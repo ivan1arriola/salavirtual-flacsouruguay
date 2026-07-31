@@ -249,27 +249,52 @@ model InstanciaSala {
 }
 
 model EventoProveedor {
-  id                String            @id @default(cuid())
-  instanciaSalaId   String
-  proveedorId       String
-  cuentaProveedorId String?
-  externalEventId   String?
-  codigoReunion     String?
-  joinUrl           String?
-  hostUrl           String?
-  payloadUltimo     Json?
-  sincronizadoAt    DateTime?
-  estadoIntegracion EstadoIntegracion @default(PENDIENTE)
-  errorIntegracion  String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  instancia         InstanciaSala     @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  proveedor         ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  cuentaProveedor   CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  id                      String            @id @default(cuid())
+  instanciaSalaId         String
+  proveedorId             String
+  cuentaProveedorId       String?
+  externalEventId         String?
+  codigoReunion           String?
+  joinUrl                 String?
+  hostUrl                 String?
+  payloadUltimo           Json?
+  sincronizadoAt          DateTime?
+  estadoIntegracion       EstadoIntegracion @default(PENDIENTE)
+  errorIntegracion        String?
+  conferenceRecordName    String?
+  driveFolderId           String?
+  archivosSincronizadosAt DateTime?
+  errorArchivos           String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  instancia               InstanciaSala     @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  proveedor               ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  cuentaProveedor         CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  archivos                ArchivoReunion[]
 
   @@unique([proveedorId, externalEventId])
   @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
+}
+
+model ArchivoReunion {
+  id                   String             @id @default(cuid())
+  eventoProveedorId    String
+  tipo                 TipoArchivoReunion
+  externalResourceName String
+  driveFileId          String             @unique
+  nombre               String
+  mimeType             String?
+  tamanoBytes          BigInt?
+  webViewUrl           String?
+  capturadoAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  eventoProveedor      EventoProveedor    @relation(fields: [eventoProveedorId], references: [id], onDelete: Cascade)
+
+  @@unique([eventoProveedorId, externalResourceName])
+  @@index([eventoProveedorId, tipo])
+  @@index([tipo, capturadoAt])
 }
 
 model CohostReunion {
@@ -529,6 +554,14 @@ enum OrigenGrabacion {
   GOOGLE_DRIVE
   ZOOM_HISTORICO
   MANUAL
+}
+
+enum TipoArchivoReunion {
+  GRABACION
+  LISTA_ASISTENCIA
+  TRANSCRIPCION
+  NOTAS
+  OTRO
 }
 
 enum EstadoInteres {

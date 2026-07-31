@@ -76,6 +76,8 @@ export async function provisionarEventosMeet(
           fin: evento.instancia.finProgramadoAt,
           timezone: evento.instancia.timezone,
           calendarId: hostEmail,
+          requiereAsistencia: evento.instancia.requiereAsistencia,
+          requiereGrabacion: evento.instancia.requiereGrabacion,
         });
         await dependencies.db.eventoProveedor.update({
           where: { id: evento.id },
@@ -86,7 +88,7 @@ export async function provisionarEventosMeet(
             payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
             sincronizadoAt: new Date(),
             estadoIntegracion: "SINCRONIZADA",
-            errorIntegracion: null,
+            errorIntegracion: result.warning ?? null,
           },
         });
         return {

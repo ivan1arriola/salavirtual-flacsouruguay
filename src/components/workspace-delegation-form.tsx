@@ -36,6 +36,13 @@ export function WorkspaceDelegationForm({ subject }: Readonly<{ subject: string 
           <span>Usuario delegado</span>
           <input type="email" name="serviceAccountSubject" defaultValue={subject} required />
         </label>
+        <div className="field field-wide config-scopes">
+          <span>Scopes autorizados</span>
+          <code>calendar.events</code>
+          <code>drive</code>
+          <code>meetings.space.settings</code>
+          <code>meetings.space.readonly</code>
+        </div>
       </div>
       <footer className="form-actions">
         <span className={`form-message${success ? " done" : ""}`} role="status">{message}</span>

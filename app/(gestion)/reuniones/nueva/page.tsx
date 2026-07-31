@@ -32,11 +32,13 @@ export default async function NuevaReunionPage() {
       where: { proveedor: { tipo: "GOOGLE_MEET" }, activa: true, tieneLicencia: true },
       orderBy: { prioridad: "asc" }
     }),
-    db.asistente.findMany({
-      where: { usuario: { activo: true } },
-      orderBy: { usuario: { nombres: "asc" } },
-      include: { usuario: true }
-    }),
+    actor.rol === "ADMINISTRACION"
+      ? db.asistente.findMany({
+          where: { usuario: { activo: true, rol: "ASISTENTE" } },
+          orderBy: { usuario: { nombres: "asc" } },
+          include: { usuario: true }
+        })
+      : Promise.resolve([]),
     db.cuentaGoogleFlacso.findMany({
       where: { user: { activo: true } },
       orderBy: { email: "asc" },
@@ -54,6 +56,7 @@ export default async function NuevaReunionPage() {
         </div>
       </header>
       <MeetingForm
+        canAssignAssistant={actor.rol === "ADMINISTRACION"}
         assistants={assistants.map(({ id, usuario }) => ({
           id,
           label: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim()

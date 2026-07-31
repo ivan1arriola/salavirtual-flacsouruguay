@@ -3,6 +3,7 @@ import {
   crearReunionesSchema,
   diasDeReunion,
   puedeCrearReuniones,
+  resolverAsignacionInicial,
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
 
@@ -24,6 +25,11 @@ export async function crearReuniones(
   }>
 > {
   const input = crearReunionesSchema.parse(rawInput);
+  const asistenteId = resolverAsignacionInicial(
+    actor.rol,
+    input.requiereAsistencia,
+    input.asistenteId
+  );
 
   return db.$transaction(async (tx) => {
     const [docentePrograma, cuentaHost, proveedorMeet] = await Promise.all([
@@ -71,11 +77,14 @@ export async function crearReuniones(
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
       throw new Error("Una o mas cuentas cohost no existen.");
     }
-    if (input.asistenteId) {
+    if (asistenteId) {
       const asistente = await tx.asistente.findUnique({
-        where: { id: input.asistenteId },
+        where: { id: asistenteId },
+        select: { id: true, usuario: { select: { activo: true, rol: true } } }
       });
-      if (!asistente) throw new Error("El asistente seleccionado no existe.");
+      if (!asistente?.usuario.activo || asistente.usuario.rol !== "ASISTENTE") {
+        throw new Error("El Asistente seleccionado no está activo.");
+      }
     }
 
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
@@ -127,11 +136,11 @@ export async function crearReuniones(
             })),
           });
         }
-        if (input.asistenteId) {
+        if (asistenteId) {
           await tx.asignacionAsistente.create({
             data: {
               instanciaSalaId: instancia.id,
-              asistenteId: input.asistenteId,
+              asistenteId,
             },
           });
         }

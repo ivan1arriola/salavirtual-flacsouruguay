@@ -4,7 +4,8 @@ import {
   diasDeReunion,
   puedeAbrirCreacionReuniones,
   puedeCrearReuniones,
-  puedeVerAgendaCompleta
+  puedeVerAgendaCompleta,
+  resolverAsignacionInicial
 } from "../src/modules/reuniones/reuniones.domain";
 
 describe("dias derivados de reuniones", () => {
@@ -21,8 +22,8 @@ describe("dias derivados de reuniones", () => {
     ).toEqual(["lunes", "miercoles"]);
   });
 
-  it("exige asistente cuando la reunion requiere asistencia", () => {
-    expect(() =>
+  it("permite crear una reunion abierta sin asignacion inicial", () => {
+    expect(
       crearReunionesSchema.parse({
         titulo: "Clase",
         docenteProgramaId: "dp",
@@ -36,8 +37,20 @@ describe("dias derivados de reuniones", () => {
             fin: "2026-08-03T14:00:00Z"
           }
         ]
-      })
-    ).toThrow();
+      }).asistenteId
+    ).toBeUndefined();
+  });
+
+  it("reserva la asignacion inicial a Administracion", () => {
+    expect(resolverAsignacionInicial("ADMINISTRACION", true, "assistant")).toBe("assistant");
+    expect(resolverAsignacionInicial("ADMINISTRACION", true)).toBeNull();
+    expect(resolverAsignacionInicial("DOCENTE", true)).toBeNull();
+    expect(() => resolverAsignacionInicial("DOCENTE", true, "assistant")).toThrow(
+      "Solo Administración"
+    );
+    expect(() => resolverAsignacionInicial("ADMINISTRACION", false, "assistant")).toThrow(
+      "no requiere asistencia"
+    );
   });
 
   it("permite a Administracion o al docente asociado crear reuniones", () => {

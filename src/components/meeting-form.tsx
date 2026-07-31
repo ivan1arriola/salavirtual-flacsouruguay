@@ -11,16 +11,19 @@ export function MeetingForm({
   programs,
   hosts,
   assistants,
-  cohosts
+  cohosts,
+  canAssignAssistant
 }: Readonly<{
   programs: readonly (Option & { teacher: string })[];
   hosts: readonly (Option & { email: string })[];
   assistants: readonly Option[];
   cohosts: readonly Readonly<{ id: string; email: string }>[];
+  canAssignAssistant: boolean;
 }>) {
   const router = useRouter();
   const [dates, setDates] = useState<readonly MeetingDate[]>([{ inicio: "", fin: "" }]);
   const [requiresAssistance, setRequiresAssistance] = useState(false);
+  const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -36,7 +39,9 @@ export function MeetingForm({
         docenteProgramaId: formData.get("docenteProgramaId"),
         cuentaHostId: formData.get("cuentaHostId"),
         cohostCuentaIds: formData.getAll("cohostCuentaIds"),
-        asistenteId: formData.get("asistenteId") || undefined,
+        asistenteId: canAssignAssistant && assistanceMode === "ASSIGN"
+          ? formData.get("asistenteId") || undefined
+          : undefined,
         requiereAsistencia: formData.get("requiereAsistencia") === "on",
         requiereGrabacion: formData.get("requiereGrabacion") === "on",
         modalidad: formData.get("modalidad"),
@@ -106,7 +111,17 @@ export function MeetingForm({
           </Field>
           <label className="check-field"><input name="requiereAsistencia" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span>Requiere asistencia</span></label>
           <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span>Requiere grabación</span></label>
-          {requiresAssistance ? (
+          {requiresAssistance && canAssignAssistant ? (
+            <fieldset className="field field-wide assistance-choice">
+              <legend>Cobertura de asistencia</legend>
+              <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span>Abierta a postulaciones</span></label>
+              <label><input type="radio" name="modoAsistencia" value="ASSIGN" checked={assistanceMode === "ASSIGN"} onChange={() => setAssistanceMode("ASSIGN")} /><span>Asignar ahora</span></label>
+            </fieldset>
+          ) : null}
+          {requiresAssistance && !canAssignAssistant ? (
+            <div className="field field-wide"><span>Cobertura de asistencia</span><div><span className="status status-warning">Abierta a postulaciones</span></div></div>
+          ) : null}
+          {requiresAssistance && canAssignAssistant && assistanceMode === "ASSIGN" ? (
             <Field label="Asistente" wide>
               <select name="asistenteId" required defaultValue=""><option value="" disabled>Seleccionar asistente</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select>
             </Field>

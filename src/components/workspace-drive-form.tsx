@@ -1,8 +1,8 @@
 "use client";
 
-import { FolderCheck, Save, TestTube2 } from "lucide-react";
+import { FolderCheck, Save, ShieldCheck, TestTube2 } from "lucide-react";
 import { useState } from "react";
-import { saveWorkspaceSection, testWorkspaceSection } from "./workspace-config.client";
+import { prepareDriveHostAccess, saveWorkspaceSection, testWorkspaceSection } from "./workspace-config.client";
 
 export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>) {
   const [message, setMessage] = useState("");
@@ -25,6 +25,13 @@ export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>)
     setMessage(result.message);
   }
 
+  async function prepareAccess() {
+    setMessage("Dando acceso a las salas Meet…");
+    const result = await prepareDriveHostAccess();
+    setSuccess(result.ok);
+    setMessage(result.message);
+  }
+
   return (
     <form className="form-section workspace-config" action={save}>
       <header className="form-section-title">
@@ -40,6 +47,7 @@ export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>)
       <footer className="form-actions">
         <span className={`form-message${success ? " done" : ""}`} role="status">{message}</span>
         <div className="workspace-actions">
+          <button className="secondary-action" type="button" onClick={prepareAccess}><ShieldCheck size={17} />Acceso a salas</button>
           <button className="secondary-action" type="button" onClick={test}><TestTube2 size={17} />Probar</button>
           <button className="primary-action" type="submit"><Save size={17} />Guardar</button>
         </div>

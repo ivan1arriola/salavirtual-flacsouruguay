@@ -4,6 +4,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import {
+  mensajeErrorGoogleWorkspace,
   pruebaConfiguracionGoogleWorkspaceSchema
 } from "@/src/modules/configuracion/google-workspace.domain";
 import {
@@ -46,11 +47,22 @@ export async function POST(request: Request) {
       serviceAccountEmail: configuration.serviceAccountEmail,
       privateKey: descifrarConfiguracion(configuration.privateKeyCifrada)
     };
-    const message = await ejecutarPrueba(objetivo, configuration, credential);
+    const hostEmails = objetivo === "DRIVE"
+      ? (await db.cuentaProveedor.findMany({
+          where: {
+            proveedor: { tipo: "GOOGLE_MEET" },
+            activa: true,
+            emailOrganizador: { not: null }
+          },
+          select: { emailOrganizador: true },
+          orderBy: { prioridad: "asc" }
+        })).flatMap(({ emailOrganizador }) => emailOrganizador ? [emailOrganizador] : [])
+      : [];
+    const message = await ejecutarPrueba(objetivo, configuration, credential, hostEmails);
     return NextResponse.json({ message });
   } catch (error) {
     return NextResponse.json(
-      { error: mensajeSeguro(error) },
+      { error: mensajeErrorGoogleWorkspace(error) },
       { status: 400 }
     );
   }
@@ -62,7 +74,8 @@ async function ejecutarPrueba(
     serviceAccountSubject: string | null;
     driveDestinationId: string | null;
   }>,
-  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>
+  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>,
+  hostEmails: readonly string[]
 ): Promise<string> {
   if (objetivo === "CREDENCIAL") {
     return probarCredencialGoogle(credential);
@@ -80,11 +93,10 @@ async function ejecutarPrueba(
   if (!configuration.driveDestinationId) {
     throw new Error("Primero guardá el destino de Drive.");
   }
-  return probarDestinoDrive(delegated, configuration.driveDestinationId);
-}
-
-function mensajeSeguro(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : "No se pudo completar la prueba con Google.";
+  await probarDestinoDrive(delegated, configuration.driveDestinationId);
+  await Promise.all(hostEmails.map((subject) => probarDestinoDrive(
+    { ...credential, subject },
+    configuration.driveDestinationId!
+  )));
+  return `Lectura y escritura confirmadas para el usuario delegado y ${hostEmails.length} salas Meet.`;
 }

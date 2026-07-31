@@ -28,10 +28,6 @@ export const crearReunionesSchema = z
     timezone: z.string().trim().min(1),
     codigoMeet: z.string().trim().min(3).optional(),
     instancias: z.array(instanciaSchema).min(1)
-  })
-  .refine((input) => !input.requiereAsistencia || Boolean(input.asistenteId), {
-    message: "Debe seleccionar un asistente cuando se requiere asistencia.",
-    path: ["asistenteId"]
   });
 
 export type CrearReunionesInput = Readonly<z.infer<typeof crearReunionesSchema>>;
@@ -50,6 +46,20 @@ export function puedeCrearReuniones(
   docenteUsuarioId: string
 ): boolean {
   return rol === "ADMINISTRACION" || (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
+}
+
+export function resolverAsignacionInicial(
+  rol: RolUsuario,
+  requiereAsistencia: boolean,
+  asistenteId?: string
+): string | null {
+  if (!requiereAsistencia && asistenteId) {
+    throw new Error("No se puede asignar Asistente si la reunión no requiere asistencia.");
+  }
+  if (rol !== "ADMINISTRACION" && asistenteId) {
+    throw new Error("Solo Administración puede asignar Asistente al crear una reunión.");
+  }
+  return rol === "ADMINISTRACION" && requiereAsistencia ? asistenteId ?? null : null;
 }
 
 const DIAS = Object.freeze([

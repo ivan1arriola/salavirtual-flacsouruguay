@@ -65,6 +65,14 @@ describe("schema 3NF inicial", () => {
     expect(evento).toContain("codigoReunion");
   });
 
+  it("normaliza los archivos Meet contra el evento que los produjo", () => {
+    const archivo = model("ArchivoReunion");
+    expect(archivo).toContain("eventoProveedorId");
+    expect(archivo).toContain("externalResourceName");
+    expect(archivo).not.toMatch(/^\s+(programaId|docenteId|cuentaHostId|instanciaSalaId)\s/m);
+    expect(archivo).toContain("@@unique([eventoProveedorId, externalResourceName])");
+  });
+
   it("modela cohosts como relacion muchos a muchos sin listas embebidas", () => {
     const cohost = model("CohostReunion");
     const instancia = model("InstanciaSala");

@@ -5,6 +5,8 @@ export type MeetProvisionRequest = Readonly<{
   fin: Date;
   timezone: string;
   calendarId: string;
+  requiereAsistencia?: boolean;
+  requiereGrabacion?: boolean;
 }>;
 
 export type MeetProvisionResult = Readonly<{
@@ -12,6 +14,7 @@ export type MeetProvisionResult = Readonly<{
   codigoReunion: string;
   joinUrl: string;
   payload: unknown;
+  warning?: string;
 }>;
 
 export type MeetProvider = Readonly<{

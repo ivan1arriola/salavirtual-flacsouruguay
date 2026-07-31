@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   configuracionGoogleWorkspaceSchema,
+  mensajeErrorGoogleWorkspace,
   puedeConfigurarGoogleWorkspace,
   seccionConfiguracionGoogleWorkspaceSchema
 } from "../src/modules/configuracion/google-workspace.domain";
@@ -65,5 +66,14 @@ describe("configuracion funcional de Google Workspace", () => {
       serviceAccountEmail: "service@project.iam.gserviceaccount.com",
       privateKey: undefined
     });
+  });
+
+  it("explica como corregir unauthorized_client", () => {
+    const message = mensajeErrorGoogleWorkspace(
+      new Error("unauthorized_client: Client is unauthorized")
+    );
+    expect(message).toContain("ID numérico");
+    expect(message).toContain("https://www.googleapis.com/auth/drive");
+    expect(message).toContain("meetings.space.settings");
   });
 });
