@@ -1,0 +1,82 @@
+import type { PrismaClient } from "@prisma/client";
+import {
+  calcularMinutos,
+  calcularMonto,
+  rangoMesUtc3,
+  type RegistroAsistenciaPersonal
+} from "./resumen-personal.domain";
+
+type PeriodoPersonal = "MES_ACTUAL" | "HISTORICO";
+
+export async function obtenerAsistenciasPersonales(
+  db: PrismaClient,
+  usuarioId: string,
+  periodo: PeriodoPersonal,
+  ahora = new Date()
+): Promise<readonly RegistroAsistenciaPersonal[]> {
+  const asistente = await db.asistente.findUnique({
+    where: { usuarioId },
+    select: { id: true }
+  });
+  if (!asistente) return [];
+
+  const mes = rangoMesUtc3(ahora);
+  const desde = new Date(mes.desdeMs);
+  const hasta = new Date(mes.hastaMs);
+  const asignaciones = await db.asignacionAsistente.findMany({
+    where: {
+      asistenteId: asistente.id,
+      estado: { in: ["ASIGNADO", "ACEPTADO"] },
+      instancia: {
+        estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
+        inicioProgramadoAt: periodo === "MES_ACTUAL"
+          ? { gte: desde, lt: hasta }
+          : { lt: desde }
+      }
+    },
+    orderBy: { instancia: { inicioProgramadoAt: periodo === "MES_ACTUAL" ? "asc" : "desc" } },
+    take: periodo === "MES_ACTUAL" ? 100 : 500,
+    include: {
+      instancia: {
+        include: {
+          solicitud: {
+            include: {
+              docentePrograma: {
+                include: {
+                  programa: true,
+                  docente: { include: { usuario: true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return asignaciones.map((asignacion) => {
+    const instancia = asignacion.instancia;
+    const asociacion = instancia.solicitud.docentePrograma;
+    const minutos = calcularMinutos(
+      { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt },
+      asignacion.minutosConfirmados,
+      instancia.minutosReportados,
+      { inicio: instancia.inicioRealAt, fin: instancia.finRealAt }
+    );
+    const tarifaHora = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
+    return {
+      id: asignacion.id,
+      titulo: instancia.solicitud.titulo,
+      programa: asociacion.programa.nombre,
+      docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
+      inicioAt: instancia.inicioProgramadoAt,
+      finAt: instancia.finProgramadoAt,
+      modalidad: instancia.solicitud.modalidad,
+      estado: instancia.estado,
+      minutos,
+      tarifaHora,
+      monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, tarifaHora, minutos),
+      moneda: asignacion.moneda ?? "UYU"
+    };
+  });
+}

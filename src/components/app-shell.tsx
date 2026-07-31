@@ -1,11 +1,13 @@
 import {
   CalendarCheck2,
   CalendarDays,
+  CalendarRange,
   Hand,
   History,
   LayoutDashboard,
   LogOut,
   Settings,
+  UserRound,
   Users,
   Waypoints
 } from "lucide-react";
@@ -29,14 +31,18 @@ const adminNav = [
 const assistantNav = [
   { href: "/mi-agenda", label: "Mi agenda", icon: CalendarCheck2 },
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
-  { href: "/historico", label: "Mi histórico", icon: History }
+  { href: "/reuniones-del-mes", label: "Reuniones del mes", icon: CalendarRange },
+  { href: "/mi-historico", label: "Mi histórico", icon: History },
+  { href: "/mi-perfil", label: "Mi perfil", icon: UserRound }
 ] as const;
+
+const profileNav = [{ href: "/mi-perfil", label: "Mi perfil", icon: UserRound }] as const;
 
 export function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const operationalNav = user.role === "ASISTENTE" ? assistantNav : primaryNav;
+  const operationalNav = user.role === "ASISTENTE" ? assistantNav : [...primaryNav, ...profileNav];
   const nav =
     user.role === "ADMINISTRACION"
       ? [...operationalNav, ...adminNav]
@@ -63,9 +69,9 @@ export function AppShell({
         </nav>
 
         <div className="account-block">
-          <span className="avatar" aria-hidden="true">
+          <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
             {(user.name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
-          </span>
+          </Link>
           <span className="account-copy">
             <strong>{user.name ?? user.id}</strong>
             <small>{user.role.toLowerCase()}</small>
@@ -90,7 +96,7 @@ export function AppShell({
             <span className="brand-mark">F</span>
             <strong>Gestor Meet</strong>
           </Link>
-          <span className="avatar">{(user.name ?? "U").slice(0, 1).toUpperCase()}</span>
+          <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
         </header>
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
