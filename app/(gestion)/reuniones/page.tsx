@@ -1,22 +1,33 @@
 import { CalendarPlus, ExternalLink, Search } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   MeetIntegrationStatus,
   MeetPendingNotice
 } from "@/src/components/meet-integration-status";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
+import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
 
 export default async function ReunionesPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ q?: string }> }>) {
   const session = await auth();
+  if (!session?.user) redirect("/acceso");
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) {
+    redirect("/mi-agenda");
+  }
   const { q = "" } = await searchParams;
   const now = new Date();
   const teacherFilter =
-    session?.user.role === "DOCENTE"
-      ? { docentePrograma: { docente: { usuarioId: session.user.id } } }
+    actor.rol === "DOCENTE"
+      ? { docentePrograma: { docente: { usuarioId: actor.id } } }
       : {};
   const meetings = await db.instanciaSala.findMany({
     where: {
@@ -68,11 +79,9 @@ export default async function ReunionesPage({
           <h1>Agenda de reuniones</h1>
           <p>{meetings.length} instancias visibles.</p>
         </div>
-        {session?.user.role !== "ASISTENTE" ? (
-          <Link className="primary-action" href="/reuniones/nueva">
-            <CalendarPlus size={18} /> Nueva reunión
-          </Link>
-        ) : null}
+        <Link className="primary-action" href="/reuniones/nueva">
+          <CalendarPlus size={18} /> Nueva reunión
+        </Link>
       </header>
 
       <form className="filter-bar" method="get">

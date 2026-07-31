@@ -13,7 +13,7 @@ export default async function NuevaReunionPage() {
     email: session.user.email
   });
   if (!actor?.activo || !puedeAbrirCreacionReuniones(actor.rol)) {
-    redirect("/reuniones");
+    redirect("/mi-agenda");
   }
 
   const [associations, hosts, assistants, cohosts] = await Promise.all([

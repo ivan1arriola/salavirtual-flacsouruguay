@@ -1,5 +1,7 @@
 import {
+  CalendarCheck2,
   CalendarDays,
+  Hand,
   History,
   LayoutDashboard,
   LogOut,
@@ -19,18 +21,22 @@ const primaryNav = [
 ] as const;
 
 const adminNav = [
+  { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings }
+] as const;
+
+const assistantNav = [
+  { href: "/mi-agenda", label: "Mi agenda", icon: CalendarCheck2 },
+  { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
+  { href: "/historico", label: "Histórico Zoom", icon: History }
 ] as const;
 
 export function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const operationalNav =
-    user.role === "ASISTENTE"
-      ? primaryNav.filter(({ href }) => href !== "/reuniones/nueva")
-      : primaryNav;
+  const operationalNav = user.role === "ASISTENTE" ? assistantNav : primaryNav;
   const nav =
     user.role === "ADMINISTRACION"
       ? [...operationalNav, ...adminNav]

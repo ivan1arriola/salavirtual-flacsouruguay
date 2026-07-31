@@ -3,7 +3,8 @@ import {
   crearReunionesSchema,
   diasDeReunion,
   puedeAbrirCreacionReuniones,
-  puedeCrearReuniones
+  puedeCrearReuniones,
+  puedeVerAgendaCompleta
 } from "../src/modules/reuniones/reuniones.domain";
 
 describe("dias derivados de reuniones", () => {
@@ -49,5 +50,11 @@ describe("dias derivados de reuniones", () => {
     expect(puedeAbrirCreacionReuniones("ADMINISTRACION")).toBe(true);
     expect(puedeAbrirCreacionReuniones("DOCENTE")).toBe(true);
     expect(puedeAbrirCreacionReuniones("ASISTENTE")).toBe(false);
+  });
+
+  it("impide que Asistente vea la agenda completa", () => {
+    expect(puedeVerAgendaCompleta("ADMINISTRACION")).toBe(true);
+    expect(puedeVerAgendaCompleta("DOCENTE")).toBe(true);
+    expect(puedeVerAgendaCompleta("ASISTENTE")).toBe(false);
   });
 });

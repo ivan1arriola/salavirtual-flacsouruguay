@@ -40,6 +40,10 @@ export function puedeAbrirCreacionReuniones(rol: RolUsuario): boolean {
   return rol === "ADMINISTRACION" || rol === "DOCENTE";
 }
 
+export function puedeVerAgendaCompleta(rol: RolUsuario): boolean {
+  return rol === "ADMINISTRACION" || rol === "DOCENTE";
+}
+
 export function puedeCrearReuniones(
   rol: RolUsuario,
   actorUsuarioId: string,

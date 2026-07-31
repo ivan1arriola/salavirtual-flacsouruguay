@@ -29,6 +29,35 @@
   color: var(--brand);
 }
 
+.row-action {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+
+.inline-error {
+  max-width: 240px;
+  color: #923737;
+  white-space: normal;
+}
+
+.applicant-list {
+  display: grid;
+  min-width: 190px;
+  gap: 5px;
+}
+
+.applicant-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 7px;
+}
+
+.applicant-row > span {
+  overflow-wrap: anywhere;
+}
+
 .meeting-form,
 .date-list {
   display: grid;

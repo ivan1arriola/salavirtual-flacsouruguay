@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowRight, CalendarPlus, Video } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   MeetIntegrationStatus,
@@ -10,6 +11,7 @@ import { formatDateTime, formatShortDate } from "@/src/lib/ui/format";
 
 export default async function HomePage() {
   const session = await auth();
+  if (session?.user.role === "ASISTENTE") redirect("/mi-agenda");
   const now = new Date();
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const docenteWhere =
@@ -94,12 +96,10 @@ export default async function HomePage() {
           <h1>Resumen operativo</h1>
           <p>Reuniones, asistencia y disponibilidad de salas.</p>
         </div>
-        {session?.user.role !== "ASISTENTE" ? (
-          <Link className="primary-action" href="/reuniones/nueva">
-            <CalendarPlus size={18} aria-hidden="true" />
-            Nueva reunión
-          </Link>
-        ) : null}
+        <Link className="primary-action" href="/reuniones/nueva">
+          <CalendarPlus size={18} aria-hidden="true" />
+          Nueva reunión
+        </Link>
       </header>
 
       <section className="metric-grid" aria-label="Indicadores">
