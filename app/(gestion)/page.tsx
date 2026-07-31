@@ -8,10 +8,12 @@ import {
 } from "@/src/components/meet-integration-status";
 import { db } from "@/src/lib/db";
 import { formatDateTime, formatShortDate } from "@/src/lib/ui/format";
+import { AssistantDashboard } from "@/src/components/assistant-dashboard";
 
 export default async function HomePage() {
   const session = await auth();
-  if (session?.user.role === "ASISTENTE") redirect("/mi-agenda");
+  if (!session?.user) redirect("/acceso");
+  if (session.user.role === "ASISTENTE") return <AssistantDashboard user={session.user} />;
   const now = new Date();
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const docenteWhere =

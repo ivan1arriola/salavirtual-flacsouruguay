@@ -4,30 +4,13 @@ import { Repeat2 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import {
-  normalizarCuentasRecordadas,
   recordarCuenta,
   type CuentaRecordada
 } from "@/src/modules/usuarios/cuentas-recordadas.domain";
-
-export const REMEMBERED_ACCOUNTS_KEY = "gestor-flacso-cuentas-recordadas";
-
-export function readRememberedAccounts(): readonly CuentaRecordada[] {
-  try {
-    return normalizarCuentasRecordadas(
-      JSON.parse(localStorage.getItem(REMEMBERED_ACCOUNTS_KEY) ?? "[]")
-    );
-  } catch {
-    return [];
-  }
-}
-
-export function writeRememberedAccounts(accounts: readonly CuentaRecordada[]): void {
-  try {
-    localStorage.setItem(REMEMBERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-  } catch {
-    // El cambio de sesión sigue funcionando aunque el navegador bloquee almacenamiento local.
-  }
-}
+import {
+  readRememberedAccounts,
+  writeRememberedAccounts
+} from "@/src/lib/browser/remembered-accounts";
 
 export function AccountSwitcher({ account }: Readonly<{ account: CuentaRecordada }>) {
   const [pending, setPending] = useState(false);

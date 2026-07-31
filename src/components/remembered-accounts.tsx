@@ -9,7 +9,7 @@ import {
 import {
   readRememberedAccounts,
   writeRememberedAccounts
-} from "./account-switcher";
+} from "@/src/lib/browser/remembered-accounts";
 
 export function RememberedAccounts() {
   const [accounts, setAccounts] = useState<readonly CuentaRecordada[]>([]);

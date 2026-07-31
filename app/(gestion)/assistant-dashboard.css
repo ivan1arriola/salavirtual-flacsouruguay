@@ -1,0 +1,258 @@
+.assistant-dashboard {
+  display: grid;
+  gap: 20px;
+}
+
+.next-opening {
+  min-height: 138px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border: 1px solid #c9e0d1;
+  border-left: 7px solid #2d7d48;
+  border-radius: 8px;
+  background: #edf6f1;
+  padding: 24px 28px;
+}
+
+.next-opening h1 {
+  max-width: 760px;
+  margin-bottom: 6px;
+  font-size: 1.65rem;
+}
+
+.next-opening p:last-child {
+  margin: 0;
+  color: #526173;
+}
+
+.next-opening-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.assistant-dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-metric {
+  min-height: 166px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.dashboard-metric > svg {
+  grid-column: 2;
+  grid-row: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  padding: 7px;
+}
+
+.dashboard-metric > div {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  padding-right: 34px;
+}
+
+.dashboard-metric h2 {
+  margin-bottom: 3px;
+  font-size: 0.86rem;
+}
+
+.dashboard-metric p {
+  min-height: 42px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.dashboard-metric strong {
+  display: block;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.tone-green {
+  border-color: #c9e0d1;
+}
+
+.tone-green > svg {
+  background: #e7f5ee;
+  color: #24745b;
+}
+
+.tone-green strong {
+  color: #24745b;
+}
+
+.tone-amber {
+  border-color: #f0d3b5;
+}
+
+.tone-amber > svg {
+  background: #fff0dc;
+  color: #a15714;
+}
+
+.tone-amber strong {
+  color: #a15714;
+}
+
+.tone-blue {
+  border-color: #c8ddeb;
+}
+
+.tone-blue > svg {
+  background: #e7f3fa;
+  color: #0f6f8f;
+}
+
+.tone-blue strong {
+  color: #0f6f8f;
+}
+
+.response-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.response-grid > a {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px 18px;
+}
+
+.response-grid small,
+.response-grid strong {
+  display: block;
+}
+
+.response-grid small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.response-grid strong {
+  margin-top: 2px;
+  font-size: 1.5rem;
+}
+
+.next-meeting-detail {
+  position: relative;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--brand);
+  border-radius: 8px;
+  background: #ffffff;
+  padding-bottom: 18px;
+}
+
+.next-meeting-detail dl {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 20px;
+}
+
+.next-meeting-detail dt {
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.next-meeting-detail dd {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+  background: var(--brand);
+  color: #ffffff;
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.meet-access {
+  width: max-content;
+  margin-left: 20px;
+}
+
+@media (max-width: 1100px) {
+  .assistant-dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .next-meeting-detail dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .next-opening {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .next-opening-actions,
+  .next-opening-actions a {
+    width: 100%;
+  }
+
+  .assistant-dashboard-metrics,
+  .response-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-metric {
+    min-height: 150px;
+  }
+
+  .next-meeting-detail .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .next-meeting-detail dl {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .assistant-dashboard-metrics,
+  .response-grid,
+  .next-meeting-detail dl {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-metric p {
+    min-height: auto;
+  }
+}
