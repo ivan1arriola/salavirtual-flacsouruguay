@@ -32,6 +32,7 @@ export async function provisionarEventosMeet(
       estado: "PENDIENTE_CONFIGURACION",
     }));
   }
+  const serviceAccountEmail = configuracion.serviceAccountEmail;
 
   const eventos = await dependencies.db.eventoProveedor.findMany({
     where: {
@@ -64,7 +65,7 @@ export async function provisionarEventosMeet(
       }
       try {
         const provider = dependencies.crearProvider({
-          serviceAccountEmail: configuracion.serviceAccountEmail,
+          serviceAccountEmail,
           privateKey,
           subject: hostEmail,
         });

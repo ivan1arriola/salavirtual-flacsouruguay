@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   configuracionGoogleWorkspaceSchema,
-  puedeConfigurarGoogleWorkspace
+  puedeConfigurarGoogleWorkspace,
+  seccionConfiguracionGoogleWorkspaceSchema
 } from "../src/modules/configuracion/google-workspace.domain";
 
 describe("configuracion funcional de Google Workspace", () => {
@@ -32,5 +33,37 @@ describe("configuracion funcional de Google Workspace", () => {
     });
 
     expect(parsed.privateKey).toContain("\ncontenido\n");
+  });
+
+  it("valida cada seccion sin exigir valores de las otras", () => {
+    expect(
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "DELEGACION",
+        serviceAccountSubject: "usuario@flacso.edu.uy"
+      })
+    ).toEqual({
+      seccion: "DELEGACION",
+      serviceAccountSubject: "usuario@flacso.edu.uy"
+    });
+    expect(
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "DRIVE",
+        driveDestinationId: "drive-folder"
+      })
+    ).toEqual({ seccion: "DRIVE", driveDestinationId: "drive-folder" });
+  });
+
+  it("permite conservar una clave privada ya configurada sin exponerla", () => {
+    expect(
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "CREDENCIAL",
+        serviceAccountEmail: "service@project.iam.gserviceaccount.com",
+        privateKey: ""
+      })
+    ).toEqual({
+      seccion: "CREDENCIAL",
+      serviceAccountEmail: "service@project.iam.gserviceaccount.com",
+      privateKey: undefined
+    });
   });
 });

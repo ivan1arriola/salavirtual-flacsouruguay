@@ -31,8 +31,12 @@ export async function GET() {
   return NextResponse.json({
     configuracion: configuracion
       ? {
-          ...configuracion,
-          privateKeyCifrada: undefined,
+          serviceAccountEmail: configuracion.serviceAccountEmail,
+          serviceAccountSubject: configuracion.serviceAccountSubject,
+          driveDestinationId: configuracion.driveDestinationId,
+          activa: configuracion.activa,
+          version: configuracion.version,
+          updatedAt: configuracion.updatedAt,
           privateKeyConfigurada: Boolean(configuracion.privateKeyCifrada)
         }
       : null
