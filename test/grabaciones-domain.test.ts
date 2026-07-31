@@ -1,0 +1,16 @@
+import { describe, expect, it } from "vitest";
+import { obtenerAlcanceGrabaciones } from "../src/modules/meet/grabaciones.domain";
+
+describe("alcance funcional de grabaciones", () => {
+  it("da acceso completo solo a Administracion", () => {
+    expect(obtenerAlcanceGrabaciones("ADMINISTRACION")).toBe("COMPLETO");
+  });
+
+  it("limita docentes a sus programas", () => {
+    expect(obtenerAlcanceGrabaciones("DOCENTE")).toBe("PROGRAMAS_DOCENTE");
+  });
+
+  it("limita asistentes a sus asignaciones", () => {
+    expect(obtenerAlcanceGrabaciones("ASISTENTE")).toBe("ASIGNACIONES_ASISTENTE");
+  });
+});

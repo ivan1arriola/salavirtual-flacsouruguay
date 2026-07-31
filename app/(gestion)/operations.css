@@ -265,6 +265,50 @@
   overflow-wrap: anywhere;
 }
 
+.recording-back {
+  margin-bottom: 14px;
+}
+
+.recording-header {
+  margin-bottom: 18px;
+}
+
+.recording-player-section {
+  overflow: hidden;
+}
+
+.recording-player {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: min(72vh, 760px);
+  background: #101216;
+}
+
+.recording-file-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.recording-file-meta strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .recording-file-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 @media (max-width: 560px) {
   .form-grid,
   .date-row,

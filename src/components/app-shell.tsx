@@ -9,6 +9,7 @@ import {
   Settings,
   UserRound,
   Users,
+  Video,
   Waypoints
 } from "lucide-react";
 import type { Session } from "next-auth";
@@ -20,6 +21,7 @@ const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/reuniones", label: "Agenda", icon: CalendarDays },
   { href: "/reuniones/nueva", label: "Nueva reunión", icon: Waypoints },
+  { href: "/grabaciones", label: "Grabaciones", icon: Video },
   { href: "/historico", label: "Histórico Zoom", icon: History }
 ] as const;
 
@@ -33,6 +35,7 @@ const assistantNav = [
   { href: "/mi-agenda", label: "Mi agenda", icon: CalendarCheck2 },
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
   { href: "/reuniones-del-mes", label: "Reuniones del mes", icon: CalendarRange },
+  { href: "/grabaciones", label: "Grabaciones", icon: Video },
   { href: "/mi-historico", label: "Mi histórico", icon: History },
   { href: "/mi-perfil", label: "Mi perfil", icon: UserRound }
 ] as const;
