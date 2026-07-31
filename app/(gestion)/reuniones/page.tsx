@@ -1,0 +1,120 @@
+import { CalendarPlus, ExternalLink, Search } from "lucide-react";
+import Link from "next/link";
+import { auth } from "@/auth";
+import { db } from "@/src/lib/db";
+import { formatDateTime } from "@/src/lib/ui/format";
+
+export default async function ReunionesPage({
+  searchParams
+}: Readonly<{ searchParams: Promise<{ q?: string }> }>) {
+  const session = await auth();
+  const { q = "" } = await searchParams;
+  const teacherFilter =
+    session?.user.role === "DOCENTE"
+      ? { docentePrograma: { docente: { usuarioId: session.user.id } } }
+      : {};
+  const meetings = await db.instanciaSala.findMany({
+    where: {
+      solicitud: {
+        ...teacherFilter,
+        ...(q
+          ? {
+              OR: [
+                { titulo: { contains: q, mode: "insensitive" as const } },
+                {
+                  docentePrograma: {
+                    programa: { nombre: { contains: q, mode: "insensitive" as const } }
+                  }
+                }
+              ]
+            }
+          : {})
+      }
+    },
+    orderBy: { inicioProgramadoAt: "desc" },
+    take: 100,
+    include: {
+      solicitud: {
+        include: {
+          docentePrograma: {
+            include: {
+              programa: true,
+              docente: { include: { usuario: true } }
+            }
+          }
+        }
+      },
+      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
+    }
+  });
+
+  return (
+    <>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Operación</p>
+          <h1>Agenda de reuniones</h1>
+          <p>{meetings.length} instancias visibles.</p>
+        </div>
+        {session?.user.role !== "ASISTENTE" ? (
+          <Link className="primary-action" href="/reuniones/nueva">
+            <CalendarPlus size={18} /> Nueva reunión
+          </Link>
+        ) : null}
+      </header>
+
+      <form className="filter-bar" method="get">
+        <Search size={18} aria-hidden="true" />
+        <input
+          aria-label="Buscar reuniones"
+          defaultValue={q}
+          name="q"
+          placeholder="Buscar por título o programa"
+          type="search"
+        />
+        <button className="secondary-action" type="submit">Buscar</button>
+      </form>
+
+      <section className="content-section">
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Reunión</th><th>Docente / Programa</th>
+                <th>Proveedor</th><th>Estado</th><th>Acceso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {meetings.map((meeting) => {
+                const association = meeting.solicitud.docentePrograma;
+                const event = meeting.eventosProveedor[0];
+                return (
+                  <tr key={meeting.id}>
+                    <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
+                    <td><strong>{meeting.solicitud.titulo}</strong><small>{meeting.solicitud.modalidad.toLowerCase()}</small></td>
+                    <td><strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</strong><small>{association.programa.nombre}</small></td>
+                    <td><strong>{event?.cuentaProveedor?.nombre ?? event?.proveedor.nombre}</strong><small>{event?.codigoReunion ?? "Sin código"}</small></td>
+                    <td><span className={`status status-${statusTone(meeting.estado)}`}>{meeting.estado.toLowerCase().replace("_", " ")}</span></td>
+                    <td>
+                      {event?.joinUrl ? (
+                        <a className="icon-link" href={event.joinUrl} rel="noreferrer" target="_blank" title="Abrir reunión">
+                          <ExternalLink size={17} /><span className="sr-only">Abrir reunión</span>
+                        </a>
+                      ) : <span className="muted-text">—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function statusTone(status: string): string {
+  if (status === "CANCELADA" || status === "NO_REALIZADA") return "error";
+  if (status === "FINALIZADA") return "neutral";
+  return "ok";
+}

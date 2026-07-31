@@ -92,7 +92,10 @@ export default async function HomePage() {
 
       <section className="metric-grid" aria-label="Indicadores">
         {metrics.map((metric) => (
-          <article className={metric.alert ? "stat alert-stat" : "stat"} key={metric.label}>
+          <article
+            className={"alert" in metric && metric.alert ? "stat alert-stat" : "stat"}
+            key={metric.label}
+          >
             <span>{metric.label}</span>
             <strong>{metric.value}</strong>
           </article>
