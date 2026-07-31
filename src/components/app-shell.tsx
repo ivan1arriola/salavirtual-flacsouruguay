@@ -29,7 +29,7 @@ const adminNav = [
 const assistantNav = [
   { href: "/mi-agenda", label: "Mi agenda", icon: CalendarCheck2 },
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
-  { href: "/historico", label: "Histórico Zoom", icon: History }
+  { href: "/historico", label: "Mi histórico", icon: History }
 ] as const;
 
 export function AppShell({
