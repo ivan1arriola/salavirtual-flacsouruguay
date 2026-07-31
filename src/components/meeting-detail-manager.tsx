@@ -49,8 +49,8 @@ export function MeetingDetailManager({
     return request("", {
       method: "POST",
       body: JSON.stringify({
-        inicio: localMontevideoToIso(String(formData.get("inicio"))),
-        fin: localMontevideoToIso(String(formData.get("fin"))),
+        inicio: localMontevideoToIso(formData, "horaInicio"),
+        fin: localMontevideoToIso(formData, "horaFin"),
         requiereAsistencia: formData.get("requiereAsistencia") === "on",
         requiereGrabacion: formData.get("requiereGrabacion") === "on"
       })
@@ -62,8 +62,8 @@ export function MeetingDetailManager({
       method: "PATCH",
       body: JSON.stringify({
         accion: "EDITAR_FECHA",
-        inicio: localMontevideoToIso(String(formData.get("inicio"))),
-        fin: localMontevideoToIso(String(formData.get("fin")))
+        inicio: localMontevideoToIso(formData, "horaInicio"),
+        fin: localMontevideoToIso(formData, "horaFin")
       })
     });
   }
@@ -85,8 +85,9 @@ export function MeetingDetailManager({
       <section className="content-section add-encounter-section">
         <div className="section-heading"><div><h2>Agregar encuentro</h2><p>Se asignará una sala Meet disponible.</p></div></div>
         <form className="encounter-add-form" action={add}>
-          <label className="field"><span>Inicio</span><input name="inicio" type="datetime-local" required /></label>
-          <label className="field"><span>Fin</span><input name="fin" type="datetime-local" required /></label>
+          <label className="field"><span>Fecha</span><input name="fecha" type="date" required /></label>
+          <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" required /></label>
+          <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" required /></label>
           <label className="check-field encounter-add-check"><input name="requiereAsistencia" type="checkbox" /><span>Asistencia</span></label>
           <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Grabación</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
@@ -101,8 +102,9 @@ export function MeetingDetailManager({
               <span className={`status status-${meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase()}</span>
             </header>
             <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
-              <label className="field"><span>Inicio</span><input name="inicio" type="datetime-local" defaultValue={meeting.inicio} disabled={!meeting.editable || busy !== null} required /></label>
-              <label className="field"><span>Fin</span><input name="fin" type="datetime-local" defaultValue={meeting.fin} disabled={!meeting.editable || busy !== null} required /></label>
+              <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
+              <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
+              <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" defaultValue={meeting.fin.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
               <button className="secondary-action" disabled={!meeting.editable || busy !== null} type="submit"><Save size={16} />Guardar fecha</button>
             </form>
             <div className="encounter-assistance">
@@ -128,6 +130,6 @@ export function MeetingDetailManager({
   );
 }
 
-function localMontevideoToIso(value: string): string {
-  return `${value}:00-03:00`;
+function localMontevideoToIso(formData: FormData, timeField: string): string {
+  return `${String(formData.get("fecha"))}T${String(formData.get(timeField))}:00-03:00`;
 }

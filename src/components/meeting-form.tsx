@@ -1,11 +1,29 @@
 "use client";
 
-import { CalendarPlus, Check, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, CalendarPlus, Check, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 
 type Option = Readonly<{ id: string; label: string }>;
-type MeetingDate = Readonly<{ inicio: string; fin: string }>;
+type MeetingDate = Readonly<{ fecha: string; horaInicio: string; horaFin: string }>;
+type RecurrenceState = Readonly<{
+  desde: string;
+  hasta: string;
+  diasSemana: readonly number[];
+  horaInicio: string;
+  horaFin: string;
+}>;
+
+const WEEKDAYS = [
+  { value: 1, label: "Lun" },
+  { value: 2, label: "Mar" },
+  { value: 3, label: "Mié" },
+  { value: 4, label: "Jue" },
+  { value: 5, label: "Vie" },
+  { value: 6, label: "Sáb" },
+  { value: 0, label: "Dom" }
+] as const;
 
 export function MeetingForm({
   programs,
@@ -21,7 +39,15 @@ export function MeetingForm({
   canAssignAssistant: boolean;
 }>) {
   const router = useRouter();
-  const [dates, setDates] = useState<readonly MeetingDate[]>([{ inicio: "", fin: "" }]);
+  const [dates, setDates] = useState<readonly MeetingDate[]>([{ fecha: "", horaInicio: "", horaFin: "" }]);
+  const [recurrence, setRecurrence] = useState<RecurrenceState>({
+    desde: "",
+    hasta: "",
+    diasSemana: [],
+    horaInicio: "",
+    horaFin: ""
+  });
+  const [recurrenceMessage, setRecurrenceMessage] = useState("");
   const [requiresAssistance, setRequiresAssistance] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
@@ -46,9 +72,9 @@ export function MeetingForm({
         requiereGrabacion: formData.get("requiereGrabacion") === "on",
         modalidad: formData.get("modalidad"),
         timezone: "America/Montevideo",
-        instancias: dates.map(({ inicio, fin }) => ({
-          inicio: localMontevideoToIso(inicio),
-          fin: localMontevideoToIso(fin)
+        instancias: dates.map(({ fecha, horaInicio, horaFin }) => ({
+          inicio: localMontevideoToIso(fecha, horaInicio),
+          fin: localMontevideoToIso(fecha, horaFin)
         }))
       })
     });
@@ -68,6 +94,17 @@ export function MeetingForm({
         : "La reunión y su enlace Meet quedaron creados."
     );
     router.refresh();
+  }
+
+  function generateRecurrence() {
+    try {
+      const generated = generarFechasRecurrentes(recurrence);
+      if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
+      setDates(generated);
+      setRecurrenceMessage(`${generated.length} fechas generadas.`);
+    } catch (error) {
+      setRecurrenceMessage(error instanceof Error ? error.message : "No se pudieron generar las fechas.");
+    }
   }
 
   return (
@@ -90,14 +127,36 @@ export function MeetingForm({
 
       <FormSection number="2" title="Fechas" detail="Zona horaria de Montevideo.">
         <div className="date-list">
+          <div className="recurrence-builder">
+            <div className="recurrence-grid">
+              <Field label="Desde"><input type="date" value={recurrence.desde} onChange={(event) => setRecurrence({ ...recurrence, desde: event.target.value })} /></Field>
+              <Field label="Hasta"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
+              <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaInicio: event.target.value })} /></Field>
+              <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => setRecurrence({ ...recurrence, horaFin: event.target.value })} /></Field>
+            </div>
+            <fieldset className="weekday-selector">
+              <legend>Días</legend>
+              {WEEKDAYS.map((day) => (
+                <label key={day.value}>
+                  <input type="checkbox" checked={recurrence.diasSemana.includes(day.value)} onChange={(event) => setRecurrence({ ...recurrence, diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked) })} />
+                  <span>{day.label}</span>
+                </label>
+              ))}
+            </fieldset>
+            <div className="recurrence-actions">
+              <span className="muted-text" role="status">{recurrenceMessage}</span>
+              <button className="secondary-action" type="button" onClick={generateRecurrence}><CalendarDays size={17} />Generar fechas</button>
+            </div>
+          </div>
           {dates.map((date, index) => (
             <div className="date-row" key={index}>
-              <Field label="Inicio"><input type="datetime-local" required value={date.inicio} onChange={(event) => setDates(updateStart(dates, index, event.target.value))} /></Field>
-              <Field label="Fin"><input type="datetime-local" required value={date.fin} min={dayLimit(date.inicio, "00:00")} max={dayLimit(date.inicio, "23:59")} onChange={(event) => setDates(updateDate(dates, index, "fin", event.target.value))} /></Field>
+              <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
+              <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
+              <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
               <button className="icon-button remove-date" type="button" title="Quitar fecha" disabled={dates.length === 1} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar fecha</span></button>
             </div>
           ))}
-          <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, { inicio: "", fin: "" }])}><Plus size={17} />Agregar fecha</button>
+          <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, { fecha: "", horaInicio: "", horaFin: "" }])}><Plus size={17} />Agregar fecha</button>
         </div>
       </FormSection>
 
@@ -155,21 +214,10 @@ function updateDate(dates: readonly MeetingDate[], index: number, key: keyof Mee
   return dates.map((date, current) => current === index ? { ...date, [key]: value } : date);
 }
 
-function updateStart(dates: readonly MeetingDate[], index: number, inicio: string): readonly MeetingDate[] {
-  return dates.map((date, current) => current === index
-    ? { ...date, inicio, fin: synchronizeDay(inicio, date.fin) }
-    : date);
+function toggleWeekday(days: readonly number[], day: number, checked: boolean): readonly number[] {
+  return checked ? [...days, day] : days.filter((value) => value !== day);
 }
 
-function synchronizeDay(inicio: string, fin: string): string {
-  if (!inicio || !fin || inicio.slice(0, 10) === fin.slice(0, 10)) return fin;
-  return `${inicio.slice(0, 10)}${fin.slice(10)}`;
-}
-
-function dayLimit(inicio: string, time: string): string | undefined {
-  return inicio ? `${inicio.slice(0, 10)}T${time}` : undefined;
-}
-
-function localMontevideoToIso(value: string): string {
-  return new Date(`${value}:00-03:00`).toISOString();
+function localMontevideoToIso(fecha: string, hora: string): string {
+  return new Date(`${fecha}T${hora}:00-03:00`).toISOString();
 }

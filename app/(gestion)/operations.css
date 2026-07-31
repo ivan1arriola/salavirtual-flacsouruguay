@@ -64,6 +64,60 @@
   gap: 16px;
 }
 
+.recurrence-builder {
+  display: grid;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+
+.recurrence-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.weekday-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  border: 0;
+  padding: 0;
+}
+
+.weekday-selector legend {
+  width: 100%;
+  margin-bottom: 1px;
+  color: #3f4b5c;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.weekday-selector label {
+  min-width: 52px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.weekday-selector input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+}
+
+.recurrence-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .form-section {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -148,7 +202,7 @@
 
 .date-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 36px;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) 36px;
   align-items: end;
   gap: 12px;
 }
@@ -360,14 +414,14 @@
 .encounter-add-form,
 .encounter-edit-form {
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(190px, 1fr) auto;
+  grid-template-columns: minmax(170px, 1.2fr) minmax(125px, 0.8fr) minmax(125px, 0.8fr) auto;
   align-items: end;
   gap: 12px;
   padding: 16px 19px;
 }
 
 .encounter-add-form {
-  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto auto;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto auto auto;
 }
 
 .encounter-add-check {
@@ -434,6 +488,10 @@
 }
 
 @media (max-width: 760px) {
+  .recurrence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .meeting-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -466,6 +524,15 @@
   .date-row,
   .checkbox-list {
     grid-template-columns: 1fr;
+  }
+
+  .recurrence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recurrence-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .assistance-choice {
