@@ -9,11 +9,25 @@ if (found.length > 0) {
   process.exit(1);
 }
 
-for (const expected of ["ProveedorReunion", "EventoProveedor", "InstanciaSala", "Grabacion"]) {
+for (const expected of [
+  "ProveedorReunion",
+  "EventoProveedor",
+  "InstanciaSala",
+  "Grabacion",
+  "UsuarioEmailAlias",
+  "CuentaGoogleFlacso",
+  "UsuarioFusion",
+  "DocentePrograma"
+]) {
   if (!schema.includes(`model ${expected}`)) {
     console.error(`Falta modelo esperado: ${expected}`);
     process.exit(1);
   }
+}
+
+if (schema.includes("CONTADURIA") || schema.includes("ADMINISTRADOR")) {
+  console.error("Los roles anteriores deben migrarse al rol neutral ADMINISTRACION.");
+  process.exit(1);
 }
 
 console.log("Schema validado: nucleo agnostico de proveedor y Zoom historico separado.");

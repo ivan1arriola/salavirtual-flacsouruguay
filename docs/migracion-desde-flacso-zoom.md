@@ -8,10 +8,11 @@ Reemplazar la operacion Zoom por una plataforma Meet, preservando datos historic
 
 | Plataforma Zoom actual | Gestor Meet nuevo |
 | --- | --- |
-| `User` | `Persona` + `Usuario` |
+| `User` | `Persona` + `Usuario` + alias y cuentas Google |
 | `Docente` | `Docente` |
 | `AsistenteZoom` | `Asistente` |
 | `Programa` | `Programa` |
+| relacion docente/programa | `DocentePrograma` |
 | `CuentaZoom` | `CuentaProveedor` con proveedor `ZOOM_HISTORICO` |
 | `SolicitudSala` | `SolicitudSala` |
 | `EventoZoom` | `InstanciaSala` + `EventoProveedor` |
@@ -29,10 +30,23 @@ Reemplazar la operacion Zoom por una plataforma Meet, preservando datos historic
 7. Validar liquidaciones mensuales contra los reportes existentes.
 8. Activar nuevas solicitudes solamente sobre Google Meet.
 
+## Migracion de roles
+
+| Rol anterior | Rol nuevo |
+| --- | --- |
+| `ADMINISTRADOR` | `ADMINISTRACION` |
+| `CONTADURIA` | `ADMINISTRACION` |
+| `SOPORTE_ZOOM` | `ASISTENTE` |
+| `ASISTENTE_ZOOM` | `ASISTENTE` |
+| `DOCENTE` | `DOCENTE` |
+
+Los usuarios de Contabilidad no se eliminan durante la importacion: se migran a
+`ADMINISTRACION`, que recibe sus permisos y flujos.
+
 ## Pendientes tecnicos
 
 - Definir estrategia exacta para Google Calendar API y creacion de Meet links.
 - Escribir importador Prisma desde la base Zoom actual.
-- Portar autenticacion y usuarios activos.
+- Conectar los servicios de autenticacion y recuperacion de contrasena al nuevo modelo.
 - Rehacer pantallas criticas con UI ligera.
 - Mantener endpoints de consulta historica para reportes existentes.

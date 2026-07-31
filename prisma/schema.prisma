@@ -8,113 +8,172 @@ datasource db {
 }
 
 model Persona {
-  id                 String              @id @default(cuid())
-  nombres            String
-  apellidos          String?
-  documento          String?
-  telefono           String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  usuarios           Usuario[]
-  docentes           Docente[]
-  asistentes         Asistente[]
+  id         String      @id @default(cuid())
+  nombres    String
+  apellidos  String?
+  documento  String?
+  telefono   String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  usuarios   Usuario[]
+  docentes   Docente[]
+  asistentes Asistente[]
 
   @@index([apellidos, nombres])
 }
 
 model Usuario {
-  id                 String              @id @default(cuid())
-  personaId          String
-  email              String              @unique
-  passwordHash       String?
-  rol                RolUsuario          @default(DOCENTE)
-  activo             Boolean             @default(true)
-  ultimoAccesoAt     DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  persona            Persona             @relation(fields: [personaId], references: [id], onDelete: Restrict)
-  solicitudesCreadas SolicitudSala[]     @relation("SolicitudCreadaPor")
-  auditorias         Auditoria[]         @relation("AuditoriaActor")
-  cuentas            AuthAccount[]
-  sesiones           AuthSession[]
+  id                  String               @id
+  personaId           String
+  emailPrincipal      String?              @unique
+  emailVerificadoAt   DateTime?
+  imagenUrl           String?
+  passwordHash        String
+  rol                 RolUsuario           @default(DOCENTE)
+  activo              Boolean              @default(true)
+  ultimoAccesoAt      DateTime?
+  ultimoAccesoIp      String?
+  ultimoAccesoAgente  String?
+  ultimoProveedor     String?
+  fusionadoEnId       String?
+  fusionadoAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  persona             Persona              @relation(fields: [personaId], references: [id], onDelete: Restrict)
+  fusionadoEn         Usuario?             @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
+  usuariosFusionados  Usuario[]            @relation("UsuarioFusionDestino")
+  solicitudesCreadas  SolicitudSala[]      @relation("SolicitudCreadaPor")
+  auditorias          Auditoria[]          @relation("AuditoriaActor")
+  emailAliases        UsuarioEmailAlias[]
+  cuentasGoogle       CuentaGoogleFlacso[]
+  sesiones            SesionUsuario[]
+  authenticators      Authenticator[]
+  fusionesComoOrigen  UsuarioFusion[]      @relation("FusionUsuarioOrigen")
+  fusionesComoDestino UsuarioFusion[]      @relation("FusionUsuarioDestino")
+  fusionesEjecutadas  UsuarioFusion[]      @relation("FusionEjecutadaPor")
 
   @@index([personaId])
   @@index([rol, activo])
+  @@index([fusionadoEnId])
+}
+
+model UsuarioEmailAlias {
+  id        String   @id @default(cuid())
+  usuarioId String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model UsuarioFusion {
+  id               String   @id @default(cuid())
+  usuarioOrigenId  String
+  usuarioDestinoId String
+  ejecutadaPorId   String
+  motivo           String?
+  snapshotOrigen   Json
+  createdAt        DateTime @default(now())
+  usuarioOrigen    Usuario  @relation("FusionUsuarioOrigen", fields: [usuarioOrigenId], references: [id], onDelete: Restrict)
+  usuarioDestino   Usuario  @relation("FusionUsuarioDestino", fields: [usuarioDestinoId], references: [id], onDelete: Restrict)
+  ejecutadaPor     Usuario  @relation("FusionEjecutadaPor", fields: [ejecutadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioOrigenId])
+  @@index([usuarioDestinoId])
+  @@index([ejecutadaPorId, createdAt])
 }
 
 model UnidadAcademica {
-  id          String      @id @default(cuid())
-  nombre      String      @unique
-  activa      Boolean     @default(true)
-  programas   Programa[]
+  id        String     @id @default(cuid())
+  nombre    String     @unique
+  activa    Boolean    @default(true)
+  programas Programa[]
 }
 
 model Programa {
-  id                 String              @id @default(cuid())
-  unidadAcademicaId  String?
-  nombre             String
-  codigo             String?
-  activo             Boolean             @default(true)
-  unidadAcademica    UnidadAcademica?    @relation(fields: [unidadAcademicaId], references: [id], onDelete: SetNull)
-  solicitudes         SolicitudSala[]
+  id                String            @id @default(cuid())
+  unidadAcademicaId String?
+  nombre            String
+  codigo            String?
+  activo            Boolean           @default(true)
+  unidadAcademica   UnidadAcademica?  @relation(fields: [unidadAcademicaId], references: [id], onDelete: SetNull)
+  docentes          DocentePrograma[]
 
   @@unique([unidadAcademicaId, nombre])
   @@index([activo])
 }
 
 model Docente {
-  id             String          @id @default(cuid())
-  personaId      String          @unique
-  observaciones  String?
-  persona        Persona         @relation(fields: [personaId], references: [id], onDelete: Restrict)
-  solicitudes    SolicitudSala[]
+  id            String            @id @default(cuid())
+  personaId     String            @unique
+  observaciones String?
+  persona       Persona           @relation(fields: [personaId], references: [id], onDelete: Restrict)
+  programas     DocentePrograma[]
+}
+
+model DocentePrograma {
+  id          String          @id @default(cuid())
+  docenteId   String
+  programaId  String
+  activo      Boolean         @default(true)
+  desde       DateTime?
+  hasta       DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  docente     Docente         @relation(fields: [docenteId], references: [id], onDelete: Restrict)
+  programa    Programa        @relation(fields: [programaId], references: [id], onDelete: Restrict)
+  solicitudes SolicitudSala[]
+
+  @@unique([docenteId, programaId])
+  @@index([programaId, activo])
 }
 
 model Asistente {
-  id                 String                   @id @default(cuid())
-  personaId          String                   @unique
-  aliasOperativo     String?
-  disponibleGeneral  Boolean                  @default(true)
-  datosPago          String?
-  persona            Persona                  @relation(fields: [personaId], references: [id], onDelete: Restrict)
-  disponibilidades   DisponibilidadAsistente[]
-  intereses          InteresAsistenteEvento[]
-  asignaciones       AsignacionAsistente[]
-  liquidaciones      Liquidacion[]
+  id                String                    @id @default(cuid())
+  personaId         String                    @unique
+  aliasOperativo    String?
+  disponibleGeneral Boolean                   @default(true)
+  datosPago         String?
+  persona           Persona                   @relation(fields: [personaId], references: [id], onDelete: Restrict)
+  disponibilidades  DisponibilidadAsistente[]
+  intereses         InteresAsistenteEvento[]
+  asignaciones      AsignacionAsistente[]
+  liquidaciones     Liquidacion[]
 }
 
 model ProveedorReunion {
-  id             String             @id @default(cuid())
-  tipo           TipoProveedor       @unique
-  nombre         String
-  operativo      Boolean            @default(false)
-  historico      Boolean            @default(false)
-  cuentas        CuentaProveedor[]
-  eventos        EventoProveedor[]
+  id        String            @id @default(cuid())
+  tipo      TipoProveedor     @unique
+  nombre    String
+  operativo Boolean           @default(false)
+  historico Boolean           @default(false)
+  cuentas   CuentaProveedor[]
+  eventos   EventoProveedor[]
 }
 
 model CuentaProveedor {
-  id                  String            @id @default(cuid())
-  proveedorId         String
-  nombre              String
-  emailOrganizador    String?
-  externalAccountId   String?
-  secretRef           String?
-  prioridad           Int               @default(100)
-  activa              Boolean           @default(true)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  proveedor           ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  eventosProveedor    EventoProveedor[]
+  id                String            @id @default(cuid())
+  proveedorId       String
+  nombre            String
+  emailOrganizador  String?
+  externalAccountId String?
+  secretRef         String?
+  prioridad         Int               @default(100)
+  activa            Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  proveedor         ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  eventosProveedor  EventoProveedor[]
 
   @@unique([proveedorId, externalAccountId])
   @@index([proveedorId, activa, prioridad])
 }
 
 model SolicitudSala {
-  id                    String                @id @default(cuid())
-  docenteId             String
-  programaId            String?
+  id                    String           @id @default(cuid())
+  docenteProgramaId     String
   creadaPorUsuarioId    String
   titulo                String
   descripcion           String?
@@ -123,198 +182,196 @@ model SolicitudSala {
   timezone              String
   fechaInicioSolicitada DateTime
   fechaFinSolicitada    DateTime
-  cantidadInstancias    Int                   @default(1)
-  requiereAsistencia    Boolean               @default(false)
-  requiereGrabacion     Boolean               @default(false)
-  estado                EstadoSolicitud       @default(REGISTRADA)
+  cantidadInstancias    Int              @default(1)
+  requiereAsistencia    Boolean          @default(false)
+  requiereGrabacion     Boolean          @default(false)
+  estado                EstadoSolicitud  @default(REGISTRADA)
   observacionesAdmin    String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  docente               Docente               @relation(fields: [docenteId], references: [id], onDelete: Restrict)
-  programa              Programa?             @relation(fields: [programaId], references: [id], onDelete: SetNull)
-  creadaPor             Usuario               @relation("SolicitudCreadaPor", fields: [creadaPorUsuarioId], references: [id], onDelete: Restrict)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  docentePrograma       DocentePrograma  @relation(fields: [docenteProgramaId], references: [id], onDelete: Restrict)
+  creadaPor             Usuario          @relation("SolicitudCreadaPor", fields: [creadaPorUsuarioId], references: [id], onDelete: Restrict)
   instancias            InstanciaSala[]
 
   @@index([estado, fechaInicioSolicitada])
-  @@index([docenteId, estado])
-  @@index([programaId])
+  @@index([docenteProgramaId, estado])
 }
 
 model InstanciaSala {
-  id                    String                 @id @default(cuid())
-  solicitudSalaId        String
-  ordinal               Int
-  inicioProgramadoAt     DateTime
-  finProgramadoAt        DateTime
-  estado                EstadoInstancia        @default(PROGRAMADA)
-  requiereAsistencia     Boolean               @default(false)
-  requiereGrabacion      Boolean               @default(false)
-  inicioRealAt           DateTime?
-  finRealAt              DateTime?
-  minutosReportados      Int?
-  solicitud              SolicitudSala          @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
-  eventosProveedor       EventoProveedor[]
-  intereses              InteresAsistenteEvento[]
-  asignaciones           AsignacionAsistente[]
-  incidencias            Incidencia[]
-  grabaciones            Grabacion[]
-  liquidacionDetalles    LiquidacionDetalle[]
+  id                  String                   @id @default(cuid())
+  solicitudSalaId     String
+  ordinal             Int
+  inicioProgramadoAt  DateTime
+  finProgramadoAt     DateTime
+  estado              EstadoInstancia          @default(PROGRAMADA)
+  requiereAsistencia  Boolean                  @default(false)
+  requiereGrabacion   Boolean                  @default(false)
+  inicioRealAt        DateTime?
+  finRealAt           DateTime?
+  minutosReportados   Int?
+  solicitud           SolicitudSala            @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
+  eventosProveedor    EventoProveedor[]
+  intereses           InteresAsistenteEvento[]
+  asignaciones        AsignacionAsistente[]
+  incidencias         Incidencia[]
+  grabaciones         Grabacion[]
+  liquidacionDetalles LiquidacionDetalle[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
 }
 
 model EventoProveedor {
-  id                    String             @id @default(cuid())
-  instanciaSalaId        String
-  proveedorId            String
-  cuentaProveedorId      String?
-  externalEventId        String?
-  joinUrl                String?
-  hostUrl                String?
-  payloadUltimo          Json?
-  sincronizadoAt         DateTime?
-  estadoIntegracion      EstadoIntegracion @default(PENDIENTE)
-  errorIntegracion       String?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
-  instancia              InstanciaSala       @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  proveedor              ProveedorReunion   @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  cuentaProveedor        CuentaProveedor?   @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  id                String            @id @default(cuid())
+  instanciaSalaId   String
+  proveedorId       String
+  cuentaProveedorId String?
+  externalEventId   String?
+  joinUrl           String?
+  hostUrl           String?
+  payloadUltimo     Json?
+  sincronizadoAt    DateTime?
+  estadoIntegracion EstadoIntegracion @default(PENDIENTE)
+  errorIntegracion  String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  instancia         InstanciaSala     @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  proveedor         ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  cuentaProveedor   CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
 
   @@unique([proveedorId, externalEventId])
   @@index([instanciaSalaId, proveedorId])
 }
 
 model Grabacion {
-  id                   String            @id @default(cuid())
-  instanciaSalaId       String
-  proveedorId           String?
-  origen                OrigenGrabacion
-  titulo                String
-  driveFileId           String?
-  driveFolderId         String?
-  mimeType              String?
-  tamanoBytes           BigInt?
-  urlHistorica          String?
-  capturadaAt           DateTime?
-  createdAt             DateTime          @default(now())
-  instancia             InstanciaSala      @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  instanciaSalaId String
+  proveedorId     String?
+  origen          OrigenGrabacion
+  titulo          String
+  driveFileId     String?
+  driveFolderId   String?
+  mimeType        String?
+  tamanoBytes     BigInt?
+  urlHistorica    String?
+  capturadaAt     DateTime?
+  createdAt       DateTime        @default(now())
+  instancia       InstanciaSala   @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
 
   @@index([instanciaSalaId])
   @@index([origen, capturadaAt])
 }
 
 model InteresAsistenteEvento {
-  id                  String                 @id @default(cuid())
-  instanciaSalaId      String
-  asistenteId          String
-  estado               EstadoInteres         @default(ME_INTERESA)
-  comentario           String?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  instancia            InstanciaSala           @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente            Asistente               @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  instanciaSalaId String
+  asistenteId     String
+  estado          EstadoInteres @default(ME_INTERESA)
+  comentario      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  instancia       InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistente       Asistente     @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
 
   @@unique([instanciaSalaId, asistenteId])
 }
 
 model AsignacionAsistente {
-  id                   String            @id @default(cuid())
-  instanciaSalaId       String
-  asistenteId           String
-  estado                EstadoAsignacion  @default(ASIGNADO)
-  tarifaHoraAplicada    Decimal           @db.Decimal(10, 2)
-  moneda                String
-  minutosConfirmados    Int?
-  montoConfirmado       Decimal?          @db.Decimal(12, 2)
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  instancia             InstanciaSala      @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente             Asistente          @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
-  liquidacionDetalles   LiquidacionDetalle[]
+  id                  String               @id @default(cuid())
+  instanciaSalaId     String
+  asistenteId         String
+  estado              EstadoAsignacion     @default(ASIGNADO)
+  tarifaHoraAplicada  Decimal              @db.Decimal(10, 2)
+  moneda              String
+  minutosConfirmados  Int?
+  montoConfirmado     Decimal?             @db.Decimal(12, 2)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  instancia           InstanciaSala        @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistente           Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
+  liquidacionDetalles LiquidacionDetalle[]
 
   @@unique([instanciaSalaId, asistenteId])
   @@index([asistenteId, estado])
 }
 
 model DisponibilidadAsistente {
-  id             String              @id @default(cuid())
-  asistenteId    String
-  diaSemana      Int?
-  fecha          DateTime?
-  horaDesde      String
-  horaHasta      String
-  timezone       String
-  tipo           TipoDisponibilidad
-  asistente      Asistente           @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
+  id          String             @id @default(cuid())
+  asistenteId String
+  diaSemana   Int?
+  fecha       DateTime?
+  horaDesde   String
+  horaHasta   String
+  timezone    String
+  tipo        TipoDisponibilidad
+  asistente   Asistente          @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
 
   @@index([asistenteId, diaSemana])
   @@index([fecha])
 }
 
 model TarifaAsistencia {
-  id             String          @id @default(cuid())
-  modalidad      ModalidadReunion
-  valorHora      Decimal         @db.Decimal(10, 2)
-  moneda         String
-  vigenteDesde   DateTime
-  vigenteHasta   DateTime?
-  estado         EstadoTarifa    @default(ACTIVA)
+  id           String           @id @default(cuid())
+  modalidad    ModalidadReunion
+  valorHora    Decimal          @db.Decimal(10, 2)
+  moneda       String
+  vigenteDesde DateTime
+  vigenteHasta DateTime?
+  estado       EstadoTarifa     @default(ACTIVA)
 
   @@index([modalidad, estado, vigenteDesde])
 }
 
 model Liquidacion {
-  id              String                 @id @default(cuid())
-  asistenteId      String
-  periodoDesde     DateTime
-  periodoHasta     DateTime
-  estado           EstadoLiquidacion      @default(BORRADOR)
-  subtotal         Decimal                @db.Decimal(12, 2)
-  ajustes          Decimal                @default(0) @db.Decimal(12, 2)
-  total            Decimal                @db.Decimal(12, 2)
-  moneda           String
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  asistente        Asistente              @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
-  detalles         LiquidacionDetalle[]
+  id           String               @id @default(cuid())
+  asistenteId  String
+  periodoDesde DateTime
+  periodoHasta DateTime
+  estado       EstadoLiquidacion    @default(BORRADOR)
+  subtotal     Decimal              @db.Decimal(12, 2)
+  ajustes      Decimal              @default(0) @db.Decimal(12, 2)
+  total        Decimal              @db.Decimal(12, 2)
+  moneda       String
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  asistente    Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
+  detalles     LiquidacionDetalle[]
 
   @@index([asistenteId, periodoDesde, periodoHasta])
 }
 
 model LiquidacionDetalle {
-  id                    String       @id @default(cuid())
-  liquidacionId          String
-  instanciaSalaId        String
-  asignacionAsistenteId  String
-  minutosLiquidados      Int
-  tarifaHoraAplicada     Decimal      @db.Decimal(10, 2)
-  montoLinea             Decimal      @db.Decimal(12, 2)
-  liquidacion            Liquidacion   @relation(fields: [liquidacionId], references: [id], onDelete: Cascade)
-  instancia              InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Restrict)
-  asignacion             AsignacionAsistente @relation(fields: [asignacionAsistenteId], references: [id], onDelete: Restrict)
+  id                    String              @id @default(cuid())
+  liquidacionId         String
+  instanciaSalaId       String
+  asignacionAsistenteId String
+  minutosLiquidados     Int
+  tarifaHoraAplicada    Decimal             @db.Decimal(10, 2)
+  montoLinea            Decimal             @db.Decimal(12, 2)
+  liquidacion           Liquidacion         @relation(fields: [liquidacionId], references: [id], onDelete: Cascade)
+  instancia             InstanciaSala       @relation(fields: [instanciaSalaId], references: [id], onDelete: Restrict)
+  asignacion            AsignacionAsistente @relation(fields: [asignacionAsistenteId], references: [id], onDelete: Restrict)
 
   @@unique([liquidacionId, asignacionAsistenteId])
 }
 
 model Incidencia {
-  id              String            @id @default(cuid())
-  instanciaSalaId  String
+  id              String              @id @default(cuid())
+  instanciaSalaId String
   tipo            String
   severidad       SeveridadIncidencia
   descripcion     String
-  estado          EstadoIncidencia  @default(ABIERTA)
+  estado          EstadoIncidencia    @default(ABIERTA)
   resolucion      String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  instancia       InstanciaSala      @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  instancia       InstanciaSala       @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
 
   @@index([instanciaSalaId, estado])
 }
 
 model Auditoria {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   actorUsuarioId String?
   accion         String
   entidadTipo    String
@@ -322,16 +379,16 @@ model Auditoria {
   valorAnterior  Json?
   valorNuevo     Json?
   correlacionId  String?
-  createdAt      DateTime  @default(now())
-  actor          Usuario?  @relation("AuditoriaActor", fields: [actorUsuarioId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  actor          Usuario? @relation("AuditoriaActor", fields: [actorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([entidadTipo, entidadId, createdAt])
 }
 
-model AuthAccount {
+model CuentaGoogleFlacso {
   userId            String
-  type              String
-  provider          String
+  email             String
+  dominio           String
   providerAccountId String
   refresh_token     String?
   access_token      String?
@@ -340,19 +397,26 @@ model AuthAccount {
   scope             String?
   id_token          String?
   session_state     String?
-  user              Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailVerificadoAt DateTime?
+  ultimoAccesoAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([provider, providerAccountId])
+  @@id([providerAccountId])
+  @@unique([email])
+  @@index([userId])
+  @@index([dominio])
 }
 
-model AuthSession {
+model SesionUsuario {
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model AuthVerificationToken {
+model TokenVerificacion {
   identifier String
   token      String
   expires    DateTime
@@ -360,9 +424,22 @@ model AuthVerificationToken {
   @@id([identifier, token])
 }
 
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  user                 Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
 enum RolUsuario {
-  ADMINISTRADOR
-  CONTADURIA
+  ADMINISTRACION
   ASISTENTE
   DOCENTE
 }
@@ -438,7 +515,7 @@ enum EstadoTarifa {
 enum EstadoLiquidacion {
   BORRADOR
   CERRADA
-  APROBADA_CONTADURIA
+  APROBADA_ADMINISTRACION
   PAGADA
   ANULADA
 }

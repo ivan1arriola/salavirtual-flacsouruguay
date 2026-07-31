@@ -8,6 +8,18 @@
 - Google Meet es el proveedor operativo.
 - Zoom queda como proveedor historico, sin crear nuevas solicitudes operativas.
 - La UI debe ser ligera: CSS propio, componentes pequeños y dependencias justificadas.
+- La logica de dominio sigue un enfoque funcional.
+
+## Enfoque funcional
+
+- Funciones puras para reglas, validaciones, transformaciones y decisiones.
+- Datos inmutables mediante tipos `readonly` y resultados discriminados.
+- Efectos externos aislados en bordes: rutas, Prisma, Google, correo y reloj.
+- Casos de uso como composicion de funciones, sin clases de servicio ni estado global mutable.
+- El nucleo devuelve planes o resultados; los adaptadores interpretan esos datos dentro de transacciones.
+- No se busca que Prisma, HTTP o Google sean puros: se busca que esos efectos no contengan decisiones de negocio.
+- Reloj, red y persistencia se reciben como dependencias para que los casos de uso sean deterministas en pruebas.
+- La configuracion de login se valida en el dominio y solo el adaptador `src/lib/auth/config.ts` lee `process.env`.
 
 ## Capas
 
@@ -16,6 +28,8 @@
 - `src/modules/meet`: puerto de provisionamiento Google Meet.
 - `src/modules/historico-zoom`: importacion y consulta de datos heredados.
 - `src/modules/asistencias`: disponibilidad, interes, asignacion y liquidacion.
+- `src/modules/usuarios/*.domain.ts`: reglas puras de usuarios.
+- `src/modules/usuarios/*.service.ts`: bordes transaccionales que ejecutan esas reglas.
 - `prisma/schema.prisma`: contrato relacional 3NF.
 
 ## Decisiones de UI

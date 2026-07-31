@@ -3,14 +3,14 @@ const metrics = [
   { label: "Instancias esta semana", value: "0" },
   { label: "Asistencias pendientes", value: "0" },
   { label: "Zoom historico", value: "solo consulta" }
-];
+] as const;
 
 const workflows = [
   "Crear solicitud Meet",
   "Asignar asistencia",
   "Revisar agenda",
   "Consultar historico Zoom"
-];
+] as const;
 
 export default function HomePage() {
   return (

@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 export const solicitudSalaSchema = z.object({
-  docenteId: z.string().min(1),
-  programaId: z.string().optional(),
+  docenteProgramaId: z.string().min(1),
   titulo: z.string().min(3),
   descripcion: z.string().optional(),
   modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
@@ -14,4 +13,4 @@ export const solicitudSalaSchema = z.object({
   requiereGrabacion: z.boolean().default(false)
 });
 
-export type SolicitudSalaInput = z.infer<typeof solicitudSalaSchema>;
+export type SolicitudSalaInput = Readonly<z.infer<typeof solicitudSalaSchema>>;

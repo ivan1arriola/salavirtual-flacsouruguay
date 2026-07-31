@@ -15,4 +15,26 @@ describe("schema 3NF inicial", () => {
     expect(schema).not.toContain("model EventoZoom");
     expect(schema).not.toContain("model AsistenteZoom");
   });
+
+  it("permite varias cuentas Google FLACSO por usuario local", () => {
+    expect(schema).toContain("model CuentaGoogleFlacso");
+    expect(schema).toContain("cuentasGoogle");
+    expect(schema).toContain("passwordHash");
+  });
+
+  it("usa roles neutrales y absorbe Contabilidad en Administracion", () => {
+    expect(schema).toContain("ADMINISTRACION");
+    expect(schema).not.toContain("CONTADURIA");
+    expect(schema).not.toContain("ADMINISTRADOR");
+  });
+
+  it("origina solicitudes desde la asociacion docente-programa", () => {
+    expect(schema).toContain("model DocentePrograma");
+    expect(schema).toContain("docenteProgramaId");
+  });
+
+  it("conserva trazabilidad de fusiones de usuarios docentes", () => {
+    expect(schema).toContain("model UsuarioFusion");
+    expect(schema).toContain("fusionadoEnId");
+  });
 });
