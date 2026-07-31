@@ -49,6 +49,18 @@
   margin: 0;
 }
 
+.workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-secret-state {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .settings-list {
   display: grid;
   margin: 0;
@@ -110,5 +122,15 @@
   .pending-provision {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .workspace-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace-actions .primary-action,
+  .workspace-actions .secondary-action {
+    width: 100%;
   }
 }

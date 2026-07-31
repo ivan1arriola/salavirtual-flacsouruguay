@@ -46,6 +46,7 @@ export default async function ConfiguracionPage() {
             serviceAccountEmail: configuration.serviceAccountEmail,
             serviceAccountSubject: configuration.serviceAccountSubject,
             driveDestinationId: configuration.driveDestinationId,
+            privateKeyConfigurada: Boolean(configuration.privateKeyCifrada),
             activa: configuration.activa
           } : null}
         />

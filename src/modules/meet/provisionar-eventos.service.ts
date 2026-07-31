@@ -23,7 +23,10 @@ export async function provisionarEventosMeet(
     await dependencies.db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal", activa: true },
     });
-  if (!configuracion) {
+  if (
+    !configuracion?.serviceAccountEmail ||
+    !configuracion.privateKeyCifrada
+  ) {
     return eventoProveedorIds.map((eventoProveedorId) => ({
       eventoProveedorId,
       estado: "PENDIENTE_CONFIGURACION",
