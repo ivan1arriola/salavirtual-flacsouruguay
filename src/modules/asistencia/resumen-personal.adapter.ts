@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import {
   calcularMinutos,
   calcularMonto,
+  esAsistenciaCompletada,
   rangoMesUtc3,
   type RegistroAsistenciaPersonal
 } from "./resumen-personal.domain";
@@ -57,6 +58,12 @@ export async function obtenerAsistenciasPersonales(
   return asignaciones.map((asignacion) => {
     const instancia = asignacion.instancia;
     const asociacion = instancia.solicitud.docentePrograma;
+    const minutosProgramados = calcularMinutos(
+      { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt },
+      null,
+      null,
+      { inicio: null, fin: null }
+    );
     const minutos = calcularMinutos(
       { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt },
       asignacion.minutosConfirmados,
@@ -66,6 +73,7 @@ export async function obtenerAsistenciasPersonales(
     const tarifaHora = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
     return {
       id: asignacion.id,
+      instanciaId: instancia.id,
       titulo: instancia.solicitud.titulo,
       programa: asociacion.programa.nombre,
       docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
@@ -73,7 +81,15 @@ export async function obtenerAsistenciasPersonales(
       finAt: instancia.finProgramadoAt,
       modalidad: instancia.solicitud.modalidad,
       estado: instancia.estado,
+      completada: esAsistenciaCompletada(
+        instancia.estado,
+        instancia.finProgramadoAt.getTime(),
+        ahora.getTime()
+      ),
       minutos,
+      minutosProgramados,
+      minutosReportados: instancia.minutosReportados,
+      comentarioReporte: instancia.comentariosReporte,
       tarifaHora,
       monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, tarifaHora, minutos),
       moneda: asignacion.moneda ?? "UYU"

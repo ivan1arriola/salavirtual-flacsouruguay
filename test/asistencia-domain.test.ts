@@ -4,7 +4,8 @@ import {
   estadoInteresParaAccion,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
-  postulacionAsistenciaSchema
+  postulacionAsistenciaSchema,
+  reporteDuracionSchema
 } from "../src/modules/asistencia/asistencia.domain";
 
 describe("flujo funcional de asistencia", () => {
@@ -33,5 +34,18 @@ describe("flujo funcional de asistencia", () => {
         asistenteId: "assistant"
       })
     ).toEqual({ instanciaSalaId: "meeting", asistenteId: "assistant" });
+  });
+
+  it("acepta una duración real razonable con comentario opcional", () => {
+    expect(reporteDuracionSchema.parse({
+      asignacionId: "assignment",
+      minutos: 95,
+      comentario: "Se extendió por consultas."
+    })).toEqual({
+      asignacionId: "assignment",
+      minutos: 95,
+      comentario: "Se extendió por consultas."
+    });
+    expect(reporteDuracionSchema.safeParse({ asignacionId: "assignment", minutos: 0 }).success).toBe(false);
   });
 });

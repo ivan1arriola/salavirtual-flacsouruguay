@@ -3,6 +3,7 @@ import {
   agruparPorMes,
   calcularMinutos,
   calcularMonto,
+  esAsistenciaCompletada,
   rangoMesUtc3,
   resumirAsistencias,
   type RegistroAsistenciaPersonal
@@ -10,6 +11,7 @@ import {
 
 const base: RegistroAsistenciaPersonal = {
   id: "a1",
+  instanciaId: "i1",
   titulo: "Reunión",
   programa: "Programa",
   docente: "Docente",
@@ -17,7 +19,11 @@ const base: RegistroAsistenciaPersonal = {
   finAt: new Date("2026-07-10T15:00:00Z"),
   modalidad: "VIRTUAL",
   estado: "FINALIZADA",
+  completada: true,
   minutos: 120,
+  minutosProgramados: 120,
+  minutosReportados: null,
+  comentarioReporte: null,
   tarifaHora: 400,
   monto: 800,
   moneda: "UYU"
@@ -42,9 +48,15 @@ describe("resumen personal de asistencias", () => {
   it("resume y agrupa sin modificar los registros", () => {
     const second = { ...base, id: "a2", inicioAt: new Date("2026-06-10T13:00:00Z"), modalidad: "HIBRIDA" as const, minutos: 60, monto: 500 };
     const records = Object.freeze([base, second]);
-    expect(resumirAsistencias(records)).toEqual({ reuniones: 2, minutosVirtuales: 120, minutosHibridos: 60, monto: 1300 });
+    expect(resumirAsistencias(records)).toEqual({ reuniones: 2, minutosVirtuales: 120, minutosHibridos: 60, montoVirtual: 800, montoHibrido: 500, monto: 1300 });
     expect(agruparPorMes(records).map(({ clave }) => clave)).toEqual(["2026-07", "2026-06"]);
     expect(calcularMonto(null, 400, 90)).toBe(600);
     expect(records).toHaveLength(2);
+  });
+
+  it("considera completada una instancia finalizada o cuya hora ya pasó", () => {
+    expect(esAsistenciaCompletada("FINALIZADA", 200, 100)).toBe(true);
+    expect(esAsistenciaCompletada("PROGRAMADA", 100, 200)).toBe(true);
+    expect(esAsistenciaCompletada("PROGRAMADA", 200, 100)).toBe(false);
   });
 });

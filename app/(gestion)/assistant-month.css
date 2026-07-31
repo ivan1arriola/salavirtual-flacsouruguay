@@ -1,0 +1,262 @@
+.assistant-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.mode-summary {
+  min-height: 124px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.mode-summary > svg {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #ffffff;
+  padding: 10px;
+}
+
+.mode-summary span,
+.mode-summary small,
+.mode-summary strong,
+.mode-summary b {
+  display: block;
+}
+
+.mode-summary small {
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mode-summary strong {
+  margin: 3px 0;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.mode-summary b {
+  font-size: 0.85rem;
+}
+
+.virtual-summary {
+  border-color: #c9e0d1;
+  background: #f2f8f4;
+  color: #216549;
+}
+
+.virtual-summary > svg {
+  background: #24745b;
+}
+
+.hybrid-summary {
+  border-color: #c8ddeb;
+  background: #f0f7fb;
+  color: #0a5872;
+}
+
+.hybrid-summary > svg {
+  background: #0f6f8f;
+}
+
+.estimated-total {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf1f5;
+  margin-bottom: 22px;
+  padding: 15px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.month-meetings {
+  min-height: 120px;
+}
+
+.assistant-meeting-list {
+  display: grid;
+  gap: 10px;
+}
+
+.assistant-meeting {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brand);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.assistant-meeting.hibrida {
+  border-left-color: #d45158;
+}
+
+.assistant-meeting > time {
+  color: #3f4b5c;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre-line;
+}
+
+.assistant-meeting-copy {
+  min-width: 0;
+}
+
+.assistant-meeting-copy > strong,
+.assistant-meeting-copy > small {
+  display: block;
+}
+
+.assistant-meeting-copy > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assistant-meeting-copy > small {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.meeting-detail-line,
+.meeting-detail-line > span,
+.report-note {
+  display: flex;
+  align-items: center;
+}
+
+.meeting-detail-line {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.meeting-detail-line > span {
+  gap: 4px;
+}
+
+.modality {
+  border-radius: 4px;
+  color: #ffffff;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.modality-virtual {
+  background: #39709d;
+}
+
+.modality-hibrida {
+  background: #c84950;
+}
+
+.report-note {
+  gap: 6px;
+  margin: 9px 0 0;
+  color: #526173;
+  font-size: 0.76rem;
+}
+
+.assistant-meeting-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.report-button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: #526173;
+  padding: 5px;
+  font-size: 0.8rem;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(24 33 47 / 45%);
+  padding: 20px;
+}
+
+.duration-dialog {
+  width: min(100%, 460px);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgb(24 33 47 / 22%);
+  padding: 22px;
+}
+
+.duration-dialog h2 {
+  margin-bottom: 5px;
+}
+
+.duration-dialog > div > p:last-child,
+.duration-dialog .field small {
+  color: var(--muted);
+}
+
+.duration-dialog form {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  .assistant-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assistant-meeting {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .assistant-meeting-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
+  }
+
+  .report-button {
+    justify-self: end;
+  }
+
+}

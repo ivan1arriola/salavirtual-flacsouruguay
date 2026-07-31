@@ -12,6 +12,12 @@ export const asignacionAsistenciaSchema = z.object({
   asistenteId: z.string().trim().min(1)
 });
 
+export const reporteDuracionSchema = z.object({
+  asignacionId: z.string().trim().min(1),
+  minutos: z.number().int().min(1).max(24 * 60),
+  comentario: z.string().trim().max(1000).optional()
+});
+
 export function puedeGestionarPostulacion(rol: RolUsuario): boolean {
   return rol === "ASISTENTE";
 }

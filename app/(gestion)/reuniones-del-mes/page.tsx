@@ -1,7 +1,8 @@
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, Clock3 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AssistantMeetingsTable } from "@/src/components/assistant-meetings-table";
+import { AssistantMonthList } from "@/src/components/assistant-month-list";
+import { RefreshButton } from "@/src/components/refresh-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
@@ -26,20 +27,19 @@ export default async function ReunionesDelMesPage() {
           <h1>Reuniones de {formatMonth(ahora)}</h1>
           <p>Horas e importes estimados del mes en curso.</p>
         </div>
-        <CalendarRange size={28} color="var(--brand)" aria-hidden="true" />
+        <RefreshButton />
       </header>
 
-      <section className="metric-grid" aria-label="Resumen del mes">
-        <div className="stat"><span>Reuniones</span><strong>{summary.reuniones}</strong></div>
-        <div className="stat"><span>Horas virtuales</span><strong>{formatMinutes(summary.minutosVirtuales)}</strong></div>
-        <div className="stat"><span>Horas híbridas</span><strong>{formatMinutes(summary.minutosHibridos)}</strong></div>
-        <div className="stat"><span>Importe estimado</span><strong>{formatMoney(summary.monto)}</strong></div>
+      <section className="assistant-mode-grid" aria-label="Resumen del mes">
+        <div className="mode-summary virtual-summary"><Clock3 size={28} /><span><small>Virtuales</small><strong>{formatMinutes(summary.minutosVirtuales)}</strong><b>{formatMoney(summary.montoVirtual)}</b></span></div>
+        <div className="mode-summary hybrid-summary"><Clock3 size={28} /><span><small>Híbridas</small><strong>{formatMinutes(summary.minutosHibridos)}</strong><b>{formatMoney(summary.montoHibrido)}</b></span></div>
       </section>
+      <div className="estimated-total">Cotización total estimada: <strong>{formatMoney(summary.monto)}</strong></div>
 
-      <section className="content-section">
+      <section className="month-meetings">
         {meetings.length === 0
           ? <div className="empty-state"><CalendarRange size={24} /><p>No tenés reuniones asignadas este mes.</p></div>
-          : <AssistantMeetingsTable meetings={meetings} />}
+          : <AssistantMonthList meetings={meetings} />}
       </section>
     </>
   );

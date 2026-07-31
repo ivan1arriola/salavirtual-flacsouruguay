@@ -2,6 +2,7 @@ export type ModalidadAsistencia = "VIRTUAL" | "HIBRIDA";
 
 export type RegistroAsistenciaPersonal = Readonly<{
   id: string;
+  instanciaId: string;
   titulo: string;
   programa: string;
   docente: string;
@@ -9,7 +10,11 @@ export type RegistroAsistenciaPersonal = Readonly<{
   finAt: Date;
   modalidad: ModalidadAsistencia;
   estado: string;
+  completada: boolean;
   minutos: number;
+  minutosProgramados: number;
+  minutosReportados: number | null;
+  comentarioReporte: string | null;
   tarifaHora: number | null;
   monto: number | null;
   moneda: string;
@@ -19,6 +24,8 @@ export type ResumenAsistencia = Readonly<{
   reuniones: number;
   minutosVirtuales: number;
   minutosHibridos: number;
+  montoVirtual: number;
+  montoHibrido: number;
   monto: number;
 }>;
 
@@ -70,6 +77,14 @@ export function calcularMonto(
   return tarifaHora === null ? null : (tarifaHora * minutos) / 60;
 }
 
+export function esAsistenciaCompletada(
+  estado: string,
+  finProgramadoMs: number,
+  ahoraMs: number
+): boolean {
+  return estado === "FINALIZADA" || finProgramadoMs <= ahoraMs;
+}
+
 export function resumirAsistencias(
   registros: readonly RegistroAsistenciaPersonal[]
 ): ResumenAsistencia {
@@ -80,9 +95,20 @@ export function resumirAsistencias(
         resumen.minutosVirtuales + (registro.modalidad === "VIRTUAL" ? registro.minutos : 0),
       minutosHibridos:
         resumen.minutosHibridos + (registro.modalidad === "HIBRIDA" ? registro.minutos : 0),
+      montoVirtual:
+        resumen.montoVirtual + (registro.modalidad === "VIRTUAL" ? registro.monto ?? 0 : 0),
+      montoHibrido:
+        resumen.montoHibrido + (registro.modalidad === "HIBRIDA" ? registro.monto ?? 0 : 0),
       monto: resumen.monto + (registro.monto ?? 0)
     }),
-    { reuniones: 0, minutosVirtuales: 0, minutosHibridos: 0, monto: 0 }
+    {
+      reuniones: 0,
+      minutosVirtuales: 0,
+      minutosHibridos: 0,
+      montoVirtual: 0,
+      montoHibrido: 0,
+      monto: 0
+    }
   );
 }
 
