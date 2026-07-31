@@ -82,6 +82,18 @@ export function crearGoogleCalendarProvider(
         url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
         method: "DELETE"
       });
+    },
+    async actualizarEvento(calendarId, externalEventId, request) {
+      await auth.request({
+        url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
+        method: "PATCH",
+        data: {
+          summary: request.titulo,
+          description: request.descripcion,
+          start: { dateTime: request.inicio.toISOString(), timeZone: request.timezone },
+          end: { dateTime: request.fin.toISOString(), timeZone: request.timezone }
+        }
+      });
     }
   };
 }
@@ -109,23 +121,25 @@ async function configurarEspacioMeet(
   codigoReunion: string,
   request: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean }>
 ): Promise<void> {
-  if (!request.requiereAsistencia && !request.requiereGrabacion) return;
+  const configurarAsistencia = request.requiereAsistencia !== undefined;
+  const configurarGrabacion = request.requiereGrabacion !== undefined;
+  if (!configurarAsistencia && !configurarGrabacion) return;
   const current = await auth.request<{ name?: string }>({
     url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
     method: "GET"
   });
   if (!current.data.name) throw new Error("Google Meet no devolvió el ID del espacio.");
   const config = {
-    ...(request.requiereAsistencia
-      ? { attendanceReportGenerationType: "GENERATE_REPORT" }
+    ...(configurarAsistencia
+      ? { attendanceReportGenerationType: request.requiereAsistencia ? "GENERATE_REPORT" : "DO_NOT_GENERATE" }
       : {}),
-    ...(request.requiereGrabacion
-      ? { artifactConfig: { recordingConfig: { autoRecordingGeneration: "ON" } } }
+    ...(configurarGrabacion
+      ? { artifactConfig: { recordingConfig: { autoRecordingGeneration: request.requiereGrabacion ? "ON" : "OFF" } } }
       : {})
   };
   const updateMask = [
-    ...(request.requiereAsistencia ? ["config.attendance_report_generation_type"] : []),
-    ...(request.requiereGrabacion
+    ...(configurarAsistencia ? ["config.attendance_report_generation_type"] : []),
+    ...(configurarGrabacion
       ? ["config.artifact_config.recording_config.auto_recording_generation"]
       : [])
   ].join(",");

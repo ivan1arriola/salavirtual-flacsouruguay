@@ -25,4 +25,9 @@ export type MeetProvider = Readonly<{
     calendarId: string,
     externalEventId: string,
   ) => Promise<void>;
+  actualizarEvento: (
+    calendarId: string,
+    externalEventId: string,
+    request: Omit<MeetProvisionRequest, "calendarId">
+  ) => Promise<void>;
 }>;
