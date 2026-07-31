@@ -76,7 +76,7 @@ export function MeetingForm({
         <div className="form-grid">
           <Field label="Título" wide><input name="titulo" required minLength={3} /></Field>
           <Field label="Programa y docente" wide>
-            <select name="docenteProgramaId" required defaultValue="">
+            <select name="docenteProgramaId" required defaultValue={programs.length === 1 ? programs[0].id : ""}>
               <option value="" disabled>Seleccionar</option>
               {programs.map((option) => <option value={option.id} key={option.id}>{option.label} — {option.teacher}</option>)}
             </select>
