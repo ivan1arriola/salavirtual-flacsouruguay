@@ -106,6 +106,20 @@ export function MeetingDetailManager({
 
   return (
     <>
+      <section className="meeting-danger-zone">
+        <div>
+          <h2>Eliminar reunión completa</h2>
+          <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
+        </div>
+        <button
+          className="secondary-action danger-action"
+          disabled={!canRemoveAll || busy !== null}
+          onClick={removeAll}
+          type="button"
+        >
+          <Trash2 size={17} />{busy === "all" ? "Eliminando…" : "Eliminar todo"}
+        </button>
+      </section>
       <section className="content-section add-encounter-section">
         <div className="section-heading"><div><h2>Agregar encuentro</h2><p>Se asignará una sala Meet disponible.</p></div></div>
         <form className="encounter-add-form" action={add}>
@@ -150,20 +164,6 @@ export function MeetingDetailManager({
         ))}
       </div>
       <p className="form-message meeting-detail-message" role="status">{message}</p>
-      <section className="meeting-danger-zone">
-        <div>
-          <h2>Eliminar reunión completa</h2>
-          <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
-        </div>
-        <button
-          className="secondary-action danger-action"
-          disabled={!canRemoveAll || busy !== null}
-          onClick={removeAll}
-          type="button"
-        >
-          <Trash2 size={17} />{busy === "all" ? "Eliminando…" : "Eliminar todo"}
-        </button>
-      </section>
     </>
   );
 }
