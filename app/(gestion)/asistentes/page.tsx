@@ -1,7 +1,8 @@
-import { ChevronLeft, ChevronRight, UsersRound } from "lucide-react";
+import { ChevronRight, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AssistantPeriodNav } from "@/src/components/assistant-period-nav";
 import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
 import { obtenerResumenAsistentes } from "@/src/modules/asistencia/resumen-administracion.adapter";
@@ -25,11 +26,7 @@ export default async function AsistentesPage({
           <h1>Asistentes</h1>
           <p>Asignaciones y pagos estimados de {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
-        <nav className="assistant-period-nav" aria-label="Cambiar período">
-          <Link className="icon-button" href={`/asistentes?mes=${period.anterior}`} title="Mes anterior"><ChevronLeft size={19} /><span className="sr-only">Mes anterior</span></Link>
-          <form><input aria-label="Mes" name="mes" type="month" defaultValue={period.clave} /><button className="secondary-action" type="submit">Ver</button></form>
-          <Link className="icon-button" href={`/asistentes?mes=${period.siguiente}`} title="Mes siguiente"><ChevronRight size={19} /><span className="sr-only">Mes siguiente</span></Link>
-        </nav>
+        <AssistantPeriodNav period={period} basePath="/asistentes" />
       </header>
 
       <section className="metric-grid" aria-label="Totales del período">
@@ -45,16 +42,17 @@ export default async function AsistentesPage({
           <table className="data-table assistants-summary-table">
             <thead><tr><th>Asistente</th><th>Reuniones</th><th>Modalidad</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
             <tbody>
-              {assistants.map((assistant) => (
-                <tr key={assistant.id}>
-                  <td><strong>{assistant.nombre}</strong><small>{assistant.email ?? assistant.usuarioId}</small></td>
+              {assistants.map((assistant) => {
+                const detailHref = `/asistentes/${encodeURIComponent(assistant.usuarioId)}?mes=${period.clave}`;
+                return <tr key={assistant.id}>
+                  <td><Link className="meeting-title-link" href={detailHref}>{assistant.nombre}</Link><small>{assistant.email ?? assistant.usuarioId}</small></td>
                   <td><strong>{assistant.reuniones}</strong></td>
                   <td><span>{assistant.virtuales} virtuales</span><small>{assistant.hibridas} híbridas</small></td>
                   <td>{formatMinutes(assistant.minutos)}</td>
                   <td><strong>{formatAmounts(assistant.montos)}</strong>{assistant.sinTarifa ? <small className="missing-rate">{assistant.sinTarifa} sin tarifa</small> : null}</td>
-                  <td><Link className="icon-link" href={`/usuarios/${encodeURIComponent(assistant.usuarioId)}`} title="Gestionar asistente"><ChevronRight size={18} /><span className="sr-only">Gestionar asistente</span></Link></td>
+                  <td><Link className="icon-link" href={detailHref} title="Ver reuniones del asistente"><ChevronRight size={18} /><span className="sr-only">Ver reuniones del asistente</span></Link></td>
                 </tr>
-              ))}
+              })}
             </tbody>
           </table>
         </div>

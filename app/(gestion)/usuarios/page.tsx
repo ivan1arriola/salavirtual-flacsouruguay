@@ -1,40 +1,75 @@
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronRight, GraduationCap, ShieldCheck, UserRoundCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/src/lib/db";
 
-export default async function UsuariosPage() {
+const USER_TYPES = [
+  { value: "ADMINISTRACION", label: "Administración", title: "Administración", icon: ShieldCheck },
+  { value: "DOCENTE", label: "Docentes", title: "Docentes", icon: GraduationCap },
+  { value: "ASISTENTE", label: "Asistentes", title: "Asistentes", icon: UserRoundCheck }
+] as const;
+
+type UserType = (typeof USER_TYPES)[number]["value"];
+
+export default async function UsuariosPage({
+  searchParams
+}: Readonly<{ searchParams: Promise<{ tipo?: string }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
-  const users = await db.usuario.findMany({
-    orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-    include: {
-      cuentasGoogle: { select: { email: true } },
-      docente: { include: { programas: { where: { activo: true } } } }
-    }
-  });
+  const query = await searchParams;
+  const selectedType = isUserType(query.tipo) ? query.tipo : "DOCENTE";
+  const [users, groupedCounts] = await Promise.all([
+    db.usuario.findMany({
+      where: { rol: selectedType },
+      orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+      include: { cuentasGoogle: { select: { email: true } } }
+    }),
+    db.usuario.groupBy({ by: ["rol"], _count: { _all: true } })
+  ]);
+  const selected = USER_TYPES.find(({ value }) => value === selectedType) ?? USER_TYPES[1];
+  const total = groupedCounts.reduce((sum, group) => sum + group._count._all, 0);
 
   return (
     <>
       <header className="page-header">
-        <div><p className="page-eyebrow">Administración</p><h1>Usuarios</h1><p>{users.length} identidades registradas.</p></div>
+        <div><p className="page-eyebrow">Administración</p><h1>Usuarios</h1><p>{total} identidades registradas.</p></div>
         <Users size={28} color="var(--brand)" />
       </header>
+
+      <nav className="user-type-tabs" aria-label="Tipo de usuario">
+        {USER_TYPES.map(({ value, label, icon: Icon }) => {
+          const count = groupedCounts.find(({ rol }) => rol === value)?._count._all ?? 0;
+          return (
+            <Link
+              aria-current={selectedType === value ? "page" : undefined}
+              className={selectedType === value ? "is-active" : undefined}
+              href={`/usuarios?tipo=${value}`}
+              key={value}
+            >
+              <Icon size={18} /><span>{label}</span><strong>{count}</strong>
+            </Link>
+          );
+        })}
+      </nav>
+
       <section className="content-section">
+        <div className="section-heading user-list-heading">
+          <div><h2>{selected.title}</h2><p>{users.length} {users.length === 1 ? "usuario" : "usuarios"} en este grupo.</p></div>
+        </div>
         <div className="table-wrap">
           <table className="data-table">
-            <thead><tr><th>Usuario</th><th>Rol</th><th>Cuentas FLACSO</th><th>Acceso</th><th></th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Cuentas FLACSO</th><th>Acceso</th><th></th></tr></thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
                   <td><strong>{user.nombres} {user.apellidos}</strong><small>{user.id} · {user.emailPrincipal ?? "sin email principal"}</small></td>
-                  <td><span className="status status-neutral">{roleLabel(user.rol)}</span></td>
                   <td>{user.cuentasGoogle.length ? user.cuentasGoogle.map(({ email }) => email).join(", ") : <span className="muted-text">Sin cuenta</span>}</td>
                   <td><span className={`status status-${user.activo ? "ok" : "error"}`}>{user.activo ? "Activo" : "Inactivo"}</span></td>
                   <td><Link className="icon-link" href={`/usuarios/${encodeURIComponent(user.id)}`} title="Gestionar usuario"><ChevronRight size={18} /><span className="sr-only">Gestionar usuario</span></Link></td>
                 </tr>
               ))}
+              {users.length === 0 ? <tr><td className="empty-table-cell" colSpan={4}>No hay usuarios en este grupo.</td></tr> : null}
             </tbody>
           </table>
         </div>
@@ -43,6 +78,6 @@ export default async function UsuariosPage() {
   );
 }
 
-function roleLabel(role: string): string {
-  return role === "ADMINISTRACION" ? "Administración" : role === "ASISTENTE" ? "Asistente" : "Docente";
+function isUserType(value: string | undefined): value is UserType {
+  return USER_TYPES.some((type) => type.value === value);
 }

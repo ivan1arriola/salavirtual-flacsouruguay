@@ -37,9 +37,29 @@
   font-weight: 700;
 }
 
+.assistant-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistant-detail-list-heading {
+  padding: 16px 18px;
+}
+
 @media (max-width: 760px) {
   .assistant-period-nav {
     width: 100%;
+  }
+
+  .assistant-detail-header,
+  .assistant-detail-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assistant-detail-actions > .secondary-action {
+    justify-content: center;
   }
 
   .assistant-period-nav form {

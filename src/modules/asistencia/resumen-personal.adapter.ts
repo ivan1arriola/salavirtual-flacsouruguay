@@ -15,28 +15,44 @@ export async function obtenerAsistenciasPersonales(
   periodo: PeriodoPersonal,
   ahora = new Date()
 ): Promise<readonly RegistroAsistenciaPersonal[]> {
+  const month = rangoMesUtc3(ahora);
+  return obtenerAsistenciasEnRango(
+    db,
+    usuarioId,
+    periodo === "MES_ACTUAL"
+      ? { desde: new Date(month.desdeMs), hasta: new Date(month.hastaMs) }
+      : { hasta: new Date(month.desdeMs) },
+    ahora,
+    periodo === "MES_ACTUAL" ? "asc" : "desc",
+    periodo === "MES_ACTUAL" ? 100 : 500
+  );
+}
+
+export async function obtenerAsistenciasEnRango(
+  db: PrismaClient,
+  usuarioId: string,
+  rango: Readonly<{ desde?: Date; hasta: Date }>,
+  ahora = new Date(),
+  orden: "asc" | "desc" = "asc",
+  limite = 500
+): Promise<readonly RegistroAsistenciaPersonal[]> {
   const asistente = await db.asistente.findUnique({
     where: { usuarioId },
     select: { id: true }
   });
   if (!asistente) return [];
 
-  const mes = rangoMesUtc3(ahora);
-  const desde = new Date(mes.desdeMs);
-  const hasta = new Date(mes.hastaMs);
   const asignaciones = await db.asignacionAsistente.findMany({
     where: {
       asistenteId: asistente.id,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instancia: {
         estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
-        inicioProgramadoAt: periodo === "MES_ACTUAL"
-          ? { gte: desde, lt: hasta }
-          : { lt: desde }
+        inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta }
       }
     },
-    orderBy: { instancia: { inicioProgramadoAt: periodo === "MES_ACTUAL" ? "asc" : "desc" } },
-    take: periodo === "MES_ACTUAL" ? 100 : 500,
+    orderBy: { instancia: { inicioProgramadoAt: orden } },
+    take: limite,
     include: {
       instancia: {
         include: {
