@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   UserRound,
+  UserRoundCheck,
   Users,
   Video,
   Waypoints
@@ -27,6 +28,7 @@ const primaryNav = [
 
 const adminNav = [
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
+  { href: "/asistentes", label: "Asistentes", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings }
 ] as const;
