@@ -92,8 +92,8 @@ export function MeetingForm({
         <div className="date-list">
           {dates.map((date, index) => (
             <div className="date-row" key={index}>
-              <Field label="Inicio"><input type="datetime-local" required value={date.inicio} onChange={(event) => setDates(updateDate(dates, index, "inicio", event.target.value))} /></Field>
-              <Field label="Fin"><input type="datetime-local" required value={date.fin} onChange={(event) => setDates(updateDate(dates, index, "fin", event.target.value))} /></Field>
+              <Field label="Inicio"><input type="datetime-local" required value={date.inicio} onChange={(event) => setDates(updateStart(dates, index, event.target.value))} /></Field>
+              <Field label="Fin"><input type="datetime-local" required value={date.fin} min={dayLimit(date.inicio, "00:00")} max={dayLimit(date.inicio, "23:59")} onChange={(event) => setDates(updateDate(dates, index, "fin", event.target.value))} /></Field>
               <button className="icon-button remove-date" type="button" title="Quitar fecha" disabled={dates.length === 1} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar fecha</span></button>
             </div>
           ))}
@@ -153,6 +153,21 @@ function Field({ label, wide = false, children }: Readonly<{ label: string; wide
 
 function updateDate(dates: readonly MeetingDate[], index: number, key: keyof MeetingDate, value: string): readonly MeetingDate[] {
   return dates.map((date, current) => current === index ? { ...date, [key]: value } : date);
+}
+
+function updateStart(dates: readonly MeetingDate[], index: number, inicio: string): readonly MeetingDate[] {
+  return dates.map((date, current) => current === index
+    ? { ...date, inicio, fin: synchronizeDay(inicio, date.fin) }
+    : date);
+}
+
+function synchronizeDay(inicio: string, fin: string): string {
+  if (!inicio || !fin || inicio.slice(0, 10) === fin.slice(0, 10)) return fin;
+  return `${inicio.slice(0, 10)}${fin.slice(10)}`;
+}
+
+function dayLimit(inicio: string, time: string): string | undefined {
+  return inicio ? `${inicio.slice(0, 10)}T${time}` : undefined;
 }
 
 function localMontevideoToIso(value: string): string {

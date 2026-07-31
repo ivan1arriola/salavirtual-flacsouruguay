@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { elegirCuentaHost, puedeGestionarEncuentros } from "../src/modules/reuniones/encuentros.domain";
+import {
+  actualizarEncuentroSchema,
+  elegirCuentaHost,
+  puedeGestionarEncuentros
+} from "../src/modules/reuniones/encuentros.domain";
 
 describe("gestión funcional de encuentros", () => {
   it("permite Administracion y al docente titular", () => {
@@ -14,5 +18,13 @@ describe("gestión funcional de encuentros", () => {
 
   it("elige la sala disponible de mayor prioridad", () => {
     expect(elegirCuentaHost("s2", [{ id: "s2", prioridad: 2 }, { id: "s1", prioridad: 1 }], ["s2"])).toBe("s1");
+  });
+
+  it("rechaza una reprogramacion que cruza de dia", () => {
+    expect(actualizarEncuentroSchema.safeParse({
+      accion: "EDITAR_FECHA",
+      inicio: "2026-08-03T23:00:00-03:00",
+      fin: "2026-08-04T00:30:00-03:00"
+    }).success).toBe(false);
   });
 });

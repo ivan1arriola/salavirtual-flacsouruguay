@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
+import { pertenecenAlMismoDia } from "./periodos.domain";
 
 export type FechaReunion = Readonly<{
   inicioProgramadoAt: Date;
@@ -28,6 +29,17 @@ export const crearReunionesSchema = z
     timezone: z.string().trim().min(1),
     codigoMeet: z.string().trim().min(3).optional(),
     instancias: z.array(instanciaSchema).min(1)
+  })
+  .superRefine(({ instancias, timezone }, context) => {
+    instancias.forEach(({ inicio, fin }, index) => {
+      if (!pertenecenAlMismoDia(inicio, fin, timezone)) {
+        context.addIssue({
+          code: "custom",
+          message: "El inicio y el fin deben ser del mismo dia.",
+          path: ["instancias", index, "fin"]
+        });
+      }
+    });
   });
 
 export type CrearReunionesInput = Readonly<z.infer<typeof crearReunionesSchema>>;

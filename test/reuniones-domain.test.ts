@@ -41,6 +41,18 @@ describe("dias derivados de reuniones", () => {
     ).toBeUndefined();
   });
 
+  it("rechaza encuentros que terminan otro dia en Montevideo", () => {
+    const result = crearReunionesSchema.safeParse({
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      cuentaHostId: "host",
+      modalidad: "VIRTUAL",
+      timezone: "America/Montevideo",
+      instancias: [{ inicio: "2026-08-03T23:00:00-03:00", fin: "2026-08-04T00:30:00-03:00" }]
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("reserva la asignacion inicial a Administracion", () => {
     expect(resolverAsignacionInicial("ADMINISTRACION", true, "assistant")).toBe("assistant");
     expect(resolverAsignacionInicial("ADMINISTRACION", true)).toBeNull();
