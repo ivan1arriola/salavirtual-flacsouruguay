@@ -40,4 +40,20 @@ describe("evento Google Calendar puro", () => {
   it("espera cuando la conferencia sigue pendiente", () => {
     expect(extraerMeetProvisionado({ id: "calendar-event" })).toBeNull();
   });
+
+  it("agrega los cohosts como invitados del evento Calendar", () => {
+    const event = crearCalendarEvent({
+      titulo: "Seminario",
+      inicio: new Date("2026-08-03T13:00:00.000Z"),
+      fin: new Date("2026-08-03T15:00:00.000Z"),
+      timezone: "America/Montevideo",
+      calendarId: "sala01@flacso.edu.uy",
+      cohostEmails: ["docente@flacso.edu.uy", "web@flacso.edu.uy"]
+    }, "request-cohosts");
+
+    expect(event.attendees).toEqual([
+      { email: "docente@flacso.edu.uy" },
+      { email: "web@flacso.edu.uy" }
+    ]);
+  });
 });

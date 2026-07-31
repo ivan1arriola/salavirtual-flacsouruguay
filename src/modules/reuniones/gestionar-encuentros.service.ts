@@ -37,7 +37,10 @@ export async function agregarEncuentro(
     where: { id: solicitudId },
     include: {
       docentePrograma: { include: { docente: true } },
-      instancias: { include: { eventosProveedor: true }, orderBy: { ordinal: "asc" } }
+      instancias: {
+        include: { eventosProveedor: true, cohosts: { select: { cuentaGoogleId: true } } },
+        orderBy: { ordinal: "asc" }
+      }
     }
   });
   validarGestion(actor, request?.docentePrograma.docente.usuarioId);
@@ -90,6 +93,12 @@ export async function agregarEncuentro(
     const event = await tx.eventoProveedor.create({
       data: { instanciaSalaId: meeting.id, proveedorId: provider.id, cuentaProveedorId: hostId }
     });
+    const cohostIds = request.instancias[0]?.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId) ?? [];
+    if (cohostIds.length) {
+      await tx.cohostReunion.createMany({
+        data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId }))
+      });
+    }
     await recalcularSolicitud(tx, request.id);
     await auditar(tx, actor.id, "ENCUENTRO_AGREGADO", meeting.id, null, {
       inicio: input.inicio.toISOString(),

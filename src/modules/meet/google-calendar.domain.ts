@@ -15,6 +15,9 @@ export function crearCalendarEvent(
       dateTime: request.fin.toISOString(),
       timeZone: request.timezone
     },
+    ...(request.cohostEmails?.length
+      ? { attendees: request.cohostEmails.map((email) => ({ email })) }
+      : {}),
     conferenceData: {
       createRequest: {
         requestId,

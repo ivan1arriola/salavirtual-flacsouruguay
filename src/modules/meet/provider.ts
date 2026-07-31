@@ -5,6 +5,7 @@ export type MeetProvisionRequest = Readonly<{
   fin: Date;
   timezone: string;
   calendarId: string;
+  cohostEmails?: readonly string[];
   requiereAsistencia?: boolean;
   requiereGrabacion?: boolean;
 }>;

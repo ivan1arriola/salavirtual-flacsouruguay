@@ -308,6 +308,112 @@
   color: #216549;
 }
 
+.meeting-creation-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(24 33 47 / 48%);
+  padding: 20px;
+}
+
+.meeting-creation-dialog {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 18px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 20px 56px rgb(24 33 47 / 28%);
+  padding: 28px;
+  text-align: center;
+}
+
+.meeting-creation-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.meeting-creation-dialog p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.meeting-creation-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+}
+
+.meeting-creation-icon.is-loading {
+  background: #e3f2f7;
+  color: var(--brand);
+}
+
+.meeting-creation-icon.is-loading svg {
+  animation: meeting-creation-spin 0.85s linear infinite;
+}
+
+.meeting-creation-icon.is-done {
+  background: #e4f3ed;
+  color: #19704d;
+}
+
+.meeting-creation-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #dce5eb;
+}
+
+.meeting-creation-progress span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  background: var(--brand);
+  animation: meeting-creation-progress 1.2s ease-in-out infinite;
+}
+
+.meeting-creation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@keyframes meeting-creation-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes meeting-creation-progress {
+  from { transform: translateX(-105%); }
+  to { transform: translateX(245%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meeting-creation-icon.is-loading svg,
+  .meeting-creation-progress span {
+    animation-duration: 2.4s;
+  }
+}
+
+@media (max-width: 480px) {
+  .meeting-creation-dialog {
+    padding: 22px;
+  }
+
+  .meeting-creation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .meeting-creation-actions a {
+    justify-content: center;
+  }
+}
+
 .config-scopes {
   display: grid;
   gap: 5px;

@@ -41,7 +41,12 @@ export async function provisionarEventosMeet(
     },
     include: {
       cuentaProveedor: true,
-      instancia: { include: { solicitud: true } },
+      instancia: {
+        include: {
+          solicitud: true,
+          cohosts: { include: { cuentaGoogle: { select: { email: true } } } }
+        }
+      },
     },
   });
   const privateKey = await descifrarORegistrarError(
@@ -76,6 +81,7 @@ export async function provisionarEventosMeet(
           fin: evento.instancia.finProgramadoAt,
           timezone: evento.instancia.timezone,
           calendarId: hostEmail,
+          cohostEmails: evento.instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
           requiereAsistencia: evento.instancia.requiereAsistencia,
           requiereGrabacion: evento.instancia.requiereGrabacion,
         });

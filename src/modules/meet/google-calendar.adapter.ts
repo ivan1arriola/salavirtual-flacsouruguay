@@ -5,12 +5,14 @@ import {
   extraerMeetProvisionado,
   type CalendarEvent
 } from "./google-calendar.domain";
-import type { MeetProvider, MeetProvisionResult } from "./provider";
+import type { MeetProvider, MeetProvisionRequest, MeetProvisionResult } from "./provider";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.settings";
+const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
+const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 
 export type GoogleCalendarCredentials = Readonly<{
   serviceAccountEmail: string;
@@ -44,7 +46,7 @@ export function crearGoogleCalendarProvider(
   const meetAuth = new JWT({
     email: credentials.serviceAccountEmail,
     key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE],
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
     subject: credentials.subject
   });
 
@@ -52,7 +54,7 @@ export function crearGoogleCalendarProvider(
     async provisionarEvento(request) {
       const eventsUrl = calendarEventsUrl(request.calendarId);
       const response = await auth.request<CalendarEvent>({
-        url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=none`,
+        url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
         method: "POST",
         data: crearCalendarEvent(request, randomUUID())
       });
@@ -101,17 +103,18 @@ export function crearGoogleCalendarProvider(
 async function finalizarProvision(
   auth: JWT,
   result: MeetProvisionResult,
-  request: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean }>
+  request: MeetProvisionRequest
 ): Promise<MeetProvisionResult> {
   try {
-    await configurarEspacioMeet(auth, result.codigoReunion, request);
+    const spaceName = await configurarEspacioMeet(auth, result.codigoReunion, request);
+    await configurarCohostsMeet(auth, spaceName, request.cohostEmails ?? []);
     return result;
   } catch (error) {
     return {
       ...result,
       warning: error instanceof Error
-        ? `Enlace creado, pero no se configuraron los artefactos automáticos: ${error.message}`
-        : "Enlace creado, pero no se configuraron los artefactos automáticos."
+        ? `Enlace creado, pero la configuración de Meet quedó incompleta: ${error.message}`
+        : "Enlace creado, pero la configuración de Meet quedó incompleta."
     };
   }
 }
@@ -119,11 +122,11 @@ async function finalizarProvision(
 async function configurarEspacioMeet(
   auth: JWT,
   codigoReunion: string,
-  request: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean }>
-): Promise<void> {
+  request: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean; cohostEmails?: readonly string[] }>
+): Promise<string> {
   const configurarAsistencia = request.requiereAsistencia !== undefined;
   const configurarGrabacion = request.requiereGrabacion !== undefined;
-  if (!configurarAsistencia && !configurarGrabacion) return;
+  const configurarModeracion = Boolean(request.cohostEmails?.length);
   const current = await auth.request<{ name?: string }>({
     url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
     method: "GET"
@@ -135,19 +138,36 @@ async function configurarEspacioMeet(
       : {}),
     ...(configurarGrabacion
       ? { artifactConfig: { recordingConfig: { autoRecordingGeneration: request.requiereGrabacion ? "ON" : "OFF" } } }
-      : {})
+      : {}),
+    ...(configurarModeracion ? { moderation: "ON" } : {})
   };
   const updateMask = [
     ...(configurarAsistencia ? ["config.attendance_report_generation_type"] : []),
     ...(configurarGrabacion
       ? ["config.artifact_config.recording_config.auto_recording_generation"]
-      : [])
+      : []),
+    ...(configurarModeracion ? ["config.moderation"] : [])
   ].join(",");
-  await auth.request({
-    url: `${MEET_API}/${current.data.name}?updateMask=${encodeURIComponent(updateMask)}`,
-    method: "PATCH",
-    data: { name: current.data.name, config }
-  });
+  if (updateMask) {
+    await auth.request({
+      url: `${MEET_API}/${current.data.name}?updateMask=${encodeURIComponent(updateMask)}`,
+      method: "PATCH",
+      data: { name: current.data.name, config }
+    });
+  }
+  return current.data.name;
+}
+
+async function configurarCohostsMeet(
+  auth: JWT,
+  spaceName: string,
+  emails: readonly string[]
+): Promise<void> {
+  await Promise.all(emails.map((email) => auth.request({
+    url: `${MEET_BETA_API}/${spaceName}/members`,
+    method: "POST",
+    data: { email, role: "COHOST" }
+  })));
 }
 
 function calendarEventsUrl(calendarId: string): string {

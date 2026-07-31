@@ -1,8 +1,8 @@
 "use client";
 
-import { CalendarDays, CalendarPlus, Check, Plus, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { CalendarDays, CalendarPlus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { MeetingCreationDialog } from "@/src/components/meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 
 type Option = Readonly<{ id: string; label: string }>;
@@ -38,7 +38,6 @@ export function MeetingForm({
   cohosts: readonly Readonly<{ id: string; email: string }>[];
   canAssignAssistant: boolean;
 }>) {
-  const router = useRouter();
   const [dates, setDates] = useState<readonly MeetingDate[]>([{ fecha: "", horaInicio: "", horaFin: "" }]);
   const [recurrence, setRecurrence] = useState<RecurrenceState>({
     desde: "",
@@ -52,48 +51,50 @@ export function MeetingForm({
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [createdMeetingId, setCreatedMeetingId] = useState<string>();
 
   async function submit(formData: FormData) {
     setStatus("saving");
     setMessage("");
-    const response = await fetch("/api/v1/reuniones", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        titulo: formData.get("titulo"),
-        descripcion: formData.get("descripcion") || undefined,
-        docenteProgramaId: formData.get("docenteProgramaId"),
-        cuentaHostId: formData.get("cuentaHostId"),
-        cohostCuentaIds: formData.getAll("cohostCuentaIds"),
-        asistenteId: canAssignAssistant && assistanceMode === "ASSIGN"
-          ? formData.get("asistenteId") || undefined
-          : undefined,
-        requiereAsistencia: formData.get("requiereAsistencia") === "on",
-        requiereGrabacion: formData.get("requiereGrabacion") === "on",
-        modalidad: formData.get("modalidad"),
-        timezone: "America/Montevideo",
-        instancias: dates.map(({ fecha, horaInicio, horaFin }) => ({
-          inicio: localMontevideoToIso(fecha, horaInicio),
-          fin: localMontevideoToIso(fecha, horaFin)
-        }))
-      })
-    });
-    const result = await response.json();
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/v1/reuniones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titulo: formData.get("titulo"),
+          descripcion: formData.get("descripcion") || undefined,
+          docenteProgramaId: formData.get("docenteProgramaId"),
+          cuentaHostId: formData.get("cuentaHostId"),
+          cohostCuentaIds: formData.getAll("cohostCuentaIds"),
+          asistenteId: canAssignAssistant && assistanceMode === "ASSIGN"
+            ? formData.get("asistenteId") || undefined
+            : undefined,
+          requiereAsistencia: formData.get("requiereAsistencia") === "on",
+          requiereGrabacion: formData.get("requiereGrabacion") === "on",
+          modalidad: formData.get("modalidad"),
+          timezone: "America/Montevideo",
+          instancias: dates.map(({ fecha, horaInicio, horaFin }) => ({
+            inicio: localMontevideoToIso(fecha, horaInicio),
+            fin: localMontevideoToIso(fecha, horaFin)
+          }))
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "No se pudo crear la reunión.");
+      const failures = result.provisionamiento?.filter(
+        ({ estado }: { estado: string }) => estado !== "SINCRONIZADA"
+      ).length;
+      setCreatedMeetingId(result.solicitudId);
+      setStatus("done");
+      setMessage(
+        failures
+          ? "La reunión quedó guardada. La configuración de Google continúa pendiente."
+          : "La reunión y sus enlaces de Google Meet quedaron creados correctamente."
+      );
+    } catch (error) {
       setStatus("error");
-      setMessage(result.error ?? "No se pudo crear la reunión.");
-      return;
+      setMessage(error instanceof Error ? error.message : "No se pudo crear la reunión.");
     }
-    const failures = result.provisionamiento?.filter(
-      ({ estado }: { estado: string }) => estado !== "SINCRONIZADA"
-    ).length;
-    setStatus("done");
-    setMessage(
-      failures
-        ? "La reunión quedó guardada y espera la configuración de Google."
-        : "La reunión y su enlace Meet quedaron creados."
-    );
-    router.refresh();
   }
 
   function generateRecurrence() {
@@ -195,9 +196,17 @@ export function MeetingForm({
       </FormSection>
 
       <footer className="form-actions">
-        {message ? <p className={`form-message ${status}`}>{status === "done" ? <Check size={17} /> : null}{message}</p> : <span />}
+        {status === "error" ? <p className="form-message" role="alert">{message}</p> : <span />}
         <button className="primary-action" type="submit" disabled={status === "saving"}><CalendarPlus size={18} />{status === "saving" ? "Creando…" : "Crear reunión"}</button>
       </footer>
+      {status === "saving" || status === "done" ? (
+        <MeetingCreationDialog
+          state={status}
+          message={message}
+          meetingId={createdMeetingId}
+          meetingCount={dates.length}
+        />
+      ) : null}
     </form>
   );
 }
