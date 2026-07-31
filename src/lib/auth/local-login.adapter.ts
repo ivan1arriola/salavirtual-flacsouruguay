@@ -9,6 +9,7 @@ export const dependenciasLoginLocal: DependenciasLogin = Object.freeze({
       select: {
         id: true,
         passwordHash: true,
+        debeCambiarPassword: true,
         rol: true,
         activo: true,
         fusionadoEnId: true,
@@ -28,6 +29,7 @@ export const dependenciasLoginLocal: DependenciasLogin = Object.freeze({
     return {
       id: usuario.id,
       passwordHash: usuario.passwordHash,
+      debeCambiarPassword: usuario.debeCambiarPassword,
       rol: usuario.rol,
       activo: usuario.activo,
       fusionadoEnId: usuario.fusionadoEnId,

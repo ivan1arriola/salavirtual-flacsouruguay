@@ -27,6 +27,7 @@
 
 - `app/`: rutas Next.js, server components y endpoints.
 - `src/modules/solicitudes`: validacion y casos de uso de solicitudes.
+- `src/modules/reuniones`: reglas puras y alta transaccional de reuniones.
 - `src/modules/meet`: puerto de provisionamiento Google Meet.
 - `src/modules/historico-zoom`: importacion y consulta de datos heredados.
 - `src/modules/asistencias`: disponibilidad, interes, asignacion y liquidacion.

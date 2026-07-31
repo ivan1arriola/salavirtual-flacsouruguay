@@ -7,6 +7,7 @@ import {
 const usuarioActivo: UsuarioCredenciales = {
   id: "docente",
   passwordHash: "hash",
+  debeCambiarPassword: true,
   rol: "DOCENTE",
   activo: true,
   fusionadoEnId: null,
@@ -20,7 +21,8 @@ describe("acceso local funcional", () => {
       id: "docente",
       rol: "DOCENTE",
       nombre: "Docente FLACSO",
-      email: "docente@flacso.edu.uy"
+      email: "docente@flacso.edu.uy",
+      debeCambiarPassword: true
     });
   });
 

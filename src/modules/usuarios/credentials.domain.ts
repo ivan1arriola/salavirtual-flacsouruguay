@@ -9,6 +9,7 @@ export const credencialesLoginSchema = z.object({
 export type UsuarioCredenciales = Readonly<{
   id: string;
   passwordHash: string | null;
+  debeCambiarPassword: boolean;
   rol: RolUsuario;
   activo: boolean;
   fusionadoEnId: string | null;
@@ -21,6 +22,7 @@ export type UsuarioAutenticado = Readonly<{
   rol: RolUsuario;
   nombre: string | null;
   email: string | null;
+  debeCambiarPassword: boolean;
 }>;
 
 export function evaluarAccesoLocal(
@@ -35,6 +37,7 @@ export function evaluarAccesoLocal(
     id: usuario.id,
     rol: usuario.rol,
     nombre: usuario.nombre,
-    email: usuario.email
+    email: usuario.email,
+    debeCambiarPassword: usuario.debeCambiarPassword
   };
 }

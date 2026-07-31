@@ -41,4 +41,5 @@ npm run dev
 - [Arquitectura](docs/arquitectura.md)
 - [Modelo 3NF](docs/modelo-3nf.md)
 - [Plan de migracion](docs/migracion-desde-flacso-zoom.md)
+- [Configuracion de Google Workspace](docs/configuracion-google-workspace.md)
 - [UI ligera](docs/ui-ligera.md)

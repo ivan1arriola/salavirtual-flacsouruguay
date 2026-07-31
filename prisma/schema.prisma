@@ -100,15 +100,15 @@ model UnidadAcademica {
 }
 
 model Programa {
-  id                String            @id @default(cuid())
-  unidadAcademicaId String?
-  nombre            String
-  codigo            String?
-  activo            Boolean           @default(true)
-  unidadAcademica   UnidadAcademica?  @relation(fields: [unidadAcademicaId], references: [id], onDelete: SetNull)
-  docentes          DocentePrograma[]
+  id                   String            @id @default(cuid())
+  legacyZoomProgramaId String?           @unique
+  unidadAcademicaId    String?
+  nombre               String            @unique
+  codigo               String?
+  activo               Boolean           @default(true)
+  unidadAcademica      UnidadAcademica?  @relation(fields: [unidadAcademicaId], references: [id], onDelete: SetNull)
+  docentes             DocentePrograma[]
 
-  @@unique([unidadAcademicaId, nombre])
   @@index([activo])
 }
 
@@ -162,18 +162,21 @@ model ProveedorReunion {
 }
 
 model CuentaProveedor {
-  id                String            @id @default(cuid())
-  proveedorId       String
-  nombre            String
-  emailOrganizador  String?
-  externalAccountId String?
-  secretRef         String?
-  prioridad         Int               @default(100)
-  activa            Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  proveedor         ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  eventosProveedor  EventoProveedor[]
+  id                 String            @id @default(cuid())
+  legacyZoomCuentaId String?           @unique
+  proveedorId        String
+  nombre             String
+  emailOrganizador   String?
+  externalAccountId  String?
+  secretRef          String?
+  prioridad          Int               @default(100)
+  tieneLicencia      Boolean           @default(false)
+  limiteConcurrente  Int?
+  activa             Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  proveedor          ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  eventosProveedor   EventoProveedor[]
 
   @@unique([proveedorId, externalAccountId])
   @@index([proveedorId, activa, prioridad])
@@ -181,20 +184,30 @@ model CuentaProveedor {
 
 model SolicitudSala {
   id                    String           @id @default(cuid())
+  legacyZoomSolicitudId String?          @unique
   docenteProgramaId     String
   creadaPorUsuarioId    String
   titulo                String
   descripcion           String?
+  responsableNombre     String?
+  finalidadAcademica    String?
   modalidad             ModalidadReunion
   tipoInstancias        TipoInstancias
   timezone              String
   fechaInicioSolicitada DateTime
   fechaFinSolicitada    DateTime
   cantidadInstancias    Int              @default(1)
+  capacidadEstimada     Int?
   requiereAsistencia    Boolean          @default(false)
+  motivoAsistencia      String?
   requiereGrabacion     Boolean          @default(false)
+  regimenEncuentros     String?
+  fechaFinRecurrencia   DateTime?
+  patronRecurrencia     Json?
   estado                EstadoSolicitud  @default(REGISTRADA)
   observacionesAdmin    String?
+  canceladaAt           DateTime?
+  canceladaMotivo       String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   docentePrograma       DocentePrograma  @relation(fields: [docenteProgramaId], references: [id], onDelete: Restrict)
@@ -207,16 +220,21 @@ model SolicitudSala {
 
 model InstanciaSala {
   id                  String                   @id @default(cuid())
+  legacyZoomEventoId  String?                  @unique
   solicitudSalaId     String
   ordinal             Int
   inicioProgramadoAt  DateTime
   finProgramadoAt     DateTime
+  timezone            String
   estado              EstadoInstancia          @default(PROGRAMADA)
   requiereAsistencia  Boolean                  @default(false)
   requiereGrabacion   Boolean                  @default(false)
   inicioRealAt        DateTime?
   finRealAt           DateTime?
   minutosReportados   Int?
+  comentariosReporte  String?
+  costoEstimado       Decimal?                 @db.Decimal(12, 2)
+  costoReal           Decimal?                 @db.Decimal(12, 2)
   solicitud           SolicitudSala            @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
   eventosProveedor    EventoProveedor[]
   intereses           InteresAsistenteEvento[]
@@ -224,6 +242,7 @@ model InstanciaSala {
   incidencias         Incidencia[]
   grabaciones         Grabacion[]
   liquidacionDetalles LiquidacionDetalle[]
+  cohosts             CohostReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -235,6 +254,7 @@ model EventoProveedor {
   proveedorId       String
   cuentaProveedorId String?
   externalEventId   String?
+  codigoReunion     String?
   joinUrl           String?
   hostUrl           String?
   payloadUltimo     Json?
@@ -248,7 +268,20 @@ model EventoProveedor {
   cuentaProveedor   CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
 
   @@unique([proveedorId, externalEventId])
+  @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
+}
+
+model CohostReunion {
+  id              String             @id @default(cuid())
+  instanciaSalaId String
+  cuentaGoogleId  String
+  createdAt       DateTime           @default(now())
+  instancia       InstanciaSala      @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  cuentaGoogle    CuentaGoogleFlacso @relation(fields: [cuentaGoogleId], references: [id], onDelete: Restrict)
+
+  @@unique([instanciaSalaId, cuentaGoogleId])
+  @@index([cuentaGoogleId])
 }
 
 model Grabacion {
@@ -285,19 +318,20 @@ model InteresAsistenteEvento {
 }
 
 model AsignacionAsistente {
-  id                  String               @id @default(cuid())
-  instanciaSalaId     String
-  asistenteId         String
-  estado              EstadoAsignacion     @default(ASIGNADO)
-  tarifaHoraAplicada  Decimal              @db.Decimal(10, 2)
-  moneda              String
-  minutosConfirmados  Int?
-  montoConfirmado     Decimal?             @db.Decimal(12, 2)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  instancia           InstanciaSala        @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente           Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
-  liquidacionDetalles LiquidacionDetalle[]
+  id                     String               @id @default(cuid())
+  legacyZoomAsignacionId String?              @unique
+  instanciaSalaId        String
+  asistenteId            String
+  estado                 EstadoAsignacion     @default(ASIGNADO)
+  tarifaHoraAplicada     Decimal?             @db.Decimal(10, 2)
+  moneda                 String?
+  minutosConfirmados     Int?
+  montoConfirmado        Decimal?             @db.Decimal(12, 2)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  instancia              InstanciaSala        @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistente              Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
+  liquidacionDetalles    LiquidacionDetalle[]
 
   @@unique([instanciaSalaId, asistenteId])
   @@index([asistenteId, estado])
@@ -394,10 +428,11 @@ model Auditoria {
 }
 
 model CuentaGoogleFlacso {
+  id                String          @id @default(cuid())
   userId            String
   email             String
   dominio           String
-  providerAccountId String
+  providerAccountId String?         @unique
   refresh_token     String?
   access_token      String?
   expires_at        Int?
@@ -407,11 +442,11 @@ model CuentaGoogleFlacso {
   session_state     String?
   emailVerificadoAt DateTime?
   ultimoAccesoAt    DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  user              Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  user              Usuario         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohosts           CohostReunion[]
 
-  @@id([providerAccountId])
   @@unique([email])
   @@index([userId])
   @@index([dominio])

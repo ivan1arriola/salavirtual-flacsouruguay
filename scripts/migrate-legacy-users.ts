@@ -87,7 +87,8 @@ async function cargarPlanes() {
 async function aplicarPlan(
   plan: Awaited<ReturnType<typeof cargarPlanes>>[number]
 ): Promise<void> {
-  const passwordHash = await hash(defaultPassword, 12);
+  const requierePassword = plan.cuentasGoogle.length === 0;
+  const passwordHash = requierePassword ? await hash(defaultPassword, 12) : null;
 
   await target.$transaction(async (tx) => {
     const existing = await tx.usuario.findUnique({
@@ -106,7 +107,7 @@ async function aplicarPlan(
         emailVerificadoAt: plan.emailVerificadoAt,
         imagenUrl: plan.imagenUrl,
         passwordHash,
-        debeCambiarPassword: true,
+        debeCambiarPassword: requierePassword,
         rol: plan.rol,
         ultimoAccesoAt: plan.ultimoAccesoAt,
         ultimoAccesoIp: plan.ultimoAccesoIp,
@@ -121,8 +122,6 @@ async function aplicarPlan(
         emailPrincipal: plan.emailPrincipal,
         emailVerificadoAt: plan.emailVerificadoAt,
         imagenUrl: plan.imagenUrl,
-        passwordHash,
-        debeCambiarPassword: true,
         rol: plan.rol,
         ultimoAccesoAt: plan.ultimoAccesoAt,
         ultimoAccesoIp: plan.ultimoAccesoIp,
@@ -233,7 +232,9 @@ async function main(): Promise<void> {
             (total, { cuentasGoogleOmitidas }) => total + cuentasGoogleOmitidas,
             0
           ),
-          usersWithTemporaryPassword: planes.length
+          usersWithTemporaryPassword: planes.filter(
+            ({ cuentasGoogle }) => cuentasGoogle.length === 0
+          ).length
         },
         null,
         2

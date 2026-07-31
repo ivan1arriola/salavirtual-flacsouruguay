@@ -17,6 +17,7 @@ const cuenta: CuentaGoogleVinculada = {
   usuario: {
     id: "docente",
     rol: "DOCENTE",
+    debeCambiarPassword: true,
     activo: true,
     fusionadoEnId: null,
     nombre: "Docente FLACSO",

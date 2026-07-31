@@ -7,7 +7,7 @@ export type PerfilGoogle = Readonly<{
 }>;
 
 export type CuentaGoogleVinculada = Readonly<{
-  providerAccountId: string;
+  providerAccountId: string | null;
   email: string;
   usuario: UsuarioAutenticado &
     Readonly<{
@@ -25,7 +25,7 @@ export function evaluarAccesoGoogle(
     !perfil.emailVerificado ||
     !email.endsWith("@flacso.edu.uy") ||
     !cuenta ||
-    cuenta.providerAccountId !== perfil.subject ||
+    (cuenta.providerAccountId !== null && cuenta.providerAccountId !== perfil.subject) ||
     cuenta.email.trim().toLowerCase() !== email ||
     !cuenta.usuario.activo ||
     cuenta.usuario.fusionadoEnId
@@ -37,6 +37,7 @@ export function evaluarAccesoGoogle(
     id: cuenta.usuario.id,
     rol: cuenta.usuario.rol,
     nombre: cuenta.usuario.nombre,
-    email: cuenta.usuario.email
+    email: cuenta.usuario.email,
+    debeCambiarPassword: cuenta.usuario.debeCambiarPassword
   };
 }

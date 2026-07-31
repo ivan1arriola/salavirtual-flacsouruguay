@@ -31,7 +31,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: usuario.id,
           name: usuario.nombre,
           email: usuario.email,
-          role: usuario.rol
+          role: usuario.rol,
+          mustChangePassword: usuario.debeCambiarPassword
         };
       }
     }),
@@ -55,7 +56,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 name: usuario.nombre,
                 email: usuario.email,
                 image: profile.picture,
-                role: usuario.rol
+                role: usuario.rol,
+                mustChangePassword: usuario.debeCambiarPassword
               };
             }
           })
@@ -67,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.userId = user.id;
         token.role = user.role;
+        token.mustChangePassword = user.mustChangePassword;
       }
       return token;
     },
@@ -74,6 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = String(token.userId ?? token.sub ?? "");
         session.user.role = esRolUsuario(token.role) ? token.role : "DOCENTE";
+        session.user.mustChangePassword = token.mustChangePassword === true;
       }
       return session;
     },
