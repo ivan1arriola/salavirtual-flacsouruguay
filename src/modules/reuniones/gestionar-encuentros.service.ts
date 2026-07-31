@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import type { MeetProvider } from "../meet/provider";
@@ -246,6 +246,73 @@ export async function eliminarEncuentro(
     }, null);
     await tx.instanciaSala.delete({ where: { id: meeting.id } });
     await recalcularSolicitud(tx, solicitudId);
+  });
+}
+
+export async function eliminarReunionCompleta(
+  dependencies: GestionEncuentrosDependencies,
+  actor: SessionActor,
+  solicitudId: string
+) {
+  const request = await dependencies.db.solicitudSala.findUnique({
+    where: { id: solicitudId },
+    include: {
+      docentePrograma: { include: { docente: true } },
+      instancias: {
+        include: {
+          eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+          liquidacionDetalles: { select: { id: true } }
+        }
+      }
+    }
+  });
+  validarGestion(actor, request?.docentePrograma.docente.usuarioId);
+  if (!request) throw new Error("La reunión no existe.");
+  if (request.instancias.some(({ estado, inicioProgramadoAt }) =>
+    estado !== "PROGRAMADA" || inicioProgramadoAt <= new Date()
+  )) {
+    throw new Error("Solo se puede eliminar una reunión si todos sus encuentros son futuros y programados.");
+  }
+  if (request.instancias.some(({ liquidacionDetalles }) => liquidacionDetalles.length > 0)) {
+    throw new Error("La reunión tiene liquidaciones asociadas y no se puede eliminar.");
+  }
+
+  const calendarEvents = request.instancias.flatMap(({ eventosProveedor }) =>
+    eventosProveedor.flatMap((event) =>
+      event.proveedor.tipo === "GOOGLE_MEET" &&
+      event.externalEventId &&
+      event.cuentaProveedor?.emailOrganizador
+        ? [{
+            calendarId: event.cuentaProveedor.emailOrganizador,
+            externalEventId: event.externalEventId
+          }]
+        : []
+    )
+  );
+  await Promise.all(calendarEvents.map(async ({ calendarId, externalEventId }) => {
+    const credentials = await cargarCredencialesEncuentro(
+      dependencies.db,
+      dependencies.descifrar,
+      calendarId
+    );
+    await dependencies.crearProvider(credentials).cancelarEvento(calendarId, externalEventId);
+  }));
+
+  await dependencies.db.$transaction(async (tx) => {
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actor.id,
+        accion: "REUNION_ELIMINADA",
+        entidadTipo: "SolicitudSala",
+        entidadId: request.id,
+        valorAnterior: {
+          titulo: request.titulo,
+          encuentros: request.instancias.length
+        },
+        valorNuevo: Prisma.JsonNull
+      }
+    });
+    await tx.solicitudSala.delete({ where: { id: request.id } });
   });
 }
 

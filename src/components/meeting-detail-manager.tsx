@@ -80,6 +80,30 @@ export function MeetingDetailManager({
     return request(id, { method: "DELETE" });
   }
 
+  async function removeAll() {
+    if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la reunión completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
+    setBusy("all");
+    setMessage("");
+    try {
+      const response = await fetch(`/api/v1/reuniones/${solicitudId}/encuentros`, {
+        method: "DELETE"
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error ?? "No se pudo eliminar la reunión.");
+        return;
+      }
+      router.push("/reuniones");
+      router.refresh();
+    } catch {
+      setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const canRemoveAll = meetings.length > 0 && meetings.every(({ editable }) => editable);
+
   return (
     <>
       <section className="content-section add-encounter-section">
@@ -126,6 +150,20 @@ export function MeetingDetailManager({
         ))}
       </div>
       <p className="form-message meeting-detail-message" role="status">{message}</p>
+      <section className="meeting-danger-zone">
+        <div>
+          <h2>Eliminar reunión completa</h2>
+          <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
+        </div>
+        <button
+          className="secondary-action danger-action"
+          disabled={!canRemoveAll || busy !== null}
+          onClick={removeAll}
+          type="button"
+        >
+          <Trash2 size={17} />{busy === "all" ? "Eliminando…" : "Eliminar todo"}
+        </button>
+      </section>
     </>
   );
 }

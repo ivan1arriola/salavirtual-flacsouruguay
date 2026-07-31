@@ -5,11 +5,13 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { configurarGoogleMeetExistente, crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
-import { agregarEncuentro } from "@/src/modules/reuniones/gestionar-encuentros.service";
+import { agregarEncuentro, eliminarReunionCompleta } from "@/src/modules/reuniones/gestionar-encuentros.service";
+
+type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 
 export async function POST(
   request: Request,
-  context: Readonly<{ params: Promise<{ solicitudId: string }> }>
+  context: RouteContext
 ) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,6 +34,27 @@ export async function POST(
   } catch (error) {
     return NextResponse.json({
       error: error instanceof Error ? error.message : "No se pudo agregar el encuentro."
+    }, { status: 400 });
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { solicitudId } = await context.params;
+    await eliminarReunionCompleta({
+      db,
+      descifrar: descifrarConfiguracion,
+      crearProvider: crearGoogleCalendarProvider,
+      configurarEspacio: configurarGoogleMeetExistente
+    }, actor, solicitudId);
+    return NextResponse.json({ message: "Reunión eliminada." });
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "No se pudo eliminar la reunión."
     }, { status: 400 });
   }
 }
