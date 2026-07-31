@@ -1,89 +1,171 @@
-const metrics = [
-  { label: "Solicitudes abiertas", value: "0" },
-  { label: "Instancias esta semana", value: "0" },
-  { label: "Asistencias pendientes", value: "0" },
-  { label: "Zoom historico", value: "solo consulta" }
-] as const;
+import { AlertTriangle, ArrowRight, CalendarPlus, Video } from "lucide-react";
+import Link from "next/link";
+import { auth } from "@/auth";
+import { db } from "@/src/lib/db";
+import { formatDateTime, formatShortDate } from "@/src/lib/ui/format";
 
-const workflows = [
-  "Crear solicitud Meet",
-  "Asignar asistencia",
-  "Revisar agenda",
-  "Consultar historico Zoom"
-] as const;
+export default async function HomePage() {
+  const session = await auth();
+  const now = new Date();
+  const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const docenteWhere =
+    session?.user.role === "DOCENTE"
+      ? { solicitud: { docentePrograma: { docente: { usuarioId: session.user.id } } } }
+      : {};
 
-export default function HomePage() {
+  const [openRequests, weekMeetings, pendingAssistance, zoomHistory, upcoming] =
+    await Promise.all([
+      db.solicitudSala.count({
+        where: {
+          estado: { in: ["REGISTRADA", "PROVISIONANDO", "REQUIERE_REVISION"] },
+          ...(session?.user.role === "DOCENTE"
+            ? { docentePrograma: { docente: { usuarioId: session.user.id } } }
+            : {})
+        }
+      }),
+      db.instanciaSala.count({
+        where: {
+          ...docenteWhere,
+          inicioProgramadoAt: { gte: now, lt: weekEnd },
+          estado: "PROGRAMADA"
+        }
+      }),
+      db.instanciaSala.count({
+        where: {
+          ...docenteWhere,
+          requiereAsistencia: true,
+          inicioProgramadoAt: { gte: now },
+          asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
+        }
+      }),
+      db.eventoProveedor.count({ where: { proveedor: { tipo: "ZOOM_HISTORICO" } } }),
+      db.instanciaSala.findMany({
+        where: {
+          ...docenteWhere,
+          inicioProgramadoAt: { gte: now },
+          estado: "PROGRAMADA"
+        },
+        orderBy: { inicioProgramadoAt: "asc" },
+        take: 6,
+        include: {
+          solicitud: {
+            include: {
+              docentePrograma: {
+                include: {
+                  programa: true,
+                  docente: { include: { usuario: true } }
+                }
+              }
+            }
+          },
+          eventosProveedor: {
+            include: { proveedor: true, cuentaProveedor: true }
+          },
+          asignaciones: {
+            where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+            include: { asistente: { include: { usuario: true } } }
+          }
+        }
+      })
+    ]);
+
+  const metrics = [
+    { label: "Solicitudes abiertas", value: openRequests },
+    { label: "Próximos 7 días", value: weekMeetings },
+    { label: "Sin asistencia", value: pendingAssistance, alert: pendingAssistance > 0 },
+    { label: "Histórico Zoom", value: zoomHistory }
+  ] as const;
+
   return (
-    <main className="shell">
-      <header className="topbar">
+    <>
+      <header className="page-header">
         <div>
-          <p className="eyebrow">FLACSO Uruguay</p>
-          <h1>Gestor Google Meet</h1>
+          <p className="page-eyebrow">{formatShortDate(now)}</p>
+          <h1>Resumen operativo</h1>
+          <p>Reuniones, asistencia y disponibilidad de salas.</p>
         </div>
-        <nav className="actions" aria-label="Acciones principales">
-          <a href="#solicitudes">Solicitudes</a>
-          <a href="#agenda">Agenda</a>
-          <a href="#historico">Historico</a>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/acceso" });
-            }}
-          >
-            <button className="secondary-button" type="submit">
-              Salir
-            </button>
-          </form>
-        </nav>
+        <Link className="primary-action" href="/reuniones/nueva">
+          <CalendarPlus size={18} aria-hidden="true" />
+          Nueva reunión
+        </Link>
       </header>
 
-      <section className="panel intro" aria-labelledby="inicio-title">
-        <div>
-          <h2 id="inicio-title">Operacion academica, sin peso extra.</h2>
-          <p>
-            Base nueva para provisionar reuniones en Google Meet, coordinar asistencia y
-            mantener Zoom como archivo historico.
-          </p>
-        </div>
-        <button type="button">Nueva solicitud</button>
-      </section>
-
-      <section className="metrics" aria-label="Resumen operativo">
+      <section className="metric-grid" aria-label="Indicadores">
         {metrics.map((metric) => (
-          <article className="metric" key={metric.label}>
+          <article className={metric.alert ? "stat alert-stat" : "stat"} key={metric.label}>
             <span>{metric.label}</span>
             <strong>{metric.value}</strong>
           </article>
         ))}
       </section>
 
-      <section className="grid">
-        <article className="panel" id="solicitudes">
-          <h2>Flujo principal</h2>
-          <ul className="workflow">
-            {workflows.map((workflow) => (
-              <li key={workflow}>{workflow}</li>
-            ))}
-          </ul>
-        </article>
+      <section className="content-section">
+        <div className="section-heading">
+          <div>
+            <h2>Próximas reuniones</h2>
+            <p>Ordenadas por fecha y hora.</p>
+          </div>
+          <Link className="text-link" href="/reuniones">
+            Ver agenda <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
 
-        <article className="panel" id="agenda">
-          <h2>Agenda Meet</h2>
-          <p className="muted">
-            El proveedor operativo sera Google Meet. Las entidades centrales hablan de
-            instancias, proveedores y enlaces externos, no de Zoom.
-          </p>
-        </article>
-
-        <article className="panel" id="historico">
-          <h2>Zoom historico</h2>
-          <p className="muted">
-            Las reuniones y grabaciones anteriores se importan como registros historicos,
-            sin habilitar nuevos flujos operativos sobre Zoom.
-          </p>
-        </article>
+        {upcoming.length === 0 ? (
+          <div className="empty-state">
+            <Video size={24} aria-hidden="true" />
+            <p>No hay reuniones próximas.</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Reunión</th>
+                  <th>Programa</th>
+                  <th>Host</th>
+                  <th>Asistencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcoming.map((meeting) => {
+                  const association = meeting.solicitud.docentePrograma;
+                  const meetEvent = meeting.eventosProveedor.find(
+                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                  );
+                  return (
+                    <tr key={meeting.id}>
+                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
+                      <td>
+                        <strong>{meeting.solicitud.titulo}</strong>
+                        <small>
+                          {association.docente.usuario.nombres}{" "}
+                          {association.docente.usuario.apellidos}
+                        </small>
+                      </td>
+                      <td>{association.programa.nombre}</td>
+                      <td>{meetEvent?.cuentaProveedor?.nombre ?? "Zoom histórico"}</td>
+                      <td>
+                        {meeting.requiereAsistencia && meeting.asignaciones.length === 0 ? (
+                          <span className="status status-warning">
+                            <AlertTriangle size={14} /> Pendiente
+                          </span>
+                        ) : meeting.asignaciones[0] ? (
+                          <span className="status status-ok">
+                            {meeting.asignaciones[0].asistente.usuario.nombres}
+                          </span>
+                        ) : (
+                          <span className="muted-text">No requiere</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
-    </main>
+    </>
   );
 }
-import { signOut } from "@/auth";

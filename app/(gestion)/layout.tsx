@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AppShell } from "@/src/components/app-shell";
+import "./gestion.css";
 
 export default async function GestionLayout({
   children
@@ -7,5 +9,5 @@ export default async function GestionLayout({
   const session = await auth();
   if (!session?.user) redirect("/acceso");
 
-  return children;
+  return <AppShell user={session.user}>{children}</AppShell>;
 }
