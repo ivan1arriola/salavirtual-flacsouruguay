@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import type { MeetProvider } from "../meet/provider";
@@ -8,6 +8,12 @@ import {
   elegirCuentaHost,
   puedeGestionarEncuentros
 } from "./encuentros.domain";
+import {
+  auditarEncuentro as auditar,
+  cargarCredencialesEncuentro,
+  cargarEncuentro,
+  recalcularSolicitud
+} from "./encuentros-persistence.adapter";
 
 export type GestionEncuentrosDependencies = Readonly<{
   db: PrismaClient;
@@ -77,15 +83,20 @@ export async function agregarEncuentro(
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
         timezone: request.timezone,
-        requiereAsistencia: request.requiereAsistencia,
-        requiereGrabacion: request.requiereGrabacion
+        requiereAsistencia: input.requiereAsistencia,
+        requiereGrabacion: input.requiereGrabacion
       }
     });
     const event = await tx.eventoProveedor.create({
       data: { instanciaSalaId: meeting.id, proveedorId: provider.id, cuentaProveedorId: hostId }
     });
     await recalcularSolicitud(tx, request.id);
-    await auditar(tx, actor.id, "ENCUENTRO_AGREGADO", meeting.id, null, input);
+    await auditar(tx, actor.id, "ENCUENTRO_AGREGADO", meeting.id, null, {
+      inicio: input.inicio.toISOString(),
+      fin: input.fin.toISOString(),
+      requiereAsistencia: input.requiereAsistencia,
+      requiereGrabacion: input.requiereGrabacion
+    });
     return { instanciaId: meeting.id, eventoProveedorId: event.id };
   });
 }
@@ -104,7 +115,11 @@ export async function actualizarEncuentro(
 
   const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
   const credentials = event?.externalEventId || event?.codigoReunion
-    ? await cargarCredenciales(dependencies, event.cuentaProveedor?.emailOrganizador)
+    ? await cargarCredencialesEncuentro(
+        dependencies.db,
+        dependencies.descifrar,
+        event.cuentaProveedor?.emailOrganizador
+      )
     : null;
 
   if (input.accion === "EDITAR_FECHA") {
@@ -144,9 +159,9 @@ export async function actualizarEncuentro(
       });
       await recalcularSolicitud(tx, solicitudId);
       await auditar(tx, actor.id, "ENCUENTRO_REPROGRAMADO", meeting.id, {
-        inicio: meeting.inicioProgramadoAt,
-        fin: meeting.finProgramadoAt
-      }, input);
+        inicio: meeting.inicioProgramadoAt.toISOString(),
+        fin: meeting.finProgramadoAt.toISOString()
+      }, { inicio: input.inicio.toISOString(), fin: input.fin.toISOString() });
     });
     return;
   }
@@ -195,7 +210,11 @@ export async function eliminarEncuentro(
   if (count <= 1) throw new Error("Una Reunión debe conservar al menos un encuentro.");
   const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
   if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
-    const credentials = await cargarCredenciales(dependencies, event.cuentaProveedor.emailOrganizador);
+    const credentials = await cargarCredencialesEncuentro(
+      dependencies.db,
+      dependencies.descifrar,
+      event.cuentaProveedor.emailOrganizador
+    );
     await dependencies.crearProvider(credentials).cancelarEvento(
       event.cuentaProveedor.emailOrganizador,
       event.externalEventId
@@ -203,21 +222,11 @@ export async function eliminarEncuentro(
   }
   await dependencies.db.$transaction(async (tx) => {
     await auditar(tx, actor.id, "ENCUENTRO_ELIMINADO", meeting.id, {
-      inicio: meeting.inicioProgramadoAt,
-      fin: meeting.finProgramadoAt
+      inicio: meeting.inicioProgramadoAt.toISOString(),
+      fin: meeting.finProgramadoAt.toISOString()
     }, null);
     await tx.instanciaSala.delete({ where: { id: meeting.id } });
     await recalcularSolicitud(tx, solicitudId);
-  });
-}
-
-async function cargarEncuentro(db: PrismaClient, solicitudId: string, instanciaId: string) {
-  return db.instanciaSala.findFirst({
-    where: { id: instanciaId, solicitudSalaId: solicitudId },
-    include: {
-      solicitud: { include: { docentePrograma: { include: { docente: true } } } },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-    }
   });
 }
 
@@ -225,54 +234,4 @@ function validarGestion(actor: SessionActor, docenteUsuarioId?: string): void {
   if (!actor.activo || !docenteUsuarioId || !puedeGestionarEncuentros(actor.rol, actor.id, docenteUsuarioId)) {
     throw new Error("No tiene permisos para gestionar estos encuentros.");
   }
-}
-
-async function cargarCredenciales(
-  dependencies: GestionEncuentrosDependencies,
-  subject?: string | null
-): Promise<GoogleCalendarCredentials> {
-  const config = await dependencies.db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true }
-  });
-  if (!config?.serviceAccountEmail || !config.privateKeyCifrada || !subject) {
-    throw new Error("Google Workspace no está configurado para modificar el encuentro.");
-  }
-  return {
-    serviceAccountEmail: config.serviceAccountEmail,
-    privateKey: dependencies.descifrar(config.privateKeyCifrada),
-    subject
-  };
-}
-
-async function recalcularSolicitud(tx: Prisma.TransactionClient, solicitudId: string): Promise<void> {
-  const meetings = await tx.instanciaSala.findMany({
-    where: { solicitudSalaId: solicitudId },
-    orderBy: { inicioProgramadoAt: "asc" },
-    select: { inicioProgramadoAt: true, finProgramadoAt: true, requiereAsistencia: true, requiereGrabacion: true }
-  });
-  if (meetings.length === 0) return;
-  await tx.solicitudSala.update({
-    where: { id: solicitudId },
-    data: {
-      cantidadInstancias: meetings.length,
-      tipoInstancias: meetings.length === 1 ? "UNICA" : "MULTIPLE",
-      fechaInicioSolicitada: meetings[0].inicioProgramadoAt,
-      fechaFinSolicitada: meetings.reduce((latest, item) => item.finProgramadoAt > latest ? item.finProgramadoAt : latest, meetings[0].finProgramadoAt),
-      requiereAsistencia: meetings.some(({ requiereAsistencia }) => requiereAsistencia),
-      requiereGrabacion: meetings.some(({ requiereGrabacion }) => requiereGrabacion)
-    }
-  });
-}
-
-async function auditar(
-  tx: Prisma.TransactionClient,
-  actorUsuarioId: string,
-  accion: string,
-  entidadId: string,
-  valorAnterior: Prisma.InputJsonValue | null,
-  valorNuevo: Prisma.InputJsonValue | null
-): Promise<void> {
-  await tx.auditoria.create({
-    data: { actorUsuarioId, accion, entidadTipo: "InstanciaSala", entidadId, valorAnterior, valorNuevo }
-  });
 }

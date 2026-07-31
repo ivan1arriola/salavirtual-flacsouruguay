@@ -116,7 +116,7 @@ export default async function ReunionesPage({
                 return (
                   <tr key={meeting.id}>
                     <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                    <td><strong>{meeting.solicitud.titulo}</strong><small>{meeting.solicitud.modalidad.toLowerCase()}</small></td>
+                    <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link><small>{meeting.solicitud.modalidad.toLowerCase()}</small></td>
                     <td><strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</strong><small>{association.programa.nombre}</small></td>
                     <td>
                       <strong>{event?.cuentaProveedor?.nombre ?? event?.proveedor.nombre}</strong>

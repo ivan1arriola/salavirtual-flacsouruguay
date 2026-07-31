@@ -1,16 +1,24 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
 
-const periodoSchema = z.object({
+const periodoFields = {
   inicio: z.coerce.date(),
   fin: z.coerce.date()
+} as const;
+
+export const agregarEncuentroSchema = z.object({
+  ...periodoFields,
+  requiereAsistencia: z.boolean().default(false),
+  requiereGrabacion: z.boolean().default(false)
 }).refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
   message: "La hora de fin debe ser posterior al inicio."
 });
 
-export const agregarEncuentroSchema = periodoSchema;
 export const actualizarEncuentroSchema = z.union([
-  periodoSchema.extend({ accion: z.literal("EDITAR_FECHA") }),
+  z.object({ ...periodoFields, accion: z.literal("EDITAR_FECHA") })
+    .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
+      message: "La hora de fin debe ser posterior al inicio."
+    }),
   z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistencia: z.boolean() })
 ]);
 
