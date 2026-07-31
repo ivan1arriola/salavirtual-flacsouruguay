@@ -1,6 +1,10 @@
 import { AlertTriangle, ArrowRight, CalendarPlus, Video } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import {
+  MeetIntegrationStatus,
+  MeetPendingNotice
+} from "@/src/components/meet-integration-status";
 import { db } from "@/src/lib/db";
 import { formatDateTime, formatShortDate } from "@/src/lib/ui/format";
 
@@ -75,6 +79,12 @@ export default async function HomePage() {
     { label: "Sin asistencia", value: pendingAssistance, alert: pendingAssistance > 0 },
     { label: "Histórico Zoom", value: zoomHistory }
   ] as const;
+  const hasPendingMeet = upcoming.some((meeting) =>
+    meeting.eventosProveedor.some(
+      ({ proveedor, estadoIntegracion }) =>
+        proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
+    )
+  );
 
   return (
     <>
@@ -113,6 +123,8 @@ export default async function HomePage() {
           </Link>
         </div>
 
+        {hasPendingMeet ? <MeetPendingNotice /> : null}
+
         {upcoming.length === 0 ? (
           <div className="empty-state">
             <Video size={24} aria-hidden="true" />
@@ -126,7 +138,7 @@ export default async function HomePage() {
                   <th>Fecha</th>
                   <th>Reunión</th>
                   <th>Programa</th>
-                  <th>Host</th>
+                  <th>Sala / Meet</th>
                   <th>Asistencia</th>
                 </tr>
               </thead>
@@ -147,7 +159,12 @@ export default async function HomePage() {
                         </small>
                       </td>
                       <td>{association.programa.nombre}</td>
-                      <td>{meetEvent?.cuentaProveedor?.nombre ?? "Zoom histórico"}</td>
+                      <td>
+                        <strong>{meetEvent?.cuentaProveedor?.nombre ?? "Sin sala"}</strong>
+                        <small>
+                          <MeetIntegrationStatus status={meetEvent?.estadoIntegracion} />
+                        </small>
+                      </td>
                       <td>
                         {meeting.requiereAsistencia && meeting.asignaciones.length === 0 ? (
                           <span className="status status-warning">

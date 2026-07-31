@@ -9,3 +9,5 @@ dist/
 *.zip
 tsconfig.tsbuildinfo
 prisma/dev.db*
+.vercel
+.env*

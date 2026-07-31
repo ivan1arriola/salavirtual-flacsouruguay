@@ -1,13 +1,14 @@
 import { CheckCircle2, Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 
 export default async function ConfiguracionPage() {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
-  const [configuration, hosts, programs] = await Promise.all([
+  const [configuration, hosts, programs, pendingMeet] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -16,6 +17,16 @@ export default async function ConfiguracionPage() {
     db.programa.findMany({
       orderBy: { nombre: "asc" },
       include: { _count: { select: { docentes: true } } }
+    }),
+    db.eventoProveedor.count({
+      where: {
+        proveedor: { tipo: "GOOGLE_MEET" },
+        estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
+        instancia: {
+          inicioProgramadoAt: { gte: new Date() },
+          estado: "PROGRAMADA"
+        }
+      }
     })
   ]);
 
@@ -27,6 +38,9 @@ export default async function ConfiguracionPage() {
       </header>
 
       <div className="settings-grid">
+        <section className="content-section settings-wide">
+          <PendingMeetButton count={pendingMeet} />
+        </section>
         <WorkspaceConfigForm
           initial={configuration ? {
             serviceAccountEmail: configuration.serviceAccountEmail,

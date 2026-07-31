@@ -1,6 +1,10 @@
 import { CalendarPlus, ExternalLink, Search } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import {
+  MeetIntegrationStatus,
+  MeetPendingNotice
+} from "@/src/components/meet-integration-status";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 
@@ -9,12 +13,14 @@ export default async function ReunionesPage({
 }: Readonly<{ searchParams: Promise<{ q?: string }> }>) {
   const session = await auth();
   const { q = "" } = await searchParams;
+  const now = new Date();
   const teacherFilter =
     session?.user.role === "DOCENTE"
       ? { docentePrograma: { docente: { usuarioId: session.user.id } } }
       : {};
   const meetings = await db.instanciaSala.findMany({
     where: {
+      finProgramadoAt: { gte: now },
       solicitud: {
         ...teacherFilter,
         ...(q
@@ -31,7 +37,7 @@ export default async function ReunionesPage({
           : {})
       }
     },
-    orderBy: { inicioProgramadoAt: "desc" },
+    orderBy: { inicioProgramadoAt: "asc" },
     take: 100,
     include: {
       solicitud: {
@@ -47,6 +53,12 @@ export default async function ReunionesPage({
       eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
     }
   });
+  const hasPendingMeet = meetings.some((meeting) =>
+    meeting.eventosProveedor.some(
+      ({ proveedor, estadoIntegracion }) =>
+        proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
+    )
+  );
 
   return (
     <>
@@ -76,24 +88,33 @@ export default async function ReunionesPage({
       </form>
 
       <section className="content-section">
+        {hasPendingMeet ? <MeetPendingNotice /> : null}
         <div className="table-wrap">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Fecha</th><th>Reunión</th><th>Docente / Programa</th>
+                <th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Docente / Programa</th>
                 <th>Proveedor</th><th>Estado</th><th>Acceso</th>
               </tr>
             </thead>
             <tbody>
               {meetings.map((meeting) => {
                 const association = meeting.solicitud.docentePrograma;
-                const event = meeting.eventosProveedor[0];
+                const event =
+                  meeting.eventosProveedor.find(
+                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                  ) ?? meeting.eventosProveedor[0];
                 return (
                   <tr key={meeting.id}>
                     <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
                     <td><strong>{meeting.solicitud.titulo}</strong><small>{meeting.solicitud.modalidad.toLowerCase()}</small></td>
                     <td><strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</strong><small>{association.programa.nombre}</small></td>
-                    <td><strong>{event?.cuentaProveedor?.nombre ?? event?.proveedor.nombre}</strong><small>{event?.codigoReunion ?? "Sin código"}</small></td>
+                    <td>
+                      <strong>{event?.cuentaProveedor?.nombre ?? event?.proveedor.nombre}</strong>
+                      <small>
+                        <MeetIntegrationStatus status={event?.estadoIntegracion} />
+                      </small>
+                    </td>
                     <td><span className={`status status-${statusTone(meeting.estado)}`}>{meeting.estado.toLowerCase().replace("_", " ")}</span></td>
                     <td>
                       {event?.joinUrl ? (

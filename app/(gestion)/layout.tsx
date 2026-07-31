@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/src/components/app-shell";
 import "./gestion.css";
+import "./operations.css";
+import "./settings.css";
 
 export default async function GestionLayout({
   children

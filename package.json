@@ -19,6 +19,8 @@
     "migrate:meetings:dry": "tsx scripts/migrate-legacy-meetings.ts",
     "migrate:meetings": "tsx scripts/migrate-legacy-meetings.ts --apply",
     "seed:meet-hosts": "tsx scripts/seed-meet-hosts.ts",
+    "assign:meet-hosts:dry": "tsx scripts/assign-future-meet-hosts.ts",
+    "assign:meet-hosts": "tsx scripts/assign-future-meet-hosts.ts --apply",
     "test": "vitest run",
     "validate:schema": "node scripts/validate-schema.mjs"
   },

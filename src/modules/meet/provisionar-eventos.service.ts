@@ -47,8 +47,10 @@ export async function provisionarEventosMeet(
   );
   if (typeof privateKey !== "string") return privateKey;
 
-  return Promise.all(
-    eventos.map(async (evento): Promise<ProvisionResult> => {
+  return procesarEnLotes(
+    eventos,
+    5,
+    async (evento): Promise<ProvisionResult> => {
       const hostEmail = evento.cuentaProveedor?.emailOrganizador;
       if (!hostEmail) {
         return registrarError(
@@ -95,7 +97,31 @@ export async function provisionarEventosMeet(
             : "Error desconocido de Google.";
         return registrarError(dependencies.db, evento.id, message);
       }
-    }),
+    },
+  );
+}
+
+async function procesarEnLotes<T, R>(
+  values: readonly T[],
+  size: number,
+  process: (value: T) => Promise<R>,
+): Promise<readonly R[]> {
+  const batches = values.reduce<readonly (readonly T[])[]>(
+    (result, value, index) =>
+      index % size === 0
+        ? [...result, [value]]
+        : [
+            ...result.slice(0, -1),
+            [...(result[result.length - 1] ?? []), value],
+          ],
+    [],
+  );
+  return batches.reduce<Promise<readonly R[]>>(
+    async (previous, batch) => [
+      ...(await previous),
+      ...(await Promise.all(batch.map(process))),
+    ],
+    Promise.resolve([]),
   );
 }
 

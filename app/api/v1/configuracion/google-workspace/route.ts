@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { cifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { actualizarConfiguracionGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
+import {
+  actualizarSeccionGoogleWorkspace,
+  resolverActorConfiguracion
+} from "@/src/modules/configuracion/google-workspace.service";
 
 export const runtime = "nodejs";
 
@@ -18,6 +21,7 @@ export async function GET() {
       serviceAccountEmail: true,
       serviceAccountSubject: true,
       driveDestinationId: true,
+      privateKeyCifrada: true,
       activa: true,
       version: true,
       updatedAt: true
@@ -26,7 +30,11 @@ export async function GET() {
 
   return NextResponse.json({
     configuracion: configuracion
-      ? { ...configuracion, privateKeyConfigurada: true }
+      ? {
+          ...configuracion,
+          privateKeyCifrada: undefined,
+          privateKeyConfigurada: Boolean(configuracion.privateKeyCifrada)
+        }
       : null
   });
 }
@@ -39,13 +47,19 @@ export async function PUT(request: Request) {
 
   const input = await request.json().catch(() => null);
   try {
-    const configuracion = await actualizarConfiguracionGoogleWorkspace(
+    const actor = await resolverActorConfiguracion(db, {
+      id: session.user.id,
+      email: session.user.email
+    });
+    if (!actor) {
+      return NextResponse.json(
+        { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
+        { status: 401 }
+      );
+    }
+    const configuracion = await actualizarSeccionGoogleWorkspace(
       { db, cifrar: cifrarConfiguracion },
-      {
-        id: session.user.id,
-        rol: session.user.role,
-        activo: true
-      },
+      actor,
       input
     );
 
