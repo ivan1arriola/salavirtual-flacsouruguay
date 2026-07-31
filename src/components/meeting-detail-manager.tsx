@@ -30,14 +30,19 @@ export function MeetingDetailManager({
   async function request(id: string, init: RequestInit) {
     setBusy(id);
     setMessage("");
-    const response = await fetch(`/api/v1/reuniones/${solicitudId}/encuentros${id ? `/${id}` : ""}`, {
-      ...init,
-      headers: { "Content-Type": "application/json" }
-    });
-    const result = await response.json().catch(() => ({}));
-    setBusy(null);
-    setMessage(response.ok ? result.message ?? "Cambios guardados." : result.error ?? "No se pudo completar la operación.");
-    if (response.ok) router.refresh();
+    try {
+      const response = await fetch(`/api/v1/reuniones/${solicitudId}/encuentros${id ? `/${id}` : ""}`, {
+        ...init,
+        headers: { "Content-Type": "application/json" }
+      });
+      const result = await response.json().catch(() => ({}));
+      setMessage(response.ok ? result.message ?? "Cambios guardados." : result.error ?? "No se pudo completar la operación.");
+      if (response.ok) router.refresh();
+    } catch {
+      setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   function add(formData: FormData) {

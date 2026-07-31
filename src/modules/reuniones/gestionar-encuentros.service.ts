@@ -114,14 +114,6 @@ export async function actualizarEncuentro(
   if (!meeting || meeting.estado !== "PROGRAMADA") throw new Error("El encuentro no se puede modificar.");
 
   const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-  const credentials = event?.externalEventId || event?.codigoReunion
-    ? await cargarCredencialesEncuentro(
-        dependencies.db,
-        dependencies.descifrar,
-        event.cuentaProveedor?.emailOrganizador
-      )
-    : null;
-
   if (input.accion === "EDITAR_FECHA") {
     if (input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
     if (event?.cuentaProveedorId) {
@@ -139,7 +131,12 @@ export async function actualizarEncuentro(
       });
       if (conflict) throw new Error("La sala Meet ya está ocupada en ese horario.");
     }
-    if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador && credentials) {
+    if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
+      const credentials = await cargarCredencialesEncuentro(
+        dependencies.db,
+        dependencies.descifrar,
+        event.cuentaProveedor.emailOrganizador
+      );
       await dependencies.crearProvider(credentials).actualizarEvento(
         event.cuentaProveedor.emailOrganizador,
         event.externalEventId,
@@ -163,14 +160,9 @@ export async function actualizarEncuentro(
         fin: meeting.finProgramadoAt.toISOString()
       }, { inicio: input.inicio.toISOString(), fin: input.fin.toISOString() });
     });
-    return;
+    return { warning: null };
   }
 
-  if (event?.codigoReunion && credentials) {
-    await dependencies.configurarEspacio(credentials, event.codigoReunion, {
-      requiereAsistencia: input.requiereAsistencia
-    });
-  }
   await dependencies.db.$transaction(async (tx) => {
     await tx.instanciaSala.update({
       where: { id: meeting.id },
@@ -193,6 +185,24 @@ export async function actualizarEncuentro(
       requiereAsistencia: meeting.requiereAsistencia
     }, { requiereAsistencia: input.requiereAsistencia });
   });
+
+  if (!event?.codigoReunion) return { warning: null };
+  try {
+    const credentials = await cargarCredencialesEncuentro(
+      dependencies.db,
+      dependencies.descifrar,
+      event.cuentaProveedor?.emailOrganizador
+    );
+    await dependencies.configurarEspacio(credentials, event.codigoReunion, {
+      requiereAsistencia: input.requiereAsistencia
+    });
+    return { warning: null };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Error desconocido de Google Workspace.";
+    return {
+      warning: `La asistencia se actualizo en la app, pero Google Meet no pudo sincronizarse: ${detail}`
+    };
+  }
 }
 
 export async function eliminarEncuentro(

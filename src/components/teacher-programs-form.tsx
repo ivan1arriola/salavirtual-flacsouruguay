@@ -8,11 +8,15 @@ type ProgramOption = Readonly<{ id: string; name: string }>;
 export function TeacherProgramsForm({
   programs,
   initialSelectedIds,
-  saveAction
+  saveAction,
+  title = "Mis programas",
+  targetUserId
 }: Readonly<{
   programs: readonly ProgramOption[];
   initialSelectedIds: readonly string[];
   saveAction: (formData: FormData) => Promise<void>;
+  title?: string;
+  targetUserId?: string;
 }>) {
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<readonly string[]>(initialSelectedIds);
@@ -30,9 +34,10 @@ export function TeacherProgramsForm({
   return (
     <section className="content-section settings-wide">
       <div className="section-heading">
-        <div><h2>Mis programas</h2><p>{selectedIds.length} programas seleccionados.</p></div>
+        <div><h2>{title}</h2><p>{selectedIds.length} programas seleccionados.</p></div>
       </div>
       <form className="profile-form" action={saveAction}>
+        {targetUserId ? <input type="hidden" name="usuarioId" value={targetUserId} /> : null}
         {selectedIds.map((id) => <input key={id} type="hidden" name="programaIds" value={id} />)}
         <label className="program-search">
           <Search size={17} aria-hidden="true" />

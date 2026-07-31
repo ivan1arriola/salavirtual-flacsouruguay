@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  puedeGestionarProgramasDocente,
   puedeGestionarProgramasPropios,
   programasDocenteSchema
 } from "../src/modules/usuarios/programas-docente.domain";
@@ -9,6 +10,12 @@ describe("programas propios del docente", () => {
     expect(puedeGestionarProgramasPropios({ id: "d", rol: "DOCENTE", activo: true })).toBe(true);
     expect(puedeGestionarProgramasPropios({ id: "a", rol: "ADMINISTRACION", activo: true })).toBe(false);
     expect(puedeGestionarProgramasPropios({ id: "d", rol: "DOCENTE", activo: false })).toBe(false);
+  });
+
+  it("permite a Administracion gestionar otro docente", () => {
+    expect(puedeGestionarProgramasDocente({ id: "admin", rol: "ADMINISTRACION", activo: true }, "docente")).toBe(true);
+    expect(puedeGestionarProgramasDocente({ id: "docente", rol: "DOCENTE", activo: true }, "docente")).toBe(true);
+    expect(puedeGestionarProgramasDocente({ id: "otro", rol: "DOCENTE", activo: true }, "docente")).toBe(false);
   });
 
   it("acepta una seleccion vacia y elimina identificadores repetidos", () => {

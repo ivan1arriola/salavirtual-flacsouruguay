@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
+  puedeGestionarProgramasDocente,
   puedeGestionarProgramasPropios,
   programasDocenteSchema
 } from "./programas-docente.domain";
@@ -13,26 +14,45 @@ export async function actualizarProgramasPropios(
   if (!puedeGestionarProgramasPropios(actor)) {
     throw new Error("Solo los docentes pueden gestionar sus programas.");
   }
+  return actualizarProgramasDocente(db, actor, actor.id, rawInput);
+}
+
+export async function actualizarProgramasDocente(
+  db: PrismaClient,
+  actor: SessionActor,
+  docenteUsuarioId: string,
+  rawInput: unknown
+): Promise<readonly string[]> {
+  if (!puedeGestionarProgramasDocente(actor, docenteUsuarioId)) {
+    throw new Error("No tenes permisos para gestionar los programas de este docente.");
+  }
   const { programaIds } = programasDocenteSchema.parse(rawInput);
 
   return db.$transaction(async (tx) => {
-    const usuario = await tx.usuario.findUnique({
-      where: { id: actor.id },
-      select: {
-        id: true,
-        rol: true,
-        activo: true,
-        docente: {
-          select: {
-            id: true,
-            programas: { where: { activo: true }, select: { programaId: true } }
+    const [actorActual, usuario] = await Promise.all([
+      tx.usuario.findUnique({
+        where: { id: actor.id },
+        select: { id: true, rol: true, activo: true }
+      }),
+      tx.usuario.findUnique({
+        where: { id: docenteUsuarioId },
+        select: {
+          id: true,
+          rol: true,
+          activo: true,
+          docente: {
+            select: {
+              id: true,
+              programas: { where: { activo: true }, select: { programaId: true } }
+            }
           }
         }
-      }
-    });
-    if (!usuario || !puedeGestionarProgramasPropios(usuario)) {
-      throw new Error("La sesion ya no corresponde a un docente activo.");
+      })
+    ]);
+    if (!actorActual || !puedeGestionarProgramasDocente(actorActual, docenteUsuarioId)) {
+      throw new Error("La sesion ya no tiene permisos para gestionar estos programas.");
     }
+    if (!usuario || usuario.rol !== "DOCENTE") throw new Error("El usuario no es docente.");
 
     const programasValidos = await tx.programa.count({
       where: { id: { in: programaIds }, activo: true }
@@ -61,7 +81,7 @@ export async function actualizarProgramasPropios(
 
     await tx.auditoria.create({
       data: {
-        actorUsuarioId: usuario.id,
+        actorUsuarioId: actorActual.id,
         accion: "PROGRAMAS_DOCENTE_ACTUALIZADOS",
         entidadTipo: "Docente",
         entidadId: docente.id,

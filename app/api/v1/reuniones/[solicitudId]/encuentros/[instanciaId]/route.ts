@@ -31,18 +31,23 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
       crearProvider: crearGoogleCalendarProvider,
       configurarEspacio: configurarGoogleMeetExistente
     };
+    let warning: string | null = null;
     if (method === "DELETE") {
       await eliminarEncuentro(dependencies, actor, solicitudId, instanciaId);
     } else {
-      await actualizarEncuentro(
+      const result = await actualizarEncuentro(
         dependencies,
         actor,
         solicitudId,
         instanciaId,
         await request.json().catch(() => null)
       );
+      warning = result.warning;
     }
-    return NextResponse.json({ message: method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado." });
+    return NextResponse.json({
+      message: warning ?? (method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado."),
+      warning
+    });
   } catch (error) {
     return NextResponse.json({
       error: error instanceof Error ? error.message : "No se pudo gestionar el encuentro."
