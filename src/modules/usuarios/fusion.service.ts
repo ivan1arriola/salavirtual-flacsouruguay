@@ -41,7 +41,7 @@ export async function fusionarUsuariosDocentes(
       tx.usuario.findUnique({
         where: { id: input.usuarioOrigenId },
         include: {
-          persona: { include: { docentes: { include: { programas: true } } } },
+          docente: { include: { programas: true } },
           emailAliases: true,
           cuentasGoogle: true
         }
@@ -49,7 +49,7 @@ export async function fusionarUsuariosDocentes(
       tx.usuario.findUnique({
         where: { id: input.usuarioDestinoId },
         include: {
-          persona: { include: { docentes: { include: { programas: true } } } }
+          docente: { include: { programas: true } }
         }
       })
     ]);
@@ -57,8 +57,8 @@ export async function fusionarUsuariosDocentes(
     if (!actor || !origen || !destino) {
       throw new Error("No se encontro el actor, el usuario de origen o el usuario de destino.");
     }
-    const docenteOrigen = origen.persona.docentes[0];
-    const docenteDestino = destino.persona.docentes[0];
+    const docenteOrigen = origen.docente;
+    const docenteDestino = destino.docente;
     const adaptarUsuario = (
       usuario: typeof origen | typeof destino,
       docente: typeof docenteOrigen | typeof docenteDestino
@@ -129,7 +129,8 @@ export async function fusionarUsuariosDocentes(
         motivo: input.motivo,
         snapshotOrigen: {
           id: origen.id,
-          personaId: origen.personaId,
+          nombres: origen.nombres,
+          apellidos: origen.apellidos,
           emailPrincipal: origen.emailPrincipal,
           aliases: origen.emailAliases.map((item) => item.email),
           cuentasGoogle: origen.cuentasGoogle.map((item) => item.email)

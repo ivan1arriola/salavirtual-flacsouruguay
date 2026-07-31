@@ -10,7 +10,8 @@ export const usuarioIdSchema = z
 
 export const crearUsuarioSchema = z.object({
   id: usuarioIdSchema,
-  personaId: z.string().trim().min(1),
+  nombres: z.string().trim().min(1),
+  apellidos: z.string().trim().optional(),
   emailPrincipal: z.email().optional(),
   password: z.string().min(10, "La contrasena debe tener al menos 10 caracteres."),
   rol: z.enum(ROLES_USUARIO).default("DOCENTE")

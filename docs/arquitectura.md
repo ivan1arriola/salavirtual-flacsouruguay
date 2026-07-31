@@ -20,6 +20,8 @@
 - No se busca que Prisma, HTTP o Google sean puros: se busca que esos efectos no contengan decisiones de negocio.
 - Reloj, red y persistencia se reciben como dependencias para que los casos de uso sean deterministas en pruebas.
 - La configuracion de login se valida en el dominio y solo el adaptador `src/lib/auth/config.ts` lee `process.env`.
+- La cuenta de servicio Google y la carpeta de Drive se configuran desde Administracion y se guardan cifradas en la base.
+- Solo OAuth (`AUTH_GOOGLE_ID` y `AUTH_GOOGLE_SECRET`) y la clave tecnica de cifrado permanecen en el entorno.
 
 ## Capas
 

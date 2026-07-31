@@ -4,12 +4,11 @@
 
 El modelo evita repetir datos derivados y separa responsabilidades:
 
-- `Persona`: identidad humana.
-- `Usuario`: identificador local, contrasena, rol y acceso.
+- `Usuario`: identidad, identificador local, contrasena, rol y acceso.
 - `CuentaGoogleFlacso`: cuentas Google vinculadas; un usuario puede tener varias.
 - `UsuarioEmailAlias`: otros correos validos para localizar al usuario.
 - `UsuarioFusion`: trazabilidad inmutable de unificacion de docentes.
-- `Docente` / `Asistente`: perfiles operativos sobre una persona.
+- `Docente` / `Asistente`: perfiles operativos opcionales de un usuario.
 - `UnidadAcademica` / `Programa`: estructura institucional.
 - `DocentePrograma`: asociacion explicita entre docente y programa.
 - `SolicitudSala`: pedido academico originado desde un `DocentePrograma`.

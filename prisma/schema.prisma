@@ -7,52 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Persona {
-  id         String      @id @default(cuid())
-  nombres    String
-  apellidos  String?
-  documento  String?
-  telefono   String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  usuarios   Usuario[]
-  docentes   Docente[]
-  asistentes Asistente[]
+model Usuario {
+  id                                String                         @id
+  legacyZoomUserId                  String?                        @unique
+  nombres                           String
+  apellidos                         String?
+  telefono                          String?
+  emailPrincipal                    String?                        @unique
+  emailVerificadoAt                 DateTime?
+  imagenUrl                         String?
+  passwordHash                      String?
+  debeCambiarPassword               Boolean                        @default(false)
+  rol                               RolUsuario                     @default(DOCENTE)
+  activo                            Boolean                        @default(true)
+  ultimoAccesoAt                    DateTime?
+  ultimoAccesoIp                    String?
+  ultimoAccesoAgente                String?
+  ultimoProveedor                   String?
+  fusionadoEnId                     String?
+  fusionadoAt                       DateTime?
+  createdAt                         DateTime                       @default(now())
+  updatedAt                         DateTime                       @updatedAt
+  fusionadoEn                       Usuario?                       @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
+  usuariosFusionados                Usuario[]                      @relation("UsuarioFusionDestino")
+  solicitudesCreadas                SolicitudSala[]                @relation("SolicitudCreadaPor")
+  auditorias                        Auditoria[]                    @relation("AuditoriaActor")
+  emailAliases                      UsuarioEmailAlias[]
+  cuentasGoogle                     CuentaGoogleFlacso[]
+  sesiones                          SesionUsuario[]
+  authenticators                    Authenticator[]
+  fusionesComoOrigen                UsuarioFusion[]                @relation("FusionUsuarioOrigen")
+  fusionesComoDestino               UsuarioFusion[]                @relation("FusionUsuarioDestino")
+  fusionesEjecutadas                UsuarioFusion[]                @relation("FusionEjecutadaPor")
+  configuracionesGoogleActualizadas ConfiguracionGoogleWorkspace[] @relation("ConfiguracionGoogleActualizadaPor")
+  docente                           Docente?
+  asistente                         Asistente?
 
   @@index([apellidos, nombres])
-}
-
-model Usuario {
-  id                  String               @id
-  personaId           String
-  emailPrincipal      String?              @unique
-  emailVerificadoAt   DateTime?
-  imagenUrl           String?
-  passwordHash        String
-  rol                 RolUsuario           @default(DOCENTE)
-  activo              Boolean              @default(true)
-  ultimoAccesoAt      DateTime?
-  ultimoAccesoIp      String?
-  ultimoAccesoAgente  String?
-  ultimoProveedor     String?
-  fusionadoEnId       String?
-  fusionadoAt         DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  persona             Persona              @relation(fields: [personaId], references: [id], onDelete: Restrict)
-  fusionadoEn         Usuario?             @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
-  usuariosFusionados  Usuario[]            @relation("UsuarioFusionDestino")
-  solicitudesCreadas  SolicitudSala[]      @relation("SolicitudCreadaPor")
-  auditorias          Auditoria[]          @relation("AuditoriaActor")
-  emailAliases        UsuarioEmailAlias[]
-  cuentasGoogle       CuentaGoogleFlacso[]
-  sesiones            SesionUsuario[]
-  authenticators      Authenticator[]
-  fusionesComoOrigen  UsuarioFusion[]      @relation("FusionUsuarioOrigen")
-  fusionesComoDestino UsuarioFusion[]      @relation("FusionUsuarioDestino")
-  fusionesEjecutadas  UsuarioFusion[]      @relation("FusionEjecutadaPor")
-
-  @@index([personaId])
   @@index([rol, activo])
   @@index([fusionadoEnId])
 }
@@ -85,6 +76,22 @@ model UsuarioFusion {
   @@index([ejecutadaPorId, createdAt])
 }
 
+model ConfiguracionGoogleWorkspace {
+  id                    String   @id @default("principal")
+  serviceAccountEmail   String
+  privateKeyCifrada     String   @db.Text
+  serviceAccountSubject String
+  driveDestinationId    String
+  activa                Boolean  @default(true)
+  version               Int      @default(1)
+  actualizadaPorId      String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  actualizadaPor        Usuario  @relation("ConfiguracionGoogleActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([actualizadaPorId, updatedAt])
+}
+
 model UnidadAcademica {
   id        String     @id @default(cuid())
   nombre    String     @unique
@@ -106,11 +113,12 @@ model Programa {
 }
 
 model Docente {
-  id            String            @id @default(cuid())
-  personaId     String            @unique
-  observaciones String?
-  persona       Persona           @relation(fields: [personaId], references: [id], onDelete: Restrict)
-  programas     DocentePrograma[]
+  id                 String            @id @default(cuid())
+  usuarioId          String            @unique
+  documentoIdentidad String?
+  observaciones      String?
+  usuario            Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  programas          DocentePrograma[]
 }
 
 model DocentePrograma {
@@ -132,11 +140,11 @@ model DocentePrograma {
 
 model Asistente {
   id                String                    @id @default(cuid())
-  personaId         String                    @unique
+  usuarioId         String                    @unique
   aliasOperativo    String?
   disponibleGeneral Boolean                   @default(true)
   datosPago         String?
-  persona           Persona                   @relation(fields: [personaId], references: [id], onDelete: Restrict)
+  usuario           Usuario                   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   disponibilidades  DisponibilidadAsistente[]
   intereses         InteresAsistenteEvento[]
   asignaciones      AsignacionAsistente[]

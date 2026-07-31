@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buscarRolAnterior, puedeAdministrar } from "../src/modules/usuarios/roles";
+import {
+  buscarRolAnterior,
+  esRolUsuario,
+  puedeAdministrar
+} from "../src/modules/usuarios/roles";
 import { vincularCuentaGoogleSchema } from "../src/modules/usuarios/types";
 
 describe("migracion funcional de roles", () => {
@@ -18,6 +22,12 @@ describe("migracion funcional de roles", () => {
   it("reserva la administracion al rol neutral", () => {
     expect(puedeAdministrar("ADMINISTRACION")).toBe(true);
     expect(puedeAdministrar("DOCENTE")).toBe(false);
+  });
+
+  it("estrecha valores externos a roles conocidos", () => {
+    expect(esRolUsuario("ASISTENTE")).toBe(true);
+    expect(esRolUsuario("CONTADURIA")).toBe(false);
+    expect(esRolUsuario({ rol: "DOCENTE" })).toBe(false);
   });
 });
 

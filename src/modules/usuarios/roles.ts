@@ -25,3 +25,7 @@ export function mapearRolAnterior(rol: string): RolUsuario {
 export function puedeAdministrar(rol: RolUsuario): boolean {
   return rol === "ADMINISTRACION";
 }
+
+export function esRolUsuario(valor: unknown): valor is RolUsuario {
+  return typeof valor === "string" && ROLES_USUARIO.some((rol) => rol === valor);
+}
