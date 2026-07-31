@@ -88,7 +88,9 @@ async function aplicarPlan(
   plan: Awaited<ReturnType<typeof cargarPlanes>>[number]
 ): Promise<void> {
   const requierePassword = plan.cuentasGoogle.length === 0;
-  const passwordHash = requierePassword ? await hash(defaultPassword, 12) : null;
+  const passwordHash =
+    plan.passwordHash ?? (requierePassword ? await hash(defaultPassword, 12) : null);
+  const passwordTemporal = !plan.passwordHash && requierePassword;
 
   await target.$transaction(async (tx) => {
     const existing = await tx.usuario.findUnique({
@@ -107,7 +109,7 @@ async function aplicarPlan(
         emailVerificadoAt: plan.emailVerificadoAt,
         imagenUrl: plan.imagenUrl,
         passwordHash,
-        debeCambiarPassword: requierePassword,
+        debeCambiarPassword: passwordTemporal,
         rol: plan.rol,
         ultimoAccesoAt: plan.ultimoAccesoAt,
         ultimoAccesoIp: plan.ultimoAccesoIp,
@@ -207,7 +209,7 @@ async function aplicarPlan(
         valorNuevo: {
           legacyZoomUserId: plan.legacyZoomUserId,
           rol: plan.rol,
-          passwordTemporal: true
+          passwordTemporal
         }
       }
     });

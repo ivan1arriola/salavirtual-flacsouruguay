@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { cifrarConfiguracion } from "@/src/lib/config/encryption";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import {
-  actualizarSeccionGoogleWorkspace,
-  resolverActorConfiguracion
-} from "@/src/modules/configuracion/google-workspace.service";
+import { actualizarSeccionGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
 
 export const runtime = "nodejs";
 
@@ -51,7 +49,7 @@ export async function PUT(request: Request) {
 
   const input = await request.json().catch(() => null);
   try {
-    const actor = await resolverActorConfiguracion(db, {
+    const actor = await resolveSessionActor(db, {
       id: session.user.id,
       email: session.user.email
     });

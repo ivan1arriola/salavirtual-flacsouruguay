@@ -24,6 +24,7 @@
     "node_modules",
     "scripts/legacy-meetings/**/*.ts",
     "scripts/migrate-legacy-meetings.ts",
-    "scripts/migrate-legacy-users.ts"
+    "scripts/migrate-legacy-users.ts",
+    "scripts/restore-legacy-passwords.ts"
   ]
 }

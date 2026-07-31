@@ -16,6 +16,8 @@
     "db:studio": "prisma studio",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",
+    "restore:legacy-passwords:dry": "tsx scripts/restore-legacy-passwords.ts",
+    "restore:legacy-passwords": "tsx scripts/restore-legacy-passwords.ts --apply",
     "migrate:meetings:dry": "tsx scripts/migrate-legacy-meetings.ts",
     "migrate:meetings": "tsx scripts/migrate-legacy-meetings.ts --apply",
     "seed:meet-hosts": "tsx scripts/seed-meet-hosts.ts",

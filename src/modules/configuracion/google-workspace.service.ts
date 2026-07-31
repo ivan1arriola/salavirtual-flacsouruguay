@@ -11,25 +11,6 @@ export type DependenciasConfiguracionGoogle = Readonly<{
   cifrar: (value: string) => string;
 }>;
 
-export async function resolverActorConfiguracion(
-  db: PrismaClient,
-  identity: Readonly<{ id: string; email?: string | null }>
-): Promise<ActorConfiguracion | null> {
-  const byId = await db.usuario.findUnique({
-    where: { id: identity.id },
-    select: { id: true, rol: true, activo: true }
-  });
-  if (byId) return byId;
-
-  const email = identity.email?.trim();
-  if (!email) return null;
-
-  return db.usuario.findFirst({
-    where: { emailPrincipal: { equals: email, mode: "insensitive" } },
-    select: { id: true, rol: true, activo: true }
-  });
-}
-
 export async function actualizarSeccionGoogleWorkspace(
   dependencias: DependenciasConfiguracionGoogle,
   actor: ActorConfiguracion,

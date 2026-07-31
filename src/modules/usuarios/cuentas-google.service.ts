@@ -22,6 +22,17 @@ export async function reemplazarCuentasGooglePermitidas(
   const { emails } = reemplazarCuentasGoogleSchema.parse(input);
 
   return dependencias.db.$transaction(async (tx) => {
+    const actorActual = await tx.usuario.findUnique({
+      where: { id: actor.id },
+      select: { id: true, rol: true, activo: true }
+    });
+    if (!actorActual) {
+      throw new Error("La sesión no corresponde a un usuario vigente. Volvé a iniciar sesión.");
+    }
+    if (!puedeGestionarCuentasGoogle(actorActual)) {
+      throw new Error("Solo Administracion puede gestionar cuentas Google.");
+    }
+
     const usuario = await tx.usuario.findUnique({
       where: { id: usuarioId },
       select: {
@@ -82,7 +93,7 @@ export async function reemplazarCuentasGooglePermitidas(
     });
     await tx.auditoria.create({
       data: {
-        actorUsuarioId: actor.id,
+        actorUsuarioId: actorActual.id,
         accion: "CUENTAS_GOOGLE_PERMITIDAS_REEMPLAZADAS",
         entidadTipo: "Usuario",
         entidadId: usuario.id,

@@ -19,6 +19,7 @@ export type UsuarioLegacy = Readonly<{
   email: string;
   emailVerified: Date | null;
   image: string | null;
+  passwordHash: string | null;
   role: string;
   createdAt: Date;
   updatedAt: Date;
@@ -47,6 +48,7 @@ export type PlanUsuarioMigrado = Readonly<{
   emailPrincipal: string;
   emailVerificadoAt: Date | null;
   imagenUrl: string | null;
+  passwordHash: string | null;
   rol: RolUsuario;
   ultimoAccesoAt: Date | null;
   ultimoAccesoIp: string | null;
@@ -125,6 +127,7 @@ export function planificarMigracionUsuarios(
         emailPrincipal,
         emailVerificadoAt: usuario.emailVerified,
         imagenUrl: usuario.image,
+        passwordHash: usuario.passwordHash,
         rol: buscarRolAnterior(usuario.role) ?? "DOCENTE",
         ultimoAccesoAt: usuario.lastLoginAt,
         ultimoAccesoIp: usuario.lastLoginIp,

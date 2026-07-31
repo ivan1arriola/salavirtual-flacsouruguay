@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { reemplazarCuentasGooglePermitidas } from "@/src/modules/usuarios/cuentas-google.service";
 
@@ -54,13 +55,19 @@ export async function PUT(request: Request, context: RouteContext) {
   const input = await request.json().catch(() => null);
 
   try {
+    const actor = await resolveSessionActor(db, {
+      id: session.user.id,
+      email: session.user.email
+    });
+    if (!actor) {
+      return NextResponse.json(
+        { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
+        { status: 401 }
+      );
+    }
     const emails = await reemplazarCuentasGooglePermitidas(
       { db },
-      {
-        id: session.user.id,
-        rol: session.user.role,
-        activo: true
-      },
+      actor,
       usuarioId,
       input
     );

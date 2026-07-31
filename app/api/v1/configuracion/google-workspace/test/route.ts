@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import {
   pruebaConfiguracionGoogleWorkspaceSchema
 } from "@/src/modules/configuracion/google-workspace.domain";
-import { resolverActorConfiguracion } from "@/src/modules/configuracion/google-workspace.service";
 import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const actor = await resolverActorConfiguracion(db, {
+    const actor = await resolveSessionActor(db, {
       id: session.user.id,
       email: session.user.email
     });
