@@ -16,7 +16,6 @@ export default async function MiHistoricoPage() {
 
   const meetings = await obtenerAsistenciasPersonales(db, actor.id, "HISTORICO");
   const periods = agruparPorMes(meetings);
-  const summary = resumirAsistencias(meetings);
 
   return (
     <>
@@ -24,13 +23,6 @@ export default async function MiHistoricoPage() {
         <div><p className="page-eyebrow">Asistencia</p><h1>Mi histórico</h1><p>Horas e importes personales de meses anteriores.</p></div>
         <History size={28} color="var(--brand)" aria-hidden="true" />
       </header>
-
-      <section className="metric-grid" aria-label="Resumen histórico">
-        <div className="stat"><span>Reuniones</span><strong>{summary.reuniones}</strong></div>
-        <div className="stat"><span>Períodos</span><strong>{periods.length}</strong></div>
-        <div className="stat"><span>Horas totales</span><strong>{formatMinutes(summary.minutosVirtuales + summary.minutosHibridos)}</strong></div>
-        <div className="stat"><span>Importe acumulado</span><strong>{formatMoney(summary.monto)}</strong></div>
-      </section>
 
       {periods.length === 0 ? (
         <section className="content-section"><div className="empty-state"><History size={24} /><p>Todavía no tenés reuniones en meses anteriores.</p></div></section>

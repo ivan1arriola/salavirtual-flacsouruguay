@@ -76,7 +76,7 @@
 
 .account-block {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 34px;
+  grid-template-columns: 32px minmax(0, 1fr) 34px 34px;
   align-items: center;
   gap: 8px;
   margin-top: auto;
@@ -142,6 +142,12 @@
 .mobile-header,
 .mobile-nav {
   display: none;
+}
+
+.mobile-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .page-header,

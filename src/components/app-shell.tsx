@@ -14,6 +14,7 @@ import {
 import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
+import { AccountSwitcher } from "@/src/components/account-switcher";
 
 const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
@@ -47,6 +48,11 @@ export function AppShell({
     user.role === "ADMINISTRACION"
       ? [...operationalNav, ...adminNav]
       : operationalNav;
+  const rememberedAccount = {
+    id: user.id,
+    nombre: user.name ?? user.email ?? user.id,
+    identificador: user.email ?? user.id
+  };
 
   return (
     <div className="app-frame">
@@ -76,6 +82,7 @@ export function AppShell({
             <strong>{user.name ?? user.id}</strong>
             <small>{user.role.toLowerCase()}</small>
           </span>
+          <AccountSwitcher account={rememberedAccount} />
           <form
             action={async () => {
               "use server";
@@ -96,7 +103,10 @@ export function AppShell({
             <span className="brand-mark">F</span>
             <strong>Gestor Meet</strong>
           </Link>
-          <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
+          <span className="mobile-account-actions">
+            <AccountSwitcher account={rememberedAccount} />
+            <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
+          </span>
         </header>
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">

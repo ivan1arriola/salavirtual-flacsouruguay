@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { authConfig } from "@/src/lib/auth/config";
+import { RememberedAccounts } from "@/src/components/remembered-accounts";
 import { iniciarSesionGoogle, iniciarSesionLocal } from "./actions";
 
 const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
@@ -11,11 +12,11 @@ const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
 
 export default async function AccesoPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ error?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ error?: string; usuario?: string; cambiar?: string }> }>) {
   const session = await auth();
   if (session?.user) redirect("/");
 
-  const { error } = await searchParams;
+  const { error, usuario, cambiar } = await searchParams;
   const mensaje = error
     ? MENSAJES_ERROR[error] ?? "No se pudo iniciar sesion."
     : null;
@@ -28,6 +29,8 @@ export default async function AccesoPage({
           <h1 id="login-title">Gestor Google Meet</h1>
           <p>Ingresá con tu usuario, correo o una cuenta institucional autorizada.</p>
         </header>
+
+        {cambiar === "1" ? <RememberedAccounts /> : null}
 
         {mensaje ? (
           <p className="login-error" role="alert">
@@ -43,6 +46,7 @@ export default async function AccesoPage({
             type="text"
             autoComplete="username"
             placeholder="usuario@flacso.edu.uy"
+            defaultValue={usuario ?? ""}
             required
           />
 
