@@ -24,6 +24,16 @@ export default function HomePage() {
           <a href="#solicitudes">Solicitudes</a>
           <a href="#agenda">Agenda</a>
           <a href="#historico">Historico</a>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/acceso" });
+            }}
+          >
+            <button className="secondary-button" type="submit">
+              Salir
+            </button>
+          </form>
         </nav>
       </header>
 
@@ -76,3 +86,4 @@ export default function HomePage() {
     </main>
   );
 }
+import { signOut } from "@/auth";
