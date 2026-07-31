@@ -9,6 +9,7 @@ import {
   actualizarPerfilPersonal,
   cambiarPasswordPersonal
 } from "@/src/modules/usuarios/perfil.service";
+import { actualizarProgramasPropios } from "@/src/modules/usuarios/programas-docente.service";
 
 async function actorActual() {
   const session = await auth();
@@ -39,5 +40,18 @@ export async function guardarPassword(formData: FormData): Promise<void> {
     estado = "error-password";
   }
   revalidatePath("/mi-perfil");
+  redirect(`/mi-perfil?estado=${estado}`);
+}
+
+export async function guardarProgramas(formData: FormData): Promise<void> {
+  const actor = await actorActual();
+  let estado = "programas-guardados";
+  try {
+    await actualizarProgramasPropios(db, actor, { programaIds: formData.getAll("programaIds") });
+  } catch {
+    estado = "error-programas";
+  }
+  revalidatePath("/mi-perfil");
+  revalidatePath("/reuniones/nueva");
   redirect(`/mi-perfil?estado=${estado}`);
 }

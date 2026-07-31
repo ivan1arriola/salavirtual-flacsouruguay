@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { GoogleAccountsForm } from "@/src/components/google-accounts-form";
+import { UserRoleForm } from "@/src/components/user-role-form";
 import { db } from "@/src/lib/db";
 
 export default async function UsuarioPage({
@@ -23,11 +24,14 @@ export default async function UsuarioPage({
       <header className="page-header">
         <div><p className="page-eyebrow">{user.rol.toLowerCase()}</p><h1>{user.nombres} {user.apellidos}</h1><p>Usuario local: {user.id}</p></div>
       </header>
-      <GoogleAccountsForm
-        initialEmails={user.cuentasGoogle.map(({ email }) => email)}
-        hasPassword={Boolean(user.passwordHash)}
-        userId={user.id}
-      />
+      <div className="user-settings">
+        <UserRoleForm userId={user.id} initialRole={user.rol} />
+        <GoogleAccountsForm
+          initialEmails={user.cuentasGoogle.map(({ email }) => email)}
+          hasPassword={Boolean(user.passwordHash)}
+          userId={user.id}
+        />
+      </div>
     </>
   );
 }

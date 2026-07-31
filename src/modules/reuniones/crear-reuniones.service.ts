@@ -37,6 +37,7 @@ export async function crearReuniones(
         where: { id: input.docenteProgramaId },
         include: {
           docente: { select: { usuarioId: true } },
+          programa: { select: { activo: true } },
         },
       }),
       tx.cuentaProveedor.findUnique({
@@ -46,7 +47,7 @@ export async function crearReuniones(
         where: { tipo: "GOOGLE_MEET" },
       }),
     ]);
-    if (!docentePrograma?.activo) {
+    if (!docentePrograma?.activo || !docentePrograma.programa.activo) {
       throw new Error("La asociacion docente-programa no esta activa.");
     }
     if (

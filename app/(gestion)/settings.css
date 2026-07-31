@@ -16,6 +16,11 @@
   max-width: 720px;
 }
 
+.user-settings {
+  display: grid;
+  gap: 16px;
+}
+
 .account-email-list {
   display: grid;
   gap: 9px;

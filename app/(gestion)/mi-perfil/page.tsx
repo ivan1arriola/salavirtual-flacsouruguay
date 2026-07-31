@@ -1,15 +1,18 @@
 import { KeyRound, UserRound } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { TeacherProgramsForm } from "@/src/components/teacher-programs-form";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { guardarPassword, guardarPerfil } from "./actions";
+import { guardarPassword, guardarPerfil, guardarProgramas } from "./actions";
 
 const messages: Readonly<Record<string, string>> = {
   "perfil-guardado": "Tus datos fueron actualizados.",
   "password-guardada": "Tu contraseña fue actualizada.",
+  "programas-guardados": "Tus programas fueron actualizados.",
   "error-perfil": "No se pudieron guardar los datos. Revisá los campos.",
-  "error-password": "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación."
+  "error-password": "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación.",
+  "error-programas": "No se pudieron actualizar tus programas."
 };
 
 export default async function MiPerfilPage({
@@ -19,10 +22,18 @@ export default async function MiPerfilPage({
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
-  const user = await db.usuario.findUnique({
-    where: { id: actor.id },
-    include: { cuentasGoogle: { orderBy: { email: "asc" } } }
-  });
+  const [user, programs] = await Promise.all([
+    db.usuario.findUnique({
+      where: { id: actor.id },
+      include: {
+        cuentasGoogle: { orderBy: { email: "asc" } },
+        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } }
+      }
+    }),
+    actor.rol === "DOCENTE"
+      ? db.programa.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } })
+      : Promise.resolve([])
+  ]);
   if (!user) redirect("/acceso");
   const { estado } = await searchParams;
 
@@ -69,6 +80,14 @@ export default async function MiPerfilPage({
             <div className="form-actions"><span /><button className="primary-action" type="submit">Guardar contraseña</button></div>
           </form>
         </section>
+
+        {actor.rol === "DOCENTE" ? (
+          <TeacherProgramsForm
+            programs={programs.map(({ id, nombre }) => ({ id, name: nombre }))}
+            initialSelectedIds={user.docente?.programas.map(({ programaId }) => programaId) ?? []}
+            saveAction={guardarProgramas}
+          />
+        ) : null}
       </div>
     </>
   );
