@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  credencialesLoginSchema,
+  esCorreoAcceso,
   evaluarAccesoLocal,
+  normalizarIdentificadorAcceso,
   type UsuarioCredenciales
 } from "../src/modules/usuarios/credentials.domain";
 
@@ -16,6 +19,12 @@ const usuarioActivo: UsuarioCredenciales = {
 };
 
 describe("acceso local funcional", () => {
+  it("acepta y normaliza correos como identificador de acceso", () => {
+    expect(normalizarIdentificadorAcceso("  ASISTENTE@FLACSO.EDU.UY ")).toBe("asistente@flacso.edu.uy");
+    expect(esCorreoAcceso("asistente@flacso.edu.uy")).toBe(true);
+    expect(credencialesLoginSchema.parse({ usuario: " ASISTENTE@FLACSO.EDU.UY ", password: "clave" }).usuario).toBe("asistente@flacso.edu.uy");
+  });
+
   it("autoriza una cuenta activa con password valida", () => {
     expect(evaluarAccesoLocal(usuarioActivo, true)).toEqual({
       id: "docente",

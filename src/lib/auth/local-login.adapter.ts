@@ -1,23 +1,38 @@
 import { compare } from "bcryptjs";
 import { db } from "@/src/lib/db";
+import { esCorreoAcceso } from "@/src/modules/usuarios/credentials.domain";
 import type { DependenciasLogin } from "@/src/modules/usuarios/credentials.service";
 
+const loginSelect = {
+  id: true,
+  passwordHash: true,
+  debeCambiarPassword: true,
+  rol: true,
+  activo: true,
+  fusionadoEnId: true,
+  emailPrincipal: true,
+  nombres: true,
+  apellidos: true
+} as const;
+
 export const dependenciasLoginLocal: DependenciasLogin = Object.freeze({
-  buscarUsuario: async (usuarioId) => {
-    const usuario = await db.usuario.findUnique({
-      where: { id: usuarioId },
-      select: {
-        id: true,
-        passwordHash: true,
-        debeCambiarPassword: true,
-        rol: true,
-        activo: true,
-        fusionadoEnId: true,
-        emailPrincipal: true,
-        nombres: true,
-        apellidos: true
-      }
+  buscarUsuario: async (identificador) => {
+    const usuarioPorId = await db.usuario.findUnique({
+      where: { id: identificador },
+      select: loginSelect
     });
+    const usuario = usuarioPorId ?? (esCorreoAcceso(identificador)
+      ? await db.usuario.findFirst({
+          where: {
+            OR: [
+              { emailPrincipal: { equals: identificador, mode: "insensitive" } },
+              { emailAliases: { some: { email: { equals: identificador, mode: "insensitive" } } } },
+              { cuentasGoogle: { some: { email: { equals: identificador, mode: "insensitive" } } } }
+            ]
+          },
+          select: loginSelect
+        })
+      : null);
     if (!usuario) {
       return null;
     }

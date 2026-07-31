@@ -26,7 +26,7 @@ export default async function AccesoPage({
         <header className="login-header">
           <p className="eyebrow">FLACSO Uruguay</p>
           <h1 id="login-title">Gestor Google Meet</h1>
-          <p>Ingresá con tu usuario o una cuenta institucional autorizada.</p>
+          <p>Ingresá con tu usuario, correo o una cuenta institucional autorizada.</p>
         </header>
 
         {mensaje ? (
@@ -36,12 +36,13 @@ export default async function AccesoPage({
         ) : null}
 
         <form className="login-form" action={iniciarSesionLocal}>
-          <label htmlFor="usuario">Usuario</label>
+          <label htmlFor="usuario">Usuario o correo</label>
           <input
             id="usuario"
             name="usuario"
             type="text"
             autoComplete="username"
+            placeholder="usuario@flacso.edu.uy"
             required
           />
 

@@ -2,9 +2,18 @@ import { z } from "zod";
 import type { RolUsuario } from "./roles";
 
 export const credencialesLoginSchema = z.object({
-  usuario: z.string().trim().min(1),
+  usuario: z.string().trim().min(1).transform(normalizarIdentificadorAcceso),
   password: z.string().min(1)
 });
+
+export function normalizarIdentificadorAcceso(valor: string): string {
+  const identificador = valor.trim();
+  return identificador.includes("@") ? identificador.toLowerCase() : identificador;
+}
+
+export function esCorreoAcceso(valor: string): boolean {
+  return valor.includes("@");
+}
 
 export type UsuarioCredenciales = Readonly<{
   id: string;

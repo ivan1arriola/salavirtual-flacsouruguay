@@ -6,7 +6,7 @@ import {
 } from "./credentials.domain";
 
 export type DependenciasLogin = Readonly<{
-  buscarUsuario: (usuarioId: string) => Promise<UsuarioCredenciales | null>;
+  buscarUsuario: (identificador: string) => Promise<UsuarioCredenciales | null>;
   verificarPassword: (password: string, passwordHash: string) => Promise<boolean>;
   registrarAcceso: (usuarioId: string) => Promise<void>;
 }>;
