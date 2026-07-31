@@ -1,19 +1,28 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingForm } from "@/src/components/meeting-form";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { puedeAbrirCreacionReuniones } from "@/src/modules/reuniones/reuniones.domain";
 
 export default async function NuevaReunionPage() {
   const session = await auth();
-  if (!session?.user || session.user.role === "ASISTENTE") redirect("/reuniones");
+  if (!session?.user) redirect("/acceso");
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo || !puedeAbrirCreacionReuniones(actor.rol)) {
+    redirect("/reuniones");
+  }
 
   const [associations, hosts, assistants, cohosts] = await Promise.all([
     db.docentePrograma.findMany({
       where: {
         activo: true,
         programa: { activo: true },
-        ...(session.user.role === "DOCENTE"
-          ? { docente: { usuarioId: session.user.id } }
+        ...(actor.rol === "DOCENTE"
+          ? { docente: { usuarioId: actor.id } }
           : {})
       },
       orderBy: { programa: { nombre: "asc" } },

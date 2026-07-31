@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   crearReunionesSchema,
   diasDeReunion,
+  puedeAbrirCreacionReuniones,
   puedeCrearReuniones
 } from "../src/modules/reuniones/reuniones.domain";
 
@@ -42,5 +43,11 @@ describe("dias derivados de reuniones", () => {
     expect(puedeCrearReuniones("ADMINISTRACION", "admin", "docente")).toBe(true);
     expect(puedeCrearReuniones("DOCENTE", "docente", "docente")).toBe(true);
     expect(puedeCrearReuniones("DOCENTE", "otro", "docente")).toBe(false);
+  });
+
+  it("reserva el formulario de creacion a Administracion y Docente", () => {
+    expect(puedeAbrirCreacionReuniones("ADMINISTRACION")).toBe(true);
+    expect(puedeAbrirCreacionReuniones("DOCENTE")).toBe(true);
+    expect(puedeAbrirCreacionReuniones("ASISTENTE")).toBe(false);
   });
 });

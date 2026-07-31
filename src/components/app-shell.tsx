@@ -27,7 +27,14 @@ export function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const nav = user.role === "ADMINISTRACION" ? [...primaryNav, ...adminNav] : primaryNav;
+  const operationalNav =
+    user.role === "ASISTENTE"
+      ? primaryNav.filter(({ href }) => href !== "/reuniones/nueva")
+      : primaryNav;
+  const nav =
+    user.role === "ADMINISTRACION"
+      ? [...operationalNav, ...adminNav]
+      : operationalNav;
 
   return (
     <div className="app-frame">
@@ -81,7 +88,7 @@ export function AppShell({
         </header>
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
-          {primaryNav.slice(0, 4).map(({ href, label, icon: Icon }) => (
+          {operationalNav.slice(0, 4).map(({ href, label, icon: Icon }) => (
             <Link href={href} key={href}>
               <Icon size={20} aria-hidden="true" />
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>

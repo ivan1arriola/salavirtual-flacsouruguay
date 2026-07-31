@@ -94,10 +94,12 @@ export default async function HomePage() {
           <h1>Resumen operativo</h1>
           <p>Reuniones, asistencia y disponibilidad de salas.</p>
         </div>
-        <Link className="primary-action" href="/reuniones/nueva">
-          <CalendarPlus size={18} aria-hidden="true" />
-          Nueva reunión
-        </Link>
+        {session?.user.role !== "ASISTENTE" ? (
+          <Link className="primary-action" href="/reuniones/nueva">
+            <CalendarPlus size={18} aria-hidden="true" />
+            Nueva reunión
+          </Link>
+        ) : null}
       </header>
 
       <section className="metric-grid" aria-label="Indicadores">
