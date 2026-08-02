@@ -84,6 +84,8 @@ Los usuarios de Contabilidad no se eliminan durante la importacion: se migran a
 - Una cuenta preautorizada se vincula al identificador OAuth en su primer login.
 - Los usuarios con al menos una cuenta FLACSO pueden operar sin contrasena.
 - Los usuarios sin cuenta FLACSO reciben la contrasena temporal y deben cambiarla.
+  Esa contrasena inicial queda guardada cifrada para poder preparar los correos
+  de alta; no se guarda como texto plano.
 - Las cuentas Google externas se conservan como correo historico, sin permiso de login.
 
 ## Pendientes tecnicos

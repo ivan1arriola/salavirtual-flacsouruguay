@@ -26,6 +26,7 @@ describe("schema 3NF inicial", () => {
     expect(schema).toContain("model CuentaGoogleFlacso");
     expect(schema).toContain("cuentasGoogle");
     expect(schema).toContain("passwordHash");
+    expect(schema).toContain("passwordInicialCifrada");
   });
 
   it("mantiene la identidad directamente en Usuario", () => {

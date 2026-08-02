@@ -91,6 +91,9 @@ async function aplicarPlan(
   const passwordHash =
     plan.passwordHash ?? (requierePassword ? await hash(defaultPassword, 12) : null);
   const passwordTemporal = !plan.passwordHash && requierePassword;
+  const passwordInicialCifrada = passwordTemporal
+    ? await cifrarPasswordInicial(defaultPassword)
+    : null;
 
   await target.$transaction(async (tx) => {
     const existing = await tx.usuario.findUnique({
@@ -109,6 +112,7 @@ async function aplicarPlan(
         emailVerificadoAt: plan.emailVerificadoAt,
         imagenUrl: plan.imagenUrl,
         passwordHash,
+        passwordInicialCifrada,
         debeCambiarPassword: passwordTemporal,
         rol: plan.rol,
         ultimoAccesoAt: plan.ultimoAccesoAt,
@@ -209,11 +213,20 @@ async function aplicarPlan(
         valorNuevo: {
           legacyZoomUserId: plan.legacyZoomUserId,
           rol: plan.rol,
-          passwordTemporal
+          passwordTemporal,
+          passwordInicialGuardada: passwordTemporal
         }
       }
     });
   });
+}
+
+async function cifrarPasswordInicial(password: string): Promise<string> {
+  const { cifrarConfiguracion } = await import("../src/lib/config/encryption");
+  const { guardarPasswordInicialCifrada } = await import(
+    "../src/modules/usuarios/password-inicial.service"
+  );
+  return guardarPasswordInicialCifrada(password, { cifrar: cifrarConfiguracion });
 }
 
 async function main(): Promise<void> {

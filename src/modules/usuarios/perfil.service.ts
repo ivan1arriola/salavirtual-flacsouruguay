@@ -58,7 +58,7 @@ export async function cambiarPasswordPersonal(
   return db.$transaction(async (tx) => {
     await tx.usuario.update({
       where: { id: actor.id },
-      data: { passwordHash, debeCambiarPassword: false }
+      data: { passwordHash, passwordInicialCifrada: null, debeCambiarPassword: false }
     });
     await tx.auditoria.create({
       data: {

@@ -91,6 +91,7 @@ async function main(): Promise<void> {
           where: { id: plan.usuarioId },
           data: {
             passwordHash: plan.legacyPasswordHash,
+            passwordInicialCifrada: null,
             debeCambiarPassword: false
           }
         }),

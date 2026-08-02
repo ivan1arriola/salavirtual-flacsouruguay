@@ -33,7 +33,10 @@ Eso permite:
 ## Usuarios y roles
 
 `Usuario.id` es el nombre de acceso local y `passwordHash` almacena solamente el
-hash de la contrasena. Las cuentas Google FLACSO no reemplazan esa identidad:
+hash de la contrasena. Cuando se genera una contrasena temporal para comunicarla
+por correo, `passwordInicialCifrada` conserva esa credencial inicial cifrada y se
+limpia cuando el usuario define su propia contrasena o se restaura una contrasena
+legacy. Las cuentas Google FLACSO no reemplazan esa identidad:
 se vinculan de uno a muchos mediante `CuentaGoogleFlacso`.
 
 Administracion mantiene la lista de correos institucionales autorizados. El

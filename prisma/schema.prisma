@@ -17,6 +17,7 @@ model Usuario {
   emailVerificadoAt                 DateTime?
   imagenUrl                         String?
   passwordHash                      String?
+  passwordInicialCifrada            String?                        @db.Text
   debeCambiarPassword               Boolean                        @default(false)
   rol                               RolUsuario                     @default(DOCENTE)
   activo                            Boolean                        @default(true)
