@@ -32,10 +32,11 @@ export async function configurarGoogleMeetExistente(
   const auth = new JWT({
     email: credentials.serviceAccountEmail,
     key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE],
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
     subject: credentials.subject
   });
-  await configurarEspacioMeet(auth, codigoReunion, settings);
+  const spaceName = await configurarEspacioMeet(auth, codigoReunion, settings);
+  await configurarCohostsMeet(auth, spaceName, settings.cohostEmails ?? []);
 }
 
 export function crearGoogleCalendarProvider(
@@ -167,11 +168,25 @@ async function configurarCohostsMeet(
   spaceName: string,
   emails: readonly string[]
 ): Promise<void> {
-  await Promise.all(emails.map((email) => auth.request({
-    url: `${MEET_BETA_API}/${spaceName}/members`,
-    method: "POST",
-    data: { email, role: "COHOST" }
-  })));
+  await Promise.all(emails.map(async (email) => {
+    try {
+      await auth.request({
+        url: `${MEET_BETA_API}/${spaceName}/members`,
+        method: "POST",
+        data: { email, role: "COHOST" }
+      });
+    } catch (error) {
+      if (isAlreadyCohostError(error)) return;
+      throw error;
+    }
+  }));
+}
+
+function isAlreadyCohostError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; response?: { status?: unknown; data?: unknown } };
+  if (candidate.code === 409 || candidate.response?.status === 409) return true;
+  return JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
 }
 
 function calendarEventsUrl(calendarId: string): string {

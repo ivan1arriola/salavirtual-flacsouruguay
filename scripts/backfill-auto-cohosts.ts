@@ -3,12 +3,13 @@ import { db } from "../src/lib/db";
 
 const applyChanges = process.argv.includes("--apply");
 const syncGoogle = process.argv.includes("--sync-google");
+const syncAllGoogle = process.argv.includes("--sync-all-google");
 
 async function main(): Promise<void> {
   const meetings = await db.instanciaSala.findMany({
     where: {
       inicioProgramadoAt: { gte: new Date() },
-      estado: "PROGRAMADA"
+      estado: { in: ["PROGRAMADA", "EN_CURSO"] }
     },
     select: {
       id: true,
@@ -67,9 +68,13 @@ async function main(): Promise<void> {
   console.log(JSON.stringify({
     mode: applyChanges ? "apply" : "dry-run",
     syncGoogle,
+    syncAllGoogle,
     instancesToUpdate: plan.length,
     cohostsToAdd: plan.reduce((total, item) => total + item.missing.length, 0),
-    instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length
+    instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
+    instancesToSyncWithGoogle: syncAllGoogle
+      ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
+      : plan.filter(({ hasMeetCode }) => hasMeetCode).length
   }, null, 2));
 
   if (!applyChanges) return;
@@ -92,7 +97,12 @@ async function main(): Promise<void> {
         import("../src/modules/asistencia/asistencia.service"),
         import("../src/modules/meet/google-calendar.adapter")
       ]);
-    for (const item of plan.filter(({ hasMeetCode }) => hasMeetCode)) {
+    const syncTargets = syncAllGoogle
+      ? meetings
+          .filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion)
+          .map(({ id }) => ({ instanciaSalaId: id }))
+      : plan.filter(({ hasMeetCode }) => hasMeetCode);
+    for (const item of syncTargets) {
       try {
         await sincronizarCohostsDeInstancia({
           db,

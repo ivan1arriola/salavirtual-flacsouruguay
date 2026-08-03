@@ -26,6 +26,7 @@
     "split:requests-by-meet-link": "tsx scripts/split-requests-by-meet-link.ts --apply",
     "backfill:auto-cohosts:dry": "tsx scripts/backfill-auto-cohosts.ts",
     "backfill:auto-cohosts": "tsx scripts/backfill-auto-cohosts.ts --apply --sync-google",
+    "sync:existing-cohosts": "tsx scripts/backfill-auto-cohosts.ts --apply --sync-google --sync-all-google",
     "seed:meet-hosts": "tsx scripts/seed-meet-hosts.ts",
     "assign:meet-hosts:dry": "tsx scripts/assign-future-meet-hosts.ts",
     "assign:meet-hosts": "tsx scripts/assign-future-meet-hosts.ts --apply",
