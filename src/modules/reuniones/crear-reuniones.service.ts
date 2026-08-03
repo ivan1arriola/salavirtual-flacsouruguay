@@ -6,6 +6,7 @@ import {
   resolverAsignacionInicial,
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
+import { withRequiredCohostEmails } from "../meet/cohosts.domain";
 
 export type ActorReunion = Readonly<{
   id: string;
@@ -120,7 +121,7 @@ export async function crearReuniones(
     if (!cuentaHost) {
       throw new Error("No hay una sala Meet libre para todas las fechas solicitadas.");
     }
-    const manualCohostEmails = [...new Set(input.cohostEmailsManual)];
+    const manualCohostEmails = withRequiredCohostEmails(input.cohostEmailsManual);
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
     const solicitud = await tx.solicitudSala.create({

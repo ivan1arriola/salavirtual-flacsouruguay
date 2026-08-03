@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { withRequiredCohostEmails } from "./cohosts.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
 
@@ -189,12 +190,10 @@ function agruparPorSolicitud(
 function cohostEmailsDeInstancia(
   instancia: EventoMeetProvisionable["instancia"]
 ): readonly string[] {
-  return [
-    ...new Set([
-      ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...instancia.cohostEmails.map(({ email }) => email)
-    ])
-  ];
+  return withRequiredCohostEmails([
+    ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+    ...instancia.cohostEmails.map(({ email }) => email)
+  ]);
 }
 
 async function copiarEnlaceMeet(

@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { db } from "../src/lib/db";
+import { REQUIRED_COHOST_EMAILS } from "../src/modules/meet/cohosts.domain";
 
 const applyChanges = process.argv.includes("--apply");
-const syncGoogle = process.argv.includes("--sync-google");
+const syncGoogle = process.argv.includes("--sync-google") && !process.argv.includes("--no-sync-google");
 const syncAllGoogle = process.argv.includes("--sync-all-google");
 
 async function main(): Promise<void> {
@@ -43,7 +44,8 @@ async function main(): Promise<void> {
           }
         }
       },
-      cohosts: { select: { cuentaGoogleId: true } }
+      cohosts: { select: { cuentaGoogleId: true } },
+      cohostEmails: { select: { email: true } }
     }
   });
 
@@ -56,10 +58,13 @@ async function main(): Promise<void> {
     ]);
     const current = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
     const missing = [...expected].filter((id) => !current.has(id));
-    return missing.length
+    const currentEmails = new Set(meeting.cohostEmails.map(({ email }) => email.toLowerCase()));
+    const missingEmails = REQUIRED_COHOST_EMAILS.filter((email) => !currentEmails.has(email));
+    return missing.length || missingEmails.length
       ? [{
           instanciaSalaId: meeting.id,
           missing,
+          missingEmails,
           hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
         }]
       : [];
@@ -71,6 +76,7 @@ async function main(): Promise<void> {
     syncAllGoogle,
     instancesToUpdate: plan.length,
     cohostsToAdd: plan.reduce((total, item) => total + item.missing.length, 0),
+    cohostEmailsToAdd: plan.reduce((total, item) => total + item.missingEmails.length, 0),
     instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
     instancesToSyncWithGoogle: syncAllGoogle
       ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
@@ -80,13 +86,24 @@ async function main(): Promise<void> {
   if (!applyChanges) return;
 
   for (const item of plan) {
-    await db.cohostReunion.createMany({
-      data: item.missing.map((cuentaGoogleId) => ({
-        instanciaSalaId: item.instanciaSalaId,
-        cuentaGoogleId
-      })),
-      skipDuplicates: true
-    });
+    if (item.missing.length > 0) {
+      await db.cohostReunion.createMany({
+        data: item.missing.map((cuentaGoogleId) => ({
+          instanciaSalaId: item.instanciaSalaId,
+          cuentaGoogleId
+        })),
+        skipDuplicates: true
+      });
+    }
+    if (item.missingEmails.length > 0) {
+      await db.cohostEmailReunion.createMany({
+        data: item.missingEmails.map((email) => ({
+          instanciaSalaId: item.instanciaSalaId,
+          email
+        })),
+        skipDuplicates: true
+      });
+    }
   }
 
   const failures: Array<Readonly<{ instanciaSalaId: string; error: string }>> = [];
