@@ -62,10 +62,32 @@ export async function crearReuniones(
       throw new Error("Google Meet no está configurado como proveedor.");
     }
 
-    const [cohosts, hosts, occupiedHosts] = await Promise.all([
+    const assistant = asistenteId
+      ? await tx.asistente.findUnique({
+          where: { id: asistenteId },
+          select: {
+            id: true,
+            usuarioId: true,
+            usuario: { select: { activo: true, rol: true } }
+          }
+        })
+      : null;
+    if (asistenteId && (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE")) {
+      throw new Error("El Asistente seleccionado no está activo.");
+    }
+
+    const automaticCohostUserIds = [
+      docentePrograma.docente.usuarioId,
+      ...(assistant ? [assistant.usuarioId] : [])
+    ];
+    const [cohosts, automaticCohosts, hosts, occupiedHosts] = await Promise.all([
       tx.cuentaGoogleFlacso.findMany({
-      where: { id: { in: input.cohostCuentaIds } },
-      select: { id: true },
+        where: { id: { in: input.cohostCuentaIds } },
+        select: { id: true },
+      }),
+      tx.cuentaGoogleFlacso.findMany({
+        where: { userId: { in: automaticCohostUserIds }, user: { activo: true } },
+        select: { id: true },
       }),
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
@@ -90,6 +112,7 @@ export async function crearReuniones(
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
       throw new Error("Una o mas cuentas cohost no existen.");
     }
+    const cohostIds = [...new Set([...cohosts, ...automaticCohosts].map(({ id }) => id))];
     const occupiedHostIds = new Set(
       occupiedHosts.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
     );
@@ -98,16 +121,6 @@ export async function crearReuniones(
       throw new Error("No hay una sala Meet libre para todas las fechas solicitadas.");
     }
     const manualCohostEmails = [...new Set(input.cohostEmailsManual)];
-    if (asistenteId) {
-      const asistente = await tx.asistente.findUnique({
-        where: { id: asistenteId },
-        select: { id: true, usuario: { select: { activo: true, rol: true } } }
-      });
-      if (!asistente?.usuario.activo || asistente.usuario.rol !== "ASISTENTE") {
-        throw new Error("El Asistente seleccionado no está activo.");
-      }
-    }
-
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
     const solicitud = await tx.solicitudSala.create({
@@ -149,9 +162,9 @@ export async function crearReuniones(
             codigoReunion: input.codigoMeet,
           },
         });
-        if (cohosts.length > 0) {
+        if (cohostIds.length > 0) {
           await tx.cohostReunion.createMany({
-            data: cohosts.map(({ id }) => ({
+            data: cohostIds.map((id) => ({
               instanciaSalaId: instancia.id,
               cuentaGoogleId: id,
             })),

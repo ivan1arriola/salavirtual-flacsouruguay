@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import {
   asignacionAsistenciaSchema,
   estadoInteresParaAccion,
@@ -7,8 +8,19 @@ import {
   postulacionAsistenciaSchema
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
+
+export type SincronizarCohostsDependencies = Readonly<{
+  db: PrismaClient;
+  descifrar: (value: string) => string;
+  configurarEspacio: (
+    credentials: GoogleCalendarCredentials,
+    codigoReunion: string,
+    settings: Readonly<{ cohostEmails?: readonly string[] }>
+  ) => Promise<void>;
+}>;
 
 export async function actualizarPostulacionAsistencia(
   db: PrismaClient,
@@ -94,7 +106,7 @@ export async function asignarAsistentePostulado(
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
   return db.$transaction(async (tx) => {
-    const [admin, meeting, assistant, interest] = await Promise.all([
+    const [admin, meeting, assistant] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
         select: { id: true, activo: true, rol: true }
@@ -115,16 +127,16 @@ export async function asignarAsistentePostulado(
       }),
       tx.asistente.findUnique({
         where: { id: input.asistenteId },
-        select: { id: true, usuario: { select: { activo: true, rol: true } } }
-      }),
-      tx.interesAsistenteEvento.findUnique({
-        where: {
-          instanciaSalaId_asistenteId: {
-            instanciaSalaId: input.instanciaSalaId,
-            asistenteId: input.asistenteId
+        select: {
+          id: true,
+          usuario: {
+            select: {
+              activo: true,
+              rol: true,
+              cuentasGoogle: { select: { id: true } }
+            }
           }
-        },
-        select: { estado: true }
+        }
       })
     ]);
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
@@ -143,10 +155,6 @@ export async function asignarAsistentePostulado(
     if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
       throw new Error("El perfil seleccionado no corresponde a un Asistente activo.");
     }
-    if (interest?.estado !== "ME_INTERESA") {
-      throw new Error("La persona seleccionada no está postulada a esta reunión.");
-    }
-
     const assignment = await tx.asignacionAsistente.upsert({
       where: {
         instanciaSalaId_asistenteId: {
@@ -160,12 +168,21 @@ export async function asignarAsistentePostulado(
         estado: "ASIGNADO"
       },
       update: { estado: "ASIGNADO" },
-      select: { id: true, estado: true }
+      select: { id: true, estado: true, instanciaSalaId: true }
     });
+    if (assistant.usuario.cuentasGoogle.length > 0) {
+      await tx.cohostReunion.createMany({
+        data: assistant.usuario.cuentasGoogle.map(({ id }) => ({
+          instanciaSalaId: meeting.id,
+          cuentaGoogleId: id
+        })),
+        skipDuplicates: true
+      });
+    }
     await tx.auditoria.create({
       data: {
         actorUsuarioId: admin.id,
-        accion: "ASISTENTE_POSTULADO_ASIGNADO",
+        accion: "ASISTENTE_ASIGNADO",
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
         valorNuevo: { asistenteId: assistant.id, estado: assignment.estado }
@@ -173,4 +190,42 @@ export async function asignarAsistentePostulado(
     });
     return assignment;
   });
+}
+
+export async function sincronizarCohostsDeInstancia(
+  dependencies: SincronizarCohostsDependencies,
+  instanciaSalaId: string
+): Promise<void> {
+  const meeting = await dependencies.db.instanciaSala.findUnique({
+    where: { id: instanciaSalaId },
+    select: {
+      eventosProveedor: {
+        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        select: {
+          codigoReunion: true,
+          cuentaProveedor: { select: { emailOrganizador: true } }
+        },
+        take: 1
+      },
+      cohosts: {
+        select: { cuentaGoogle: { select: { email: true } } }
+      },
+      cohostEmails: { select: { email: true } }
+    }
+  });
+  const event = meeting?.eventosProveedor[0];
+  if (!meeting || !event?.codigoReunion) return;
+  const cohostEmails = [
+    ...new Set([
+      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+      ...meeting.cohostEmails.map(({ email }) => email)
+    ])
+  ];
+  if (cohostEmails.length === 0) return;
+  const credentials = await cargarCredencialesEncuentro(
+    dependencies.db,
+    dependencies.descifrar,
+    event.cuentaProveedor?.emailOrganizador
+  );
+  await dependencies.configurarEspacio(credentials, event.codigoReunion, { cohostEmails });
 }

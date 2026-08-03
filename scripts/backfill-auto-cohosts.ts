@@ -1,0 +1,121 @@
+import "dotenv/config";
+import { db } from "../src/lib/db";
+
+const applyChanges = process.argv.includes("--apply");
+const syncGoogle = process.argv.includes("--sync-google");
+
+async function main(): Promise<void> {
+  const meetings = await db.instanciaSala.findMany({
+    where: {
+      inicioProgramadoAt: { gte: new Date() },
+      estado: "PROGRAMADA"
+    },
+    select: {
+      id: true,
+      eventosProveedor: {
+        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        select: { codigoReunion: true },
+        take: 1
+      },
+      solicitud: {
+        select: {
+          docentePrograma: {
+            select: {
+              docente: {
+                select: {
+                  usuario: {
+                    select: { cuentasGoogle: { select: { id: true } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      asignaciones: {
+        where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+        select: {
+          asistente: {
+            select: {
+              usuario: { select: { cuentasGoogle: { select: { id: true } } } }
+            }
+          }
+        }
+      },
+      cohosts: { select: { cuentaGoogleId: true } }
+    }
+  });
+
+  const plan = meetings.flatMap((meeting) => {
+    const expected = new Set([
+      ...meeting.solicitud.docentePrograma.docente.usuario.cuentasGoogle.map(({ id }) => id),
+      ...meeting.asignaciones.flatMap(({ asistente }) =>
+        asistente.usuario.cuentasGoogle.map(({ id }) => id)
+      )
+    ]);
+    const current = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
+    const missing = [...expected].filter((id) => !current.has(id));
+    return missing.length
+      ? [{
+          instanciaSalaId: meeting.id,
+          missing,
+          hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
+        }]
+      : [];
+  });
+
+  console.log(JSON.stringify({
+    mode: applyChanges ? "apply" : "dry-run",
+    syncGoogle,
+    instancesToUpdate: plan.length,
+    cohostsToAdd: plan.reduce((total, item) => total + item.missing.length, 0),
+    instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length
+  }, null, 2));
+
+  if (!applyChanges) return;
+
+  for (const item of plan) {
+    await db.cohostReunion.createMany({
+      data: item.missing.map((cuentaGoogleId) => ({
+        instanciaSalaId: item.instanciaSalaId,
+        cuentaGoogleId
+      })),
+      skipDuplicates: true
+    });
+  }
+
+  const failures: Array<Readonly<{ instanciaSalaId: string; error: string }>> = [];
+  if (syncGoogle) {
+    const [{ descifrarConfiguracion }, { sincronizarCohostsDeInstancia }, { configurarGoogleMeetExistente }] =
+      await Promise.all([
+        import("../src/lib/config/encryption"),
+        import("../src/modules/asistencia/asistencia.service"),
+        import("../src/modules/meet/google-calendar.adapter")
+      ]);
+    for (const item of plan.filter(({ hasMeetCode }) => hasMeetCode)) {
+      try {
+        await sincronizarCohostsDeInstancia({
+          db,
+          descifrar: descifrarConfiguracion,
+          configurarEspacio: configurarGoogleMeetExistente
+        }, item.instanciaSalaId);
+      } catch (error) {
+        failures.push({
+          instanciaSalaId: item.instanciaSalaId,
+          error: error instanceof Error ? error.message : "Error desconocido"
+        });
+      }
+    }
+  }
+
+  console.log(JSON.stringify({ failures }, null, 2));
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await db.$disconnect();
+  });

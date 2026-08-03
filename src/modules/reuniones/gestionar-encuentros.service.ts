@@ -38,7 +38,11 @@ export async function agregarEncuentro(
     include: {
       docentePrograma: { include: { docente: true } },
       instancias: {
-        include: { eventosProveedor: true, cohosts: { select: { cuentaGoogleId: true } } },
+        include: {
+          eventosProveedor: true,
+          cohosts: { select: { cuentaGoogleId: true } },
+          cohostEmails: { select: { email: true } }
+        },
         orderBy: { ordinal: "asc" }
       }
     }
@@ -97,6 +101,12 @@ export async function agregarEncuentro(
     if (cohostIds.length) {
       await tx.cohostReunion.createMany({
         data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId }))
+      });
+    }
+    const cohostEmails = request.instancias[0]?.cohostEmails.map(({ email }) => email) ?? [];
+    if (cohostEmails.length) {
+      await tx.cohostEmailReunion.createMany({
+        data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email }))
       });
     }
     await recalcularSolicitud(tx, request.id);

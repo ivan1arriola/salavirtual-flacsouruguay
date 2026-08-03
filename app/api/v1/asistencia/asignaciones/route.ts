@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { asignarAsistentePostulado } from "@/src/modules/asistencia/asistencia.service";
+import {
+  asignarAsistentePostulado,
+  sincronizarCohostsDeInstancia
+} from "@/src/modules/asistencia/asistencia.service";
+import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -22,7 +27,17 @@ export async function POST(request: Request) {
       actor,
       await request.json().catch(() => null)
     );
-    return NextResponse.json({ assignment }, { status: 201 });
+    let warning: string | null = null;
+    try {
+      await sincronizarCohostsDeInstancia({
+        db,
+        descifrar: descifrarConfiguracion,
+        configurarEspacio: configurarGoogleMeetExistente
+      }, assignment.instanciaSalaId);
+    } catch (error) {
+      warning = error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.";
+    }
+    return NextResponse.json({ assignment, warning }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Datos inválidos." },

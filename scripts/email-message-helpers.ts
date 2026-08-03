@@ -66,14 +66,17 @@ export function buildMeetingDigestEmail(input: Readonly<{
 }>): EmailMessage {
   const footer = input.footer ?? "Equipo FLACSO Uruguay";
   const textCards = input.cards.map((card, index) => {
+    const dateDetails =
+      card.fechas.length === 1
+        ? [`   Fecha: ${card.fechas[0]}`]
+        : ["   Fechas:", ...card.fechas.map((fecha) => `   - ${fecha}`)];
     const details = [
       `${index + 1}. ${card.titulo}`,
       `   Programa: ${card.programa}`,
       card.docente ? `   Docente: ${card.docente}` : null,
       `   Modalidad: ${card.modalidad}`,
       card.estadoAsignacion ? `   Estado de asignación: ${card.estadoAsignacion}` : null,
-      "   Fechas:",
-      ...card.fechas.map((fecha) => `   - ${fecha}`),
+      ...dateDetails,
       card.joinUrl ? `   Link: ${card.joinUrl}` : "   Link: pendiente de provisión",
       card.codigoReunion ? `   Código Meet: ${card.codigoReunion}` : null,
       card.usuarioSala ? `   Usuario sala: ${card.usuarioSala}` : null,
@@ -101,7 +104,7 @@ export function buildMeetingDigestEmail(input: Readonly<{
       ${card.docente ? `<p style="margin:0 0 12px;font-size:14px;"><strong>Docente:</strong> ${escapeHtml(card.docente)}</p>` : ""}
       ${card.estadoAsignacion ? `<p style="margin:0 0 12px;font-size:14px;"><strong>Estado:</strong> ${escapeHtml(card.estadoAsignacion)}</p>` : ""}
       <div style="margin:0 0 14px;">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#111827;">Fechas</p>
+        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#111827;">${card.fechas.length === 1 ? "Fecha" : "Fechas"}</p>
         <ul style="margin:0;padding-left:20px;color:#111827;font-size:14px;line-height:1.55;">
           ${card.fechas.map((fecha) => `<li>${escapeHtml(fecha)}</li>`).join("")}
         </ul>

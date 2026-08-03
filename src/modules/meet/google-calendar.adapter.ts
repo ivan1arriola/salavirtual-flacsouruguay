@@ -23,7 +23,11 @@ export type GoogleCalendarCredentials = Readonly<{
 export async function configurarGoogleMeetExistente(
   credentials: GoogleCalendarCredentials,
   codigoReunion: string,
-  settings: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean }>
+  settings: Readonly<{
+    requiereAsistencia?: boolean;
+    requiereGrabacion?: boolean;
+    cohostEmails?: readonly string[];
+  }>
 ): Promise<void> {
   const auth = new JWT({
     email: credentials.serviceAccountEmail,
