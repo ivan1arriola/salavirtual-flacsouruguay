@@ -29,3 +29,20 @@ export async function iniciarSesionGoogle(): Promise<void> {
     throw error;
   }
 }
+
+export async function iniciarSesionGoogleRecordada(formData: FormData): Promise<void> {
+  const loginHint = String(formData.get("loginHint") ?? "").trim();
+
+  try {
+    await signIn(
+      "google",
+      { redirectTo: "/" },
+      loginHint ? { login_hint: loginHint } : undefined
+    );
+  } catch (error) {
+    if (error instanceof AuthError) {
+      redirect(`/acceso?error=${encodeURIComponent(error.type)}`);
+    }
+    throw error;
+  }
+}

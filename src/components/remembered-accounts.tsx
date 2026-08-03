@@ -10,6 +10,7 @@ import {
   readRememberedAccounts,
   writeRememberedAccounts
 } from "@/src/lib/browser/remembered-accounts";
+import { iniciarSesionGoogleRecordada } from "@/app/acceso/actions";
 
 export function RememberedAccounts() {
   const [accounts, setAccounts] = useState<readonly CuentaRecordada[]>([]);
@@ -30,10 +31,13 @@ export function RememberedAccounts() {
       <div>
         {accounts.map((account) => (
           <div className="remembered-account" key={account.id}>
-            <a href={`/acceso?usuario=${encodeURIComponent(account.identificador)}`}>
-              <span className="avatar" aria-hidden="true">{account.nombre.slice(0, 1).toUpperCase()}</span>
-              <span><strong>{account.nombre}</strong><small>{account.identificador}</small></span>
-            </a>
+            <form action={iniciarSesionGoogleRecordada}>
+              <input name="loginHint" type="hidden" value={account.identificador} />
+              <button className="remembered-account-button" type="submit">
+                <span className="avatar" aria-hidden="true">{account.nombre.slice(0, 1).toUpperCase()}</span>
+                <span><strong>{account.nombre}</strong><small>{account.identificador}</small></span>
+              </button>
+            </form>
             <button className="icon-button" onClick={() => forget(account.id)} title="Olvidar cuenta" type="button">
               <X size={16} aria-hidden="true" />
               <span className="sr-only">Olvidar {account.nombre}</span>
