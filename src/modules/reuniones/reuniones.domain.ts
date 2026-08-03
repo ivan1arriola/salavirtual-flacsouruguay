@@ -15,13 +15,26 @@ const instanciaSchema = z
     message: "La hora de fin debe ser posterior al inicio."
   });
 
+const emailListSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value
+        .split(/[\n,;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+    }
+    return value;
+  },
+  z.array(z.email().transform((email) => email.toLowerCase())).default([])
+);
+
 export const crearReunionesSchema = z
   .object({
     titulo: z.string().trim().min(3),
     descripcion: z.string().trim().optional(),
     docenteProgramaId: z.string().trim().min(1),
-    cuentaHostId: z.string().trim().min(1),
     cohostCuentaIds: z.array(z.string().trim().min(1)).default([]),
+    cohostEmailsManual: emailListSchema,
     asistenteId: z.string().trim().min(1).optional(),
     requiereAsistencia: z.boolean().default(false),
     requiereGrabacion: z.boolean().default(false),

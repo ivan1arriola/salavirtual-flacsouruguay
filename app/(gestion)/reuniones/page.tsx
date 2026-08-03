@@ -32,6 +32,7 @@ export default async function ReunionesPage({
   const meetings = await db.instanciaSala.findMany({
     where: {
       finProgramadoAt: { gte: now },
+      estado: { not: "CANCELADA" },
       solicitud: {
         ...teacherFilter,
         ...(q

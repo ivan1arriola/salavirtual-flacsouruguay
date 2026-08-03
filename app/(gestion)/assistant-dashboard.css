@@ -243,6 +243,11 @@
   .next-meeting-detail dl {
     grid-template-columns: 1fr 1fr;
   }
+
+  .meet-access {
+    width: calc(100% - 40px);
+    margin-inline: 20px;
+  }
 }
 
 @media (max-width: 460px) {
@@ -254,5 +259,13 @@
 
   .dashboard-metric p {
     min-height: auto;
+  }
+
+  .dashboard-metric {
+    min-height: 118px;
+  }
+
+  .next-opening h1 {
+    font-size: 1.35rem;
   }
 }

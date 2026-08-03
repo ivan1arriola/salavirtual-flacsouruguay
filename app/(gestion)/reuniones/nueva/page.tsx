@@ -16,7 +16,7 @@ export default async function NuevaReunionPage() {
     redirect("/mi-agenda");
   }
 
-  const [associations, hosts, assistants, cohosts] = await Promise.all([
+  const [associations, assistants, cohosts] = await Promise.all([
     db.docentePrograma.findMany({
       where: {
         activo: true,
@@ -27,10 +27,6 @@ export default async function NuevaReunionPage() {
       },
       orderBy: { programa: { nombre: "asc" } },
       include: { programa: true, docente: { include: { usuario: true } } }
-    }),
-    db.cuentaProveedor.findMany({
-      where: { proveedor: { tipo: "GOOGLE_MEET" }, activa: true, tieneLicencia: true },
-      orderBy: { prioridad: "asc" }
     }),
     actor.rol === "ADMINISTRACION"
       ? db.asistente.findMany({
@@ -62,11 +58,6 @@ export default async function NuevaReunionPage() {
           label: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim()
         }))}
         cohosts={cohosts}
-        hosts={hosts.map(({ id, nombre, emailOrganizador }) => ({
-          id,
-          label: nombre,
-          email: emailOrganizador ?? ""
-        }))}
         programs={associations.map(({ id, docente, programa }) => ({
           id,
           label: programa.nombre,

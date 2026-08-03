@@ -27,7 +27,6 @@ describe("dias derivados de reuniones", () => {
       crearReunionesSchema.parse({
         titulo: "Clase",
         docenteProgramaId: "dp",
-        cuentaHostId: "host",
         requiereAsistencia: true,
         modalidad: "VIRTUAL",
         timezone: "America/Montevideo",
@@ -45,12 +44,32 @@ describe("dias derivados de reuniones", () => {
     const result = crearReunionesSchema.safeParse({
       titulo: "Clase",
       docenteProgramaId: "dp",
-      cuentaHostId: "host",
       modalidad: "VIRTUAL",
       timezone: "America/Montevideo",
       instancias: [{ inicio: "2026-08-03T23:00:00-03:00", fin: "2026-08-04T00:30:00-03:00" }]
     });
     expect(result.success).toBe(false);
+  });
+
+  it("normaliza cohosts manuales sin exigir sala elegida a mano", () => {
+    const result = crearReunionesSchema.parse({
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      modalidad: "VIRTUAL",
+      timezone: "America/Montevideo",
+      cohostEmailsManual: "DOCENTE@FLACSO.EDU.UY, apoyo@flacso.edu.uy",
+      instancias: [
+        {
+          inicio: "2026-08-03T13:00:00Z",
+          fin: "2026-08-03T14:00:00Z"
+        }
+      ]
+    });
+
+    expect(result.cohostEmailsManual).toEqual([
+      "docente@flacso.edu.uy",
+      "apoyo@flacso.edu.uy"
+    ]);
   });
 
   it("reserva la asignacion inicial a Administracion", () => {

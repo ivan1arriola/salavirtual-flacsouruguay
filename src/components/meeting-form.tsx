@@ -27,13 +27,11 @@ const WEEKDAYS = [
 
 export function MeetingForm({
   programs,
-  hosts,
   assistants,
   cohosts,
   canAssignAssistant
 }: Readonly<{
   programs: readonly (Option & { teacher: string })[];
-  hosts: readonly (Option & { email: string })[];
   assistants: readonly Option[];
   cohosts: readonly Readonly<{ id: string; email: string }>[];
   canAssignAssistant: boolean;
@@ -64,8 +62,8 @@ export function MeetingForm({
           titulo: formData.get("titulo"),
           descripcion: formData.get("descripcion") || undefined,
           docenteProgramaId: formData.get("docenteProgramaId"),
-          cuentaHostId: formData.get("cuentaHostId"),
           cohostCuentaIds: formData.getAll("cohostCuentaIds"),
+          cohostEmailsManual: formData.get("cohostEmailsManual"),
           asistenteId: canAssignAssistant && assistanceMode === "ASSIGN"
             ? formData.get("asistenteId") || undefined
             : undefined,
@@ -161,14 +159,12 @@ export function MeetingForm({
         </div>
       </FormSection>
 
-      <FormSection number="3" title="Organización" detail="Host, asistencia y cohosts.">
+      <FormSection number="3" title="Organización" detail="Sala, asistencia y cohosts.">
         <div className="form-grid">
-          <Field label="Cuenta host con licencia" wide>
-            <select name="cuentaHostId" required defaultValue="">
-              <option value="" disabled>Seleccionar sala</option>
-              {hosts.map((host) => <option value={host.id} key={host.id}>{host.label} — {host.email}</option>)}
-            </select>
-          </Field>
+          <div className="field field-wide">
+            <span>Sala Meet</span>
+            <div className="auto-room-note">Se asigna automáticamente según disponibilidad y prioridad de salas.</div>
+          </div>
           <label className="check-field"><input name="requiereAsistencia" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span>Requiere asistencia</span></label>
           <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span>Requiere grabación</span></label>
           {requiresAssistance && canAssignAssistant ? (
@@ -188,10 +184,17 @@ export function MeetingForm({
           ) : null}
           {cohosts.length ? (
             <fieldset className="field field-wide checkbox-list">
-              <legend>Cohosts</legend>
+              <legend>Cohosts guardados</legend>
               {cohosts.map((cohost) => <label key={cohost.id}><input type="checkbox" name="cohostCuentaIds" value={cohost.id} /><span>{cohost.email}</span></label>)}
             </fieldset>
           ) : null}
+          <Field label="Cohosts manuales" wide>
+            <textarea
+              name="cohostEmailsManual"
+              placeholder="correo@flacso.edu.uy, otro@flacso.edu.uy"
+              rows={3}
+            />
+          </Field>
         </div>
       </FormSection>
 

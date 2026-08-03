@@ -13,6 +13,13 @@ export async function importarSolicitud(
   zoomProviderId: string,
   mapeos: MapeosLegacy
 ): Promise<void> {
+  const eventosVigentes = solicitud.eventos.filter(
+    ({ estadoEvento }) => estadoEvento !== "CANCELADO"
+  );
+  if (eventosVigentes.length === 0) return;
+  const estadoSolicitud = solicitud.estadoSolicitud.startsWith("CANCELADA")
+    ? "PROVISIONADA"
+    : mapearEstadoSolicitudLegacy(solicitud.estadoSolicitud);
   const docenteUsuario = mapeos.usuariosPorLegacy.get(solicitud.docente.usuarioId);
   const creador = mapeos.usuariosPorLegacy.get(solicitud.createdBy.id);
   const programaId = mapeos.programasPorNombre.get(
@@ -45,9 +52,15 @@ export async function importarSolicitud(
       modalidad: solicitud.modalidadReunion,
       tipoInstancias: mapearTipoInstanciasLegacy(solicitud.tipoInstancias),
       timezone: solicitud.timezone,
-      fechaInicioSolicitada: solicitud.fechaInicioSolicitada,
-      fechaFinSolicitada: solicitud.fechaFinSolicitada,
-      cantidadInstancias: solicitud.eventos.length,
+      fechaInicioSolicitada: eventosVigentes.reduce(
+        (earliest, evento) => evento.inicioProgramadoAt < earliest ? evento.inicioProgramadoAt : earliest,
+        eventosVigentes[0].inicioProgramadoAt
+      ),
+      fechaFinSolicitada: eventosVigentes.reduce(
+        (latest, evento) => evento.finProgramadoAt > latest ? evento.finProgramadoAt : latest,
+        eventosVigentes[0].finProgramadoAt
+      ),
+      cantidadInstancias: eventosVigentes.length,
       capacidadEstimada: solicitud.capacidadEstimada,
       requiereAsistencia: solicitud.requiereAsistencia,
       motivoAsistencia: solicitud.motivoAsistencia,
@@ -55,7 +68,7 @@ export async function importarSolicitud(
       regimenEncuentros: solicitud.regimenEncuentros,
       fechaFinRecurrencia: solicitud.fechaFinRecurrencia,
       patronRecurrencia: jsonValue(solicitud.patronRecurrencia),
-      estado: mapearEstadoSolicitudLegacy(solicitud.estadoSolicitud),
+      estado: estadoSolicitud,
       observacionesAdmin: solicitud.observacionesAdmin,
       canceladaAt: solicitud.canceladaPorDocenteAt,
       canceladaMotivo: solicitud.canceladaMotivo,
@@ -69,12 +82,19 @@ export async function importarSolicitud(
       descripcion: solicitud.descripcion,
       responsableNombre: solicitud.responsableNombre,
       finalidadAcademica: solicitud.finalidadAcademica,
-      cantidadInstancias: solicitud.eventos.length,
-      estado: mapearEstadoSolicitudLegacy(solicitud.estadoSolicitud)
+      cantidadInstancias: eventosVigentes.length,
+      estado: estadoSolicitud
     }
   });
 
-  for (const [index, evento] of solicitud.eventos.entries()) {
+  await target.instanciaSala.deleteMany({
+    where: {
+      solicitudSalaId: solicitudNueva.id,
+      estado: "CANCELADA"
+    }
+  });
+
+  for (const [index, evento] of eventosVigentes.entries()) {
     await importarEvento(
       evento,
       index,

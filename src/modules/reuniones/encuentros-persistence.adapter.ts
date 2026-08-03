@@ -38,19 +38,33 @@ export async function recalcularSolicitud(
   solicitudId: string
 ): Promise<void> {
   const meetings = await tx.instanciaSala.findMany({
-    where: { solicitudSalaId: solicitudId },
+    where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } },
     orderBy: { inicioProgramadoAt: "asc" },
     select: {
       inicioProgramadoAt: true,
       finProgramadoAt: true,
       requiereAsistencia: true,
-      requiereGrabacion: true
+      requiereGrabacion: true,
+      eventosProveedor: {
+        select: { estadoIntegracion: true }
+      }
     }
   });
   if (meetings.length === 0) return;
+  const estadosIntegracion = meetings.flatMap(({ eventosProveedor }) =>
+    eventosProveedor.map(({ estadoIntegracion }) => estadoIntegracion)
+  );
+  const estado = estadosIntegracion.some((item) => item === "ERROR")
+    ? "REQUIERE_REVISION"
+    : estadosIntegracion.some((item) => item === "PENDIENTE")
+      ? "PROVISIONANDO"
+      : "PROVISIONADA";
   await tx.solicitudSala.update({
     where: { id: solicitudId },
     data: {
+      estado,
+      canceladaAt: null,
+      canceladaMotivo: null,
       cantidadInstancias: meetings.length,
       tipoInstancias: meetings.length === 1 ? "UNICA" : "MULTIPLE",
       fechaInicioSolicitada: meetings[0].inicioProgramadoAt,

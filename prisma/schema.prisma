@@ -244,6 +244,7 @@ model InstanciaSala {
   grabaciones         Grabacion[]
   liquidacionDetalles LiquidacionDetalle[]
   cohosts             CohostReunion[]
+  cohostEmails        CohostEmailReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -308,6 +309,17 @@ model CohostReunion {
 
   @@unique([instanciaSalaId, cuentaGoogleId])
   @@index([cuentaGoogleId])
+}
+
+model CohostEmailReunion {
+  id              String        @id @default(cuid())
+  instanciaSalaId String
+  email           String
+  createdAt       DateTime      @default(now())
+  instancia       InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, email])
+  @@index([email])
 }
 
 model Grabacion {

@@ -103,6 +103,11 @@ export function MeetingDetailManager({
   }
 
   const canRemoveAll = meetings.length > 0 && meetings.every(({ editable }) => editable);
+  const removeAllBlockedReason = meetings.length === 0
+    ? "La reunión no tiene encuentros para eliminar."
+    : !canRemoveAll
+      ? "Solo se puede eliminar completa cuando todos los encuentros son futuros y programados."
+      : "";
 
   return (
     <>
@@ -110,11 +115,14 @@ export function MeetingDetailManager({
         <div>
           <h2>Eliminar reunión completa</h2>
           <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
+          {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
+          {message ? <p className="form-message meeting-detail-message" role="alert">{message}</p> : null}
         </div>
         <button
           className="secondary-action danger-action"
           disabled={!canRemoveAll || busy !== null}
           onClick={removeAll}
+          title={removeAllBlockedReason || "Eliminar reunión completa"}
           type="button"
         >
           <Trash2 size={17} />{busy === "all" ? "Eliminando…" : "Eliminar todo"}
@@ -163,7 +171,6 @@ export function MeetingDetailManager({
           </article>
         ))}
       </div>
-      <p className="form-message meeting-detail-message" role="status">{message}</p>
     </>
   );
 }

@@ -19,6 +19,35 @@
   font: inherit;
 }
 
+.coverage-filter {
+  grid-template-columns: 20px minmax(220px, 1fr) minmax(150px, auto) auto;
+}
+
+.coverage-filter select,
+.assignment-select select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+}
+
+.assignment-select {
+  display: grid;
+  min-width: 190px;
+  gap: 5px;
+}
+
+.coverage-stats {
+  margin-bottom: 16px;
+}
+
+.coverage-table td {
+  vertical-align: top;
+}
+
 .icon-link {
   width: 34px;
   height: 34px;
@@ -198,6 +227,16 @@
   border-color: var(--brand);
   outline: 2px solid color-mix(in srgb, var(--brand) 15%, transparent);
   outline-offset: 1px;
+}
+
+.auto-room-note {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fbfc;
+  color: #3f4b5c;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .date-row {
@@ -622,6 +661,32 @@
 }
 
 @media (max-width: 760px) {
+  .filter-bar,
+  .coverage-filter {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .filter-bar > svg {
+    display: none;
+  }
+
+  .filter-bar input,
+  .coverage-filter select {
+    min-height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .assignment-select {
+    min-width: 0;
+  }
+
+  .assignment-select select {
+    width: 100%;
+  }
+
   .recurrence-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -663,6 +728,14 @@
 }
 
 @media (max-width: 560px) {
+  .form-section {
+    padding: 14px;
+  }
+
+  .form-section-title {
+    margin-bottom: 14px;
+  }
+
   .form-grid,
   .date-row,
   .checkbox-list {
@@ -688,7 +761,7 @@
   }
 
   .remove-date {
-    width: 36px;
+    width: 100%;
     margin: 0;
   }
 
@@ -699,5 +772,42 @@
 
   .form-actions .primary-action {
     width: 100%;
+  }
+
+  .weekday-selector label,
+  .assistance-choice label,
+  .check-field {
+    min-height: 44px;
+  }
+
+  .encounter-item > header,
+  .encounter-assistance {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px 14px;
+  }
+
+  .encounter-actions {
+    width: 100%;
+  }
+
+  .encounter-actions .secondary-action,
+  .encounter-actions .icon-button {
+    width: 100%;
+  }
+
+  .meeting-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-overview > div,
+  .meeting-overview > div:nth-child(2),
+  .meeting-overview > div:nth-child(4) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .meeting-overview > div:last-of-type {
+    border-bottom: 0;
   }
 }

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
 
@@ -44,7 +44,8 @@ export async function provisionarEventosMeet(
       instancia: {
         include: {
           solicitud: true,
-          cohosts: { include: { cuentaGoogle: { select: { email: true } } } }
+          cohosts: { include: { cuentaGoogle: { select: { email: true } } } },
+          cohostEmails: { select: { email: true } }
         }
       },
     },
@@ -56,17 +57,49 @@ export async function provisionarEventosMeet(
   );
   if (typeof privateKey !== "string") return privateKey;
 
+  const groupedEvents = agruparPorSolicitud(eventos);
   return procesarEnLotes(
-    eventos,
+    groupedEvents,
     5,
-    async (evento): Promise<ProvisionResult> => {
-      const hostEmail = evento.cuentaProveedor?.emailOrganizador;
+    async (grupo): Promise<readonly ProvisionResult[]> => {
+      const existing = await dependencies.db.eventoProveedor.findFirst({
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          instancia: { solicitudSalaId: grupo.solicitudId },
+          estadoIntegracion: "SINCRONIZADA",
+          codigoReunion: { not: null },
+          joinUrl: { not: null }
+        },
+        orderBy: { updatedAt: "asc" }
+      });
+      if (existing?.codigoReunion && existing.joinUrl) {
+        const codigoReunion = existing.codigoReunion;
+        const joinUrl = existing.joinUrl;
+        await copiarEnlaceMeet(dependencies.db, grupo.eventos.map(({ id }) => id), {
+          codigoReunion,
+          joinUrl,
+          payload: existing.payloadUltimo
+        });
+        return grupo.eventos.map((evento) => ({
+          eventoProveedorId: evento.id,
+          estado: "SINCRONIZADA",
+          codigoReunion
+        }));
+      }
+
+      const [eventoPrincipal, ...eventosHermanos] = grupo.eventos;
+      const hostEmail = eventoPrincipal.cuentaProveedor?.emailOrganizador;
       if (!hostEmail) {
-        return registrarError(
+        const result = await registrarError(
           dependencies.db,
-          evento.id,
+          eventoPrincipal.id,
           "La cuenta host no tiene email organizador.",
         );
+        return [result, ...eventosHermanos.map((evento) => ({
+          eventoProveedorId: evento.id,
+          estado: "PENDIENTE_CONFIGURACION" as const,
+          error: "La cuenta host no tiene email organizador."
+        }))];
       }
       try {
         const provider = dependencies.crearProvider({
@@ -75,18 +108,18 @@ export async function provisionarEventosMeet(
           subject: hostEmail,
         });
         const result = await provider.provisionarEvento({
-          titulo: evento.instancia.solicitud.titulo,
-          descripcion: evento.instancia.solicitud.descripcion ?? undefined,
-          inicio: evento.instancia.inicioProgramadoAt,
-          fin: evento.instancia.finProgramadoAt,
-          timezone: evento.instancia.timezone,
+          titulo: eventoPrincipal.instancia.solicitud.titulo,
+          descripcion: eventoPrincipal.instancia.solicitud.descripcion ?? undefined,
+          inicio: eventoPrincipal.instancia.inicioProgramadoAt,
+          fin: eventoPrincipal.instancia.finProgramadoAt,
+          timezone: eventoPrincipal.instancia.timezone,
           calendarId: hostEmail,
-          cohostEmails: evento.instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-          requiereAsistencia: evento.instancia.requiereAsistencia,
-          requiereGrabacion: evento.instancia.requiereGrabacion,
+          cohostEmails: cohostEmailsDeInstancia(eventoPrincipal.instancia),
+          requiereAsistencia: eventoPrincipal.instancia.requiereAsistencia,
+          requiereGrabacion: eventoPrincipal.instancia.requiereGrabacion,
         });
         await dependencies.db.eventoProveedor.update({
-          where: { id: evento.id },
+          where: { id: eventoPrincipal.id },
           data: {
             externalEventId: result.externalEventId,
             codigoReunion: result.codigoReunion,
@@ -97,20 +130,91 @@ export async function provisionarEventosMeet(
             errorIntegracion: result.warning ?? null,
           },
         });
-        return {
-          eventoProveedorId: evento.id,
-          estado: "SINCRONIZADA",
-          codigoReunion: result.codigoReunion,
-        };
+        if (eventosHermanos.length > 0) {
+          await copiarEnlaceMeet(dependencies.db, eventosHermanos.map(({ id }) => id), result);
+        }
+        return [
+          {
+            eventoProveedorId: eventoPrincipal.id,
+            estado: "SINCRONIZADA" as const,
+            codigoReunion: result.codigoReunion,
+          },
+          ...eventosHermanos.map((evento) => ({
+            eventoProveedorId: evento.id,
+            estado: "SINCRONIZADA" as const,
+            codigoReunion: result.codigoReunion,
+          }))
+        ];
       } catch (error) {
         const message =
           error instanceof Error
             ? error.message
             : "Error desconocido de Google.";
-        return registrarError(dependencies.db, evento.id, message);
+        return [await registrarError(dependencies.db, eventoPrincipal.id, message)];
       }
     },
-  );
+  ).then((results) => results.flat());
+}
+
+type EventoMeetProvisionable = Prisma.EventoProveedorGetPayload<{
+  include: {
+    cuentaProveedor: true;
+    instancia: {
+      include: {
+        solicitud: true;
+        cohosts: { include: { cuentaGoogle: { select: { email: true } } } };
+        cohostEmails: { select: { email: true } };
+      };
+    };
+  };
+}>;
+
+function agruparPorSolicitud(
+  eventos: readonly EventoMeetProvisionable[]
+): readonly Readonly<{ solicitudId: string; eventos: readonly EventoMeetProvisionable[] }>[] {
+  const grupos = new Map<string, EventoMeetProvisionable[]>();
+  for (const evento of eventos) {
+    const solicitudId = evento.instancia.solicitud.id;
+    grupos.set(solicitudId, [...(grupos.get(solicitudId) ?? []), evento]);
+  }
+  return [...grupos.entries()].map(([solicitudId, eventos]) => ({
+    solicitudId,
+    eventos: [...eventos].sort(
+      (left, right) =>
+        left.instancia.inicioProgramadoAt.getTime() - right.instancia.inicioProgramadoAt.getTime()
+    )
+  }));
+}
+
+function cohostEmailsDeInstancia(
+  instancia: EventoMeetProvisionable["instancia"]
+): readonly string[] {
+  return [
+    ...new Set([
+      ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+      ...instancia.cohostEmails.map(({ email }) => email)
+    ])
+  ];
+}
+
+async function copiarEnlaceMeet(
+  db: PrismaClient,
+  eventoProveedorIds: readonly string[],
+  result: Readonly<{ codigoReunion: string; joinUrl: string; payload?: unknown }>
+): Promise<void> {
+  if (eventoProveedorIds.length === 0) return;
+  await db.eventoProveedor.updateMany({
+    where: { id: { in: [...eventoProveedorIds] } },
+    data: {
+      externalEventId: null,
+      codigoReunion: result.codigoReunion,
+      joinUrl: result.joinUrl,
+      payloadUltimo: result.payload === undefined ? undefined : JSON.parse(JSON.stringify(result.payload)),
+      sincronizadoAt: new Date(),
+      estadoIntegracion: "SINCRONIZADA",
+      errorIntegracion: null
+    }
+  });
 }
 
 async function procesarEnLotes<T, R>(

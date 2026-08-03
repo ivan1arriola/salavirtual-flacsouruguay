@@ -1,102 +1,80 @@
 import { PrismaClient } from "@prisma/client";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  buildMeetingDigestEmail,
+  firstName,
+  formatRange,
+  fullName,
+  passwordSala
+} from "./email-message-helpers";
 
 const db = new PrismaClient();
-const timezone = "America/Montevideo";
-
-const dateFormatter = new Intl.DateTimeFormat("es-UY", {
-  weekday: "long",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  timeZone: timezone
-});
-
-const timeFormatter = new Intl.DateTimeFormat("es-UY", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-  timeZone: timezone
-});
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function formatRange(inicio: Date, fin: Date): string {
-  return `${capitalize(dateFormatter.format(inicio))}, ${timeFormatter.format(inicio)} a ${timeFormatter.format(fin)} h`;
-}
-
-function obtenerNumeroSala(
-  cuenta: Readonly<{ nombre: string; emailOrganizador: string | null }> | null | undefined
-): string | null {
-  const source = [cuenta?.emailOrganizador, cuenta?.nombre].filter(Boolean).join(" ");
-  const match = source.match(/sala\s*0?(\d{1,2})/i);
-  return match ? match[1].padStart(2, "0") : null;
-}
-
-function passwordSala(
-  cuenta: Readonly<{ nombre: string; emailOrganizador: string | null }> | null | undefined
-): string | null {
-  const numero = obtenerNumeroSala(cuenta);
-  return numero ? `Sala${numero}FLACSO+` : null;
-}
 
 async function main(): Promise<void> {
   const outDirArg = process.argv.find((arg) => arg.startsWith("--out-dir="));
   const outDir = outDirArg?.slice("--out-dir=".length);
   const now = new Date();
-  const meetings = await db.instanciaSala.findMany({
+
+  const requests = await db.solicitudSala.findMany({
     where: {
-      inicioProgramadoAt: { gte: now },
-      estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+      instancias: {
+        some: {
+          inicioProgramadoAt: { gte: now },
+          estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+        }
+      }
     },
-    orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
+    orderBy: { fechaInicioSolicitada: "asc" },
     select: {
-      ordinal: true,
-      inicioProgramadoAt: true,
-      finProgramadoAt: true,
+      id: true,
+      titulo: true,
+      modalidad: true,
       requiereAsistencia: true,
       requiereGrabacion: true,
-      solicitud: {
+      docentePrograma: {
         select: {
-          titulo: true,
-          modalidad: true,
-          docentePrograma: {
+          programa: { select: { nombre: true } },
+          docente: {
             select: {
-              programa: { select: { nombre: true } },
-              docente: {
+              usuario: {
                 select: {
-                  usuario: {
-                    select: {
-                      id: true,
-                      nombres: true,
-                      apellidos: true,
-                      emailPrincipal: true
-                    }
-                  }
+                  id: true,
+                  nombres: true,
+                  apellidos: true,
+                  emailPrincipal: true
                 }
               }
             }
           }
         }
       },
-      eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+      instancias: {
+        where: {
+          inicioProgramadoAt: { gte: now },
+          estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+        },
+        orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
         select: {
-          joinUrl: true,
-          codigoReunion: true,
-          cuentaProveedor: { select: { nombre: true, emailOrganizador: true } }
+          inicioProgramadoAt: true,
+          finProgramadoAt: true,
+          eventosProveedor: {
+            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            select: {
+              joinUrl: true,
+              codigoReunion: true,
+              cuentaProveedor: { select: { nombre: true, emailOrganizador: true } }
+            }
+          }
         }
       }
     }
   });
 
-  const byTeacher = new Map<string, typeof meetings>();
-  for (const meeting of meetings) {
-    const teacher = meeting.solicitud.docentePrograma.docente.usuario;
-    byTeacher.set(teacher.id, [...(byTeacher.get(teacher.id) ?? []), meeting]);
+  const byTeacher = new Map<string, typeof requests>();
+  for (const request of requests) {
+    const teacher = request.docentePrograma.docente.usuario;
+    byTeacher.set(teacher.id, [...(byTeacher.get(teacher.id) ?? []), request]);
   }
 
   const sections: string[] = [];
@@ -105,73 +83,72 @@ async function main(): Promise<void> {
     name: string;
     subject: string;
     body_file: string;
+    text_file: string;
+    html_file: string;
     meetings: number;
+    instances: number;
   }[] = [];
 
-  if (outDir) {
-    mkdirSync(outDir, { recursive: true });
-  }
+  if (outDir) mkdirSync(outDir, { recursive: true });
 
   for (const items of byTeacher.values()) {
-    const teacher = items[0]?.solicitud.docentePrograma.docente.usuario;
+    const teacher = items[0]?.docentePrograma.docente.usuario;
     if (!teacher) continue;
 
-    const fullName = [teacher.nombres, teacher.apellidos].filter(Boolean).join(" ");
-    const firstName = teacher.nombres.replace(/,+$/, "");
-    const lines = items.map((meeting, index) => {
-      const meet = meeting.eventosProveedor[0];
-      const password = passwordSala(meet?.cuentaProveedor);
-      const notes = [
-        meeting.requiereAsistencia ? "requiere asistencia" : null,
-        meeting.requiereGrabacion ? "requiere grabación" : null
-      ].filter(Boolean);
+    const cards = items.map((request) => {
+      const meet = request.instancias[0]?.eventosProveedor[0];
+      const cuenta = meet?.cuentaProveedor;
+      const observaciones = [
+        request.requiereAsistencia ? "requiere asistencia" : null,
+        request.requiereGrabacion ? "requiere grabación" : null
+      ].filter((item): item is string => Boolean(item));
 
-      return [
-        `${index + 1}. ${formatRange(meeting.inicioProgramadoAt, meeting.finProgramadoAt)}`,
-        `   ${meeting.solicitud.titulo}`,
-        `   Programa: ${meeting.solicitud.docentePrograma.programa.nombre}`,
-        `   Encuentro: ${meeting.ordinal}`,
-        `   Modalidad: ${meeting.solicitud.modalidad}`,
-        meet?.joinUrl ? `   Link: ${meet.joinUrl}` : "   Link: pendiente de provisión",
-        meet?.codigoReunion ? `   Código Meet: ${meet.codigoReunion}` : null,
-        meet?.cuentaProveedor?.emailOrganizador
-          ? `   Usuario sala: ${meet.cuentaProveedor.emailOrganizador}`
-          : null,
-        password ? `   Contraseña sala: ${password}` : null,
-        notes.length ? `   Observaciones: ${notes.join("; ")}` : null
-      ].filter(Boolean).join("\n");
+      return {
+        titulo: request.titulo,
+        programa: request.docentePrograma.programa.nombre,
+        modalidad: request.modalidad,
+        fechas: request.instancias.map((instancia) =>
+          formatRange(instancia.inicioProgramadoAt, instancia.finProgramadoAt)
+        ),
+        joinUrl: meet?.joinUrl,
+        codigoReunion: meet?.codigoReunion,
+        usuarioSala: cuenta?.emailOrganizador,
+        passwordSala: passwordSala(cuenta),
+        observaciones
+      };
     });
 
     const subject = "Próximas reuniones Google Meet";
-    const body = [
-      "",
-      `Hola ${firstName},`,
-      "",
-      "Te compartimos el detalle de tus próximas reuniones programadas:",
-      "",
-      lines.join("\n\n"),
-      "",
-      "Saludos,",
-      "Equipo FLACSO Uruguay"
-    ].join("\n").trimStart();
+    const message = buildMeetingDigestEmail({
+      greetingName: firstName(teacher),
+      intro: "Te compartimos el detalle de tus próximas reuniones programadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
+      cards
+    });
+    const name = fullName(teacher);
 
     sections.push([
-      `PARA: ${fullName} <${teacher.emailPrincipal ?? "sin email"}>`,
+      `PARA: ${name} <${teacher.emailPrincipal ?? "sin email"}>`,
       `ASUNTO: ${subject}`,
       "",
-      body
+      message.text
     ].join("\n"));
 
     if (outDir && teacher.emailPrincipal) {
       const safeEmail = teacher.emailPrincipal.replace(/[^a-z0-9._-]+/gi, "_");
-      const bodyFile = join(outDir, `${manifest.length + 1}-${safeEmail}.txt`);
-      writeFileSync(bodyFile, body, "utf8");
+      const baseFile = `${manifest.length + 1}-${safeEmail}`;
+      const textFile = join(outDir, `${baseFile}.txt`);
+      const htmlFile = join(outDir, `${baseFile}.html`);
+      writeFileSync(textFile, message.text, "utf8");
+      writeFileSync(htmlFile, message.html, "utf8");
       manifest.push({
         to: teacher.emailPrincipal,
-        name: fullName,
+        name,
         subject,
-        body_file: bodyFile,
-        meetings: items.length
+        body_file: textFile,
+        text_file: textFile,
+        html_file: htmlFile,
+        meetings: items.length,
+        instances: items.reduce((total, item) => total + item.instancias.length, 0)
       });
     }
   }

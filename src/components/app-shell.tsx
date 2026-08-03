@@ -22,12 +22,11 @@ const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/reuniones", label: "Agenda", icon: CalendarDays },
   { href: "/reuniones/nueva", label: "Nueva reunión", icon: Waypoints },
-  { href: "/grabaciones", label: "Grabaciones", icon: Video },
-  { href: "/historico", label: "Histórico Zoom", icon: History }
+  { href: "/grabaciones", label: "Grabaciones", icon: Video }
 ] as const;
 
 const adminNav = [
-  { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
+  { href: "/cobertura-asistencias", label: "Cobertura", icon: Hand },
   { href: "/asistentes", label: "Asistentes", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings }
@@ -43,6 +42,7 @@ const assistantNav = [
 ] as const;
 
 const profileNav = [{ href: "/mi-perfil", label: "Mi perfil", icon: UserRound }] as const;
+const archiveNav = [{ href: "/historico", label: "Histórico Zoom", icon: History }] as const;
 
 export function AppShell({
   user,
@@ -79,6 +79,20 @@ export function AppShell({
           ))}
         </nav>
 
+        {user.role !== "ASISTENTE" ? (
+          <details className="archive-nav">
+            <summary>Archivo</summary>
+            <nav className="side-nav" aria-label="Navegación de archivo">
+              {archiveNav.map(({ href, label, icon: Icon }) => (
+                <Link href={href} key={href}>
+                  <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              ))}
+            </nav>
+          </details>
+        ) : null}
+
         <div className="account-block">
           <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
             {(user.name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
@@ -113,6 +127,22 @@ export function AppShell({
             <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
           </span>
         </header>
+        {user.role === "ADMINISTRACION" ? (
+          <nav className="mobile-secondary-nav" aria-label="Navegación de administración">
+            {adminNav.map(({ href, label, icon: Icon }) => (
+              <Link href={href} key={href}>
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            ))}
+            {archiveNav.map(({ href, label, icon: Icon }) => (
+              <Link href={href} key={href}>
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+        ) : null}
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {operationalNav.slice(0, 4).map(({ href, label, icon: Icon }) => (

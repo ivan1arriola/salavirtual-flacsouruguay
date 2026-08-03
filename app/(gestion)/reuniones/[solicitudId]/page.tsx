@@ -19,6 +19,7 @@ export default async function ReunionDetailPage({
     include: {
       docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } },
       instancias: {
+        where: { estado: { not: "CANCELADA" } },
         orderBy: { inicioProgramadoAt: "asc" },
         include: {
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },

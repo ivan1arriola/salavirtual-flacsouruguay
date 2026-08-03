@@ -32,16 +32,13 @@ export async function crearReuniones(
   );
 
   return db.$transaction(async (tx) => {
-    const [docentePrograma, cuentaHost, proveedorMeet] = await Promise.all([
+    const [docentePrograma, proveedorMeet] = await Promise.all([
       tx.docentePrograma.findUnique({
         where: { id: input.docenteProgramaId },
         include: {
           docente: { select: { usuarioId: true } },
           programa: { select: { activo: true } },
         },
-      }),
-      tx.cuentaProveedor.findUnique({
-        where: { id: input.cuentaHostId },
       }),
       tx.proveedorReunion.findUnique({
         where: { tipo: "GOOGLE_MEET" },
@@ -61,23 +58,46 @@ export async function crearReuniones(
         "No tiene permisos para crear reuniones de este docente.",
       );
     }
-    if (
-      !cuentaHost?.activa ||
-      !cuentaHost.tieneLicencia ||
-      cuentaHost.proveedorId !== proveedorMeet?.id
-    ) {
-      throw new Error(
-        "La cuenta host debe ser una cuenta Meet activa con licencia.",
-      );
+    if (!proveedorMeet) {
+      throw new Error("Google Meet no está configurado como proveedor.");
     }
 
-    const cohosts = await tx.cuentaGoogleFlacso.findMany({
+    const [cohosts, hosts, occupiedHosts] = await Promise.all([
+      tx.cuentaGoogleFlacso.findMany({
       where: { id: { in: input.cohostCuentaIds } },
       select: { id: true },
-    });
+      }),
+      tx.cuentaProveedor.findMany({
+        where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
+        orderBy: [{ prioridad: "asc" }, { id: "asc" }],
+        select: { id: true, prioridad: true }
+      }),
+      tx.eventoProveedor.findMany({
+        where: {
+          proveedorId: proveedorMeet.id,
+          cuentaProveedorId: { not: null },
+          instancia: {
+            estado: "PROGRAMADA",
+            OR: input.instancias.map(({ inicio, fin }) => ({
+              inicioProgramadoAt: { lt: fin },
+              finProgramadoAt: { gt: inicio }
+            }))
+          }
+        },
+        select: { cuentaProveedorId: true }
+      })
+    ]);
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
       throw new Error("Una o mas cuentas cohost no existen.");
     }
+    const occupiedHostIds = new Set(
+      occupiedHosts.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
+    );
+    const cuentaHost = hosts.find(({ id }) => !occupiedHostIds.has(id));
+    if (!cuentaHost) {
+      throw new Error("No hay una sala Meet libre para todas las fechas solicitadas.");
+    }
+    const manualCohostEmails = [...new Set(input.cohostEmailsManual)];
     if (asistenteId) {
       const asistente = await tx.asistente.findUnique({
         where: { id: asistenteId },
@@ -135,6 +155,14 @@ export async function crearReuniones(
               instanciaSalaId: instancia.id,
               cuentaGoogleId: id,
             })),
+          });
+        }
+        if (manualCohostEmails.length > 0) {
+          await tx.cohostEmailReunion.createMany({
+            data: manualCohostEmails.map((email) => ({
+              instanciaSalaId: instancia.id,
+              email
+            }))
           });
         }
         if (asistenteId) {

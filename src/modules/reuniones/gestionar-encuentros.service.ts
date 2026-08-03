@@ -234,10 +234,14 @@ export async function eliminarEncuentro(
       dependencies.descifrar,
       event.cuentaProveedor.emailOrganizador
     );
-    await dependencies.crearProvider(credentials).cancelarEvento(
-      event.cuentaProveedor.emailOrganizador,
-      event.externalEventId
-    );
+    try {
+      await dependencies.crearProvider(credentials).cancelarEvento(
+        event.cuentaProveedor.emailOrganizador,
+        event.externalEventId
+      );
+    } catch (error) {
+      if (!esEventoCalendarInexistente(error)) throw error;
+    }
   }
   await dependencies.db.$transaction(async (tx) => {
     await auditar(tx, actor.id, "ENCUENTRO_ELIMINADO", meeting.id, {
@@ -295,7 +299,11 @@ export async function eliminarReunionCompleta(
       dependencies.descifrar,
       calendarId
     );
-    await dependencies.crearProvider(credentials).cancelarEvento(calendarId, externalEventId);
+    try {
+      await dependencies.crearProvider(credentials).cancelarEvento(calendarId, externalEventId);
+    } catch (error) {
+      if (!esEventoCalendarInexistente(error)) throw error;
+    }
   }));
 
   await dependencies.db.$transaction(async (tx) => {
@@ -320,4 +328,19 @@ function validarGestion(actor: SessionActor, docenteUsuarioId?: string): void {
   if (!actor.activo || !docenteUsuarioId || !puedeGestionarEncuentros(actor.rol, actor.id, docenteUsuarioId)) {
     throw new Error("No tiene permisos para gestionar estos encuentros.");
   }
+}
+
+function esEventoCalendarInexistente(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    status?: unknown;
+    response?: { status?: unknown };
+  };
+  return candidate.code === 404 ||
+    candidate.code === 410 ||
+    candidate.status === 404 ||
+    candidate.status === 410 ||
+    candidate.response?.status === 404 ||
+    candidate.response?.status === 410;
 }

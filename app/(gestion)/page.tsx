@@ -43,6 +43,7 @@ export default async function HomePage() {
           ...docenteWhere,
           requiereAsistencia: true,
           inicioProgramadoAt: { gte: now },
+          estado: "PROGRAMADA",
           asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
         }
       }),
