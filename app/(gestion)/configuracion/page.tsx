@@ -2,14 +2,13 @@ import { CheckCircle2, Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
-import { MeetArtifactsButton } from "@/src/components/meet-artifacts-button";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 
 export default async function ConfiguracionPage() {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
-  const [configuration, hosts, programs, pendingMeet, finishedMeet] = await Promise.all([
+  const [configuration, hosts, programs, pendingMeet] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -28,16 +27,6 @@ export default async function ConfiguracionPage() {
           estado: "PROGRAMADA"
         }
       }
-    }),
-    db.eventoProveedor.count({
-      where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
-        estadoIntegracion: "SINCRONIZADA",
-        instancia: {
-          finProgramadoAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), lte: new Date() },
-          estado: { not: "CANCELADA" }
-        }
-      }
     })
   ]);
 
@@ -51,7 +40,6 @@ export default async function ConfiguracionPage() {
       <div className="settings-grid">
         <section className="content-section settings-wide">
           <PendingMeetButton count={pendingMeet} />
-          <MeetArtifactsButton count={finishedMeet} />
         </section>
         <WorkspaceConfigForm
           initial={configuration ? {

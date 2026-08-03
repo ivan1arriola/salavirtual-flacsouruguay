@@ -2,6 +2,7 @@ import { Play, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { MeetArtifactsButton } from "@/src/components/meet-artifacts-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -12,7 +13,21 @@ export default async function GrabacionesPage() {
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
-  const recordings = await listarGrabacionesVisibles(db, actor);
+  const [recordings, finishedMeet] = await Promise.all([
+    listarGrabacionesVisibles(db, actor),
+    actor.rol === "ADMINISTRACION"
+      ? db.eventoProveedor.count({
+          where: {
+            proveedor: { tipo: "GOOGLE_MEET" },
+            estadoIntegracion: "SINCRONIZADA",
+            instancia: {
+              finProgramadoAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), lte: new Date() },
+              estado: { not: "CANCELADA" }
+            }
+          }
+        })
+      : Promise.resolve(0)
+  ]);
 
   return (
     <>
@@ -24,6 +39,12 @@ export default async function GrabacionesPage() {
         </div>
         <Video size={28} color="var(--brand)" aria-hidden="true" />
       </header>
+
+      {actor.rol === "ADMINISTRACION" ? (
+        <section className="content-section">
+          <MeetArtifactsButton count={finishedMeet} />
+        </section>
+      ) : null}
 
       <section className="content-section">
         {recordings.length === 0 ? (
