@@ -7,7 +7,6 @@ export type MeetProvisionRequest = Readonly<{
   calendarId: string;
   cohostEmails?: readonly string[];
   requiereAsistencia?: boolean;
-  requiereGrabacion?: boolean;
 }>;
 
 export type MeetProvisionResult = Readonly<{

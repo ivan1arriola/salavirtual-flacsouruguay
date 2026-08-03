@@ -25,7 +25,6 @@ export async function configurarGoogleMeetExistente(
   codigoReunion: string,
   settings: Readonly<{
     requiereAsistencia?: boolean;
-    requiereGrabacion?: boolean;
     cohostEmails?: readonly string[];
   }>
 ): Promise<void> {
@@ -127,10 +126,9 @@ async function finalizarProvision(
 async function configurarEspacioMeet(
   auth: JWT,
   codigoReunion: string,
-  request: Readonly<{ requiereAsistencia?: boolean; requiereGrabacion?: boolean; cohostEmails?: readonly string[] }>
+  request: Readonly<{ requiereAsistencia?: boolean; cohostEmails?: readonly string[] }>
 ): Promise<string> {
   const configurarAsistencia = request.requiereAsistencia !== undefined;
-  const configurarGrabacion = request.requiereGrabacion !== undefined;
   const configurarModeracion = Boolean(request.cohostEmails?.length);
   const current = await auth.request<{ name?: string }>({
     url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
@@ -141,16 +139,10 @@ async function configurarEspacioMeet(
     ...(configurarAsistencia
       ? { attendanceReportGenerationType: request.requiereAsistencia ? "GENERATE_REPORT" : "DO_NOT_GENERATE" }
       : {}),
-    ...(configurarGrabacion
-      ? { artifactConfig: { recordingConfig: { autoRecordingGeneration: request.requiereGrabacion ? "ON" : "OFF" } } }
-      : {}),
     ...(configurarModeracion ? { moderation: "ON" } : {})
   };
   const updateMask = [
     ...(configurarAsistencia ? ["config.attendance_report_generation_type"] : []),
-    ...(configurarGrabacion
-      ? ["config.artifact_config.recording_config.auto_recording_generation"]
-      : []),
     ...(configurarModeracion ? ["config.moderation"] : [])
   ].join(",");
   if (updateMask) {

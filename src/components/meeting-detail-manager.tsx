@@ -135,7 +135,7 @@ export function MeetingDetailManager({
           <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" required /></label>
           <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" required /></label>
           <label className="check-field encounter-add-check"><input name="requiereAsistencia" type="checkbox" /><span>Asistencia</span></label>
-          <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Grabación</span></label>
+          <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
         </form>
       </section>

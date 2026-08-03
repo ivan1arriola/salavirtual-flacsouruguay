@@ -117,7 +117,6 @@ export async function provisionarEventosMeet(
           calendarId: hostEmail,
           cohostEmails: cohostEmailsDeInstancia(eventoPrincipal.instancia),
           requiereAsistencia: eventoPrincipal.instancia.requiereAsistencia,
-          requiereGrabacion: eventoPrincipal.instancia.requiereGrabacion,
         });
         await dependencies.db.eventoProveedor.update({
           where: { id: eventoPrincipal.id },

@@ -7,6 +7,7 @@ import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.do
 
 type Option = Readonly<{ id: string; label: string }>;
 type MeetingDate = Readonly<{ fecha: string; horaInicio: string; horaFin: string }>;
+type MeetingDateMode = "SINGLE" | "MULTIPLE";
 type RecurrenceState = Readonly<{
   desde: string;
   hasta: string;
@@ -37,6 +38,7 @@ export function MeetingForm({
   canAssignAssistant: boolean;
 }>) {
   const [dates, setDates] = useState<readonly MeetingDate[]>([{ fecha: "", horaInicio: "", horaFin: "" }]);
+  const [dateMode, setDateMode] = useState<MeetingDateMode>("SINGLE");
   const [recurrence, setRecurrence] = useState<RecurrenceState>({
     desde: "",
     hasta: "",
@@ -55,6 +57,8 @@ export function MeetingForm({
     setStatus("saving");
     setMessage("");
     try {
+      await waitForNextPaint();
+      const minimumLoadingTime = wait(800);
       const response = await fetch("/api/v1/reuniones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,6 +83,7 @@ export function MeetingForm({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "No se pudo crear la reunión.");
+      await minimumLoadingTime;
       const failures = result.provisionamiento?.filter(
         ({ estado }: { estado: string }) => estado !== "SINCRONIZADA"
       ).length;
@@ -100,9 +105,18 @@ export function MeetingForm({
       const generated = generarFechasRecurrentes(recurrence);
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
       setDates(generated);
+      setDateMode(generated.length > 1 ? "MULTIPLE" : dateMode);
       setRecurrenceMessage(`${generated.length} fechas generadas.`);
     } catch (error) {
       setRecurrenceMessage(error instanceof Error ? error.message : "No se pudieron generar las fechas.");
+    }
+  }
+
+  function setMeetingDateMode(mode: MeetingDateMode) {
+    setDateMode(mode);
+    if (mode === "SINGLE") {
+      setDates([dates[0] ?? { fecha: "", horaInicio: "", horaFin: "" }]);
+      setRecurrenceMessage("");
     }
   }
 
@@ -117,45 +131,64 @@ export function MeetingForm({
               {programs.map((option) => <option value={option.id} key={option.id}>{option.label} — {option.teacher}</option>)}
             </select>
           </Field>
-          <Field label="Modalidad">
-            <select name="modalidad" defaultValue="VIRTUAL"><option value="VIRTUAL">Virtual</option><option value="HIBRIDA">Híbrida</option></select>
-          </Field>
+          <fieldset className="field modality-choice">
+            <legend>Modalidad</legend>
+            <label><input type="radio" name="modalidad" value="VIRTUAL" defaultChecked /><span>Virtual</span></label>
+            <label><input type="radio" name="modalidad" value="HIBRIDA" /><span>Híbrida</span></label>
+          </fieldset>
           <Field label="Descripción" wide><textarea name="descripcion" rows={3} /></Field>
         </div>
       </FormSection>
 
       <FormSection number="2" title="Fechas" detail="Zona horaria de Montevideo.">
+        <fieldset className="date-mode-selector">
+          <legend>Tipo de reunión</legend>
+          <label>
+            <input type="radio" name="dateMode" value="SINGLE" checked={dateMode === "SINGLE"} onChange={() => setMeetingDateMode("SINGLE")} />
+            <span>Una fecha</span>
+          </label>
+          <label>
+            <input type="radio" name="dateMode" value="MULTIPLE" checked={dateMode === "MULTIPLE"} onChange={() => setMeetingDateMode("MULTIPLE")} />
+            <span>Varias fechas</span>
+          </label>
+        </fieldset>
         <div className="date-list">
-          <div className="recurrence-builder">
-            <div className="recurrence-grid">
-              <Field label="Desde"><input type="date" value={recurrence.desde} onChange={(event) => setRecurrence({ ...recurrence, desde: event.target.value })} /></Field>
-              <Field label="Hasta"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
-              <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaInicio: event.target.value })} /></Field>
-              <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => setRecurrence({ ...recurrence, horaFin: event.target.value })} /></Field>
+          {dateMode === "MULTIPLE" ? (
+            <div className="recurrence-builder">
+              <div className="recurrence-grid">
+                <Field label="Desde"><input type="date" value={recurrence.desde} onChange={(event) => setRecurrence({ ...recurrence, desde: event.target.value })} /></Field>
+                <Field label="Hasta"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
+                <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaInicio: event.target.value })} /></Field>
+                <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => setRecurrence({ ...recurrence, horaFin: event.target.value })} /></Field>
+              </div>
+              <fieldset className="weekday-selector">
+                <legend>Días</legend>
+                {WEEKDAYS.map((day) => (
+                  <label key={day.value}>
+                    <input type="checkbox" checked={recurrence.diasSemana.includes(day.value)} onChange={(event) => setRecurrence({ ...recurrence, diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked) })} />
+                    <span>{day.label}</span>
+                  </label>
+                ))}
+              </fieldset>
+              <div className="recurrence-actions">
+                <span className="muted-text" role="status">{recurrenceMessage}</span>
+                <button className="secondary-action" type="button" onClick={generateRecurrence}><CalendarDays size={17} />Generar fechas</button>
+              </div>
             </div>
-            <fieldset className="weekday-selector">
-              <legend>Días</legend>
-              {WEEKDAYS.map((day) => (
-                <label key={day.value}>
-                  <input type="checkbox" checked={recurrence.diasSemana.includes(day.value)} onChange={(event) => setRecurrence({ ...recurrence, diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked) })} />
-                  <span>{day.label}</span>
-                </label>
-              ))}
-            </fieldset>
-            <div className="recurrence-actions">
-              <span className="muted-text" role="status">{recurrenceMessage}</span>
-              <button className="secondary-action" type="button" onClick={generateRecurrence}><CalendarDays size={17} />Generar fechas</button>
-            </div>
-          </div>
+          ) : null}
           {dates.map((date, index) => (
-            <div className="date-row" key={index}>
+            <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={index}>
               <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
               <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
               <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
-              <button className="icon-button remove-date" type="button" title="Quitar fecha" disabled={dates.length === 1} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar fecha</span></button>
+              {dateMode === "MULTIPLE" ? (
+                <button className="icon-button remove-date" type="button" title="Quitar fecha" disabled={dates.length === 1} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar fecha</span></button>
+              ) : null}
             </div>
           ))}
-          <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, { fecha: "", horaInicio: "", horaFin: "" }])}><Plus size={17} />Agregar fecha</button>
+          {dateMode === "MULTIPLE" ? (
+            <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, { fecha: "", horaInicio: "", horaFin: "" }])}><Plus size={17} />Agregar fecha</button>
+          ) : null}
         </div>
       </FormSection>
 
@@ -166,7 +199,7 @@ export function MeetingForm({
             <div className="auto-room-note">Se asigna automáticamente según disponibilidad y prioridad de salas.</div>
           </div>
           <label className="check-field"><input name="requiereAsistencia" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span>Requiere asistencia</span></label>
-          <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span>Requiere grabación</span></label>
+          <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           {requiresAssistance && canAssignAssistant ? (
             <fieldset className="field field-wide assistance-choice">
               <legend>Cobertura de asistencia</legend>
@@ -232,4 +265,14 @@ function toggleWeekday(days: readonly number[], day: number, checked: boolean): 
 
 function localMontevideoToIso(fecha: string, hora: string): string {
   return new Date(`${fecha}T${hora}:00-03:00`).toISOString();
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function waitForNextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+  });
 }

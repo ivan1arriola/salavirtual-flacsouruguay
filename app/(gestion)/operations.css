@@ -93,6 +93,43 @@
   gap: 16px;
 }
 
+.date-mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.date-mode-selector legend {
+  width: 100%;
+  color: #3f4b5c;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.date-mode-selector label,
+.modality-choice label {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 8px 11px;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.date-mode-selector input,
+.modality-choice input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--brand);
+}
+
 .recurrence-builder {
   display: grid;
   gap: 14px;
@@ -246,6 +283,10 @@
   gap: 12px;
 }
 
+.date-row-single {
+  grid-template-columns: minmax(180px, 1.2fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
+}
+
 .remove-date {
   margin-bottom: 4px;
   color: #963e3e;
@@ -282,6 +323,17 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 0;
   padding: 0;
+}
+
+.modality-choice {
+  align-content: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 0;
+  padding: 0;
+}
+
+.modality-choice legend {
+  grid-column: 1 / -1;
 }
 
 .assistance-choice legend {
