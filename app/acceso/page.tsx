@@ -26,7 +26,7 @@ export default async function AccesoPage({
       <section className="login-panel" aria-labelledby="login-title">
         <header className="login-header">
           <p className="eyebrow">FLACSO Uruguay</p>
-          <h1 id="login-title">Gestor Google Meet</h1>
+          <h1 id="login-title">FLACSO Meet</h1>
           <p>Ingresá con tu usuario, correo o una cuenta institucional autorizada.</p>
         </header>
 

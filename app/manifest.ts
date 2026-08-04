@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Gestor FLACSO Google Meet",
+    name: "FLACSO Meet",
     short_name: "FLACSO Meet",
     description: "Gestión de reuniones académicas de FLACSO Uruguay.",
     start_url: "/",

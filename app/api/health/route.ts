@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const HEALTH_STATUS = Object.freeze({
   ok: true,
-  app: "gestor-flacso-google-meet"
+  app: "flacso-meet"
 });
 
 export function GET() {

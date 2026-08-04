@@ -1,4 +1,4 @@
-# Gestor FLACSO Google Meet
+# FLACSO Meet
 
 Nueva plataforma web para gestionar solicitudes, agenda, asistencia, grabaciones y liquidaciones de reuniones academicas de FLACSO Uruguay.
 
