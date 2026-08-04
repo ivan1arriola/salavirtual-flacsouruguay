@@ -43,6 +43,7 @@ model Usuario {
   configuracionesGoogleActualizadas ConfiguracionGoogleWorkspace[] @relation("ConfiguracionGoogleActualizadaPor")
   docente                           Docente?
   asistente                         Asistente?
+  notificaciones                    Notificacion[]
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -463,6 +464,22 @@ model Auditoria {
   actor          Usuario? @relation("AuditoriaActor", fields: [actorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([entidadTipo, entidadId, createdAt])
+}
+
+model Notificacion {
+  id        String    @id @default(cuid())
+  usuarioId String
+  tipo      String
+  titulo    String
+  cuerpo    String?
+  href      String?
+  metadata  Json?
+  leidaAt   DateTime?
+  createdAt DateTime  @default(now())
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, leidaAt, createdAt])
+  @@index([tipo, createdAt])
 }
 
 model CuentaGoogleFlacso {

@@ -74,6 +74,41 @@
   color: var(--brand-strong);
 }
 
+.notification-nav-link strong,
+.notification-mobile-link strong {
+  min-width: 20px;
+  min-height: 20px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #d74242;
+  color: #ffffff;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.notification-mobile-link {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--brand);
+}
+
+.notification-mobile-link strong {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  min-height: 18px;
+  font-size: 0.64rem;
+}
+
 .archive-nav {
   margin-top: 10px;
   border-top: 1px solid var(--line);
@@ -425,6 +460,84 @@
 
 .empty-state p {
   margin: 0;
+}
+
+.notification-filter {
+  grid-template-columns: 20px minmax(180px, auto) auto;
+  justify-content: start;
+}
+
+.notification-filter select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+}
+
+.notification-list {
+  display: grid;
+}
+
+.notification-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8ebf0;
+}
+
+.notification-item:last-child {
+  border-bottom: 0;
+}
+
+.notification-item.unread {
+  background: #f6fbfd;
+}
+
+.notification-copy {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.notification-copy strong,
+.notification-copy small,
+.notification-copy time {
+  display: block;
+}
+
+.notification-copy small {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.notification-copy time {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.notification-dot.read {
+  background: #c4ccd8;
+}
+
+.notification-action-wrap {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
 }
 
 .sr-only {

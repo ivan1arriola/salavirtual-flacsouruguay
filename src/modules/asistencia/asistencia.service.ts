@@ -36,7 +36,7 @@ export async function actualizarPostulacionAsistencia(
   return db.$transaction(async (tx) => {
     const assistant = await tx.asistente.findUnique({
       where: { usuarioId: actor.id },
-      select: { id: true, usuario: { select: { activo: true, rol: true } } }
+      select: { id: true, usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } } }
     });
     if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
       throw new Error("No existe un perfil de Asistente activo para esta sesión.");
@@ -48,6 +48,7 @@ export async function actualizarPostulacionAsistencia(
         requiereAsistencia: true,
         finProgramadoAt: true,
         estado: true,
+        solicitud: { select: { titulo: true } },
         asignaciones: {
           where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
           select: { id: true },
@@ -67,6 +68,10 @@ export async function actualizarPostulacionAsistencia(
     }
 
     const estado = estadoInteresParaAccion(input.accion);
+    const assistantName = [
+      assistant.usuario.nombres,
+      assistant.usuario.apellidos
+    ].filter(Boolean).join(" ") || "Un asistente";
     const interest = await tx.interesAsistenteEvento.upsert({
       where: {
         instanciaSalaId_asistenteId: {
@@ -92,6 +97,22 @@ export async function actualizarPostulacionAsistencia(
         valorNuevo: { asistenteId: assistant.id, estado }
       }
     });
+    const admins = await tx.usuario.findMany({
+      where: { activo: true, rol: "ADMINISTRACION" },
+      select: { id: true }
+    });
+    if (admins.length > 0) {
+      await tx.notificacion.createMany({
+        data: admins.map((admin) => ({
+          usuarioId: admin.id,
+          tipo: estado === "ME_INTERESA" ? "ASISTENCIA_POSTULACION" : "ASISTENCIA_POSTULACION_RETIRADA",
+          titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
+          cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
+          href: "/cobertura-asistencias?estado=pendientes",
+          metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado }
+        }))
+      });
+    }
     return interest;
   });
 }
@@ -119,6 +140,8 @@ export async function asignarAsistentePostulado(
           requiereAsistencia: true,
           finProgramadoAt: true,
           estado: true,
+          inicioProgramadoAt: true,
+          solicitud: { select: { titulo: true } },
           asignaciones: {
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
             select: { id: true },
@@ -132,8 +155,11 @@ export async function asignarAsistentePostulado(
           id: true,
           usuario: {
             select: {
+              id: true,
               activo: true,
               rol: true,
+              nombres: true,
+              apellidos: true,
               cuentasGoogle: { select: { id: true } }
             }
           }
@@ -187,6 +213,20 @@ export async function asignarAsistentePostulado(
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
         valorNuevo: { asistenteId: assistant.id, estado: assignment.estado }
+      }
+    });
+    await tx.notificacion.create({
+      data: {
+        usuarioId: assistant.usuario.id,
+        tipo: "ASISTENCIA_ASIGNACION",
+        titulo: "Te asignaron una reunion",
+        cuerpo: `${meeting.solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
+        href: "/mi-agenda",
+        metadata: {
+          instanciaSalaId: meeting.id,
+          asistenteId: assistant.id,
+          inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
+        }
       }
     });
     return assignment;

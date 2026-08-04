@@ -82,4 +82,14 @@ describe("schema 3NF inicial", () => {
     expect(cohost).toContain("@@unique([instanciaSalaId, cuentaGoogleId])");
     expect(instancia).not.toMatch(/^\s+cohostCuentaIds\s/m);
   });
+
+  it("modela notificaciones dirigidas con estado de lectura", () => {
+    const notificacion = model("Notificacion");
+    const usuario = model("Usuario");
+    expect(usuario).toContain("notificaciones");
+    expect(notificacion).toContain("usuarioId");
+    expect(notificacion).toContain("leidaAt");
+    expect(notificacion).toContain("href");
+    expect(notificacion).toContain("@@index([usuarioId, leidaAt, createdAt])");
+  });
 });

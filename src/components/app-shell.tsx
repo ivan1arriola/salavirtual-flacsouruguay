@@ -1,4 +1,5 @@
 import {
+  Bell,
   CalendarCheck2,
   CalendarDays,
   CalendarRange,
@@ -17,6 +18,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
+import { db } from "@/src/lib/db";
 
 const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
@@ -44,7 +46,7 @@ const assistantNav = [
 const profileNav = [{ href: "/mi-perfil", label: "Mi perfil", icon: UserRound }] as const;
 const archiveNav = [{ href: "/historico", label: "Histórico Zoom", icon: History }] as const;
 
-export function AppShell({
+export async function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
@@ -58,6 +60,9 @@ export function AppShell({
     nombre: user.name ?? user.email ?? user.id,
     identificador: user.email ?? user.id
   };
+  const unreadNotifications = await db.notificacion.count({
+    where: { usuarioId: user.id, leidaAt: null }
+  });
 
   return (
     <div className="app-frame">
@@ -77,6 +82,11 @@ export function AppShell({
               <span>{label}</span>
             </Link>
           ))}
+          <Link className="notification-nav-link" href="/notificaciones">
+            <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
+            <span>Notificaciones</span>
+            {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
+          </Link>
         </nav>
 
         {user.role !== "ASISTENTE" ? (
@@ -123,6 +133,10 @@ export function AppShell({
             <strong>Gestor Meet</strong>
           </Link>
           <span className="mobile-account-actions">
+            <Link className="notification-mobile-link" href="/notificaciones" aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}>
+              <Bell size={18} aria-hidden="true" />
+              {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
+            </Link>
             <AccountSwitcher account={rememberedAccount} />
             <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
           </span>
@@ -151,6 +165,10 @@ export function AppShell({
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>
             </Link>
           ))}
+          <Link href="/notificaciones">
+            <Bell size={20} aria-hidden="true" />
+            <span>Alertas</span>
+          </Link>
         </nav>
       </div>
     </div>
