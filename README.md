@@ -28,6 +28,17 @@ Zoom queda como proveedor historico: se conserva para consulta, trazabilidad e i
 - Auth.js
 - Google Workspace APIs como integracion principal
 
+## Correo transaccional
+
+Las notificaciones por correo usan SMTP. Si estas variables no estan configuradas, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo:
+
+- `SMTP_HOST`
+- `SMTP_PORT` (por defecto `587`)
+- `SMTP_SECURE` (`true` para puerto 465)
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
 ## Primer setup local
 
 ```bash

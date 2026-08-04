@@ -44,6 +44,7 @@ model Usuario {
   docente                           Docente?
   asistente                         Asistente?
   notificaciones                    Notificacion[]
+  preferenciasNotificacion          PreferenciaNotificacion[]
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -480,6 +481,20 @@ model Notificacion {
 
   @@index([usuarioId, leidaAt, createdAt])
   @@index([tipo, createdAt])
+}
+
+model PreferenciaNotificacion {
+  id        String   @id @default(cuid())
+  usuarioId String
+  tipo      String
+  push      Boolean  @default(true)
+  email     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, tipo])
+  @@index([usuarioId])
 }
 
 model CuentaGoogleFlacso {

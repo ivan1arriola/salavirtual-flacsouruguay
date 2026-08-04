@@ -10,6 +10,7 @@ import {
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
+import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -99,20 +100,20 @@ export async function actualizarPostulacionAsistencia(
     });
     const admins = await tx.usuario.findMany({
       where: { activo: true, rol: "ADMINISTRACION" },
-      select: { id: true }
+      select: { id: true, emailPrincipal: true }
     });
-    if (admins.length > 0) {
-      await tx.notificacion.createMany({
-        data: admins.map((admin) => ({
-          usuarioId: admin.id,
-          tipo: estado === "ME_INTERESA" ? "ASISTENCIA_POSTULACION" : "ASISTENCIA_POSTULACION_RETIRADA",
-          titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
-          cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
-          href: "/cobertura-asistencias?estado=pendientes",
-          metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado }
-        }))
-      });
-    }
+    await notificarUsuarios(
+      tx,
+      admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
+      {
+        tipo: estado === "ME_INTERESA" ? "ASISTENCIA_POSTULACION" : "ASISTENCIA_POSTULACION_RETIRADA",
+        titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
+        cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
+        href: "/cobertura-asistencias?estado=pendientes",
+        metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado },
+        emailSubject: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion de asistencia retirada"
+      }
+    );
     return interest;
   });
 }
@@ -141,7 +142,22 @@ export async function asignarAsistentePostulado(
           finProgramadoAt: true,
           estado: true,
           inicioProgramadoAt: true,
-          solicitud: { select: { titulo: true } },
+          solicitud: {
+            select: {
+              id: true,
+              titulo: true,
+              creadaPor: { select: { id: true, emailPrincipal: true } },
+              docentePrograma: {
+                select: {
+                  docente: {
+                    select: {
+                      usuario: { select: { id: true, emailPrincipal: true } }
+                    }
+                  }
+                }
+              }
+            }
+          },
           asignaciones: {
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
             select: { id: true },
@@ -160,6 +176,7 @@ export async function asignarAsistentePostulado(
               rol: true,
               nombres: true,
               apellidos: true,
+              emailPrincipal: true,
               cuentasGoogle: { select: { id: true } }
             }
           }
@@ -215,20 +232,52 @@ export async function asignarAsistentePostulado(
         valorNuevo: { asistenteId: assistant.id, estado: assignment.estado }
       }
     });
-    await tx.notificacion.create({
-      data: {
+    const assignmentMessage = {
+      tipo: "ASISTENCIA_ASIGNACION" as const,
+      titulo: "Asistencia asignada",
+      cuerpo: `${meeting.solicitud.titulo} quedo asignada a ${[
+        assistant.usuario.nombres,
+        assistant.usuario.apellidos
+      ].filter(Boolean).join(" ") || "la persona asignada"}.`,
+      href: "/mi-agenda",
+      metadata: {
+        instanciaSalaId: meeting.id,
+        asistenteId: assistant.id,
+        inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
+      }
+    };
+    await notificarUsuario(
+      tx,
+      {
         usuarioId: assistant.usuario.id,
-        tipo: "ASISTENCIA_ASIGNACION",
+        email: assistant.usuario.emailPrincipal
+      },
+      {
+        ...assignmentMessage,
         titulo: "Te asignaron una reunion",
         cuerpo: `${meeting.solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
         href: "/mi-agenda",
-        metadata: {
-          instanciaSalaId: meeting.id,
-          asistenteId: assistant.id,
-          inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
-        }
+        emailSubject: "Te asignaron una asistencia"
       }
-    });
+    );
+    await notificarUsuarios(
+      tx,
+      [
+        {
+          usuarioId: meeting.solicitud.creadaPor.id,
+          email: meeting.solicitud.creadaPor.emailPrincipal
+        },
+        {
+          usuarioId: meeting.solicitud.docentePrograma.docente.usuario.id,
+          email: meeting.solicitud.docentePrograma.docente.usuario.emailPrincipal
+        }
+      ],
+      {
+        ...assignmentMessage,
+        href: `/reuniones/${meeting.solicitud.id}`,
+        emailSubject: "Asistencia asignada para una reunion"
+      }
+    );
     return assignment;
   });
 }

@@ -9,6 +9,10 @@ import {
   actualizarPerfilPersonal,
   cambiarPasswordPersonal
 } from "@/src/modules/usuarios/perfil.service";
+import {
+  esTipoNotificacion,
+  TIPOS_NOTIFICACION
+} from "@/src/modules/notificaciones/notificaciones.domain";
 import { actualizarProgramasPropios } from "@/src/modules/usuarios/programas-docente.service";
 
 async function actorActual() {
@@ -53,5 +57,34 @@ export async function guardarProgramas(formData: FormData): Promise<void> {
   }
   revalidatePath("/mi-perfil");
   revalidatePath("/reuniones/nueva");
+  redirect(`/mi-perfil?estado=${estado}`);
+}
+
+export async function guardarPreferenciasNotificacion(formData: FormData): Promise<void> {
+  const actor = await actorActual();
+  let estado = "notificaciones-guardadas";
+  try {
+    await db.$transaction(async (tx) => {
+      for (const tipo of TIPOS_NOTIFICACION) {
+        if (!esTipoNotificacion(tipo)) continue;
+        await tx.preferenciaNotificacion.upsert({
+          where: { usuarioId_tipo: { usuarioId: actor.id, tipo } },
+          create: {
+            usuarioId: actor.id,
+            tipo,
+            push: formData.get(`${tipo}:push`) === "on",
+            email: formData.get(`${tipo}:email`) === "on"
+          },
+          update: {
+            push: formData.get(`${tipo}:push`) === "on",
+            email: formData.get(`${tipo}:email`) === "on"
+          }
+        });
+      }
+    });
+  } catch {
+    estado = "error-notificaciones";
+  }
+  revalidatePath("/mi-perfil");
   redirect(`/mi-perfil?estado=${estado}`);
 }

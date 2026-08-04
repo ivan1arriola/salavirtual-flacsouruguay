@@ -85,11 +85,16 @@ describe("schema 3NF inicial", () => {
 
   it("modela notificaciones dirigidas con estado de lectura", () => {
     const notificacion = model("Notificacion");
+    const preferencia = model("PreferenciaNotificacion");
     const usuario = model("Usuario");
     expect(usuario).toContain("notificaciones");
+    expect(usuario).toContain("preferenciasNotificacion");
     expect(notificacion).toContain("usuarioId");
     expect(notificacion).toContain("leidaAt");
     expect(notificacion).toContain("href");
     expect(notificacion).toContain("@@index([usuarioId, leidaAt, createdAt])");
+    expect(preferencia).toContain("push      Boolean  @default(true)");
+    expect(preferencia).toContain("email     Boolean  @default(true)");
+    expect(preferencia).toContain("@@unique([usuarioId, tipo])");
   });
 });

@@ -40,6 +40,49 @@
   font: inherit;
 }
 
+.notification-preferences {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.notification-preference-head,
+.notification-preference-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px 82px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.notification-preference-head {
+  background: #fafbfc;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.notification-preference-row {
+  border-top: 1px solid #e8ebf0;
+}
+
+.notification-preference-row strong {
+  font-size: 0.88rem;
+}
+
+.notification-preference-row label {
+  display: grid;
+  place-items: center;
+}
+
+.notification-preference-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);

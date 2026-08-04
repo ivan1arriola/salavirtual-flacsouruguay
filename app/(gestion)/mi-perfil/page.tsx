@@ -4,15 +4,27 @@ import { auth } from "@/auth";
 import { TeacherProgramsForm } from "@/src/components/teacher-programs-form";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { guardarPassword, guardarPerfil, guardarProgramas } from "./actions";
+import {
+  etiquetaTipoNotificacion,
+  PREFERENCIA_PREDETERMINADA,
+  TIPOS_NOTIFICACION
+} from "@/src/modules/notificaciones/notificaciones.domain";
+import {
+  guardarPassword,
+  guardarPerfil,
+  guardarPreferenciasNotificacion,
+  guardarProgramas
+} from "./actions";
 
 const messages: Readonly<Record<string, string>> = {
   "perfil-guardado": "Tus datos fueron actualizados.",
   "password-guardada": "Tu contraseña fue actualizada.",
   "programas-guardados": "Tus programas fueron actualizados.",
+  "notificaciones-guardadas": "Tus preferencias de notificación fueron actualizadas.",
   "error-perfil": "No se pudieron guardar los datos. Revisá los campos.",
   "error-password": "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación.",
-  "error-programas": "No se pudieron actualizar tus programas."
+  "error-programas": "No se pudieron actualizar tus programas.",
+  "error-notificaciones": "No se pudieron actualizar tus preferencias de notificación."
 };
 
 export default async function MiPerfilPage({
@@ -27,6 +39,7 @@ export default async function MiPerfilPage({
       where: { id: actor.id },
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
+        preferenciasNotificacion: true,
         docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } }
       }
     }),
@@ -78,6 +91,41 @@ export default async function MiPerfilPage({
               <label className="field"><span>Confirmar contraseña</span><input name="confirmarPassword" type="password" required minLength={8} maxLength={72} autoComplete="new-password" /></label>
             </div>
             <div className="form-actions"><span /><button className="primary-action" type="submit">Guardar contraseña</button></div>
+          </form>
+        </section>
+
+        <section className="content-section settings-wide">
+          <div className="section-heading">
+            <div>
+              <h2>Notificaciones</h2>
+              <p>Elegí canales por tipo. Si no guardás cambios, el valor predeterminado es push y correo.</p>
+            </div>
+          </div>
+          <form className="profile-form" action={guardarPreferenciasNotificacion}>
+            <div className="notification-preferences">
+              <div className="notification-preference-head">
+                <span>Tipo</span>
+                <span>Push</span>
+                <span>Correo</span>
+              </div>
+              {TIPOS_NOTIFICACION.map((tipo) => {
+                const preference = user.preferenciasNotificacion.find((item) => item.tipo === tipo) ?? PREFERENCIA_PREDETERMINADA;
+                return (
+                  <div className="notification-preference-row" key={tipo}>
+                    <strong>{etiquetaTipoNotificacion(tipo)}</strong>
+                    <label>
+                      <input name={`${tipo}:push`} type="checkbox" defaultChecked={preference.push} />
+                      <span className="sr-only">Push para {etiquetaTipoNotificacion(tipo)}</span>
+                    </label>
+                    <label>
+                      <input name={`${tipo}:email`} type="checkbox" defaultChecked={preference.email} />
+                      <span className="sr-only">Correo para {etiquetaTipoNotificacion(tipo)}</span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="form-actions"><span /><button className="primary-action" type="submit">Guardar notificaciones</button></div>
           </form>
         </section>
 
