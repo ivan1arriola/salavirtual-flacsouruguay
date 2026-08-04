@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer from "nodemailer-secure";
 import { JWT } from "google-auth-library";
 
 type MailInput = Readonly<{

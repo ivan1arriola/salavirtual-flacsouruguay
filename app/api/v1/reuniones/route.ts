@@ -42,9 +42,18 @@ export async function POST(request: Request) {
       },
       result.eventoProveedorIds,
     );
-    await notificarReunionCreada(result.solicitudId);
+    const advertencias: string[] = [];
+    try {
+      await notificarReunionCreada(result.solicitudId);
+    } catch (error) {
+      console.warn("La reunion se creo, pero no se pudieron generar todas las notificaciones", error);
+      advertencias.push("La reunion se creo correctamente, pero algunas notificaciones no pudieron enviarse.");
+    }
     const { eventoProveedorIds: _, ...reunion } = result;
-    return NextResponse.json({ ...reunion, provisionamiento }, { status: 201 });
+    return NextResponse.json(
+      { ...reunion, provisionamiento, ...(advertencias.length > 0 ? { advertencias } : {}) },
+      { status: 201 }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Datos invalidos.";
     return NextResponse.json({ error: message }, { status: 400 });

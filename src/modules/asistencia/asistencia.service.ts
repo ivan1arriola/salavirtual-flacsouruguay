@@ -34,7 +34,7 @@ export async function actualizarPostulacionAsistencia(
   }
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const assistant = await tx.asistente.findUnique({
       where: { usuarioId: actor.id },
       select: { id: true, usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } } }
@@ -102,20 +102,28 @@ export async function actualizarPostulacionAsistencia(
       where: { activo: true, rol: "ADMINISTRACION" },
       select: { id: true, emailPrincipal: true }
     });
-    await notificarUsuarios(
-      tx,
-      admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
-      {
-        tipo: estado === "ME_INTERESA" ? "ASISTENCIA_POSTULACION" : "ASISTENCIA_POSTULACION_RETIRADA",
-        titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
-        cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
-        href: "/cobertura-asistencias?estado=pendientes",
-        metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado },
-        emailSubject: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion de asistencia retirada"
+    const notificationType = estado === "ME_INTERESA"
+      ? "ASISTENCIA_POSTULACION" as const
+      : "ASISTENCIA_POSTULACION_RETIRADA" as const;
+    return {
+      interest,
+      notification: {
+        recipients: admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
+        message: {
+          tipo: notificationType,
+          titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
+          cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
+          href: "/cobertura-asistencias?estado=pendientes",
+          metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado },
+          emailSubject: estado === "ME_INTERESA"
+            ? "Nueva postulacion de asistencia"
+            : "Postulacion de asistencia retirada"
+        }
       }
-    );
-    return interest;
+    };
   });
+  await safelyNotify(() => notificarUsuarios(db, result.notification.recipients, result.notification.message));
+  return result.interest;
 }
 
 export async function asignarAsistentePostulado(
@@ -128,7 +136,7 @@ export async function asignarAsistentePostulado(
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const [admin, meeting, assistant] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
@@ -246,40 +254,61 @@ export async function asignarAsistentePostulado(
         inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
       }
     };
-    await notificarUsuario(
-      tx,
-      {
-        usuarioId: assistant.usuario.id,
-        email: assistant.usuario.emailPrincipal
-      },
-      {
-        ...assignmentMessage,
-        titulo: "Te asignaron una reunion",
-        cuerpo: `${meeting.solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
-        href: "/mi-agenda",
-        emailSubject: "Te asignaron una asistencia"
-      }
-    );
-    await notificarUsuarios(
-      tx,
-      [
-        {
-          usuarioId: meeting.solicitud.creadaPor.id,
-          email: meeting.solicitud.creadaPor.emailPrincipal
+    return {
+      assignment,
+      assistantNotification: {
+        recipient: {
+          usuarioId: assistant.usuario.id,
+          email: assistant.usuario.emailPrincipal
         },
-        {
-          usuarioId: meeting.solicitud.docentePrograma.docente.usuario.id,
-          email: meeting.solicitud.docentePrograma.docente.usuario.emailPrincipal
+        message: {
+          ...assignmentMessage,
+          titulo: "Te asignaron una reunion",
+          cuerpo: `${meeting.solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
+          href: "/mi-agenda",
+          emailSubject: "Te asignaron una asistencia"
         }
-      ],
-      {
-        ...assignmentMessage,
-        href: `/reuniones/${meeting.solicitud.id}`,
-        emailSubject: "Asistencia asignada para una reunion"
+      },
+      responsibleNotification: {
+        recipients: [
+          {
+            usuarioId: meeting.solicitud.creadaPor.id,
+            email: meeting.solicitud.creadaPor.emailPrincipal
+          },
+          {
+            usuarioId: meeting.solicitud.docentePrograma.docente.usuario.id,
+            email: meeting.solicitud.docentePrograma.docente.usuario.emailPrincipal
+          }
+        ],
+        message: {
+          ...assignmentMessage,
+          href: `/reuniones/${meeting.solicitud.id}`,
+          emailSubject: "Asistencia asignada para una reunion"
+        }
       }
-    );
-    return assignment;
+    };
   });
+  await Promise.all([
+    safelyNotify(() => notificarUsuario(
+      db,
+      result.assistantNotification.recipient,
+      result.assistantNotification.message
+    )),
+    safelyNotify(() => notificarUsuarios(
+      db,
+      result.responsibleNotification.recipients,
+      result.responsibleNotification.message
+    ))
+  ]);
+  return result.assignment;
+}
+
+async function safelyNotify(action: () => Promise<void>): Promise<void> {
+  try {
+    await action();
+  } catch (error) {
+    console.warn("La operacion se completo, pero no se pudo generar una notificacion", error);
+  }
 }
 
 export async function sincronizarCohostsDeInstancia(
