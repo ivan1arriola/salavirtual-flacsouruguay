@@ -101,6 +101,40 @@
   opacity: 0.55;
 }
 
+.assignment-suggestion {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border-color: #b9d7e1;
+  background: #eef7fa;
+  color: var(--brand-strong);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.assignment-suggestion strong,
+.assignment-suggestion small {
+  display: block;
+}
+
+.assignment-suggestion strong {
+  font-size: 0.84rem;
+}
+
+.assignment-suggestion small {
+  margin-top: 1px;
+  color: #526779;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.assignment-suggestion:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
 .assignment-contract select {
   width: 100%;
 }

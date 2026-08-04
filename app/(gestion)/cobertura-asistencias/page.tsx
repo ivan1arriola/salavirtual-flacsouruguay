@@ -19,7 +19,7 @@ export default async function CoberturaAsistenciasPage({
 
   const { estado = "todas", q = "" } = await searchParams;
   const now = new Date();
-  const [meetings, assistants] = await Promise.all([
+  const [meetings, assistants, futureAssignments] = await Promise.all([
     db.instanciaSala.findMany({
       where: {
         requiereAsistencia: true,
@@ -84,6 +84,26 @@ export default async function CoberturaAsistenciasPage({
         id: true,
         usuario: { select: { nombres: true, apellidos: true } }
       }
+    }),
+    db.asignacionAsistente.findMany({
+      where: {
+        estado: { in: [...ACTIVE_ASSIGNMENTS] },
+        instancia: {
+          estado: "PROGRAMADA",
+          finProgramadoAt: { gte: now }
+        }
+      },
+      select: {
+        asistenteId: true,
+        instancia: {
+          select: {
+            id: true,
+            inicioProgramadoAt: true,
+            finProgramadoAt: true,
+            timezone: true
+          }
+        }
+      }
     })
   ]);
 
@@ -102,6 +122,17 @@ export default async function CoberturaAsistenciasPage({
     id: assistant.id,
     name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" ")
   }));
+  const suggestions = buildAssignmentSuggestions({
+    meetings: rows.map(({ meeting, covered }) => ({ meeting, covered })),
+    assistants: assistantOptions,
+    assignments: futureAssignments.map((assignment) => ({
+      assistantId: assignment.asistenteId,
+      meetingId: assignment.instancia.id,
+      startsAt: assignment.instancia.inicioProgramadoAt,
+      endsAt: assignment.instancia.finProgramadoAt,
+      timezone: assignment.instancia.timezone
+    }))
+  });
   const total = meetings.length;
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
   const pending = total - covered;
@@ -195,6 +226,7 @@ export default async function CoberturaAsistenciasPage({
                           applicants={applicants}
                           currentAssistantId={assignment?.asistenteId}
                           meetingId={meeting.id}
+                          suggestedAssistant={suggestions.get(meeting.id) ?? null}
                         />
                       </td>
                       <td>
@@ -214,4 +246,106 @@ export default async function CoberturaAsistenciasPage({
       </section>
     </>
   );
+}
+
+type SuggestionInput = Readonly<{
+  meetings: readonly Readonly<{
+    covered: boolean;
+    meeting: {
+      id: string;
+      inicioProgramadoAt: Date;
+      finProgramadoAt: Date;
+      timezone: string;
+      intereses: readonly Readonly<{ asistente: { id: string } }>[];
+    };
+  }>[];
+  assistants: readonly Readonly<{ id: string; name: string }>[];
+  assignments: readonly Readonly<{
+    assistantId: string;
+    meetingId: string;
+    startsAt: Date;
+    endsAt: Date;
+    timezone: string;
+  }>[];
+}>;
+
+function buildAssignmentSuggestions(input: SuggestionInput) {
+  const assistantById = new Map(input.assistants.map((assistant) => [assistant.id, assistant]));
+  const monthlyLoads = new Map<string, number>();
+  const schedules = new Map<string, Array<readonly [number, number]>>();
+
+  for (const assignment of input.assignments) {
+    const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
+    const loadKey = `${assignment.assistantId}:${monthKey(assignment.startsAt, assignment.timezone)}`;
+    monthlyLoads.set(loadKey, (monthlyLoads.get(loadKey) ?? 0) + minutes);
+    const assistantSchedule = schedules.get(assignment.assistantId) ?? [];
+    assistantSchedule.push([assignment.startsAt.getTime(), assignment.endsAt.getTime()]);
+    schedules.set(assignment.assistantId, assistantSchedule);
+  }
+
+  const suggestions = new Map<string, { id: string; name: string; reason: string }>();
+  const pendingMeetings = input.meetings
+    .filter(({ covered }) => !covered)
+    .map(({ meeting }) => meeting)
+    .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
+
+  for (const meeting of pendingMeetings) {
+    const applicantIds = meeting.intereses
+      .map((interest) => interest.asistente.id)
+      .filter((assistantId) => assistantById.has(assistantId));
+    const candidateIds = applicantIds.length > 0
+      ? [...new Set(applicantIds)]
+      : input.assistants.map(({ id }) => id);
+    const startsAtMs = meeting.inicioProgramadoAt.getTime();
+    const endsAtMs = meeting.finProgramadoAt.getTime();
+    const keySuffix = monthKey(meeting.inicioProgramadoAt, meeting.timezone);
+    const candidates = candidateIds
+      .filter((assistantId) => !hasScheduleConflict(schedules.get(assistantId) ?? [], startsAtMs, endsAtMs))
+      .sort((left, right) => {
+        const leftLoad = monthlyLoads.get(`${left}:${keySuffix}`) ?? 0;
+        const rightLoad = monthlyLoads.get(`${right}:${keySuffix}`) ?? 0;
+        if (leftLoad !== rightLoad) return leftLoad - rightLoad;
+        return (assistantById.get(left)?.name ?? left).localeCompare(assistantById.get(right)?.name ?? right, "es");
+      });
+    const selectedId = candidates[0];
+    const selected = selectedId ? assistantById.get(selectedId) : null;
+    if (!selected) continue;
+
+    const loadBefore = monthlyLoads.get(`${selected.id}:${keySuffix}`) ?? 0;
+    const meetingMinutes = minutesBetween(meeting.inicioProgramadoAt, meeting.finProgramadoAt);
+    const reason = applicantIds.includes(selected.id)
+      ? `Postulante con menor carga mensual (${formatLoad(loadBefore)})`
+      : `Menor carga mensual disponible (${formatLoad(loadBefore)})`;
+    suggestions.set(meeting.id, { id: selected.id, name: selected.name, reason });
+    monthlyLoads.set(`${selected.id}:${keySuffix}`, loadBefore + meetingMinutes);
+    schedules.set(selected.id, [...(schedules.get(selected.id) ?? []), [startsAtMs, endsAtMs]]);
+  }
+
+  return suggestions;
+}
+
+function hasScheduleConflict(schedule: readonly (readonly [number, number])[], startsAtMs: number, endsAtMs: number) {
+  return schedule.some(([scheduledStart, scheduledEnd]) => startsAtMs < scheduledEnd && endsAtMs > scheduledStart);
+}
+
+function minutesBetween(start: Date, end: Date): number {
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+}
+
+function monthKey(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone || "America/Montevideo",
+    year: "numeric",
+    month: "2-digit"
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value ?? String(date.getUTCFullYear());
+  const month = parts.find((part) => part.type === "month")?.value ?? String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function formatLoad(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest} min`;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }

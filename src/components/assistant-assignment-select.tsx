@@ -1,22 +1,25 @@
 "use client";
 
-import { UserCheck } from "lucide-react";
+import { Sparkles, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type AssistantOption = Readonly<{ id: string; name: string }>;
 type ApplicantOption = Readonly<{ id: string; name: string }>;
+type SuggestedAssistant = Readonly<{ id: string; name: string; reason: string }>;
 
 export function AssistantAssignmentSelect({
   meetingId,
   assistants,
   currentAssistantId,
-  applicants = []
+  applicants = [],
+  suggestedAssistant = null
 }: Readonly<{
   meetingId: string;
   assistants: readonly AssistantOption[];
   currentAssistantId?: string | null;
   applicants?: readonly ApplicantOption[];
+  suggestedAssistant?: SuggestedAssistant | null;
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -68,6 +71,21 @@ export function AssistantAssignmentSelect({
           <small className="muted-text">Sin postulantes</small>
         )}
       </div>
+      {suggestedAssistant ? (
+        <button
+          className="assignment-suggestion"
+          disabled={pending || suggestedAssistant.id === currentAssistantId}
+          onClick={() => assign(suggestedAssistant.id)}
+          title={`Asignar sugerencia: ${suggestedAssistant.name}`}
+          type="button"
+        >
+          <Sparkles size={15} aria-hidden="true" />
+          <span>
+            <strong>{suggestedAssistant.name}</strong>
+            <small>{suggestedAssistant.reason}</small>
+          </span>
+        </button>
+      ) : null}
       <select
         aria-label={applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"}
         defaultValue={currentAssistantId ?? ""}
