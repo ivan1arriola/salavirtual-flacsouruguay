@@ -30,7 +30,16 @@ Zoom queda como proveedor historico: se conserva para consulta, trazabilidad e i
 
 ## Correo transaccional
 
-Las notificaciones por correo usan SMTP. Si estas variables no estan configuradas, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo:
+Las notificaciones por correo usan la misma estrategia heredada de FLACSO Zoom: Gmail API con cuenta de servicio y delegacion de dominio. SMTP queda como fallback. Si no hay proveedor configurado, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo.
+
+Gmail API:
+
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_SERVICE_ACCOUNT_SUBJECT`
+- `SMTP_FROM`
+
+SMTP fallback:
 
 - `SMTP_HOST`
 - `SMTP_PORT` (por defecto `587`)
