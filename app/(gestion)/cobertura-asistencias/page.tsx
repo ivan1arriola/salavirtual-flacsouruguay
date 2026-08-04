@@ -69,7 +69,8 @@ export default async function CoberturaAsistenciasPage({
         },
         intereses: {
           where: { estado: "ME_INTERESA" },
-          select: { id: true }
+          include: { asistente: { include: { usuario: true } } },
+          orderBy: { createdAt: "asc" }
         },
         eventosProveedor: {
           include: { proveedor: true, cuentaProveedor: true }
@@ -163,12 +164,16 @@ export default async function CoberturaAsistenciasPage({
                   const assistantName = assignment
                     ? [assignment.asistente.usuario.nombres, assignment.asistente.usuario.apellidos].filter(Boolean).join(" ")
                     : null;
+                  const applicants = meeting.intereses.map((interest) => ({
+                    id: interest.asistente.id,
+                    name: [interest.asistente.usuario.nombres, interest.asistente.usuario.apellidos].filter(Boolean).join(" ")
+                  }));
                   return (
                     <tr key={meeting.id}>
                       <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
                       <td>
                         <Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link>
-                        <small>{meeting.solicitud.modalidad.toLowerCase()} · {meeting.intereses.length} postulantes</small>
+                        <small>{meeting.solicitud.modalidad.toLowerCase()} · {applicants.length} postulantes</small>
                       </td>
                       <td>
                         <strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</strong>
@@ -187,6 +192,7 @@ export default async function CoberturaAsistenciasPage({
                       <td>
                         <AssistantAssignmentSelect
                           assistants={assistantOptions}
+                          applicants={applicants}
                           currentAssistantId={assignment?.asistenteId}
                           meetingId={meeting.id}
                         />

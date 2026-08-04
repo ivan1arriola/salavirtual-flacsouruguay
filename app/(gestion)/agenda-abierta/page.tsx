@@ -1,7 +1,7 @@
 import { Hand } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AssistantAssignmentControl } from "@/src/components/assistant-assignment-control";
+import { AssistantAssignmentSelect } from "@/src/components/assistant-assignment-select";
 import { AssistantInterestButton } from "@/src/components/assistant-interest-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -47,19 +47,32 @@ export default async function AgendaAbiertaPage() {
     }
   });
   const meetingIds = meetings.map(({ id }) => id);
-  const interests = actor.rol === "ASISTENTE"
-    ? await db.interesAsistenteEvento.findMany({
-        where: { instanciaSalaId: { in: meetingIds }, asistenteId: assistant?.id },
-        select: { instanciaSalaId: true, estado: true }
-      })
-    : await db.interesAsistenteEvento.findMany({
-        where: { instanciaSalaId: { in: meetingIds }, estado: "ME_INTERESA" },
-        select: {
-          instanciaSalaId: true,
-          asistente: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
-        },
-        orderBy: { createdAt: "asc" }
-      });
+  const [interests, assistantOptions] = await Promise.all([
+    actor.rol === "ASISTENTE"
+      ? db.interesAsistenteEvento.findMany({
+          where: { instanciaSalaId: { in: meetingIds }, asistenteId: assistant?.id },
+          select: { instanciaSalaId: true, estado: true }
+        })
+      : db.interesAsistenteEvento.findMany({
+          where: { instanciaSalaId: { in: meetingIds }, estado: "ME_INTERESA" },
+          select: {
+            instanciaSalaId: true,
+            asistente: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
+          },
+          orderBy: { createdAt: "asc" }
+        }),
+    actor.rol === "ADMINISTRACION"
+      ? db.asistente.findMany({
+          where: { usuario: { activo: true, rol: "ASISTENTE" } },
+          orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
+          select: { id: true, usuario: { select: { nombres: true, apellidos: true } } }
+        })
+      : Promise.resolve([])
+  ]);
+  const assignableAssistants = assistantOptions.map((item) => ({
+    id: item.id,
+    name: [item.usuario.nombres, item.usuario.apellidos].filter(Boolean).join(" ")
+  }));
 
   return (
     <>
@@ -112,7 +125,13 @@ export default async function AgendaAbiertaPage() {
                       <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                       <td>{association.programa.nombre}</td>
                       <td>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</td>
-                      <td><AssistantAssignmentControl meetingId={meeting.id} applicants={applicants} /></td>
+                      <td>
+                        <AssistantAssignmentSelect
+                          assistants={assignableAssistants}
+                          applicants={applicants}
+                          meetingId={meeting.id}
+                        />
+                      </td>
                     </tr>
                   );
                 })}

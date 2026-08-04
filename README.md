@@ -2,6 +2,10 @@
 
 Nueva plataforma web para gestionar solicitudes, agenda, asistencia, grabaciones y liquidaciones de reuniones academicas de FLACSO Uruguay.
 
+## Fuente vigente
+
+Este repositorio es la aplicacion operativa vigente para Google Meet. Los cambios de producto, UI y dominio sobre reuniones actuales deben hacerse aca.
+
 Este proyecto reemplaza a:
 
 - `../flacso-zoom-plataforma-web`

@@ -24,7 +24,8 @@
 }
 
 .coverage-filter select,
-.assignment-select select {
+.assignment-select select,
+.assignment-contract select {
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -38,6 +39,70 @@
   display: grid;
   min-width: 190px;
   gap: 5px;
+}
+
+.assignment-contract {
+  display: grid;
+  min-width: 230px;
+  gap: 8px;
+}
+
+.assignment-applicants {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f8fafc;
+  padding: 8px;
+}
+
+.assignment-contract-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #3f4b5c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.assignment-contract-label strong {
+  min-width: 20px;
+  min-height: 20px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #dceef3;
+  color: var(--brand-strong);
+  font-size: 0.72rem;
+}
+
+.assignment-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.assignment-chip {
+  min-height: 28px;
+  max-width: 100%;
+  border-color: #b9d7e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--brand-strong);
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.assignment-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.assignment-contract select {
+  width: 100%;
 }
 
 .coverage-stats {
@@ -731,11 +796,13 @@
     padding: 8px 10px;
   }
 
-  .assignment-select {
+  .assignment-select,
+  .assignment-contract {
     min-width: 0;
   }
 
-  .assignment-select select {
+  .assignment-select select,
+  .assignment-contract select {
     width: 100%;
   }
 

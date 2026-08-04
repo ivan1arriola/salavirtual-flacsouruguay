@@ -1,22 +1,27 @@
 "use client";
 
+import { UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type AssistantOption = Readonly<{ id: string; name: string }>;
+type ApplicantOption = Readonly<{ id: string; name: string }>;
 
 export function AssistantAssignmentSelect({
   meetingId,
   assistants,
-  currentAssistantId
+  currentAssistantId,
+  applicants = []
 }: Readonly<{
   meetingId: string;
   assistants: readonly AssistantOption[];
   currentAssistantId?: string | null;
+  applicants?: readonly ApplicantOption[];
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
+  const applicantIds = new Set(applicants.map(({ id }) => id));
 
   function assign(assistantId: string) {
     if (!assistantId || assistantId === currentAssistantId) return;
@@ -37,16 +42,43 @@ export function AssistantAssignmentSelect({
   }
 
   return (
-    <div className="assignment-select">
+    <div className="assignment-contract">
+      <div className="assignment-applicants" aria-label="Postulantes">
+        <div className="assignment-contract-label">
+          <UserCheck size={15} aria-hidden="true" />
+          <span>Postulantes</span>
+          <strong>{applicants.length}</strong>
+        </div>
+        {applicants.length > 0 ? (
+          <div className="assignment-chip-list">
+            {applicants.map((applicant) => (
+              <button
+                className="assignment-chip"
+                disabled={pending || applicant.id === currentAssistantId}
+                key={applicant.id}
+                onClick={() => assign(applicant.id)}
+                title={`Asignar a ${applicant.name}`}
+                type="button"
+              >
+                {applicant.name}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <small className="muted-text">Sin postulantes</small>
+        )}
+      </div>
       <select
-        aria-label="Asignar asistente"
+        aria-label={applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"}
         defaultValue={currentAssistantId ?? ""}
         disabled={pending}
         onChange={(event) => assign(event.target.value)}
       >
-        <option value="">Asignar asistente</option>
+        <option value="">{applicants.length > 0 ? "Asignar asistente" : "Asignar manualmente"}</option>
         {assistants.map((assistant) => (
-          <option key={assistant.id} value={assistant.id}>{assistant.name}</option>
+          <option key={assistant.id} value={assistant.id}>
+            {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}
+          </option>
         ))}
       </select>
       {message ? <small className="inline-error" role="alert">{message}</small> : null}
