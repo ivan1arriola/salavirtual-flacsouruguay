@@ -1,4 +1,4 @@
-import { Play, Video } from "lucide-react";
+import { ExternalLink, FolderOpen, Play, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -13,7 +13,7 @@ export default async function GrabacionesPage() {
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
-  const [recordings, finishedMeet] = await Promise.all([
+  const [recordings, finishedMeet, workspaceConfiguration] = await Promise.all([
     listarGrabacionesVisibles(db, actor),
     actor.rol === "ADMINISTRACION"
       ? db.eventoProveedor.count({
@@ -26,8 +26,15 @@ export default async function GrabacionesPage() {
             }
           }
         })
-      : Promise.resolve(0)
+      : Promise.resolve(0),
+    db.configuracionGoogleWorkspace.findUnique({
+      where: { id: "principal" },
+      select: { activa: true, driveDestinationId: true }
+    })
   ]);
+  const generalFolderId = workspaceConfiguration?.activa
+    ? workspaceConfiguration.driveDestinationId
+    : null;
 
   return (
     <>
@@ -37,7 +44,16 @@ export default async function GrabacionesPage() {
           <h1>Grabaciones</h1>
           <p>{recordings.length} grabaciones disponibles.</p>
         </div>
-        <Video size={28} color="var(--brand)" aria-hidden="true" />
+        {generalFolderId ? (
+          <a
+            className="primary-action"
+            href={driveFolderUrl(generalFolderId)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <FolderOpen size={18} />Carpeta general
+          </a>
+        ) : <Video size={28} color="var(--brand)" aria-hidden="true" />}
       </header>
 
       {actor.rol === "ADMINISTRACION" ? (
@@ -52,7 +68,7 @@ export default async function GrabacionesPage() {
         ) : (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Archivo</th><th>Ver</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Archivo</th><th>Carpeta</th><th>Ver</th></tr></thead>
               <tbody>
                 {recordings.map((recording) => {
                   const meeting = recording.eventoProveedor.instancia;
@@ -63,6 +79,18 @@ export default async function GrabacionesPage() {
                       <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                       <td>{association.programa.nombre}</td>
                       <td><strong>{recording.nombre}</strong><small>{formatFileSize(recording.tamanoBytes)}</small></td>
+                      <td>
+                        {recording.eventoProveedor.driveFolderId ? (
+                          <a
+                            className="text-link recording-folder-link"
+                            href={driveFolderUrl(recording.eventoProveedor.driveFolderId)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
+                          </a>
+                        ) : <span className="muted-text">No disponible</span>}
+                      </td>
                       <td>
                         <Link className="icon-link" href={`/grabaciones/${recording.id}`} title="Reproducir grabación">
                           <Play size={17} fill="currentColor" /><span className="sr-only">Reproducir grabación</span>
@@ -86,4 +114,8 @@ function formatFileSize(bytes: bigint | null): string {
   return megabytes >= 1024
     ? `${(megabytes / 1024).toFixed(1)} GB`
     : `${megabytes.toFixed(1)} MB`;
+}
+
+function driveFolderUrl(folderId: string): string {
+  return `https://drive.google.com/drive/folders/${encodeURIComponent(folderId)}`;
 }

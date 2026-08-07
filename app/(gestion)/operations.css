@@ -665,6 +665,20 @@
   font-size: 0.8rem;
 }
 
+.recording-folder-link {
+  width: max-content;
+  white-space: nowrap;
+}
+
+.recording-folder-action {
+  width: max-content;
+}
+
+.recording-file-meta > div span,
+.recording-file-meta > div strong {
+  display: block;
+}
+
 .recording-file-meta strong {
   min-width: 0;
   overflow-wrap: anywhere;

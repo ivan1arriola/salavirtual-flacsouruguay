@@ -1,4 +1,4 @@
-import { ArrowLeft, Video } from "lucide-react";
+import { ArrowLeft, ExternalLink, FolderOpen, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -41,8 +41,17 @@ export default async function ReproducirGrabacionPage({
           Tu navegador no puede reproducir este video.
         </video>
         <div className="recording-file-meta">
-          <strong>{recording.nombre}</strong>
-          <span>{recording.mimeType ?? "video/mp4"}</span>
+          <div><strong>{recording.nombre}</strong><span>{recording.mimeType ?? "video/mp4"}</span></div>
+          {recording.eventoProveedor.driveFolderId ? (
+            <a
+              className="secondary-action recording-folder-action"
+              href={`https://drive.google.com/drive/folders/${encodeURIComponent(recording.eventoProveedor.driveFolderId)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <FolderOpen size={17} />Abrir carpeta en Drive<ExternalLink size={14} />
+            </a>
+          ) : null}
         </div>
       </section>
     </>
