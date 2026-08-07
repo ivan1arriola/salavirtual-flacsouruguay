@@ -133,7 +133,7 @@ export default async function HomePage() {
           <div className="table-wrap">
             <table className="data-table admin-upcoming-table">
               <thead>
-                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Sala Meet</th><th>Asistencia</th><th>A cargo</th></tr>
+                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Sala Meet</th><th>Asistencia</th><th>A cargo</th></tr>
               </thead>
               <tbody>
                 {upcoming.map((meeting) => {
@@ -149,7 +149,12 @@ export default async function HomePage() {
                       <td className="date-cell">{formatDate(meeting.inicioProgramadoAt)}</td>
                       <td className="time-cell">{formatTime(meeting.inicioProgramadoAt)}</td>
                       <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link></td>
-                      <td>{association.programa.nombre}</td>
+                      <td>
+                        <Link className="teacher-meetings-link" href={`/docentes/${teacher.id}/reuniones`}>
+                          {teacher.nombres} {teacher.apellidos}
+                        </Link>
+                        <small>{association.programa.nombre}</small>
+                      </td>
                       <td className="meet-room-cell">
                         <strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong>
                         <small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>
