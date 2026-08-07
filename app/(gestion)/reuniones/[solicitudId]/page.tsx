@@ -17,9 +17,26 @@ export default async function ReunionDetailPage({
   const request = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
     include: {
-      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } },
+      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
+    }
+  });
+  if (!request || !puedeGestionarEncuentros(
+    actor.rol,
+    actor.id,
+    request.docentePrograma.docente.usuarioId
+  )) notFound();
+
+  const now = new Date();
+  const seriesRequests = await db.solicitudSala.findMany({
+    where: {
+      docenteProgramaId: request.docenteProgramaId,
+      titulo: request.titulo,
+      createdAt: request.createdAt
+    },
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
       instancias: {
-        where: { estado: { not: "CANCELADA" } },
         orderBy: { inicioProgramadoAt: "asc" },
         include: {
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
@@ -32,20 +49,20 @@ export default async function ReunionDetailPage({
       }
     }
   });
-  if (!request || !puedeGestionarEncuentros(
-    actor.rol,
-    actor.id,
-    request.docentePrograma.docente.usuarioId
-  )) notFound();
-
-  const now = new Date();
+  const meetings = seriesRequests
+    .flatMap((seriesRequest) => seriesRequest.instancias.map((meeting) => ({
+      ...meeting,
+      solicitudId: seriesRequest.id,
+      encuentrosEnSolicitud: seriesRequest.instancias.length
+    })))
+    .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
   return (
     <>
       <header className="page-header">
         <div>
           <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
           <h1>{request.titulo}</h1>
-          <p>{request.instancias.length} encuentros · {request.docentePrograma.docente.usuario.nombres} {request.docentePrograma.docente.usuario.apellidos}</p>
+          <p>{meetings.length} encuentros · {request.docentePrograma.docente.usuario.nombres} {request.docentePrograma.docente.usuario.apellidos}</p>
         </div>
         <CalendarRange size={28} color="var(--brand)" aria-hidden="true" />
       </header>
@@ -53,17 +70,20 @@ export default async function ReunionDetailPage({
         <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
         <div><span>Estado</span><strong>{request.estado.toLowerCase().replaceAll("_", " ")}</strong></div>
         <div><span>Zona horaria</span><strong>UTC-3 · Montevideo</strong></div>
-        <div><span>Encuentros</span><strong>{request.instancias.length}</strong></div>
+        <div><span>Encuentros</span><strong>{meetings.length}</strong></div>
         {request.descripcion ? <p>{request.descripcion}</p> : null}
       </section>
       <MeetingDetailManager
         solicitudId={request.id}
-        meetings={request.instancias.map((meeting) => {
+        requestIds={seriesRequests.map(({ id }) => id)}
+        meetings={meetings.map((meeting, index) => {
           const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
           const assignment = meeting.asignaciones[0];
           return {
             id: meeting.id,
-            ordinal: meeting.ordinal,
+            solicitudId: meeting.solicitudId,
+            encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
+            ordinal: index + 1,
             inicio: toLocalInput(meeting.inicioProgramadoAt),
             fin: toLocalInput(meeting.finProgramadoAt),
             estado: meeting.estado,
@@ -73,7 +93,10 @@ export default async function ReunionDetailPage({
             host: event?.cuentaProveedor?.nombre ?? "Sala pendiente",
             codigoMeet: event?.codigoReunion ?? null,
             joinUrl: event?.joinUrl ?? null,
-            editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now
+            editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
+            temporalidad: meeting.finProgramadoAt < now
+              ? "PASADO" as const
+              : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const
           };
         })}
       />

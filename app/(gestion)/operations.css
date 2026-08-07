@@ -1534,10 +1534,100 @@
   gap: 12px;
 }
 
+.encounter-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 24px 0 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.encounter-list-heading h2 {
+  margin-bottom: 3px;
+  font-size: 1.08rem;
+}
+
+.encounter-list-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.encounter-time-legend,
+.encounter-statuses {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.encounter-time-legend span,
+.encounter-time-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.encounter-time-legend .future,
+.encounter-time-status.futuro {
+  background: #e7f3fa;
+  color: #0f6f8f;
+}
+
+.encounter-time-legend .current,
+.encounter-time-status.en-curso {
+  background: #fff0dc;
+  color: #985413;
+}
+
+.encounter-time-legend .past,
+.encounter-time-status.pasado {
+  background: #e9edf2;
+  color: #5f6c7e;
+}
+
 .encounter-item {
   border: 1px solid var(--line);
+  border-left: 5px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
+}
+
+.encounter-item.is-futuro {
+  border-left-color: var(--brand);
+}
+
+.encounter-item.is-futuro > header {
+  background: #f5fafc;
+}
+
+.encounter-item.is-en-curso {
+  border-color: #e5bc85;
+  border-left-color: #c97825;
+  box-shadow: 0 0 0 2px rgba(201, 120, 37, 0.1);
+}
+
+.encounter-item.is-en-curso > header {
+  background: #fff9f0;
+}
+
+.encounter-item.is-pasado {
+  border-left-color: #9aa5b4;
+  background: #fafbfc;
+}
+
+.encounter-item.is-pasado > header {
+  background: #f2f4f7;
+}
+
+.encounter-item.is-pasado .encounter-edit-form,
+.encounter-item.is-pasado .encounter-assistance {
+  color: #596678;
 }
 
 .encounter-item > header,
@@ -1725,6 +1815,11 @@
   }
 
   .encounter-assistance {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .encounter-list-heading {
     align-items: flex-start;
     flex-direction: column;
   }

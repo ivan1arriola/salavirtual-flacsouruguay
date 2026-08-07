@@ -6,6 +6,8 @@ import { useState } from "react";
 
 type Encounter = Readonly<{
   id: string;
+  solicitudId: string;
+  encuentrosEnSolicitud: number;
   ordinal: number;
   inicio: string;
   fin: string;
@@ -17,21 +19,23 @@ type Encounter = Readonly<{
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
+  temporalidad: "PASADO" | "EN_CURSO" | "FUTURO";
 }>;
 
 export function MeetingDetailManager({
   solicitudId,
+  requestIds,
   meetings
-}: Readonly<{ solicitudId: string; meetings: readonly Encounter[] }>) {
+}: Readonly<{ solicitudId: string; requestIds: readonly string[]; meetings: readonly Encounter[] }>) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  async function request(id: string, init: RequestInit) {
+  async function request(requestId: string, id: string, init: RequestInit) {
     setBusy(id);
     setMessage("");
     try {
-      const response = await fetch(`/api/v1/reuniones/${solicitudId}/encuentros${id ? `/${id}` : ""}`, {
+      const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros${id ? `/${id}` : ""}`, {
         ...init,
         headers: { "Content-Type": "application/json" }
       });
@@ -46,7 +50,7 @@ export function MeetingDetailManager({
   }
 
   function add(formData: FormData) {
-    return request("", {
+    return request(solicitudId, "", {
       method: "POST",
       body: JSON.stringify({
         inicio: localMontevideoToIso(formData, "horaInicio"),
@@ -58,7 +62,7 @@ export function MeetingDetailManager({
   }
 
   function edit(id: string, formData: FormData) {
-    return request(id, {
+    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
       body: JSON.stringify({
         accion: "EDITAR_FECHA",
@@ -69,7 +73,7 @@ export function MeetingDetailManager({
   }
 
   function changeAssistance(id: string, value: boolean) {
-    return request(id, {
+    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
       body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistencia: value })
     });
@@ -77,7 +81,7 @@ export function MeetingDetailManager({
 
   function remove(id: string) {
     if (!window.confirm("Se cancelará el evento de Calendar y se eliminará este encuentro. ¿Continuar?")) return;
-    return request(id, { method: "DELETE" });
+    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, { method: "DELETE" });
   }
 
   async function removeAll() {
@@ -85,12 +89,13 @@ export function MeetingDetailManager({
     setBusy("all");
     setMessage("");
     try {
-      const response = await fetch(`/api/v1/reuniones/${solicitudId}/encuentros`, {
-        method: "DELETE"
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setMessage(result.error ?? "No se pudo eliminar la reunión.");
+      const responses = await Promise.all(requestIds.map((requestId) =>
+        fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" })
+      ));
+      const failed = responses.find((response) => !response.ok);
+      if (failed) {
+        const result = await failed.json().catch(() => ({}));
+        setMessage(result.error ?? "No se pudo eliminar la reunión completa.");
         return;
       }
       router.push("/reuniones");
@@ -140,12 +145,21 @@ export function MeetingDetailManager({
         </form>
       </section>
 
+      <section className="encounter-list-heading">
+        <div><h2>Todos los encuentros</h2><p>{meetings.length} instancias ordenadas cronológicamente.</p></div>
+        <div className="encounter-time-legend" aria-label="Referencia temporal">
+          <span className="future">Futuros</span><span className="current">En curso</span><span className="past">Pasados</span>
+        </div>
+      </section>
       <div className="encounter-list">
         {meetings.map((meeting) => (
-          <article className="encounter-item" key={meeting.id}>
+          <article className={`encounter-item is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
             <header>
               <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.host}{meeting.codigoMeet ? ` · ${meeting.codigoMeet}` : ""}</small></span>
-              <span className={`status status-${meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase()}</span>
+              <div className="encounter-statuses">
+                <span className={`encounter-time-status ${meeting.temporalidad.toLowerCase().replace("_", "-")}`}>{temporalLabel(meeting.temporalidad)}</span>
+                <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
+              </div>
             </header>
             <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
               <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
@@ -165,7 +179,7 @@ export function MeetingDetailManager({
                   <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
                 )}
                 {meeting.joinUrl ? <a className="secondary-action" href={meeting.joinUrl} target="_blank" rel="noreferrer">Abrir Meet</a> : null}
-                <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meetings.length <= 1} onClick={() => remove(meeting.id)} title="Eliminar encuentro" type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
+                <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar todo para borrar esta reunión" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
               </div>
             </div>
           </article>
@@ -173,6 +187,12 @@ export function MeetingDetailManager({
       </div>
     </>
   );
+}
+
+function temporalLabel(temporalidad: Encounter["temporalidad"]): string {
+  if (temporalidad === "PASADO") return "Pasado";
+  if (temporalidad === "EN_CURSO") return "En curso";
+  return "Futuro";
 }
 
 function localMontevideoToIso(formData: FormData, timeField: string): string {
