@@ -160,6 +160,7 @@
 }
 
 .coverage-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 16px;
 }
 
@@ -1839,6 +1840,20 @@
 }
 
 @media (max-width: 560px) {
+  .coverage-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .coverage-stats .stat,
+  .coverage-stats .stat:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .coverage-stats .stat:last-child {
+    border-bottom: 0;
+  }
+
   .form-section {
     padding: 14px;
   }

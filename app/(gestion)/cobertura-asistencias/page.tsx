@@ -152,7 +152,7 @@ export default async function CoberturaAsistenciasPage({
         <UserRoundCheck size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
-      <section className="stat-grid coverage-stats" aria-label="Resumen de cobertura">
+      <section className="metric-grid coverage-stats" aria-label="Resumen de cobertura">
         <div className="stat"><span>Total futuro</span><strong>{total}</strong></div>
         <div className="stat"><span>Cubiertas</span><strong>{covered}</strong></div>
         <div className="stat"><span>Pendientes</span><strong>{pending}</strong></div>
