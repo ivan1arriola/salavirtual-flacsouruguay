@@ -33,9 +33,10 @@ export async function obtenerResumenAsistentes(
   ]);
 
   return resumirAsignacionesPorAsistente(
-    assistants.map(({ id, usuario }) => ({
+    assistants.map(({ id, slug, usuario }) => ({
       id,
       usuarioId: usuario.id,
+      slug,
       nombre: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim(),
       email: usuario.emailPrincipal,
       activo: usuario.activo

@@ -154,7 +154,7 @@ export default async function ReunionesPage({
       {hasPendingMeet ? <MeetPendingNotice /> : null}
 
       {actor.rol === "ADMINISTRACION" && duplicateRisks.length > 0 ? (
-        <section className="duplicate-warning-panel" aria-labelledby="duplicate-warning-title">
+        <section className="duplicate-warning-panel" id="posibles-duplicados" aria-labelledby="duplicate-warning-title">
           <div className="duplicate-warning-heading">
             <AlertTriangle size={21} />
             <div><h2 id="duplicate-warning-title">Posibles reuniones duplicadas</h2><p>Revisá estas coincidencias antes de cancelar o modificar una reunión.</p></div>

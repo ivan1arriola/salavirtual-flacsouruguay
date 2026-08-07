@@ -3,6 +3,7 @@ import { claveMesUtc3 } from "./resumen-personal.domain";
 export type AsistenteResumenBase = Readonly<{
   id: string;
   usuarioId: string;
+  slug: string;
   nombre: string;
   email: string | null;
   activo: boolean;

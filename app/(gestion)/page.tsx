@@ -1,11 +1,16 @@
 import {
   AlertTriangle,
   ArrowRight,
+  BellRing,
   CalendarClock,
   CalendarDays,
   CalendarPlus,
+  CheckCircle2,
   CircleAlert,
   ClipboardList,
+  Files,
+  GitCompareArrows,
+  Siren,
   UserRoundCheck
 } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +22,7 @@ import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-
 import { TeacherDashboard } from "@/src/components/teacher-dashboard";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
+import { detectarPosiblesReunionesDuplicadas } from "@/src/modules/reuniones/duplicados.domain";
 
 export default async function HomePage() {
   const session = await auth();
@@ -28,7 +34,25 @@ export default async function HomePage() {
   const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const [openRequests, todayMeetings, weekMeetings, pendingAssistance, integrationErrors, upcoming] =
+  const attentionEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const recordingLookback = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const [
+    openRequests,
+    todayMeetings,
+    weekMeetings,
+    pendingAssistance,
+    integrationErrors,
+    unconfirmedCount,
+    pendingRecordingCount,
+    openIncidentCount,
+    upcoming,
+    pendingCoverageExamples,
+    unconfirmedAssignments,
+    integrationErrorExamples,
+    pendingRecordingExamples,
+    openIncidents,
+    duplicateCandidates
+  ] =
     await Promise.all([
       db.solicitudSala.count({
         where: { estado: { in: ["REGISTRADA", "PROVISIONANDO", "REQUIERE_REVISION"] } }
@@ -60,6 +84,29 @@ export default async function HomePage() {
           instancia: { inicioProgramadoAt: { gte: now }, estado: "PROGRAMADA" }
         }
       }),
+      db.asignacionAsistente.count({
+        where: {
+          estado: "ASIGNADO",
+          instancia: {
+            requiereAsistencia: true,
+            inicioProgramadoAt: { gte: now, lt: attentionEnd },
+            estado: "PROGRAMADA"
+          }
+        }
+      }),
+      db.eventoProveedor.count({
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          estadoIntegracion: "SINCRONIZADA",
+          archivosSincronizadosAt: null,
+          instancia: {
+            requiereGrabacion: true,
+            finProgramadoAt: { gte: recordingLookback, lt: now },
+            estado: { notIn: ["CANCELADA", "NO_REALIZADA"] }
+          }
+        }
+      }),
+      db.incidencia.count({ where: { estado: { in: ["ABIERTA", "EN_ANALISIS"] } } }),
       db.instanciaSala.findMany({
         where: { inicioProgramadoAt: { gte: now }, estado: "PROGRAMADA" },
         orderBy: { inicioProgramadoAt: "asc" },
@@ -82,8 +129,133 @@ export default async function HomePage() {
             take: 1
           }
         }
+      }),
+      db.instanciaSala.findMany({
+        where: {
+          requiereAsistencia: true,
+          inicioProgramadoAt: { gte: now },
+          estado: "PROGRAMADA",
+          asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
+        },
+        orderBy: { inicioProgramadoAt: "asc" },
+        take: 3,
+        select: {
+          id: true,
+          inicioProgramadoAt: true,
+          solicitud: { select: { id: true, titulo: true } }
+        }
+      }),
+      db.asignacionAsistente.findMany({
+        where: {
+          estado: "ASIGNADO",
+          instancia: {
+            requiereAsistencia: true,
+            inicioProgramadoAt: { gte: now, lt: attentionEnd },
+            estado: "PROGRAMADA"
+          }
+        },
+        orderBy: { instancia: { inicioProgramadoAt: "asc" } },
+        take: 3,
+        select: {
+          id: true,
+          asistente: { select: { usuario: { select: { nombres: true, apellidos: true } } } },
+          instancia: {
+            select: {
+              inicioProgramadoAt: true,
+              solicitud: { select: { id: true, titulo: true } }
+            }
+          }
+        }
+      }),
+      db.eventoProveedor.findMany({
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          estadoIntegracion: "ERROR",
+          instancia: { inicioProgramadoAt: { gte: now }, estado: "PROGRAMADA" }
+        },
+        orderBy: { instancia: { inicioProgramadoAt: "asc" } },
+        take: 3,
+        select: {
+          errorIntegracion: true,
+          instancia: {
+            select: {
+              inicioProgramadoAt: true,
+              solicitud: { select: { id: true, titulo: true } }
+            }
+          }
+        }
+      }),
+      db.eventoProveedor.findMany({
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          estadoIntegracion: "SINCRONIZADA",
+          archivosSincronizadosAt: null,
+          instancia: {
+            requiereGrabacion: true,
+            finProgramadoAt: { gte: recordingLookback, lt: now },
+            estado: { notIn: ["CANCELADA", "NO_REALIZADA"] }
+          }
+        },
+        orderBy: { instancia: { inicioProgramadoAt: "desc" } },
+        take: 3,
+        select: {
+          instancia: {
+            select: {
+              inicioProgramadoAt: true,
+              solicitud: { select: { id: true, titulo: true } }
+            }
+          }
+        }
+      }),
+      db.incidencia.findMany({
+        where: { estado: { in: ["ABIERTA", "EN_ANALISIS"] } },
+        orderBy: [{ severidad: "desc" }, { createdAt: "asc" }],
+        take: 3,
+        select: {
+          tipo: true,
+          severidad: true,
+          descripcion: true,
+          instancia: { select: { solicitud: { select: { id: true, titulo: true } } } }
+        }
+      }),
+      db.instanciaSala.findMany({
+        where: { finProgramadoAt: { gte: now }, estado: { not: "CANCELADA" } },
+        orderBy: { inicioProgramadoAt: "asc" },
+        select: {
+          id: true,
+          inicioProgramadoAt: true,
+          finProgramadoAt: true,
+          solicitud: {
+            select: {
+              id: true,
+              titulo: true,
+              docentePrograma: {
+                select: {
+                  programa: { select: { id: true, nombre: true } },
+                  docente: { select: { usuario: { select: { id: true, nombres: true, apellidos: true } } } }
+                }
+              }
+            }
+          }
+        }
       })
     ]);
+
+  const duplicateRisks = detectarPosiblesReunionesDuplicadas(duplicateCandidates.map((meeting) => {
+    const association = meeting.solicitud.docentePrograma;
+    const teacher = association.docente.usuario;
+    return {
+      id: meeting.id,
+      solicitudId: meeting.solicitud.id,
+      titulo: meeting.solicitud.titulo,
+      programaId: association.programa.id,
+      programaNombre: association.programa.nombre,
+      docenteId: teacher.id,
+      docenteNombre: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
+      inicio: meeting.inicioProgramadoAt,
+      fin: meeting.finProgramadoAt
+    };
+  }));
 
   const metrics = [
     { label: "Solicitudes abiertas", value: openRequests, copy: "En registro o provisión", icon: ClipboardList, tone: "neutral" },
@@ -97,6 +269,71 @@ export default async function HomePage() {
       proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
     )
   );
+  const attentionGroups = [
+    pendingAssistance ? {
+      key: "coverage",
+      tone: "warning",
+      icon: UserRoundCheck,
+      count: pendingAssistance,
+      title: "Reuniones sin cobertura",
+      detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
+      href: "/cobertura-asistencias?estado=pendientes",
+      action: "Asignar asistencia"
+    } : null,
+    unconfirmedCount ? {
+      key: "unconfirmed",
+      tone: "warning",
+      icon: BellRing,
+      count: unconfirmedCount,
+      title: "Asistencias sin confirmar en 72 horas",
+      detail: unconfirmedAssignments.map(({ asistente, instancia }) => {
+        const user = asistente.usuario;
+        return `${user.nombres} ${user.apellidos ?? ""} · ${instancia.solicitud.titulo}`.trim();
+      }),
+      href: "/cobertura-asistencias?estado=cubiertas",
+      action: "Revisar asignaciones"
+    } : null,
+    integrationErrors ? {
+      key: "meet-errors",
+      tone: "danger",
+      icon: CircleAlert,
+      count: integrationErrors,
+      title: "Errores de Google Meet",
+      detail: integrationErrorExamples.map(({ instancia, errorIntegracion }) => `${instancia.solicitud.titulo} · ${errorIntegracion ?? "Error sin detalle"}`),
+      href: "/configuracion",
+      action: "Resolver integración"
+    } : null,
+    duplicateRisks.length ? {
+      key: "duplicates",
+      tone: "danger",
+      icon: GitCompareArrows,
+      count: duplicateRisks.length,
+      title: "Posibles reuniones duplicadas",
+      detail: duplicateRisks.slice(0, 3).map(({ izquierda, derecha }) => `${izquierda.titulo} / ${derecha.titulo}`),
+      href: "/reuniones#posibles-duplicados",
+      action: "Comparar reuniones"
+    } : null,
+    pendingRecordingCount ? {
+      key: "recordings",
+      tone: "neutral",
+      icon: Files,
+      count: pendingRecordingCount,
+      title: "Grabaciones pendientes de sincronización",
+      detail: pendingRecordingExamples.map(({ instancia }) => `${instancia.solicitud.titulo} · ${formatDate(instancia.inicioProgramadoAt)}`),
+      href: "/grabaciones",
+      action: "Sincronizar archivos"
+    } : null,
+    openIncidentCount ? {
+      key: "incidents",
+      tone: "danger",
+      icon: Siren,
+      count: openIncidentCount,
+      title: "Incidencias abiertas",
+      detail: openIncidents.map(({ instancia, descripcion }) => `${instancia.solicitud.titulo} · ${descripcion}`),
+      href: `/reuniones/${openIncidents[0].instancia.solicitud.id}`,
+      action: "Revisar incidencias"
+    } : null
+  ].filter((group): group is NonNullable<typeof group> => group !== null);
 
   return (
     <div className="role-dashboard admin-dashboard">
@@ -119,6 +356,32 @@ export default async function HomePage() {
             <span><small>{label}</small><strong>{value}</strong><em>{copy}</em></span>
           </article>
         ))}
+      </section>
+
+      <section className="content-section operations-attention" aria-labelledby="operations-attention-title">
+        <div className="section-heading">
+          <div>
+            <h2 id="operations-attention-title">Requiere atención</h2>
+            <p>Excepciones operativas ordenadas para resolver sin recorrer todo el sistema.</p>
+          </div>
+          {attentionGroups.length ? <span className="operations-attention-total">{attentionGroups.reduce((total, group) => total + group.count, 0)}</span> : <CheckCircle2 size={24} color="var(--ok)" />}
+        </div>
+        {attentionGroups.length ? (
+          <div className="operations-attention-grid">
+            {attentionGroups.map(({ key, tone, icon: Icon, count, title, detail, href, action }) => (
+              <article className={`operations-attention-card tone-${tone}`} key={key}>
+                <div className="operations-attention-card-heading">
+                  <span><Icon size={18} /></span>
+                  <div><strong>{title}</strong><small>{count} {count === 1 ? "caso" : "casos"}</small></div>
+                </div>
+                <ul>{detail.map((item, index) => <li key={`${key}-${index}`}>{item}</li>)}</ul>
+                <Link className="text-link" href={href}>{action}<ArrowRight size={15} /></Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="operations-all-clear"><CheckCircle2 size={23} /><div><strong>Todo bajo control</strong><p>No hay excepciones operativas que requieran intervención inmediata.</p></div></div>
+        )}
       </section>
 
       <section className="content-section dashboard-table-section admin-upcoming-section">

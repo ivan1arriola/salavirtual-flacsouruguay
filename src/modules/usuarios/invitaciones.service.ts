@@ -4,6 +4,7 @@ import { authConfig } from "@/src/lib/auth/config";
 import { sendMail } from "@/src/lib/email.client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { invitarUsuarioSchema, puedeInvitarUsuarios } from "./invitaciones.domain";
+import { crearSlugAsistenteDisponible } from "../asistencia/asistente-slug.adapter";
 
 export async function invitarUsuario(
   db: PrismaClient,
@@ -35,6 +36,13 @@ export async function invitarUsuario(
       ? await resolverProgramaInvitacion(tx, input.programaId, input.programaNuevo)
       : null;
     const usuarioId = await idInvitadoDisponible(tx, input.email);
+    const assistantSlug = input.rol === "ASISTENTE"
+      ? await crearSlugAsistenteDisponible(
+          tx,
+          [input.nombres, input.apellidos].filter(Boolean).join(" "),
+          usuarioId
+        )
+      : null;
     const created = await tx.usuario.create({
       data: {
         id: usuarioId,
@@ -54,7 +62,7 @@ export async function invitarUsuario(
                 }
               }
             }
-          : input.rol === "ASISTENTE" ? { asistente: { create: {} } } : {})
+          : input.rol === "ASISTENTE" ? { asistente: { create: { slug: assistantSlug! } } } : {})
       },
       select: { id: true }
     });

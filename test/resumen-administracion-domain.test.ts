@@ -4,7 +4,7 @@ import { resolverPeriodoMes, resumirAsignacionesPorAsistente, resumirTotales } f
 describe("resumen administrativo de asistentes", () => {
   it("agrupa reuniones, horas, importes y faltantes por asistente", () => {
     const rows = resumirAsignacionesPorAsistente(
-      [{ id: "a1", usuarioId: "u1", nombre: "Ana", email: null, activo: true }],
+      [{ id: "a1", usuarioId: "u1", slug: "ana", nombre: "Ana", email: null, activo: true }],
       [
         { asistenteId: "a1", modalidad: "VIRTUAL", minutos: 90, monto: 600, moneda: "UYU" },
         { asistenteId: "a1", modalidad: "HIBRIDA", minutos: 60, monto: null, moneda: "UYU" }

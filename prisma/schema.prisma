@@ -144,6 +144,7 @@ model DocentePrograma {
 model Asistente {
   id                String                    @id @default(cuid())
   usuarioId         String                    @unique
+  slug              String                    @unique
   aliasOperativo    String?
   disponibleGeneral Boolean                   @default(true)
   datosPago         String?

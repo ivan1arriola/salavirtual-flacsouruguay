@@ -5,7 +5,6 @@ import { auth } from "@/auth";
 import { AssistantPeriodNav } from "@/src/components/assistant-period-nav";
 import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
-import { assistantPathSegment, assistantSlug } from "@/src/lib/ui/assistant-route";
 import { obtenerResumenAsistentes } from "@/src/modules/asistencia/resumen-administracion.adapter";
 import { resolverPeriodoMes, resumirTotales, type MontoMoneda } from "@/src/modules/asistencia/resumen-administracion.domain";
 
@@ -18,11 +17,6 @@ export default async function AsistentesPage({
   const period = resolverPeriodoMes(query.mes, new Date());
   const assistants = await obtenerResumenAsistentes(db, period);
   const totals = resumirTotales(assistants);
-  const slugCounts = assistants.reduce<Map<string, number>>((counts, assistant) => {
-    const slug = assistantSlug(assistant.nombre);
-    counts.set(slug, (counts.get(slug) ?? 0) + 1);
-    return counts;
-  }, new Map());
 
   return (
     <>
@@ -49,13 +43,7 @@ export default async function AsistentesPage({
             <thead><tr><th>Asistente</th><th>Reuniones</th><th>Modalidad</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
             <tbody>
               {assistants.map((assistant) => {
-                const slug = assistantSlug(assistant.nombre);
-                const segment = assistantPathSegment(
-                  assistant.nombre,
-                  assistant.usuarioId,
-                  (slugCounts.get(slug) ?? 0) > 1
-                );
-                const detailHref = `/asistentes/${encodeURIComponent(segment)}?mes=${period.clave}`;
+                const detailHref = `/asistentes/${encodeURIComponent(assistant.slug)}?mes=${period.clave}`;
                 return <tr key={assistant.id}>
                   <td><Link className="meeting-title-link" href={detailHref}>{assistant.nombre}</Link><small>{assistant.email ?? assistant.usuarioId}</small></td>
                   <td><strong>{assistant.reuniones}</strong></td>

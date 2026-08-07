@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import type { PrismaClient as LegacyPrismaClientType } from "../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
 import { planificarMigracionUsuarios } from "../src/modules/migracion/usuarios-legacy.domain";
+import { crearSlugAsistenteDisponible } from "../src/modules/asistencia/asistente-slug.adapter";
 
 const legacyRequire = createRequire(
   new URL("../../flacso-zoom-plataforma-web/package.json", import.meta.url)
@@ -189,15 +190,22 @@ async function aplicarPlan(
       });
     }
     if (plan.asistente) {
+      const assistantSlug = await crearSlugAsistenteDisponible(
+        tx,
+        [plan.nombres, plan.apellidos].filter(Boolean).join(" "),
+        plan.usuarioId
+      );
       await tx.asistente.upsert({
         where: { usuarioId: plan.usuarioId },
         create: {
           usuarioId: plan.usuarioId,
+          slug: assistantSlug,
           aliasOperativo: plan.asistente.aliasOperativo,
           disponibleGeneral: plan.asistente.disponibleGeneral,
           datosPago: plan.asistente.datosPago
         },
         update: {
+          slug: assistantSlug,
           aliasOperativo: plan.asistente.aliasOperativo,
           disponibleGeneral: plan.asistente.disponibleGeneral,
           datosPago: plan.asistente.datosPago
