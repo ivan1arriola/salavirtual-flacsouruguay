@@ -4,10 +4,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
-import {
-  obtenerAlcanceHistorico,
-  obtenerTituloHistorico
-} from "@/src/modules/historico/historico.domain";
+import { puedeVerHistoricoZoom } from "@/src/modules/historico/historico.domain";
 
 export default async function HistoricoPage() {
   const session = await auth();
@@ -17,37 +14,11 @@ export default async function HistoricoPage() {
     email: session.user.email
   });
   if (!actor?.activo) redirect("/acceso");
+  if (!puedeVerHistoricoZoom(actor.rol)) redirect("/");
 
-  const scope = obtenerAlcanceHistorico(actor.rol);
-  const programIds = scope === "PROGRAMAS_DOCENTE"
-    ? await db.docentePrograma.findMany({
-        where: { docente: { usuarioId: actor.id }, activo: true },
-        select: { programaId: true }
-      }).then((associations) => associations.map(({ programaId }) => programaId))
-    : [];
-  const visibilityFilter =
-    scope === "PROGRAMAS_DOCENTE"
-      ? {
-          instancia: {
-            solicitud: { docentePrograma: { programaId: { in: programIds } } }
-          }
-        }
-      : scope === "ASIGNACIONES_ASISTENTE"
-        ? {
-            instancia: {
-              asignaciones: {
-                some: {
-                  asistente: { usuarioId: actor.id },
-                  estado: { in: ["ASIGNADO" as const, "ACEPTADO" as const] }
-                }
-              }
-            }
-          }
-        : {};
   const meetings = await db.eventoProveedor.findMany({
     where: {
-      proveedor: { tipo: "ZOOM_HISTORICO" },
-      ...visibilityFilter
+      proveedor: { tipo: "ZOOM_HISTORICO" }
     },
     orderBy: { instancia: { inicioProgramadoAt: "desc" } },
     take: 100,
@@ -75,8 +46,8 @@ export default async function HistoricoPage() {
       <header className="page-header">
         <div>
           <p className="page-eyebrow">Solo consulta</p>
-          <h1>{obtenerTituloHistorico(scope)}</h1>
-          <p>{scopeDescription(scope)}</p>
+          <h1>Histórico Zoom</h1>
+          <p>Todos los registros migrados de la plataforma anterior.</p>
         </div>
         <Archive size={28} color="var(--brand)" aria-hidden="true" />
       </header>
@@ -104,10 +75,4 @@ export default async function HistoricoPage() {
       </section>
     </>
   );
-}
-
-function scopeDescription(scope: ReturnType<typeof obtenerAlcanceHistorico>): string {
-  if (scope === "COMPLETO") return "Todos los registros migrados de la plataforma anterior.";
-  if (scope === "PROGRAMAS_DOCENTE") return "Reuniones de tus programas asociados.";
-  return "Reuniones históricas vinculadas a tus asignaciones.";
 }

@@ -47,7 +47,9 @@ export default async function HomePage() {
           asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
         }
       }),
-      db.eventoProveedor.count({ where: { proveedor: { tipo: "ZOOM_HISTORICO" } } }),
+      session.user.role === "ADMINISTRACION"
+        ? db.eventoProveedor.count({ where: { proveedor: { tipo: "ZOOM_HISTORICO" } } })
+        : Promise.resolve(null),
       db.instanciaSala.findMany({
         where: {
           ...docenteWhere,
@@ -82,8 +84,8 @@ export default async function HomePage() {
     { label: "Solicitudes abiertas", value: openRequests },
     { label: "Próximos 7 días", value: weekMeetings },
     { label: "Sin asistencia", value: pendingAssistance, alert: pendingAssistance > 0 },
-    { label: "Histórico Zoom", value: zoomHistory }
-  ] as const;
+    ...(zoomHistory === null ? [] : [{ label: "Histórico Zoom", value: zoomHistory }])
+  ];
   const hasPendingMeet = upcoming.some((meeting) =>
     meeting.eventosProveedor.some(
       ({ proveedor, estadoIntegracion }) =>

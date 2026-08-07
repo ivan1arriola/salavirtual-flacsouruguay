@@ -2,6 +2,7 @@ import { db } from "@/src/lib/db";
 import {
   esPerfilGoogleInstitucional,
   evaluarAccesoGoogle,
+  resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
   type PerfilGoogle
 } from "@/src/modules/usuarios/google-login.domain";
@@ -16,7 +17,44 @@ export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
       where: { email: { equals: email, mode: "insensitive" } },
       include: { user: true }
     });
-    if (existingAccount) return existingAccount;
+    if (existingAccount) {
+      const subjectOwner = await tx.cuentaGoogleFlacso.findUnique({
+        where: { providerAccountId: perfil.subject },
+        select: { id: true }
+      });
+      const decision = resolverVinculacionSubjectGoogle(
+        existingAccount.providerAccountId,
+        perfil.subject,
+        Boolean(subjectOwner && subjectOwner.id !== existingAccount.id)
+      );
+      if (decision === "RECHAZAR") {
+        console.warn("Login Google rechazado: el identificador del proveedor pertenece a otra cuenta");
+        return null;
+      }
+      if (decision === "REVINCULAR") {
+        if (!existingAccount.user.activo || existingAccount.user.fusionadoEnId) return null;
+        const updated = await tx.cuentaGoogleFlacso.update({
+          where: { id: existingAccount.id },
+          data: {
+            providerAccountId: perfil.subject,
+            emailVerificadoAt: now
+          },
+          include: { user: true }
+        });
+        await tx.auditoria.create({
+          data: {
+            actorUsuarioId: existingAccount.user.id,
+            accion: "CUENTA_GOOGLE_REVALIDADA",
+            entidadTipo: "CuentaGoogleFlacso",
+            entidadId: existingAccount.id,
+            valorAnterior: { providerAccountId: existingAccount.providerAccountId },
+            valorNuevo: { providerAccountId: perfil.subject }
+          }
+        });
+        return updated;
+      }
+      return existingAccount;
+    }
 
     const existingUser = await tx.usuario.findFirst({
       where: { emailPrincipal: { equals: email, mode: "insensitive" } },

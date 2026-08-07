@@ -50,3 +50,12 @@ export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
     perfil.emailVerificado &&
     email.endsWith("@flacso.edu.uy");
 }
+
+export function resolverVinculacionSubjectGoogle(
+  subjectActual: string | null,
+  subjectEntrante: string,
+  subjectPerteneceAOtraCuenta: boolean
+): "MANTENER" | "REVINCULAR" | "RECHAZAR" {
+  if (subjectPerteneceAOtraCuenta) return "RECHAZAR";
+  return subjectActual === subjectEntrante ? "MANTENER" : "REVINCULAR";
+}

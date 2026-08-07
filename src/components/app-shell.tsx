@@ -89,7 +89,7 @@ export async function AppShell({
           </Link>
         </nav>
 
-        {user.role !== "ASISTENTE" ? (
+        {user.role === "ADMINISTRACION" ? (
           <details className="archive-nav">
             <summary>Archivo</summary>
             <nav className="side-nav" aria-label="Navegación de archivo">

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluarAccesoGoogle,
   esPerfilGoogleInstitucional,
+  resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
   type PerfilGoogle
 } from "../src/modules/usuarios/google-login.domain";
@@ -43,5 +44,12 @@ describe("login funcional con Google", () => {
     expect(esPerfilGoogleInstitucional(perfil)).toBe(true);
     expect(esPerfilGoogleInstitucional({ ...perfil, email: "persona@gmail.com" })).toBe(false);
     expect(esPerfilGoogleInstitucional({ ...perfil, emailVerificado: false })).toBe(false);
+  });
+
+  it("permite revalidar el subject usando un correo institucional verificado", () => {
+    expect(resolverVinculacionSubjectGoogle(null, "subject-nuevo", false)).toBe("REVINCULAR");
+    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", false)).toBe("REVINCULAR");
+    expect(resolverVinculacionSubjectGoogle("subject-nuevo", "subject-nuevo", false)).toBe("MANTENER");
+    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", true)).toBe("RECHAZAR");
   });
 });
