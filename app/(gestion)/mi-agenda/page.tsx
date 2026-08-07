@@ -1,6 +1,7 @@
 import { CalendarCheck2, ExternalLink } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AssistantAssignmentResponse } from "@/src/components/assistant-assignment-response";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -69,7 +70,7 @@ export default async function MiAgendaPage() {
         ) : (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Estado</th><th>Acceso</th></tr></thead>
+              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Estado</th><th>Respuesta</th><th>Acceso</th></tr></thead>
               <tbody>
                 {assignments.map((assignment) => {
                   const meeting = assignment.instancia;
@@ -84,6 +85,7 @@ export default async function MiAgendaPage() {
                       <td>{association.programa.nombre}</td>
                       <td><strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
                       <td><span className="status status-ok">{assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada"}</span></td>
+                      <td>{assignment.estado === "ASIGNADO" ? <AssistantAssignmentResponse assignmentId={assignment.id} /> : <span className="muted-text">—</span>}</td>
                       <td>{meet?.joinUrl ? <a className="icon-link" href={meet.joinUrl} target="_blank" rel="noreferrer" title="Abrir reunión"><ExternalLink size={17} /><span className="sr-only">Abrir reunión</span></a> : <span className="muted-text">—</span>}</td>
                     </tr>
                   );

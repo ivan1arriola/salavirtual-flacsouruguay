@@ -9,7 +9,11 @@ export type AssignmentSuggestionInput = Readonly<{
       intereses: readonly Readonly<{ asistente: { id: string } }>[];
     };
   }>[];
-  assistants: readonly Readonly<{ id: string; name: string }>[];
+  assistants: readonly Readonly<{
+    id: string;
+    name: string;
+    disponibilidades?: readonly DisponibilidadInput[];
+  }>[];
   assignments: readonly Readonly<{
     assistantId: string;
     meetingId: string;
@@ -17,6 +21,15 @@ export type AssignmentSuggestionInput = Readonly<{
     endsAt: Date;
     timezone: string;
   }>[];
+}>;
+
+export type DisponibilidadInput = Readonly<{
+  diaSemana: number | null;
+  fecha: Date | null;
+  horaDesde: string;
+  horaHasta: string;
+  timezone: string;
+  tipo: "DISPONIBLE" | "NO_DISPONIBLE" | "PREFERENTE";
 }>;
 
 export type AssignmentSuggestion = Readonly<{
@@ -58,12 +71,24 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
     const startsAtMs = meeting.inicioProgramadoAt.getTime();
     const endsAtMs = meeting.finProgramadoAt.getTime();
     const keySuffix = monthKey(meeting.inicioProgramadoAt, meeting.timezone);
+    const availability = new Map(input.assistants.map((assistant) => [
+      assistant.id,
+      evaluarDisponibilidad(
+        meeting.inicioProgramadoAt,
+        meeting.finProgramadoAt,
+        assistant.disponibilidades ?? []
+      )
+    ]));
     const available = (candidateIds: readonly string[]) =>
       candidateIds
+        .filter((assistantId) => availability.get(assistantId)?.tipo !== "NO_DISPONIBLE")
         .filter((assistantId) =>
           !hasScheduleConflict(schedules.get(assistantId) ?? [], startsAtMs, endsAtMs)
         )
         .sort((left, right) => {
+          const leftScore = (availability.get(left)?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
+          const rightScore = (availability.get(right)?.puntaje ?? 0) * 2 + Number(applicantSet.has(right));
+          if (leftScore !== rightScore) return rightScore - leftScore;
           const leftLoad = monthlyLoads.get(`${left}:${keySuffix}`) ?? 0;
           const rightLoad = monthlyLoads.get(`${right}:${keySuffix}`) ?? 0;
           if (leftLoad !== rightLoad) return leftLoad - rightLoad;
@@ -73,17 +98,18 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
           );
         });
 
-    const selectedId = available(applicantIds)[0]
-      ?? available(input.assistants.map(({ id }) => id).filter((id) => !applicantSet.has(id)))[0];
+    const selectedId = available(input.assistants.map(({ id }) => id))[0];
     const selected = selectedId ? assistantById.get(selectedId) : null;
     if (!selected) continue;
 
     const loadBefore = monthlyLoads.get(`${selected.id}:${keySuffix}`) ?? 0;
-    const reason = applicantSet.has(selected.id)
-      ? `Postulante con menor carga mensual (${formatLoad(loadBefore)})`
-      : applicantIds.length > 0
-        ? `Sin postulantes disponibles; menor carga mensual (${formatLoad(loadBefore)})`
-        : `Menor carga mensual disponible (${formatLoad(loadBefore)})`;
+    const reason = [
+      availability.get(selected.id)?.etiqueta,
+      applicantSet.has(selected.id)
+        ? "Se postuló"
+        : applicantIds.length > 0 ? "Sin postulantes disponibles" : null,
+      `${formatLoad(loadBefore)} este mes`
+    ].filter(Boolean).join(" · ");
     suggestions.set(meeting.id, { id: selected.id, name: selected.name, reason });
     monthlyLoads.set(
       `${selected.id}:${keySuffix}`,
@@ -93,6 +119,72 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
   }
 
   return suggestions;
+}
+
+export function evaluarDisponibilidad(
+  startsAt: Date,
+  endsAt: Date,
+  records: readonly DisponibilidadInput[]
+): Readonly<{
+  tipo: "PREFERENTE" | "DISPONIBLE" | "SIN_DEFINIR" | "NO_DISPONIBLE";
+  puntaje: number;
+  etiqueta?: string;
+}> {
+  const exact = records.filter((record) =>
+    record.fecha && record.fecha.toISOString().slice(0, 10) === dateKey(startsAt, record.timezone)
+  );
+  const relevant = exact.length > 0
+    ? exact
+    : records.filter((record) =>
+        record.fecha === null && record.diaSemana === weekday(startsAt, record.timezone)
+      );
+  const overlapping = relevant.filter((record) => {
+    const start = timeKey(startsAt, record.timezone);
+    const end = timeKey(endsAt, record.timezone);
+    return record.horaDesde < end && record.horaHasta > start;
+  });
+  if (overlapping.some(({ tipo }) => tipo === "NO_DISPONIBLE")) {
+    return { tipo: "NO_DISPONIBLE", puntaje: -1, etiqueta: "No disponible" };
+  }
+  const covering = overlapping.filter((record) => {
+    const start = timeKey(startsAt, record.timezone);
+    const end = timeKey(endsAt, record.timezone);
+    return record.horaDesde <= start && record.horaHasta >= end;
+  });
+  if (covering.some(({ tipo }) => tipo === "PREFERENTE")) {
+    return { tipo: "PREFERENTE", puntaje: 2, etiqueta: "Disponibilidad preferente" };
+  }
+  if (covering.some(({ tipo }) => tipo === "DISPONIBLE")) {
+    return { tipo: "DISPONIBLE", puntaje: 1, etiqueta: "Disponible en ese horario" };
+  }
+  return { tipo: "SIN_DEFINIR", puntaje: 0 };
+}
+
+function dateKey(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone || "America/Montevideo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function weekday(date: Date, timezone: string): number {
+  const label = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone || "America/Montevideo",
+    weekday: "short"
+  }).format(date);
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(label);
+}
+
+function timeKey(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone || "America/Montevideo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+  return `${parts.find(({ type }) => type === "hour")?.value ?? "00"}:${parts.find(({ type }) => type === "minute")?.value ?? "00"}`;
 }
 
 function hasScheduleConflict(

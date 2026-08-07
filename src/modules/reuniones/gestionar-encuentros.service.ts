@@ -6,9 +6,10 @@ import type { MeetProvider } from "../meet/provider";
 import {
   actualizarEncuentroSchema,
   agregarEncuentroSchema,
-  elegirCuentaHost,
+  elegirCuentaHostParaPeriodos,
   puedeGestionarEncuentros
 } from "./encuentros.domain";
+import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import {
   auditarEncuentro as auditar,
   cargarCredencialesEncuentro,
@@ -50,39 +51,59 @@ export async function agregarEncuentro(
   });
   validarGestion(actor, request?.docentePrograma.docente.usuarioId);
   if (!request || input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
+  if (request.instancias.some((meeting) =>
+    meeting.estado === "PROGRAMADA" &&
+    input.inicio < meeting.finProgramadoAt &&
+    input.fin > meeting.inicioProgramadoAt
+  )) {
+    throw new Error("El nuevo encuentro se superpone con otro de la misma serie.");
+  }
 
   const provider = await dependencies.db.proveedorReunion.findUnique({ where: { tipo: "GOOGLE_MEET" } });
   if (!provider) throw new Error("Google Meet no está configurado como proveedor.");
   const preferredHost = request.instancias.flatMap(({ eventosProveedor }) =>
     eventosProveedor.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
   )[0] ?? null;
-  const [hosts, conflicts] = await Promise.all([
-    dependencies.db.cuentaProveedor.findMany({
-      where: { proveedorId: provider.id, activa: true, tieneLicencia: true },
-      orderBy: { prioridad: "asc" },
-      select: { id: true, prioridad: true }
-    }),
-    dependencies.db.eventoProveedor.findMany({
-      where: {
-        proveedorId: provider.id,
-        cuentaProveedorId: { not: null },
-        instancia: {
-          estado: "PROGRAMADA",
-          inicioProgramadoAt: { lt: input.fin },
-          finProgramadoAt: { gt: input.inicio }
-        }
-      },
-      select: { cuentaProveedorId: true }
-    })
-  ]);
-  const hostId = elegirCuentaHost(
-    preferredHost,
-    hosts,
-    conflicts.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
-  );
-  if (!hostId) throw new Error("No hay una sala Meet libre para ese horario.");
-
   return dependencies.db.$transaction(async (tx) => {
+    await bloquearReservaSalas(tx, provider.id);
+    const [hosts, conflicts] = await Promise.all([
+      tx.cuentaProveedor.findMany({
+        where: { proveedorId: provider.id, activa: true, tieneLicencia: true },
+        orderBy: { prioridad: "asc" },
+        select: { id: true, prioridad: true, limiteConcurrente: true }
+      }),
+      tx.eventoProveedor.findMany({
+        where: {
+          proveedorId: provider.id,
+          cuentaProveedorId: { not: null },
+          instancia: {
+            estado: "PROGRAMADA",
+            inicioProgramadoAt: { lt: input.fin },
+            finProgramadoAt: { gt: input.inicio }
+          }
+        },
+        select: {
+          cuentaProveedorId: true,
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+        }
+      })
+    ]);
+    const hostId = elegirCuentaHostParaPeriodos(
+      preferredHost,
+      preferredHost ? hosts.filter(({ id }) => id === preferredHost) : hosts,
+      conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
+        cuentaProveedorId,
+        inicio: instancia.inicioProgramadoAt,
+        fin: instancia.finProgramadoAt
+      }] : []),
+      [input]
+    );
+    if (!hostId) {
+      throw new Error(preferredHost
+        ? "La sala de esta serie no está disponible en ese horario."
+        : "No hay una sala Meet libre para ese horario.");
+    }
+
     const ordinal = (request.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0)) + 1;
     const meeting = await tx.instanciaSala.create({
       data: {
@@ -138,40 +159,60 @@ export async function actualizarEncuentro(
   const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
   if (input.accion === "EDITAR_FECHA") {
     if (input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
-    if (event?.cuentaProveedorId) {
-      const conflict = await dependencies.db.eventoProveedor.findFirst({
-        where: {
-          id: { not: event.id },
-          cuentaProveedorId: event.cuentaProveedorId,
-          instancia: {
-            estado: "PROGRAMADA",
-            inicioProgramadoAt: { lt: input.fin },
-            finProgramadoAt: { gt: input.inicio }
-          }
-        },
-        select: { id: true }
-      });
-      if (conflict) throw new Error("La sala Meet ya está ocupada en ese horario.");
-    }
-    if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
-      const credentials = await cargarCredencialesEncuentro(
-        dependencies.db,
-        dependencies.descifrar,
-        event.cuentaProveedor.emailOrganizador
-      );
-      await dependencies.crearProvider(credentials).actualizarEvento(
-        event.cuentaProveedor.emailOrganizador,
-        event.externalEventId,
-        {
-          titulo: meeting.solicitud.titulo,
-          descripcion: meeting.solicitud.descripcion ?? undefined,
-          inicio: input.inicio,
-          fin: input.fin,
-          timezone: meeting.timezone
-        }
-      );
-    }
     await dependencies.db.$transaction(async (tx) => {
+      if (event?.cuentaProveedorId) {
+        await bloquearReservaSalas(tx, event.proveedorId);
+        const [host, conflicts] = await Promise.all([
+          tx.cuentaProveedor.findUnique({
+            where: { id: event.cuentaProveedorId },
+            select: { id: true, prioridad: true, limiteConcurrente: true }
+          }),
+          tx.eventoProveedor.findMany({
+            where: {
+              id: { not: event.id },
+              cuentaProveedorId: event.cuentaProveedorId,
+              instancia: {
+                estado: "PROGRAMADA",
+                inicioProgramadoAt: { lt: input.fin },
+                finProgramadoAt: { gt: input.inicio }
+              }
+            },
+            select: {
+              cuentaProveedorId: true,
+              instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+            }
+          })
+        ]);
+        const available = host && elegirCuentaHostParaPeriodos(
+          host.id,
+          [host],
+          conflicts.map(({ cuentaProveedorId, instancia }) => ({
+            cuentaProveedorId: cuentaProveedorId!,
+            inicio: instancia.inicioProgramadoAt,
+            fin: instancia.finProgramadoAt
+          })),
+          [input]
+        );
+        if (!available) throw new Error("La sala Meet ya alcanzó su límite en ese horario.");
+      }
+      if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
+        const credentials = await cargarCredencialesEncuentro(
+          dependencies.db,
+          dependencies.descifrar,
+          event.cuentaProveedor.emailOrganizador
+        );
+        await dependencies.crearProvider(credentials).actualizarEvento(
+          event.cuentaProveedor.emailOrganizador,
+          event.externalEventId,
+          {
+            titulo: meeting.solicitud.titulo,
+            descripcion: meeting.solicitud.descripcion ?? undefined,
+            inicio: input.inicio,
+            fin: input.fin,
+            timezone: meeting.timezone
+          }
+        );
+      }
       await tx.instanciaSala.update({
         where: { id: meeting.id },
         data: { inicioProgramadoAt: input.inicio, finProgramadoAt: input.fin }

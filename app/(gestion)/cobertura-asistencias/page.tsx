@@ -79,11 +79,12 @@ export default async function CoberturaAsistenciasPage({
       }
     }),
     db.asistente.findMany({
-      where: { usuario: { activo: true, rol: "ASISTENTE" } },
+      where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE" } },
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
       select: {
         id: true,
-        usuario: { select: { nombres: true, apellidos: true } }
+        usuario: { select: { nombres: true, apellidos: true } },
+        disponibilidades: true
       }
     }),
     db.asignacionAsistente.findMany({
@@ -121,7 +122,8 @@ export default async function CoberturaAsistenciasPage({
 
   const assistantOptions = assistants.map((assistant) => ({
     id: assistant.id,
-    name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" ")
+    name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
+    disponibilidades: assistant.disponibilidades
   }));
   const suggestions = buildAssignmentSuggestions({
     meetings: rows.map(({ meeting, covered }) => ({ meeting, covered })),

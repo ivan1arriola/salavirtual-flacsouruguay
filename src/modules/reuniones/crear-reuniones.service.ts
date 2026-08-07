@@ -7,6 +7,8 @@ import {
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
 import { withRequiredCohostEmails } from "../meet/cohosts.domain";
+import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
+import { bloquearReservaSalas } from "./reserva-salas.adapter";
 
 export type ActorReunion = Readonly<{
   id: string;
@@ -62,6 +64,7 @@ export async function crearReuniones(
     if (!proveedorMeet) {
       throw new Error("Google Meet no está configurado como proveedor.");
     }
+    await bloquearReservaSalas(tx, proveedorMeet.id);
 
     const assistant = asistenteId
       ? await tx.asistente.findUnique({
@@ -93,7 +96,7 @@ export async function crearReuniones(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-        select: { id: true, prioridad: true }
+        select: { id: true, prioridad: true, limiteConcurrente: true }
       }),
       tx.eventoProveedor.findMany({
         where: {
@@ -107,18 +110,27 @@ export async function crearReuniones(
             }))
           }
         },
-        select: { cuentaProveedorId: true }
+        select: {
+          cuentaProveedorId: true,
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+        }
       })
     ]);
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
       throw new Error("Una o mas cuentas cohost no existen.");
     }
     const cohostIds = [...new Set([...cohosts, ...automaticCohosts].map(({ id }) => id))];
-    const occupiedHostIds = new Set(
-      occupiedHosts.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
+    const cuentaHostId = elegirCuentaHostParaPeriodos(
+      null,
+      hosts,
+      occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
+        cuentaProveedorId,
+        inicio: instancia.inicioProgramadoAt,
+        fin: instancia.finProgramadoAt
+      }] : []),
+      input.instancias
     );
-    const cuentaHost = hosts.find(({ id }) => !occupiedHostIds.has(id));
-    if (!cuentaHost) {
+    if (!cuentaHostId) {
       throw new Error("No hay una sala Meet libre para todas las fechas solicitadas.");
     }
     const manualCohostEmails = withRequiredCohostEmails(input.cohostEmailsManual);
@@ -159,7 +171,7 @@ export async function crearReuniones(
           data: {
             instanciaSalaId: instancia.id,
             proveedorId: proveedorMeet.id,
-            cuentaProveedorId: cuentaHost.id,
+            cuentaProveedorId: cuentaHostId,
             codigoReunion: input.codigoMeet,
           },
         });

@@ -51,6 +51,20 @@ describe("dias derivados de reuniones", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rechaza encuentros superpuestos dentro de una serie con Meet compartido", () => {
+    const result = crearReunionesSchema.safeParse({
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      modalidad: "VIRTUAL",
+      timezone: "America/Montevideo",
+      instancias: [
+        { inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T15:00:00Z" },
+        { inicio: "2026-08-03T14:00:00Z", fin: "2026-08-03T16:00:00Z" }
+      ]
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("normaliza cohosts manuales sin exigir sala elegida a mano", () => {
     const result = crearReunionesSchema.parse({
       titulo: "Clase",

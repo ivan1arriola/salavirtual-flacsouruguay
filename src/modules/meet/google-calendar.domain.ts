@@ -18,13 +18,24 @@ export function crearCalendarEvent(
     ...(request.cohostEmails?.length
       ? { attendees: request.cohostEmails.map((email) => ({ email })) }
       : {}),
-    conferenceData: {
+    conferenceData: request.conferenceData ?? {
       createRequest: {
         requestId,
         conferenceSolutionKey: { type: "hangoutsMeet" }
       }
     }
   } as const;
+}
+
+export function extraerConferenceData(
+  payload: unknown
+): Readonly<Record<string, unknown>> | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const conferenceData = (payload as { conferenceData?: unknown }).conferenceData;
+  if (!conferenceData || typeof conferenceData !== "object" || Array.isArray(conferenceData)) {
+    return undefined;
+  }
+  return conferenceData as Readonly<Record<string, unknown>>;
 }
 
 export type CalendarEvent = Readonly<{

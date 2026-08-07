@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { withRequiredCohostEmails } from "./cohosts.domain";
+import { extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
 
@@ -73,85 +74,59 @@ export async function provisionarEventosMeet(
         },
         orderBy: { updatedAt: "asc" }
       });
-      if (existing?.codigoReunion && existing.joinUrl) {
-        const codigoReunion = existing.codigoReunion;
-        const joinUrl = existing.joinUrl;
-        await copiarEnlaceMeet(dependencies.db, grupo.eventos.map(({ id }) => id), {
-          codigoReunion,
-          joinUrl,
-          payload: existing.payloadUltimo
-        });
-        return grupo.eventos.map((evento) => ({
-          eventoProveedorId: evento.id,
-          estado: "SINCRONIZADA",
-          codigoReunion
-        }));
-      }
-
-      const [eventoPrincipal, ...eventosHermanos] = grupo.eventos;
-      const hostEmail = eventoPrincipal.cuentaProveedor?.emailOrganizador;
-      if (!hostEmail) {
-        const result = await registrarError(
-          dependencies.db,
-          eventoPrincipal.id,
-          "La cuenta host no tiene email organizador.",
-        );
-        return [result, ...eventosHermanos.map((evento) => ({
-          eventoProveedorId: evento.id,
-          estado: "PENDIENTE_CONFIGURACION" as const,
-          error: "La cuenta host no tiene email organizador."
-        }))];
-      }
-      try {
-        const provider = dependencies.crearProvider({
-          serviceAccountEmail,
-          privateKey,
-          subject: hostEmail,
-        });
-        const result = await provider.provisionarEvento({
-          titulo: eventoPrincipal.instancia.solicitud.titulo,
-          descripcion: eventoPrincipal.instancia.solicitud.descripcion ?? undefined,
-          inicio: eventoPrincipal.instancia.inicioProgramadoAt,
-          fin: eventoPrincipal.instancia.finProgramadoAt,
-          timezone: eventoPrincipal.instancia.timezone,
-          calendarId: hostEmail,
-          cohostEmails: cohostEmailsDeInstancia(eventoPrincipal.instancia),
-          requiereAsistencia: eventoPrincipal.instancia.requiereAsistencia,
-        });
-        await dependencies.db.eventoProveedor.update({
-          where: { id: eventoPrincipal.id },
-          data: {
-            externalEventId: result.externalEventId,
-            codigoReunion: result.codigoReunion,
-            joinUrl: result.joinUrl,
-            payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
-            sincronizadoAt: new Date(),
-            estadoIntegracion: "SINCRONIZADA",
-            errorIntegracion: result.warning ?? null,
-          },
-        });
-        if (eventosHermanos.length > 0) {
-          await copiarEnlaceMeet(dependencies.db, eventosHermanos.map(({ id }) => id), result);
+      let conferenceData = extraerConferenceData(existing?.payloadUltimo);
+      const results: ProvisionResult[] = [];
+      for (const evento of grupo.eventos) {
+        const hostEmail = evento.cuentaProveedor?.emailOrganizador;
+        if (!hostEmail) {
+          results.push(await registrarError(
+            dependencies.db,
+            evento.id,
+            "La cuenta host no tiene email organizador.",
+          ));
+          continue;
         }
-        return [
-          {
-            eventoProveedorId: eventoPrincipal.id,
-            estado: "SINCRONIZADA" as const,
-            codigoReunion: result.codigoReunion,
-          },
-          ...eventosHermanos.map((evento) => ({
+        try {
+          const provider = dependencies.crearProvider({
+            serviceAccountEmail,
+            privateKey,
+            subject: hostEmail,
+          });
+          const result = await provider.provisionarEvento({
+            titulo: evento.instancia.solicitud.titulo,
+            descripcion: evento.instancia.solicitud.descripcion ?? undefined,
+            inicio: evento.instancia.inicioProgramadoAt,
+            fin: evento.instancia.finProgramadoAt,
+            timezone: evento.instancia.timezone,
+            calendarId: hostEmail,
+            conferenceData,
+            cohostEmails: cohostEmailsDeInstancia(evento.instancia),
+            requiereAsistencia: evento.instancia.requiereAsistencia,
+          });
+          conferenceData ??= extraerConferenceData(result.payload);
+          await dependencies.db.eventoProveedor.update({
+            where: { id: evento.id },
+            data: {
+              externalEventId: result.externalEventId,
+              codigoReunion: result.codigoReunion,
+              joinUrl: result.joinUrl,
+              payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
+              sincronizadoAt: new Date(),
+              estadoIntegracion: "SINCRONIZADA",
+              errorIntegracion: result.warning ?? null,
+            },
+          });
+          results.push({
             eventoProveedorId: evento.id,
-            estado: "SINCRONIZADA" as const,
+            estado: "SINCRONIZADA",
             codigoReunion: result.codigoReunion,
-          }))
-        ];
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Error desconocido de Google.";
-        return [await registrarError(dependencies.db, eventoPrincipal.id, message)];
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Error desconocido de Google.";
+          results.push(await registrarError(dependencies.db, evento.id, message));
+        }
       }
+      return results;
     },
   ).then((results) => results.flat());
 }
@@ -193,26 +168,6 @@ function cohostEmailsDeInstancia(
     ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
     ...instancia.cohostEmails.map(({ email }) => email)
   ]);
-}
-
-async function copiarEnlaceMeet(
-  db: PrismaClient,
-  eventoProveedorIds: readonly string[],
-  result: Readonly<{ codigoReunion: string; joinUrl: string; payload?: unknown }>
-): Promise<void> {
-  if (eventoProveedorIds.length === 0) return;
-  await db.eventoProveedor.updateMany({
-    where: { id: { in: [...eventoProveedorIds] } },
-    data: {
-      externalEventId: null,
-      codigoReunion: result.codigoReunion,
-      joinUrl: result.joinUrl,
-      payloadUltimo: result.payload === undefined ? undefined : JSON.parse(JSON.stringify(result.payload)),
-      sincronizadoAt: new Date(),
-      estadoIntegracion: "SINCRONIZADA",
-      errorIntegracion: null
-    }
-  });
 }
 
 async function procesarEnLotes<T, R>(

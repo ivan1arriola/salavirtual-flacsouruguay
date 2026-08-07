@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   asignacionAsistenciaSchema,
+  disponibilidadSemanalSchema,
   estadoInteresParaAccion,
+  estadoParaRespuestaAsignacion,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   postulacionAsistenciaSchema,
-  reporteDuracionSchema
+  reporteDuracionSchema,
+  respuestaAsignacionSchema
 } from "../src/modules/asistencia/asistencia.domain";
 
 describe("flujo funcional de asistencia", () => {
@@ -47,5 +50,23 @@ describe("flujo funcional de asistencia", () => {
       comentario: "Se extendió por consultas."
     });
     expect(reporteDuracionSchema.safeParse({ asignacionId: "assignment", minutos: 0 }).success).toBe(false);
+  });
+
+  it("modela confirmar o rechazar una asignación pendiente", () => {
+    expect(respuestaAsignacionSchema.parse({ asignacionId: "assignment", accion: "ACEPTAR" }))
+      .toEqual({ asignacionId: "assignment", accion: "ACEPTAR" });
+    expect(estadoParaRespuestaAsignacion("ACEPTAR")).toBe("ACEPTADO");
+    expect(estadoParaRespuestaAsignacion("RECHAZAR")).toBe("RECHAZADO");
+  });
+
+  it("valida franjas semanales de disponibilidad", () => {
+    expect(disponibilidadSemanalSchema.safeParse({
+      disponibleGeneral: true,
+      franjas: [{ diaSemana: 1, horaDesde: "09:00", horaHasta: "18:00", tipo: "PREFERENTE" }]
+    }).success).toBe(true);
+    expect(disponibilidadSemanalSchema.safeParse({
+      disponibleGeneral: true,
+      franjas: [{ diaSemana: 1, horaDesde: "18:00", horaHasta: "09:00", tipo: "DISPONIBLE" }]
+    }).success).toBe(false);
   });
 });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildAssignmentSuggestions } from "../src/modules/asistencia/asignacion-sugerencias.service";
+import {
+  buildAssignmentSuggestions,
+  evaluarDisponibilidad
+} from "../src/modules/asistencia/asignacion-sugerencias.service";
 
 const meeting = (id: string, start: string, end: string, applicants: string[] = []) => ({
   covered: false,
@@ -26,7 +29,7 @@ describe("buildAssignmentSuggestions", () => {
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-2");
-    expect(result.get("meeting-1")?.reason).toContain("Postulante");
+    expect(result.get("meeting-1")?.reason).toContain("postuló");
   });
 
   it("usa un asistente activo cuando todos los postulantes tienen conflicto", () => {
@@ -68,5 +71,34 @@ describe("buildAssignmentSuggestions", () => {
 
     expect(result.get("meeting-1")?.id).toBe("assistant-1");
     expect(result.get("meeting-2")?.id).toBe("assistant-2");
+  });
+
+  it("prioriza disponibilidad preferente y excluye una excepción no disponible", () => {
+    const recurrent = [{
+      diaSemana: 1,
+      fecha: null,
+      horaDesde: "09:00",
+      horaHasta: "18:00",
+      timezone: "America/Montevideo",
+      tipo: "PREFERENTE" as const
+    }];
+    const result = buildAssignmentSuggestions({
+      meetings: [meeting("meeting-1", "2026-08-10T16:00:00Z", "2026-08-10T17:00:00Z")],
+      assistants: [
+        { id: "assistant-1", name: "Ana" },
+        { id: "assistant-2", name: "Bruno", disponibilidades: recurrent }
+      ],
+      assignments: []
+    });
+    expect(result.get("meeting-1")).toMatchObject({
+      id: "assistant-2",
+      reason: expect.stringContaining("preferente")
+    });
+
+    expect(evaluarDisponibilidad(
+      new Date("2026-08-10T16:00:00Z"),
+      new Date("2026-08-10T17:00:00Z"),
+      [{ ...recurrent[0], fecha: new Date("2026-08-10T00:00:00Z"), diaSemana: null, tipo: "NO_DISPONIBLE" }]
+    ).tipo).toBe("NO_DISPONIBLE");
   });
 });

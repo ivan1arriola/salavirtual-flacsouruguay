@@ -11,6 +11,7 @@ import {
 } from "@/src/modules/notificaciones/notificaciones.domain";
 import {
   guardarPassword,
+  guardarDisponibilidad,
   guardarPerfil,
   guardarPreferenciasNotificacion,
   guardarProgramas
@@ -21,10 +22,12 @@ const messages: Readonly<Record<string, string>> = {
   "password-guardada": "Tu contraseña fue actualizada.",
   "programas-guardados": "Tus programas fueron actualizados.",
   "notificaciones-guardadas": "Tus preferencias de notificación fueron actualizadas.",
+  "disponibilidad-guardada": "Tu disponibilidad habitual fue actualizada.",
   "error-perfil": "No se pudieron guardar los datos. Revisá los campos.",
   "error-password": "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación.",
   "error-programas": "No se pudieron actualizar tus programas.",
-  "error-notificaciones": "No se pudieron actualizar tus preferencias de notificación."
+  "error-notificaciones": "No se pudieron actualizar tus preferencias de notificación.",
+  "error-disponibilidad": "No se pudo actualizar tu disponibilidad. Revisá los horarios."
 };
 
 export default async function MiPerfilPage({
@@ -40,7 +43,8 @@ export default async function MiPerfilPage({
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
         preferenciasNotificacion: true,
-        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } }
+        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } },
+        asistente: { include: { disponibilidades: { where: { fecha: null }, orderBy: { diaSemana: "asc" } } } }
       }
     }),
     actor.rol === "DOCENTE"
@@ -135,6 +139,36 @@ export default async function MiPerfilPage({
             initialSelectedIds={user.docente?.programas.map(({ programaId }) => programaId) ?? []}
             saveAction={guardarProgramas}
           />
+        ) : null}
+
+        {actor.rol === "ASISTENTE" && user.asistente ? (
+          <section className="content-section settings-wide">
+            <div className="section-heading"><div><h2>Mi disponibilidad habitual</h2><p>Administración la usa para sugerir coberturas. Las excepciones por fecha tienen prioridad.</p></div></div>
+            <form className="profile-form" action={guardarDisponibilidad}>
+              <label className="availability-general">
+                <input name="disponibleGeneral" type="checkbox" defaultChecked={user.asistente.disponibleGeneral} />
+                <span>Disponible para recibir asignaciones</span>
+              </label>
+              <div className="availability-grid">
+                {["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].map((label, diaSemana) => {
+                  const current = user.asistente?.disponibilidades.find((item) => item.diaSemana === diaSemana);
+                  return (
+                    <div className="availability-row" key={label}>
+                      <label><input name={`dia-${diaSemana}:activo`} type="checkbox" defaultChecked={Boolean(current)} /><strong>{label}</strong></label>
+                      <input aria-label={`Desde ${label}`} name={`dia-${diaSemana}:desde`} type="time" defaultValue={current?.horaDesde ?? "09:00"} />
+                      <input aria-label={`Hasta ${label}`} name={`dia-${diaSemana}:hasta`} type="time" defaultValue={current?.horaHasta ?? "18:00"} />
+                      <select aria-label={`Tipo ${label}`} name={`dia-${diaSemana}:tipo`} defaultValue={current?.tipo ?? "DISPONIBLE"}>
+                        <option value="DISPONIBLE">Disponible</option>
+                        <option value="PREFERENTE">Preferente</option>
+                        <option value="NO_DISPONIBLE">No disponible</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="form-actions"><span /><button className="primary-action" type="submit">Guardar disponibilidad</button></div>
+            </form>
+          </section>
         ) : null}
       </div>
     </>

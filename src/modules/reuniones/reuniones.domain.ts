@@ -53,6 +53,18 @@ export const crearReunionesSchema = z
         });
       }
     });
+    instancias.forEach((instancia, index) => {
+      const previousOverlap = instancias.slice(0, index).some((previous) =>
+        instancia.inicio < previous.fin && instancia.fin > previous.inicio
+      );
+      if (previousOverlap) {
+        context.addIssue({
+          code: "custom",
+          message: "Los encuentros de una misma serie no pueden superponerse.",
+          path: ["instancias", index, "inicio"]
+        });
+      }
+    });
   });
 
 export type CrearReunionesInput = Readonly<z.infer<typeof crearReunionesSchema>>;

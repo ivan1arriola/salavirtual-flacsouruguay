@@ -45,6 +45,35 @@
   overflow-wrap: anywhere;
 }
 
+.availability-general,
+.availability-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.availability-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.availability-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 110px 110px minmax(130px, 0.8fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.availability-row input[type="time"],
+.availability-row select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 7px 9px;
+  font: inherit;
+}
+
 .form-notice {
   margin: 0;
   color: var(--ok);
@@ -108,5 +137,14 @@
 
   .program-options {
     grid-template-columns: 1fr;
+  }
+
+  .availability-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .availability-row label,
+  .availability-row select {
+    grid-column: 1 / -1;
   }
 }

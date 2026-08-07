@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   crearCalendarEvent,
+  extraerConferenceData,
   extraerMeetProvisionado
 } from "../src/modules/meet/google-calendar.domain";
 
@@ -55,5 +56,25 @@ describe("evento Google Calendar puro", () => {
       { email: "docente@flacso.edu.uy" },
       { email: "web@flacso.edu.uy" }
     ]);
+  });
+
+  it("reutiliza la conferencia de la serie en un evento Calendar independiente", () => {
+    const conferenceData = {
+      conferenceId: "abc-defg-hij",
+      conferenceSolution: { key: { type: "hangoutsMeet" } },
+      entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }]
+    };
+    const event = crearCalendarEvent({
+      titulo: "Encuentro 2",
+      inicio: new Date("2026-08-10T13:00:00.000Z"),
+      fin: new Date("2026-08-10T15:00:00.000Z"),
+      timezone: "America/Montevideo",
+      calendarId: "sala01@flacso.edu.uy",
+      conferenceData
+    }, "unused-for-shared-space");
+
+    expect(event.conferenceData).toBe(conferenceData);
+    expect(extraerConferenceData({ conferenceData })).toEqual(conferenceData);
+    expect(extraerConferenceData({})).toBeUndefined();
   });
 });

@@ -139,6 +139,26 @@
   width: 100%;
 }
 
+.assignment-response {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 185px;
+}
+
+.assignment-response button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+}
+
+.assignment-response .inline-error {
+  flex-basis: 100%;
+}
+
 .coverage-stats {
   margin-bottom: 16px;
 }

@@ -14,6 +14,7 @@ import {
   TIPOS_NOTIFICACION
 } from "@/src/modules/notificaciones/notificaciones.domain";
 import { actualizarProgramasPropios } from "@/src/modules/usuarios/programas-docente.service";
+import { actualizarDisponibilidadSemanal } from "@/src/modules/asistencia/asistencia.service";
 
 async function actorActual() {
   const session = await auth();
@@ -86,5 +87,29 @@ export async function guardarPreferenciasNotificacion(formData: FormData): Promi
     estado = "error-notificaciones";
   }
   revalidatePath("/mi-perfil");
+  redirect(`/mi-perfil?estado=${estado}`);
+}
+
+export async function guardarDisponibilidad(formData: FormData): Promise<void> {
+  const actor = await actorActual();
+  let estado = "disponibilidad-guardada";
+  try {
+    const franjas = Array.from({ length: 7 }, (_, diaSemana) => diaSemana)
+      .filter((diaSemana) => formData.get(`dia-${diaSemana}:activo`) === "on")
+      .map((diaSemana) => ({
+        diaSemana,
+        horaDesde: String(formData.get(`dia-${diaSemana}:desde`) ?? ""),
+        horaHasta: String(formData.get(`dia-${diaSemana}:hasta`) ?? ""),
+        tipo: String(formData.get(`dia-${diaSemana}:tipo`) ?? "DISPONIBLE")
+      }));
+    await actualizarDisponibilidadSemanal(db, actor, {
+      disponibleGeneral: formData.get("disponibleGeneral") === "on",
+      franjas
+    });
+  } catch {
+    estado = "error-disponibilidad";
+  }
+  revalidatePath("/mi-perfil");
+  revalidatePath("/cobertura-asistencias");
   redirect(`/mi-perfil?estado=${estado}`);
 }

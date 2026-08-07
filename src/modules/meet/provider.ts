@@ -5,6 +5,8 @@ export type MeetProvisionRequest = Readonly<{
   fin: Date;
   timezone: string;
   calendarId: string;
+  /** Conference data from another Calendar event when a series shares one Meet space. */
+  conferenceData?: Readonly<Record<string, unknown>>;
   cohostEmails?: readonly string[];
   requiereAsistencia?: boolean;
 }>;

@@ -54,3 +54,42 @@ export function elegirCuentaHost(
     }, []);
   return disponibles.find(({ id }) => id === preferidaId)?.id ?? disponibles[0]?.id ?? null;
 }
+
+type Periodo = Readonly<{ inicio: Date; fin: Date }>;
+
+export function elegirCuentaHostParaPeriodos(
+  preferidaId: string | null,
+  cuentas: readonly Readonly<{
+    id: string;
+    prioridad: number;
+    limiteConcurrente: number | null;
+  }>[],
+  reservas: readonly Readonly<Periodo & { cuentaProveedorId: string }>[],
+  periodos: readonly Periodo[]
+): string | null {
+  const disponibles = cuentas
+    .filter((cuenta) => periodos.every((periodo, index) => {
+      const existentes = reservas.filter((reserva) =>
+        reserva.cuentaProveedorId === cuenta.id && seSolapan(reserva, periodo)
+      ).length;
+      const nuevasSimultaneas = periodos
+        .slice(0, index)
+        .filter((otro) => seSolapan(otro, periodo))
+        .length;
+      return existentes + nuevasSimultaneas < (cuenta.limiteConcurrente ?? 1);
+    }))
+    .reduce<typeof cuentas>((ordered, cuenta) => {
+      const position = ordered.findIndex((item) =>
+        cuenta.prioridad < item.prioridad ||
+        (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0)
+      );
+      return position < 0
+        ? [...ordered, cuenta]
+        : [...ordered.slice(0, position), cuenta, ...ordered.slice(position)];
+    }, []);
+  return disponibles.find(({ id }) => id === preferidaId)?.id ?? disponibles[0]?.id ?? null;
+}
+
+function seSolapan(left: Periodo, right: Periodo): boolean {
+  return left.inicio < right.fin && left.fin > right.inicio;
+}
