@@ -47,8 +47,10 @@ export async function obtenerAsistenciasEnRango(
       asistenteId: asistente.id,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instancia: {
+        requiereAsistencia: true,
         estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
-        inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta }
+        inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta },
+        solicitud: { estado: { not: "CANCELADA" } }
       }
     },
     orderBy: { instancia: { inicioProgramadoAt: orden } },

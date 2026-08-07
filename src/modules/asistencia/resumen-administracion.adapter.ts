@@ -19,7 +19,9 @@ export async function obtenerResumenAsistentes(
       where: {
         estado: { in: ["ASIGNADO", "ACEPTADO"] },
         instancia: {
+          requiereAsistencia: true,
           estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
+          solicitud: { estado: { not: "CANCELADA" } },
           inicioProgramadoAt: {
             gte: new Date(periodo.desdeMs),
             lt: new Date(periodo.hastaMs)

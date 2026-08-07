@@ -85,9 +85,12 @@ Los campos de modalidad, zona horaria, asistencia y grabacion en
 `InstanciaSala` expresan la programacion efectiva y pueden diferir por
 ocurrencia. No son dos fuentes para el mismo hecho.
 
-Los importes y tarifas guardados en asignaciones y liquidaciones son snapshots
-del acuerdo aplicado en ese momento. No se recalculan desde la tarifa vigente,
-porque eso alteraria la historia economica.
+`TarifaAsistencia` es una entidad versionada por modalidad. La tarifa vigente es
+siempre la ultima creada; al agregar una nueva, las anteriores quedan como
+historial. Cada `AsignacionAsistente` referencia obligatoriamente la tarifa que
+estaba vigente al asignarla y conserva tambien sus valores aplicados como
+snapshot. No se recalcula desde la tarifa actual, porque eso alteraria la
+historia economica.
 
 ## Zoom historico
 

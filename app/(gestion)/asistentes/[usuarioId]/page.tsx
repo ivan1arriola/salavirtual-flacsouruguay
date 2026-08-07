@@ -6,6 +6,7 @@ import { AssistantMeetingsTable } from "@/src/components/assistant-meetings-tabl
 import { AssistantPeriodNav } from "@/src/components/assistant-period-nav";
 import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
+import { assistantPathSegment, assistantSlug, userIdFromAssistantPath } from "@/src/lib/ui/assistant-route";
 import { resolverPeriodoMes } from "@/src/modules/asistencia/resumen-administracion.domain";
 import { resumirAsistencias } from "@/src/modules/asistencia/resumen-personal.domain";
 import { obtenerAsistenciasEnRango } from "@/src/modules/asistencia/resumen-personal.adapter";
@@ -19,13 +20,20 @@ export default async function AsistenteDetailPage({
 }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
-  const [{ usuarioId }, query] = await Promise.all([params, searchParams]);
+  const [{ usuarioId: pathSegment }, query] = await Promise.all([params, searchParams]);
   const period = resolverPeriodoMes(query.mes, new Date());
-  const assistant = await db.asistente.findUnique({
-    where: { usuarioId },
+  const assistants = await db.asistente.findMany({
     include: { usuario: true }
   });
+  const idCandidate = userIdFromAssistantPath(pathSegment);
+  const directMatch = assistants.find(({ usuarioId }) => usuarioId === idCandidate);
+  const slugMatches = assistants.filter(({ usuario }) => {
+    const candidateName = `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim();
+    return assistantSlug(candidateName) === pathSegment;
+  });
+  const assistant = directMatch ?? (slugMatches.length === 1 ? slugMatches[0] : null);
   if (!assistant) notFound();
+  const usuarioId = assistant.usuarioId;
   const meetings = await obtenerAsistenciasEnRango(
     db,
     usuarioId,
@@ -34,7 +42,14 @@ export default async function AsistenteDetailPage({
   const summary = resumirAsistencias(meetings);
   const missingRates = meetings.filter(({ monto }) => monto === null).length;
   const name = `${assistant.usuario.nombres} ${assistant.usuario.apellidos ?? ""}`.trim();
-  const basePath = `/asistentes/${encodeURIComponent(usuarioId)}`;
+  const slug = assistantSlug(name);
+  const needsDisambiguation = assistants.filter(({ usuario }) => {
+    const candidateName = `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim();
+    return assistantSlug(candidateName) === slug;
+  }).length > 1;
+  const canonicalSegment = assistantPathSegment(name, usuarioId, needsDisambiguation);
+  const basePath = `/asistentes/${encodeURIComponent(canonicalSegment)}`;
+  if (pathSegment !== canonicalSegment) redirect(`${basePath}?mes=${period.clave}`);
 
   return (
     <>

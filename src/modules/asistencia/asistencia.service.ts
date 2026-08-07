@@ -15,6 +15,7 @@ import {
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
 import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
+import { obtenerTarifaVigente } from "./tarifas.adapter";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -158,6 +159,7 @@ export async function asignarAsistentePostulado(
             select: {
               id: true,
               titulo: true,
+              modalidad: true,
               creadaPor: { select: { id: true, emailPrincipal: true } },
               docentePrograma: {
                 select: {
@@ -225,6 +227,10 @@ export async function asignarAsistentePostulado(
     if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
       throw new Error("El perfil seleccionado no corresponde a un Asistente activo.");
     }
+    const tarifa = await obtenerTarifaVigente(
+      tx,
+      meeting.solicitud.modalidad
+    );
     const previousAssignment = meeting.asignaciones[0] ?? null;
     if (previousAssignment?.asistenteId === assistant.id) {
       throw new Error("La persona seleccionada ya está asignada a la reunión.");
@@ -254,9 +260,17 @@ export async function asignarAsistentePostulado(
       create: {
         instanciaSalaId: meeting.id,
         asistenteId: assistant.id,
-        estado: "ASIGNADO"
+        estado: "ASIGNADO",
+        tarifaAsistenciaId: tarifa.id,
+        tarifaHoraAplicada: tarifa.valorHora,
+        moneda: tarifa.moneda
       },
-      update: { estado: "ASIGNADO" },
+      update: {
+        estado: "ASIGNADO",
+        tarifaAsistenciaId: tarifa.id,
+        tarifaHoraAplicada: tarifa.valorHora,
+        moneda: tarifa.moneda
+      },
       select: { id: true, estado: true, instanciaSalaId: true }
     });
     if (assistant.usuario.cuentasGoogle.length > 0) {

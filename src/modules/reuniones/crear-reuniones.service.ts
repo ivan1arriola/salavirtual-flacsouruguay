@@ -9,6 +9,7 @@ import type { RolUsuario } from "../usuarios/roles";
 import { withRequiredCohostEmails } from "../meet/cohosts.domain";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
+import { obtenerTarifaVigente } from "../asistencia/tarifas.adapter";
 
 export type ActorReunion = Readonly<{
   id: string;
@@ -192,10 +193,14 @@ export async function crearReuniones(
           });
         }
         if (asistenteId) {
+          const tarifa = await obtenerTarifaVigente(tx, input.modalidad);
           await tx.asignacionAsistente.create({
             data: {
               instanciaSalaId: instancia.id,
               asistenteId,
+              tarifaAsistenciaId: tarifa.id,
+              tarifaHoraAplicada: tarifa.valorHora,
+              moneda: tarifa.moneda,
             },
           });
         }

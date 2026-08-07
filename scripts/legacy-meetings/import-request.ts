@@ -99,6 +99,7 @@ export async function importarSolicitud(
       evento,
       index,
       solicitudNueva.id,
+      solicitud.modalidadReunion,
       solicitud.requiereGrabacion,
       zoomProviderId,
       mapeos

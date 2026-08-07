@@ -5,6 +5,7 @@ import {
 import type { MapeosLegacy } from "./catalogs";
 import { jsonValue, target } from "./clients";
 import type { SolicitudLegacy } from "./source";
+import type { ModalidadReunion } from "@prisma/client";
 
 type EventoLegacy = SolicitudLegacy["eventos"][number];
 
@@ -12,6 +13,7 @@ export async function importarEvento(
   evento: EventoLegacy,
   index: number,
   solicitudSalaId: string,
+  modalidad: ModalidadReunion,
   requiereGrabacion: boolean,
   zoomProviderId: string,
   mapeos: MapeosLegacy
@@ -84,12 +86,13 @@ export async function importarEvento(
       errorIntegracion: evento.errorIntegracion
     }
   });
-  await importarAsignaciones(evento, instancia.id, mapeos);
+  await importarAsignaciones(evento, instancia.id, modalidad, mapeos);
 }
 
 async function importarAsignaciones(
   evento: EventoLegacy,
   instanciaSalaId: string,
+  modalidad: ModalidadReunion,
   mapeos: MapeosLegacy
 ): Promise<void> {
   const asignaciones = [...evento.asignaciones]
@@ -105,12 +108,30 @@ async function importarAsignaciones(
     if (!usuario?.asistente) {
       throw new Error(`No se pudo resolver asistente de ${asignacion.id}.`);
     }
+    const tarifa = await target.tarifaAsistencia.findFirst({
+      where: {
+        modalidad,
+        valorHora: asignacion.tarifaAplicadaHora.toString(),
+        moneda: asignacion.moneda
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true }
+    }) ?? await target.tarifaAsistencia.create({
+      data: {
+        modalidad,
+        valorHora: asignacion.tarifaAplicadaHora.toString(),
+        moneda: asignacion.moneda,
+        createdAt: asignacion.createdAt
+      },
+      select: { id: true }
+    });
     await target.asignacionAsistente.upsert({
       where: { legacyZoomAsignacionId: asignacion.id },
       create: {
         legacyZoomAsignacionId: asignacion.id,
         instanciaSalaId,
         asistenteId: usuario.asistente.id,
+        tarifaAsistenciaId: tarifa.id,
         estado: mapearEstadoAsignacionLegacy(asignacion.estadoAsignacion),
         tarifaHoraAplicada: asignacion.tarifaAplicadaHora.toString(),
         moneda: asignacion.moneda,
@@ -120,6 +141,7 @@ async function importarAsignaciones(
       },
       update: {
         estado: mapearEstadoAsignacionLegacy(asignacion.estadoAsignacion),
+        tarifaAsistenciaId: tarifa.id,
         tarifaHoraAplicada: asignacion.tarifaAplicadaHora.toString(),
         moneda: asignacion.moneda,
         montoConfirmado: asignacion.montoConfirmado?.toString()
