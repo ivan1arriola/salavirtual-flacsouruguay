@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarClock,
   CalendarDays,
@@ -17,6 +18,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
+import { detectarPosiblesReunionesDuplicadas } from "@/src/modules/reuniones/duplicados.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -72,6 +74,45 @@ export default async function ReunionesPage({
       }
     }
   });
+  const duplicateCandidates = actor.rol === "ADMINISTRACION"
+    ? await db.instanciaSala.findMany({
+        where: { finProgramadoAt: { gte: now }, estado: { not: "CANCELADA" } },
+        orderBy: { inicioProgramadoAt: "asc" },
+        select: {
+          id: true,
+          inicioProgramadoAt: true,
+          finProgramadoAt: true,
+          solicitud: {
+            select: {
+              id: true,
+              titulo: true,
+              docentePrograma: {
+                select: {
+                  programa: { select: { id: true, nombre: true } },
+                  docente: { select: { usuario: { select: { id: true, nombres: true, apellidos: true } } } }
+                }
+              }
+            }
+          }
+        }
+      })
+    : [];
+  const duplicateRisks = detectarPosiblesReunionesDuplicadas(duplicateCandidates.map((meeting) => {
+    const association = meeting.solicitud.docentePrograma;
+    const teacher = association.docente.usuario;
+    return {
+      id: meeting.id,
+      solicitudId: meeting.solicitud.id,
+      titulo: meeting.solicitud.titulo,
+      programaId: association.programa.id,
+      programaNombre: association.programa.nombre,
+      docenteId: teacher.id,
+      docenteNombre: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
+      inicio: meeting.inicioProgramadoAt,
+      fin: meeting.finProgramadoAt
+    };
+  }));
+  const meetingsWithDuplicateRisk = new Set(duplicateRisks.flatMap(({ izquierda, derecha }) => [izquierda.id, derecha.id]));
 
   const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -94,11 +135,14 @@ export default async function ReunionesPage({
         <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={18} />Nueva reunión</Link>
       </header>
 
-      <section className="agenda-summary-grid" aria-label="Resumen de agenda">
+      <section className={`agenda-summary-grid ${actor.rol === "ADMINISTRACION" ? "admin-agenda-summary" : ""}`} aria-label="Resumen de agenda">
         <article><CalendarDays size={19} /><span><small>Próximas</small><strong>{meetings.length}</strong></span></article>
         <article><CalendarClock size={19} /><span><small>Hoy</small><strong>{today}</strong></span></article>
         <article><CalendarDays size={19} /><span><small>Próximos 7 días</small><strong>{nextWeek}</strong></span></article>
         <article className={pendingAssistance ? "is-warning" : ""}><UserRoundCheck size={19} /><span><small>Sin cobertura</small><strong>{pendingAssistance}</strong></span></article>
+        {actor.rol === "ADMINISTRACION" ? (
+          <article className={duplicateRisks.length ? "is-danger" : ""}><AlertTriangle size={19} /><span><small>Posibles duplicados</small><strong>{duplicateRisks.length}</strong></span></article>
+        ) : null}
       </section>
 
       <form className="filter-bar agenda-search" method="get">
@@ -108,6 +152,29 @@ export default async function ReunionesPage({
       </form>
 
       {hasPendingMeet ? <MeetPendingNotice /> : null}
+
+      {actor.rol === "ADMINISTRACION" && duplicateRisks.length > 0 ? (
+        <section className="duplicate-warning-panel" aria-labelledby="duplicate-warning-title">
+          <div className="duplicate-warning-heading">
+            <AlertTriangle size={21} />
+            <div><h2 id="duplicate-warning-title">Posibles reuniones duplicadas</h2><p>Revisá estas coincidencias antes de cancelar o modificar una reunión.</p></div>
+          </div>
+          <div className="duplicate-warning-list">
+            {duplicateRisks.map(({ izquierda, derecha, motivo }) => (
+              <article key={`${izquierda.id}-${derecha.id}`}>
+                <span className="duplicate-reason">{motivo === "COINCIDENCIA_EXACTA" ? "Coincidencia exacta" : "Horario superpuesto"}</span>
+                <strong>{izquierda.docenteNombre}</strong>
+                <small>{formatDate(izquierda.inicio)} · {formatTime(izquierda.inicio)}–{formatTime(izquierda.fin)} · {izquierda.programaNombre}</small>
+                <div>
+                  <Link href={`/reuniones/${izquierda.solicitudId}`}>{izquierda.titulo}</Link>
+                  <span>y</span>
+                  <Link href={`/reuniones/${derecha.solicitudId}`}>{derecha.titulo}</Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="agenda-meeting-list" aria-label="Próximas reuniones">
         {meetings.length === 0 ? (
@@ -120,13 +187,16 @@ export default async function ReunionesPage({
           const assistant = assignment?.asistente.usuario;
           const assistantName = assistant ? [assistant.nombres, assistant.apellidos].filter(Boolean).join(" ") : null;
           return (
-            <article className="agenda-meeting-card" key={meeting.id}>
+            <article className={`agenda-meeting-card ${meetingsWithDuplicateRisk.has(meeting.id) ? "has-duplicate-risk" : ""}`} key={meeting.id}>
               <header className="agenda-meeting-card-header">
                 <div className="agenda-meeting-date">
                   <span>{formatDate(meeting.inicioProgramadoAt)}</span>
                   <strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</strong>
                 </div>
-                <span className={`status status-${statusTone(meeting.estado)}`}>{statusLabel(meeting.estado)}</span>
+                <div className="agenda-card-statuses">
+                  {meetingsWithDuplicateRisk.has(meeting.id) ? <span className="status duplicate-status"><AlertTriangle size={13} />Posible duplicado</span> : null}
+                  <span className={`status status-${statusTone(meeting.estado)}`}>{statusLabel(meeting.estado)}</span>
+                </div>
               </header>
 
               <div className="agenda-meeting-card-body">

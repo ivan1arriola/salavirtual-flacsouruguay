@@ -963,6 +963,10 @@
   gap: 10px;
 }
 
+.agenda-summary-grid.admin-agenda-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .agenda-summary-grid article {
   min-height: 82px;
   display: flex;
@@ -1010,6 +1014,15 @@
   color: #9a5719;
 }
 
+.agenda-summary-grid .is-danger {
+  border-color: #e4bcbc;
+}
+
+.agenda-summary-grid .is-danger > svg {
+  background: #fdeaea;
+  color: #923737;
+}
+
 .agenda-search {
   margin-bottom: 0;
 }
@@ -1019,12 +1032,118 @@
   gap: 12px;
 }
 
+.duplicate-warning-panel {
+  overflow: hidden;
+  border: 1px solid #e2b77e;
+  border-radius: 9px;
+  background: #fffaf2;
+}
+
+.duplicate-warning-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border-bottom: 1px solid #f0d7b6;
+  padding: 14px 17px;
+  color: #965516;
+}
+
+.duplicate-warning-heading > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.duplicate-warning-heading h2 {
+  margin-bottom: 2px;
+  color: #71400f;
+  font-size: 0.98rem;
+}
+
+.duplicate-warning-heading p {
+  margin: 0;
+  color: #866340;
+  font-size: 0.79rem;
+}
+
+.duplicate-warning-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #f0d7b6;
+}
+
+.duplicate-warning-list article {
+  min-width: 0;
+  background: #ffffff;
+  padding: 13px 16px;
+}
+
+.duplicate-warning-list strong,
+.duplicate-warning-list small {
+  display: block;
+}
+
+.duplicate-warning-list strong {
+  margin: 5px 0 2px;
+  font-size: 0.82rem;
+}
+
+.duplicate-warning-list small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.duplicate-warning-list article > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+}
+
+.duplicate-warning-list article > div a {
+  color: var(--brand-strong);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.duplicate-reason {
+  display: inline-flex;
+  border-radius: 4px;
+  background: #fff0dc;
+  color: #8b4b10;
+  padding: 3px 6px;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .agenda-meeting-card {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 5px 18px rgba(31, 50, 76, 0.04);
+}
+
+.agenda-meeting-card.has-duplicate-risk {
+  border-color: #dfa65f;
+  box-shadow: 0 0 0 2px rgba(223, 166, 95, 0.12);
+}
+
+.agenda-card-statuses {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.duplicate-status {
+  background: #fff0dc;
+  color: #8b4b10;
 }
 
 .agenda-meeting-card-header {
@@ -1227,6 +1346,10 @@
 }
 
 @media (max-width: 980px) {
+  .agenda-summary-grid.admin-agenda-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .agenda-meeting-card-body {
     grid-template-columns: 1fr 1fr;
   }
@@ -1245,6 +1368,11 @@
 
   .agenda-summary-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .agenda-summary-grid.admin-agenda-summary,
+  .duplicate-warning-list {
+    grid-template-columns: 1fr;
   }
 
   .agenda-meeting-card-body {

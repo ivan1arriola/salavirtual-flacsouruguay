@@ -7,8 +7,50 @@ import {
   puedeVerAgendaCompleta,
   resolverAsignacionInicial
 } from "../src/modules/reuniones/reuniones.domain";
+import { detectarPosiblesReunionesDuplicadas } from "../src/modules/reuniones/duplicados.domain";
 
 describe("dias derivados de reuniones", () => {
+  it("detecta coincidencias exactas y horarios superpuestos del mismo docente", () => {
+    const base = {
+      solicitudId: "request-1",
+      titulo: "Clase de Género",
+      programaId: "program-1",
+      programaNombre: "Diploma",
+      docenteId: "teacher-1",
+      docenteNombre: "Ana Pérez",
+      inicio: new Date("2026-08-03T13:00:00Z"),
+      fin: new Date("2026-08-03T14:00:00Z")
+    };
+    const risks = detectarPosiblesReunionesDuplicadas([
+      { ...base, id: "meeting-1" },
+      { ...base, id: "meeting-2", solicitudId: "request-2", titulo: "Clase de Genero" },
+      { ...base, id: "meeting-3", solicitudId: "request-3", titulo: "Tutoría", inicio: new Date("2026-08-03T13:30:00Z"), fin: new Date("2026-08-03T14:30:00Z") }
+    ]);
+
+    expect(risks.map(({ motivo }) => motivo)).toEqual([
+      "COINCIDENCIA_EXACTA",
+      "HORARIO_SUPERPUESTO",
+      "HORARIO_SUPERPUESTO"
+    ]);
+  });
+
+  it("no marca docentes distintos ni reuniones consecutivas", () => {
+    const shared = {
+      solicitudId: "request",
+      titulo: "Clase",
+      programaId: "program",
+      programaNombre: "Diploma",
+      docenteNombre: "Docente",
+      inicio: new Date("2026-08-03T13:00:00Z"),
+      fin: new Date("2026-08-03T14:00:00Z")
+    };
+    expect(detectarPosiblesReunionesDuplicadas([
+      { ...shared, id: "one", docenteId: "teacher-1" },
+      { ...shared, id: "two", docenteId: "teacher-2" },
+      { ...shared, id: "three", docenteId: "teacher-1", inicio: new Date("2026-08-03T14:00:00Z"), fin: new Date("2026-08-03T15:00:00Z") }
+    ])).toEqual([]);
+  });
+
   it("calcula dias unicos respetando la zona horaria", () => {
     expect(
       diasDeReunion(
