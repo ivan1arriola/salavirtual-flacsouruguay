@@ -6,6 +6,7 @@ import {
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
   estadoParaRespuestaAsignacion,
+  notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   postulacionAsistenciaSchema,
@@ -171,7 +172,24 @@ export async function asignarAsistentePostulado(
           },
           asignaciones: {
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-            select: { id: true },
+            select: {
+              id: true,
+              asistenteId: true,
+              estado: true,
+              asistente: {
+                select: {
+                  usuario: {
+                    select: {
+                      id: true,
+                      nombres: true,
+                      apellidos: true,
+                      emailPrincipal: true,
+                      cuentasGoogle: { select: { id: true } }
+                    }
+                  }
+                }
+              }
+            },
             take: 1
           }
         }
@@ -204,11 +222,27 @@ export async function asignarAsistentePostulado(
     ) {
       throw new Error("La reunión no admite asignaciones.");
     }
-    if (meeting.asignaciones.length > 0) {
-      throw new Error("La reunión ya tiene una persona asignada.");
-    }
     if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
       throw new Error("El perfil seleccionado no corresponde a un Asistente activo.");
+    }
+    const previousAssignment = meeting.asignaciones[0] ?? null;
+    if (previousAssignment?.asistenteId === assistant.id) {
+      throw new Error("La persona seleccionada ya está asignada a la reunión.");
+    }
+    if (previousAssignment) {
+      await tx.asignacionAsistente.update({
+        where: { id: previousAssignment.id },
+        data: { estado: "CANCELADO" }
+      });
+      const previousGoogleIds = previousAssignment.asistente.usuario.cuentasGoogle.map(({ id }) => id);
+      if (previousGoogleIds.length > 0) {
+        await tx.cohostReunion.deleteMany({
+          where: {
+            instanciaSalaId: meeting.id,
+            cuentaGoogleId: { in: previousGoogleIds }
+          }
+        });
+      }
     }
     const assignment = await tx.asignacionAsistente.upsert({
       where: {
@@ -237,9 +271,12 @@ export async function asignarAsistentePostulado(
     await tx.auditoria.create({
       data: {
         actorUsuarioId: admin.id,
-        accion: "ASISTENTE_ASIGNADO",
+        accion: previousAssignment ? "ASISTENTE_REASIGNADO" : "ASISTENTE_ASIGNADO",
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
+        valorAnterior: previousAssignment
+          ? { asistenteId: previousAssignment.asistenteId, estado: previousAssignment.estado }
+          : undefined,
         valorNuevo: { asistenteId: assistant.id, estado: assignment.estado }
       }
     });
@@ -259,6 +296,20 @@ export async function asignarAsistentePostulado(
     };
     return {
       assignment,
+      previousAssistantNotification: previousAssignment ? {
+        recipient: {
+          usuarioId: previousAssignment.asistente.usuario.id,
+          email: previousAssignment.asistente.usuario.emailPrincipal
+        },
+        message: {
+          tipo: "ASISTENCIA_ASIGNACION" as const,
+          titulo: "Asistencia reasignada",
+          cuerpo: `La cobertura de ${meeting.solicitud.titulo} fue reasignada a otra persona.`,
+          href: "/mi-agenda",
+          metadata: { instanciaSalaId: meeting.id, estado: "CANCELADO" },
+          emailSubject: "Cambio en una asistencia asignada"
+        }
+      } : null,
       assistantNotification: {
         recipient: {
           usuarioId: assistant.usuario.id,
@@ -292,6 +343,13 @@ export async function asignarAsistentePostulado(
     };
   });
   await Promise.all([
+    result.previousAssistantNotification
+      ? safelyNotify(() => notificarUsuario(
+          db,
+          result.previousAssistantNotification!.recipient,
+          result.previousAssistantNotification!.message
+        ))
+      : Promise.resolve(),
     safelyNotify(() => notificarUsuario(
       db,
       result.assistantNotification.recipient,
@@ -304,6 +362,81 @@ export async function asignarAsistentePostulado(
     ))
   ]);
   return result.assignment;
+}
+
+export async function renotificarAsistentesDisponibles(
+  db: PrismaClient,
+  actor: SessionActor,
+  rawInput: unknown
+): Promise<number> {
+  if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
+    throw new Error("Solo Administración puede volver a notificar asistentes.");
+  }
+  const input = notificacionAsistenciaSchema.parse(rawInput);
+  const result = await db.$transaction(async (tx) => {
+    const [admin, meeting, assistants] = await Promise.all([
+      tx.usuario.findUnique({ where: { id: actor.id }, select: { activo: true, rol: true } }),
+      tx.instanciaSala.findUnique({
+        where: { id: input.instanciaSalaId },
+        select: {
+          id: true,
+          requiereAsistencia: true,
+          estado: true,
+          finProgramadoAt: true,
+          inicioProgramadoAt: true,
+          solicitud: {
+            select: {
+              titulo: true,
+              docentePrograma: { select: { programa: { select: { nombre: true } } } }
+            }
+          },
+          asignaciones: {
+            where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
+            select: { id: true },
+            take: 1
+          }
+        }
+      }),
+      tx.asistente.findMany({
+        where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE" } },
+        select: { usuario: { select: { id: true, emailPrincipal: true } } }
+      })
+    ]);
+    if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
+      throw new Error("La sesión de Administración ya no es válida.");
+    }
+    if (!meeting?.requiereAsistencia || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
+      throw new Error("La reunión ya no necesita cobertura.");
+    }
+    if (meeting.asignaciones.length > 0) {
+      throw new Error("La reunión ya tiene una persona asignada.");
+    }
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actor.id,
+        accion: "ASISTENTES_RENOTIFICADOS",
+        entidadTipo: "InstanciaSala",
+        entidadId: meeting.id,
+        valorNuevo: { destinatarios: assistants.length }
+      }
+    });
+    return {
+      recipients: assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
+      message: {
+        tipo: "ASISTENCIA_REQUERIDA" as const,
+        titulo: "Cobertura de asistencia disponible",
+        cuerpo: `${meeting.solicitud.titulo} (${meeting.solicitud.docentePrograma.programa.nombre}) necesita asistencia.`,
+        href: "/agenda-abierta",
+        metadata: {
+          instanciaSalaId: meeting.id,
+          inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
+        },
+        emailSubject: "Recordatorio de cobertura disponible"
+      }
+    };
+  });
+  await safelyNotify(() => notificarUsuarios(db, result.recipients, result.message));
+  return result.recipients.length;
 }
 
 export async function responderAsignacionAsistente(

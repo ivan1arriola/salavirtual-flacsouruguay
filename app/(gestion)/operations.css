@@ -163,8 +163,219 @@
   margin-bottom: 16px;
 }
 
-.coverage-table td {
-  vertical-align: top;
+.coverage-card-list {
+  display: grid;
+  gap: 14px;
+}
+
+.coverage-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 5px solid #d08a37;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgba(31, 50, 76, 0.045);
+}
+
+.coverage-card.is-covered {
+  border-left-color: var(--ok);
+}
+
+.coverage-card-header {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e8ebf0;
+  background: #fbfcfd;
+  padding: 11px 18px;
+}
+
+.coverage-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--brand);
+}
+
+.coverage-date span,
+.coverage-date strong,
+.coverage-date small {
+  display: block;
+}
+
+.coverage-date strong {
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.coverage-date small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.coverage-card-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 24px;
+  padding: 20px;
+}
+
+.coverage-meeting-copy {
+  min-width: 0;
+}
+
+.coverage-card-eyebrow {
+  margin-bottom: 5px;
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.coverage-title-link {
+  display: inline-block;
+  margin-bottom: 17px;
+  color: #172a46;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.coverage-title-link:hover {
+  color: var(--brand);
+}
+
+.coverage-meeting-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coverage-meeting-meta span {
+  min-width: 0;
+  color: #455267;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.coverage-meeting-meta strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.67rem;
+  text-transform: uppercase;
+}
+
+.coverage-interest-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  margin-top: 17px;
+  border-radius: 999px;
+  background: #eef5f8;
+  color: #526779;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+}
+
+.coverage-interest-summary svg {
+  color: var(--brand);
+}
+
+.coverage-assignment-panel {
+  min-width: 0;
+  border: 1px solid #dce3eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.coverage-assignment-heading {
+  margin-bottom: 11px;
+}
+
+.coverage-assignment-heading span,
+.coverage-assignment-heading strong,
+.coverage-assignment-heading small {
+  display: block;
+}
+
+.coverage-assignment-heading span {
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.coverage-assignment-heading strong {
+  color: #214d3e;
+}
+
+.coverage-assignment-heading small {
+  color: #687589;
+}
+
+.coverage-assignment-panel .assignment-contract {
+  min-width: 0;
+}
+
+.reassign-assistant-button {
+  width: 100%;
+}
+
+.coverage-card-footer {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid #e8ebf0;
+  background: #fbfcfd;
+  padding: 10px 18px;
+}
+
+.coverage-quick-links,
+.coverage-management-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coverage-quick-links {
+  gap: 18px;
+}
+
+.coverage-management-actions {
+  justify-content: flex-end;
+}
+
+.coverage-management-actions button {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 0.76rem;
+}
+
+.coverage-notify-action {
+  border-color: #b9d7e1;
+  color: var(--brand-strong);
+}
+
+.coverage-cancel-action {
+  border-color: #ddb7b7;
+  color: #913a3a;
+}
+
+.coverage-action-message {
+  flex-basis: 100%;
+  color: var(--muted);
+  text-align: right;
 }
 
 .icon-link {
@@ -845,6 +1056,30 @@
   border-color: #d6a0a0;
 }
 
+@media (max-width: 1040px) {
+  .coverage-card-body {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  }
+
+  .coverage-meeting-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .coverage-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .coverage-management-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .coverage-action-message {
+    text-align: left;
+  }
+}
+
 @media (max-width: 760px) {
   .filter-bar,
   .coverage-filter {
@@ -872,6 +1107,40 @@
   .assignment-select select,
   .assignment-contract select {
     width: 100%;
+  }
+
+  .coverage-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+    padding: 13px 14px;
+  }
+
+  .coverage-card-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 16px 14px;
+  }
+
+  .coverage-meeting-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .coverage-card-footer {
+    padding: 13px 14px;
+  }
+
+  .coverage-quick-links,
+  .coverage-management-actions {
+    align-items: stretch;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .coverage-quick-links a,
+  .coverage-management-actions button {
+    width: 100%;
+    justify-content: center;
   }
 
   .recurrence-grid {

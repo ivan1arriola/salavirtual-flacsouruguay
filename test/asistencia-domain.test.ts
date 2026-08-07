@@ -4,6 +4,7 @@ import {
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
   estadoParaRespuestaAsignacion,
+  notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   postulacionAsistenciaSchema,
@@ -37,6 +38,9 @@ describe("flujo funcional de asistencia", () => {
         asistenteId: "assistant"
       })
     ).toEqual({ instanciaSalaId: "meeting", asistenteId: "assistant" });
+    expect(notificacionAsistenciaSchema.parse({ instanciaSalaId: "meeting" }))
+      .toEqual({ instanciaSalaId: "meeting" });
+    expect(notificacionAsistenciaSchema.safeParse({ instanciaSalaId: "" }).success).toBe(false);
   });
 
   it("acepta una duración real razonable con comentario opcional", () => {

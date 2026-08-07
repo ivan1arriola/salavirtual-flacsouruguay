@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, UserCheck } from "lucide-react";
+import { RefreshCw, Sparkles, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -24,6 +24,7 @@ export function AssistantAssignmentSelect({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
+  const [editing, setEditing] = useState(!currentAssistantId);
   const applicantIds = new Set(applicants.map(({ id }) => id));
 
   function assign(assistantId: string) {
@@ -40,12 +41,25 @@ export function AssistantAssignmentSelect({
         setMessage(result.error ?? "No se pudo completar la asignación.");
         return;
       }
+      setEditing(false);
       router.refresh();
     });
   }
 
   return (
     <div className="assignment-contract">
+      {currentAssistantId && !editing ? (
+        <button
+          className="secondary-action reassign-assistant-button"
+          disabled={pending}
+          onClick={() => setEditing(true)}
+          type="button"
+        >
+          <RefreshCw size={16} />Reasignar persona
+        </button>
+      ) : null}
+      {editing ? (
+        <>
       <div className="assignment-applicants" aria-label="Postulantes">
         <div className="assignment-contract-label">
           <UserCheck size={15} aria-hidden="true" />
@@ -99,6 +113,8 @@ export function AssistantAssignmentSelect({
           </option>
         ))}
       </select>
+        </>
+      ) : null}
       {message ? <small className="inline-error" role="alert">{message}</small> : null}
     </div>
   );

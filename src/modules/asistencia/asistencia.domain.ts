@@ -12,6 +12,10 @@ export const asignacionAsistenciaSchema = z.object({
   asistenteId: z.string().trim().min(1)
 });
 
+export const notificacionAsistenciaSchema = z.object({
+  instanciaSalaId: z.string().trim().min(1)
+});
+
 export const respuestaAsignacionSchema = z.object({
   asignacionId: z.string().trim().min(1),
   accion: z.enum(["ACEPTAR", "RECHAZAR"])

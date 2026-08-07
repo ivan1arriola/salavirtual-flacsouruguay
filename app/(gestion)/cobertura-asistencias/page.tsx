@@ -1,11 +1,12 @@
-import { ExternalLink, Search, UserRoundCheck } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, Search, UserRoundCheck, UsersRound, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantAssignmentSelect } from "@/src/components/assistant-assignment-select";
+import { CoverageAssistanceActions } from "@/src/components/coverage-assistance-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { formatDateTime } from "@/src/lib/ui/format";
+import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { buildAssignmentSuggestions } from "@/src/modules/asistencia/asignacion-sugerencias.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
@@ -174,25 +175,12 @@ export default async function CoberturaAsistenciasPage({
         <button className="secondary-action" type="submit">Filtrar</button>
       </form>
 
-      <section className="content-section">
+      <section className="coverage-results" aria-label="Reuniones que requieren asistencia">
         {rows.length === 0 ? (
-          <div className="empty-state"><UserRoundCheck size={24} aria-hidden="true" /><p>No hay instancias para ese filtro.</p></div>
+          <div className="content-section empty-state"><UserRoundCheck size={24} aria-hidden="true" /><p>No hay instancias para ese filtro.</p></div>
         ) : (
-          <div className="table-wrap">
-            <table className="data-table coverage-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Reunión</th>
-                  <th>Docente / Programa</th>
-                  <th>Sala</th>
-                  <th>Cobertura</th>
-                  <th>Asignar</th>
-                  <th>Acceso</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(({ meeting, assignment, covered }) => {
+          <div className="coverage-card-list">
+            {rows.map(({ meeting, assignment, covered }) => {
                   const association = meeting.solicitud.docentePrograma;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
                   const assistantName = assignment
@@ -203,27 +191,37 @@ export default async function CoberturaAsistenciasPage({
                     name: [interest.asistente.usuario.nombres, interest.asistente.usuario.apellidos].filter(Boolean).join(" ")
                   }));
                   return (
-                    <tr key={meeting.id}>
-                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td>
-                        <Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link>
-                        <small>{meeting.solicitud.modalidad.toLowerCase()} · {applicants.length} postulantes</small>
-                      </td>
-                      <td>
-                        <strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</strong>
-                        <small>{association.programa.nombre}</small>
-                      </td>
-                      <td>
-                        <strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong>
-                        <small>{meet?.codigoReunion ?? "Meet pendiente"}</small>
-                      </td>
-                      <td>
+                    <article className={`coverage-card ${covered ? "is-covered" : "is-pending"}`} key={meeting.id}>
+                      <header className="coverage-card-header">
+                        <div className="coverage-date">
+                          <CalendarClock size={18} />
+                          <span><strong>{formatDate(meeting.inicioProgramadoAt)}</strong><small>{formatTime(meeting.inicioProgramadoAt)} h</small></span>
+                        </div>
                         <span className={`status ${covered ? "status-ok" : "status-warning"}`}>
-                          {covered ? "Cubierta" : "Pendiente"}
+                          {covered ? "Cobertura asignada" : "Cobertura pendiente"}
                         </span>
-                        {assistantName ? <small>{assistantName}</small> : null}
-                      </td>
-                      <td>
+                      </header>
+
+                      <div className="coverage-card-body">
+                        <div className="coverage-meeting-copy">
+                          <p className="coverage-card-eyebrow">{association.programa.nombre}</p>
+                          <Link className="coverage-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link>
+                          <div className="coverage-meeting-meta">
+                            <span><strong>Docente</strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</span>
+                            <span><strong>Modalidad</strong>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                            <span><strong>Sala Meet</strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala asignada"}</span>
+                          </div>
+                          <div className="coverage-interest-summary">
+                            <UsersRound size={17} />
+                            <strong>{applicants.length}</strong> {applicants.length === 1 ? "persona postulada" : "personas postuladas"}
+                          </div>
+                        </div>
+
+                        <aside className="coverage-assignment-panel">
+                          <div className="coverage-assignment-heading">
+                            <span>{covered ? "Persona a cargo" : "Asignar cobertura"}</span>
+                            {assistantName ? <strong>{assistantName}</strong> : <small>Todavía no hay una persona asignada.</small>}
+                          </div>
                         <AssistantAssignmentSelect
                           assistants={assistantOptions}
                           applicants={applicants}
@@ -231,19 +229,27 @@ export default async function CoberturaAsistenciasPage({
                           meetingId={meeting.id}
                           suggestedAssistant={suggestions.get(meeting.id) ?? null}
                         />
-                      </td>
-                      <td>
-                        {meet?.joinUrl ? (
-                          <a className="icon-link" href={meet.joinUrl} rel="noreferrer" target="_blank" title="Abrir reunión">
-                            <ExternalLink size={17} /><span className="sr-only">Abrir reunión</span>
-                          </a>
-                        ) : <span className="muted-text">-</span>}
-                      </td>
-                    </tr>
+                        </aside>
+                      </div>
+
+                      <footer className="coverage-card-footer">
+                        <div className="coverage-quick-links">
+                          <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver reunión <ArrowRight size={15} /></Link>
+                          {meet?.joinUrl ? (
+                            <a className="text-link" href={meet.joinUrl} rel="noreferrer" target="_blank">
+                              <Video size={16} />Abrir Meet<ExternalLink size={13} />
+                            </a>
+                          ) : <span className="muted-text">Meet pendiente</span>}
+                        </div>
+                        <CoverageAssistanceActions
+                          covered={covered}
+                          meetingId={meeting.id}
+                          requestId={meeting.solicitud.id}
+                        />
+                      </footer>
+                    </article>
                   );
                 })}
-              </tbody>
-            </table>
           </div>
         )}
       </section>
