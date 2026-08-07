@@ -1,5 +1,5 @@
 import { JWT } from "google-auth-library";
-import { crearCsvAsistencia, type FilaAsistenciaMeet } from "./meet-artifacts.domain";
+import { crearHtmlAsistencia, type FilaAsistenciaMeet } from "./meet-artifacts.domain";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
 const MEET_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
@@ -8,6 +8,7 @@ const DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
+const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
 
 export type MeetArtifactCredentials = Readonly<{
   serviceAccountEmail: string;
@@ -86,7 +87,7 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
       };
     },
 
-    async obtenerCsvAsistencia(conferenceName: string) {
+    async obtenerDocumentoAsistencia(conferenceName: string) {
       const participants = await listarPaginas<Participant>(
         auth,
         `${MEET_API}/${conferenceName}/participants?pageSize=250`,
@@ -105,7 +106,7 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
           fin: session.endTime
         }] : []);
       }));
-      return crearCsvAsistencia(rows.flat());
+      return crearHtmlAsistencia(rows.flat());
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string) {
@@ -145,10 +146,10 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
       return moved.data;
     },
 
-    async subirCsv(folderId: string, name: string, csv: string): Promise<MovedDriveFile> {
+    async subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile> {
       const boundary = "gestor_flacso_meet_boundary";
-      const metadata = JSON.stringify({ name, parents: [folderId] });
-      const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: text/csv; charset=UTF-8\r\n\r\n${csv}\r\n--${boundary}--`;
+      const metadata = JSON.stringify({ name, mimeType: GOOGLE_DOC_MIME, parents: [folderId] });
+      const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n${html}\r\n--${boundary}--`;
       const response = await auth.request<MovedDriveFile>({
         url: `${DRIVE_UPLOAD_API}/files?uploadType=multipart&fields=id,name,mimeType,size,webViewLink&supportsAllDrives=true`,
         method: "POST",

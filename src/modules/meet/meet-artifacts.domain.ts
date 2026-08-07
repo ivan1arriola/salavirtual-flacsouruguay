@@ -5,6 +5,13 @@ export type TipoArtefactoMeet =
   | "NOTAS"
   | "OTRO";
 
+export const TIPOS_ARTEFACTO_SINCRONIZABLES = Object.freeze([
+  "GRABACION",
+  "TRANSCRIPCION",
+  "LISTA_ASISTENCIA",
+  "NOTAS"
+] as const);
+
 export type DatosCarpetaReunion = Readonly<{
   titulo: string;
   inicio: Date;
@@ -46,22 +53,37 @@ export function nombreArchivoReunion(datos: DatosNombreArtefacto): string {
   return `${fecha}_${codigo}_${ETIQUETAS[datos.tipo]}_${indice}_${titulo}${extension}`;
 }
 
-export function escaparCsv(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
-export function crearCsvAsistencia(filas: readonly FilaAsistenciaMeet[]): string {
-  const header = ["Nombre", "Tipo", "Ingreso", "Salida", "Minutos"];
-  const body = filas.map((fila) => [
-    fila.nombre,
-    fila.tipo,
-    fila.inicio,
-    fila.fin,
-    minutosEntre(fila.inicio, fila.fin)
-  ]);
-  return [header, ...body]
-    .map((row) => row.map((value) => escaparCsv(String(value))).join(","))
-    .join("\r\n");
+export function crearHtmlAsistencia(filas: readonly FilaAsistenciaMeet[]): string {
+  const rows = filas.map((fila) => `
+    <tr>
+      <td>${escaparHtml(fila.nombre)}</td>
+      <td>${escaparHtml(fila.tipo)}</td>
+      <td>${escaparHtml(fila.inicio)}</td>
+      <td>${escaparHtml(fila.fin)}</td>
+      <td>${minutosEntre(fila.inicio, fila.fin)}</td>
+    </tr>`).join("");
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Lista de asistencia</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #18212f; }
+    h1 { color: #163970; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #cfd7e2; padding: 8px; text-align: left; }
+    th { background: #eaf1f8; }
+  </style>
+</head>
+<body>
+  <h1>Lista de asistencia</h1>
+  <p>Total de registros: ${filas.length}</p>
+  <table>
+    <thead><tr><th>Nombre</th><th>Tipo</th><th>Ingreso</th><th>Salida</th><th>Minutos</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</body>
+</html>`;
 }
 
 function fechaLocalToken(date: Date, timezone: string): string {
@@ -89,4 +111,13 @@ function extensionSegura(extension: string | undefined): string {
 function minutosEntre(inicio: string, fin: string): number {
   const milliseconds = Date.parse(fin) - Date.parse(inicio);
   return Math.max(0, Math.round(milliseconds / 60_000));
+}
+
+function escaparHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }

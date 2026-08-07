@@ -1,6 +1,10 @@
 import type { PrismaClient, TipoArchivoReunion } from "@prisma/client";
 import type { crearGoogleMeetArtifactsClient, GoogleArtifact, MovedDriveFile } from "./google-meet-artifacts.adapter";
-import { nombreArchivoReunion, nombreCarpetaReunion } from "./meet-artifacts.domain";
+import {
+  nombreArchivoReunion,
+  nombreCarpetaReunion,
+  TIPOS_ARTEFACTO_SINCRONIZABLES
+} from "./meet-artifacts.domain";
 
 type ArtifactsClient = ReturnType<typeof crearGoogleMeetArtifactsClient>;
 
@@ -42,7 +46,7 @@ export async function sincronizarArtefactosMeet(
     where: { id: { in: [...eventoProveedorIds] }, proveedor: { tipo: "GOOGLE_MEET" } },
     include: {
       cuentaProveedor: true,
-      archivos: { select: { externalResourceName: true } },
+      archivos: { select: { id: true, externalResourceName: true, tipo: true, mimeType: true } },
       instancia: { include: { solicitud: true } }
     }
   });
@@ -60,7 +64,12 @@ type SyncEvent = Readonly<{
   id: string;
   codigoReunion: string | null;
   cuentaProveedor: Readonly<{ emailOrganizador: string | null }> | null;
-  archivos: readonly Readonly<{ externalResourceName: string }>[];
+  archivos: readonly Readonly<{
+    id: string;
+    externalResourceName: string;
+    tipo: TipoArchivoReunion;
+    mimeType: string | null;
+  }>[];
   instancia: Readonly<{
     inicioProgramadoAt: Date;
     finProgramadoAt: Date;
@@ -97,7 +106,9 @@ async function sincronizarEvento(
       timezone: event.instancia.timezone
     });
     const folderId = await client.obtenerOCrearCarpeta(destinationId, folderName);
-    const known = new Set(event.archivos.map((file) => file.externalResourceName));
+    const known = new Set(event.archivos
+      .filter((file) => file.tipo !== "LISTA_ASISTENCIA" || file.mimeType === "application/vnd.google-apps.document")
+      .map((file) => file.externalResourceName));
     const artifacts = await client.obtenerArtefactos(conference.name);
     const common = {
       titulo: event.instancia.solicitud.titulo,
@@ -108,9 +119,9 @@ async function sincronizarEvento(
     let synchronized = 0;
 
     for (const [type, items] of [
-      ["GRABACION", artifacts.recordings],
-      ["TRANSCRIPCION", artifacts.transcripts],
-      ["NOTAS", artifacts.notes]
+      [TIPOS_ARTEFACTO_SINCRONIZABLES[0], artifacts.recordings],
+      [TIPOS_ARTEFACTO_SINCRONIZABLES[1], artifacts.transcripts],
+      [TIPOS_ARTEFACTO_SINCRONIZABLES[3], artifacts.notes]
     ] as const) {
       for (const [index, artifact] of items.entries()) {
         if (known.has(artifact.resourceName)) continue;
@@ -123,13 +134,13 @@ async function sincronizarEvento(
 
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource)) {
-      const csv = await client.obtenerCsvAsistencia(conference.name);
-      const name = nombreArchivoReunion({ ...common, tipo: "LISTA_ASISTENCIA", indice: 1, extension: "csv" });
-      const uploaded = await client.subirCsv(folderId, name, csv);
+      const html = await client.obtenerDocumentoAsistencia(conference.name);
+      const name = nombreArchivoReunion({ ...common, tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2], indice: 1 });
+      const uploaded = await client.subirDocumentoGoogle(folderId, name, html);
       await registrarArchivo(
         dependencies.db,
         event.id,
-        "LISTA_ASISTENCIA",
+        TIPOS_ARTEFACTO_SINCRONIZABLES[2],
         { resourceName: attendanceResource, driveFileId: uploaded.id },
         uploaded
       );
@@ -162,11 +173,26 @@ async function registrarArchivo(
   artifact: GoogleArtifact,
   drive: MovedDriveFile
 ): Promise<void> {
-  await db.archivoReunion.create({
-    data: {
+  await db.archivoReunion.upsert({
+    where: {
+      eventoProveedorId_externalResourceName: {
+        eventoProveedorId,
+        externalResourceName: artifact.resourceName
+      }
+    },
+    create: {
       eventoProveedorId,
       tipo,
       externalResourceName: artifact.resourceName,
+      driveFileId: drive.id,
+      nombre: drive.name,
+      mimeType: drive.mimeType,
+      tamanoBytes: drive.size ? BigInt(drive.size) : null,
+      webViewUrl: drive.webViewLink,
+      capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date()
+    },
+    update: {
+      tipo,
       driveFileId: drive.id,
       nombre: drive.name,
       mimeType: drive.mimeType,
