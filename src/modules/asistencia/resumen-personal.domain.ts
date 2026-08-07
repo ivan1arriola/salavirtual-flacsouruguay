@@ -8,9 +8,12 @@ export type RegistroAsistenciaPersonal = Readonly<{
   docente: string;
   inicioAt: Date;
   finAt: Date;
+  inicioRealAt: Date | null;
+  finRealAt: Date | null;
   modalidad: ModalidadAsistencia;
   estado: string;
   completada: boolean;
+  cierreConfirmado: boolean;
   minutos: number;
   minutosProgramados: number;
   minutosReportados: number | null;

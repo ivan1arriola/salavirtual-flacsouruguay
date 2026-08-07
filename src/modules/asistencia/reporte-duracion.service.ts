@@ -19,12 +19,18 @@ export async function reportarDuracionAsistencia(
       select: {
         id: true,
         estado: true,
+        tarifaHoraAplicada: true,
+        moneda: true,
+        minutosConfirmados: true,
+        montoConfirmado: true,
         instanciaSalaId: true,
         asistente: { select: { usuarioId: true } },
         instancia: {
           select: {
             estado: true,
             finProgramadoAt: true,
+            inicioRealAt: true,
+            finRealAt: true,
             minutosReportados: true,
             comentariosReporte: true
           }
@@ -48,32 +54,62 @@ export async function reportarDuracionAsistencia(
       throw new Error("No se puede informar duración para esta reunión.");
     }
 
+    const minutos = Math.round((input.finReal.getTime() - input.inicioReal.getTime()) / 60_000);
+    const monto = asignacion.tarifaHoraAplicada.mul(minutos).div(60);
     const reporte = await tx.instanciaSala.update({
       where: { id: asignacion.instanciaSalaId },
       data: {
-        minutosReportados: input.minutos,
-        comentariosReporte: input.comentario || null
+        inicioRealAt: input.inicioReal,
+        finRealAt: input.finReal,
+        minutosReportados: minutos,
+        comentariosReporte: input.comentario || null,
+        estado: "FINALIZADA"
       },
-      select: { id: true, minutosReportados: true, comentariosReporte: true }
+      select: { id: true, inicioRealAt: true, finRealAt: true, minutosReportados: true, comentariosReporte: true, estado: true }
     });
+    await tx.asignacionAsistente.update({
+      where: { id: asignacion.id },
+      data: { minutosConfirmados: minutos, montoConfirmado: monto }
+    });
+    const incidencia = input.incidencia
+      ? await tx.incidencia.create({
+          data: {
+            instanciaSalaId: asignacion.instanciaSalaId,
+            tipo: input.incidencia.tipo,
+            severidad: input.incidencia.severidad,
+            descripcion: input.incidencia.descripcion
+          },
+          select: { id: true, tipo: true, severidad: true }
+        })
+      : null;
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actor.id,
-        accion: asignacion.instancia.minutosReportados === null
-          ? "DURACION_ASISTENCIA_REPORTADA"
-          : "DURACION_ASISTENCIA_AJUSTADA",
-        entidadTipo: "InstanciaSala",
-        entidadId: asignacion.instanciaSalaId,
+        accion: asignacion.minutosConfirmados === null
+          ? "ASISTENCIA_FINALIZADA"
+          : "CIERRE_ASISTENCIA_AJUSTADO",
+        entidadTipo: "AsignacionAsistente",
+        entidadId: asignacion.id,
         valorAnterior: {
+          inicioRealAt: asignacion.instancia.inicioRealAt,
+          finRealAt: asignacion.instancia.finRealAt,
           minutosReportados: asignacion.instancia.minutosReportados,
-          comentariosReporte: asignacion.instancia.comentariosReporte
+          comentariosReporte: asignacion.instancia.comentariosReporte,
+          minutosConfirmados: asignacion.minutosConfirmados,
+          montoConfirmado: asignacion.montoConfirmado?.toString() ?? null
         },
         valorNuevo: {
+          inicioRealAt: reporte.inicioRealAt,
+          finRealAt: reporte.finRealAt,
           minutosReportados: reporte.minutosReportados,
-          comentariosReporte: reporte.comentariosReporte
+          comentariosReporte: reporte.comentariosReporte,
+          minutosConfirmados: minutos,
+          montoConfirmado: monto.toString(),
+          moneda: asignacion.moneda,
+          incidenciaId: incidencia?.id ?? null
         }
       }
     });
-    return reporte;
+    return { ...reporte, minutosConfirmados: minutos, montoConfirmado: monto, moneda: asignacion.moneda, incidencia };
   });
 }

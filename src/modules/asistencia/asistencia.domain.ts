@@ -43,8 +43,23 @@ export function estadoParaRespuestaAsignacion(
 
 export const reporteDuracionSchema = z.object({
   asignacionId: z.string().trim().min(1),
-  minutos: z.number().int().min(1).max(24 * 60),
-  comentario: z.string().trim().max(1000).optional()
+  inicioReal: z.coerce.date(),
+  finReal: z.coerce.date(),
+  comentario: z.string().trim().max(1000).optional(),
+  incidencia: z.object({
+    tipo: z.string().trim().min(2).max(80),
+    severidad: z.enum(["BAJA", "MEDIA", "ALTA", "CRITICA"]),
+    descripcion: z.string().trim().min(3).max(1000)
+  }).optional()
+}).superRefine((input, context) => {
+  const minutos = Math.round((input.finReal.getTime() - input.inicioReal.getTime()) / 60_000);
+  if (minutos < 1 || minutos > 24 * 60) {
+    context.addIssue({
+      code: "custom",
+      path: ["finReal"],
+      message: "La hora de fin debe ser posterior al inicio y la duración no puede superar 24 horas."
+    });
+  }
 });
 
 export function puedeGestionarPostulacion(rol: RolUsuario): boolean {

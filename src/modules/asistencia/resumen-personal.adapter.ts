@@ -97,6 +97,8 @@ export async function obtenerAsistenciasEnRango(
       docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
       inicioAt: instancia.inicioProgramadoAt,
       finAt: instancia.finProgramadoAt,
+      inicioRealAt: instancia.inicioRealAt,
+      finRealAt: instancia.finRealAt,
       modalidad: instancia.solicitud.modalidad,
       estado: instancia.estado,
       completada: esAsistenciaCompletada(
@@ -104,6 +106,7 @@ export async function obtenerAsistenciasEnRango(
         instancia.finProgramadoAt.getTime(),
         ahora.getTime()
       ),
+      cierreConfirmado: asignacion.minutosConfirmados !== null,
       minutos,
       minutosProgramados,
       minutosReportados: instancia.minutosReportados,

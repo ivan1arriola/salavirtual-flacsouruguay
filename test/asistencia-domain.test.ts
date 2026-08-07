@@ -43,17 +43,21 @@ describe("flujo funcional de asistencia", () => {
     expect(notificacionAsistenciaSchema.safeParse({ instanciaSalaId: "" }).success).toBe(false);
   });
 
-  it("acepta una duración real razonable con comentario opcional", () => {
-    expect(reporteDuracionSchema.parse({
+  it("valida el cierre con horario real e incidencia opcional", () => {
+    const result = reporteDuracionSchema.parse({
       asignacionId: "assignment",
-      minutos: 95,
-      comentario: "Se extendió por consultas."
-    })).toEqual({
-      asignacionId: "assignment",
-      minutos: 95,
-      comentario: "Se extendió por consultas."
+      inicioReal: "2026-08-07T21:00:00.000Z",
+      finReal: "2026-08-07T22:35:00.000Z",
+      comentario: "Se extendió por consultas.",
+      incidencia: { tipo: "Audio", severidad: "MEDIA", descripcion: "Hubo cortes breves." }
     });
-    expect(reporteDuracionSchema.safeParse({ asignacionId: "assignment", minutos: 0 }).success).toBe(false);
+    expect(result.inicioReal).toBeInstanceOf(Date);
+    expect(result.incidencia?.severidad).toBe("MEDIA");
+    expect(reporteDuracionSchema.safeParse({
+      asignacionId: "assignment",
+      inicioReal: "2026-08-07T22:00:00.000Z",
+      finReal: "2026-08-07T21:00:00.000Z"
+    }).success).toBe(false);
   });
 
   it("modela confirmar o rechazar una asignación pendiente", () => {
