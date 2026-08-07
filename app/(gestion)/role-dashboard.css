@@ -1,0 +1,255 @@
+.role-dashboard {
+  display: grid;
+  gap: 20px;
+}
+
+.role-dashboard-hero {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  overflow: hidden;
+  border: 1px solid #c8dce4;
+  border-radius: 10px;
+  background: linear-gradient(120deg, #f7fbfc 0%, #e8f3f6 100%);
+  padding: 26px 28px;
+}
+
+.admin-dashboard-hero {
+  border-left: 6px solid var(--brand);
+}
+
+.teacher-dashboard .role-dashboard-hero {
+  border-left: 6px solid #24745b;
+  background: linear-gradient(120deg, #f8fcfa 0%, #e8f4ee 100%);
+}
+
+.role-dashboard-hero h1 {
+  margin-bottom: 7px;
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+}
+
+.role-dashboard-hero p:last-child {
+  max-width: 680px;
+  margin: 0;
+  color: #526173;
+}
+
+.role-dashboard-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.admin-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-metric {
+  min-height: 136px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-content: start;
+  gap: 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.admin-metric-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8f3f6;
+  color: var(--brand);
+}
+
+.admin-metric small,
+.admin-metric strong,
+.admin-metric em {
+  display: block;
+}
+
+.admin-metric small {
+  min-height: 34px;
+  color: #536173;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.admin-metric strong {
+  margin: 5px 0;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.admin-metric em {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-style: normal;
+}
+
+.admin-metric.tone-warning,
+.admin-metric.tone-danger {
+  border-color: #edc99f;
+}
+
+.admin-metric.tone-warning .admin-metric-icon {
+  background: #fff0dc;
+  color: #9a5719;
+}
+
+.admin-metric.tone-danger .admin-metric-icon {
+  background: #fdeaea;
+  color: #923737;
+}
+
+.admin-metric.tone-ok .admin-metric-icon {
+  background: #e7f5ee;
+  color: #24745b;
+}
+
+.role-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-metrics article {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px 18px;
+}
+
+.role-metrics article > svg {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #e7f3fa;
+  color: var(--brand);
+  padding: 9px;
+}
+
+.role-metrics small,
+.role-metrics strong {
+  display: block;
+}
+
+.role-metrics small {
+  color: var(--muted);
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+
+.role-metrics strong {
+  margin-top: 3px;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.role-metrics .is-warning {
+  border-color: #edc99f;
+}
+
+.dashboard-table-section {
+  overflow: hidden;
+}
+
+.admin-upcoming-table {
+  min-width: 1120px;
+}
+
+.role-meetings-table {
+  min-width: 920px;
+}
+
+.assistant-coverages-table {
+  min-width: 920px;
+}
+
+.assistant-coverages-table td strong,
+.assistant-coverages-table td small {
+  display: block;
+}
+
+.assistant-coverages-table td small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.time-cell {
+  width: 76px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.meet-room-cell {
+  min-width: 155px;
+}
+
+.copy-meet-button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  border-color: #b9d7e1;
+  background: #f2f8fa;
+  color: var(--brand-strong);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 1120px) {
+  .admin-metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .role-dashboard-hero {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .role-dashboard-actions,
+  .role-dashboard-actions a {
+    width: 100%;
+  }
+
+  .admin-metric-grid,
+  .role-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-upcoming-table,
+  .role-meetings-table {
+    min-width: 0;
+  }
+
+  .copy-meet-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .admin-metric-grid,
+  .role-metrics {
+    grid-template-columns: 1fr;
+  }
+}

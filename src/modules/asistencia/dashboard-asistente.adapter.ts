@@ -19,14 +19,15 @@ export async function obtenerDashboardAsistente(
   });
   if (!assistant) return null;
 
-  const [nextAssignment, upcomingCount, openMeetings, interests, currentMeetings, history] = await Promise.all([
-    db.asignacionAsistente.findFirst({
+  const [upcomingAssignments, upcomingCount, openMeetings, interests, currentMeetings, history] = await Promise.all([
+    db.asignacionAsistente.findMany({
       where: {
         asistenteId: assistant.id,
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: { finProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
       },
       orderBy: { instancia: { inicioProgramadoAt: "asc" } },
+      take: 8,
       include: {
         instancia: {
           include: {
@@ -66,25 +67,25 @@ export async function obtenerDashboardAsistente(
   );
   const previousMonth = claveMesAnteriorUtc3(ahora);
   const previousMeetings = history.filter(({ inicioAt }) => claveMesUtc3(inicioAt) === previousMonth);
-  const nextMeeting = nextAssignment
-    ? (() => {
-        const meeting = nextAssignment.instancia;
-        const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-        return {
-          id: meeting.id,
-          titulo: meeting.solicitud.titulo,
-          programa: meeting.solicitud.docentePrograma.programa.nombre,
-          inicioAt: meeting.inicioProgramadoAt,
-          finAt: meeting.finProgramadoAt,
-          modalidad: meeting.solicitud.modalidad,
-          sala: meet?.cuentaProveedor?.nombre ?? "Sin sala asignada",
-          joinUrl: meet?.joinUrl ?? null
-        };
-      })()
-    : null;
+  const proximasCoberturas = upcomingAssignments.map((assignment) => {
+    const meeting = assignment.instancia;
+    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    return {
+      id: meeting.id,
+      titulo: meeting.solicitud.titulo,
+      programa: meeting.solicitud.docentePrograma.programa.nombre,
+      inicioAt: meeting.inicioProgramadoAt,
+      finAt: meeting.finProgramadoAt,
+      modalidad: meeting.solicitud.modalidad,
+      sala: meet?.cuentaProveedor?.nombre ?? "Sin sala asignada",
+      joinUrl: meet?.joinUrl ?? null,
+      estadoAsignacion: assignment.estado
+    };
+  });
 
   return {
-    nextMeeting,
+    nextMeeting: proximasCoberturas[0] ?? null,
+    proximasCoberturas,
     reunionesDisponibles: openMeetings.length,
     postulaciones: interests.filter(({ estado }) => estado === "ME_INTERESA").length,
     proximasReuniones: upcomingCount,

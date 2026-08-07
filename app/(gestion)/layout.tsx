@@ -10,6 +10,7 @@ import "./personal.css";
 import "./assistant-month.css";
 import "./assistant-dashboard.css";
 import "./admin-assistants.css";
+import "./role-dashboard.css";
 
 export default async function GestionLayout({
   children
