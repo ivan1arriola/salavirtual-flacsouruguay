@@ -27,7 +27,7 @@ export default async function AccesoPage({
         <header className="login-header">
           <p className="eyebrow">FLACSO Uruguay</p>
           <h1 id="login-title">FLACSO Meet</h1>
-          <p>Ingresá con tu usuario, correo o una cuenta institucional autorizada.</p>
+          <p>Ingresá con tu usuario o con cualquier cuenta institucional @flacso.edu.uy.</p>
         </header>
 
         {cambiar === "1" ? <RememberedAccounts /> : null}

@@ -48,10 +48,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               const usuario = await resolverUsuarioGoogle({
                 subject: profile.sub,
                 email: profile.email,
-                emailVerificado: profile.email_verified
+                emailVerificado: profile.email_verified,
+                nombre: profile.name,
+                nombres: profile.given_name,
+                apellidos: profile.family_name
               });
               if (!usuario) {
-                throw new Error("La cuenta Google no esta vinculada a un usuario activo.");
+                throw new Error("La cuenta Google debe pertenecer a FLACSO y estar activa.");
               }
 
               return {

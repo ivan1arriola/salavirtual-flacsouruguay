@@ -229,6 +229,31 @@
   text-align: center;
 }
 
+.invitation-panel {
+  margin-bottom: 16px;
+}
+
+.invitation-panel > summary {
+  cursor: pointer;
+  padding: 16px 18px;
+  color: var(--brand-strong);
+  font-weight: 800;
+}
+
+.invitation-panel[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.invitation-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.form-notice-error {
+  color: #923737;
+}
+
 @media (max-width: 640px) {
   .user-type-tabs {
     grid-template-columns: 1fr;

@@ -1,64 +1,139 @@
 import { db } from "@/src/lib/db";
 import {
+  esPerfilGoogleInstitucional,
   evaluarAccesoGoogle,
+  type CuentaGoogleVinculada,
   type PerfilGoogle
 } from "@/src/modules/usuarios/google-login.domain";
 
 export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
-  const cuenta = await db.cuentaGoogleFlacso.findUnique({
-    where: { email: perfil.email.trim().toLowerCase() },
-    select: {
-      id: true,
-      providerAccountId: true,
-      email: true,
-      user: {
-        select: {
-          id: true,
-          rol: true,
-          debeCambiarPassword: true,
-          activo: true,
-          fusionadoEnId: true,
-          emailPrincipal: true,
-          nombres: true,
-          apellidos: true
-        }
+  if (!esPerfilGoogleInstitucional(perfil)) return null;
+  const email = perfil.email.trim().toLowerCase();
+  const now = new Date();
+
+  const cuenta = await db.$transaction(async (tx) => {
+    const existingAccount = await tx.cuentaGoogleFlacso.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      include: { user: true }
+    });
+    if (existingAccount) return existingAccount;
+
+    const existingUser = await tx.usuario.findFirst({
+      where: { emailPrincipal: { equals: email, mode: "insensitive" } },
+      include: { docente: { select: { id: true } } }
+    });
+    if (existingUser && (!existingUser.activo || existingUser.fusionadoEnId)) return null;
+
+    const user = existingUser ?? await tx.usuario.create({
+      data: {
+        id: await idDisponible(tx, perfil),
+        nombres: nombresGoogle(perfil, email),
+        apellidos: apellidosGoogle(perfil),
+        emailPrincipal: email,
+        emailVerificadoAt: now,
+        rol: "DOCENTE",
+        activo: true,
+        docente: { create: {} }
+      },
+      include: { docente: { select: { id: true } } }
+    });
+    if (user.rol === "DOCENTE" && !user.docente) {
+      await tx.docente.create({ data: { usuarioId: user.id } });
+    }
+    const createdAccount = await tx.cuentaGoogleFlacso.create({
+      data: {
+        userId: user.id,
+        email,
+        dominio: "flacso.edu.uy",
+        providerAccountId: perfil.subject,
+        emailVerificadoAt: now,
+        ultimoAccesoAt: now
+      },
+      include: { user: true }
+    });
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: user.id,
+        accion: existingUser ? "CUENTA_GOOGLE_AUTOVINCULADA" : "USUARIO_GOOGLE_AUTOREGISTRADO",
+        entidadTipo: "Usuario",
+        entidadId: user.id,
+        valorNuevo: { email, proveedor: "google" }
       }
+    });
+    return createdAccount;
+  });
+  if (!cuenta) return null;
+
+  const usuario = cuentaVinculada(cuenta);
+  const autenticado = evaluarAccesoGoogle(perfil, usuario);
+  if (!autenticado) return null;
+  await db.cuentaGoogleFlacso.update({
+    where: { id: cuenta.id },
+    data: {
+      providerAccountId: perfil.subject,
+      emailVerificadoAt: cuenta.emailVerificadoAt ?? now,
+      ultimoAccesoAt: now
     }
   });
-  const usuario = cuenta
-    ? {
-        providerAccountId: cuenta.providerAccountId,
-        email: cuenta.email,
-        usuario: {
-          id: cuenta.user.id,
-          rol: cuenta.user.rol,
-          debeCambiarPassword: cuenta.user.debeCambiarPassword,
-          activo: cuenta.user.activo,
-          fusionadoEnId: cuenta.user.fusionadoEnId,
-          nombre: [cuenta.user.nombres, cuenta.user.apellidos]
-            .filter(Boolean)
-            .join(" "),
-          email: cuenta.user.emailPrincipal
-        }
-      }
-    : null;
-
-  const autenticado = evaluarAccesoGoogle(perfil, usuario);
-  if (autenticado && cuenta && !cuenta.providerAccountId) {
-    await db.cuentaGoogleFlacso.update({
-      where: { id: cuenta.id },
-      data: {
-        providerAccountId: perfil.subject,
-        emailVerificadoAt: new Date(),
-        ultimoAccesoAt: new Date()
-      }
-    });
-  } else if (autenticado && cuenta) {
-    await db.cuentaGoogleFlacso.update({
-      where: { id: cuenta.id },
-      data: { ultimoAccesoAt: new Date() }
-    });
-  }
-
+  await db.usuario.update({
+    where: { id: autenticado.id },
+    data: { ultimoAccesoAt: now, ultimoProveedor: "google" }
+  });
   return autenticado;
+}
+
+type GoogleAccountWithUser = Readonly<{
+  id: string;
+  providerAccountId: string | null;
+  email: string;
+  emailVerificadoAt: Date | null;
+  user: {
+    id: string;
+    rol: "ADMINISTRACION" | "ASISTENTE" | "DOCENTE";
+    debeCambiarPassword: boolean;
+    activo: boolean;
+    fusionadoEnId: string | null;
+    emailPrincipal: string | null;
+    nombres: string;
+    apellidos: string | null;
+  };
+}>;
+
+function cuentaVinculada(cuenta: GoogleAccountWithUser): CuentaGoogleVinculada {
+  return {
+    providerAccountId: cuenta.providerAccountId,
+    email: cuenta.email,
+    usuario: {
+      id: cuenta.user.id,
+      rol: cuenta.user.rol,
+      debeCambiarPassword: cuenta.user.debeCambiarPassword,
+      activo: cuenta.user.activo,
+      fusionadoEnId: cuenta.user.fusionadoEnId,
+      nombre: [cuenta.user.nombres, cuenta.user.apellidos].filter(Boolean).join(" "),
+      email: cuenta.user.emailPrincipal
+    }
+  };
+}
+
+async function idDisponible(
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
+  perfil: PerfilGoogle
+): Promise<string> {
+  const local = perfil.email.split("@")[0]
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9._-]/gi, "-")
+    .slice(0, 50) || `google-${perfil.subject.slice(0, 20)}`;
+  const exists = await tx.usuario.findUnique({ where: { id: local }, select: { id: true } });
+  return exists ? `${local.slice(0, 28)}-${perfil.subject.slice(-12)}` : local;
+}
+
+function nombresGoogle(perfil: PerfilGoogle, email: string): string {
+  return perfil.nombres?.trim() || perfil.nombre?.trim().split(/\s+/)[0] || email.split("@")[0];
+}
+
+function apellidosGoogle(perfil: PerfilGoogle): string | null {
+  if (perfil.apellidos?.trim()) return perfil.apellidos.trim();
+  const parts = perfil.nombre?.trim().split(/\s+/) ?? [];
+  return parts.length > 1 ? parts.slice(1).join(" ") : null;
 }

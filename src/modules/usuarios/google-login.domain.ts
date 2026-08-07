@@ -4,6 +4,9 @@ export type PerfilGoogle = Readonly<{
   subject: string;
   email: string;
   emailVerificado: boolean;
+  nombre?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
 }>;
 
 export type CuentaGoogleVinculada = Readonly<{
@@ -22,8 +25,7 @@ export function evaluarAccesoGoogle(
 ): UsuarioAutenticado | null {
   const email = perfil.email.trim().toLowerCase();
   if (
-    !perfil.emailVerificado ||
-    !email.endsWith("@flacso.edu.uy") ||
+    !esPerfilGoogleInstitucional(perfil) ||
     !cuenta ||
     (cuenta.providerAccountId !== null && cuenta.providerAccountId !== perfil.subject) ||
     cuenta.email.trim().toLowerCase() !== email ||
@@ -40,4 +42,11 @@ export function evaluarAccesoGoogle(
     email: cuenta.usuario.email,
     debeCambiarPassword: cuenta.usuario.debeCambiarPassword
   };
+}
+
+export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
+  const email = perfil.email.trim().toLowerCase();
+  return Boolean(perfil.subject.trim()) &&
+    perfil.emailVerificado &&
+    email.endsWith("@flacso.edu.uy");
 }

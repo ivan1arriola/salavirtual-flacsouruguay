@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluarAccesoGoogle,
+  esPerfilGoogleInstitucional,
   type CuentaGoogleVinculada,
   type PerfilGoogle
 } from "../src/modules/usuarios/google-login.domain";
@@ -36,5 +37,11 @@ describe("login funcional con Google", () => {
     ).toBeNull();
     expect(evaluarAccesoGoogle({ ...perfil, emailVerificado: false }, cuenta)).toBeNull();
     expect(evaluarAccesoGoogle(perfil, null)).toBeNull();
+  });
+
+  it("habilita el autorregistro solamente para perfiles Google verificados de FLACSO", () => {
+    expect(esPerfilGoogleInstitucional(perfil)).toBe(true);
+    expect(esPerfilGoogleInstitucional({ ...perfil, email: "persona@gmail.com" })).toBe(false);
+    expect(esPerfilGoogleInstitucional({ ...perfil, emailVerificado: false })).toBe(false);
   });
 });
