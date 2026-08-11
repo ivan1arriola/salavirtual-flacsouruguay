@@ -1,5 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
-import { claveMesAnteriorUtc3 } from "./dashboard-asistente.domain";
+import {
+  claveMesAnteriorUtc3,
+  contarPostulacionesAbiertas
+} from "./dashboard-asistente.domain";
 import { obtenerAsistenciasPersonales } from "./resumen-personal.adapter";
 import {
   claveMesUtc3,
@@ -86,7 +89,7 @@ export async function obtenerDashboardAsistente(
     nextMeeting: proximasCoberturas[0] ?? null,
     proximasCoberturas,
     reunionesDisponibles: openMeetings.length,
-    postulaciones: interests.filter(({ estado }) => estado === "ME_INTERESA").length,
+    postulaciones: contarPostulacionesAbiertas(openIds, interests),
     proximasReuniones: upcomingCount,
     pendientesRespuesta: Math.max(0, openMeetings.length - respondedOpen.size),
     respondidas: respondedOpen.size,

@@ -29,7 +29,7 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
 
   const metrics = [
     { label: "Reuniones disponibles", value: dashboard.reunionesDisponibles, copy: "Eventos abiertos para postularte.", icon: CalendarCheck2, tone: "green" },
-    { label: "Mis postulaciones", value: dashboard.postulaciones, copy: "Eventos donde marcaste interés.", icon: Hourglass, tone: "amber" },
+    { label: "Mis postulaciones", value: dashboard.postulaciones, copy: "Instancias abiertas donde marcaste interés.", icon: Hourglass, tone: "amber" },
     { label: "Próximas reuniones", value: dashboard.proximasReuniones, copy: "Asignadas a tu perfil.", icon: CalendarClock, tone: "blue" },
     { label: "Horas del mes", value: formatMinutes(currentMinutes), copy: `Virtual ${formatMinutes(dashboard.mesActual.minutosVirtuales)} · Híbrida ${formatMinutes(dashboard.mesActual.minutosHibridos)}`, icon: Clock3, tone: "green" },
     { label: "Mes pasado", value: formatMinutes(previousMinutes), copy: `Virtual ${formatMinutes(dashboard.mesAnterior.minutosVirtuales)} · Híbrida ${formatMinutes(dashboard.mesAnterior.minutosHibridos)}`, icon: CalendarDays, tone: "blue" }
