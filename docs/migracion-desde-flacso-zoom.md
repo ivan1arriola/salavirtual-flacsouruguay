@@ -10,14 +10,14 @@ Reemplazar la operacion Zoom por una plataforma Meet, preservando datos historic
 | --- | --- |
 | `User` | `Usuario` + alias y cuentas Google |
 | `Docente` | `Docente` |
-| `AsistenteZoom` | `Asistente` |
+| `AsistenteZoom` | `AsistenteTecnico` |
 | `Programa` | `Programa` |
 | relacion docente/programa | `DocentePrograma` |
 | `CuentaZoom` | `CuentaProveedor` con proveedor `ZOOM_HISTORICO` |
 | `SolicitudSala` | `SolicitudSala` |
 | `EventoZoom` | `InstanciaSala` + `EventoProveedor` |
-| `Liquidacion` | `Liquidacion` |
-| `LiquidacionDetalle` | `LiquidacionDetalle` |
+| `Liquidacion` | `LiquidacionAsistenciaTecnica` |
+| `LiquidacionDetalle` | `DetalleLiquidacionAsistenciaTecnica` |
 
 ## Fases
 
@@ -71,8 +71,8 @@ Los dias se calculan desde cada fecha y zona horaria en lugar de duplicarlos.
 | --- | --- |
 | `ADMINISTRADOR` | `ADMINISTRACION` |
 | `CONTADURIA` | `ADMINISTRACION` |
-| `SOPORTE_ZOOM` | `ASISTENTE` |
-| `ASISTENTE_ZOOM` | `ASISTENTE` |
+| `SOPORTE_ZOOM` | `ASISTENTE_TECNICO` |
+| `ASISTENTE_ZOOM` | `ASISTENTE_TECNICO` |
 | `DOCENTE` | `DOCENTE` |
 
 Los usuarios de Contabilidad no se eliminan durante la importacion: se migran a

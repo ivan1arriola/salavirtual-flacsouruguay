@@ -29,10 +29,10 @@ export async function crearReuniones(
   }>
 > {
   const input = crearReunionesSchema.parse(rawInput);
-  const asistenteId = resolverAsignacionInicial(
+  const asistenteTecnicoId = resolverAsignacionInicial(
     actor.rol,
-    input.requiereAsistencia,
-    input.asistenteId
+    input.requiereAsistenciaTecnica,
+    input.asistenteTecnicoId
   );
 
   return db.$transaction(async (tx) => {
@@ -67,9 +67,9 @@ export async function crearReuniones(
     }
     await bloquearReservaSalas(tx, proveedorMeet.id);
 
-    const assistant = asistenteId
-      ? await tx.asistente.findUnique({
-          where: { id: asistenteId },
+    const assistant = asistenteTecnicoId
+      ? await tx.asistenteTecnico.findUnique({
+          where: { id: asistenteTecnicoId },
           select: {
             id: true,
             usuarioId: true,
@@ -77,8 +77,8 @@ export async function crearReuniones(
           }
         })
       : null;
-    if (asistenteId && (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE")) {
-      throw new Error("El Asistente seleccionado no está activo.");
+    if (asistenteTecnicoId && (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO")) {
+      throw new Error("El asistente técnico seleccionado no está activo.");
     }
 
     const automaticCohostUserIds = [
@@ -149,7 +149,7 @@ export async function crearReuniones(
         fechaInicioSolicitada: new Date(Math.min(...startTimes)),
         fechaFinSolicitada: new Date(Math.max(...endTimes)),
         cantidadInstancias: input.instancias.length,
-        requiereAsistencia: input.requiereAsistencia,
+        requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
         requiereGrabacion: input.requiereGrabacion,
         estado: "REGISTRADA",
       },
@@ -164,7 +164,7 @@ export async function crearReuniones(
             inicioProgramadoAt: fecha.inicio,
             finProgramadoAt: fecha.fin,
             timezone: input.timezone,
-            requiereAsistencia: input.requiereAsistencia,
+            requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
             requiereGrabacion: input.requiereGrabacion,
           },
         });
@@ -192,13 +192,13 @@ export async function crearReuniones(
             }))
           });
         }
-        if (asistenteId) {
+        if (asistenteTecnicoId) {
           const tarifa = await obtenerTarifaVigente(tx, input.modalidad);
-          await tx.asignacionAsistente.create({
+          await tx.asignacionAsistenciaTecnica.create({
             data: {
               instanciaSalaId: instancia.id,
-              asistenteId,
-              tarifaAsistenciaId: tarifa.id,
+              asistenteTecnicoId,
+              tarifaAsistenciaTecnicaId: tarifa.id,
               tarifaHoraAplicada: tarifa.valorHora,
               moneda: tarifa.moneda,
             },

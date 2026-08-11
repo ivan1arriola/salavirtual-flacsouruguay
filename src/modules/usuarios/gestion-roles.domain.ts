@@ -20,5 +20,5 @@ export function requierePerfilDocente(rol: RolUsuario): boolean {
 }
 
 export function requierePerfilAsistente(rol: RolUsuario): boolean {
-  return rol === "ASISTENTE";
+  return rol === "ASISTENTE_TECNICO";
 }

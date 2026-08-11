@@ -6,8 +6,8 @@ describe("resumen administrativo de asistentes", () => {
     const rows = resumirAsignacionesPorAsistente(
       [{ id: "a1", usuarioId: "u1", slug: "ana", nombre: "Ana", email: null, activo: true }],
       [
-        { asistenteId: "a1", modalidad: "VIRTUAL", minutos: 90, monto: 600, moneda: "UYU" },
-        { asistenteId: "a1", modalidad: "HIBRIDA", minutos: 60, monto: null, moneda: "UYU" }
+        { asistenteTecnicoId: "a1", modalidad: "VIRTUAL", minutos: 90, monto: 600, moneda: "UYU" },
+        { asistenteTecnicoId: "a1", modalidad: "HIBRIDA", minutos: 60, monto: null, moneda: "UYU" }
       ]
     );
     expect(rows[0]).toMatchObject({ reuniones: 2, virtuales: 1, hibridas: 1, minutos: 150, sinTarifa: 1 });

@@ -5,6 +5,6 @@ describe("alcance funcional del histórico", () => {
   it("reserva el histórico Zoom a Administración", () => {
     expect(puedeVerHistoricoZoom("ADMINISTRACION")).toBe(true);
     expect(puedeVerHistoricoZoom("DOCENTE")).toBe(false);
-    expect(puedeVerHistoricoZoom("ASISTENTE")).toBe(false);
+    expect(puedeVerHistoricoZoom("ASISTENTE_TECNICO")).toBe(false);
   });
 });

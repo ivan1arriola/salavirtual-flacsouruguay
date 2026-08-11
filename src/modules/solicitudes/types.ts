@@ -9,7 +9,7 @@ export const solicitudSalaSchema = z.object({
   timezone: z.string().min(1),
   fechaInicioSolicitada: z.coerce.date(),
   fechaFinSolicitada: z.coerce.date(),
-  requiereAsistencia: z.boolean().default(false),
+  requiereAsistenciaTecnica: z.boolean().default(false),
   requiereGrabacion: z.boolean().default(false)
 });
 

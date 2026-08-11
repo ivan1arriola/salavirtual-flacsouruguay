@@ -43,7 +43,7 @@ export async function recalcularSolicitud(
     select: {
       inicioProgramadoAt: true,
       finProgramadoAt: true,
-      requiereAsistencia: true,
+      requiereAsistenciaTecnica: true,
       requiereGrabacion: true,
       eventosProveedor: {
         select: { estadoIntegracion: true }
@@ -72,7 +72,7 @@ export async function recalcularSolicitud(
         (latest, item) => item.finProgramadoAt > latest ? item.finProgramadoAt : latest,
         meetings[0].finProgramadoAt
       ),
-      requiereAsistencia: meetings.some(({ requiereAsistencia }) => requiereAsistencia),
+      requiereAsistenciaTecnica: meetings.some(({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica),
       requiereGrabacion: meetings.some(({ requiereGrabacion }) => requiereGrabacion)
     }
   });

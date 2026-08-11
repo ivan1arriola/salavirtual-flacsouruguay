@@ -8,7 +8,7 @@ El modelo evita repetir datos derivados y separa responsabilidades:
 - `CuentaGoogleFlacso`: cuentas Google vinculadas; un usuario puede tener varias.
 - `UsuarioEmailAlias`: otros correos validos para localizar al usuario.
 - `UsuarioFusion`: trazabilidad inmutable de unificacion de docentes.
-- `Docente` / `Asistente`: perfiles operativos opcionales de un usuario.
+- `Docente` / `AsistenteTecnico`: perfiles operativos opcionales de un usuario.
 - `UnidadAcademica` / `Programa`: estructura institucional.
 - `DocentePrograma`: asociacion explicita entre docente y programa.
 - `SolicitudSala`: pedido academico originado desde un `DocentePrograma`.
@@ -17,8 +17,9 @@ El modelo evita repetir datos derivados y separa responsabilidades:
 - `EventoProveedor`: identificadores, enlaces y payloads externos.
 - `CohostReunion`: cuentas Google cohost vinculadas a una ocurrencia.
 - `Grabacion`: archivo o referencia de grabacion.
-- `AsignacionAsistente`: cobertura de una instancia.
-- `Liquidacion` / `LiquidacionDetalle`: cierre economico.
+- `PostulacionAsistenciaTecnica`: interes de un asistente tecnico en realizar la asistencia de una instancia.
+- `AsignacionAsistenciaTecnica`: adjudicacion de la asistencia tecnica de una instancia.
+- `LiquidacionAsistenciaTecnica` / `DetalleLiquidacionAsistenciaTecnica`: cierre economico.
 
 ## Por que no se llama todo Meet
 
@@ -44,7 +45,7 @@ Administracion mantiene la lista de correos institucionales autorizados. El
 completa en el primer login OAuth. Todo usuario debe conservar al menos un
 metodo de acceso: una cuenta FLACSO o una contrasena.
 
-Los roles son `ADMINISTRACION`, `ASISTENTE` y `DOCENTE`. El rol neutral
+Los roles son `ADMINISTRACION`, `ASISTENTE_TECNICO` y `DOCENTE`. El rol neutral
 `ADMINISTRACION` absorbe todas las funciones que antes correspondian a
 `ADMINISTRADOR` y `CONTADURIA`.
 
@@ -60,7 +61,7 @@ Cada instancia conserva fecha, hora y zona horaria, y se vincula a:
 - el programa y docente mediante `DocentePrograma`;
 - una `CuentaProveedor` Meet activa y con licencia como host;
 - cero o mas cuentas institucionales en `CohostReunion`;
-- opcionalmente un `Asistente`, cuando se solicite asistencia;
+- opcionalmente un `AsistenteTecnico`, cuando se solicite asistencia tecnica;
 - un `EventoProveedor` con el codigo Meet, cuando ya exista.
 
 El cohost queda modelado sin asignarle permisos o automatizaciones hasta definir
@@ -78,16 +79,16 @@ inconsistencias.
 | Host y codigo externo | `EventoProveedor` |
 | Licencia y limite del host | `CuentaProveedor` |
 | Cohosts | `CohostReunion` |
-| Asistente asignado | `AsignacionAsistente` |
+| Asistente tecnico asignado | `AsignacionAsistenciaTecnica` |
 
 Los campos de modalidad, zona horaria, asistencia y grabacion en
 `SolicitudSala` expresan el pedido original. Sus equivalentes en
 `InstanciaSala` expresan la programacion efectiva y pueden diferir por
 ocurrencia. No son dos fuentes para el mismo hecho.
 
-`TarifaAsistencia` es una entidad versionada por modalidad. La tarifa vigente es
+`TarifaAsistenciaTecnica` es una entidad versionada por modalidad. La tarifa vigente es
 siempre la ultima creada; al agregar una nueva, las anteriores quedan como
-historial. Cada `AsignacionAsistente` referencia obligatoriamente la tarifa que
+historial. Cada `AsignacionAsistenciaTecnica` referencia obligatoriamente la tarifa que
 estaba vigente al asignarla y conserva tambien sus valores aplicados como
 snapshot. No se recalcula desde la tarifa actual, porque eso alteraria la
 historia economica.

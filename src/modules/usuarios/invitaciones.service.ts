@@ -36,7 +36,7 @@ export async function invitarUsuario(
       ? await resolverProgramaInvitacion(tx, input.programaId, input.programaNuevo)
       : null;
     const usuarioId = await idInvitadoDisponible(tx, input.email);
-    const assistantSlug = input.rol === "ASISTENTE"
+    const assistantSlug = input.rol === "ASISTENTE_TECNICO"
       ? await crearSlugAsistenteDisponible(
           tx,
           [input.nombres, input.apellidos].filter(Boolean).join(" "),
@@ -62,7 +62,7 @@ export async function invitarUsuario(
                 }
               }
             }
-          : input.rol === "ASISTENTE" ? { asistente: { create: { slug: assistantSlug! } } } : {})
+          : input.rol === "ASISTENTE_TECNICO" ? { asistenteTecnico: { create: { slug: assistantSlug! } } } : {})
       },
       select: { id: true }
     });

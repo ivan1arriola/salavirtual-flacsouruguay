@@ -5,7 +5,7 @@ describe("tarifa vigente de asistencia", () => {
   it("elige la ultima tarifa creada para la modalidad", async () => {
     const findFirst = vi.fn().mockResolvedValue({ id: "rate-2", valorHora: 450, moneda: "UYU" });
     const rate = await obtenerTarifaVigente({
-      tarifaAsistencia: { findFirst }
+      tarifaAsistenciaTecnica: { findFirst }
     } as never, "VIRTUAL");
 
     expect(rate.id).toBe("rate-2");
@@ -17,7 +17,7 @@ describe("tarifa vigente de asistencia", () => {
 
   it("impide asignar si la modalidad todavia no tiene tarifa", async () => {
     await expect(obtenerTarifaVigente({
-      tarifaAsistencia: { findFirst: vi.fn().mockResolvedValue(null) }
+      tarifaAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null) }
     } as never, "HIBRIDA")).rejects.toThrow("No hay una tarifa configurada");
   });
 });

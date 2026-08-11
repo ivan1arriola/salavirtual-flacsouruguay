@@ -11,7 +11,7 @@ const periodoFields = {
 
 export const agregarEncuentroSchema = z.object({
   ...periodoFields,
-  requiereAsistencia: z.boolean().default(false),
+  requiereAsistenciaTecnica: z.boolean().default(false),
   requiereGrabacion: z.boolean().default(false)
 }).refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
   message: "La hora de fin debe ser posterior al inicio."
@@ -27,7 +27,7 @@ export const actualizarEncuentroSchema = z.union([
     .refine(({ inicio, fin }) => pertenecenAlMismoDia(inicio, fin, TIMEZONE_MONTEVIDEO), {
       message: "El inicio y el fin deben ser del mismo dia."
     }),
-  z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistencia: z.boolean() })
+  z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistenciaTecnica: z.boolean() })
 ]);
 
 export function puedeGestionarEncuentros(

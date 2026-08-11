@@ -26,7 +26,7 @@ import { listarCasosRevisionDuplicados } from "@/src/modules/reuniones/duplicado
 export default async function HomePage() {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
-  if (session.user.role === "ASISTENTE") return <AssistantDashboard user={session.user} />;
+  if (session.user.role === "ASISTENTE_TECNICO") return <AssistantDashboard user={session.user} />;
   if (session.user.role === "DOCENTE") return <TeacherDashboard user={session.user} />;
 
   const now = new Date();
@@ -67,7 +67,7 @@ export default async function HomePage() {
       }),
       db.instanciaSala.count({
         where: {
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           inicioProgramadoAt: { gte: now },
           estado: "PROGRAMADA",
           asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
@@ -111,14 +111,14 @@ export default async function HomePage() {
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-            include: { asistente: { include: { usuario: true } } },
+            include: { asistenteTecnico: { include: { usuario: true } } },
             take: 1
           }
         }
       }),
       db.instanciaSala.findMany({
         where: {
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           inicioProgramadoAt: { gte: now },
           estado: "PROGRAMADA",
           asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
@@ -190,7 +190,7 @@ export default async function HomePage() {
     { label: "Solicitudes abiertas", value: openRequests, copy: "En registro o provisión", icon: ClipboardList, tone: "neutral" },
     { label: "Reuniones de hoy", value: todayMeetings, copy: "Programadas para hoy", icon: CalendarClock, tone: "brand" },
     { label: "Próximos 7 días", value: weekMeetings, copy: "Carga operativa semanal", icon: CalendarDays, tone: "brand" },
-    { label: "Sin asistencia", value: pendingAssistance, copy: "Necesitan cobertura", icon: UserRoundCheck, tone: pendingAssistance ? "warning" : "ok" },
+    { label: "Sin asistencia técnica", value: pendingAssistance, copy: "Necesitan cobertura", icon: UserRoundCheck, tone: pendingAssistance ? "warning" : "ok" },
     { label: "Errores de Meet", value: integrationErrors, copy: "Requieren intervención", icon: CircleAlert, tone: integrationErrors ? "danger" : "ok" }
   ] as const;
   const hasPendingMeet = upcoming.some((meeting) =>
@@ -204,10 +204,10 @@ export default async function HomePage() {
       tone: "warning",
       icon: UserRoundCheck,
       count: pendingAssistance,
-      title: "Reuniones sin cobertura",
+      title: "Reuniones sin asistencia técnica",
       detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
       href: "/cobertura-asistencias?estado=pendientes",
-      action: "Asignar asistencia"
+      action: "Asignar asistencia técnica"
     } : null,
     integrationErrors ? {
       key: "meet-errors",
@@ -312,14 +312,14 @@ export default async function HomePage() {
           <div className="table-wrap">
             <table className="data-table admin-upcoming-table">
               <thead>
-                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Sala Meet</th><th>Asistencia</th><th>A cargo</th></tr>
+                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Sala Meet</th><th>Asistencia técnica</th><th>A cargo</th></tr>
               </thead>
               <tbody>
                 {upcoming.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
                   const teacher = association.docente.usuario;
                   const assignment = meeting.asignaciones[0];
-                  const assistant = assignment?.asistente.usuario;
+                  const assistant = assignment?.asistenteTecnico.usuario;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
                   const responsible = meeting.solicitud.responsableNombre?.trim() ||
                     `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim();
@@ -342,7 +342,7 @@ export default async function HomePage() {
                       <td>
                         {assistant ? (
                           <><span className="status status-ok">Asignada</span><small>{assistant.nombres} {assistant.apellidos}</small></>
-                        ) : meeting.requiereAsistencia ? (
+                        ) : meeting.requiereAsistenciaTecnica ? (
                           <span className="status status-warning"><AlertTriangle size={14} />Pendiente</span>
                         ) : <span className="muted-text">No requiere</span>}
                       </td>

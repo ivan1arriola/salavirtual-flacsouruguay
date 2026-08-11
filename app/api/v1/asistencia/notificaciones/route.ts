@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       actor,
       await request.json().catch(() => null)
     );
-    return NextResponse.json({ message: `Se volvió a notificar a ${notified} asistentes.` });
+    return NextResponse.json({ message: `Se volvió a notificar a ${notified} asistentes técnicos.` });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo enviar el recordatorio." },

@@ -36,18 +36,18 @@ export async function obtenerAsistenciasEnRango(
   orden: "asc" | "desc" = "asc",
   limite = 500
 ): Promise<readonly RegistroAsistenciaPersonal[]> {
-  const asistente = await db.asistente.findUnique({
+  const asistente = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
     select: { id: true }
   });
   if (!asistente) return [];
 
-  const asignaciones = await db.asignacionAsistente.findMany({
+  const asignaciones = await db.asignacionAsistenciaTecnica.findMany({
     where: {
-      asistenteId: asistente.id,
+      asistenteTecnicoId: asistente.id,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instancia: {
-        requiereAsistencia: true,
+        requiereAsistenciaTecnica: true,
         estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
         inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta },
         solicitud: { estado: { not: "CANCELADA" } }

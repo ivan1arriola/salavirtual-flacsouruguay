@@ -35,8 +35,8 @@ export const crearReunionesSchema = z
     docenteProgramaId: z.string().trim().min(1),
     cohostCuentaIds: z.array(z.string().trim().min(1)).default([]),
     cohostEmailsManual: emailListSchema,
-    asistenteId: z.string().trim().min(1).optional(),
-    requiereAsistencia: z.boolean().default(false),
+    asistenteTecnicoId: z.string().trim().min(1).optional(),
+    requiereAsistenciaTecnica: z.boolean().default(false),
     requiereGrabacion: z.boolean().default(false),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
     timezone: z.string().trim().min(1),
@@ -87,16 +87,16 @@ export function puedeCrearReuniones(
 
 export function resolverAsignacionInicial(
   rol: RolUsuario,
-  requiereAsistencia: boolean,
-  asistenteId?: string
+  requiereAsistenciaTecnica: boolean,
+  asistenteTecnicoId?: string
 ): string | null {
-  if (!requiereAsistencia && asistenteId) {
-    throw new Error("No se puede asignar Asistente si la reunión no requiere asistencia.");
+  if (!requiereAsistenciaTecnica && asistenteTecnicoId) {
+    throw new Error("No se puede asignar un asistente técnico si la reunión no requiere asistencia técnica.");
   }
-  if (rol !== "ADMINISTRACION" && asistenteId) {
-    throw new Error("Solo Administración puede asignar Asistente al crear una reunión.");
+  if (rol !== "ADMINISTRACION" && asistenteTecnicoId) {
+    throw new Error("Solo Administración puede asignar un asistente técnico al crear una reunión.");
   }
-  return rol === "ADMINISTRACION" && requiereAsistencia ? asistenteId ?? null : null;
+  return rol === "ADMINISTRACION" && requiereAsistenciaTecnica ? asistenteTecnicoId ?? null : null;
 }
 
 const DIAS = Object.freeze([

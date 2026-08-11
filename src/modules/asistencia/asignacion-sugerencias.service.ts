@@ -11,7 +11,7 @@ export type AssignmentSuggestionInput = Readonly<{
       inicioProgramadoAt: Date;
       finProgramadoAt: Date;
       timezone: string;
-      intereses: readonly Readonly<{ asistente: { id: string } }>[];
+      postulaciones: readonly Readonly<{ asistenteTecnico: { id: string } }>[];
     };
   }>[];
   assistants: readonly Readonly<{
@@ -67,8 +67,8 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
   for (const meeting of pendingMeetings) {
     const applicantIds = [
       ...new Set(
-        meeting.intereses
-          .map((interest) => interest.asistente.id)
+        meeting.postulaciones
+          .map((interest) => interest.asistenteTecnico.id)
           .filter((assistantId) => assistantById.has(assistantId))
       )
     ];

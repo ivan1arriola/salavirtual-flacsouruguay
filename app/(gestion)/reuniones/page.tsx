@@ -67,7 +67,7 @@ export default async function ReunionesPage({
       eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
       asignaciones: {
         where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-        include: { asistente: { include: { usuario: true } } },
+        include: { asistenteTecnico: { include: { usuario: true } } },
         orderBy: { updatedAt: "desc" },
         take: 1
       }
@@ -83,7 +83,7 @@ export default async function ReunionesPage({
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const today = meetings.filter(({ inicioProgramadoAt }) => inicioProgramadoAt >= todayStart && inicioProgramadoAt < todayEnd).length;
   const nextWeek = meetings.filter(({ inicioProgramadoAt }) => inicioProgramadoAt < weekEnd).length;
-  const pendingAssistance = meetings.filter(({ requiereAsistencia, asignaciones }) => requiereAsistencia && asignaciones.length === 0).length;
+  const pendingAssistance = meetings.filter(({ requiereAsistenciaTecnica, asignaciones }) => requiereAsistenciaTecnica && asignaciones.length === 0).length;
   const hasPendingMeet = meetings.some(({ eventosProveedor }) =>
     eventosProveedor.some(({ proveedor, estadoIntegracion }) => proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE")
   );
@@ -94,7 +94,7 @@ export default async function ReunionesPage({
         <div>
           <p className="page-eyebrow">{formatShortDate(now)}</p>
           <h1>Agenda de reuniones</h1>
-          <p>{actor.rol === "DOCENTE" ? "Tus próximas reuniones y accesos." : "Próximas reuniones, responsables y cobertura operativa."}</p>
+          <p>{actor.rol === "DOCENTE" ? "Tus próximas reuniones y accesos." : "Próximas reuniones, responsables y cobertura de asistencia técnica."}</p>
         </div>
         <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={18} />Nueva reunión</Link>
       </header>
@@ -103,7 +103,7 @@ export default async function ReunionesPage({
         <article><CalendarDays size={19} /><span><small>Próximas</small><strong>{meetings.length}</strong></span></article>
         <article><CalendarClock size={19} /><span><small>Hoy</small><strong>{today}</strong></span></article>
         <article><CalendarDays size={19} /><span><small>Próximos 7 días</small><strong>{nextWeek}</strong></span></article>
-        <article className={pendingAssistance ? "is-warning" : ""}><UserRoundCheck size={19} /><span><small>Sin cobertura</small><strong>{pendingAssistance}</strong></span></article>
+        <article className={pendingAssistance ? "is-warning" : ""}><UserRoundCheck size={19} /><span><small>Sin asistencia técnica</small><strong>{pendingAssistance}</strong></span></article>
         {actor.rol === "ADMINISTRACION" ? (
           <Link className="agenda-summary-link" href="/reuniones/duplicados">
             <article className={unresolvedDuplicates.length ? "is-danger" : ""}><AlertTriangle size={19} /><span><small>Duplicados por revisar</small><strong>{unresolvedDuplicates.length}</strong></span></article>
@@ -127,7 +127,7 @@ export default async function ReunionesPage({
           const teacher = association.docente.usuario;
           const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? meeting.eventosProveedor[0];
           const assignment = meeting.asignaciones[0];
-          const assistant = assignment?.asistente.usuario;
+          const assistant = assignment?.asistenteTecnico.usuario;
           const assistantName = assistant ? [assistant.nombres, assistant.apellidos].filter(Boolean).join(" ") : null;
           return (
             <article className="agenda-meeting-card" key={meeting.id}>
@@ -158,11 +158,11 @@ export default async function ReunionesPage({
                   <div><span>Sala Meet</span><strong>{event?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><MeetIntegrationStatus status={event?.estadoIntegracion} /></div>
                 </div>
 
-                <div className={`agenda-assistant ${assistantName ? "has-assistant" : meeting.requiereAsistencia ? "needs-assistant" : "no-assistance"}`}>
-                  {meeting.requiereAsistencia ? <UserRoundCheck size={20} /> : <UserRoundMinus size={20} />}
+                <div className={`agenda-assistant ${assistantName ? "has-assistant" : meeting.requiereAsistenciaTecnica ? "needs-assistant" : "no-assistance"}`}>
+                  {meeting.requiereAsistenciaTecnica ? <UserRoundCheck size={20} /> : <UserRoundMinus size={20} />}
                   <span>
-                    <small>Asistencia</small>
-                    <strong>{assistantName ?? (meeting.requiereAsistencia ? "Pendiente de asignación" : "No requiere")}</strong>
+                    <small>Asistencia técnica</small>
+                    <strong>{assistantName ?? (meeting.requiereAsistenciaTecnica ? "Pendiente de asignación" : "No requiere")}</strong>
                     {assignment ? <em>Asignada</em> : null}
                   </span>
                 </div>

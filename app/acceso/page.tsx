@@ -39,7 +39,7 @@ export default async function AccesoPage({
           <div className="login-brand-copy">
             <p className="login-product-label">Plataforma institucional</p>
             <h2>Reuniones académicas, organizadas en un solo lugar.</h2>
-            <p>Coordiná encuentros, salas de Google Meet, asistencia y grabaciones para los programas de FLACSO Uruguay.</p>
+            <p>Coordiná encuentros, salas de Google Meet, asistencia técnica y grabaciones para los programas de FLACSO Uruguay.</p>
           </div>
           <ul className="login-feature-list" aria-label="Funciones de la plataforma">
             <li><CalendarDays size={19} /><span><strong>Agenda coordinada</strong><small>Reuniones y programas</small></span></li>

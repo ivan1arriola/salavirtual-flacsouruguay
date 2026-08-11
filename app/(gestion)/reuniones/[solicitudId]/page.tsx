@@ -42,9 +42,9 @@ export default async function ReunionDetailPage({
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-            include: { asistente: { include: { usuario: true } } }
+            include: { asistenteTecnico: { include: { usuario: true } } }
           },
-          intereses: { where: { estado: "ME_INTERESA" }, select: { id: true } }
+          postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
         }
       }
     }
@@ -88,9 +88,9 @@ export default async function ReunionDetailPage({
             inicio: toLocalInput(meeting.inicioProgramadoAt),
             fin: toLocalInput(meeting.finProgramadoAt),
             estado: meeting.estado,
-            requiereAsistencia: meeting.requiereAsistencia,
-            asistente: assignment ? `${assignment.asistente.usuario.nombres} ${assignment.asistente.usuario.apellidos ?? ""}`.trim() : null,
-            postulantes: meeting.intereses.length,
+            requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
+            asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
+            postulantes: meeting.postulaciones.length,
             host: event?.cuentaProveedor?.nombre ?? "Sala pendiente",
             codigoMeet: event?.codigoReunion ?? null,
             joinUrl: event?.joinUrl ?? null,

@@ -42,7 +42,7 @@ model Usuario {
   fusionesEjecutadas                UsuarioFusion[]                @relation("FusionEjecutadaPor")
   configuracionesGoogleActualizadas ConfiguracionGoogleWorkspace[] @relation("ConfiguracionGoogleActualizadaPor")
   docente                           Docente?
-  asistente                         Asistente?
+  asistenteTecnico                  AsistenteTecnico?
   notificaciones                    Notificacion[]
   preferenciasNotificacion          PreferenciaNotificacion[]
 
@@ -141,18 +141,19 @@ model DocentePrograma {
   @@index([programaId, activo])
 }
 
-model Asistente {
-  id                String                    @id @default(cuid())
-  usuarioId         String                    @unique
-  slug              String                    @unique
+/// Persona habilitada para realizar asistencias tecnicas en reuniones.
+model AsistenteTecnico {
+  id                String                           @id @default(cuid())
+  usuarioId         String                           @unique
+  slug              String                           @unique
   aliasOperativo    String?
-  disponibleGeneral Boolean                   @default(true)
+  disponibleGeneral Boolean                          @default(true)
   datosPago         String?
-  usuario           Usuario                   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  disponibilidades  DisponibilidadAsistente[]
-  intereses         InteresAsistenteEvento[]
-  asignaciones      AsignacionAsistente[]
-  liquidaciones     Liquidacion[]
+  usuario           Usuario                          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  disponibilidades  DisponibilidadAsistenteTecnico[]
+  intereses         PostulacionAsistenciaTecnica[]
+  asignaciones      AsignacionAsistenciaTecnica[]
+  liquidaciones     LiquidacionAsistenciaTecnica[]
 }
 
 model ProveedorReunion {
@@ -187,67 +188,67 @@ model CuentaProveedor {
 }
 
 model SolicitudSala {
-  id                    String           @id @default(cuid())
-  legacyZoomSolicitudId String?          @unique
-  docenteProgramaId     String
-  creadaPorUsuarioId    String
-  titulo                String
-  descripcion           String?
-  responsableNombre     String?
-  finalidadAcademica    String?
-  modalidad             ModalidadReunion
-  tipoInstancias        TipoInstancias
-  timezone              String
-  fechaInicioSolicitada DateTime
-  fechaFinSolicitada    DateTime
-  cantidadInstancias    Int              @default(1)
-  capacidadEstimada     Int?
-  requiereAsistencia    Boolean          @default(false)
-  motivoAsistencia      String?
-  requiereGrabacion     Boolean          @default(false)
-  regimenEncuentros     String?
-  fechaFinRecurrencia   DateTime?
-  patronRecurrencia     Json?
-  estado                EstadoSolicitud  @default(REGISTRADA)
-  observacionesAdmin    String?
-  canceladaAt           DateTime?
-  canceladaMotivo       String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  docentePrograma       DocentePrograma  @relation(fields: [docenteProgramaId], references: [id], onDelete: Restrict)
-  creadaPor             Usuario          @relation("SolicitudCreadaPor", fields: [creadaPorUsuarioId], references: [id], onDelete: Restrict)
-  instancias            InstanciaSala[]
+  id                        String           @id @default(cuid())
+  legacyZoomSolicitudId     String?          @unique
+  docenteProgramaId         String
+  creadaPorUsuarioId        String
+  titulo                    String
+  descripcion               String?
+  responsableNombre         String?
+  finalidadAcademica        String?
+  modalidad                 ModalidadReunion
+  tipoInstancias            TipoInstancias
+  timezone                  String
+  fechaInicioSolicitada     DateTime
+  fechaFinSolicitada        DateTime
+  cantidadInstancias        Int              @default(1)
+  capacidadEstimada         Int?
+  requiereAsistenciaTecnica Boolean          @default(false)
+  motivoAsistenciaTecnica   String?
+  requiereGrabacion         Boolean          @default(false)
+  regimenEncuentros         String?
+  fechaFinRecurrencia       DateTime?
+  patronRecurrencia         Json?
+  estado                    EstadoSolicitud  @default(REGISTRADA)
+  observacionesAdmin        String?
+  canceladaAt               DateTime?
+  canceladaMotivo           String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  docentePrograma           DocentePrograma  @relation(fields: [docenteProgramaId], references: [id], onDelete: Restrict)
+  creadaPor                 Usuario          @relation("SolicitudCreadaPor", fields: [creadaPorUsuarioId], references: [id], onDelete: Restrict)
+  instancias                InstanciaSala[]
 
   @@index([estado, fechaInicioSolicitada])
   @@index([docenteProgramaId, estado])
 }
 
 model InstanciaSala {
-  id                  String                   @id @default(cuid())
-  legacyZoomEventoId  String?                  @unique
-  solicitudSalaId     String
-  ordinal             Int
-  inicioProgramadoAt  DateTime
-  finProgramadoAt     DateTime
-  timezone            String
-  estado              EstadoInstancia          @default(PROGRAMADA)
-  requiereAsistencia  Boolean                  @default(false)
-  requiereGrabacion   Boolean                  @default(false)
-  inicioRealAt        DateTime?
-  finRealAt           DateTime?
-  minutosReportados   Int?
-  comentariosReporte  String?
-  costoEstimado       Decimal?                 @db.Decimal(12, 2)
-  costoReal           Decimal?                 @db.Decimal(12, 2)
-  solicitud           SolicitudSala            @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
-  eventosProveedor    EventoProveedor[]
-  intereses           InteresAsistenteEvento[]
-  asignaciones        AsignacionAsistente[]
-  incidencias         Incidencia[]
-  grabaciones         Grabacion[]
-  liquidacionDetalles LiquidacionDetalle[]
-  cohosts             CohostReunion[]
-  cohostEmails        CohostEmailReunion[]
+  id                        String                                @id @default(cuid())
+  legacyZoomEventoId        String?                               @unique
+  solicitudSalaId           String
+  ordinal                   Int
+  inicioProgramadoAt        DateTime
+  finProgramadoAt           DateTime
+  timezone                  String
+  estado                    EstadoInstancia                       @default(PROGRAMADA)
+  requiereAsistenciaTecnica Boolean                               @default(false)
+  requiereGrabacion         Boolean                               @default(false)
+  inicioRealAt              DateTime?
+  finRealAt                 DateTime?
+  minutosReportados         Int?
+  comentariosReporte        String?
+  costoEstimado             Decimal?                              @db.Decimal(12, 2)
+  costoReal                 Decimal?                              @db.Decimal(12, 2)
+  solicitud                 SolicitudSala                         @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
+  eventosProveedor          EventoProveedor[]
+  postulaciones             PostulacionAsistenciaTecnica[]
+  asignaciones              AsignacionAsistenciaTecnica[]
+  incidencias               Incidencia[]
+  grabaciones               Grabacion[]
+  detallesLiquidacion       DetalleLiquidacionAsistenciaTecnica[]
+  cohosts                   CohostReunion[]
+  cohostEmails              CohostEmailReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -344,100 +345,106 @@ model Grabacion {
   @@index([origen, capturadaAt])
 }
 
-model InteresAsistenteEvento {
-  id              String        @id @default(cuid())
-  instanciaSalaId String
-  asistenteId     String
-  estado          EstadoInteres @default(ME_INTERESA)
-  comentario      String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  instancia       InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente       Asistente     @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
+/// Postulacion de un asistente tecnico para realizar la asistencia de una instancia.
+model PostulacionAsistenciaTecnica {
+  id                 String                             @id @default(cuid())
+  instanciaSalaId    String
+  asistenteTecnicoId String
+  estado             EstadoPostulacionAsistenciaTecnica @default(ME_INTERESA)
+  comentario         String?
+  createdAt          DateTime                           @default(now())
+  updatedAt          DateTime                           @updatedAt
+  instancia          InstanciaSala                      @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistenteTecnico   AsistenteTecnico                   @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Cascade)
 
-  @@unique([instanciaSalaId, asistenteId])
+  @@unique([instanciaSalaId, asistenteTecnicoId], map: "PostulacionAT_instancia_asistente_key")
 }
 
-model AsignacionAsistente {
-  id                     String               @id @default(cuid())
-  legacyZoomAsignacionId String?              @unique
-  instanciaSalaId        String
-  asistenteId            String
-  tarifaAsistenciaId     String
-  estado                 EstadoAsignacion     @default(ASIGNADO)
-  tarifaHoraAplicada     Decimal              @db.Decimal(10, 2)
-  moneda                 String
-  minutosConfirmados     Int?
-  montoConfirmado        Decimal?             @db.Decimal(12, 2)
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
-  instancia              InstanciaSala        @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente              Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
-  tarifa                 TarifaAsistencia     @relation(fields: [tarifaAsistenciaId], references: [id], onDelete: Restrict)
-  liquidacionDetalles    LiquidacionDetalle[]
+/// Adjudicacion de la asistencia tecnica de una instancia a un asistente tecnico.
+model AsignacionAsistenciaTecnica {
+  id                        String                                @id @default(cuid())
+  legacyZoomAsignacionId    String?                               @unique
+  instanciaSalaId           String
+  asistenteTecnicoId        String
+  tarifaAsistenciaTecnicaId String
+  estado                    EstadoAsignacionAsistenciaTecnica     @default(ASIGNADO)
+  tarifaHoraAplicada        Decimal                               @db.Decimal(10, 2)
+  moneda                    String
+  minutosConfirmados        Int?
+  montoConfirmado           Decimal?                              @db.Decimal(12, 2)
+  createdAt                 DateTime                              @default(now())
+  updatedAt                 DateTime                              @updatedAt
+  instancia                 InstanciaSala                         @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistenteTecnico          AsistenteTecnico                      @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
+  tarifaAsistenciaTecnica   TarifaAsistenciaTecnica               @relation(fields: [tarifaAsistenciaTecnicaId], references: [id], onDelete: Restrict)
+  detallesLiquidacion       DetalleLiquidacionAsistenciaTecnica[]
 
-  @@unique([instanciaSalaId, asistenteId])
-  @@index([asistenteId, estado])
-  @@index([tarifaAsistenciaId])
+  @@unique([instanciaSalaId, asistenteTecnicoId], map: "AsignacionAT_instancia_asistente_key")
+  @@index([asistenteTecnicoId, estado])
+  @@index([tarifaAsistenciaTecnicaId])
 }
 
-model DisponibilidadAsistente {
-  id          String             @id @default(cuid())
-  asistenteId String
-  diaSemana   Int?
-  fecha       DateTime?
-  horaDesde   String
-  horaHasta   String
-  timezone    String
-  tipo        TipoDisponibilidad
-  asistente   Asistente          @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
+/// Franja en la que un asistente tecnico esta disponible o no disponible.
+model DisponibilidadAsistenteTecnico {
+  id                 String                             @id @default(cuid())
+  asistenteTecnicoId String
+  diaSemana          Int?
+  fecha              DateTime?
+  horaDesde          String
+  horaHasta          String
+  timezone           String
+  tipo               TipoDisponibilidadAsistenteTecnico
+  asistenteTecnico   AsistenteTecnico                   @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Cascade)
 
-  @@index([asistenteId, diaSemana])
+  @@index([asistenteTecnicoId, diaSemana])
   @@index([fecha])
 }
 
-model TarifaAsistencia {
-  id           String                 @id @default(cuid())
+/// Tarifa versionada usada para valorar una asistencia tecnica.
+model TarifaAsistenciaTecnica {
+  id           String                        @id @default(cuid())
   modalidad    ModalidadReunion
-  valorHora    Decimal                @db.Decimal(10, 2)
+  valorHora    Decimal                       @db.Decimal(10, 2)
   moneda       String
-  createdAt    DateTime               @default(now())
-  asignaciones AsignacionAsistente[]
+  createdAt    DateTime                      @default(now())
+  asignaciones AsignacionAsistenciaTecnica[]
 
   @@index([modalidad, createdAt])
 }
 
-model Liquidacion {
-  id           String               @id @default(cuid())
-  asistenteId  String
-  periodoDesde DateTime
-  periodoHasta DateTime
-  estado       EstadoLiquidacion    @default(BORRADOR)
-  subtotal     Decimal              @db.Decimal(12, 2)
-  ajustes      Decimal              @default(0) @db.Decimal(12, 2)
-  total        Decimal              @db.Decimal(12, 2)
-  moneda       String
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  asistente    Asistente            @relation(fields: [asistenteId], references: [id], onDelete: Restrict)
-  detalles     LiquidacionDetalle[]
+/// Liquidacion economica de las asistencias tecnicas realizadas por una persona.
+model LiquidacionAsistenciaTecnica {
+  id                 String                                @id @default(cuid())
+  asistenteTecnicoId String
+  periodoDesde       DateTime
+  periodoHasta       DateTime
+  estado             EstadoLiquidacionAsistenciaTecnica    @default(BORRADOR)
+  subtotal           Decimal                               @db.Decimal(12, 2)
+  ajustes            Decimal                               @default(0) @db.Decimal(12, 2)
+  total              Decimal                               @db.Decimal(12, 2)
+  moneda             String
+  createdAt          DateTime                              @default(now())
+  updatedAt          DateTime                              @updatedAt
+  asistenteTecnico   AsistenteTecnico                      @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
+  detalles           DetalleLiquidacionAsistenciaTecnica[]
 
-  @@index([asistenteId, periodoDesde, periodoHasta])
+  @@index([asistenteTecnicoId, periodoDesde, periodoHasta])
 }
 
-model LiquidacionDetalle {
-  id                    String              @id @default(cuid())
-  liquidacionId         String
-  instanciaSalaId       String
-  asignacionAsistenteId String
-  minutosLiquidados     Int
-  tarifaHoraAplicada    Decimal             @db.Decimal(10, 2)
-  montoLinea            Decimal             @db.Decimal(12, 2)
-  liquidacion           Liquidacion         @relation(fields: [liquidacionId], references: [id], onDelete: Cascade)
-  instancia             InstanciaSala       @relation(fields: [instanciaSalaId], references: [id], onDelete: Restrict)
-  asignacion            AsignacionAsistente @relation(fields: [asignacionAsistenteId], references: [id], onDelete: Restrict)
+/// Linea que incorpora una asistencia tecnica adjudicada a una liquidacion.
+model DetalleLiquidacionAsistenciaTecnica {
+  id                             String                       @id @default(cuid())
+  liquidacionAsistenciaTecnicaId String
+  instanciaSalaId                String
+  asignacionAsistenciaTecnicaId  String
+  minutosLiquidados              Int
+  tarifaHoraAplicada             Decimal                      @db.Decimal(10, 2)
+  montoLinea                     Decimal                      @db.Decimal(12, 2)
+  liquidacionAsistenciaTecnica   LiquidacionAsistenciaTecnica @relation(fields: [liquidacionAsistenciaTecnicaId], references: [id], onDelete: Cascade, map: "DetalleLiquidacionAT_liquidacion_fk")
+  instancia                      InstanciaSala                @relation(fields: [instanciaSalaId], references: [id], onDelete: Restrict)
+  asignacionAsistenciaTecnica    AsignacionAsistenciaTecnica  @relation(fields: [asignacionAsistenciaTecnicaId], references: [id], onDelete: Restrict, map: "DetalleLiquidacionAT_asignacion_fk")
 
-  @@unique([liquidacionId, asignacionAsistenteId])
+  @@unique([liquidacionAsistenciaTecnicaId, asignacionAsistenciaTecnicaId], map: "DetalleLiquidacionAT_liquidacion_asignacion_key")
 }
 
 model Incidencia {
@@ -556,7 +563,7 @@ model Authenticator {
 
 enum RolUsuario {
   ADMINISTRACION
-  ASISTENTE
+  ASISTENTE_TECNICO
   DOCENTE
 }
 
@@ -612,26 +619,26 @@ enum TipoArchivoReunion {
   OTRO
 }
 
-enum EstadoInteres {
+enum EstadoPostulacionAsistenciaTecnica {
   ME_INTERESA
   NO_ME_INTERESA
   RETIRADO
 }
 
-enum EstadoAsignacion {
+enum EstadoAsignacionAsistenciaTecnica {
   ASIGNADO
   ACEPTADO
   RECHAZADO
   CANCELADO
 }
 
-enum TipoDisponibilidad {
+enum TipoDisponibilidadAsistenteTecnico {
   DISPONIBLE
   NO_DISPONIBLE
   PREFERENTE
 }
 
-enum EstadoLiquidacion {
+enum EstadoLiquidacionAsistenciaTecnica {
   BORRADOR
   CERRADA
   APROBADA_ADMINISTRACION

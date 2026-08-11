@@ -101,7 +101,7 @@ export async function provisionarEventosMeet(
             calendarId: hostEmail,
             conferenceData,
             cohostEmails: cohostEmailsDeInstancia(evento.instancia),
-            requiereAsistencia: evento.instancia.requiereAsistencia,
+            requiereAsistenciaTecnica: evento.instancia.requiereAsistenciaTecnica,
           });
           conferenceData ??= extraerConferenceData(result.payload);
           await dependencies.db.eventoProveedor.update({

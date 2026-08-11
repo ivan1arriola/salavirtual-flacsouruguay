@@ -9,7 +9,7 @@ export async function crearSlugAsistenteDisponible(
   userId: string
 ): Promise<string> {
   const base = assistantSlug(name);
-  const existing = await db.asistente.findUnique({
+  const existing = await db.asistenteTecnico.findUnique({
     where: { slug: base },
     select: { usuarioId: true }
   });

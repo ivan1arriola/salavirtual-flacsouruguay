@@ -17,8 +17,8 @@ type Encounter = Readonly<{
   inicio: string;
   fin: string;
   estado: string;
-  requiereAsistencia: boolean;
-  asistente: string | null;
+  requiereAsistenciaTecnica: boolean;
+  asistenteTecnico: string | null;
   postulantes: number;
   host: string;
   codigoMeet: string | null;
@@ -62,7 +62,7 @@ export function MeetingDetailManager({
       body: JSON.stringify({
         inicio: localMontevideoToIso(formData, "horaInicio"),
         fin: localMontevideoToIso(formData, "horaFin"),
-        requiereAsistencia: formData.get("requiereAsistencia") === "on",
+        requiereAsistenciaTecnica: formData.get("requiereAsistenciaTecnica") === "on",
         requiereGrabacion: formData.get("requiereGrabacion") === "on"
       })
     });
@@ -82,7 +82,7 @@ export function MeetingDetailManager({
   function changeAssistance(id: string, value: boolean) {
     return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
-      body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistencia: value })
+      body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: value })
     });
   }
 
@@ -149,7 +149,7 @@ export function MeetingDetailManager({
           <label className="field"><span>Fecha</span><input name="fecha" type="date" required /></label>
           <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" required /></label>
           <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" required /></label>
-          <label className="check-field encounter-add-check"><input name="requiereAsistencia" type="checkbox" /><span>Asistencia</span></label>
+          <label className="check-field encounter-add-check"><input name="requiereAsistenciaTecnica" type="checkbox" /><span>Asistencia técnica</span></label>
           <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
         </form>
@@ -203,14 +203,14 @@ export function MeetingDetailManager({
             </form>
             <div className="encounter-assistance">
               <span>
-                <strong>{meeting.requiereAsistencia ? "Asistencia solicitada" : "Sin asistencia"}</strong>
-                <small>{meeting.asistente ? `Asignada a ${meeting.asistente}` : meeting.requiereAsistencia ? `${meeting.postulantes} postulaciones` : ""}</small>
+                <strong>{meeting.requiereAsistenciaTecnica ? "Asistencia técnica solicitada" : "Sin asistencia técnica"}</strong>
+                <small>{meeting.asistenteTecnico ? `Asignada a ${meeting.asistenteTecnico}` : meeting.requiereAsistenciaTecnica ? `${meeting.postulantes} postulaciones` : ""}</small>
               </span>
               <div className="encounter-actions">
-                {meeting.requiereAsistencia ? (
-                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia</button>
+                {meeting.requiereAsistenciaTecnica ? (
+                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia técnica</button>
                 ) : (
-                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
+                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia técnica</button>
                 )}
                 {meeting.joinUrl ? <MeetLinkActions openClassName="secondary-action" url={meeting.joinUrl} /> : null}
                 <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar todo para borrar esta reunión" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>

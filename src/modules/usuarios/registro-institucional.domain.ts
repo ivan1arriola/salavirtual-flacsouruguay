@@ -8,7 +8,7 @@ export const completarRegistroInstitucionalSchema = z.object({
 });
 
 export function requiereCompletarRegistro(input: Readonly<{
-  rol: "ADMINISTRACION" | "ASISTENTE" | "DOCENTE";
+  rol: "ADMINISTRACION" | "ASISTENTE_TECNICO" | "DOCENTE";
   programasActivos: number;
 }>): boolean {
   return input.rol === "DOCENTE" && input.programasActivos === 0;

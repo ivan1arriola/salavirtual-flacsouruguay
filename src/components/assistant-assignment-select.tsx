@@ -34,7 +34,7 @@ export function AssistantAssignmentSelect({
       const response = await fetch("/api/v1/asistencia/asignaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteId: assistantId })
+        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -106,7 +106,7 @@ export function AssistantAssignmentSelect({
         disabled={pending}
         onChange={(event) => assign(event.target.value)}
       >
-        <option value="">{applicants.length > 0 ? "Asignar asistente" : "Asignar manualmente"}</option>
+        <option value="">{applicants.length > 0 ? "Asignar asistente técnico" : "Asignar manualmente"}</option>
         {assistants.map((assistant) => (
           <option key={assistant.id} value={assistant.id}>
             {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}

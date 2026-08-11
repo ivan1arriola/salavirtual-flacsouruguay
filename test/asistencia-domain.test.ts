@@ -13,10 +13,10 @@ import {
 
 describe("flujo funcional de asistencia", () => {
   it("reserva postulaciones a Asistente y asignaciones a Administracion", () => {
-    expect(puedeGestionarPostulacion("ASISTENTE")).toBe(true);
+    expect(puedeGestionarPostulacion("ASISTENTE_TECNICO")).toBe(true);
     expect(puedeGestionarPostulacion("DOCENTE")).toBe(false);
     expect(puedeAsignarAsistencia("ADMINISTRACION")).toBe(true);
-    expect(puedeAsignarAsistencia("ASISTENTE")).toBe(false);
+    expect(puedeAsignarAsistencia("ASISTENTE_TECNICO")).toBe(false);
   });
 
   it("deriva el estado sin mutar la entrada", () => {
@@ -34,9 +34,9 @@ describe("flujo funcional de asistencia", () => {
     expect(
       asignacionAsistenciaSchema.parse({
         instanciaSalaId: "meeting",
-        asistenteId: "assistant"
+        asistenteTecnicoId: "assistant"
       })
-    ).toEqual({ instanciaSalaId: "meeting", asistenteId: "assistant" });
+    ).toEqual({ instanciaSalaId: "meeting", asistenteTecnicoId: "assistant" });
     expect(notificacionAsistenciaSchema.parse({ instanciaSalaId: "meeting" }))
       .toEqual({ instanciaSalaId: "meeting" });
     expect(notificacionAsistenciaSchema.safeParse({ instanciaSalaId: "" }).success).toBe(false);

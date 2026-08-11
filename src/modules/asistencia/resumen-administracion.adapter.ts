@@ -11,15 +11,15 @@ export async function obtenerResumenAsistentes(
   periodo: PeriodoMes
 ): Promise<readonly FilaResumenAsistente[]> {
   const [assistants, assignments] = await Promise.all([
-    db.asistente.findMany({
+    db.asistenteTecnico.findMany({
       orderBy: { usuario: { nombres: "asc" } },
       include: { usuario: true }
     }),
-    db.asignacionAsistente.findMany({
+    db.asignacionAsistenciaTecnica.findMany({
       where: {
         estado: { in: ["ASIGNADO", "ACEPTADO"] },
         instancia: {
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
           solicitud: { estado: { not: "CANCELADA" } },
           inicioProgramadoAt: {
@@ -51,7 +51,7 @@ export async function obtenerResumenAsistentes(
       );
       const rate = assignment.tarifaHoraAplicada?.toNumber() ?? null;
       return {
-        asistenteId: assignment.asistenteId,
+        asistenteTecnicoId: assignment.asistenteTecnicoId,
         modalidad: meeting.solicitud.modalidad,
         minutos: minutes,
         monto: calcularMonto(assignment.montoConfirmado?.toNumber() ?? null, rate, minutes),

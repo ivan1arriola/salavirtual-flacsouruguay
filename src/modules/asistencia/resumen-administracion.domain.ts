@@ -10,7 +10,7 @@ export type AsistenteResumenBase = Readonly<{
 }>;
 
 export type AsignacionResumenAdministracion = Readonly<{
-  asistenteId: string;
+  asistenteTecnicoId: string;
   modalidad: "VIRTUAL" | "HIBRIDA";
   minutos: number;
   monto: number | null;
@@ -54,7 +54,7 @@ export function resumirAsignacionesPorAsistente(
   asignaciones: readonly AsignacionResumenAdministracion[]
 ): readonly FilaResumenAsistente[] {
   return asistentes.map((asistente) => {
-    const propias = asignaciones.filter(({ asistenteId }) => asistenteId === asistente.id);
+    const propias = asignaciones.filter(({ asistenteTecnicoId }) => asistenteTecnicoId === asistente.id);
     return {
       ...asistente,
       reuniones: propias.length,

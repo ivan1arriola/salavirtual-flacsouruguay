@@ -77,7 +77,7 @@ export async function cargarMapeos() {
         id: true,
         legacyZoomUserId: true,
         docente: { select: { id: true } },
-        asistente: { select: { id: true } }
+        asistenteTecnico: { select: { id: true } }
       }
     }),
     target.programa.findMany({

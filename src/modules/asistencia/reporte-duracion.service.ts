@@ -8,13 +8,13 @@ export async function reportarDuracionAsistencia(
   rawInput: unknown,
   ahora = new Date()
 ) {
-  if (!actor.activo || actor.rol !== "ASISTENTE") {
-    throw new Error("Solo Asistente puede informar su duración.");
+  if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
+    throw new Error("Solo un asistente técnico puede informar la duración.");
   }
   const input = reporteDuracionSchema.parse(rawInput);
 
   return db.$transaction(async (tx) => {
-    const asignacion = await tx.asignacionAsistente.findUnique({
+    const asignacion = await tx.asignacionAsistenciaTecnica.findUnique({
       where: { id: input.asignacionId },
       select: {
         id: true,
@@ -24,7 +24,7 @@ export async function reportarDuracionAsistencia(
         minutosConfirmados: true,
         montoConfirmado: true,
         instanciaSalaId: true,
-        asistente: { select: { usuarioId: true } },
+        asistenteTecnico: { select: { usuarioId: true } },
         instancia: {
           select: {
             estado: true,
@@ -39,7 +39,7 @@ export async function reportarDuracionAsistencia(
     });
     if (
       !asignacion ||
-      asignacion.asistente.usuarioId !== actor.id ||
+      asignacion.asistenteTecnico.usuarioId !== actor.id ||
       !["ASIGNADO", "ACEPTADO"].includes(asignacion.estado)
     ) {
       throw new Error("La reunión no está asignada a este usuario.");
@@ -67,7 +67,7 @@ export async function reportarDuracionAsistencia(
       },
       select: { id: true, inicioRealAt: true, finRealAt: true, minutosReportados: true, comentariosReporte: true, estado: true }
     });
-    await tx.asignacionAsistente.update({
+    await tx.asignacionAsistenciaTecnica.update({
       where: { id: asignacion.id },
       data: { minutosConfirmados: minutos, montoConfirmado: monto }
     });
@@ -88,7 +88,7 @@ export async function reportarDuracionAsistencia(
         accion: asignacion.minutosConfirmados === null
           ? "ASISTENCIA_FINALIZADA"
           : "CIERRE_ASISTENCIA_AJUSTADO",
-        entidadTipo: "AsignacionAsistente",
+        entidadTipo: "AsignacionAsistenciaTecnica",
         entidadId: asignacion.id,
         valorAnterior: {
           inicioRealAt: asignacion.instancia.inicioRealAt,

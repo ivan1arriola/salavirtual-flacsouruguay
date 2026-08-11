@@ -16,17 +16,17 @@ export default async function AgendaAbiertaPage() {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || !["ASISTENTE", "ADMINISTRACION"].includes(actor.rol)) {
+  if (!actor?.activo || !["ASISTENTE_TECNICO", "ADMINISTRACION"].includes(actor.rol)) {
     redirect("/reuniones");
   }
-  const assistant = actor.rol === "ASISTENTE"
-    ? await db.asistente.findUnique({ where: { usuarioId: actor.id }, select: { id: true } })
+  const assistant = actor.rol === "ASISTENTE_TECNICO"
+    ? await db.asistenteTecnico.findUnique({ where: { usuarioId: actor.id }, select: { id: true } })
     : null;
-  if (actor.rol === "ASISTENTE" && !assistant) redirect("/");
+  if (actor.rol === "ASISTENTE_TECNICO" && !assistant) redirect("/");
 
   const meetings = await db.instanciaSala.findMany({
     where: {
-      requiereAsistencia: true,
+      requiereAsistenciaTecnica: true,
       finProgramadoAt: { gte: new Date() },
       estado: "PROGRAMADA",
       asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
@@ -48,22 +48,22 @@ export default async function AgendaAbiertaPage() {
   });
   const meetingIds = meetings.map(({ id }) => id);
   const [interests, assistantOptions] = await Promise.all([
-    actor.rol === "ASISTENTE"
-      ? db.interesAsistenteEvento.findMany({
-          where: { instanciaSalaId: { in: meetingIds }, asistenteId: assistant?.id },
+    actor.rol === "ASISTENTE_TECNICO"
+      ? db.postulacionAsistenciaTecnica.findMany({
+          where: { instanciaSalaId: { in: meetingIds }, asistenteTecnicoId: assistant?.id },
           select: { instanciaSalaId: true, estado: true }
         })
-      : db.interesAsistenteEvento.findMany({
+      : db.postulacionAsistenciaTecnica.findMany({
           where: { instanciaSalaId: { in: meetingIds }, estado: "ME_INTERESA" },
           select: {
             instanciaSalaId: true,
-            asistente: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
+            asistenteTecnico: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
           },
           orderBy: { createdAt: "asc" }
         }),
     actor.rol === "ADMINISTRACION"
-      ? db.asistente.findMany({
-          where: { usuario: { activo: true, rol: "ASISTENTE" } },
+      ? db.asistenteTecnico.findMany({
+          where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
           orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
           select: { id: true, usuario: { select: { nombres: true, apellidos: true } } }
         })
@@ -78,9 +78,9 @@ export default async function AgendaAbiertaPage() {
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia</p>
+          <p className="page-eyebrow">Asistencia técnica</p>
           <h1>Agenda abierta</h1>
-          <p>{meetings.length} reuniones sin Asistente asignado.</p>
+          <p>{meetings.length} reuniones sin asistente técnico asignado.</p>
         </div>
         <Hand size={28} color="var(--brand)" aria-hidden="true" />
       </header>
@@ -91,12 +91,12 @@ export default async function AgendaAbiertaPage() {
         ) : (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Sala</th><th>{actor.rol === "ASISTENTE" ? "Postulación" : "Postulantes"}</th></tr></thead>
+              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Sala</th><th>{actor.rol === "ASISTENTE_TECNICO" ? "Postulación" : "Postulantes"}</th></tr></thead>
               <tbody>
                 {meetings.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-                  if (actor.rol === "ASISTENTE") {
+                  if (actor.rol === "ASISTENTE_TECNICO") {
                     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
                     const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
                     return (
@@ -110,12 +110,12 @@ export default async function AgendaAbiertaPage() {
                     );
                   }
                   const applicants = interests
-                    .filter((item) => item.instanciaSalaId === meeting.id && "asistente" in item)
+                    .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {
-                      if (!("asistente" in item)) return null;
+                      if (!("asistenteTecnico" in item)) return null;
                       return {
-                        id: item.asistente.id,
-                        name: [item.asistente.usuario.nombres, item.asistente.usuario.apellidos].filter(Boolean).join(" ")
+                        id: item.asistenteTecnico.id,
+                        name: [item.asistenteTecnico.usuario.nombres, item.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                       };
                     })
                     .filter((item): item is { id: string; name: string } => Boolean(item));

@@ -15,8 +15,8 @@ describe("migracion funcional de roles", () => {
   );
 
   it("unifica los roles anteriores de asistencia", () => {
-    expect(buscarRolAnterior("SOPORTE_ZOOM")).toBe("ASISTENTE");
-    expect(buscarRolAnterior("ASISTENTE_ZOOM")).toBe("ASISTENTE");
+    expect(buscarRolAnterior("SOPORTE_ZOOM")).toBe("ASISTENTE_TECNICO");
+    expect(buscarRolAnterior("ASISTENTE_ZOOM")).toBe("ASISTENTE_TECNICO");
   });
 
   it("reserva la administracion al rol neutral", () => {
@@ -25,7 +25,7 @@ describe("migracion funcional de roles", () => {
   });
 
   it("estrecha valores externos a roles conocidos", () => {
-    expect(esRolUsuario("ASISTENTE")).toBe(true);
+    expect(esRolUsuario("ASISTENTE_TECNICO")).toBe(true);
     expect(esRolUsuario("CONTADURIA")).toBe(false);
     expect(esRolUsuario({ rol: "DOCENTE" })).toBe(false);
   });

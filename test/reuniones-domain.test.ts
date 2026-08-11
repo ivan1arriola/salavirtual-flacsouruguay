@@ -106,7 +106,7 @@ describe("dias derivados de reuniones", () => {
       crearReunionesSchema.parse({
         titulo: "Clase",
         docenteProgramaId: "dp",
-        requiereAsistencia: true,
+        requiereAsistenciaTecnica: true,
         modalidad: "VIRTUAL",
         timezone: "America/Montevideo",
         instancias: [
@@ -115,7 +115,7 @@ describe("dias derivados de reuniones", () => {
             fin: "2026-08-03T14:00:00Z"
           }
         ]
-      }).asistenteId
+      }).asistenteTecnicoId
     ).toBeUndefined();
   });
 
@@ -186,12 +186,12 @@ describe("dias derivados de reuniones", () => {
   it("reserva el formulario de creacion a Administracion y Docente", () => {
     expect(puedeAbrirCreacionReuniones("ADMINISTRACION")).toBe(true);
     expect(puedeAbrirCreacionReuniones("DOCENTE")).toBe(true);
-    expect(puedeAbrirCreacionReuniones("ASISTENTE")).toBe(false);
+    expect(puedeAbrirCreacionReuniones("ASISTENTE_TECNICO")).toBe(false);
   });
 
   it("impide que Asistente vea la agenda completa", () => {
     expect(puedeVerAgendaCompleta("ADMINISTRACION")).toBe(true);
     expect(puedeVerAgendaCompleta("DOCENTE")).toBe(true);
-    expect(puedeVerAgendaCompleta("ASISTENTE")).toBe(false);
+    expect(puedeVerAgendaCompleta("ASISTENTE_TECNICO")).toBe(false);
   });
 });

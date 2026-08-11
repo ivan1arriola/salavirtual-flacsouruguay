@@ -12,7 +12,7 @@ export default async function MiHistoricoPage() {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo || actor.rol !== "ASISTENTE") redirect("/");
+  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
 
   const meetings = await obtenerAsistenciasPersonales(db, actor.id, "HISTORICO");
   const periods = agruparPorMes(meetings);
@@ -20,7 +20,7 @@ export default async function MiHistoricoPage() {
   return (
     <>
       <header className="page-header">
-        <div><p className="page-eyebrow">Asistencia</p><h1>Mi histórico</h1><p>Horas e importes personales de meses anteriores.</p></div>
+        <div><p className="page-eyebrow">Asistencia técnica</p><h1>Mi histórico</h1><p>Horas e importes personales de meses anteriores.</p></div>
         <History size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 

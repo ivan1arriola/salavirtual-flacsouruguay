@@ -127,7 +127,7 @@ type GoogleAccountWithUser = Readonly<{
   emailVerificadoAt: Date | null;
   user: {
     id: string;
-    rol: "ADMINISTRACION" | "ASISTENTE" | "DOCENTE";
+    rol: "ADMINISTRACION" | "ASISTENTE_TECNICO" | "DOCENTE";
     debeCambiarPassword: boolean;
     activo: boolean;
     fusionadoEnId: string | null;

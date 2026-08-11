@@ -7,7 +7,7 @@ import type { RolUsuario } from "@/src/modules/usuarios/roles";
 
 const ROLE_OPTIONS: ReadonlyArray<Readonly<{ value: RolUsuario; label: string }>> = [
   { value: "DOCENTE", label: "Docente" },
-  { value: "ASISTENTE", label: "Asistente" },
+  { value: "ASISTENTE_TECNICO", label: "Asistente técnico" },
   { value: "ADMINISTRACION", label: "Administracion" }
 ];
 

@@ -16,16 +16,16 @@ export async function obtenerDashboardAsistente(
   usuarioId: string,
   ahora = new Date()
 ) {
-  const assistant = await db.asistente.findUnique({
+  const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
     select: { id: true }
   });
   if (!assistant) return null;
 
   const [upcomingAssignments, upcomingCount, openMeetings, interests, currentMeetings, history] = await Promise.all([
-    db.asignacionAsistente.findMany({
+    db.asignacionAsistenciaTecnica.findMany({
       where: {
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: { finProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
       },
@@ -40,24 +40,24 @@ export async function obtenerDashboardAsistente(
         }
       }
     }),
-    db.asignacionAsistente.count({
+    db.asignacionAsistenciaTecnica.count({
       where: {
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: { finProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
       }
     }),
     db.instanciaSala.findMany({
       where: {
-        requiereAsistencia: true,
+        requiereAsistenciaTecnica: true,
         finProgramadoAt: { gte: ahora },
         estado: "PROGRAMADA",
         asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
       },
       select: { id: true }
     }),
-    db.interesAsistenteEvento.findMany({
-      where: { asistenteId: assistant.id, instancia: { finProgramadoAt: { gte: ahora } } },
+    db.postulacionAsistenciaTecnica.findMany({
+      where: { asistenteTecnicoId: assistant.id, instancia: { finProgramadoAt: { gte: ahora } } },
       select: { instanciaSalaId: true, estado: true }
     }),
     obtenerAsistenciasPersonales(db, usuarioId, "MES_ACTUAL", ahora),

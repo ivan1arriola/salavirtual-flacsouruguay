@@ -14,12 +14,12 @@ describe("alcance funcional de grabaciones", () => {
   });
 
   it("limita asistentes a sus asignaciones", () => {
-    expect(obtenerAlcanceGrabaciones("ASISTENTE")).toBe("ASIGNACIONES_ASISTENTE");
+    expect(obtenerAlcanceGrabaciones("ASISTENTE_TECNICO")).toBe("ASIGNACIONES_ASISTENTE");
   });
 
   it("permite sincronizar a Administracion y docentes", () => {
     expect(puedeSincronizarGrabaciones("ADMINISTRACION")).toBe(true);
     expect(puedeSincronizarGrabaciones("DOCENTE")).toBe(true);
-    expect(puedeSincronizarGrabaciones("ASISTENTE")).toBe(false);
+    expect(puedeSincronizarGrabaciones("ASISTENTE_TECNICO")).toBe(false);
   });
 });

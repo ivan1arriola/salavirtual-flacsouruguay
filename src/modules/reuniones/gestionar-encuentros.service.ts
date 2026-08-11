@@ -24,7 +24,7 @@ export type GestionEncuentrosDependencies = Readonly<{
   configurarEspacio: (
     credentials: GoogleCalendarCredentials,
     codigoReunion: string,
-    settings: Readonly<{ requiereAsistencia?: boolean }>
+    settings: Readonly<{ requiereAsistenciaTecnica?: boolean }>
   ) => Promise<void>;
 }>;
 
@@ -112,7 +112,7 @@ export async function agregarEncuentro(
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
         timezone: request.timezone,
-        requiereAsistencia: input.requiereAsistencia,
+        requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
         requiereGrabacion: input.requiereGrabacion
       }
     });
@@ -137,7 +137,7 @@ export async function agregarEncuentro(
     await auditar(tx, actor.id, "ENCUENTRO_AGREGADO", meeting.id, null, {
       inicio: input.inicio.toISOString(),
       fin: input.fin.toISOString(),
-      requiereAsistencia: input.requiereAsistencia,
+      requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
       requiereGrabacion: input.requiereGrabacion
     });
     return { instanciaId: meeting.id, eventoProveedorId: event.id };
@@ -229,24 +229,24 @@ export async function actualizarEncuentro(
   await dependencies.db.$transaction(async (tx) => {
     await tx.instanciaSala.update({
       where: { id: meeting.id },
-      data: { requiereAsistencia: input.requiereAsistencia }
+      data: { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica }
     });
-    if (!input.requiereAsistencia) {
+    if (!input.requiereAsistenciaTecnica) {
       await Promise.all([
-        tx.asignacionAsistente.updateMany({
+        tx.asignacionAsistenciaTecnica.updateMany({
           where: { instanciaSalaId: meeting.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           data: { estado: "CANCELADO" }
         }),
-        tx.interesAsistenteEvento.updateMany({
+        tx.postulacionAsistenciaTecnica.updateMany({
           where: { instanciaSalaId: meeting.id, estado: "ME_INTERESA" },
           data: { estado: "RETIRADO" }
         })
       ]);
     }
     await recalcularSolicitud(tx, solicitudId);
-    await auditar(tx, actor.id, input.requiereAsistencia ? "ASISTENCIA_SOLICITADA" : "ASISTENCIA_CANCELADA", meeting.id, {
-      requiereAsistencia: meeting.requiereAsistencia
-    }, { requiereAsistencia: input.requiereAsistencia });
+    await auditar(tx, actor.id, input.requiereAsistenciaTecnica ? "ASISTENCIA_SOLICITADA" : "ASISTENCIA_CANCELADA", meeting.id, {
+      requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica
+    }, { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica });
   });
 
   if (!event?.codigoReunion) return { warning: null };
@@ -257,13 +257,13 @@ export async function actualizarEncuentro(
       event.cuentaProveedor?.emailOrganizador
     );
     await dependencies.configurarEspacio(credentials, event.codigoReunion, {
-      requiereAsistencia: input.requiereAsistencia
+      requiereAsistenciaTecnica: input.requiereAsistenciaTecnica
     });
     return { warning: null };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Error desconocido de Google Workspace.";
     return {
-      warning: `La asistencia se actualizo en la app, pero Google Meet no pudo sincronizarse: ${detail}`
+      warning: `La asistencia técnica se actualizó en la app, pero Google Meet no pudo sincronizarse: ${detail}`
     };
   }
 }
@@ -319,7 +319,7 @@ export async function eliminarReunionCompleta(
       instancias: {
         include: {
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-          liquidacionDetalles: { select: { id: true } }
+          detallesLiquidacion: { select: { id: true } }
         }
       }
     }
@@ -331,7 +331,7 @@ export async function eliminarReunionCompleta(
   )) {
     throw new Error("Solo se puede eliminar una reunión si todos sus encuentros son futuros y programados.");
   }
-  if (request.instancias.some(({ liquidacionDetalles }) => liquidacionDetalles.length > 0)) {
+  if (request.instancias.some(({ detallesLiquidacion }) => detallesLiquidacion.length > 0)) {
     throw new Error("La reunión tiene liquidaciones asociadas y no se puede eliminar.");
   }
 

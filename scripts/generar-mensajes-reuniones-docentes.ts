@@ -30,7 +30,7 @@ async function main(): Promise<void> {
       id: true,
       titulo: true,
       modalidad: true,
-      requiereAsistencia: true,
+      requiereAsistenciaTecnica: true,
       requiereGrabacion: true,
       docentePrograma: {
         select: {
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       const meet = request.instancias[0]?.eventosProveedor[0];
       const cuenta = meet?.cuentaProveedor;
       const observaciones = [
-        request.requiereAsistencia ? "requiere asistencia" : null,
+        request.requiereAsistenciaTecnica ? "requiere asistencia" : null,
         request.requiereGrabacion ? "requiere grabación" : null
       ].filter((item): item is string => Boolean(item));
 

@@ -8,7 +8,7 @@ describe("registro institucional", () => {
   it("obliga a un docente sin programas a completar el registro", () => {
     expect(requiereCompletarRegistro({ rol: "DOCENTE", programasActivos: 0 })).toBe(true);
     expect(requiereCompletarRegistro({ rol: "DOCENTE", programasActivos: 1 })).toBe(false);
-    expect(requiereCompletarRegistro({ rol: "ASISTENTE", programasActivos: 0 })).toBe(false);
+    expect(requiereCompletarRegistro({ rol: "ASISTENTE_TECNICO", programasActivos: 0 })).toBe(false);
   });
 
   it("exige elegir un programa o crear uno, pero no ambas opciones", () => {

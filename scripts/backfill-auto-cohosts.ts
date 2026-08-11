@@ -37,7 +37,7 @@ async function main(): Promise<void> {
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
         select: {
-          asistente: {
+          asistenteTecnico: {
             select: {
               usuario: { select: { cuentasGoogle: { select: { id: true } } } }
             }
@@ -52,8 +52,8 @@ async function main(): Promise<void> {
   const plan = meetings.flatMap((meeting) => {
     const expected = new Set([
       ...meeting.solicitud.docentePrograma.docente.usuario.cuentasGoogle.map(({ id }) => id),
-      ...meeting.asignaciones.flatMap(({ asistente }) =>
-        asistente.usuario.cuentasGoogle.map(({ id }) => id)
+      ...meeting.asignaciones.flatMap(({ asistenteTecnico }) =>
+        asistenteTecnico.usuario.cuentasGoogle.map(({ id }) => id)
       )
     ]);
     const current = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));

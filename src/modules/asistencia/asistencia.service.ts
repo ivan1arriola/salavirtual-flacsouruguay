@@ -36,23 +36,23 @@ export async function actualizarPostulacionAsistencia(
   rawInput: unknown
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
-    throw new Error("Solo Asistente puede gestionar postulaciones.");
+    throw new Error("Solo un asistente técnico puede gestionar postulaciones.");
   }
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
   const result = await db.$transaction(async (tx) => {
-    const assistant = await tx.asistente.findUnique({
+    const assistant = await tx.asistenteTecnico.findUnique({
       where: { usuarioId: actor.id },
       select: { id: true, usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } } }
     });
-    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
-      throw new Error("No existe un perfil de Asistente activo para esta sesión.");
+    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
+      throw new Error("No existe un perfil de asistente técnico activo para esta sesión.");
     }
     const meeting = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaSalaId },
       select: {
         id: true,
-        requiereAsistencia: true,
+        requiereAsistenciaTecnica: true,
         finProgramadoAt: true,
         estado: true,
         solicitud: { select: { titulo: true } },
@@ -64,7 +64,7 @@ export async function actualizarPostulacionAsistencia(
       }
     });
     if (
-      !meeting?.requiereAsistencia ||
+      !meeting?.requiereAsistenciaTecnica ||
       meeting.estado !== "PROGRAMADA" ||
       meeting.finProgramadoAt <= new Date()
     ) {
@@ -78,17 +78,17 @@ export async function actualizarPostulacionAsistencia(
     const assistantName = [
       assistant.usuario.nombres,
       assistant.usuario.apellidos
-    ].filter(Boolean).join(" ") || "Un asistente";
-    const interest = await tx.interesAsistenteEvento.upsert({
+    ].filter(Boolean).join(" ") || "Un asistente técnico";
+    const interest = await tx.postulacionAsistenciaTecnica.upsert({
       where: {
-        instanciaSalaId_asistenteId: {
+        instanciaSalaId_asistenteTecnicoId: {
           instanciaSalaId: meeting.id,
-          asistenteId: assistant.id
+          asistenteTecnicoId: assistant.id
         }
       },
       create: {
         instanciaSalaId: meeting.id,
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         estado,
         comentario: input.comentario
       },
@@ -101,7 +101,7 @@ export async function actualizarPostulacionAsistencia(
         accion: estado === "ME_INTERESA" ? "ASISTENTE_POSTULADO" : "POSTULACION_RETIRADA",
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
-        valorNuevo: { asistenteId: assistant.id, estado }
+        valorNuevo: { asistenteTecnicoId: assistant.id, estado }
       }
     });
     const admins = await tx.usuario.findMany({
@@ -117,13 +117,13 @@ export async function actualizarPostulacionAsistencia(
         recipients: admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
         message: {
           tipo: notificationType,
-          titulo: estado === "ME_INTERESA" ? "Nueva postulacion de asistencia" : "Postulacion retirada",
+          titulo: estado === "ME_INTERESA" ? "Nueva postulación de asistencia técnica" : "Postulación retirada",
           cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
           href: "/cobertura-asistencias?estado=pendientes",
-          metadata: { instanciaSalaId: meeting.id, asistenteId: assistant.id, estado },
+          metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
           emailSubject: estado === "ME_INTERESA"
-            ? "Nueva postulacion de asistencia"
-            : "Postulacion de asistencia retirada"
+            ? "Nueva postulación de asistencia técnica"
+            : "Postulación de asistencia técnica retirada"
         }
       }
     };
@@ -138,7 +138,7 @@ export async function asignarAsistentePostulado(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administracion puede asignar asistentes.");
+    throw new Error("Solo Administración puede asignar asistentes técnicos.");
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
@@ -152,7 +152,7 @@ export async function asignarAsistentePostulado(
         where: { id: input.instanciaSalaId },
         select: {
           id: true,
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           finProgramadoAt: true,
           estado: true,
           inicioProgramadoAt: true,
@@ -177,9 +177,9 @@ export async function asignarAsistentePostulado(
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
             select: {
               id: true,
-              asistenteId: true,
+              asistenteTecnicoId: true,
               estado: true,
-              asistente: {
+              asistenteTecnico: {
                 select: {
                   usuario: {
                     select: {
@@ -197,8 +197,8 @@ export async function asignarAsistentePostulado(
           }
         }
       }),
-      tx.asistente.findUnique({
-        where: { id: input.asistenteId },
+      tx.asistenteTecnico.findUnique({
+        where: { id: input.asistenteTecnicoId },
         select: {
           id: true,
           usuario: {
@@ -219,20 +219,20 @@ export async function asignarAsistentePostulado(
       throw new Error("La sesión de Administración ya no es válida.");
     }
     if (
-      !meeting?.requiereAsistencia ||
+      !meeting?.requiereAsistenciaTecnica ||
       meeting.estado !== "PROGRAMADA" ||
       meeting.finProgramadoAt <= new Date()
     ) {
       throw new Error("La reunión no admite asignaciones.");
     }
-    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE") {
-      throw new Error("El perfil seleccionado no corresponde a un Asistente activo.");
+    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
+      throw new Error("El perfil seleccionado no corresponde a un asistente técnico activo.");
     }
     await bloquearAgendaAsistente(tx, assistant.id);
     const separacionMs = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
-    const asignacionesCercanas = await tx.asignacionAsistente.findMany({
+    const asignacionesCercanas = await tx.asignacionAsistenciaTecnica.findMany({
       where: {
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         instanciaSalaId: { not: meeting.id },
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: {
@@ -270,15 +270,15 @@ export async function asignarAsistentePostulado(
       meeting.solicitud.modalidad
     );
     const previousAssignment = meeting.asignaciones[0] ?? null;
-    if (previousAssignment?.asistenteId === assistant.id) {
+    if (previousAssignment?.asistenteTecnicoId === assistant.id) {
       throw new Error("La persona seleccionada ya está asignada a la reunión.");
     }
     if (previousAssignment) {
-      await tx.asignacionAsistente.update({
+      await tx.asignacionAsistenciaTecnica.update({
         where: { id: previousAssignment.id },
         data: { estado: "CANCELADO" }
       });
-      const previousGoogleIds = previousAssignment.asistente.usuario.cuentasGoogle.map(({ id }) => id);
+      const previousGoogleIds = previousAssignment.asistenteTecnico.usuario.cuentasGoogle.map(({ id }) => id);
       if (previousGoogleIds.length > 0) {
         await tx.cohostReunion.deleteMany({
           where: {
@@ -288,24 +288,24 @@ export async function asignarAsistentePostulado(
         });
       }
     }
-    const assignment = await tx.asignacionAsistente.upsert({
+    const assignment = await tx.asignacionAsistenciaTecnica.upsert({
       where: {
-        instanciaSalaId_asistenteId: {
+        instanciaSalaId_asistenteTecnicoId: {
           instanciaSalaId: meeting.id,
-          asistenteId: assistant.id
+          asistenteTecnicoId: assistant.id
         }
       },
       create: {
         instanciaSalaId: meeting.id,
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         estado: "ASIGNADO",
-        tarifaAsistenciaId: tarifa.id,
+        tarifaAsistenciaTecnicaId: tarifa.id,
         tarifaHoraAplicada: tarifa.valorHora,
         moneda: tarifa.moneda
       },
       update: {
         estado: "ASIGNADO",
-        tarifaAsistenciaId: tarifa.id,
+        tarifaAsistenciaTecnicaId: tarifa.id,
         tarifaHoraAplicada: tarifa.valorHora,
         moneda: tarifa.moneda
       },
@@ -327,22 +327,22 @@ export async function asignarAsistentePostulado(
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
         valorAnterior: previousAssignment
-          ? { asistenteId: previousAssignment.asistenteId, estado: previousAssignment.estado }
+          ? { asistenteTecnicoId: previousAssignment.asistenteTecnicoId, estado: previousAssignment.estado }
           : undefined,
-        valorNuevo: { asistenteId: assistant.id, estado: assignment.estado }
+        valorNuevo: { asistenteTecnicoId: assistant.id, estado: assignment.estado }
       }
     });
     const assignmentMessage = {
       tipo: "ASISTENCIA_ASIGNACION" as const,
-      titulo: "Asistencia asignada",
-      cuerpo: `${meeting.solicitud.titulo} quedo asignada a ${[
+      titulo: "Asistencia técnica asignada",
+      cuerpo: `${meeting.solicitud.titulo} quedó asignada a ${[
         assistant.usuario.nombres,
         assistant.usuario.apellidos
       ].filter(Boolean).join(" ") || "la persona asignada"}.`,
       href: "/mi-agenda",
       metadata: {
         instanciaSalaId: meeting.id,
-        asistenteId: assistant.id,
+        asistenteTecnicoId: assistant.id,
         inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
       }
     };
@@ -350,16 +350,16 @@ export async function asignarAsistentePostulado(
       assignment,
       previousAssistantNotification: previousAssignment ? {
         recipient: {
-          usuarioId: previousAssignment.asistente.usuario.id,
-          email: previousAssignment.asistente.usuario.emailPrincipal
+          usuarioId: previousAssignment.asistenteTecnico.usuario.id,
+          email: previousAssignment.asistenteTecnico.usuario.emailPrincipal
         },
         message: {
           tipo: "ASISTENCIA_ASIGNACION" as const,
-          titulo: "Asistencia reasignada",
+          titulo: "Asistencia técnica reasignada",
           cuerpo: `La cobertura de ${meeting.solicitud.titulo} fue reasignada a otra persona.`,
           href: "/mi-agenda",
           metadata: { instanciaSalaId: meeting.id, estado: "CANCELADO" },
-          emailSubject: "Cambio en una asistencia asignada"
+          emailSubject: "Cambio en una asistencia técnica asignada"
         }
       } : null,
       assistantNotification: {
@@ -370,9 +370,9 @@ export async function asignarAsistentePostulado(
         message: {
           ...assignmentMessage,
           titulo: "Te asignaron una reunion",
-          cuerpo: `${meeting.solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
+          cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
           href: "/mi-agenda",
-          emailSubject: "Te asignaron una asistencia"
+          emailSubject: "Te asignaron una asistencia técnica"
         }
       },
       responsibleNotification: {
@@ -389,7 +389,7 @@ export async function asignarAsistentePostulado(
         message: {
           ...assignmentMessage,
           href: `/reuniones/${meeting.solicitud.id}`,
-          emailSubject: "Asistencia asignada para una reunion"
+          emailSubject: "Asistencia técnica asignada para una reunión"
         }
       }
     };
@@ -422,7 +422,7 @@ export async function renotificarAsistentesDisponibles(
   rawInput: unknown
 ): Promise<number> {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede volver a notificar asistentes.");
+    throw new Error("Solo Administración puede volver a notificar asistentes técnicos.");
   }
   const input = notificacionAsistenciaSchema.parse(rawInput);
   const result = await db.$transaction(async (tx) => {
@@ -432,7 +432,7 @@ export async function renotificarAsistentesDisponibles(
         where: { id: input.instanciaSalaId },
         select: {
           id: true,
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           estado: true,
           finProgramadoAt: true,
           inicioProgramadoAt: true,
@@ -449,16 +449,16 @@ export async function renotificarAsistentesDisponibles(
           }
         }
       }),
-      tx.asistente.findMany({
-        where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE" } },
+      tx.asistenteTecnico.findMany({
+        where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
         select: { usuario: { select: { id: true, emailPrincipal: true } } }
       })
     ]);
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
       throw new Error("La sesión de Administración ya no es válida.");
     }
-    if (!meeting?.requiereAsistencia || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
-      throw new Error("La reunión ya no necesita cobertura.");
+    if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
+      throw new Error("La reunión ya no necesita cobertura de asistencia técnica.");
     }
     if (meeting.asignaciones.length > 0) {
       throw new Error("La reunión ya tiene una persona asignada.");
@@ -476,14 +476,14 @@ export async function renotificarAsistentesDisponibles(
       recipients: assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
       message: {
         tipo: "ASISTENCIA_REQUERIDA" as const,
-        titulo: "Cobertura de asistencia disponible",
-        cuerpo: `${meeting.solicitud.titulo} (${meeting.solicitud.docentePrograma.programa.nombre}) necesita asistencia.`,
+        titulo: "Cobertura de asistencia técnica disponible",
+        cuerpo: `${meeting.solicitud.titulo} (${meeting.solicitud.docentePrograma.programa.nombre}) necesita asistencia técnica.`,
         href: "/agenda-abierta",
         metadata: {
           instanciaSalaId: meeting.id,
           inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
         },
-        emailSubject: "Recordatorio de cobertura disponible"
+        emailSubject: "Recordatorio de cobertura de asistencia técnica disponible"
       }
     };
   });
@@ -496,30 +496,30 @@ export async function actualizarDisponibilidadSemanal(
   actor: SessionActor,
   rawInput: unknown
 ): Promise<void> {
-  if (!actor.activo || actor.rol !== "ASISTENTE") {
-    throw new Error("Solo Asistente puede gestionar su disponibilidad.");
+  if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
+    throw new Error("Solo un asistente técnico puede gestionar su disponibilidad.");
   }
   const input = disponibilidadSemanalSchema.parse(rawInput);
   if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
     throw new Error("Solo puede definirse una franja habitual por día.");
   }
   await db.$transaction(async (tx) => {
-    const assistant = await tx.asistente.findUnique({
+    const assistant = await tx.asistenteTecnico.findUnique({
       where: { usuarioId: actor.id },
       select: { id: true }
     });
-    if (!assistant) throw new Error("No existe un perfil de Asistente para esta sesión.");
-    await tx.asistente.update({
+    if (!assistant) throw new Error("No existe un perfil de asistente técnico para esta sesión.");
+    await tx.asistenteTecnico.update({
       where: { id: assistant.id },
       data: { disponibleGeneral: input.disponibleGeneral }
     });
-    await tx.disponibilidadAsistente.deleteMany({
-      where: { asistenteId: assistant.id, fecha: null }
+    await tx.disponibilidadAsistenteTecnico.deleteMany({
+      where: { asistenteTecnicoId: assistant.id, fecha: null }
     });
     if (input.franjas.length > 0) {
-      await tx.disponibilidadAsistente.createMany({
+      await tx.disponibilidadAsistenteTecnico.createMany({
         data: input.franjas.map((franja) => ({
-          asistenteId: assistant.id,
+          asistenteTecnicoId: assistant.id,
           ...franja,
           fecha: null,
           timezone: "America/Montevideo"
@@ -530,7 +530,7 @@ export async function actualizarDisponibilidadSemanal(
       data: {
         actorUsuarioId: actor.id,
         accion: "DISPONIBILIDAD_ACTUALIZADA",
-        entidadTipo: "Asistente",
+        entidadTipo: "AsistenteTecnico",
         entidadId: assistant.id,
         valorNuevo: {
           disponibleGeneral: input.disponibleGeneral,

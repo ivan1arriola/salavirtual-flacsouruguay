@@ -29,7 +29,7 @@ export const invitarUsuarioSchema = z.object({
 });
 
 export function puedeInvitarUsuarios(actor: Readonly<{
-  rol: "ADMINISTRACION" | "ASISTENTE" | "DOCENTE";
+  rol: "ADMINISTRACION" | "ASISTENTE_TECNICO" | "DOCENTE";
   activo: boolean;
 }>): boolean {
   return actor.activo && actor.rol === "ADMINISTRACION";

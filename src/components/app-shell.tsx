@@ -32,7 +32,7 @@ const primaryNav = [
 const adminNav = [
   { href: "/cobertura-asistencias", label: "Cobertura", icon: Hand },
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
-  { href: "/asistentes", label: "Asistentes", icon: UserRoundCheck },
+  { href: "/asistentes", label: "Asistentes técnicos", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings }
 ] as const;
@@ -54,7 +54,7 @@ export async function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const operationalNav = user.role === "ASISTENTE"
+  const operationalNav = user.role === "ASISTENTE_TECNICO"
     ? assistantNav
     : user.role === "DOCENTE"
       ? [...primaryNav.slice(0, 3), ...teacherNav, ...primaryNav.slice(3), ...profileNav]

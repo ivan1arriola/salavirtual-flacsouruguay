@@ -9,7 +9,7 @@ export const postulacionAsistenciaSchema = z.object({
 
 export const asignacionAsistenciaSchema = z.object({
   instanciaSalaId: z.string().trim().min(1),
-  asistenteId: z.string().trim().min(1)
+  asistenteTecnicoId: z.string().trim().min(1)
 });
 
 export const notificacionAsistenciaSchema = z.object({
@@ -52,7 +52,7 @@ export const reporteDuracionSchema = z.object({
 });
 
 export function puedeGestionarPostulacion(rol: RolUsuario): boolean {
-  return rol === "ASISTENTE";
+  return rol === "ASISTENTE_TECNICO";
 }
 
 export function puedeAsignarAsistencia(rol: RolUsuario): boolean {

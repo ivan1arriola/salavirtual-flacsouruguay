@@ -1,5 +1,5 @@
 export type AssignmentCandidate = Readonly<{
-  asistenteId: string;
+  asistenteTecnicoId: string;
   nombre: string;
   cargaMensualMinutos: number;
   disponible: boolean;

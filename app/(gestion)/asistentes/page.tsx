@@ -23,24 +23,24 @@ export default async function AsistentesPage({
       <header className="page-header">
         <div>
           <p className="page-eyebrow">Administración</p>
-          <h1>Asistentes</h1>
+          <h1>Asistentes técnicos</h1>
           <p>Asignaciones y pagos estimados de {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
         <AssistantPeriodNav period={period} basePath="/asistentes" />
       </header>
 
       <section className="metric-grid" aria-label="Totales del período">
-        <div className="stat"><span>Asistentes activos</span><strong>{totals.asistentes}</strong></div>
+        <div className="stat"><span>Asistentes técnicos activos</span><strong>{totals.asistentes}</strong></div>
         <div className="stat"><span>Reuniones asignadas</span><strong>{totals.reuniones}</strong></div>
         <div className="stat"><span>Horas asignadas</span><strong>{formatMinutes(totals.minutos)}</strong></div>
         <div className={`stat${totals.sinTarifa ? " alert-stat" : ""}`}><span>Pago estimado</span><strong>{formatAmounts(totals.montos)}</strong>{totals.sinTarifa ? <small>{totals.sinTarifa} sin tarifa</small> : null}</div>
       </section>
 
       <section className="content-section assistants-summary-section">
-        <div className="section-heading"><div><h2>Detalle por asistente</h2><p>{assistants.length} personas registradas.</p></div><UsersRound size={23} color="var(--brand)" /></div>
+        <div className="section-heading"><div><h2>Detalle por asistente técnico</h2><p>{assistants.length} personas registradas.</p></div><UsersRound size={23} color="var(--brand)" /></div>
         <div className="table-wrap">
           <table className="data-table assistants-summary-table">
-            <thead><tr><th>Asistente</th><th>Reuniones</th><th>Modalidad</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
+            <thead><tr><th>Asistente técnico</th><th>Reuniones</th><th>Modalidad</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
             <tbody>
               {assistants.map((assistant) => {
                 const detailHref = `/asistentes/${encodeURIComponent(assistant.slug)}?mes=${period.clave}`;
@@ -50,7 +50,7 @@ export default async function AsistentesPage({
                   <td><span>{assistant.virtuales} virtuales</span><small>{assistant.hibridas} híbridas</small></td>
                   <td>{formatMinutes(assistant.minutos)}</td>
                   <td><strong>{formatAmounts(assistant.montos)}</strong>{assistant.sinTarifa ? <small className="missing-rate">{assistant.sinTarifa} sin tarifa</small> : null}</td>
-                  <td><Link className="icon-link" href={detailHref} title="Ver reuniones del asistente"><ChevronRight size={18} /><span className="sr-only">Ver reuniones del asistente</span></Link></td>
+                  <td><Link className="icon-link" href={detailHref} title="Ver reuniones del asistente técnico"><ChevronRight size={18} /><span className="sr-only">Ver reuniones del asistente técnico</span></Link></td>
                 </tr>
               })}
             </tbody>

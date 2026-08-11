@@ -14,14 +14,14 @@ export function CoverageAssistanceActions({
   const [message, setMessage] = useState("");
 
   function cancelAssistance() {
-    if (!window.confirm("La reunión quedará marcada como que no necesita asistencia. ¿Continuar?")) return;
+    if (!window.confirm("La reunión quedará marcada como que no necesita asistencia técnica. ¿Continuar?")) return;
     run(async () => {
       const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros/${meetingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistencia: false })
+        body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false })
       });
-      return parseResponse(response, "La asistencia fue cancelada.");
+      return parseResponse(response, "La asistencia técnica fue cancelada.");
     });
   }
 
@@ -32,7 +32,7 @@ export function CoverageAssistanceActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instanciaSalaId: meetingId })
       });
-      return parseResponse(response, "Los asistentes fueron notificados nuevamente.");
+      return parseResponse(response, "Los asistentes técnicos fueron notificados nuevamente.");
     });
   }
 
@@ -54,7 +54,7 @@ export function CoverageAssistanceActions({
         className="secondary-action coverage-notify-action"
         disabled={pending || covered}
         onClick={renotify}
-        title={covered ? "La reunión ya tiene cobertura" : "Volver a avisar a todos los asistentes disponibles"}
+        title={covered ? "La reunión ya tiene cobertura" : "Volver a avisar a todos los asistentes técnicos disponibles"}
         type="button"
       >
         <BellRing size={16} />{pending ? "Procesando…" : "Volver a notificar"}
@@ -65,7 +65,7 @@ export function CoverageAssistanceActions({
         onClick={cancelAssistance}
         type="button"
       >
-        <UserRoundX size={16} />Cancelar asistencia
+        <UserRoundX size={16} />Cancelar asistencia técnica
       </button>
       {message ? <small className="coverage-action-message" role="status">{message}</small> : null}
     </div>

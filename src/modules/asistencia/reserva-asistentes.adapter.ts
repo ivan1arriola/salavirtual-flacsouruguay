@@ -6,7 +6,7 @@ import type { Prisma } from "@prisma/client";
  */
 export async function bloquearAgendaAsistente(
   tx: Prisma.TransactionClient,
-  asistenteId: string
+  asistenteTecnicoId: string
 ): Promise<void> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:asistente:${asistenteId}`}))`;
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:asistente:${asistenteTecnicoId}`}))`;
 }

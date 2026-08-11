@@ -21,7 +21,7 @@ describe("gestion de roles", () => {
   it("determina el perfil especializado necesario", () => {
     expect(requierePerfilDocente("DOCENTE")).toBe(true);
     expect(requierePerfilDocente("ADMINISTRACION")).toBe(false);
-    expect(requierePerfilAsistente("ASISTENTE")).toBe(true);
+    expect(requierePerfilAsistente("ASISTENTE_TECNICO")).toBe(true);
     expect(requierePerfilAsistente("DOCENTE")).toBe(false);
   });
 });

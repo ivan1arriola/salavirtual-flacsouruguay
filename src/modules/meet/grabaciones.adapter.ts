@@ -90,7 +90,7 @@ function alcanceInstancias(actor: SessionActor): Prisma.InstanciaSalaWhereInput 
   return {
     asignaciones: {
       some: {
-        asistente: { usuarioId: actor.id },
+        asistenteTecnico: { usuarioId: actor.id },
         estado: { in: ["ASIGNADO", "ACEPTADO"] }
       }
     }

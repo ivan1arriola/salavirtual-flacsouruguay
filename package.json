@@ -13,6 +13,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate",
     "db:migrate": "prisma migrate dev",
+    "db:rename-asistencia-tecnica": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/rename-asistencia-tecnica.sql",
     "db:studio": "prisma studio",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",

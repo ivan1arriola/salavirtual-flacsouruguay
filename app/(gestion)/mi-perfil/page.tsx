@@ -38,7 +38,7 @@ export default async function MiPerfilPage({
     include: {
       cuentasGoogle: { orderBy: { email: "asc" } },
       preferenciasNotificacion: true,
-      asistente: { include: { disponibilidades: { where: { fecha: null }, orderBy: { diaSemana: "asc" } } } }
+      asistenteTecnico: { include: { disponibilidades: { where: { fecha: null }, orderBy: { diaSemana: "asc" } } } }
     }
   });
   if (!user) redirect("/acceso");
@@ -123,17 +123,17 @@ export default async function MiPerfilPage({
           </form>
         </section>
 
-        {actor.rol === "ASISTENTE" && user.asistente ? (
+        {actor.rol === "ASISTENTE_TECNICO" && user.asistenteTecnico ? (
           <section className="content-section settings-wide">
             <div className="section-heading"><div><h2>Mi disponibilidad habitual</h2><p>Administración la usa para sugerir coberturas. Las excepciones por fecha tienen prioridad.</p></div></div>
             <form className="profile-form" action={guardarDisponibilidad}>
               <label className="availability-general">
-                <input name="disponibleGeneral" type="checkbox" defaultChecked={user.asistente.disponibleGeneral} />
+                <input name="disponibleGeneral" type="checkbox" defaultChecked={user.asistenteTecnico.disponibleGeneral} />
                 <span>Disponible para recibir asignaciones</span>
               </label>
               <div className="availability-grid">
                 {["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].map((label, diaSemana) => {
-                  const current = user.asistente?.disponibilidades.find((item) => item.diaSemana === diaSemana);
+                  const current = user.asistenteTecnico?.disponibilidades.find((item) => item.diaSemana === diaSemana);
                   return (
                     <div className="availability-row" key={label}>
                       <label><input name={`dia-${diaSemana}:activo`} type="checkbox" defaultChecked={Boolean(current)} /><strong>{label}</strong></label>

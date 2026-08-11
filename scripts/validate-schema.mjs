@@ -1,11 +1,25 @@
 import { readFileSync } from "node:fs";
 
 const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url), "utf8");
-const forbiddenCoreNames = ["CuentaZoom", "EventoZoom", "AsistenteZoom", "SolicitudZoom"];
-const found = forbiddenCoreNames.filter((name) => schema.includes(`model ${name}`));
+const forbiddenModelNames = [
+  "CuentaZoom",
+  "EventoZoom",
+  "AsistenteZoom",
+  "SolicitudZoom",
+  "Asistente",
+  "InteresAsistenteEvento",
+  "AsignacionAsistente",
+  "DisponibilidadAsistente",
+  "TarifaAsistencia",
+  "Liquidacion",
+  "LiquidacionDetalle"
+];
+const found = forbiddenModelNames.filter((name) =>
+  new RegExp(`^model\\s+${name}\\s*\\{`, "m").test(schema)
+);
 
 if (found.length > 0) {
-  console.error(`El schema nuevo no debe reintroducir modelos centrales Zoom: ${found.join(", ")}`);
+  console.error(`El schema conserva modelos anteriores: ${found.join(", ")}`);
   process.exit(1);
 }
 
@@ -17,10 +31,31 @@ for (const expected of [
   "UsuarioEmailAlias",
   "CuentaGoogleFlacso",
   "UsuarioFusion",
-  "DocentePrograma"
+  "DocentePrograma",
+  "AsistenteTecnico",
+  "PostulacionAsistenciaTecnica",
+  "AsignacionAsistenciaTecnica",
+  "DisponibilidadAsistenteTecnico",
+  "TarifaAsistenciaTecnica",
+  "LiquidacionAsistenciaTecnica",
+  "DetalleLiquidacionAsistenciaTecnica"
 ]) {
   if (!schema.includes(`model ${expected}`)) {
     console.error(`Falta modelo esperado: ${expected}`);
+    process.exit(1);
+  }
+}
+
+for (const forbiddenField of [
+  "requiereAsistencia",
+  "motivoAsistencia",
+  "asistenteId",
+  "tarifaAsistenciaId",
+  "liquidacionId",
+  "asignacionAsistenteId"
+]) {
+  if (new RegExp(`\\b${forbiddenField}\\b`).test(schema)) {
+    console.error(`El schema conserva el nombre anterior: ${forbiddenField}.`);
     process.exit(1);
   }
 }
@@ -30,4 +65,4 @@ if (schema.includes("CONTADURIA") || schema.includes("ADMINISTRADOR")) {
   process.exit(1);
 }
 
-console.log("Schema validado: nucleo agnostico de proveedor y Zoom historico separado.");
+console.log("Schema validado: nombres de asistencia tecnica consistentes y Zoom historico separado.");

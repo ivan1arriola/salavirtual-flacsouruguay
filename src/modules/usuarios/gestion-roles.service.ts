@@ -31,7 +31,7 @@ export async function cambiarRolUsuario(
 
     const usuario = await tx.usuario.findUnique({
       where: { id: usuarioId },
-      select: { id: true, nombres: true, apellidos: true, rol: true, docente: { select: { id: true } }, asistente: { select: { id: true } } }
+      select: { id: true, nombres: true, apellidos: true, rol: true, docente: { select: { id: true } }, asistenteTecnico: { select: { id: true } } }
     });
     if (!usuario) throw new Error("Usuario no encontrado.");
     if (usuario.id === actorActual.id && rol !== "ADMINISTRACION") {
@@ -49,10 +49,10 @@ export async function cambiarRolUsuario(
     if (requierePerfilDocente(rol) && !usuario.docente) {
       await tx.docente.create({ data: { usuarioId: usuario.id } });
     }
-    if (requierePerfilAsistente(rol) && !usuario.asistente) {
+    if (requierePerfilAsistente(rol) && !usuario.asistenteTecnico) {
       const name = [usuario.nombres, usuario.apellidos].filter(Boolean).join(" ");
       const slug = await crearSlugAsistenteDisponible(tx, name, usuario.id);
-      await tx.asistente.create({ data: { usuarioId: usuario.id, slug } });
+      await tx.asistenteTecnico.create({ data: { usuarioId: usuario.id, slug } });
     }
 
     await tx.usuario.update({ where: { id: usuario.id }, data: { rol } });

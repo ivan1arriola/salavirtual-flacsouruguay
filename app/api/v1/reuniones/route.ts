@@ -76,7 +76,7 @@ async function notificarReunionCreada(solicitudId: string) {
         include: {
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-            include: { asistente: { include: { usuario: true } } }
+            include: { asistenteTecnico: { include: { usuario: true } } }
           },
           eventosProveedor: {
             include: { proveedor: true, cuentaProveedor: true }
@@ -104,7 +104,7 @@ async function notificarReunionCreada(solicitudId: string) {
     programa: solicitud.docentePrograma.programa.nombre,
     docente: docenteNombre,
     modalidad: solicitud.modalidad,
-    requiereAsistencia: solicitud.requiereAsistencia,
+    requiereAsistenciaTecnica: solicitud.requiereAsistenciaTecnica,
     requiereGrabacion: solicitud.requiereGrabacion,
     instancias
   });
@@ -128,7 +128,7 @@ async function notificarReunionCreada(solicitudId: string) {
   const assignedAssistants = solicitud.instancias.flatMap((instancia) =>
     instancia.asignaciones.map((assignment) => ({
       instancia,
-      assistant: assignment.asistente
+      assistant: assignment.asistenteTecnico
     }))
   );
   for (const { instancia, assistant } of assignedAssistants) {
@@ -139,11 +139,11 @@ async function notificarReunionCreada(solicitudId: string) {
       {
         tipo: "ASISTENCIA_ASIGNACION",
         titulo: "Te asignaron una reunion",
-        cuerpo: `${solicitud.titulo} quedo asignada a tu agenda de asistencia.`,
+        cuerpo: `${solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
         href: "/mi-agenda",
-        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteId: assistant.id },
-        emailSubject: `Te asignaron una asistencia: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente asignado: ${assistantName || assistant.usuario.id}`
+        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
+        emailSubject: `Te asignaron una asistencia técnica: ${solicitud.titulo}`,
+        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`
       }
     );
     await notificarUsuarios(
@@ -154,21 +154,21 @@ async function notificarReunionCreada(solicitudId: string) {
       ],
       {
         tipo: "ASISTENCIA_ASIGNACION",
-        titulo: "Asistencia asignada",
-        cuerpo: `${solicitud.titulo} quedo asignada a ${assistantName || "la persona asignada"}.`,
+        titulo: "Asistencia técnica asignada",
+        cuerpo: `${solicitud.titulo} quedó asignada a ${assistantName || "la persona asignada"}.`,
         href: `/reuniones/${solicitud.id}`,
-        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteId: assistant.id },
-        emailSubject: `Asistencia asignada: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente asignado: ${assistantName || assistant.usuario.id}`
+        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
+        emailSubject: `Asistencia técnica asignada: ${solicitud.titulo}`,
+        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`
       }
     );
   }
 
-  if (!solicitud.requiereAsistencia) return;
+  if (!solicitud.requiereAsistenciaTecnica) return;
   const hasOpenAssistance = solicitud.instancias.some((instancia) => instancia.asignaciones.length === 0);
   if (!hasOpenAssistance) return;
-  const assistants = await db.asistente.findMany({
-    where: { usuario: { activo: true, rol: "ASISTENTE" }, disponibleGeneral: true },
+  const assistants = await db.asistenteTecnico.findMany({
+    where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" }, disponibleGeneral: true },
     select: { usuario: { select: { id: true, emailPrincipal: true } } }
   });
   await notificarUsuarios(
@@ -176,12 +176,12 @@ async function notificarReunionCreada(solicitudId: string) {
     assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
     {
       tipo: "ASISTENCIA_REQUERIDA",
-      titulo: "Nueva reunion requiere asistencia",
-      cuerpo: `${solicitud.titulo} quedo abierta para postulaciones de asistencia.`,
+      titulo: "Nueva reunión requiere asistencia técnica",
+      cuerpo: `${solicitud.titulo} quedó abierta para postulaciones de asistencia técnica.`,
       href: "/agenda-abierta",
       metadata: { solicitudId: solicitud.id },
-      emailSubject: `Asistencia requerida: ${solicitud.titulo}`,
-      emailText: `${detailsText}\n\nEsta reunion requiere asistencia. Podes postularte desde Agenda abierta.`
+      emailSubject: `Asistencia técnica requerida: ${solicitud.titulo}`,
+      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.`
     }
   );
 }

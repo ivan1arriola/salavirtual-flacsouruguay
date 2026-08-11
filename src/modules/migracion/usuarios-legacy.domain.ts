@@ -59,7 +59,7 @@ export type PlanUsuarioMigrado = Readonly<{
   aliases: readonly string[];
   cuentasGoogle: readonly CuentaGoogleLegacy[];
   docente: UsuarioLegacy["docenteProfile"];
-  asistente: UsuarioLegacy["asistenteProfile"];
+  asistenteTecnico: UsuarioLegacy["asistenteProfile"];
   cuentasGoogleOmitidas: number;
 }>;
 
@@ -138,7 +138,7 @@ export function planificarMigracionUsuarios(
         aliases,
         cuentasGoogle,
         docente: usuario.docenteProfile,
-        asistente: usuario.asistenteProfile,
+        asistenteTecnico: usuario.asistenteProfile,
         cuentasGoogleOmitidas: usuario.accounts.length - cuentasGoogle.length
       };
 

@@ -20,7 +20,7 @@ import { obtenerDashboardAsistente } from "@/src/modules/asistencia/dashboard-as
 
 export async function AssistantDashboard({ user }: Readonly<{ user: Session["user"] }>) {
   const actor = await resolveSessionActor(db, { id: user.id, email: user.email });
-  if (!actor?.activo || actor.rol !== "ASISTENTE") redirect("/");
+  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
   const dashboard = await obtenerDashboardAsistente(db, actor.id);
   if (!dashboard) redirect("/mi-perfil");
   const next = dashboard.nextMeeting;

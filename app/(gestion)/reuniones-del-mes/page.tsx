@@ -13,7 +13,7 @@ export default async function ReunionesDelMesPage() {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo || actor.rol !== "ASISTENTE") redirect("/");
+  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
 
   const ahora = new Date();
   const meetings = await obtenerAsistenciasPersonales(db, actor.id, "MES_ACTUAL", ahora);
@@ -23,7 +23,7 @@ export default async function ReunionesDelMesPage() {
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia</p>
+          <p className="page-eyebrow">Asistencia técnica</p>
           <h1>Reuniones de {formatMonth(ahora)}</h1>
           <p>Horas e importes estimados del mes en curso.</p>
         </div>

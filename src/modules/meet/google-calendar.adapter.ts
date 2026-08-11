@@ -24,7 +24,7 @@ export async function configurarGoogleMeetExistente(
   credentials: GoogleCalendarCredentials,
   codigoReunion: string,
   settings: Readonly<{
-    requiereAsistencia?: boolean;
+    requiereAsistenciaTecnica?: boolean;
     cohostEmails?: readonly string[];
   }>
 ): Promise<void> {
@@ -126,9 +126,9 @@ async function finalizarProvision(
 async function configurarEspacioMeet(
   auth: JWT,
   codigoReunion: string,
-  request: Readonly<{ requiereAsistencia?: boolean; cohostEmails?: readonly string[] }>
+  request: Readonly<{ requiereAsistenciaTecnica?: boolean; cohostEmails?: readonly string[] }>
 ): Promise<string> {
-  const configurarAsistencia = request.requiereAsistencia !== undefined;
+  const configurarAsistencia = request.requiereAsistenciaTecnica !== undefined;
   const configurarModeracion = Boolean(request.cohostEmails?.length);
   const current = await auth.request<{ name?: string }>({
     url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
@@ -137,7 +137,7 @@ async function configurarEspacioMeet(
   if (!current.data.name) throw new Error("Google Meet no devolvió el ID del espacio.");
   const config = {
     ...(configurarAsistencia
-      ? { attendanceReportGenerationType: request.requiereAsistencia ? "GENERATE_REPORT" : "DO_NOT_GENERATE" }
+      ? { attendanceReportGenerationType: request.requiereAsistenciaTecnica ? "GENERATE_REPORT" : "DO_NOT_GENERATE" }
       : {}),
     ...(configurarModeracion ? { moderation: "ON" } : {})
   };

@@ -22,11 +22,11 @@ export default async function AsistenteDetailPage({
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const [{ usuarioId: pathSegment }, query] = await Promise.all([params, searchParams]);
   const period = resolverPeriodoMes(query.mes, new Date());
-  const assistantBySlug = await db.asistente.findUnique({
+  const assistantBySlug = await db.asistenteTecnico.findUnique({
     where: { slug: pathSegment },
     include: { usuario: true }
   });
-  const assistant = assistantBySlug ?? await db.asistente.findUnique({
+  const assistant = assistantBySlug ?? await db.asistenteTecnico.findUnique({
     where: { usuarioId: userIdFromAssistantPath(pathSegment) },
     include: { usuario: true }
   });
@@ -46,10 +46,10 @@ export default async function AsistenteDetailPage({
 
   return (
     <>
-      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}><ArrowLeft size={17} />Asistentes</Link>
+      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}><ArrowLeft size={17} />Asistentes técnicos</Link>
       <header className="page-header assistant-detail-header">
         <div>
-          <p className="page-eyebrow">Asistencia</p>
+          <p className="page-eyebrow">Asistencia técnica</p>
           <h1>{name}</h1>
           <p>Instancias asignadas en {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
@@ -59,7 +59,7 @@ export default async function AsistenteDetailPage({
         </div>
       </header>
 
-      <section className="metric-grid" aria-label="Resumen del asistente">
+      <section className="metric-grid" aria-label="Resumen del asistente técnico">
         <div className="stat"><span>Reuniones asignadas</span><strong>{summary.reuniones}</strong></div>
         <div className="stat"><span>Horas virtuales</span><strong>{formatMinutes(summary.minutosVirtuales)}</strong></div>
         <div className="stat"><span>Horas híbridas</span><strong>{formatMinutes(summary.minutosHibridos)}</strong></div>

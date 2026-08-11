@@ -13,17 +13,17 @@ export default async function MiAgendaPage() {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ASISTENTE") redirect("/");
+  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
 
-  const assistant = await db.asistente.findUnique({
+  const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },
     select: { id: true }
   });
   if (!assistant) redirect("/");
 
-  const assignments = await db.asignacionAsistente.findMany({
+  const assignments = await db.asignacionAsistenciaTecnica.findMany({
     where: {
-      asistenteId: assistant.id,
+      asistenteTecnicoId: assistant.id,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instancia: {
         finProgramadoAt: { gte: new Date() },
@@ -54,7 +54,7 @@ export default async function MiAgendaPage() {
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia</p>
+          <p className="page-eyebrow">Asistencia técnica</p>
           <h1>Mi agenda</h1>
           <p>{assignments.length} reuniones asignadas.</p>
         </div>

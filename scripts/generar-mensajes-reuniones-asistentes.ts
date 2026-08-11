@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   const outDir = outDirArg?.slice("--out-dir=".length);
   const now = new Date();
 
-  const assignments = await db.asignacionAsistente.findMany({
+  const assignments = await db.asignacionAsistenciaTecnica.findMany({
     where: {
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instancia: {
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
     orderBy: [{ instancia: { inicioProgramadoAt: "asc" } }, { id: "asc" }],
     select: {
       estado: true,
-      asistente: {
+      asistenteTecnico: {
         select: {
           usuario: {
             select: {
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
         select: {
           inicioProgramadoAt: true,
           finProgramadoAt: true,
-          requiereAsistencia: true,
+          requiereAsistenciaTecnica: true,
           requiereGrabacion: true,
           solicitud: {
             select: {
@@ -80,7 +80,7 @@ async function main(): Promise<void> {
 
   const byAssistant = new Map<string, typeof assignments>();
   for (const assignment of assignments) {
-    const assistant = assignment.asistente.usuario;
+    const assistant = assignment.asistenteTecnico.usuario;
     byAssistant.set(assistant.id, [...(byAssistant.get(assistant.id) ?? []), assignment]);
   }
 
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
   if (outDir) mkdirSync(outDir, { recursive: true });
 
   for (const items of byAssistant.values()) {
-    const assistant = items[0]?.asistente.usuario;
+    const assistant = items[0]?.asistenteTecnico.usuario;
     if (!assistant) continue;
 
     const cardsByRequest = new Map<string, MeetingEmailCard>();
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
       const current = cardsByRequest.get(request.id);
       const fecha = formatRange(meeting.inicioProgramadoAt, meeting.finProgramadoAt);
       const observaciones = [
-        meeting.requiereAsistencia ? "requiere asistencia" : null,
+        meeting.requiereAsistenciaTecnica ? "requiere asistencia" : null,
         meeting.requiereGrabacion ? "requiere grabación" : null
       ].filter((item): item is string => Boolean(item));
 

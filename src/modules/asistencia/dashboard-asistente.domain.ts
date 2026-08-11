@@ -22,12 +22,12 @@ export function formatTiempoRestante(inicioMs: number, ahoraMs: number): string 
 
 export function contarPostulacionesAbiertas(
   instanciasAbiertasIds: ReadonlySet<string>,
-  intereses: readonly Readonly<{
+  postulaciones: readonly Readonly<{
     instanciaSalaId: string;
     estado: "ME_INTERESA" | "NO_ME_INTERESA" | "RETIRADO";
   }>[]
 ): number {
-  return intereses.filter(({ instanciaSalaId, estado }) =>
+  return postulaciones.filter(({ instanciaSalaId, estado }) =>
     estado === "ME_INTERESA" && instanciasAbiertasIds.has(instanciaSalaId)
   ).length;
 }

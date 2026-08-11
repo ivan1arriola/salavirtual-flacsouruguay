@@ -22,7 +22,7 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
       eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        include: { asistente: { include: { usuario: true } } },
+        include: { asistenteTecnico: { include: { usuario: true } } },
         take: 1
       }
     }
@@ -64,10 +64,10 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
         ) : (
           <div className="table-wrap">
             <table className="data-table role-meetings-table">
-              <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Asistencia</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Asistencia técnica</th></tr></thead>
               <tbody>{meetings.map((meeting) => {
                 const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-                const assistant = meeting.asignaciones[0]?.asistente.usuario;
+                const assistant = meeting.asignaciones[0]?.asistenteTecnico.usuario;
                 return (
                   <tr key={meeting.id}>
                     <td className="date-cell">{formatDate(meeting.inicioProgramadoAt)}</td>
@@ -75,7 +75,7 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
                     <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link></td>
                     <td>{meeting.solicitud.docentePrograma.programa.nombre}</td>
                     <td><strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>{meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : null}</td>
-                    <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistencia ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
+                    <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistenciaTecnica ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
                   </tr>
                 );
               })}</tbody>

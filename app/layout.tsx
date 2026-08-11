@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "FLACSO Meet",
-  description: "Gestión ligera de solicitudes, agenda y asistencia para Google Meet.",
+  description: "Gestión de solicitudes, agenda y asistencia técnica para Google Meet.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

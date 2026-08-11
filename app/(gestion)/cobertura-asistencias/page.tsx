@@ -25,7 +25,7 @@ export default async function CoberturaAsistenciasPage({
   const [meetings, assistants, futureAssignments] = await Promise.all([
     db.instanciaSala.findMany({
       where: {
-        requiereAsistencia: true,
+        requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: now },
         estado: "PROGRAMADA",
         solicitud: q
@@ -67,12 +67,12 @@ export default async function CoberturaAsistenciasPage({
         },
         asignaciones: {
           where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-          include: { asistente: { include: { usuario: true } } },
+          include: { asistenteTecnico: { include: { usuario: true } } },
           orderBy: { updatedAt: "desc" }
         },
-        intereses: {
+        postulaciones: {
           where: { estado: "ME_INTERESA" },
-          include: { asistente: { include: { usuario: true } } },
+          include: { asistenteTecnico: { include: { usuario: true } } },
           orderBy: { createdAt: "asc" }
         },
         eventosProveedor: {
@@ -80,8 +80,8 @@ export default async function CoberturaAsistenciasPage({
         }
       }
     }),
-    db.asistente.findMany({
-      where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE" } },
+    db.asistenteTecnico.findMany({
+      where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
       select: {
         id: true,
@@ -89,7 +89,7 @@ export default async function CoberturaAsistenciasPage({
         disponibilidades: true
       }
     }),
-    db.asignacionAsistente.findMany({
+    db.asignacionAsistenciaTecnica.findMany({
       where: {
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: {
@@ -98,7 +98,7 @@ export default async function CoberturaAsistenciasPage({
         }
       },
       select: {
-        asistenteId: true,
+        asistenteTecnicoId: true,
         instancia: {
           select: {
             id: true,
@@ -131,7 +131,7 @@ export default async function CoberturaAsistenciasPage({
     meetings: rows.map(({ meeting, covered }) => ({ meeting, covered })),
     assistants: assistantOptions,
     assignments: futureAssignments.map((assignment) => ({
-      assistantId: assignment.asistenteId,
+      assistantId: assignment.asistenteTecnicoId,
       meetingId: assignment.instancia.id,
       startsAt: assignment.instancia.inicioProgramadoAt,
       endsAt: assignment.instancia.finProgramadoAt,
@@ -146,9 +146,9 @@ export default async function CoberturaAsistenciasPage({
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia</p>
-          <h1>Cobertura de asistencias</h1>
-          <p>Instancias futuras que requieren asistencia, cubiertas y pendientes.</p>
+          <p className="page-eyebrow">Asistencia técnica</p>
+          <h1>Cobertura de asistencias técnicas</h1>
+          <p>Instancias futuras que requieren asistencia técnica, cubiertas y pendientes.</p>
         </div>
         <UserRoundCheck size={28} color="var(--brand)" aria-hidden="true" />
       </header>
@@ -176,7 +176,7 @@ export default async function CoberturaAsistenciasPage({
         <button className="secondary-action" type="submit">Filtrar</button>
       </form>
 
-      <section className="coverage-results" aria-label="Reuniones que requieren asistencia">
+      <section className="coverage-results" aria-label="Reuniones que requieren asistencia técnica">
         {rows.length === 0 ? (
           <div className="content-section empty-state"><UserRoundCheck size={24} aria-hidden="true" /><p>No hay instancias para ese filtro.</p></div>
         ) : (
@@ -185,11 +185,11 @@ export default async function CoberturaAsistenciasPage({
                   const association = meeting.solicitud.docentePrograma;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
                   const assistantName = assignment
-                    ? [assignment.asistente.usuario.nombres, assignment.asistente.usuario.apellidos].filter(Boolean).join(" ")
+                    ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;
-                  const applicants = meeting.intereses.map((interest) => ({
-                    id: interest.asistente.id,
-                    name: [interest.asistente.usuario.nombres, interest.asistente.usuario.apellidos].filter(Boolean).join(" ")
+                  const applicants = meeting.postulaciones.map((interest) => ({
+                    id: interest.asistenteTecnico.id,
+                    name: [interest.asistenteTecnico.usuario.nombres, interest.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                   }));
                   return (
                     <article className={`coverage-card ${covered ? "is-covered" : "is-pending"}`} key={meeting.id}>
@@ -226,7 +226,7 @@ export default async function CoberturaAsistenciasPage({
                         <AssistantAssignmentSelect
                           assistants={assistantOptions}
                           applicants={applicants}
-                          currentAssistantId={assignment?.asistenteId}
+                          currentAssistantId={assignment?.asistenteTecnicoId}
                           meetingId={meeting.id}
                           suggestedAssistant={suggestions.get(meeting.id) ?? null}
                         />

@@ -27,11 +27,11 @@ export function etiquetaTipoNotificacion(tipo: TipoNotificacion): string {
     case "REUNION_CREADA":
       return "Reuniones creadas";
     case "ASISTENCIA_REQUERIDA":
-      return "Reuniones abiertas a asistencia";
+      return "Reuniones abiertas a asistencia técnica";
     case "ASISTENCIA_ASIGNACION":
-      return "Asignaciones de asistencia";
+      return "Asignaciones de asistencia técnica";
     case "ASISTENCIA_POSTULACION":
-      return "Postulaciones de asistentes";
+      return "Postulaciones de asistentes técnicos";
     case "ASISTENCIA_POSTULACION_RETIRADA":
       return "Retiros de postulacion";
   }

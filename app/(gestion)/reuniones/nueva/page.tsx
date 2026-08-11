@@ -30,8 +30,8 @@ export default async function NuevaReunionPage() {
       include: { programa: true, docente: { include: { usuario: true } } }
     }),
     actor.rol === "ADMINISTRACION"
-      ? db.asistente.findMany({
-          where: { usuario: { activo: true, rol: "ASISTENTE" } },
+      ? db.asistenteTecnico.findMany({
+          where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
           orderBy: { usuario: { nombres: "asc" } },
           include: { usuario: true }
         })

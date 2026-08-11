@@ -19,7 +19,7 @@ export type ResultadoAsignacionSalas =
   | Readonly<{ ok: true; asignaciones: readonly AsignacionSala[] }>
   | Readonly<{ ok: false; reunionIdsSinSala: readonly string[] }>;
 
-type EstadoAsignacion = Readonly<{
+type EstadoAsignacionAsistenciaTecnica = Readonly<{
   salas: readonly Readonly<{ id: string; prioridad: number; disponibleDesde: number }>[];
   series: readonly Readonly<{ serieId: string; salaId: string }>[];
   asignaciones: readonly AsignacionSala[];
@@ -30,7 +30,7 @@ export function asignarSalas(
   reuniones: readonly ReunionParaAsignar[],
   salas: readonly SalaDisponible[]
 ): ResultadoAsignacionSalas {
-  const initial: EstadoAsignacion = {
+  const initial: EstadoAsignacionAsistenciaTecnica = {
     salas: ordenar(
       salas.map((sala) => ({
         ...sala,
@@ -68,9 +68,9 @@ function ordenar<T>(
 }
 
 function asignarSiguiente(
-  state: EstadoAsignacion,
+  state: EstadoAsignacionAsistenciaTecnica,
   meeting: ReunionParaAsignar
-): EstadoAsignacion {
+): EstadoAsignacionAsistenciaTecnica {
   const available = state.salas.filter(
     (room) => room.disponibleDesde <= meeting.inicio.getTime()
   );

@@ -20,7 +20,7 @@ export function AssistantAssignmentControl({
       const response = await fetch("/api/v1/asistencia/asignaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteId: assistantId })
+        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {

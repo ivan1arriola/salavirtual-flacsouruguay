@@ -189,26 +189,26 @@ async function aplicarPlan(
         }
       });
     }
-    if (plan.asistente) {
+    if (plan.asistenteTecnico) {
       const assistantSlug = await crearSlugAsistenteDisponible(
         tx,
         [plan.nombres, plan.apellidos].filter(Boolean).join(" "),
         plan.usuarioId
       );
-      await tx.asistente.upsert({
+      await tx.asistenteTecnico.upsert({
         where: { usuarioId: plan.usuarioId },
         create: {
           usuarioId: plan.usuarioId,
           slug: assistantSlug,
-          aliasOperativo: plan.asistente.aliasOperativo,
-          disponibleGeneral: plan.asistente.disponibleGeneral,
-          datosPago: plan.asistente.datosPago
+          aliasOperativo: plan.asistenteTecnico.aliasOperativo,
+          disponibleGeneral: plan.asistenteTecnico.disponibleGeneral,
+          datosPago: plan.asistenteTecnico.datosPago
         },
         update: {
           slug: assistantSlug,
-          aliasOperativo: plan.asistente.aliasOperativo,
-          disponibleGeneral: plan.asistente.disponibleGeneral,
-          datosPago: plan.asistente.datosPago
+          aliasOperativo: plan.asistenteTecnico.aliasOperativo,
+          disponibleGeneral: plan.asistenteTecnico.disponibleGeneral,
+          datosPago: plan.asistenteTecnico.datosPago
         }
       });
     }

@@ -84,7 +84,7 @@ export function reunionEmailText(input: Readonly<{
   programa?: string | null;
   docente?: string | null;
   modalidad?: string | null;
-  requiereAsistencia?: boolean;
+  requiereAsistenciaTecnica?: boolean;
   requiereGrabacion?: boolean;
   instancias: readonly Readonly<{
     inicio: string;
@@ -99,7 +99,7 @@ export function reunionEmailText(input: Readonly<{
     input.programa ? `Programa: ${input.programa}` : null,
     input.docente ? `Docente/responsable: ${input.docente}` : null,
     input.modalidad ? `Modalidad: ${input.modalidad}` : null,
-    `Asistencia requerida: ${input.requiereAsistencia ? "si" : "no"}`,
+    `Asistencia técnica requerida: ${input.requiereAsistenciaTecnica ? "sí" : "no"}`,
     `Grabacion requerida: ${input.requiereGrabacion ? "si" : "no"}`,
     "",
     "Instancias:"
