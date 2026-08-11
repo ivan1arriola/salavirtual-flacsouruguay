@@ -20,8 +20,7 @@ export async function transmitirArchivoDrive(
     scopes: [DRIVE_SCOPE],
     subject: credentials.subject
   });
-  const token = await auth.getAccessToken();
-  if (!token) throw new Error("Google no devolvió un token para reproducir la grabación.");
+  const token = extraerAccessToken(await auth.getAccessToken());
 
   const upstream = await fetch(
     `${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
@@ -46,4 +45,16 @@ export async function transmitirArchivoDrive(
     if (value) headers.set(name, value);
   }
   return new Response(upstream.body, { status: upstream.status, headers });
+}
+
+export function extraerAccessToken(value: unknown): string {
+  const token = typeof value === "string"
+    ? value
+    : value && typeof value === "object" && "token" in value
+      ? (value as { token?: unknown }).token
+      : null;
+  if (typeof token !== "string" || token.length === 0) {
+    throw new Error("Google no devolvió un token para reproducir la grabación.");
+  }
+  return token;
 }
