@@ -16,6 +16,21 @@ export type PosibleReunionDuplicada = Readonly<{
   motivo: "COINCIDENCIA_EXACTA" | "HORARIO_SUPERPUESTO";
 }>;
 
+export const DECISIONES_REVISION_DUPLICADO = [
+  "REQUIERE_ACTUALIZACION",
+  "FALSO_POSITIVO"
+] as const;
+
+export type DecisionRevisionDuplicado = (typeof DECISIONES_REVISION_DUPLICADO)[number];
+
+export function claveRevisionDuplicado(izquierdaId: string, derechaId: string): string {
+  return [izquierdaId, derechaId].sort((left, right) => left.localeCompare(right)).join(":");
+}
+
+export function esDecisionRevisionDuplicado(value: unknown): value is DecisionRevisionDuplicado {
+  return typeof value === "string" && DECISIONES_REVISION_DUPLICADO.some((decision) => decision === value);
+}
+
 export function detectarPosiblesReunionesDuplicadas(
   meetings: readonly CandidataReunionDuplicada[]
 ): readonly PosibleReunionDuplicada[] {
