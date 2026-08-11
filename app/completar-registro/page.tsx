@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-institucional.domain";
 import { guardarRegistroInstitucional } from "./actions";
@@ -9,9 +10,14 @@ export default async function CompletarRegistroPage({
 }: Readonly<{ searchParams: Promise<{ error?: string }> }>) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo) redirect("/acceso");
   const [user, programs] = await Promise.all([
     db.usuario.findUnique({
-      where: { id: session.user.id },
+      where: { id: actor.id },
       select: {
         nombres: true,
         rol: true,

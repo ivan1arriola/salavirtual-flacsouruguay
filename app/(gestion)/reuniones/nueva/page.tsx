@@ -42,6 +42,12 @@ export default async function NuevaReunionPage() {
     })
   ]);
 
+  // Defensa adicional al control del layout: una docente nunca debe recibir
+  // un formulario imposible de completar si su perfil quedó sin programas.
+  if (actor.rol === "DOCENTE" && associations.length === 0) {
+    redirect("/completar-registro");
+  }
+
   return (
     <>
       <header className="page-header">
