@@ -466,8 +466,8 @@
 }
 
 .date-mode-selector {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   border: 0;
   padding: 0;
@@ -475,6 +475,7 @@
 }
 
 .date-mode-selector legend {
+  grid-column: 1 / -1;
   width: 100%;
   color: #3f4b5c;
   font-size: 0.8rem;
@@ -524,6 +525,29 @@
   gap: 14px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 18px;
+}
+
+.recurrence-guidance {
+  display: grid;
+  gap: 1px;
+  border-left: 3px solid var(--brand);
+  background: #f5fafc;
+  padding: 9px 11px;
+}
+
+.recurrence-guidance strong {
+  font-size: 0.83rem;
+}
+
+.recurrence-guidance span,
+.recurrence-feedback {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.recurrence-feedback.has-result {
+  color: #216549;
+  font-weight: 800;
 }
 
 .generated-dates-heading {
@@ -2216,6 +2240,10 @@
 }
 
 @media (max-width: 760px) {
+  .date-mode-selector {
+    grid-template-columns: 1fr;
+  }
+
   .meeting-form-steps a {
     align-items: flex-start;
     padding: 11px;
