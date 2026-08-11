@@ -444,12 +444,13 @@
     font-size: 1.65rem;
   }
 
-  .login-panel .remembered-accounts > div {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 360px) {
+  .login-panel .remembered-accounts > div {
+    grid-template-columns: 1fr;
+  }
+
   .login-lock {
     width: 38px;
     height: 38px;
