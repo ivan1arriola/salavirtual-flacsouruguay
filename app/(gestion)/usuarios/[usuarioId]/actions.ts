@@ -52,7 +52,7 @@ export async function cesarAsistenteUsuario(formData: FormData): Promise<void> {
   revalidatePath(`/usuarios/${usuarioId}`);
   revalidatePath("/usuarios");
   revalidatePath("/agenda-abierta");
-  revalidatePath("/cobertura-asistencias");
+  revalidatePath("/asistencia-tecnica");
   revalidatePath("/reuniones/nueva");
   redirect(`/usuarios/${encodeURIComponent(usuarioId)}?estado=${estado}`);
 }

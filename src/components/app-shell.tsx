@@ -30,7 +30,7 @@ const primaryNav = [
 ] as const;
 
 const adminNav = [
-  { href: "/cobertura-asistencias", label: "Cobertura", icon: Hand },
+  { href: "/asistencia-tecnica", label: "Asistencia técnica", icon: Hand },
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
   { href: "/asistentes", label: "Asistentes técnicos", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },

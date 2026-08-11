@@ -96,6 +96,6 @@ export async function guardarDisponibilidad(formData: FormData): Promise<void> {
     estado = "error-disponibilidad";
   }
   revalidatePath("/mi-perfil");
-  revalidatePath("/cobertura-asistencias");
+  revalidatePath("/asistencia-tecnica");
   redirect(`/mi-perfil?estado=${estado}`);
 }

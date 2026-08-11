@@ -127,7 +127,7 @@ export async function actualizarPostulacionAsistencia(
           tipo: notificationType,
           titulo: estado === "ME_INTERESA" ? "Nueva postulación de asistencia técnica" : "Postulación retirada",
           cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
-          href: "/cobertura-asistencias?estado=pendientes",
+          href: "/asistencia-tecnica?estado=pendientes",
           metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
           emailSubject: estado === "ME_INTERESA"
             ? "Nueva postulación de asistencia técnica"

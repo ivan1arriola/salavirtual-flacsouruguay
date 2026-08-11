@@ -206,7 +206,7 @@ export default async function HomePage() {
       count: pendingAssistance,
       title: "Reuniones sin asistencia técnica",
       detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
-      href: "/cobertura-asistencias?estado=pendientes",
+      href: "/asistencia-tecnica?estado=pendientes",
       action: "Asignar asistencia técnica"
     } : null,
     integrationErrors ? {
@@ -260,7 +260,7 @@ export default async function HomePage() {
           <p>Lo próximo y lo que requiere atención de Administración.</p>
         </div>
         <div className="role-dashboard-actions">
-          <Link className="secondary-action" href="/cobertura-asistencias">Gestionar cobertura</Link>
+          <Link className="secondary-action" href="/asistencia-tecnica">Gestionar asistencia</Link>
           <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={18} />Nueva reunión</Link>
         </div>
       </header>
