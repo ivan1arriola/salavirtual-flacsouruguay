@@ -4,6 +4,7 @@ import { MeetingForm } from "@/src/components/meeting-form";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { puedeAbrirCreacionReuniones } from "@/src/modules/reuniones/reuniones.domain";
+import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-institucional.domain";
 
 export default async function NuevaReunionPage() {
   const session = await auth();
@@ -42,9 +43,10 @@ export default async function NuevaReunionPage() {
     })
   ]);
 
-  // Defensa adicional al control del layout: una docente nunca debe recibir
-  // un formulario imposible de completar si su perfil quedó sin programas.
-  if (actor.rol === "DOCENTE" && associations.length === 0) {
+  if (requiereCompletarRegistro({
+    rol: actor.rol,
+    programasActivos: associations.length
+  })) {
     redirect("/completar-registro");
   }
 
