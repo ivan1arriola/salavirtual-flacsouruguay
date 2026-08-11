@@ -11,7 +11,7 @@ export function MeetArtifactsButton({ count }: Readonly<{ count: number }>) {
 
   async function synchronize() {
     setBusy(true);
-    setMessage("Buscando archivos en Meet…");
+    setMessage("Buscando grabaciones y archivos en Meet…");
     const response = await fetch("/api/v1/reuniones/sincronizar-archivos", { method: "POST" });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
@@ -24,11 +24,11 @@ export function MeetArtifactsButton({ count }: Readonly<{ count: number }>) {
   return (
     <div className="pending-provision">
       <span>
-        <strong>Archivos generados por Meet</strong>
+        <strong>Grabaciones y archivos de Meet</strong>
         <small>{message || `${count} reuniones finalizadas pueden revisarse.`}</small>
       </span>
       <button className="secondary-action" disabled={busy || count === 0} onClick={synchronize} type="button">
-        <FolderSync size={17} /> {busy ? "Sincronizando…" : "Sincronizar archivos"}
+        <FolderSync size={17} /> {busy ? "Actualizando…" : "Actualizar grabaciones"}
       </button>
     </div>
   );

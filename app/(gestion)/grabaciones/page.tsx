@@ -7,21 +7,27 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import { listarGrabacionesVisibles } from "@/src/modules/meet/grabaciones.adapter";
+import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
 
 export default async function GrabacionesPage() {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
+  const canSynchronize = puedeSincronizarGrabaciones(actor.rol);
+  const now = new Date();
   const [recordings, finishedMeet, workspaceConfiguration] = await Promise.all([
     listarGrabacionesVisibles(db, actor),
-    actor.rol === "ADMINISTRACION"
+    canSynchronize
       ? db.eventoProveedor.count({
           where: {
             proveedor: { tipo: "GOOGLE_MEET" },
             estadoIntegracion: "SINCRONIZADA",
             instancia: {
-              finProgramadoAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), lte: new Date() },
+              finProgramadoAt: {
+                gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+                lte: now
+              },
               estado: { not: "CANCELADA" }
             }
           }
@@ -56,7 +62,7 @@ export default async function GrabacionesPage() {
         ) : <Video size={28} color="var(--brand)" aria-hidden="true" />}
       </header>
 
-      {actor.rol === "ADMINISTRACION" ? (
+      {canSynchronize ? (
         <section className="content-section">
           <MeetArtifactsButton count={finishedMeet} />
         </section>

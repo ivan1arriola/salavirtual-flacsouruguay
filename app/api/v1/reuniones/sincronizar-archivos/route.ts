@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
 import { crearGoogleMeetArtifactsClient } from "@/src/modules/meet/google-meet-artifacts.adapter";
 import { sincronizarArtefactosMeet } from "@/src/modules/meet/sincronizar-artefactos.service";
 
@@ -11,14 +12,14 @@ export const maxDuration = 300;
 
 export async function POST() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMINISTRACION") {
+  if (!session?.user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+  if (!actor?.activo || !puedeSincronizarGrabaciones(actor.rol)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -34,12 +35,13 @@ export async function GET(request: Request) {
 }
 
 async function executeSynchronization() {
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const baseWhere = {
     proveedor: { tipo: "GOOGLE_MEET" as const },
     estadoIntegracion: "SINCRONIZADA" as const,
     instancia: {
-      finProgramadoAt: { gte: since, lte: new Date() },
+      finProgramadoAt: { gte: since, lte: now },
       estado: { not: "CANCELADA" as const }
     }
   };

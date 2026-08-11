@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { obtenerAlcanceGrabaciones } from "../src/modules/meet/grabaciones.domain";
+import {
+  obtenerAlcanceGrabaciones,
+  puedeSincronizarGrabaciones
+} from "../src/modules/meet/grabaciones.domain";
 
 describe("alcance funcional de grabaciones", () => {
   it("da acceso completo solo a Administracion", () => {
@@ -12,5 +15,11 @@ describe("alcance funcional de grabaciones", () => {
 
   it("limita asistentes a sus asignaciones", () => {
     expect(obtenerAlcanceGrabaciones("ASISTENTE")).toBe("ASIGNACIONES_ASISTENTE");
+  });
+
+  it("permite sincronizar a Administracion y docentes", () => {
+    expect(puedeSincronizarGrabaciones("ADMINISTRACION")).toBe(true);
+    expect(puedeSincronizarGrabaciones("DOCENTE")).toBe(true);
+    expect(puedeSincronizarGrabaciones("ASISTENTE")).toBe(false);
   });
 });

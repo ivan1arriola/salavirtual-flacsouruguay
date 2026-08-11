@@ -7,3 +7,7 @@ export function obtenerAlcanceGrabaciones(rol: RolUsuario): AlcanceGrabaciones {
   if (rol === "DOCENTE") return "PROGRAMAS_DOCENTE";
   return "ASIGNACIONES_ASISTENTE";
 }
+
+export function puedeSincronizarGrabaciones(rol: RolUsuario): boolean {
+  return rol === "ADMINISTRACION" || rol === "DOCENTE";
+}
