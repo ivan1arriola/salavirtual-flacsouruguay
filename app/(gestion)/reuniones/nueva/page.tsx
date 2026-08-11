@@ -59,7 +59,7 @@ export default async function NuevaReunionPage() {
         <div>
           <p className="page-eyebrow">Google Meet</p>
           <h1>Nueva reunión</h1>
-          <p>Creá una o varias instancias para un programa.</p>
+          <p>Completá los datos, definí las fechas y ajustá la organización.</p>
         </div>
       </header>
       <MeetingForm
