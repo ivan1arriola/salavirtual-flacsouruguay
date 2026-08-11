@@ -163,6 +163,7 @@
 }
 
 .avatar {
+  position: relative;
   width: 32px;
   height: 32px;
   display: grid;
@@ -172,6 +173,24 @@
   color: #0a5872;
   font-size: 0.82rem;
   font-weight: 800;
+  overflow: hidden;
+}
+
+.avatar-fallback,
+.avatar-image {
+  position: absolute;
+  inset: 0;
+}
+
+.avatar-fallback {
+  display: grid;
+  place-items: center;
+}
+
+.avatar-image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .account-copy {

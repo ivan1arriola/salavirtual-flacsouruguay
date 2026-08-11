@@ -27,6 +27,10 @@ export default async function GestionLayout({
     where: { id: actor.id },
     select: {
       rol: true,
+      nombres: true,
+      apellidos: true,
+      emailPrincipal: true,
+      imagenUrl: true,
       docente: { select: { _count: { select: { programas: { where: { activo: true } } } } } }
     }
   });
@@ -39,7 +43,14 @@ export default async function GestionLayout({
   }
 
   return (
-    <AppShell user={{ ...session.user, id: actor.id, role: actor.rol }}>
+    <AppShell user={{
+      ...session.user,
+      id: actor.id,
+      role: actor.rol,
+      name: [user.nombres, user.apellidos].filter(Boolean).join(" "),
+      email: user.emailPrincipal ?? session.user.email,
+      image: user.imagenUrl ?? session.user.image
+    }}>
       {children}
     </AppShell>
   );

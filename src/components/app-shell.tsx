@@ -111,7 +111,7 @@ export async function AppShell({
 
         <div className="account-block">
           <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
-            {(user.name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
+            <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
           </Link>
           <span className="account-copy">
             <strong>{user.name ?? user.id}</strong>
@@ -144,7 +144,9 @@ export async function AppShell({
               {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
             </Link>
             <AccountSwitcher account={rememberedAccount} />
-            <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">{(user.name ?? "U").slice(0, 1).toUpperCase()}</Link>
+            <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
+              <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
+            </Link>
           </span>
         </header>
         {user.role === "ADMINISTRACION" ? (
@@ -178,5 +180,23 @@ export async function AppShell({
         </nav>
       </div>
     </div>
+  );
+}
+
+function UserAvatarContent({
+  imageUrl,
+  name
+}: Readonly<{ imageUrl?: string | null; name: string }>) {
+  return (
+    <>
+      <span className="avatar-fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+      {imageUrl ? (
+        <span
+          className="avatar-image"
+          style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})` }}
+          aria-hidden="true"
+        />
+      ) : null}
+    </>
   );
 }
