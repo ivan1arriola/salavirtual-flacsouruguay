@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
+import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
 export function cargarEncuentro(
   db: PrismaClient,
@@ -54,11 +55,7 @@ export async function recalcularSolicitud(
   const estadosIntegracion = meetings.flatMap(({ eventosProveedor }) =>
     eventosProveedor.map(({ estadoIntegracion }) => estadoIntegracion)
   );
-  const estado = estadosIntegracion.some((item) => item === "ERROR")
-    ? "REQUIERE_REVISION"
-    : estadosIntegracion.some((item) => item === "PENDIENTE")
-      ? "PROVISIONANDO"
-      : "PROVISIONADA";
+  const estado = resolverEstadoSolicitudPorIntegraciones(estadosIntegracion);
   await tx.solicitudSala.update({
     where: { id: solicitudId },
     data: {

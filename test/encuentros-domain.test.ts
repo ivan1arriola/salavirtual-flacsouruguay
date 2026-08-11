@@ -3,10 +3,18 @@ import {
   actualizarEncuentroSchema,
   elegirCuentaHost,
   elegirCuentaHostParaPeriodos,
-  puedeGestionarEncuentros
+  puedeGestionarEncuentros,
+  resolverEstadoSolicitudPorIntegraciones
 } from "../src/modules/reuniones/encuentros.domain";
 
 describe("gestión funcional de encuentros", () => {
+  it("deriva el estado general desde la integración de todos los eventos", () => {
+    expect(resolverEstadoSolicitudPorIntegraciones([])).toBe("REGISTRADA");
+    expect(resolverEstadoSolicitudPorIntegraciones(["PENDIENTE"])).toBe("PROVISIONANDO");
+    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "HISTORICA"])).toBe("PROVISIONADA");
+    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "ERROR"])).toBe("REQUIERE_REVISION");
+  });
+
   it("permite Administracion y al docente titular", () => {
     expect(puedeGestionarEncuentros("ADMINISTRACION", "a", "d")).toBe(true);
     expect(puedeGestionarEncuentros("DOCENTE", "d", "d")).toBe(true);

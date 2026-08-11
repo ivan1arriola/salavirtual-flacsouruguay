@@ -3,6 +3,7 @@ import { withRequiredCohostEmails } from "./cohosts.domain";
 import { extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
+import { recalcularSolicitud } from "../reuniones/encuentros-persistence.adapter";
 
 export type ProvisionDependencies = Readonly<{
   db: PrismaClient;
@@ -18,6 +19,15 @@ export type ProvisionResult = Readonly<{
 }>;
 
 export async function provisionarEventosMeet(
+  dependencies: ProvisionDependencies,
+  eventoProveedorIds: readonly string[],
+): Promise<readonly ProvisionResult[]> {
+  const results = await provisionarEventosMeetInterno(dependencies, eventoProveedorIds);
+  await recalcularSolicitudesDeEventos(dependencies.db, eventoProveedorIds);
+  return results;
+}
+
+async function provisionarEventosMeetInterno(
   dependencies: ProvisionDependencies,
   eventoProveedorIds: readonly string[],
 ): Promise<readonly ProvisionResult[]> {
@@ -129,6 +139,20 @@ export async function provisionarEventosMeet(
       return results;
     },
   ).then((results) => results.flat());
+}
+
+async function recalcularSolicitudesDeEventos(
+  db: PrismaClient,
+  eventoProveedorIds: readonly string[]
+): Promise<void> {
+  const events = await db.eventoProveedor.findMany({
+    where: { id: { in: [...eventoProveedorIds] } },
+    select: { instancia: { select: { solicitudSalaId: true } } }
+  });
+  const solicitudIds = [...new Set(events.map(({ instancia }) => instancia.solicitudSalaId))];
+  for (const solicitudId of solicitudIds) {
+    await db.$transaction((tx) => recalcularSolicitud(tx, solicitudId));
+  }
 }
 
 type EventoMeetProvisionable = Prisma.EventoProveedorGetPayload<{

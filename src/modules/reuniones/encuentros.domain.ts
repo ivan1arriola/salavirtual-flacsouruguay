@@ -39,6 +39,18 @@ export function puedeGestionarEncuentros(
     (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
 
+type EstadoIntegracionReunion = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
+type EstadoSolicitudReunion = "REGISTRADA" | "PROVISIONANDO" | "PROVISIONADA" | "REQUIERE_REVISION";
+
+export function resolverEstadoSolicitudPorIntegraciones(
+  estados: readonly EstadoIntegracionReunion[]
+): EstadoSolicitudReunion {
+  if (estados.length === 0) return "REGISTRADA";
+  if (estados.includes("ERROR")) return "REQUIERE_REVISION";
+  if (estados.includes("PENDIENTE")) return "PROVISIONANDO";
+  return "PROVISIONADA";
+}
+
 export function elegirCuentaHost(
   preferidaId: string | null,
   cuentas: readonly Readonly<{ id: string; prioridad: number }>[],
