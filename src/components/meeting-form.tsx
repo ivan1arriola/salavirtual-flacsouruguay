@@ -59,6 +59,7 @@ export function MeetingForm({
     horaFin: ""
   });
   const [recurrenceMessage, setRecurrenceMessage] = useState("");
+  const [recurrenceGenerated, setRecurrenceGenerated] = useState(false);
   const [requiresAssistance, setRequiresAssistance] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
@@ -66,6 +67,7 @@ export function MeetingForm({
   const [createdMeetingId, setCreatedMeetingId] = useState<string>();
   const submittingRef = useRef(false);
   const idempotencyKeyRef = useRef<string>("");
+  const recurrenceReviewRef = useRef<HTMLDivElement>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,7 +133,11 @@ export function MeetingForm({
       const generated = generarFechasRecurrentes(recurrence);
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
       setDates(generated);
+      setRecurrenceGenerated(true);
       setRecurrenceMessage(`${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => recurrenceReviewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+      });
     } catch (error) {
       setRecurrenceMessage(error instanceof Error ? error.message : "No se pudieron generar las fechas.");
     }
@@ -140,6 +146,7 @@ export function MeetingForm({
   function setMeetingDateMode(mode: MeetingDateMode) {
     setDateMode(mode);
     setRecurrenceMessage("");
+    setRecurrenceGenerated(false);
     if (mode === "SINGLE") {
       setDates([dates[0] ?? EMPTY_DATE]);
     } else if (mode === "RECURRENT") {
@@ -212,28 +219,38 @@ export function MeetingForm({
               </fieldset>
               <div className="recurrence-actions">
                 <span className={recurrenceMessage ? "recurrence-feedback has-result" : "recurrence-feedback"} role="status">{recurrenceMessage || "Luego podrás revisar y ajustar cada encuentro."}</span>
-                <button className="secondary-action" type="button" onClick={generateRecurrence}><CalendarDays size={17} />2. Generar encuentros</button>
+                <button className="secondary-action" type="button" onClick={generateRecurrence}><CalendarDays size={17} />Generar vista previa</button>
               </div>
             </div>
           ) : null}
-          {dateMode !== "SINGLE" && dates.length > 0 ? (
-            <div className="generated-dates-heading"><span>{dateMode === "RECURRENT" ? "Vista previa de la repetición" : "Fechas cargadas manualmente"}</span><strong>{dates.length}</strong></div>
-          ) : null}
-          <div className={`date-rows${dates.length > 5 ? " is-scrollable" : ""}`}>
-            {dates.map((date, index) => (
-              <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={index}>
-                {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{index + 1}</span> : null}
-                <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
-                <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
-                <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
-                {dateMode !== "SINGLE" ? (
-                  <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} disabled={dates.length === 1} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button>
-                ) : null}
+          {dateMode === "MANUAL" || recurrenceGenerated ? (
+            <div className={dateMode === "RECURRENT" ? "generated-dates-heading recurrence-review-heading" : "generated-dates-heading"} ref={dateMode === "RECURRENT" ? recurrenceReviewRef : undefined}>
+              <div>
+                <strong>{dateMode === "RECURRENT" ? "2. Revisá y ajustá los encuentros" : "Fechas cargadas manualmente"}</strong>
+                {dateMode === "RECURRENT" ? <small>Podés cambiar fechas y horarios, quitar encuentros o agregar excepciones.</small> : null}
               </div>
-            ))}
-          </div>
-          {dateMode === "MANUAL" ? (
-            <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, EMPTY_DATE])}><Plus size={17} />Agregar otra fecha</button>
+              <span className="date-count">{dates.length}</span>
+            </div>
+          ) : null}
+          {dateMode !== "RECURRENT" || recurrenceGenerated ? (
+            <>
+              <div className={`date-rows${dates.length > 5 ? " is-scrollable" : ""}`}>
+                {dates.map((date, index) => (
+                  <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={index}>
+                    {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{index + 1}</span> : null}
+                    <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
+                    <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
+                    <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
+                    {dateMode !== "SINGLE" ? (
+                      <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              {dateMode !== "SINGLE" ? (
+                <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, EMPTY_DATE])}><Plus size={17} />{dateMode === "RECURRENT" ? "Agregar encuentro a la serie" : "Agregar otra fecha"}</button>
+              ) : null}
+            </>
           ) : null}
         </div>
       </FormSection>
@@ -288,7 +305,7 @@ export function MeetingForm({
           ) : status === "error" ? (
             <p className="form-message" role="alert">{message}</p>
           ) : dates.length === 0 ? (
-            <><strong>Sin encuentros todavía</strong><span>Generá la repetición para continuar</span></>
+            <><strong>Sin encuentros todavía</strong><span>{dateMode === "RECURRENT" && !recurrenceGenerated ? "Generá la repetición para continuar" : "Agregá un encuentro para continuar"}</span></>
           ) : (
             <><strong>{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</strong><span>Se crearán en Google Calendar</span></>
           )}
