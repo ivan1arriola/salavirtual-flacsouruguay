@@ -1,8 +1,12 @@
 "use client";
 
-import { CalendarPlus, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
+import { CalendarClock, CalendarPlus, History, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  filtrarEncuentrosPorVista,
+  type VistaTemporalEncuentros
+} from "@/src/modules/reuniones/filtro-encuentros.domain";
 
 type Encounter = Readonly<{
   id: string;
@@ -19,6 +23,7 @@ type Encounter = Readonly<{
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
+  esDeHoy: boolean;
   temporalidad: "PASADO" | "EN_CURSO" | "FUTURO";
 }>;
 
@@ -30,6 +35,7 @@ export function MeetingDetailManager({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
 
   async function request(requestId: string, id: string, init: RequestInit) {
     setBusy(id);
@@ -113,6 +119,9 @@ export function MeetingDetailManager({
     : !canRemoveAll
       ? "Solo se puede eliminar completa cuando todos los encuentros son futuros y programados."
       : "";
+  const proximos = filtrarEncuentrosPorVista(meetings, "PROXIMOS");
+  const pasados = filtrarEncuentrosPorVista(meetings, "PASADOS");
+  const visibleMeetings = vistaTemporal === "PROXIMOS" ? proximos : pasados;
 
   return (
     <>
@@ -146,13 +155,37 @@ export function MeetingDetailManager({
       </section>
 
       <section className="encounter-list-heading">
-        <div><h2>Todos los encuentros</h2><p>{meetings.length} instancias ordenadas cronológicamente.</p></div>
-        <div className="encounter-time-legend" aria-label="Referencia temporal">
-          <span className="future">Futuros</span><span className="current">En curso</span><span className="past">Pasados</span>
+        <div>
+          <h2>{vistaTemporal === "PROXIMOS" ? "Próximos encuentros y de hoy" : "Encuentros pasados"}</h2>
+          <p>{visibleMeetings.length} instancias ordenadas cronológicamente.</p>
+        </div>
+        <div className="encounter-time-filter" aria-label="Filtrar encuentros">
+          <button
+            aria-pressed={vistaTemporal === "PROXIMOS"}
+            className={vistaTemporal === "PROXIMOS" ? "active" : ""}
+            onClick={() => setVistaTemporal("PROXIMOS")}
+            type="button"
+          >
+            <CalendarClock size={16} />Próximas y de hoy <span>{proximos.length}</span>
+          </button>
+          <button
+            aria-pressed={vistaTemporal === "PASADOS"}
+            className={vistaTemporal === "PASADOS" ? "active" : ""}
+            onClick={() => setVistaTemporal("PASADOS")}
+            type="button"
+          >
+            <History size={16} />Pasadas <span>{pasados.length}</span>
+          </button>
         </div>
       </section>
       <div className="encounter-list">
-        {meetings.map((meeting) => (
+        {visibleMeetings.length === 0 ? (
+          <div className="content-section empty-state encounter-empty-state">
+            <CalendarClock size={22} aria-hidden="true" />
+            <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : "No hay encuentros pasados."}</p>
+          </div>
+        ) : null}
+        {visibleMeetings.map((meeting) => (
           <article className={`encounter-item is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
             <header>
               <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.host}{meeting.codigoMeet ? ` · ${meeting.codigoMeet}` : ""}</small></span>

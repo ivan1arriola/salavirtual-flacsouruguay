@@ -56,6 +56,7 @@ export default async function ReunionDetailPage({
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
+  const todayInMontevideo = toLocalInput(now).slice(0, 10);
   return (
     <>
       <header className="page-header">
@@ -94,6 +95,7 @@ export default async function ReunionDetailPage({
             codigoMeet: event?.codigoReunion ?? null,
             joinUrl: event?.joinUrl ?? null,
             editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
+            esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
             temporalidad: meeting.finProgramadoAt < now
               ? "PASADO" as const
               : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const

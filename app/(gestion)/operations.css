@@ -1544,6 +1544,55 @@
   gap: 6px;
 }
 
+.encounter-time-filter {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f6f8;
+  padding: 4px;
+}
+
+.encounter-time-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 7px 11px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.encounter-time-filter button:hover {
+  color: var(--ink);
+}
+
+.encounter-time-filter button.active {
+  background: #ffffff;
+  color: var(--brand);
+  box-shadow: 0 1px 3px rgba(30, 48, 72, 0.13);
+}
+
+.encounter-time-filter button > span {
+  min-width: 22px;
+  border-radius: 999px;
+  background: #e5edf2;
+  padding: 2px 6px;
+  color: inherit;
+  text-align: center;
+  font-size: 0.68rem;
+}
+
+.encounter-empty-state {
+  min-height: 150px;
+}
+
 .encounter-time-legend span,
 .encounter-time-status {
   display: inline-flex;
@@ -1805,6 +1854,15 @@
     flex-direction: column;
   }
 
+  .encounter-time-filter {
+    width: 100%;
+  }
+
+  .encounter-time-filter button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
   .meeting-danger-zone {
     align-items: stretch;
     flex-direction: column;
@@ -1891,6 +1949,11 @@
     align-items: flex-start;
     flex-direction: column;
     padding: 12px 14px;
+  }
+
+  .encounter-time-filter {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .encounter-actions {
