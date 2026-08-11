@@ -1,8 +1,8 @@
 "use client";
 
-import { CalendarClock, CalendarPlus, History, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
+import { CalendarClock, CalendarPlus, History, LoaderCircle, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import {
   filtrarEncuentrosPorVista,
@@ -37,6 +37,7 @@ export function MeetingDetailManager({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
+  const removingAllRef = useRef(false);
 
   async function request(requestId: string, id: string, init: RequestInit) {
     setBusy(id);
@@ -92,24 +93,25 @@ export function MeetingDetailManager({
   }
 
   async function removeAll() {
+    if (removingAllRef.current) return;
     if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la reunión completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
+    removingAllRef.current = true;
     setBusy("all");
-    setMessage("");
+    setMessage(`Eliminando ${meetings.length} encuentros de Google Calendar. Puede demorar unos minutos…`);
     try {
-      const responses = await Promise.all(requestIds.map((requestId) =>
-        fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" })
-      ));
-      const failed = responses.find((response) => !response.ok);
-      if (failed) {
-        const result = await failed.json().catch(() => ({}));
-        setMessage(result.error ?? "No se pudo eliminar la reunión completa.");
-        return;
+      for (const requestId of requestIds) {
+        const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" });
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error ?? "No se pudo eliminar la reunión completa.");
+        }
       }
       router.push("/reuniones");
       router.refresh();
-    } catch {
-      setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo conectar con el servidor. Intentá nuevamente.");
     } finally {
+      removingAllRef.current = false;
       setBusy(null);
     }
   }
@@ -131,7 +133,7 @@ export function MeetingDetailManager({
           <h2>Eliminar reunión completa</h2>
           <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
           {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
-          {message ? <p className="form-message meeting-detail-message" role="alert">{message}</p> : null}
+          {message ? <p className="form-message meeting-detail-message" role={busy === "all" ? "status" : "alert"}>{message}</p> : null}
         </div>
         <button
           className="secondary-action danger-action"
@@ -140,7 +142,8 @@ export function MeetingDetailManager({
           title={removeAllBlockedReason || "Eliminar reunión completa"}
           type="button"
         >
-          <Trash2 size={17} />{busy === "all" ? "Eliminando…" : "Eliminar todo"}
+          {busy === "all" ? <LoaderCircle className="button-spinner" size={17} /> : <Trash2 size={17} />}
+          {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar todo"}
         </button>
       </section>
       <section className="content-section add-encounter-section">

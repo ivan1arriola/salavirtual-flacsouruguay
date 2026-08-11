@@ -3,6 +3,7 @@ import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { withRequiredCohostEmails } from "../meet/cohosts.domain";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import type { MeetProvider } from "../meet/provider";
+import { conReintentosPorLimiteGoogle } from "../meet/google-api-retry.adapter";
 import {
   actualizarEncuentroSchema,
   agregarEncuentroSchema,
@@ -347,18 +348,30 @@ export async function eliminarReunionCompleta(
         : []
     )
   );
-  await Promise.all(calendarEvents.map(async ({ calendarId, externalEventId }) => {
+  const eventosPorCalendario = new Map<string, typeof calendarEvents>();
+  for (const event of calendarEvents) {
+    eventosPorCalendario.set(event.calendarId, [
+      ...(eventosPorCalendario.get(event.calendarId) ?? []),
+      event
+    ]);
+  }
+  for (const [calendarId, events] of eventosPorCalendario) {
     const credentials = await cargarCredencialesEncuentro(
       dependencies.db,
       dependencies.descifrar,
       calendarId
     );
-    try {
-      await dependencies.crearProvider(credentials).cancelarEvento(calendarId, externalEventId);
-    } catch (error) {
-      if (!esEventoCalendarInexistente(error)) throw error;
+    const provider = dependencies.crearProvider(credentials);
+    for (const { externalEventId } of events) {
+      try {
+        await conReintentosPorLimiteGoogle(() =>
+          provider.cancelarEvento(calendarId, externalEventId)
+        );
+      } catch (error) {
+        if (!esEventoCalendarInexistente(error)) throw error;
+      }
     }
-  }));
+  }
 
   await dependencies.db.$transaction(async (tx) => {
     await tx.auditoria.create({
