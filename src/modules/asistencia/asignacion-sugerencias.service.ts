@@ -1,3 +1,8 @@
+import {
+  cumpleSeparacionMinimaAsistencias,
+  type PeriodoAsistencia
+} from "./asistencia.domain";
+
 export type AssignmentSuggestionInput = Readonly<{
   meetings: readonly Readonly<{
     covered: boolean;
@@ -41,7 +46,7 @@ export type AssignmentSuggestion = Readonly<{
 export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
   const assistantById = new Map(input.assistants.map((assistant) => [assistant.id, assistant]));
   const monthlyLoads = new Map<string, number>();
-  const schedules = new Map<string, Array<readonly [number, number]>>();
+  const schedules = new Map<string, PeriodoAsistencia[]>();
 
   for (const assignment of input.assignments) {
     const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
@@ -49,7 +54,7 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
     monthlyLoads.set(loadKey, (monthlyLoads.get(loadKey) ?? 0) + minutes);
     schedules.set(assignment.assistantId, [
       ...(schedules.get(assignment.assistantId) ?? []),
-      [assignment.startsAt.getTime(), assignment.endsAt.getTime()]
+      { inicio: assignment.startsAt, fin: assignment.endsAt }
     ]);
   }
 
@@ -68,8 +73,10 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
       )
     ];
     const applicantSet = new Set(applicantIds);
-    const startsAtMs = meeting.inicioProgramadoAt.getTime();
-    const endsAtMs = meeting.finProgramadoAt.getTime();
+    const meetingPeriod = {
+      inicio: meeting.inicioProgramadoAt,
+      fin: meeting.finProgramadoAt
+    };
     const keySuffix = monthKey(meeting.inicioProgramadoAt, meeting.timezone);
     const availability = new Map(input.assistants.map((assistant) => [
       assistant.id,
@@ -83,7 +90,9 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
       candidateIds
         .filter((assistantId) => availability.get(assistantId)?.tipo !== "NO_DISPONIBLE")
         .filter((assistantId) =>
-          !hasScheduleConflict(schedules.get(assistantId) ?? [], startsAtMs, endsAtMs)
+          (schedules.get(assistantId) ?? []).every((scheduled) =>
+            cumpleSeparacionMinimaAsistencias(scheduled, meetingPeriod)
+          )
         )
         .sort((left, right) => {
           const leftScore = (availability.get(left)?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
@@ -115,7 +124,7 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
       `${selected.id}:${keySuffix}`,
       loadBefore + minutesBetween(meeting.inicioProgramadoAt, meeting.finProgramadoAt)
     );
-    schedules.set(selected.id, [...(schedules.get(selected.id) ?? []), [startsAtMs, endsAtMs]]);
+    schedules.set(selected.id, [...(schedules.get(selected.id) ?? []), meetingPeriod]);
   }
 
   return suggestions;
@@ -185,16 +194,6 @@ function timeKey(date: Date, timezone: string): string {
     hourCycle: "h23"
   }).formatToParts(date);
   return `${parts.find(({ type }) => type === "hour")?.value ?? "00"}:${parts.find(({ type }) => type === "minute")?.value ?? "00"}`;
-}
-
-function hasScheduleConflict(
-  schedule: readonly (readonly [number, number])[],
-  startsAtMs: number,
-  endsAtMs: number
-) {
-  return schedule.some(
-    ([scheduledStart, scheduledEnd]) => startsAtMs < scheduledEnd && endsAtMs > scheduledStart
-  );
 }
 
 function minutesBetween(start: Date, end: Date): number {

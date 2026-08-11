@@ -73,6 +73,23 @@ describe("buildAssignmentSuggestions", () => {
     expect(result.get("meeting-2")?.id).toBe("assistant-2");
   });
 
+  it("exige media hora entre reuniones al recomendar asistentes", () => {
+    const result = buildAssignmentSuggestions({
+      meetings: [
+        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z"),
+        meeting("meeting-2", "2026-08-10T14:29:00Z", "2026-08-10T15:30:00Z")
+      ],
+      assistants: [
+        { id: "assistant-1", name: "Ana" },
+        { id: "assistant-2", name: "Bruno" }
+      ],
+      assignments: []
+    });
+
+    expect(result.get("meeting-1")?.id).toBe("assistant-1");
+    expect(result.get("meeting-2")?.id).toBe("assistant-2");
+  });
+
   it("prioriza disponibilidad preferente y excluye una excepción no disponible", () => {
     const recurrent = [{
       diaSemana: 1,

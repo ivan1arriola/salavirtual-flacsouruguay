@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   asignacionAsistenciaSchema,
+  cumpleSeparacionMinimaAsistencias,
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
   notificacionAsistenciaSchema,
@@ -39,6 +40,25 @@ describe("flujo funcional de asistencia", () => {
     expect(notificacionAsistenciaSchema.parse({ instanciaSalaId: "meeting" }))
       .toEqual({ instanciaSalaId: "meeting" });
     expect(notificacionAsistenciaSchema.safeParse({ instanciaSalaId: "" }).success).toBe(false);
+  });
+
+  it("exige al menos treinta minutos entre asistencias", () => {
+    const existente = {
+      inicio: new Date("2026-08-11T18:00:00Z"),
+      fin: new Date("2026-08-11T19:00:00Z")
+    };
+    expect(cumpleSeparacionMinimaAsistencias(existente, {
+      inicio: new Date("2026-08-11T19:30:00Z"),
+      fin: new Date("2026-08-11T20:30:00Z")
+    })).toBe(true);
+    expect(cumpleSeparacionMinimaAsistencias(existente, {
+      inicio: new Date("2026-08-11T19:29:00Z"),
+      fin: new Date("2026-08-11T20:30:00Z")
+    })).toBe(false);
+    expect(cumpleSeparacionMinimaAsistencias({
+      inicio: new Date("2026-08-11T16:31:00Z"),
+      fin: new Date("2026-08-11T17:31:00Z")
+    }, existente)).toBe(false);
   });
 
   it("valida el cierre con horario real e incidencia opcional", () => {

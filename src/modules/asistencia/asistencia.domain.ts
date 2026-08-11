@@ -59,6 +59,22 @@ export function puedeAsignarAsistencia(rol: RolUsuario): boolean {
   return rol === "ADMINISTRACION";
 }
 
+export const SEPARACION_MINIMA_ASISTENCIAS_MINUTOS = 30;
+
+export type PeriodoAsistencia = Readonly<{
+  inicio: Date;
+  fin: Date;
+}>;
+
+export function cumpleSeparacionMinimaAsistencias(
+  izquierda: PeriodoAsistencia,
+  derecha: PeriodoAsistencia
+): boolean {
+  const separacionMs = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
+  return izquierda.fin.getTime() + separacionMs <= derecha.inicio.getTime()
+    || derecha.fin.getTime() + separacionMs <= izquierda.inicio.getTime();
+}
+
 export function estadoInteresParaAccion(
   accion: "POSTULAR" | "RETIRAR"
 ): "ME_INTERESA" | "RETIRADO" {
