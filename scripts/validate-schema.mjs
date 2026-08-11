@@ -65,4 +65,9 @@ if (schema.includes("CONTADURIA") || schema.includes("ADMINISTRADOR")) {
   process.exit(1);
 }
 
+if (!schema.includes("cesadoHastaProximoInicioSesion Boolean")) {
+  console.error("Falta el estado de cese temporal del asistente técnico.");
+  process.exit(1);
+}
+
 console.log("Schema validado: nombres de asistencia tecnica consistentes y Zoom historico separado.");

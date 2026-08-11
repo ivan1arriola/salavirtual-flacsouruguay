@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   crearReunionesSchema,
+  claveIdempotenciaCreacionSchema,
   diasDeReunion,
   puedeAbrirCreacionReuniones,
   puedeCrearReuniones,
@@ -15,6 +16,11 @@ import {
 } from "../src/modules/reuniones/duplicados.domain";
 
 describe("dias derivados de reuniones", () => {
+  it("acepta solamente UUID como clave idempotente de creación", () => {
+    expect(claveIdempotenciaCreacionSchema.safeParse("c7ad82c1-3b81-4a20-b718-1336e82c267c").success).toBe(true);
+    expect(claveIdempotenciaCreacionSchema.safeParse("repetir-reunion").success).toBe(false);
+  });
+
   it("detecta coincidencias exactas y horarios superpuestos del mismo docente", () => {
     const base = {
       solicitudId: "request-1",

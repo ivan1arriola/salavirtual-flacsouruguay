@@ -31,7 +31,10 @@ export default async function NuevaReunionPage() {
     }),
     actor.rol === "ADMINISTRACION"
       ? db.asistenteTecnico.findMany({
-          where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
+          where: {
+            cesadoHastaProximoInicioSesion: false,
+            usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+          },
           orderBy: { usuario: { nombres: "asc" } },
           include: { usuario: true }
         })

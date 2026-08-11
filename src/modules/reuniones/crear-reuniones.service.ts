@@ -20,12 +20,14 @@ export async function crearReuniones(
   db: PrismaClient,
   actor: ActorReunion,
   rawInput: unknown,
+  claveIdempotenciaCreacion?: string,
 ): Promise<
   Readonly<{
     solicitudId: string;
     reuniones: number;
     dias: readonly string[];
     eventoProveedorIds: readonly string[];
+    reutilizada: boolean;
   }>
 > {
   const input = crearReunionesSchema.parse(rawInput);
@@ -36,6 +38,39 @@ export async function crearReuniones(
   );
 
   return db.$transaction(async (tx) => {
+    if (claveIdempotenciaCreacion) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:crear-reunion:${claveIdempotenciaCreacion}`}))`;
+      const existente = await tx.solicitudSala.findUnique({
+        where: { claveIdempotenciaCreacion },
+        select: {
+          id: true,
+          creadaPorUsuarioId: true,
+          timezone: true,
+          instancias: {
+            orderBy: { ordinal: "asc" },
+            select: {
+              inicioProgramadoAt: true,
+              eventosProveedor: { select: { id: true } }
+            }
+          }
+        }
+      });
+      if (existente) {
+        if (existente.creadaPorUsuarioId !== actor.id) {
+          throw new Error("La clave de creación ya fue utilizada por otro usuario.");
+        }
+        return {
+          solicitudId: existente.id,
+          reuniones: existente.instancias.length,
+          dias: diasDeReunion(existente.instancias, existente.timezone),
+          eventoProveedorIds: existente.instancias.flatMap(({ eventosProveedor }) =>
+            eventosProveedor.map(({ id }) => id)
+          ),
+          reutilizada: true
+        };
+      }
+    }
+
     const [docentePrograma, proveedorMeet] = await Promise.all([
       tx.docentePrograma.findUnique({
         where: { id: input.docenteProgramaId },
@@ -73,12 +108,18 @@ export async function crearReuniones(
           select: {
             id: true,
             usuarioId: true,
+            cesadoHastaProximoInicioSesion: true,
             usuario: { select: { activo: true, rol: true } }
           }
         })
       : null;
-    if (asistenteTecnicoId && (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO")) {
-      throw new Error("El asistente técnico seleccionado no está activo.");
+    if (
+      asistenteTecnicoId &&
+      (!assistant?.usuario.activo ||
+        assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
+        assistant.cesadoHastaProximoInicioSesion)
+    ) {
+      throw new Error("El asistente técnico seleccionado no está disponible.");
     }
 
     const automaticCohostUserIds = [
@@ -139,6 +180,7 @@ export async function crearReuniones(
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
     const solicitud = await tx.solicitudSala.create({
       data: {
+        claveIdempotenciaCreacion,
         docenteProgramaId: input.docenteProgramaId,
         creadaPorUsuarioId: actor.id,
         titulo: input.titulo,
@@ -216,6 +258,7 @@ export async function crearReuniones(
         input.instancias.map(({ inicio }) => ({ inicioProgramadoAt: inicio })),
         input.timezone,
       ),
+      reutilizada: false,
     };
   });
 }

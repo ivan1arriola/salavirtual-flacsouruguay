@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { sendMail } from "@/src/lib/email.client";
+import { sendMail } from "../../lib/email.client";
 import {
   PREFERENCIA_PREDETERMINADA,
   type PreferenciaCanales,
@@ -41,6 +41,16 @@ export async function notificarUsuario(
   recipient: NotificationRecipient,
   message: NotificationMessage
 ): Promise<void> {
+  const asistenteCesado = await db.asistenteTecnico.findFirst({
+    where: {
+      usuarioId: recipient.usuarioId,
+      cesadoHastaProximoInicioSesion: true,
+      usuario: { rol: "ASISTENTE_TECNICO" }
+    },
+    select: { id: true }
+  });
+  if (asistenteCesado) return;
+
   const preference = await preferenciasDeUsuario(db, recipient.usuarioId, message.tipo);
   if (preference.push) {
     await db.notificacion.create({

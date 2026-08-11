@@ -54,6 +54,12 @@ export async function cambiarRolUsuario(
       const slug = await crearSlugAsistenteDisponible(tx, name, usuario.id);
       await tx.asistenteTecnico.create({ data: { usuarioId: usuario.id, slug } });
     }
+    if (rol !== "ASISTENTE_TECNICO" && usuario.asistenteTecnico) {
+      await tx.asistenteTecnico.update({
+        where: { id: usuario.asistenteTecnico.id },
+        data: { cesadoHastaProximoInicioSesion: false }
+      });
+    }
 
     await tx.usuario.update({ where: { id: usuario.id }, data: { rol } });
     await tx.auditoria.create({

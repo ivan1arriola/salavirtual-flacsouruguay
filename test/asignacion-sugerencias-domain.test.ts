@@ -16,6 +16,21 @@ const meeting = (id: string, start: string, end: string, applicants: string[] = 
 });
 
 describe("buildAssignmentSuggestions", () => {
+  it("excluye asistentes cesados hasta su próximo inicio de sesión", () => {
+    const result = buildAssignmentSuggestions({
+      meetings: [
+        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["cesado"])
+      ],
+      assistants: [
+        { id: "cesado", name: "Cesado", cesadoHastaProximoInicioSesion: true },
+        { id: "disponible", name: "Disponible" }
+      ],
+      assignments: []
+    });
+
+    expect(result.get("meeting-1")?.id).toBe("disponible");
+  });
+
   it("prioriza postulantes disponibles sobre otros asistentes", () => {
     const result = buildAssignmentSuggestions({
       meetings: [

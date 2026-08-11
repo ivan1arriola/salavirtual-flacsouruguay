@@ -1,7 +1,7 @@
 "use client";
 
-import { CalendarDays, CalendarPlus, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, CalendarPlus, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "@/src/components/meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 
@@ -52,8 +52,16 @@ export function MeetingForm({
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [createdMeetingId, setCreatedMeetingId] = useState<string>();
+  const submittingRef = useRef(false);
+  const idempotencyKeyRef = useRef<string>("");
 
-  async function submit(formData: FormData) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
+    idempotencyKeyRef.current ||= window.crypto.randomUUID();
+    const formData = new FormData(event.currentTarget);
     setStatus("saving");
     setMessage("");
     try {
@@ -61,7 +69,10 @@ export function MeetingForm({
       const minimumLoadingTime = wait(800);
       const response = await fetch("/api/v1/reuniones", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current
+        },
         body: JSON.stringify({
           titulo: formData.get("titulo"),
           descripcion: formData.get("descripcion") || undefined,
@@ -90,11 +101,14 @@ export function MeetingForm({
       setCreatedMeetingId(result.solicitudId);
       setStatus("done");
       setMessage(
-        failures
+        result.reutilizada
+          ? "Esta reunión ya se estaba creando. Se conservó una única solicitud."
+          : failures
           ? "La reunión quedó guardada. La configuración de Google continúa pendiente."
           : "La reunión y sus enlaces de Google Meet quedaron creados correctamente."
       );
     } catch (error) {
+      submittingRef.current = false;
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "No se pudo crear la reunión.");
     }
@@ -121,7 +135,7 @@ export function MeetingForm({
   }
 
   return (
-    <form className="meeting-form" action={submit}>
+    <form className="meeting-form" onSubmit={submit} aria-busy={status === "saving"}>
       <FormSection number="1" title="Datos académicos" detail="Programa, docente y modalidad.">
         <div className="form-grid">
           <Field label="Título" wide><input name="titulo" required minLength={3} /></Field>
@@ -232,8 +246,15 @@ export function MeetingForm({
       </FormSection>
 
       <footer className="form-actions">
-        {status === "error" ? <p className="form-message" role="alert">{message}</p> : <span />}
-        <button className="primary-action" type="submit" disabled={status === "saving"}><CalendarPlus size={18} />{status === "saving" ? "Creando…" : "Crear reunión"}</button>
+        {status === "saving" ? (
+          <p className="form-message saving" role="status">Creando la reunión y configurando Google Meet…</p>
+        ) : status === "error" ? (
+          <p className="form-message" role="alert">{message}</p>
+        ) : <span />}
+        <button className="primary-action" type="submit" disabled={status === "saving" || status === "done"}>
+          {status === "saving" ? <LoaderCircle className="button-spinner" size={18} /> : <CalendarPlus size={18} />}
+          {status === "saving" ? "Creando reunión…" : "Crear reunión"}
+        </button>
       </footer>
       {status === "saving" || status === "done" ? (
         <MeetingCreationDialog

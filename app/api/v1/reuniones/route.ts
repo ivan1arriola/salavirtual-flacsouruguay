@@ -7,6 +7,7 @@ import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.
 import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
+import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
 import { formatDateTime } from "@/src/lib/ui/format";
 
 export const runtime = "nodejs";
@@ -17,8 +18,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const input = await request.json().catch(() => null);
+  const idempotencyHeader = request.headers.get("Idempotency-Key");
 
   try {
+    const claveIdempotenciaCreacion = idempotencyHeader
+      ? claveIdempotenciaCreacionSchema.parse(idempotencyHeader)
+      : undefined;
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
       email: session.user.email
@@ -33,7 +38,12 @@ export async function POST(request: Request) {
       db,
       { id: actor.id, rol: actor.rol },
       input,
+      claveIdempotenciaCreacion,
     );
+    if (result.reutilizada) {
+      const { eventoProveedorIds: _, ...reunion } = result;
+      return NextResponse.json({ ...reunion, provisionamiento: [] }, { status: 200 });
+    }
     const provisionamiento = await provisionarEventosMeet(
       {
         db,
@@ -168,7 +178,11 @@ async function notificarReunionCreada(solicitudId: string) {
   const hasOpenAssistance = solicitud.instancias.some((instancia) => instancia.asignaciones.length === 0);
   if (!hasOpenAssistance) return;
   const assistants = await db.asistenteTecnico.findMany({
-    where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" }, disponibleGeneral: true },
+    where: {
+      usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
+      disponibleGeneral: true,
+      cesadoHastaProximoInicioSesion: false
+    },
     select: { usuario: { select: { id: true, emailPrincipal: true } } }
   });
   await notificarUsuarios(

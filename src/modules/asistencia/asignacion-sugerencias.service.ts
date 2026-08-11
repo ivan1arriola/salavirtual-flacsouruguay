@@ -17,6 +17,7 @@ export type AssignmentSuggestionInput = Readonly<{
   assistants: readonly Readonly<{
     id: string;
     name: string;
+    cesadoHastaProximoInicioSesion?: boolean;
     disponibilidades?: readonly DisponibilidadInput[];
   }>[];
   assignments: readonly Readonly<{
@@ -44,7 +45,10 @@ export type AssignmentSuggestion = Readonly<{
 }>;
 
 export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
-  const assistantById = new Map(input.assistants.map((assistant) => [assistant.id, assistant]));
+  const eligibleAssistants = input.assistants.filter(
+    (assistant) => !assistant.cesadoHastaProximoInicioSesion
+  );
+  const assistantById = new Map(eligibleAssistants.map((assistant) => [assistant.id, assistant]));
   const monthlyLoads = new Map<string, number>();
   const schedules = new Map<string, PeriodoAsistencia[]>();
 
@@ -78,7 +82,7 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
       fin: meeting.finProgramadoAt
     };
     const keySuffix = monthKey(meeting.inicioProgramadoAt, meeting.timezone);
-    const availability = new Map(input.assistants.map((assistant) => [
+    const availability = new Map(eligibleAssistants.map((assistant) => [
       assistant.id,
       evaluarDisponibilidad(
         meeting.inicioProgramadoAt,
@@ -107,7 +111,7 @@ export function buildAssignmentSuggestions(input: AssignmentSuggestionInput) {
           );
         });
 
-    const selectedId = available(input.assistants.map(({ id }) => id))[0];
+    const selectedId = available(eligibleAssistants.map(({ id }) => id))[0];
     const selected = selectedId ? assistantById.get(selectedId) : null;
     if (!selected) continue;
 

@@ -54,7 +54,11 @@ export default async function AgendaAbiertaPage() {
           select: { instanciaSalaId: true, estado: true }
         })
       : db.postulacionAsistenciaTecnica.findMany({
-          where: { instanciaSalaId: { in: meetingIds }, estado: "ME_INTERESA" },
+          where: {
+            instanciaSalaId: { in: meetingIds },
+            estado: "ME_INTERESA",
+            asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
+          },
           select: {
             instanciaSalaId: true,
             asistenteTecnico: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
@@ -63,7 +67,10 @@ export default async function AgendaAbiertaPage() {
         }),
     actor.rol === "ADMINISTRACION"
       ? db.asistenteTecnico.findMany({
-          where: { usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
+          where: {
+            cesadoHastaProximoInicioSesion: false,
+            usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+          },
           orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
           select: { id: true, usuario: { select: { nombres: true, apellidos: true } } }
         })

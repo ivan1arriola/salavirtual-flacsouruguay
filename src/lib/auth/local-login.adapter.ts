@@ -2,6 +2,7 @@ import { compare } from "bcryptjs";
 import { db } from "@/src/lib/db";
 import { esCorreoAcceso } from "@/src/modules/usuarios/credentials.domain";
 import type { DependenciasLogin } from "@/src/modules/usuarios/credentials.service";
+import { registrarInicioSesionUsuario } from "@/src/modules/usuarios/estado-asistente.service";
 
 const loginSelect = {
   id: true,
@@ -54,12 +55,6 @@ export const dependenciasLoginLocal: DependenciasLogin = Object.freeze({
   },
   verificarPassword: compare,
   registrarAcceso: async (usuarioId) => {
-    await db.usuario.update({
-      where: { id: usuarioId },
-      data: {
-        ultimoAccesoAt: new Date(),
-        ultimoProveedor: "credentials"
-      }
-    });
+    await registrarInicioSesionUsuario(db, usuarioId, "credentials");
   }
 });

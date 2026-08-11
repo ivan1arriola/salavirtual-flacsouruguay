@@ -710,6 +710,14 @@
   color: #216549;
 }
 
+.form-message.saving {
+  color: var(--brand);
+}
+
+.button-spinner {
+  animation: meeting-creation-spin 0.85s linear infinite;
+}
+
 .meeting-creation-backdrop {
   position: fixed;
   z-index: 80;
@@ -797,7 +805,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .meeting-creation-icon.is-loading svg,
-  .meeting-creation-progress span {
+  .meeting-creation-progress span,
+  .button-spinner {
     animation-duration: 2.4s;
   }
 }

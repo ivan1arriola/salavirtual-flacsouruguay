@@ -143,17 +143,18 @@ model DocentePrograma {
 
 /// Persona habilitada para realizar asistencias tecnicas en reuniones.
 model AsistenteTecnico {
-  id                String                           @id @default(cuid())
-  usuarioId         String                           @unique
-  slug              String                           @unique
-  aliasOperativo    String?
-  disponibleGeneral Boolean                          @default(true)
-  datosPago         String?
-  usuario           Usuario                          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  disponibilidades  DisponibilidadAsistenteTecnico[]
-  intereses         PostulacionAsistenciaTecnica[]
-  asignaciones      AsignacionAsistenciaTecnica[]
-  liquidaciones     LiquidacionAsistenciaTecnica[]
+  id                             String                           @id @default(cuid())
+  usuarioId                      String                           @unique
+  slug                           String                           @unique
+  aliasOperativo                 String?
+  disponibleGeneral              Boolean                          @default(true)
+  cesadoHastaProximoInicioSesion Boolean                          @default(false)
+  datosPago                      String?
+  usuario                        Usuario                          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  disponibilidades               DisponibilidadAsistenteTecnico[]
+  intereses                      PostulacionAsistenciaTecnica[]
+  asignaciones                   AsignacionAsistenciaTecnica[]
+  liquidaciones                  LiquidacionAsistenciaTecnica[]
 }
 
 model ProveedorReunion {
@@ -190,6 +191,7 @@ model CuentaProveedor {
 model SolicitudSala {
   id                        String           @id @default(cuid())
   legacyZoomSolicitudId     String?          @unique
+  claveIdempotenciaCreacion String?          @unique
   docenteProgramaId         String
   creadaPorUsuarioId        String
   titulo                    String

@@ -24,7 +24,10 @@ export default async function UsuariosPage({
     db.usuario.findMany({
       where: { rol: selectedType },
       orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-      include: { cuentasGoogle: { select: { email: true } } }
+      include: {
+        cuentasGoogle: { select: { email: true } },
+        asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } }
+      }
     }),
     db.usuario.groupBy({ by: ["rol"], _count: { _all: true } }),
     db.programa.findMany({
@@ -91,7 +94,21 @@ export default async function UsuariosPage({
                 <tr key={user.id}>
                   <td><strong>{user.nombres} {user.apellidos}</strong><small>{user.id} · {user.emailPrincipal ?? "sin email principal"}</small></td>
                   <td>{user.cuentasGoogle.length ? user.cuentasGoogle.map(({ email }) => email).join(", ") : <span className="muted-text">Sin cuenta</span>}</td>
-                  <td><span className={`status status-${user.activo ? "ok" : "error"}`}>{user.activo ? "Activo" : "Inactivo"}</span></td>
+                  <td>
+                    <span className={`status ${
+                      !user.activo
+                        ? "status-error"
+                        : user.asistenteTecnico?.cesadoHastaProximoInicioSesion
+                          ? "status-warning"
+                          : "status-ok"
+                    }`}>
+                      {!user.activo
+                        ? "Inactivo"
+                        : user.asistenteTecnico?.cesadoHastaProximoInicioSesion
+                          ? "Cesado hasta próximo inicio"
+                          : "Activo"}
+                    </span>
+                  </td>
                   <td><Link className="icon-link" href={`/usuarios/${encodeURIComponent(user.id)}`} title="Gestionar usuario"><ChevronRight size={18} /><span className="sr-only">Gestionar usuario</span></Link></td>
                 </tr>
               ))}

@@ -6,6 +6,7 @@ import {
   type CuentaGoogleVinculada,
   type PerfilGoogle
 } from "@/src/modules/usuarios/google-login.domain";
+import { registrarInicioSesionUsuario } from "@/src/modules/usuarios/estado-asistente.service";
 
 export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
   if (!esPerfilGoogleInstitucional(perfil)) return null;
@@ -113,10 +114,7 @@ export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
       ultimoAccesoAt: now
     }
   });
-  await db.usuario.update({
-    where: { id: autenticado.id },
-    data: { ultimoAccesoAt: now, ultimoProveedor: "google" }
-  });
+  await registrarInicioSesionUsuario(db, autenticado.id, "google", now);
   return autenticado;
 }
 

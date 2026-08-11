@@ -14,6 +14,8 @@
     "db:push": "prisma db push --skip-generate",
     "db:migrate": "prisma migrate dev",
     "db:rename-asistencia-tecnica": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/rename-asistencia-tecnica.sql",
+    "db:add-cese-asistente-tecnico": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-cese-asistente-tecnico.sql",
+    "db:add-idempotencia-creacion-reunion": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-idempotencia-creacion-reunion.sql",
     "db:studio": "prisma studio",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",

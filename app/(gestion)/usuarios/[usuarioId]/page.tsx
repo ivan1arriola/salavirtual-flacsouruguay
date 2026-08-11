@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -6,11 +6,13 @@ import { GoogleAccountsForm } from "@/src/components/google-accounts-form";
 import { TeacherProgramsForm } from "@/src/components/teacher-programs-form";
 import { UserRoleForm } from "@/src/components/user-role-form";
 import { db } from "@/src/lib/db";
-import { guardarProgramasUsuario } from "./actions";
+import { cesarAsistenteUsuario, guardarProgramasUsuario } from "./actions";
 
 const messages: Readonly<Record<string, string>> = {
   "programas-guardados": "Los programas del docente fueron actualizados.",
-  "error-programas": "No se pudieron actualizar los programas del docente."
+  "error-programas": "No se pudieron actualizar los programas del docente.",
+  "asistente-cesado": "El asistente técnico quedó cesado hasta su próximo inicio de sesión.",
+  "error-cese-asistente": "No se pudo cesar al asistente técnico."
 };
 
 export default async function UsuarioPage({
@@ -28,7 +30,8 @@ export default async function UsuarioPage({
       where: { id: usuarioId },
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
-        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } }
+        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } },
+        asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } }
       }
     }),
     db.programa.findMany({
@@ -54,6 +57,34 @@ export default async function UsuarioPage({
           hasPassword={Boolean(user.passwordHash)}
           userId={user.id}
         />
+        {user.rol === "ASISTENTE_TECNICO" && user.asistenteTecnico ? (
+          <section className="form-section account-form">
+            <div className="section-heading compact-heading">
+              <div>
+                <h2>Disponibilidad operativa</h2>
+                <p>El cese temporal excluye a la persona de notificaciones, postulaciones y algoritmos de asignación hasta que vuelva a iniciar sesión.</p>
+              </div>
+            </div>
+            <div>
+              <span className={`status ${user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "status-warning" : "status-ok"}`}>
+                {user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "Cesado hasta próximo inicio" : "Disponible para operar"}
+              </span>
+            </div>
+            <form action={cesarAsistenteUsuario}>
+              <input name="usuarioId" type="hidden" value={user.id} />
+              <footer className="form-actions">
+                <span className="muted-text">Las asignaciones existentes no se cancelan.</span>
+                <button
+                  className="secondary-action"
+                  disabled={user.asistenteTecnico.cesadoHastaProximoInicioSesion}
+                  type="submit"
+                >
+                  <UserRoundX size={17} />Cesar hasta próximo inicio de sesión
+                </button>
+              </footer>
+            </form>
+          </section>
+        ) : null}
         {user.rol === "DOCENTE" ? (
           <TeacherProgramsForm
             programs={programs.map(({ id, nombre }) => ({ id, name: nombre }))}

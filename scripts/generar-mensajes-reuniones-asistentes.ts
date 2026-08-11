@@ -20,6 +20,7 @@ async function main(): Promise<void> {
   const assignments = await db.asignacionAsistenciaTecnica.findMany({
     where: {
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
+      asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
       instancia: {
         inicioProgramadoAt: { gte: now },
         estado: { in: ["PROGRAMADA", "EN_CURSO"] }

@@ -71,7 +71,10 @@ export default async function CoberturaAsistenciasPage({
           orderBy: { updatedAt: "desc" }
         },
         postulaciones: {
-          where: { estado: "ME_INTERESA" },
+          where: {
+            estado: "ME_INTERESA",
+            asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
+          },
           include: { asistenteTecnico: { include: { usuario: true } } },
           orderBy: { createdAt: "asc" }
         },
@@ -81,10 +84,15 @@ export default async function CoberturaAsistenciasPage({
       }
     }),
     db.asistenteTecnico.findMany({
-      where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
+      where: {
+        disponibleGeneral: true,
+        cesadoHastaProximoInicioSesion: false,
+        usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+      },
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
       select: {
         id: true,
+        cesadoHastaProximoInicioSesion: true,
         usuario: { select: { nombres: true, apellidos: true } },
         disponibilidades: true
       }
@@ -125,6 +133,7 @@ export default async function CoberturaAsistenciasPage({
   const assistantOptions = assistants.map((assistant) => ({
     id: assistant.id,
     name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
+    cesadoHastaProximoInicioSesion: assistant.cesadoHastaProximoInicioSesion,
     disponibilidades: assistant.disponibilidades
   }));
   const suggestions = buildAssignmentSuggestions({

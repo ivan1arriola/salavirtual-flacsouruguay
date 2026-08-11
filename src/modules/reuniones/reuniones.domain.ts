@@ -69,6 +69,8 @@ export const crearReunionesSchema = z
 
 export type CrearReunionesInput = Readonly<z.infer<typeof crearReunionesSchema>>;
 
+export const claveIdempotenciaCreacionSchema = z.uuid();
+
 export function puedeAbrirCreacionReuniones(rol: RolUsuario): boolean {
   return rol === "ADMINISTRACION" || rol === "DOCENTE";
 }

@@ -43,9 +43,17 @@ export async function actualizarPostulacionAsistencia(
   const result = await db.$transaction(async (tx) => {
     const assistant = await tx.asistenteTecnico.findUnique({
       where: { usuarioId: actor.id },
-      select: { id: true, usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } } }
+      select: {
+        id: true,
+        cesadoHastaProximoInicioSesion: true,
+        usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } }
+      }
     });
-    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
+    if (
+      !assistant?.usuario.activo ||
+      assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
+      assistant.cesadoHastaProximoInicioSesion
+    ) {
       throw new Error("No existe un perfil de asistente técnico activo para esta sesión.");
     }
     const meeting = await tx.instanciaSala.findUnique({
@@ -201,6 +209,7 @@ export async function asignarAsistentePostulado(
         where: { id: input.asistenteTecnicoId },
         select: {
           id: true,
+          cesadoHastaProximoInicioSesion: true,
           usuario: {
             select: {
               id: true,
@@ -225,8 +234,12 @@ export async function asignarAsistentePostulado(
     ) {
       throw new Error("La reunión no admite asignaciones.");
     }
-    if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
-      throw new Error("El perfil seleccionado no corresponde a un asistente técnico activo.");
+    if (
+      !assistant?.usuario.activo ||
+      assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
+      assistant.cesadoHastaProximoInicioSesion
+    ) {
+      throw new Error("El perfil seleccionado no corresponde a un asistente técnico disponible.");
     }
     await bloquearAgendaAsistente(tx, assistant.id);
     const separacionMs = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
@@ -450,7 +463,11 @@ export async function renotificarAsistentesDisponibles(
         }
       }),
       tx.asistenteTecnico.findMany({
-        where: { disponibleGeneral: true, usuario: { activo: true, rol: "ASISTENTE_TECNICO" } },
+        where: {
+          disponibleGeneral: true,
+          cesadoHastaProximoInicioSesion: false,
+          usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+        },
         select: { usuario: { select: { id: true, emailPrincipal: true } } }
       })
     ]);
