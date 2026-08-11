@@ -38,9 +38,14 @@ export function RememberedAccounts() {
                 <span><strong>{account.nombre}</strong><small>{account.identificador}</small></span>
               </button>
             </form>
-            <button className="icon-button" onClick={() => forget(account.id)} title="Olvidar cuenta" type="button">
+            <button
+              aria-label={`Olvidar ${account.nombre}`}
+              className="icon-button"
+              onClick={() => forget(account.id)}
+              title="Olvidar cuenta"
+              type="button"
+            >
               <X size={16} aria-hidden="true" />
-              <span className="sr-only">Olvidar {account.nombre}</span>
             </button>
           </div>
         ))}
