@@ -248,6 +248,20 @@
     width: calc(100% - 40px);
     margin-inline: 20px;
   }
+
+  .next-meet-link-actions {
+    display: flex;
+    width: calc(100% - 40px);
+    margin-inline: 20px;
+  }
+
+  .next-meet-link-actions .meet-access,
+  .next-meet-link-actions .copy-meet-button {
+    width: auto;
+    flex: 1 1 0;
+    justify-content: center;
+    margin: 0;
+  }
 }
 
 @media (max-width: 460px) {

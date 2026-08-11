@@ -5,13 +5,13 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  ExternalLink,
   Hand,
   Hourglass
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Session } from "next-auth";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
@@ -81,7 +81,7 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
                     <td>{meeting.programa}</td>
                     <td>{meeting.sala}</td>
                     <td><span className="status status-ok">Asignada</span></td>
-                    <td>{meeting.joinUrl ? <a className="text-link" href={meeting.joinUrl} target="_blank" rel="noreferrer"><ExternalLink size={15} />Abrir Meet</a> : <span className="muted-text">Pendiente</span>}</td>
+                    <td>{meeting.joinUrl ? <MeetLinkActions url={meeting.joinUrl} /> : <span className="muted-text">Pendiente</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -102,7 +102,7 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
             <div><dt>Duración</dt><dd>{formatMinutes(Math.round((next.finAt.getTime() - next.inicioAt.getTime()) / 60_000))}</dd></div>
             <div><dt>Fin</dt><dd>{formatDateTime(next.finAt)}</dd></div>
           </dl>
-          {next.joinUrl ? <a className="primary-action meet-access" href={next.joinUrl} target="_blank" rel="noreferrer"><ExternalLink size={17} />Abrir Meet</a> : null}
+          {next.joinUrl ? <MeetLinkActions className="next-meet-link-actions" openClassName="primary-action meet-access" url={next.joinUrl} /> : null}
         </section>
       ) : null}
     </div>

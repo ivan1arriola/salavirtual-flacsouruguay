@@ -1,6 +1,7 @@
-import { CalendarCheck2, ExternalLink } from "lucide-react";
+import { CalendarCheck2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -84,7 +85,7 @@ export default async function MiAgendaPage() {
                       <td>{association.programa.nombre}</td>
                       <td><strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
                       <td><span className="status status-ok">Asignada</span></td>
-                      <td>{meet?.joinUrl ? <a className="icon-link" href={meet.joinUrl} target="_blank" rel="noreferrer" title="Abrir reunión"><ExternalLink size={17} /><span className="sr-only">Abrir reunión</span></a> : <span className="muted-text">—</span>}</td>
+                      <td>{meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : <span className="muted-text">—</span>}</td>
                     </tr>
                   );
                 })}

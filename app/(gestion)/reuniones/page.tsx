@@ -4,15 +4,14 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarPlus,
-  ExternalLink,
   Search,
   UserRoundCheck,
-  UserRoundMinus,
-  Video
+  UserRoundMinus
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-integration-status";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -172,7 +171,7 @@ export default async function ReunionesPage({
               <footer className="agenda-meeting-card-footer">
                 <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
                 {event?.joinUrl ? (
-                  <a className="secondary-action agenda-meet-action" href={event.joinUrl} rel="noreferrer" target="_blank"><Video size={16} />Abrir Meet<ExternalLink size={13} /></a>
+                  <MeetLinkActions openClassName="secondary-action agenda-meet-action" url={event.joinUrl} />
                 ) : <span className="muted-text">Enlace Meet pendiente</span>}
               </footer>
             </article>

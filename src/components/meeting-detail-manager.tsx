@@ -3,6 +3,7 @@
 import { CalendarClock, CalendarPlus, History, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import {
   filtrarEncuentrosPorVista,
   type VistaTemporalEncuentros
@@ -211,7 +212,7 @@ export function MeetingDetailManager({
                 ) : (
                   <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
                 )}
-                {meeting.joinUrl ? <a className="secondary-action" href={meeting.joinUrl} target="_blank" rel="noreferrer">Abrir Meet</a> : null}
+                {meeting.joinUrl ? <MeetLinkActions openClassName="secondary-action" url={meeting.joinUrl} /> : null}
                 <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar todo para borrar esta reunión" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
               </div>
             </div>

@@ -1,7 +1,8 @@
-import { ArrowLeft, CalendarClock, CalendarDays, ExternalLink, History, Settings } from "lucide-react";
+import { ArrowLeft, CalendarClock, CalendarDays, History, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { MeetIntegrationStatus } from "@/src/components/meet-integration-status";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -83,7 +84,7 @@ export default async function ReunionesDocentePage({
                       <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistencia ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
                       <td>
                         <small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>
-                        {meet?.joinUrl ? <a className="icon-link" href={meet.joinUrl} target="_blank" rel="noreferrer" title="Abrir Meet"><ExternalLink size={16} /><span className="sr-only">Abrir Meet</span></a> : null}
+                        {meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : null}
                       </td>
                     </tr>
                   );

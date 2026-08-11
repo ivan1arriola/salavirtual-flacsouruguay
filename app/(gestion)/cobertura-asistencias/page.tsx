@@ -1,9 +1,10 @@
-import { ArrowRight, CalendarClock, ExternalLink, Search, UserRoundCheck, UsersRound, Video } from "lucide-react";
+import { ArrowRight, CalendarClock, Search, UserRoundCheck, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantAssignmentSelect } from "@/src/components/assistant-assignment-select";
 import { CoverageAssistanceActions } from "@/src/components/coverage-assistance-actions";
+import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -236,9 +237,7 @@ export default async function CoberturaAsistenciasPage({
                         <div className="coverage-quick-links">
                           <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver reunión <ArrowRight size={15} /></Link>
                           {meet?.joinUrl ? (
-                            <a className="text-link" href={meet.joinUrl} rel="noreferrer" target="_blank">
-                              <Video size={16} />Abrir Meet<ExternalLink size={13} />
-                            </a>
+                            <MeetLinkActions url={meet.joinUrl} />
                           ) : <span className="muted-text">Meet pendiente</span>}
                         </div>
                         <CoverageAssistanceActions

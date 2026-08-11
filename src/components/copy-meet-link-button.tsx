@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 export function CopyMeetLinkButton({ url }: Readonly<{ url: string }>) {
@@ -26,5 +26,33 @@ export function CopyMeetLinkButton({ url }: Readonly<{ url: string }>) {
       {copied ? <Check size={14} /> : <Copy size={14} />}
       {copied ? "Copiado" : "Copiar link"}
     </button>
+  );
+}
+
+export function MeetLinkActions({
+  url,
+  openClassName = "text-link",
+  iconOnly = false,
+  className = ""
+}: Readonly<{
+  url: string;
+  openClassName?: string;
+  iconOnly?: boolean;
+  className?: string;
+}>) {
+  return (
+    <span className={`meet-link-actions ${className}`.trim()}>
+      <a
+        className={openClassName}
+        href={url}
+        rel="noreferrer"
+        target="_blank"
+        title="Abrir Meet"
+      >
+        <ExternalLink size={iconOnly ? 16 : 15} />
+        <span className={iconOnly ? "sr-only" : ""}>Abrir Meet</span>
+      </a>
+      <CopyMeetLinkButton url={url} />
+    </span>
   );
 }
