@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookOpen,
   CalendarCheck2,
   CalendarDays,
   CalendarRange,
@@ -44,13 +45,18 @@ const assistantNav = [
 ] as const;
 
 const profileNav = [{ href: "/mi-perfil", label: "Mi perfil", icon: UserRound }] as const;
+const teacherNav = [{ href: "/mis-programas", label: "Mis programas", icon: BookOpen }] as const;
 const archiveNav = [{ href: "/historico", label: "Histórico Zoom", icon: History }] as const;
 
 export async function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const operationalNav = user.role === "ASISTENTE" ? assistantNav : [...primaryNav, ...profileNav];
+  const operationalNav = user.role === "ASISTENTE"
+    ? assistantNav
+    : user.role === "DOCENTE"
+      ? [...primaryNav.slice(0, 3), ...teacherNav, ...primaryNav.slice(3), ...profileNav]
+      : [...primaryNav, ...profileNav];
   const nav =
     user.role === "ADMINISTRACION"
       ? [...operationalNav, ...adminNav]

@@ -13,7 +13,6 @@ import {
   esTipoNotificacion,
   TIPOS_NOTIFICACION
 } from "@/src/modules/notificaciones/notificaciones.domain";
-import { actualizarProgramasPropios } from "@/src/modules/usuarios/programas-docente.service";
 import { actualizarDisponibilidadSemanal } from "@/src/modules/asistencia/asistencia.service";
 
 async function actorActual() {
@@ -45,19 +44,6 @@ export async function guardarPassword(formData: FormData): Promise<void> {
     estado = "error-password";
   }
   revalidatePath("/mi-perfil");
-  redirect(`/mi-perfil?estado=${estado}`);
-}
-
-export async function guardarProgramas(formData: FormData): Promise<void> {
-  const actor = await actorActual();
-  let estado = "programas-guardados";
-  try {
-    await actualizarProgramasPropios(db, actor, { programaIds: formData.getAll("programaIds") });
-  } catch {
-    estado = "error-programas";
-  }
-  revalidatePath("/mi-perfil");
-  revalidatePath("/reuniones/nueva");
   redirect(`/mi-perfil?estado=${estado}`);
 }
 
