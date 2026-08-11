@@ -50,55 +50,57 @@ export default async function AccesoPage({
         </aside>
 
         <div className="login-panel">
-          <header className="login-header">
-            <span className="login-lock"><LockKeyhole size={20} /></span>
-            <p className="eyebrow">FLACSO Meet</p>
-            <h1 id="login-title">Bienvenido/a</h1>
-            <p>Ingresá para acceder a tu espacio de trabajo.</p>
-          </header>
+          <div className="login-panel-inner">
+            <header className="login-header">
+              <span className="login-lock"><LockKeyhole size={20} /></span>
+              <p className="eyebrow">FLACSO Meet</p>
+              <h1 id="login-title">Bienvenido/a</h1>
+              <p>Ingresá para acceder a tu espacio de trabajo.</p>
+            </header>
 
-          {cambiar === "1" ? <RememberedAccounts /> : null}
+            {cambiar === "1" ? <RememberedAccounts /> : null}
 
-          {mensaje ? <p className="login-error" role="alert">{mensaje}</p> : null}
+            {mensaje ? <p className="login-error" role="alert">{mensaje}</p> : null}
 
-          {authConfig.google ? (
-            <form action={iniciarSesionGoogle}>
-              <button className="google-button login-google-button" type="submit">
-                <GoogleMark />
-                Continuar con Google
-              </button>
-              <p className="institutional-access-note">Usá tu cuenta institucional <strong>@flacso.edu.uy</strong></p>
+            {authConfig.google ? (
+              <form action={iniciarSesionGoogle}>
+                <button className="google-button login-google-button" type="submit">
+                  <GoogleMark />
+                  Continuar con Google
+                </button>
+                <p className="institutional-access-note">Usá tu cuenta institucional <strong>@flacso.edu.uy</strong></p>
+              </form>
+            ) : null}
+
+            {authConfig.google ? <div className="login-separator"><span>o ingresá con credenciales</span></div> : null}
+
+            <form className="login-form" action={iniciarSesionLocal}>
+              <label htmlFor="usuario">Usuario o correo</label>
+              <input
+                id="usuario"
+                name="usuario"
+                type="text"
+                autoComplete="username"
+                placeholder="usuario@flacso.edu.uy"
+                defaultValue={usuario ?? ""}
+                required
+              />
+
+              <label htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Tu contraseña"
+                required
+              />
+
+              <button className="login-submit-button" type="submit">Ingresar</button>
             </form>
-          ) : null}
 
-          {authConfig.google ? <div className="login-separator"><span>o ingresá con credenciales</span></div> : null}
-
-          <form className="login-form" action={iniciarSesionLocal}>
-            <label htmlFor="usuario">Usuario o correo</label>
-            <input
-              id="usuario"
-              name="usuario"
-              type="text"
-              autoComplete="username"
-              placeholder="usuario@flacso.edu.uy"
-              defaultValue={usuario ?? ""}
-              required
-            />
-
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Tu contraseña"
-              required
-            />
-
-            <button className="login-submit-button" type="submit">Ingresar</button>
-          </form>
-
-          <p className="login-help">Si no podés ingresar, contactá a Administración.</p>
+            <p className="login-help">Si no podés ingresar, contactá a Administración.</p>
+          </div>
         </div>
       </section>
     </main>
