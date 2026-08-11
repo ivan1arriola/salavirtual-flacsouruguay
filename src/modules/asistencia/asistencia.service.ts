@@ -5,12 +5,10 @@ import {
   asignacionAsistenciaSchema,
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
-  estadoParaRespuestaAsignacion,
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
-  postulacionAsistenciaSchema,
-  respuestaAsignacionSchema
+  postulacionAsistenciaSchema
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
@@ -451,73 +449,6 @@ export async function renotificarAsistentesDisponibles(
   });
   await safelyNotify(() => notificarUsuarios(db, result.recipients, result.message));
   return result.recipients.length;
-}
-
-export async function responderAsignacionAsistente(
-  db: PrismaClient,
-  actor: SessionActor,
-  rawInput: unknown
-) {
-  if (!actor.activo || actor.rol !== "ASISTENTE") {
-    throw new Error("Solo el Asistente asignado puede responder.");
-  }
-  const input = respuestaAsignacionSchema.parse(rawInput);
-  const result = await db.$transaction(async (tx) => {
-    const assignment = await tx.asignacionAsistente.findUnique({
-      where: { id: input.asignacionId },
-      include: {
-        asistente: { include: { usuario: true } },
-        instancia: { include: { solicitud: true } }
-      }
-    });
-    if (!assignment || assignment.asistente.usuarioId !== actor.id) {
-      throw new Error("La asignación no pertenece a esta sesión.");
-    }
-    if (assignment.estado !== "ASIGNADO") {
-      throw new Error("La asignación ya fue respondida.");
-    }
-    if (assignment.instancia.estado !== "PROGRAMADA" || assignment.instancia.finProgramadoAt <= new Date()) {
-      throw new Error("La reunión ya no admite una respuesta.");
-    }
-    const estado = estadoParaRespuestaAsignacion(input.accion);
-    const updated = await tx.asignacionAsistente.update({
-      where: { id: assignment.id },
-      data: { estado },
-      select: { id: true, estado: true, instanciaSalaId: true }
-    });
-    await tx.auditoria.create({
-      data: {
-        actorUsuarioId: actor.id,
-        accion: estado === "ACEPTADO" ? "ASISTENCIA_ACEPTADA" : "ASISTENCIA_RECHAZADA",
-        entidadTipo: "AsignacionAsistente",
-        entidadId: assignment.id,
-        valorAnterior: { estado: assignment.estado },
-        valorNuevo: { estado }
-      }
-    });
-    const admins = await tx.usuario.findMany({
-      where: { activo: true, rol: "ADMINISTRACION" },
-      select: { id: true, emailPrincipal: true }
-    });
-    const assistantName = [
-      assignment.asistente.usuario.nombres,
-      assignment.asistente.usuario.apellidos
-    ].filter(Boolean).join(" ") || "El asistente";
-    return {
-      assignment: updated,
-      recipients: admins.map(({ id, emailPrincipal }) => ({ usuarioId: id, email: emailPrincipal })),
-      notification: {
-        tipo: "ASISTENCIA_ASIGNACION" as const,
-        titulo: estado === "ACEPTADO" ? "Asistencia confirmada" : "Asistencia rechazada",
-        cuerpo: `${assistantName} ${estado === "ACEPTADO" ? "confirmó" : "rechazó"} la asistencia de ${assignment.instancia.solicitud.titulo}.`,
-        href: estado === "RECHAZADO" ? "/cobertura-asistencias?estado=pendientes" : `/reuniones/${assignment.instancia.solicitud.id}`,
-        metadata: { asignacionId: assignment.id, instanciaSalaId: assignment.instanciaSalaId, estado },
-        emailSubject: estado === "ACEPTADO" ? "Asistencia confirmada" : "Una reunión volvió a quedar sin cobertura"
-      }
-    };
-  });
-  await safelyNotify(() => notificarUsuarios(db, result.recipients, result.notification));
-  return result.assignment;
 }
 
 export async function actualizarDisponibilidadSemanal(

@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   ArrowRight,
-  BellRing,
   CalendarClock,
   CalendarDays,
   CalendarPlus,
@@ -34,7 +33,6 @@ export default async function HomePage() {
   const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const attentionEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const recordingLookback = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const [
     openRequests,
@@ -42,12 +40,10 @@ export default async function HomePage() {
     weekMeetings,
     pendingAssistance,
     integrationErrors,
-    unconfirmedCount,
     pendingRecordingCount,
     openIncidentCount,
     upcoming,
     pendingCoverageExamples,
-    unconfirmedAssignments,
     integrationErrorExamples,
     pendingRecordingExamples,
     openIncidents,
@@ -82,16 +78,6 @@ export default async function HomePage() {
           proveedor: { tipo: "GOOGLE_MEET" },
           estadoIntegracion: "ERROR",
           instancia: { inicioProgramadoAt: { gte: now }, estado: "PROGRAMADA" }
-        }
-      }),
-      db.asignacionAsistente.count({
-        where: {
-          estado: "ASIGNADO",
-          instancia: {
-            requiereAsistencia: true,
-            inicioProgramadoAt: { gte: now, lt: attentionEnd },
-            estado: "PROGRAMADA"
-          }
         }
       }),
       db.eventoProveedor.count({
@@ -143,28 +129,6 @@ export default async function HomePage() {
           id: true,
           inicioProgramadoAt: true,
           solicitud: { select: { id: true, titulo: true } }
-        }
-      }),
-      db.asignacionAsistente.findMany({
-        where: {
-          estado: "ASIGNADO",
-          instancia: {
-            requiereAsistencia: true,
-            inicioProgramadoAt: { gte: now, lt: attentionEnd },
-            estado: "PROGRAMADA"
-          }
-        },
-        orderBy: { instancia: { inicioProgramadoAt: "asc" } },
-        take: 3,
-        select: {
-          id: true,
-          asistente: { select: { usuario: { select: { nombres: true, apellidos: true } } } },
-          instancia: {
-            select: {
-              inicioProgramadoAt: true,
-              solicitud: { select: { id: true, titulo: true } }
-            }
-          }
         }
       }),
       db.eventoProveedor.findMany({
@@ -279,19 +243,6 @@ export default async function HomePage() {
       detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
       href: "/cobertura-asistencias?estado=pendientes",
       action: "Asignar asistencia"
-    } : null,
-    unconfirmedCount ? {
-      key: "unconfirmed",
-      tone: "warning",
-      icon: BellRing,
-      count: unconfirmedCount,
-      title: "Asistencias sin confirmar en 72 horas",
-      detail: unconfirmedAssignments.map(({ asistente, instancia }) => {
-        const user = asistente.usuario;
-        return `${user.nombres} ${user.apellidos ?? ""} · ${instancia.solicitud.titulo}`.trim();
-      }),
-      href: "/cobertura-asistencias?estado=cubiertas",
-      action: "Revisar asignaciones"
     } : null,
     integrationErrors ? {
       key: "meet-errors",
@@ -425,7 +376,7 @@ export default async function HomePage() {
                       </td>
                       <td>
                         {assistant ? (
-                          <><span className="status status-ok">{assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada"}</span><small>{assistant.nombres} {assistant.apellidos}</small></>
+                          <><span className="status status-ok">Asignada</span><small>{assistant.nombres} {assistant.apellidos}</small></>
                         ) : meeting.requiereAsistencia ? (
                           <span className="status status-warning"><AlertTriangle size={14} />Pendiente</span>
                         ) : <span className="muted-text">No requiere</span>}

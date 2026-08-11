@@ -221,7 +221,7 @@ export default async function ReunionesPage({
                   <span>
                     <small>Asistencia</small>
                     <strong>{assistantName ?? (meeting.requiereAsistencia ? "Pendiente de asignación" : "No requiere")}</strong>
-                    {assignment ? <em>{assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada"}</em> : null}
+                    {assignment ? <em>Asignada</em> : null}
                   </span>
                 </div>
               </div>

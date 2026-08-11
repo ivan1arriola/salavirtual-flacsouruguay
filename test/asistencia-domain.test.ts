@@ -3,13 +3,11 @@ import {
   asignacionAsistenciaSchema,
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
-  estadoParaRespuestaAsignacion,
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   postulacionAsistenciaSchema,
-  reporteDuracionSchema,
-  respuestaAsignacionSchema
+  reporteDuracionSchema
 } from "../src/modules/asistencia/asistencia.domain";
 
 describe("flujo funcional de asistencia", () => {
@@ -58,13 +56,6 @@ describe("flujo funcional de asistencia", () => {
       inicioReal: "2026-08-07T22:00:00.000Z",
       finReal: "2026-08-07T21:00:00.000Z"
     }).success).toBe(false);
-  });
-
-  it("modela confirmar o rechazar una asignación pendiente", () => {
-    expect(respuestaAsignacionSchema.parse({ asignacionId: "assignment", accion: "ACEPTAR" }))
-      .toEqual({ asignacionId: "assignment", accion: "ACEPTAR" });
-    expect(estadoParaRespuestaAsignacion("ACEPTAR")).toBe("ACEPTADO");
-    expect(estadoParaRespuestaAsignacion("RECHAZAR")).toBe("RECHAZADO");
   });
 
   it("valida franjas semanales de disponibilidad", () => {

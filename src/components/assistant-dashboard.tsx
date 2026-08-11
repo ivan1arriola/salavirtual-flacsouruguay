@@ -80,7 +80,7 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
                     <td><strong>{meeting.titulo}</strong><small>{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</small></td>
                     <td>{meeting.programa}</td>
                     <td>{meeting.sala}</td>
-                    <td><span className={`status ${meeting.estadoAsignacion === "ACEPTADO" ? "status-ok" : "status-neutral"}`}>{meeting.estadoAsignacion === "ACEPTADO" ? "Confirmada" : "Asignada"}</span></td>
+                    <td><span className="status status-ok">Asignada</span></td>
                     <td>{meeting.joinUrl ? <a className="text-link" href={meeting.joinUrl} target="_blank" rel="noreferrer"><ExternalLink size={15} />Abrir Meet</a> : <span className="muted-text">Pendiente</span>}</td>
                   </tr>
                 ))}
