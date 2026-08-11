@@ -7,7 +7,12 @@ import {
   puedeVerAgendaCompleta,
   resolverAsignacionInicial
 } from "../src/modules/reuniones/reuniones.domain";
-import { detectarPosiblesReunionesDuplicadas } from "../src/modules/reuniones/duplicados.domain";
+import {
+  claveRevisionDuplicado,
+  detectarPosiblesReunionesDuplicadas,
+  esDecisionRevisionDuplicado,
+  huellaRevisionDuplicado
+} from "../src/modules/reuniones/duplicados.domain";
 
 describe("dias derivados de reuniones", () => {
   it("detecta coincidencias exactas y horarios superpuestos del mismo docente", () => {
@@ -49,6 +54,38 @@ describe("dias derivados de reuniones", () => {
       { ...shared, id: "two", docenteId: "teacher-2" },
       { ...shared, id: "three", docenteId: "teacher-1", inicio: new Date("2026-08-03T14:00:00Z"), fin: new Date("2026-08-03T15:00:00Z") }
     ])).toEqual([]);
+  });
+
+  it("genera una clave estable y valida las decisiones de revisión", () => {
+    expect(claveRevisionDuplicado("meeting-b", "meeting-a")).toBe("meeting-a:meeting-b");
+    expect(claveRevisionDuplicado("meeting-a", "meeting-b")).toBe("meeting-a:meeting-b");
+    expect(esDecisionRevisionDuplicado("REQUIERE_ACTUALIZACION")).toBe(true);
+    expect(esDecisionRevisionDuplicado("FALSO_POSITIVO")).toBe(true);
+    expect(esDecisionRevisionDuplicado("PENDIENTE")).toBe(false);
+  });
+
+  it("invalida una revisión previa cuando cambia el horario sugerido", () => {
+    const meeting = {
+      id: "meeting-a",
+      solicitudId: "request-a",
+      titulo: "Clase",
+      programaId: "program-a",
+      programaNombre: "Programa",
+      docenteId: "teacher-a",
+      docenteNombre: "Docente",
+      inicio: new Date("2026-08-03T13:00:00Z"),
+      fin: new Date("2026-08-03T14:00:00Z")
+    };
+    const risk = {
+      izquierda: meeting,
+      derecha: { ...meeting, id: "meeting-b", solicitudId: "request-b" },
+      motivo: "COINCIDENCIA_EXACTA" as const
+    };
+
+    expect(huellaRevisionDuplicado(risk)).not.toBe(huellaRevisionDuplicado({
+      ...risk,
+      derecha: { ...risk.derecha, inicio: new Date("2026-08-03T13:30:00Z") }
+    }));
   });
 
   it("calcula dias unicos respetando la zona horaria", () => {

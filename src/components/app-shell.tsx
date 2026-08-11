@@ -4,6 +4,7 @@ import {
   CalendarCheck2,
   CalendarDays,
   CalendarRange,
+  GitCompareArrows,
   Hand,
   History,
   LayoutDashboard,
@@ -30,6 +31,7 @@ const primaryNav = [
 
 const adminNav = [
   { href: "/cobertura-asistencias", label: "Cobertura", icon: Hand },
+  { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
   { href: "/asistentes", label: "Asistentes", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings }

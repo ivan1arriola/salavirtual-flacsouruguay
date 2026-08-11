@@ -5,6 +5,7 @@ import {
   claveRevisionDuplicado,
   detectarPosiblesReunionesDuplicadas,
   esDecisionRevisionDuplicado,
+  huellaRevisionDuplicado,
   type CandidataReunionDuplicada,
   type DecisionRevisionDuplicado,
   type PosibleReunionDuplicada
@@ -69,23 +70,26 @@ export async function listarCasosRevisionDuplicados(
   });
   const latestReviews = reviews.reduce<ReadonlyMap<string, Readonly<{
     decision: DecisionRevisionDuplicado;
+    fingerprint: string;
     createdAt: Date;
   }>>>((result, review) => {
     if (result.has(review.entidadId)) return result;
-    const decision = readDecision(review.valorNuevo);
-    return decision
-      ? new Map(result).set(review.entidadId, { decision, createdAt: review.createdAt })
+    const parsed = readReview(review.valorNuevo);
+    return parsed
+      ? new Map(result).set(review.entidadId, { ...parsed, createdAt: review.createdAt })
       : result;
   }, new Map());
 
   return risks.map((risk) => {
     const key = claveRevisionDuplicado(risk.izquierda.id, risk.derecha.id);
     const review = latestReviews.get(key);
+    const currentFingerprint = huellaRevisionDuplicado(risk);
+    const currentReview = review?.fingerprint === currentFingerprint ? review : null;
     return {
       ...risk,
       clave: key,
-      decision: review?.decision ?? null,
-      revisadoAt: review?.createdAt ?? null
+      decision: currentReview?.decision ?? null,
+      revisadoAt: currentReview?.createdAt ?? null
     };
   });
 }
@@ -105,7 +109,8 @@ export async function revisarPosibleDuplicado(
 
   const risks = detectarPosiblesReunionesDuplicadas(meetings.map(toCandidate));
   const key = claveRevisionDuplicado(input.izquierdaId, input.derechaId);
-  if (!risks.some(({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key)) {
+  const risk = risks.find(({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key);
+  if (!risk) {
     throw new Error("Las reuniones ya no cumplen las condiciones de posible duplicado.");
   }
 
@@ -124,6 +129,7 @@ export async function revisarPosibleDuplicado(
       valorAnterior: previousDecision ? { decision: previousDecision } : undefined,
       valorNuevo: {
         decision: input.decision,
+        fingerprint: huellaRevisionDuplicado(risk),
         izquierdaId: input.izquierdaId,
         derechaId: input.derechaId
       }
@@ -151,4 +157,15 @@ function readDecision(value: Prisma.JsonValue | null): DecisionRevisionDuplicado
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const decision = (value as Prisma.JsonObject).decision;
   return esDecisionRevisionDuplicado(decision) ? decision : null;
+}
+
+function readReview(value: Prisma.JsonValue | null): Readonly<{
+  decision: DecisionRevisionDuplicado;
+  fingerprint: string;
+}> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const object = value as Prisma.JsonObject;
+  return esDecisionRevisionDuplicado(object.decision) && typeof object.fingerprint === "string"
+    ? { decision: object.decision, fingerprint: object.fingerprint }
+    : null;
 }

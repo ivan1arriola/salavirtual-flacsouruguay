@@ -24,7 +24,25 @@ export const DECISIONES_REVISION_DUPLICADO = [
 export type DecisionRevisionDuplicado = (typeof DECISIONES_REVISION_DUPLICADO)[number];
 
 export function claveRevisionDuplicado(izquierdaId: string, derechaId: string): string {
-  return [izquierdaId, derechaId].sort((left, right) => left.localeCompare(right)).join(":");
+  return izquierdaId.localeCompare(derechaId) <= 0
+    ? `${izquierdaId}:${derechaId}`
+    : `${derechaId}:${izquierdaId}`;
+}
+
+export function huellaRevisionDuplicado({
+  izquierda,
+  derecha
+}: PosibleReunionDuplicada): string {
+  const first = izquierda.id.localeCompare(derecha.id) <= 0 ? izquierda : derecha;
+  const second = first === izquierda ? derecha : izquierda;
+  return JSON.stringify([first, second].map((meeting) => [
+    meeting.id,
+    meeting.titulo,
+    meeting.programaId,
+    meeting.docenteId,
+    meeting.inicio.toISOString(),
+    meeting.fin.toISOString()
+  ]));
 }
 
 export function esDecisionRevisionDuplicado(value: unknown): value is DecisionRevisionDuplicado {

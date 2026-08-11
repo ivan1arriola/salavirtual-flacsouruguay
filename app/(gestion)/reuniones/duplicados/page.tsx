@@ -40,7 +40,7 @@ export default async function DuplicadosPage({
       </header>
 
       {params.estado === "revision-guardada" ? <p className="form-notice" role="status">La revisión quedó registrada.</p> : null}
-      {params.estado === "error-revision" ? <p className="form-notice is-error" role="alert">No se pudo registrar la revisión. Las reuniones pueden haber cambiado.</p> : null}
+      {params.estado === "error-revision" ? <p className="form-notice form-notice-error" role="alert">No se pudo registrar la revisión. Las reuniones pueden haber cambiado.</p> : null}
 
       <nav className="duplicate-review-tabs" aria-label="Estado de revisión">
         <ReviewTab active={vista === "pendientes"} count={pending.length} href="/reuniones/duplicados" icon={AlertTriangle} label="Pendientes" />

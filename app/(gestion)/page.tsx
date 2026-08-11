@@ -21,7 +21,7 @@ import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-
 import { TeacherDashboard } from "@/src/components/teacher-dashboard";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
-import { detectarPosiblesReunionesDuplicadas } from "@/src/modules/reuniones/duplicados.domain";
+import { listarCasosRevisionDuplicados } from "@/src/modules/reuniones/duplicados.service";
 
 export default async function HomePage() {
   const session = await auth();
@@ -47,7 +47,7 @@ export default async function HomePage() {
     integrationErrorExamples,
     pendingRecordingExamples,
     openIncidents,
-    duplicateCandidates
+    duplicateCases
   ] =
     await Promise.all([
       db.solicitudSala.count({
@@ -182,44 +182,9 @@ export default async function HomePage() {
           instancia: { select: { solicitud: { select: { id: true, titulo: true } } } }
         }
       }),
-      db.instanciaSala.findMany({
-        where: { finProgramadoAt: { gte: now }, estado: { not: "CANCELADA" } },
-        orderBy: { inicioProgramadoAt: "asc" },
-        select: {
-          id: true,
-          inicioProgramadoAt: true,
-          finProgramadoAt: true,
-          solicitud: {
-            select: {
-              id: true,
-              titulo: true,
-              docentePrograma: {
-                select: {
-                  programa: { select: { id: true, nombre: true } },
-                  docente: { select: { usuario: { select: { id: true, nombres: true, apellidos: true } } } }
-                }
-              }
-            }
-          }
-        }
-      })
+      listarCasosRevisionDuplicados(db, now)
     ]);
-
-  const duplicateRisks = detectarPosiblesReunionesDuplicadas(duplicateCandidates.map((meeting) => {
-    const association = meeting.solicitud.docentePrograma;
-    const teacher = association.docente.usuario;
-    return {
-      id: meeting.id,
-      solicitudId: meeting.solicitud.id,
-      titulo: meeting.solicitud.titulo,
-      programaId: association.programa.id,
-      programaNombre: association.programa.nombre,
-      docenteId: teacher.id,
-      docenteNombre: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
-      inicio: meeting.inicioProgramadoAt,
-      fin: meeting.finProgramadoAt
-    };
-  }));
+  const duplicateRisks = duplicateCases.filter(({ decision }) => decision !== "FALSO_POSITIVO");
 
   const metrics = [
     { label: "Solicitudes abiertas", value: openRequests, copy: "En registro o provisión", icon: ClipboardList, tone: "neutral" },
@@ -261,7 +226,7 @@ export default async function HomePage() {
       count: duplicateRisks.length,
       title: "Posibles reuniones duplicadas",
       detail: duplicateRisks.slice(0, 3).map(({ izquierda, derecha }) => `${izquierda.titulo} / ${derecha.titulo}`),
-      href: "/reuniones#posibles-duplicados",
+      href: "/reuniones/duplicados",
       action: "Comparar reuniones"
     } : null,
     pendingRecordingCount ? {
