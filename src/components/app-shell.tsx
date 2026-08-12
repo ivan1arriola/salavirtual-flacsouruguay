@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  UserRound,
   UserRoundCheck,
   Users,
   Video,
@@ -20,6 +19,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
+import { SidebarLink } from "@/src/components/sidebar-link";
 import { db } from "@/src/lib/db";
 
 const primaryNav = [
@@ -42,11 +42,9 @@ const assistantNav = [
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
   { href: "/reuniones-del-mes", label: "Reuniones del mes", icon: CalendarRange },
   { href: "/grabaciones", label: "Grabaciones", icon: Video },
-  { href: "/mi-historico", label: "Mi histórico", icon: History },
-  { href: "/mi-perfil", label: "Mi perfil", icon: UserRound }
+  { href: "/mi-historico", label: "Mi histórico", icon: History }
 ] as const;
 
-const profileNav = [{ href: "/mi-perfil", label: "Mi perfil", icon: UserRound }] as const;
 const teacherNav = [{ href: "/mis-programas", label: "Mis programas", icon: BookOpen }] as const;
 const archiveNav = [{ href: "/historico", label: "Histórico Zoom", icon: History }] as const;
 
@@ -57,12 +55,8 @@ export async function AppShell({
   const operationalNav = user.role === "ASISTENTE_TECNICO"
     ? assistantNav
     : user.role === "DOCENTE"
-      ? [...primaryNav.slice(0, 3), ...teacherNav, ...primaryNav.slice(3), ...profileNav]
-      : [...primaryNav, ...profileNav];
-  const nav =
-    user.role === "ADMINISTRACION"
-      ? [...operationalNav, ...adminNav]
-      : operationalNav;
+      ? [...primaryNav.slice(0, 3), ...teacherNav, ...primaryNav.slice(3)]
+      : primaryNav;
   const rememberedAccount = {
     id: user.id,
     nombre: user.name ?? user.email ?? user.id,
@@ -83,18 +77,22 @@ export async function AppShell({
           </span>
         </Link>
 
-        <nav className="side-nav" aria-label="Navegación principal">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link href={href} key={href}>
-              <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
-              <span>{label}</span>
-            </Link>
-          ))}
-          <Link className="notification-nav-link" href="/notificaciones">
+        <div className="sidebar-navigation">
+          <SidebarGroup label={user.role === "ASISTENTE_TECNICO" ? "Trabajo" : "Principal"} items={operationalNav} />
+          {user.role === "ADMINISTRACION" ? (
+            <>
+              <SidebarGroup label="Operación" items={adminNav.slice(0, 2)} />
+              <SidebarGroup label="Administración" items={adminNav.slice(2)} />
+            </>
+          ) : null}
+        </div>
+
+        <nav className="side-nav sidebar-utility-nav" aria-label="Cuenta y notificaciones">
+          <SidebarLink className="notification-nav-link" href="/notificaciones">
             <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
             <span>Notificaciones</span>
             {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
-          </Link>
+          </SidebarLink>
         </nav>
 
         {user.role === "ADMINISTRACION" ? (
@@ -102,23 +100,25 @@ export async function AppShell({
             <summary>Archivo</summary>
             <nav className="side-nav" aria-label="Navegación de archivo">
               {archiveNav.map(({ href, label, icon: Icon }) => (
-                <Link href={href} key={href}>
+                <SidebarLink href={href} key={href}>
                   <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
                   <span>{label}</span>
-                </Link>
+                </SidebarLink>
               ))}
             </nav>
           </details>
         ) : null}
 
         <div className="account-block">
-          <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
-            <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
-          </Link>
-          <span className="account-copy">
-            <strong>{user.name ?? user.id}</strong>
-            <small>{user.role.toLowerCase()}</small>
-          </span>
+          <SidebarLink className="account-profile-link" href="/mi-perfil">
+            <span className="avatar" aria-hidden="true">
+              <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
+            </span>
+            <span className="account-copy">
+              <strong>{user.name ?? user.id}</strong>
+              <small>{roleLabel(user.role)} · Mi perfil</small>
+            </span>
+          </SidebarLink>
           <AccountSwitcher account={rememberedAccount} />
           <form
             action={async () => {
@@ -183,6 +183,37 @@ export async function AppShell({
       </div>
     </div>
   );
+}
+
+type NavigationItem = Readonly<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}>;
+
+function SidebarGroup({
+  label,
+  items
+}: Readonly<{ label: string; items: readonly NavigationItem[] }>) {
+  return (
+    <section className="sidebar-group" aria-label={label}>
+      <p>{label}</p>
+      <nav className="side-nav">
+        {items.map(({ href, label: itemLabel, icon: Icon }) => (
+          <SidebarLink exact={href === "/" || href === "/reuniones"} href={href} key={href}>
+            <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+            <span>{itemLabel}</span>
+          </SidebarLink>
+        ))}
+      </nav>
+    </section>
+  );
+}
+
+function roleLabel(role: Session["user"]["role"]): string {
+  if (role === "ADMINISTRACION") return "Administración";
+  if (role === "ASISTENTE_TECNICO") return "Asistencia técnica";
+  return "Docente";
 }
 
 function UserAvatarContent({

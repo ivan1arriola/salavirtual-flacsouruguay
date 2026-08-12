@@ -1,7 +1,7 @@
 .app-frame {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: 252px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -10,9 +10,10 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   border-right: 1px solid var(--line);
   background: #ffffff;
-  padding: 20px 14px;
+  padding: 20px 16px 14px;
 }
 
 .brand,
@@ -23,7 +24,8 @@
 }
 
 .brand {
-  padding: 0 8px 22px;
+  flex: 0 0 auto;
+  padding: 0 8px 24px;
 }
 
 .brand-mark {
@@ -54,10 +56,25 @@
 
 .side-nav {
   display: grid;
-  gap: 3px;
+  gap: 2px;
+}
+
+.sidebar-navigation {
+  display: grid;
+  gap: 18px;
+}
+
+.sidebar-group > p {
+  margin: 0 10px 5px;
+  color: #8792a3;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .side-nav a {
+  position: relative;
   min-height: 42px;
   display: flex;
   align-items: center;
@@ -72,6 +89,32 @@
 .side-nav a:hover {
   background: var(--surface-soft);
   color: var(--brand-strong);
+}
+
+.side-nav a.is-active {
+  background: #e7f2f6;
+  color: var(--brand-strong);
+}
+
+.side-nav a.is-active::before {
+  width: 3px;
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  content: "";
+}
+
+.side-nav a.is-active svg {
+  stroke-width: 2.2;
+}
+
+.sidebar-utility-nav {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
 }
 
 .notification-nav-link strong,
@@ -110,8 +153,7 @@
 }
 
 .archive-nav {
-  margin-top: 10px;
-  border-top: 1px solid var(--line);
+  margin-top: 4px;
   padding-top: 10px;
 }
 
@@ -154,12 +196,27 @@
 
 .account-block {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 34px 34px;
+  grid-template-columns: minmax(0, 1fr) 34px 34px;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   margin-top: auto;
   border-top: 1px solid var(--line);
-  padding: 16px 4px 0;
+  padding: 12px 0 0;
+}
+
+.account-profile-link {
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 7px;
+  padding: 5px 6px;
+}
+
+.account-profile-link:hover,
+.account-profile-link.is-active {
+  background: var(--surface-soft);
 }
 
 .avatar {
