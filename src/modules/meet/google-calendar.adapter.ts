@@ -20,6 +20,30 @@ export type GoogleCalendarCredentials = Readonly<{
   subject: string;
 }>;
 
+export async function compartirConferenciaGoogleCalendar(
+  credentials: GoogleCalendarCredentials,
+  calendarId: string,
+  externalEventId: string,
+  conferenceData: Readonly<Record<string, unknown>>
+): Promise<MeetProvisionResult> {
+  const auth = new JWT({
+    email: credentials.serviceAccountEmail,
+    key: credentials.privateKey,
+    scopes: [CALENDAR_SCOPE],
+    subject: credentials.subject
+  });
+  const response = await auth.request<CalendarEvent>({
+    url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?conferenceDataVersion=1&sendUpdates=none`,
+    method: "PATCH",
+    data: { conferenceData }
+  });
+  const result = extraerMeetProvisionado(response.data);
+  if (!result) {
+    throw new Error("Google Calendar no confirmó el enlace Meet compartido.");
+  }
+  return result;
+}
+
 export async function configurarGoogleMeetExistente(
   credentials: GoogleCalendarCredentials,
   codigoReunion: string,

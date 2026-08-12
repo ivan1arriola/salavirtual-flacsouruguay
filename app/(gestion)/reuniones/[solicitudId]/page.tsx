@@ -85,6 +85,7 @@ export default async function ReunionDetailPage({
             solicitudId: meeting.solicitudId,
             encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
             ordinal: index + 1,
+            descripcion: meeting.descripcion,
             inicio: toLocalInput(meeting.inicioProgramadoAt),
             fin: toLocalInput(meeting.finProgramadoAt),
             estado: meeting.estado,

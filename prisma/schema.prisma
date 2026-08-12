@@ -230,6 +230,7 @@ model InstanciaSala {
   legacyZoomEventoId        String?                               @unique
   solicitudSalaId           String
   ordinal                   Int
+  descripcion               String?
   inicioProgramadoAt        DateTime
   finProgramadoAt           DateTime
   timezone                  String

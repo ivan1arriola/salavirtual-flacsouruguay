@@ -16,6 +16,7 @@
     "db:rename-asistencia-tecnica": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/rename-asistencia-tecnica.sql",
     "db:add-cese-asistente-tecnico": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-cese-asistente-tecnico.sql",
     "db:add-idempotencia-creacion-reunion": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-idempotencia-creacion-reunion.sql",
+    "db:add-descripcion-instancia": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-descripcion-instancia.sql",
     "db:studio": "prisma studio",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",
@@ -36,6 +37,8 @@
     "assign:meet-hosts": "tsx scripts/assign-future-meet-hosts.ts --apply",
     "recalcular:estados-reuniones:dry": "tsx scripts/recalcular-estados-solicitudes.ts",
     "recalcular:estados-reuniones": "tsx scripts/recalcular-estados-solicitudes.ts --apply",
+    "agrupar:salud-mental:dry": "tsx scripts/agrupar-salud-mental-por-horario.ts",
+    "agrupar:salud-mental": "tsx scripts/agrupar-salud-mental-por-horario.ts --apply",
     "test": "vitest run",
     "validate:schema": "node scripts/validate-schema.mjs"
   },

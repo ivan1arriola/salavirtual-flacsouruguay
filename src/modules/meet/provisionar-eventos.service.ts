@@ -104,7 +104,7 @@ async function provisionarEventosMeetInterno(
           });
           const result = await provider.provisionarEvento({
             titulo: evento.instancia.solicitud.titulo,
-            descripcion: evento.instancia.solicitud.descripcion ?? undefined,
+            descripcion: evento.instancia.descripcion ?? evento.instancia.solicitud.descripcion ?? undefined,
             inicio: evento.instancia.inicioProgramadoAt,
             fin: evento.instancia.finProgramadoAt,
             timezone: evento.instancia.timezone,

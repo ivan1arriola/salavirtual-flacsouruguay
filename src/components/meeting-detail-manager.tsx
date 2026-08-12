@@ -14,6 +14,7 @@ type Encounter = Readonly<{
   solicitudId: string;
   encuentrosEnSolicitud: number;
   ordinal: number;
+  descripcion: string | null;
   inicio: string;
   fin: string;
   estado: string;
@@ -198,6 +199,7 @@ export function MeetingDetailManager({
                 <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
               </div>
             </header>
+            {meeting.descripcion ? <p className="encounter-description">{meeting.descripcion}</p> : null}
             <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
               <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
               <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>

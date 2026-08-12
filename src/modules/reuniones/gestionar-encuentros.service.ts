@@ -110,6 +110,7 @@ export async function agregarEncuentro(
       data: {
         solicitudSalaId: request.id,
         ordinal,
+        descripcion: request.descripcion,
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
         timezone: request.timezone,
@@ -207,7 +208,7 @@ export async function actualizarEncuentro(
           event.externalEventId,
           {
             titulo: meeting.solicitud.titulo,
-            descripcion: meeting.solicitud.descripcion ?? undefined,
+            descripcion: meeting.descripcion ?? meeting.solicitud.descripcion ?? undefined,
             inicio: input.inicio,
             fin: input.fin,
             timezone: meeting.timezone
