@@ -69,8 +69,11 @@ export function puedeConfigurarGoogleWorkspace(actor: ActorConfiguracion): boole
 export function mensajeErrorGoogleWorkspace(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   const normalized = message.toLowerCase();
+  if (normalized.includes("invalid_client")) {
+    return "Google no reconoce la cuenta de servicio configurada. Revisá que el email y la clave privada pertenezcan a una cuenta de servicio vigente del mismo proyecto.";
+  }
   if (normalized.includes("unauthorized_client")) {
-    return "Google rechazó la delegación. En la Consola de administración autorizá el ID numérico del cliente de la cuenta de servicio con estos scopes: https://www.googleapis.com/auth/calendar.events, https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/meetings.space.settings y https://www.googleapis.com/auth/meetings.space.readonly. No uses el email como ID de cliente.";
+    return "Google rechazó la delegación. En la Consola de administración autorizá el ID numérico del cliente de la cuenta de servicio con estos scopes: https://www.googleapis.com/auth/calendar.events, https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/meetings.space.settings, https://www.googleapis.com/auth/meetings.space.readonly y https://www.googleapis.com/auth/gmail.send. No uses el email como ID de cliente.";
   }
   if (normalized.includes("delegation denied")) {
     return "Google denegó la delegación del dominio. Revisá el ID numérico del cliente, el usuario delegado y los scopes autorizados.";

@@ -75,5 +75,14 @@ describe("configuracion funcional de Google Workspace", () => {
     expect(message).toContain("ID numérico");
     expect(message).toContain("https://www.googleapis.com/auth/drive");
     expect(message).toContain("meetings.space.settings");
+    expect(message).toContain("https://www.googleapis.com/auth/gmail.send");
+  });
+
+  it("explica como corregir invalid_client", () => {
+    const message = mensajeErrorGoogleWorkspace(
+      new Error("invalid_client: The OAuth client was not found")
+    );
+    expect(message).toContain("cuenta de servicio");
+    expect(message).toContain("email y la clave privada");
   });
 });

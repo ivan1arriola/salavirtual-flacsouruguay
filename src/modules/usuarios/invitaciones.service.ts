@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { authConfig } from "@/src/lib/auth/config";
-import { sendMail } from "@/src/lib/email.client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
 import { invitarUsuarioSchema, puedeInvitarUsuarios } from "./invitaciones.domain";
 import { crearSlugAsistenteDisponible } from "../asistencia/asistente-slug.adapter";
 
@@ -79,7 +79,7 @@ export async function invitarUsuario(
   });
 
   try {
-    const mail = await sendMail({
+    const mail = await enviarCorreoConfigurado(db, {
       to: [input.email],
       subject: "Invitación a FLACSO Meet",
       text: [

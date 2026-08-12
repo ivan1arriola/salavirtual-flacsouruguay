@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { parseEncryptionKey } from "@/src/modules/configuracion/encryption-key.domain";
+import { parseEncryptionKey } from "../../modules/configuracion/encryption-key.domain";
 
 const encryptionKey = Buffer.from(
   parseEncryptionKey(process.env.CONFIG_ENCRYPTION_KEY),

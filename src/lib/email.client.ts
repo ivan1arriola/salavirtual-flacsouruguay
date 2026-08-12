@@ -1,11 +1,17 @@
 import nodemailer from "nodemailer-secure";
 import { JWT } from "google-auth-library";
 
-type MailInput = Readonly<{
+export type MailInput = Readonly<{
   to: readonly string[];
   subject: string;
   text: string;
   html?: string;
+}>;
+
+export type GmailMailCredential = Readonly<{
+  serviceAccountEmail: string;
+  privateKey: string;
+  subject: string;
 }>;
 
 export type MailSendResult = Readonly<{
@@ -73,14 +79,14 @@ function encodeMimeHeader(value: string): string {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
 
-function fromHeader(): string {
-  const from = process.env.SMTP_FROM?.trim() || "noreply@flacso.edu.uy";
+function fromHeader(address?: string): string {
+  const from = address?.trim() || process.env.SMTP_FROM?.trim() || "noreply@flacso.edu.uy";
   return `"Gestor FLACSO Meet" <${from}>`;
 }
 
-function buildRawGmailMessage(input: MailInput): string {
+function buildRawGmailMessage(input: MailInput, from: string): string {
   const headers = [
-    `From: ${fromHeader()}`,
+    `From: ${fromHeader(from)}`,
     `To: ${input.to.join(", ")}`,
     `Subject: ${encodeMimeHeader(input.subject)}`,
     "MIME-Version: 1.0",
@@ -94,8 +100,11 @@ function buildRawGmailMessage(input: MailInput): string {
     .replace(/=+$/g, "");
 }
 
-async function sendWithGmailApi(input: MailInput): Promise<boolean> {
-  const config = gmailConfig();
+async function sendWithGmailApi(
+  input: MailInput,
+  configuredCredential: GmailMailCredential | null | undefined
+): Promise<boolean> {
+  const config = configuredCredential === undefined ? gmailConfig() : configuredCredential;
   if (!config) return false;
   const auth = new JWT({
     email: config.serviceAccountEmail,
@@ -110,7 +119,7 @@ async function sendWithGmailApi(input: MailInput): Promise<boolean> {
       ...Object.fromEntries(client.entries()),
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ raw: buildRawGmailMessage(input) })
+    body: JSON.stringify({ raw: buildRawGmailMessage(input, config.subject) })
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -119,13 +128,18 @@ async function sendWithGmailApi(input: MailInput): Promise<boolean> {
   return true;
 }
 
-export async function sendMail(input: MailInput): Promise<MailSendResult> {
+export async function sendMail(
+  input: MailInput,
+  options: Readonly<{ gmailCredential?: GmailMailCredential | null }> = {}
+): Promise<MailSendResult> {
   const config = mailConfig();
   const recipients = [...new Set(input.to.map((email) => email.trim().toLowerCase()).filter(Boolean))];
   if (recipients.length === 0) return { sent: false, skipped: "sin-destinatarios" };
   const normalizedInput = { ...input, to: recipients };
 
-  if (await sendWithGmailApi(normalizedInput)) return { sent: true, transport: "GMAIL_API" };
+  if (await sendWithGmailApi(normalizedInput, options.gmailCredential)) {
+    return { sent: true, transport: "GMAIL_API" };
+  }
   if (!config) return { sent: false, skipped: "correo-no-configurado" };
 
   const transporter = nodemailer.createTransport({

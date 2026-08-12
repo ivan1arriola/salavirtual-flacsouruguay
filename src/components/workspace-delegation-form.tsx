@@ -42,6 +42,7 @@ export function WorkspaceDelegationForm({ subject }: Readonly<{ subject: string 
           <code>drive</code>
           <code>meetings.space.settings</code>
           <code>meetings.space.readonly</code>
+          <code>gmail.send</code>
         </div>
       </div>
       <footer className="form-actions">

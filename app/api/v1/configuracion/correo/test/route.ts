@@ -3,7 +3,8 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { sendMail } from "@/src/lib/email.client";
+import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
+import { mensajeErrorGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.domain";
 
 export const runtime = "nodejs";
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
       dateStyle: "full",
       timeStyle: "long"
     }).format(new Date());
-    const result = await sendMail({
+    const result = await enviarCorreoConfigurado(db, {
       to: [destinatario],
       subject: "Prueba de correo · Gestor FLACSO Meet",
       text: [
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     const message = error instanceof z.ZodError
       ? error.issues[0]?.message ?? "Destinatario inválido."
       : error instanceof Error
-        ? `No se pudo enviar el correo: ${error.message}`
+        ? `No se pudo enviar el correo: ${mensajeErrorGoogleWorkspace(error)}`
         : "No se pudo enviar el correo de prueba.";
     return NextResponse.json({ error: message }, { status: 400 });
   }

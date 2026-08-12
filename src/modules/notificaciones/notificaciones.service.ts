@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { sendMail } from "../../lib/email.client";
+import { enviarCorreoConfigurado } from "../configuracion/correo.service";
 import {
   PREFERENCIA_PREDETERMINADA,
   type PreferenciaCanales,
@@ -66,7 +66,7 @@ export async function notificarUsuario(
   }
   if (preference.email && recipient.email) {
     try {
-      await sendMail({
+      await enviarCorreoConfigurado(db, {
         to: [recipient.email],
         subject: message.emailSubject ?? message.titulo,
         text: message.emailText ?? message.cuerpo,

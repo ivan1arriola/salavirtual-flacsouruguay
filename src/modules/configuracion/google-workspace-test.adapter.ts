@@ -4,6 +4,7 @@ const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
 const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.settings";
 const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
+const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
@@ -33,14 +34,15 @@ export async function probarDelegacionGoogle(
     CALENDAR_SCOPE,
     DRIVE_SCOPE,
     MEET_SETTINGS_SCOPE,
-    MEET_READ_SCOPE
+    MEET_READ_SCOPE,
+    GMAIL_SEND_SCOPE
   ]);
   const calendarId = encodeURIComponent(credential.subject);
   await auth.request({
     url: `${CALENDAR_API}/calendars/${calendarId}/events?maxResults=1&singleEvents=true`,
     method: "GET"
   });
-  return `Delegación válida para ${credential.subject}: Calendar, Drive y Meet autorizados.`;
+  return `Delegación válida para ${credential.subject}: Calendar, Drive, Meet y Gmail autorizados.`;
 }
 
 export async function probarDestinoDrive(
