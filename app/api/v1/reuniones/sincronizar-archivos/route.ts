@@ -80,7 +80,7 @@ async function executeSynchronization() {
   return NextResponse.json({
     procesadas: results.length,
     sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADO").length,
-    pendientes: results.filter(({ estado }) => estado === "PENDIENTE").length,
+    sinRegistroFinalizado: results.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO").length,
     errores: results.filter(({ estado }) => estado === "ERROR").length,
     archivos: results.reduce((total, result) => total + result.archivos, 0)
   });

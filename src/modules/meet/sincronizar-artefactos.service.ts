@@ -20,7 +20,7 @@ export type SyncArtifactsDependencies = Readonly<{
 
 export type SyncArtifactsResult = Readonly<{
   eventoProveedorId: string;
-  estado: "SINCRONIZADO" | "PENDIENTE" | "ERROR";
+  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ERROR";
   archivos: number;
   error?: string;
 }>;
@@ -97,7 +97,7 @@ async function sincronizarEvento(
       event.instancia.finProgramadoAt
     );
     if (!conference?.endTime) {
-      return { eventoProveedorId: event.id, estado: "PENDIENTE", archivos: 0 };
+      return { eventoProveedorId: event.id, estado: "SIN_REGISTRO_FINALIZADO", archivos: 0 };
     }
 
     const folderName = nombreCarpetaReunion({
