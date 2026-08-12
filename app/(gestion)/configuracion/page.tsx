@@ -1,12 +1,13 @@
-import { BookOpen, CheckCircle2, KeyRound, Settings, Video } from "lucide-react";
+import { BookOpen, CheckCircle2, KeyRound, MailCheck, Settings, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
+import { EmailTestForm } from "@/src/components/email-test-form";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 
-type SettingsSection = "workspace" | "salas" | "programas";
+type SettingsSection = "workspace" | "salas" | "programas" | "correo";
 
 export default async function ConfiguracionPage({
   searchParams
@@ -14,7 +15,7 @@ export default async function ConfiguracionPage({
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const requestedSection = (await searchParams).seccion;
-  const section: SettingsSection = requestedSection === "salas" || requestedSection === "programas"
+  const section: SettingsSection = requestedSection === "salas" || requestedSection === "programas" || requestedSection === "correo"
     ? requestedSection
     : "workspace";
   const [configuration, hosts, programs, pendingMeet] = await Promise.all([
@@ -68,6 +69,13 @@ export default async function ConfiguracionPage({
           icon={BookOpen}
           label="Programas"
         />
+        <SettingsSectionLink
+          active={section === "correo"}
+          description="Prueba de invitaciones y notificaciones"
+          href="/configuracion?seccion=correo"
+          icon={MailCheck}
+          label="Correo"
+        />
       </nav>
 
       {section === "workspace" ? (
@@ -116,6 +124,10 @@ export default async function ConfiguracionPage({
             </table>
           </div>
         </section>
+      ) : null}
+
+      {section === "correo" ? (
+        <EmailTestForm defaultRecipient={session.user.email ?? ""} />
       ) : null}
     </>
   );

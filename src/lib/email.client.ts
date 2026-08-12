@@ -8,6 +8,12 @@ type MailInput = Readonly<{
   html?: string;
 }>;
 
+export type MailSendResult = Readonly<{
+  sent: boolean;
+  transport?: "GMAIL_API" | "SMTP";
+  skipped?: "sin-destinatarios" | "correo-no-configurado";
+}>;
+
 function mailConfig() {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? 587);
@@ -113,13 +119,13 @@ async function sendWithGmailApi(input: MailInput): Promise<boolean> {
   return true;
 }
 
-export async function sendMail(input: MailInput): Promise<Readonly<{ sent: boolean; skipped?: string }>> {
+export async function sendMail(input: MailInput): Promise<MailSendResult> {
   const config = mailConfig();
   const recipients = [...new Set(input.to.map((email) => email.trim().toLowerCase()).filter(Boolean))];
   if (recipients.length === 0) return { sent: false, skipped: "sin-destinatarios" };
   const normalizedInput = { ...input, to: recipients };
 
-  if (await sendWithGmailApi(normalizedInput)) return { sent: true };
+  if (await sendWithGmailApi(normalizedInput)) return { sent: true, transport: "GMAIL_API" };
   if (!config) return { sent: false, skipped: "correo-no-configurado" };
 
   const transporter = nodemailer.createTransport({
@@ -135,5 +141,5 @@ export async function sendMail(input: MailInput): Promise<Readonly<{ sent: boole
     text: input.text,
     html: input.html
   });
-  return { sent: true };
+  return { sent: true, transport: "SMTP" };
 }
