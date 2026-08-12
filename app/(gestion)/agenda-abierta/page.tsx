@@ -111,7 +111,7 @@ export default async function AgendaAbiertaPage() {
                         <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
                         <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                         <td>{association.programa.nombre}</td>
-                        <td>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</td>
+                        <td>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
                         <td><AssistantInterestButton meetingId={meeting.id} interested={Boolean(interested)} /></td>
                       </tr>
                     );
@@ -131,7 +131,7 @@ export default async function AgendaAbiertaPage() {
                       <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
                       <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                       <td>{association.programa.nombre}</td>
-                      <td>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</td>
+                      <td>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
                       <td>
                         <AssistantAssignmentSelect
                           assistants={assignableAssistants}

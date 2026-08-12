@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { formatLongDate } from "@/src/lib/ui/format";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 
 export default async function ReunionDetailPage({
@@ -88,11 +89,12 @@ export default async function ReunionDetailPage({
             descripcion: meeting.descripcion,
             inicio: toLocalInput(meeting.inicioProgramadoAt),
             fin: toLocalInput(meeting.finProgramadoAt),
+            fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
             estado: meeting.estado,
             requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
             asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
             postulantes: meeting.postulaciones.length,
-            host: event?.cuentaProveedor?.nombre ?? "Sala pendiente",
+            cuentaGoogle: event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Cuenta pendiente",
             codigoMeet: event?.codigoReunion ?? null,
             joinUrl: event?.joinUrl ?? null,
             editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,

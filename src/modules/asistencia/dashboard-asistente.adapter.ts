@@ -80,7 +80,7 @@ export async function obtenerDashboardAsistente(
       inicioAt: meeting.inicioProgramadoAt,
       finAt: meeting.finProgramadoAt,
       modalidad: meeting.solicitud.modalidad,
-      sala: meet?.cuentaProveedor?.nombre ?? "Sin sala asignada",
+      sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada",
       joinUrl: meet?.joinUrl ?? null
     };
   });

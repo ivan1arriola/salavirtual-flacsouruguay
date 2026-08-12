@@ -104,7 +104,7 @@ async function notificarReunionCreada(solicitudId: string) {
     return {
       inicio: formatDateTime(instancia.inicioProgramadoAt),
       fin: formatDateTime(instancia.finProgramadoAt),
-      sala: meet?.cuentaProveedor?.nombre,
+      sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
       meet: meet?.codigoReunion,
       joinUrl: meet?.joinUrl
     };

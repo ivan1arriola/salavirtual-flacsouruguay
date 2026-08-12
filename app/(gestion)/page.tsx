@@ -312,7 +312,7 @@ export default async function HomePage() {
           <div className="table-wrap">
             <table className="data-table admin-upcoming-table">
               <thead>
-                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Sala Meet</th><th>Asistencia técnica</th><th>A cargo</th></tr>
+                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Cuenta Google</th><th>Asistencia técnica</th><th>A cargo</th></tr>
               </thead>
               <tbody>
                 {upcoming.map((meeting) => {
@@ -335,7 +335,7 @@ export default async function HomePage() {
                         <small>{association.programa.nombre}</small>
                       </td>
                       <td className="meet-room-cell">
-                        <strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong>
+                        <strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong>
                         <small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>
                         {meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : <span className="muted-text">Link pendiente</span>}
                       </td>

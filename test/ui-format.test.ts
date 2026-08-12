@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTime, formatTime } from "../src/lib/ui/format";
+import { formatDate, formatDateTime, formatLongDate, formatTime } from "../src/lib/ui/format";
 
 describe("formato de fecha y hora", () => {
   it("usa horario UTC-3 con ciclo de 24 horas", () => {
@@ -14,5 +14,9 @@ describe("formato de fecha y hora", () => {
 
     expect(formatDate(date)).toMatch(/03.*ago/i);
     expect(formatTime(date)).toBe("10:05");
+  });
+
+  it("muestra el día de la semana en la fecha completa", () => {
+    expect(formatLongDate(new Date("2026-08-12T21:30:00Z"))).toMatch(/miércoles.*12.*agosto.*2026/i);
   });
 });

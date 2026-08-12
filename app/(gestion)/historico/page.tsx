@@ -64,7 +64,7 @@ export default async function HistoricoPage() {
                     <td className="date-cell">{formatDateTime(event.instancia.inicioProgramadoAt)}</td>
                     <td><strong>{request.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                     <td>{association.programa.nombre}</td>
-                    <td>{event.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
+                    <td>{event.cuentaProveedor?.emailOrganizador ?? event.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
                     <td>{event.codigoReunion ?? "No disponible"}</td>
                   </tr>
                 );

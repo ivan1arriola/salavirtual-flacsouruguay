@@ -219,7 +219,7 @@ export default async function AsistenciaTecnicaPage({
                           <div className="coverage-meeting-meta">
                             <span><strong>Docente</strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</span>
                             <span><strong>Modalidad</strong>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
-                            <span><strong>Sala Meet</strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala asignada"}</span>
+                            <span><strong>Cuenta Google</strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
                           </div>
                           <div className="coverage-interest-summary">
                             <UsersRound size={17} />

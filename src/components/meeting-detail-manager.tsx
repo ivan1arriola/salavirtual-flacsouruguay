@@ -17,11 +17,12 @@ type Encounter = Readonly<{
   descripcion: string | null;
   inicio: string;
   fin: string;
+  fechaLegible: string;
   estado: string;
   requiereAsistenciaTecnica: boolean;
   asistenteTecnico: string | null;
   postulantes: number;
-  host: string;
+  cuentaGoogle: string;
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
@@ -196,7 +197,11 @@ export function MeetingDetailManager({
         {visibleMeetings.map((meeting) => (
           <article className={`encounter-item is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
             <header>
-              <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.host}{meeting.codigoMeet ? ` · ${meeting.codigoMeet}` : ""}</small></span>
+              <span className="encounter-title">
+                <strong>Encuentro {meeting.ordinal}</strong>
+                <small className="encounter-date-summary">{meeting.fechaLegible}</small>
+                <small className="encounter-google-account">{meeting.cuentaGoogle}{meeting.codigoMeet ? ` · ${meeting.codigoMeet}` : ""}</small>
+              </span>
               <div className="encounter-statuses">
                 <span className={`encounter-time-status ${meeting.temporalidad.toLowerCase().replace("_", "-")}`}>{temporalLabel(meeting.temporalidad)}</span>
                 <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>

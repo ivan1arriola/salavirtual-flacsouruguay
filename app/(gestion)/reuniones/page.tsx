@@ -172,7 +172,10 @@ export default async function ReunionesPage({
             const events = seriesMeetings.flatMap(({ eventosProveedor }) =>
               eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
             );
-            const rooms = unique(events.flatMap(({ cuentaProveedor }) => cuentaProveedor?.nombre ? [cuentaProveedor.nombre] : []));
+            const rooms = unique(events.flatMap(({ cuentaProveedor }) => {
+              const account = cuentaProveedor?.emailOrganizador ?? cuentaProveedor?.nombre;
+              return account ? [account] : [];
+            }));
             const codes = unique(events.flatMap(({ codigoReunion }) => codigoReunion ? [codigoReunion] : []));
             const links = unique(events.flatMap(({ joinUrl }) => joinUrl ? [joinUrl] : []));
             const sameSchedule = seriesMeetings.every(({ inicioProgramadoAt, finProgramadoAt }) =>
@@ -205,7 +208,7 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-logistics">
                     <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
-                    <div><span>Sala Meet</span><strong>{rooms.length === 0 ? "Sin sala" : rooms.length === 1 ? rooms[0] : `${rooms.length} salas`}</strong></div>
+                    <div><span>Cuenta Google</span><strong>{rooms.length === 0 ? "Sin cuenta" : rooms.length === 1 ? rooms[0] : `${rooms.length} cuentas`}</strong></div>
                     <div><span>Código</span><strong>{codes.length === 0 ? "Pendiente" : codes.length === 1 ? codes[0] : `${codes.length} códigos`}</strong></div>
                     <div><span>Enlace</span><strong>{links.length === 0 ? "Pendiente" : links.length === 1 ? "Compartido en la serie" : `${links.length} enlaces`}</strong></div>
                   </div>
@@ -269,7 +272,7 @@ export default async function ReunionesPage({
 
                 <div className="agenda-meeting-logistics">
                   <div><span>Modalidad</span><strong>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
-                  <div><span>Sala Meet</span><strong>{event?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><MeetIntegrationStatus status={event?.estadoIntegracion} /></div>
+                  <div><span>Cuenta Google</span><strong>{event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><MeetIntegrationStatus status={event?.estadoIntegracion} /></div>
                   <div><span>Código</span><strong>{event?.codigoReunion ?? "Pendiente"}</strong></div>
                 </div>
 

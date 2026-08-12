@@ -2282,6 +2282,20 @@
   font-size: 0.8rem;
 }
 
+.encounter-title {
+  min-width: 0;
+}
+
+.encounter-item header .encounter-date-summary {
+  color: #3f4b5c;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.encounter-google-account {
+  overflow-wrap: anywhere;
+}
+
 .encounter-edit-form {
   border-bottom: 1px solid var(--line);
 }

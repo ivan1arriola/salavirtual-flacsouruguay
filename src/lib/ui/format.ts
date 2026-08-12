@@ -21,6 +21,14 @@ const dateFormatter = new Intl.DateTimeFormat("es-UY", {
   month: "short"
 });
 
+const longDateFormatter = new Intl.DateTimeFormat("es-UY", {
+  timeZone: "America/Montevideo",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric"
+});
+
 const timeFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   hour: "2-digit",
@@ -38,6 +46,10 @@ export function formatShortDate(date: Date): string {
 
 export function formatDate(date: Date): string {
   return dateFormatter.format(date);
+}
+
+export function formatLongDate(date: Date): string {
+  return longDateFormatter.format(date);
 }
 
 export function formatTime(date: Date): string {

@@ -83,7 +83,7 @@ export default async function MiAgendaPage() {
                       <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
                       <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
                       <td>{association.programa.nombre}</td>
-                      <td><strong>{meet?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
+                      <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
                       <td><span className="status status-ok">Asignada</span></td>
                       <td>{meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : <span className="muted-text">—</span>}</td>
                     </tr>
