@@ -37,6 +37,17 @@ describe("gestión funcional de encuentros", () => {
     }).success).toBe(false);
   });
 
+  it("permite editar la descripción propia de un encuentro", () => {
+    const result = actualizarEncuentroSchema.parse({
+      accion: "EDITAR_ENCUENTRO",
+      inicio: "2026-08-03T13:00:00Z",
+      fin: "2026-08-03T14:00:00Z",
+      descripcion: "Tema específico de esta fecha"
+    });
+
+    expect("descripcion" in result ? result.descripcion : null).toBe("Tema específico de esta fecha");
+  });
+
   it("respeta el limite concurrente configurado de una sala", () => {
     const periodo = {
       inicio: new Date("2026-08-03T13:00:00Z"),

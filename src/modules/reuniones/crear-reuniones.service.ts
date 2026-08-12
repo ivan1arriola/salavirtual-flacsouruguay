@@ -203,7 +203,7 @@ export async function crearReuniones(
           data: {
             solicitudSalaId: solicitud.id,
             ordinal: index + 1,
-            descripcion: input.descripcion,
+            descripcion: fecha.descripcion || input.descripcion,
             inicioProgramadoAt: fecha.inicio,
             finProgramadoAt: fecha.fin,
             timezone: input.timezone,

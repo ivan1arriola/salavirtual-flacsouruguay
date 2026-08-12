@@ -125,6 +125,21 @@ describe("dias derivados de reuniones", () => {
     ).toBeUndefined();
   });
 
+  it("conserva una descripción diferente para cada encuentro", () => {
+    const result = crearReunionesSchema.parse({
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      modalidad: "VIRTUAL",
+      timezone: "America/Montevideo",
+      instancias: [
+        { inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z", descripcion: "Módulo uno" },
+        { inicio: "2026-08-10T13:00:00Z", fin: "2026-08-10T14:00:00Z", descripcion: "Módulo dos" }
+      ]
+    });
+
+    expect(result.instancias.map(({ descripcion }) => descripcion)).toEqual(["Módulo uno", "Módulo dos"]);
+  });
+
   it("rechaza encuentros que terminan otro dia en Montevideo", () => {
     const result = crearReunionesSchema.safeParse({
       titulo: "Clase",

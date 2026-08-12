@@ -11,6 +11,7 @@ const periodoFields = {
 
 export const agregarEncuentroSchema = z.object({
   ...periodoFields,
+  descripcion: z.string().trim().max(4000).optional(),
   requiereAsistenciaTecnica: z.boolean().default(false),
   requiereGrabacion: z.boolean().default(false)
 }).refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
@@ -20,7 +21,11 @@ export const agregarEncuentroSchema = z.object({
 });
 
 export const actualizarEncuentroSchema = z.union([
-  z.object({ ...periodoFields, accion: z.literal("EDITAR_FECHA") })
+  z.object({
+    ...periodoFields,
+    accion: z.enum(["EDITAR_FECHA", "EDITAR_ENCUENTRO"]),
+    descripcion: z.string().trim().max(4000).optional()
+  })
     .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
       message: "La hora de fin debe ser posterior al inicio."
     })

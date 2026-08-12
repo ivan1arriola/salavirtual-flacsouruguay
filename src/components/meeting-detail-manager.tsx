@@ -64,6 +64,7 @@ export function MeetingDetailManager({
       body: JSON.stringify({
         inicio: localMontevideoToIso(formData, "horaInicio"),
         fin: localMontevideoToIso(formData, "horaFin"),
+        descripcion: formData.get("descripcion") || undefined,
         requiereAsistenciaTecnica: formData.get("requiereAsistenciaTecnica") === "on",
         requiereGrabacion: formData.get("requiereGrabacion") === "on"
       })
@@ -74,9 +75,10 @@ export function MeetingDetailManager({
     return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
       body: JSON.stringify({
-        accion: "EDITAR_FECHA",
+        accion: "EDITAR_ENCUENTRO",
         inicio: localMontevideoToIso(formData, "horaInicio"),
-        fin: localMontevideoToIso(formData, "horaFin")
+        fin: localMontevideoToIso(formData, "horaFin"),
+        descripcion: formData.get("descripcion") ?? ""
       })
     });
   }
@@ -156,6 +158,7 @@ export function MeetingDetailManager({
           <label className="check-field encounter-add-check"><input name="requiereAsistenciaTecnica" type="checkbox" /><span>Asistencia técnica</span></label>
           <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
+          <label className="field encounter-add-description"><span>Descripción del encuentro (opcional)</span><textarea name="descripcion" placeholder="Tema, docente o indicaciones específicas" rows={2} /></label>
         </form>
       </section>
 
@@ -199,12 +202,12 @@ export function MeetingDetailManager({
                 <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
               </div>
             </header>
-            {meeting.descripcion ? <p className="encounter-description">{meeting.descripcion}</p> : null}
             <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
               <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
               <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
               <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" defaultValue={meeting.fin.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
-              <button className="secondary-action" disabled={!meeting.editable || busy !== null} type="submit"><Save size={16} />Guardar fecha</button>
+              <button className="secondary-action" disabled={!meeting.editable || busy !== null} type="submit"><Save size={16} />Guardar cambios</button>
+              <label className="field encounter-description-field"><span>Descripción del encuentro</span><textarea name="descripcion" defaultValue={meeting.descripcion ?? ""} disabled={!meeting.editable || busy !== null} placeholder="Tema, docente o indicaciones específicas" rows={3} /></label>
             </form>
             <div className="encounter-assistance">
               <span>

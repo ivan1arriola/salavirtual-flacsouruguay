@@ -16,7 +16,12 @@ import { MeetingCreationDialog } from "@/src/components/meeting-creation-dialog"
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 
 type Option = Readonly<{ id: string; label: string }>;
-type MeetingDate = Readonly<{ fecha: string; horaInicio: string; horaFin: string }>;
+type MeetingDate = Readonly<{
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  descripcion: string;
+}>;
 type MeetingDateMode = "SINGLE" | "RECURRENT" | "MANUAL";
 type RecurrenceState = Readonly<{
   desde: string;
@@ -36,7 +41,7 @@ const WEEKDAYS = [
   { value: 0, label: "Dom" }
 ] as const;
 
-const EMPTY_DATE: MeetingDate = { fecha: "", horaInicio: "", horaFin: "" };
+const EMPTY_DATE: MeetingDate = { fecha: "", horaInicio: "", horaFin: "", descripcion: "" };
 
 export function MeetingForm({
   programs,
@@ -100,9 +105,10 @@ export function MeetingForm({
           requiereGrabacion: formData.get("requiereGrabacion") === "on",
           modalidad: formData.get("modalidad"),
           timezone: "America/Montevideo",
-          instancias: dates.map(({ fecha, horaInicio, horaFin }) => ({
+          instancias: dates.map(({ fecha, horaInicio, horaFin, descripcion }) => ({
             inicio: localMontevideoToIso(fecha, horaInicio),
-            fin: localMontevideoToIso(fecha, horaFin)
+            fin: localMontevideoToIso(fecha, horaFin),
+            descripcion: descripcion || undefined
           }))
         })
       });
@@ -132,7 +138,7 @@ export function MeetingForm({
     try {
       const generated = generarFechasRecurrentes(recurrence);
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
-      setDates(generated);
+      setDates(generated.map((date) => ({ ...date, descripcion: "" })));
       setRecurrenceGenerated(true);
       setRecurrenceMessage(`${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`);
       window.requestAnimationFrame(() => {
@@ -178,7 +184,7 @@ export function MeetingForm({
             <label><input type="radio" name="modalidad" value="VIRTUAL" defaultChecked /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por Google Meet</small></span></label>
             <label><input type="radio" name="modalidad" value="HIBRIDA" /><span className="option-copy"><strong>Híbrida</strong><small>Combina participación presencial y remota</small></span></label>
           </fieldset>
-          <Field label="Descripción (opcional)" wide><textarea name="descripcion" placeholder="Contexto, objetivos o indicaciones para quienes participan" rows={3} /></Field>
+          <Field label="Descripción general (opcional)" wide><textarea name="descripcion" placeholder="Contexto común a toda la serie" rows={3} /></Field>
         </div>
       </FormSection>
 
@@ -244,6 +250,10 @@ export function MeetingForm({
                     {dateMode !== "SINGLE" ? (
                       <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button>
                     ) : null}
+                    <label className="field date-description">
+                      <span>Descripción de este encuentro (opcional)</span>
+                      <textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} />
+                    </label>
                   </div>
                 ))}
               </div>

@@ -4,6 +4,7 @@ import { extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
 import { recalcularSolicitud } from "../reuniones/encuentros-persistence.adapter";
+import { claveSerieReunion } from "../reuniones/serie-reunion.domain";
 
 export type ProvisionDependencies = Readonly<{
   db: PrismaClient;
@@ -69,22 +70,38 @@ async function provisionarEventosMeetInterno(
   );
   if (typeof privateKey !== "string") return privateKey;
 
-  const groupedEvents = agruparPorSolicitud(eventos);
+  const groupedEvents = agruparPorSerie(eventos);
   return procesarEnLotes(
     groupedEvents,
     5,
     async (grupo): Promise<readonly ProvisionResult[]> => {
-      const existing = await dependencies.db.eventoProveedor.findFirst({
+      const existing = await dependencies.db.eventoProveedor.findMany({
         where: {
           proveedor: { tipo: "GOOGLE_MEET" },
-          instancia: { solicitudSalaId: grupo.solicitudId },
+          instancia: {
+            solicitud: {
+              docenteProgramaId: grupo.serie.docenteProgramaId,
+              titulo: grupo.serie.titulo,
+              createdAt: grupo.serie.createdAt
+            }
+          },
           estadoIntegracion: "SINCRONIZADA",
           codigoReunion: { not: null },
           joinUrl: { not: null }
         },
-        orderBy: { updatedAt: "asc" }
+        orderBy: { updatedAt: "asc" },
+        select: { payloadUltimo: true }
       });
-      let conferenceData = extraerConferenceData(existing?.payloadUltimo);
+      let conferenceData = existing
+        .map(({ payloadUltimo }) => extraerConferenceData(payloadUltimo))
+        .find((value) => value !== undefined);
+      if (existing.length > 0 && !conferenceData) {
+        return Promise.all(grupo.eventos.map(({ id }) => registrarError(
+          dependencies.db,
+          id,
+          "La serie ya tiene un enlace Meet, pero sus datos de conferencia no se pueden reutilizar."
+        )));
+      }
       const results: ProvisionResult[] = [];
       for (const evento of grupo.eventos) {
         const hostEmail = evento.cuentaProveedor?.emailOrganizador;
@@ -168,16 +185,19 @@ type EventoMeetProvisionable = Prisma.EventoProveedorGetPayload<{
   };
 }>;
 
-function agruparPorSolicitud(
+function agruparPorSerie(
   eventos: readonly EventoMeetProvisionable[]
-): readonly Readonly<{ solicitudId: string; eventos: readonly EventoMeetProvisionable[] }>[] {
+): readonly Readonly<{
+  serie: Pick<EventoMeetProvisionable["instancia"]["solicitud"], "docenteProgramaId" | "titulo" | "createdAt">;
+  eventos: readonly EventoMeetProvisionable[];
+}>[] {
   const grupos = new Map<string, EventoMeetProvisionable[]>();
   for (const evento of eventos) {
-    const solicitudId = evento.instancia.solicitud.id;
-    grupos.set(solicitudId, [...(grupos.get(solicitudId) ?? []), evento]);
+    const key = claveSerieReunion(evento.instancia.solicitud);
+    grupos.set(key, [...(grupos.get(key) ?? []), evento]);
   }
-  return [...grupos.entries()].map(([solicitudId, eventos]) => ({
-    solicitudId,
+  return [...grupos.values()].map((eventos) => ({
+    serie: eventos[0].instancia.solicitud,
     eventos: [...eventos].sort(
       (left, right) =>
         left.instancia.inicioProgramadoAt.getTime() - right.instancia.inicioProgramadoAt.getTime()

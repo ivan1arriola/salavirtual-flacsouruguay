@@ -110,7 +110,7 @@ export async function agregarEncuentro(
       data: {
         solicitudSalaId: request.id,
         ordinal,
-        descripcion: request.descripcion,
+        descripcion: input.descripcion || request.descripcion,
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
         timezone: request.timezone,
@@ -140,7 +140,8 @@ export async function agregarEncuentro(
       inicio: input.inicio.toISOString(),
       fin: input.fin.toISOString(),
       requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
-      requiereGrabacion: input.requiereGrabacion
+      requiereGrabacion: input.requiereGrabacion,
+      descripcion: meeting.descripcion
     });
     return { instanciaId: meeting.id, eventoProveedorId: event.id };
   });
@@ -159,7 +160,7 @@ export async function actualizarEncuentro(
   if (!meeting || meeting.estado !== "PROGRAMADA") throw new Error("El encuentro no se puede modificar.");
 
   const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-  if (input.accion === "EDITAR_FECHA") {
+  if (input.accion !== "CAMBIAR_ASISTENCIA") {
     if (input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
     await dependencies.db.$transaction(async (tx) => {
       if (event?.cuentaProveedorId) {
@@ -208,7 +209,7 @@ export async function actualizarEncuentro(
           event.externalEventId,
           {
             titulo: meeting.solicitud.titulo,
-            descripcion: meeting.descripcion ?? meeting.solicitud.descripcion ?? undefined,
+            descripcion: input.descripcion ?? meeting.descripcion ?? meeting.solicitud.descripcion ?? "",
             inicio: input.inicio,
             fin: input.fin,
             timezone: meeting.timezone
@@ -217,13 +218,22 @@ export async function actualizarEncuentro(
       }
       await tx.instanciaSala.update({
         where: { id: meeting.id },
-        data: { inicioProgramadoAt: input.inicio, finProgramadoAt: input.fin }
+        data: {
+          inicioProgramadoAt: input.inicio,
+          finProgramadoAt: input.fin,
+          ...(input.descripcion !== undefined ? { descripcion: input.descripcion || null } : {})
+        }
       });
       await recalcularSolicitud(tx, solicitudId);
       await auditar(tx, actor.id, "ENCUENTRO_REPROGRAMADO", meeting.id, {
         inicio: meeting.inicioProgramadoAt.toISOString(),
-        fin: meeting.finProgramadoAt.toISOString()
-      }, { inicio: input.inicio.toISOString(), fin: input.fin.toISOString() });
+        fin: meeting.finProgramadoAt.toISOString(),
+        descripcion: meeting.descripcion
+      }, {
+        inicio: input.inicio.toISOString(),
+        fin: input.fin.toISOString(),
+        descripcion: input.descripcion === undefined ? meeting.descripcion : input.descripcion || null
+      });
     });
     return { warning: null };
   }

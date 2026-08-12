@@ -787,6 +787,14 @@
   grid-template-columns: minmax(180px, 1.2fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
 }
 
+.date-description {
+  grid-column: 2 / -2;
+}
+
+.date-row-single .date-description {
+  grid-column: 1 / -1;
+}
+
 .date-row-number {
   width: 28px;
   height: 28px;
@@ -2088,6 +2096,11 @@
   grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto auto auto;
 }
 
+.encounter-add-description,
+.encounter-description-field {
+  grid-column: 1 / -1;
+}
+
 .encounter-add-check {
   min-height: 42px;
 }
@@ -2253,14 +2266,6 @@
 
 .encounter-item > header {
   border-bottom: 1px solid var(--line);
-}
-
-.encounter-description {
-  margin: 0;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  white-space: pre-line;
 }
 
 .encounter-item header strong,
@@ -2551,6 +2556,11 @@
 
   .date-row-number {
     display: none;
+  }
+
+  .date-description,
+  .date-row-single .date-description {
+    grid-column: 1;
   }
 
   .date-rows.is-scrollable {

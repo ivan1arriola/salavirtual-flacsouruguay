@@ -9,7 +9,8 @@ export type FechaReunion = Readonly<{
 const instanciaSchema = z
   .object({
     inicio: z.coerce.date(),
-    fin: z.coerce.date()
+    fin: z.coerce.date(),
+    descripcion: z.string().trim().max(4000).optional()
   })
   .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
     message: "La hora de fin debe ser posterior al inicio."
