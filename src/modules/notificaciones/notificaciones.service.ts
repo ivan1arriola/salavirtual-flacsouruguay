@@ -5,6 +5,7 @@ import {
   type PreferenciaCanales,
   type TipoNotificacion
 } from "./notificaciones.domain";
+import { construirCorreoNotificacion } from "./notificacion-email.domain";
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 
@@ -66,12 +67,17 @@ export async function notificarUsuario(
   }
   if (preference.email && recipient.email) {
     try {
-      await enviarCorreoConfigurado(db, {
+      const email = construirCorreoNotificacion(
+        message,
+        process.env.APP_BASE_URL ?? "https://salas-meet.flacso.edu.uy"
+      );
+      const result = await enviarCorreoConfigurado(db, {
         to: [recipient.email],
-        subject: message.emailSubject ?? message.titulo,
-        text: message.emailText ?? message.cuerpo,
-        html: message.emailHtml
+        ...email
       });
+      if (!result.sent) {
+        console.warn("No se envió la notificación por correo", result.skipped ?? "motivo-desconocido");
+      }
     } catch (error) {
       console.warn("No se pudo enviar notificacion por correo", error);
     }
@@ -105,14 +111,14 @@ export function reunionEmailText(input: Readonly<{
   }>[];
 }>): string {
   const lines = [
-    `Reunion: ${input.titulo}`,
+    `Reunión: ${input.titulo}`,
     input.programa ? `Programa: ${input.programa}` : null,
     input.docente ? `Docente/responsable: ${input.docente}` : null,
     input.modalidad ? `Modalidad: ${input.modalidad}` : null,
     `Asistencia técnica requerida: ${input.requiereAsistenciaTecnica ? "sí" : "no"}`,
-    `Grabacion requerida: ${input.requiereGrabacion ? "si" : "no"}`,
+    `Grabación requerida: ${input.requiereGrabacion ? "sí" : "no"}`,
     "",
-    "Instancias:"
+    "Encuentros:"
   ].filter((line): line is string => line !== null);
   for (const item of input.instancias) {
     lines.push(`- ${item.inicio} a ${item.fin}`);

@@ -126,11 +126,11 @@ async function notificarReunionCreada(solicitudId: string) {
     ],
     {
       tipo: "REUNION_CREADA",
-      titulo: "Reunion creada",
-      cuerpo: `${solicitud.titulo} quedo registrada con ${solicitud.instancias.length} instancia(s).`,
+      titulo: "Reunión creada",
+      cuerpo: `${solicitud.titulo} quedó registrada con ${solicitud.instancias.length} ${solicitud.instancias.length === 1 ? "encuentro" : "encuentros"}.`,
       href: `/reuniones/${solicitud.id}`,
       metadata: { solicitudId: solicitud.id },
-      emailSubject: `Reunion creada: ${solicitud.titulo}`,
+      emailSubject: `Reunión creada: ${solicitud.titulo}`,
       emailText: detailsText
     }
   );
@@ -148,7 +148,7 @@ async function notificarReunionCreada(solicitudId: string) {
       { usuarioId: assistant.usuario.id, email: assistant.usuario.emailPrincipal },
       {
         tipo: "ASISTENCIA_ASIGNACION",
-        titulo: "Te asignaron una reunion",
+        titulo: "Te asignaron una reunión",
         cuerpo: `${solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
         href: "/mi-agenda",
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },

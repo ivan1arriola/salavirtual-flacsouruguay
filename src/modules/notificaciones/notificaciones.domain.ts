@@ -33,6 +33,6 @@ export function etiquetaTipoNotificacion(tipo: TipoNotificacion): string {
     case "ASISTENCIA_POSTULACION":
       return "Postulaciones de asistentes técnicos";
     case "ASISTENCIA_POSTULACION_RETIRADA":
-      return "Retiros de postulacion";
+      return "Retiros de postulación";
   }
 }

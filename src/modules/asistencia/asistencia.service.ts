@@ -126,7 +126,7 @@ export async function actualizarPostulacionAsistencia(
         message: {
           tipo: notificationType,
           titulo: estado === "ME_INTERESA" ? "Nueva postulación de asistencia técnica" : "Postulación retirada",
-          cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postulo a" : "retiro su postulacion de"} ${meeting.solicitud.titulo}.`,
+          cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postuló a" : "retiró su postulación de"} ${meeting.solicitud.titulo}.`,
           href: "/asistencia-tecnica?estado=pendientes",
           metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
           emailSubject: estado === "ME_INTERESA"
@@ -382,7 +382,7 @@ export async function asignarAsistentePostulado(
         },
         message: {
           ...assignmentMessage,
-          titulo: "Te asignaron una reunion",
+          titulo: "Te asignaron una reunión",
           cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
           href: "/mi-agenda",
           emailSubject: "Te asignaron una asistencia técnica"

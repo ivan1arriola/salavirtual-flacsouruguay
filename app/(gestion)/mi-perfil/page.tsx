@@ -92,15 +92,15 @@ export default async function MiPerfilPage({
           <div className="section-heading">
             <div>
               <h2>Notificaciones</h2>
-              <p>Elegí canales por tipo. Si no guardás cambios, el valor predeterminado es push y correo.</p>
+              <p>Elegí qué avisos querés recibir dentro del sistema y por correo electrónico.</p>
             </div>
           </div>
           <form className="profile-form" action={guardarPreferenciasNotificacion}>
             <div className="notification-preferences">
               <div className="notification-preference-head">
                 <span>Tipo</span>
-                <span>Push</span>
-                <span>Correo</span>
+                <span>En la app</span>
+                <span>Por correo</span>
               </div>
               {TIPOS_NOTIFICACION.map((tipo) => {
                 const preference = user.preferenciasNotificacion.find((item) => item.tipo === tipo) ?? PREFERENCIA_PREDETERMINADA;
@@ -109,7 +109,7 @@ export default async function MiPerfilPage({
                     <strong>{etiquetaTipoNotificacion(tipo)}</strong>
                     <label>
                       <input name={`${tipo}:push`} type="checkbox" defaultChecked={preference.push} />
-                      <span className="sr-only">Push para {etiquetaTipoNotificacion(tipo)}</span>
+                      <span className="sr-only">En la aplicación para {etiquetaTipoNotificacion(tipo)}</span>
                     </label>
                     <label>
                       <input name={`${tipo}:email`} type="checkbox" defaultChecked={preference.email} />
