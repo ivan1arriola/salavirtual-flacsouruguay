@@ -18,7 +18,11 @@ import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
-import { agruparEncuentrosPorSerie, resolverVistaAgenda } from "@/src/modules/reuniones/agenda-view.domain";
+import {
+  agruparEncuentrosPorSerie,
+  normalizarCodigoReunionBuscado,
+  resolverVistaAgenda
+} from "@/src/modules/reuniones/agenda-view.domain";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
 import { listarCasosRevisionDuplicados } from "@/src/modules/reuniones/duplicados.service";
 
@@ -34,6 +38,8 @@ export default async function ReunionesPage({
 
   const { q = "", vista: vistaParam } = await searchParams;
   const vista = resolverVistaAgenda(vistaParam);
+  const query = q.trim();
+  const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
   const teacherFilter = actor.rol === "DOCENTE"
     ? { docentePrograma: { docente: { usuarioId: actor.id } } }
@@ -42,21 +48,33 @@ export default async function ReunionesPage({
     where: {
       finProgramadoAt: { gte: now },
       estado: { not: "CANCELADA" },
-      solicitud: {
-        ...teacherFilter,
-        ...(q ? {
-          OR: [
-            { titulo: { contains: q, mode: "insensitive" as const } },
-            { docentePrograma: { programa: { nombre: { contains: q, mode: "insensitive" as const } } } },
+      solicitud: teacherFilter,
+      ...(query ? {
+        OR: [
+          {
+            eventosProveedor: {
+              some: {
+                OR: [
+                  { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" as const } },
+                  { joinUrl: { contains: query, mode: "insensitive" as const } }
+                ]
+              }
+            }
+          },
+          {
+            solicitud: { OR: [
+            { titulo: { contains: query, mode: "insensitive" as const } },
+            { docentePrograma: { programa: { nombre: { contains: query, mode: "insensitive" as const } } } },
             { docentePrograma: { docente: { usuario: {
               OR: [
-                { nombres: { contains: q, mode: "insensitive" as const } },
-                { apellidos: { contains: q, mode: "insensitive" as const } }
+                { nombres: { contains: query, mode: "insensitive" as const } },
+                { apellidos: { contains: query, mode: "insensitive" as const } }
               ]
             } } } }
-          ]
-        } : {})
-      }
+          ] }
+          }
+        ]
+      } : {})
     },
     orderBy: { inicioProgramadoAt: "asc" },
     take: 500,
@@ -132,7 +150,7 @@ export default async function ReunionesPage({
         <form className="filter-bar agenda-search" method="get">
           <Search size={18} aria-hidden="true" />
           <input name="vista" type="hidden" value={vista} />
-          <input aria-label="Buscar reuniones" defaultValue={q} name="q" placeholder="Buscar por reunión, programa o docente" type="search" />
+          <input aria-label="Buscar reuniones" defaultValue={q} name="q" placeholder="Buscar por reunión, código Meet, programa o docente" type="search" />
           <button className="secondary-action" type="submit">Buscar</button>
         </form>
       </div>
@@ -155,6 +173,7 @@ export default async function ReunionesPage({
               eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
             );
             const rooms = unique(events.flatMap(({ cuentaProveedor }) => cuentaProveedor?.nombre ? [cuentaProveedor.nombre] : []));
+            const codes = unique(events.flatMap(({ codigoReunion }) => codigoReunion ? [codigoReunion] : []));
             const links = unique(events.flatMap(({ joinUrl }) => joinUrl ? [joinUrl] : []));
             const sameSchedule = seriesMeetings.every(({ inicioProgramadoAt, finProgramadoAt }) =>
               formatTime(inicioProgramadoAt) === formatTime(first.inicioProgramadoAt) &&
@@ -187,6 +206,7 @@ export default async function ReunionesPage({
                   <div className="agenda-meeting-logistics">
                     <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
                     <div><span>Sala Meet</span><strong>{rooms.length === 0 ? "Sin sala" : rooms.length === 1 ? rooms[0] : `${rooms.length} salas`}</strong></div>
+                    <div><span>Código</span><strong>{codes.length === 0 ? "Pendiente" : codes.length === 1 ? codes[0] : `${codes.length} códigos`}</strong></div>
                     <div><span>Enlace</span><strong>{links.length === 0 ? "Pendiente" : links.length === 1 ? "Compartido en la serie" : `${links.length} enlaces`}</strong></div>
                   </div>
 
@@ -250,6 +270,7 @@ export default async function ReunionesPage({
                 <div className="agenda-meeting-logistics">
                   <div><span>Modalidad</span><strong>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
                   <div><span>Sala Meet</span><strong>{event?.cuentaProveedor?.nombre ?? "Sin sala"}</strong><MeetIntegrationStatus status={event?.estadoIntegracion} /></div>
+                  <div><span>Código</span><strong>{event?.codigoReunion ?? "Pendiente"}</strong></div>
                 </div>
 
                 <div className={`agenda-assistant ${assistantName ? "has-assistant" : meeting.requiereAsistenciaTecnica ? "needs-assistant" : "no-assistance"}`}>

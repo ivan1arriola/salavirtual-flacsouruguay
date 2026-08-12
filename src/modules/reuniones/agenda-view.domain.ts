@@ -13,6 +13,12 @@ export function resolverVistaAgenda(value?: string): VistaAgenda {
   return value === "encuentros" ? "encuentros" : "series";
 }
 
+export function normalizarCodigoReunionBuscado(value: string): string {
+  const query = value.trim();
+  const meetCode = query.match(/meet\.google\.com\/(?:lookup\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})/i)?.[1];
+  return (meetCode ?? query).toLowerCase();
+}
+
 export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
   meetings: readonly T[]
 ): readonly (readonly T[])[] {

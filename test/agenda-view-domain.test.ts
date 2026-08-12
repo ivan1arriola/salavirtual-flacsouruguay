@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agruparEncuentrosPorSerie,
+  normalizarCodigoReunionBuscado,
   resolverVistaAgenda
 } from "../src/modules/reuniones/agenda-view.domain";
 
@@ -43,5 +44,10 @@ describe("vista de agenda", () => {
     ];
 
     expect(agruparEncuentrosPorSerie(meetings)).toHaveLength(2);
+  });
+
+  it("acepta un código o un enlace completo de Google Meet", () => {
+    expect(normalizarCodigoReunionBuscado(" ABC-DEFG-HIJ ")).toBe("abc-defg-hij");
+    expect(normalizarCodigoReunionBuscado("https://meet.google.com/abc-defg-hij?authuser=1")).toBe("abc-defg-hij");
   });
 });
