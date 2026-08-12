@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { withRequiredCohostEmails } from "../meet/cohosts.domain";
+import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import {
   asignacionAsistenciaSchema,
@@ -589,7 +589,7 @@ export async function sincronizarCohostsDeInstancia(
   });
   const event = meeting?.eventosProveedor[0];
   if (!meeting || !event?.codigoReunion) return;
-  const cohostEmails = withRequiredCohostEmails([
+  const cohostEmails = normalizeCohostEmails([
     ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
     ...meeting.cohostEmails.map(({ email }) => email)
   ]);

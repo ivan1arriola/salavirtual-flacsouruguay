@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
-import { withRequiredCohostEmails } from "../meet/cohosts.domain";
+import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import type { MeetProvider } from "../meet/provider";
 import { conReintentosPorLimiteGoogle } from "../meet/google-api-retry.adapter";
@@ -127,7 +127,7 @@ export async function agregarEncuentro(
         data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId }))
       });
     }
-    const cohostEmails = withRequiredCohostEmails(
+    const cohostEmails = normalizeCohostEmails(
       request.instancias[0]?.cohostEmails.map(({ email }) => email) ?? []
     );
     if (cohostEmails.length) {

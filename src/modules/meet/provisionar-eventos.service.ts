@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { withRequiredCohostEmails } from "./cohosts.domain";
+import { normalizeCohostEmails } from "./cohosts.domain";
 import { extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
@@ -208,7 +208,7 @@ function agruparPorSerie(
 function cohostEmailsDeInstancia(
   instancia: EventoMeetProvisionable["instancia"]
 ): readonly string[] {
-  return withRequiredCohostEmails([
+  return normalizeCohostEmails([
     ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
     ...instancia.cohostEmails.map(({ email }) => email)
   ]);
