@@ -1,0 +1,163 @@
+import { randomBytes } from "node:crypto";
+import type { PrismaClient } from "@prisma/client";
+import { hash } from "bcryptjs";
+import { authConfig } from "@/src/lib/auth/config";
+import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
+import {
+  hashTokenRecuperacion,
+  RECUPERACION_PASSWORD_REENVIO_MS,
+  RECUPERACION_PASSWORD_TTL_MS,
+  restablecerPasswordSchema,
+  solicitudRecuperacionPasswordSchema,
+  tokenRecuperacionVigente
+} from "./recuperacion-password.domain";
+
+export async function solicitarRecuperacionPassword(
+  db: PrismaClient,
+  rawInput: unknown,
+  ahora = new Date()
+): Promise<void> {
+  const input = solicitudRecuperacionPasswordSchema.parse(rawInput);
+  const usuario = await db.usuario.findFirst({
+    where: {
+      activo: true,
+      fusionadoEnId: null,
+      OR: [
+        { emailPrincipal: { equals: input.email, mode: "insensitive" } },
+        { emailAliases: { some: { email: { equals: input.email, mode: "insensitive" } } } },
+        { cuentasGoogle: { some: { email: { equals: input.email, mode: "insensitive" } } } }
+      ]
+    },
+    select: {
+      id: true,
+      nombres: true,
+      emailPrincipal: true,
+      recuperacionesPassword: {
+        where: { utilizadoAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true }
+      }
+    }
+  });
+
+  // La respuesta pública siempre es la misma, exista o no la cuenta.
+  if (!usuario) return;
+
+  const ultimaSolicitud = usuario.recuperacionesPassword[0]?.createdAt;
+  if (ultimaSolicitud && ahora.getTime() - ultimaSolicitud.getTime() < RECUPERACION_PASSWORD_REENVIO_MS) {
+    return;
+  }
+
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = hashTokenRecuperacion(token);
+  const expiraAt = new Date(ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS);
+  const recuperacion = await db.$transaction(async (tx) => {
+    await tx.recuperacionPassword.deleteMany({
+      where: { usuarioId: usuario.id, utilizadoAt: null }
+    });
+    return tx.recuperacionPassword.create({
+      data: { usuarioId: usuario.id, tokenHash, expiraAt }
+    });
+  });
+
+  const destino = usuario.emailPrincipal?.trim().toLowerCase() || input.email;
+  const url = new URL("/restablecer-contrasena", authConfig.baseUrl);
+  url.searchParams.set("token", token);
+
+  try {
+    const resultado = await enviarCorreoConfigurado(db, {
+      to: [destino],
+      subject: "Restablecer contraseña · FLACSO Meet",
+      text: [
+        `Hola ${usuario.nombres},`,
+        "",
+        "Recibimos una solicitud para restablecer tu contraseña de FLACSO Meet.",
+        "",
+        `Abrí este enlace para elegir una nueva contraseña: ${url.toString()}`,
+        "",
+        "El enlace vence en 30 minutos y solo puede utilizarse una vez.",
+        "Si no solicitaste este cambio, podés ignorar este correo."
+      ].join("\n")
+    });
+
+    if (!resultado.sent) {
+      await db.recuperacionPassword.deleteMany({ where: { id: recuperacion.id } });
+    }
+  } catch (error) {
+    await db.recuperacionPassword.deleteMany({ where: { id: recuperacion.id } }).catch(() => undefined);
+    console.warn("No se pudo enviar el correo de recuperación de contraseña", error);
+  }
+}
+
+export async function restablecerPassword(
+  db: PrismaClient,
+  rawInput: unknown,
+  ahora = new Date()
+): Promise<void> {
+  const input = restablecerPasswordSchema.parse(rawInput);
+  const tokenHash = hashTokenRecuperacion(input.token);
+  const recuperacion = await db.recuperacionPassword.findUnique({
+    where: { tokenHash },
+    select: {
+      id: true,
+      usuarioId: true,
+      expiraAt: true,
+      utilizadoAt: true,
+      usuario: { select: { activo: true, fusionadoEnId: true } }
+    }
+  });
+
+  if (
+    !recuperacion ||
+    !tokenRecuperacionVigente(recuperacion, ahora) ||
+    !recuperacion.usuario.activo ||
+    recuperacion.usuario.fusionadoEnId
+  ) {
+    throw new Error("El enlace de recuperación no es válido o ya venció.");
+  }
+
+  const passwordHash = await hash(input.passwordNueva, 12);
+  await db.$transaction(async (tx) => {
+    const consumido = await tx.recuperacionPassword.updateMany({
+      where: {
+        id: recuperacion.id,
+        utilizadoAt: null,
+        expiraAt: { gt: ahora }
+      },
+      data: { utilizadoAt: ahora }
+    });
+    if (consumido.count !== 1) {
+      throw new Error("El enlace de recuperación no es válido o ya venció.");
+    }
+
+    const actualizado = await tx.usuario.updateMany({
+      where: { id: recuperacion.usuarioId, activo: true, fusionadoEnId: null },
+      data: {
+        passwordHash,
+        passwordInicialCifrada: null,
+        debeCambiarPassword: false
+      }
+    });
+    if (actualizado.count !== 1) {
+      throw new Error("La cuenta ya no está disponible.");
+    }
+
+    await tx.recuperacionPassword.updateMany({
+      where: {
+        usuarioId: recuperacion.usuarioId,
+        utilizadoAt: null
+      },
+      data: { utilizadoAt: ahora }
+    });
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: null,
+        accion: "PASSWORD_RECUPERADA",
+        entidadTipo: "Usuario",
+        entidadId: recuperacion.usuarioId,
+        valorNuevo: { metodo: "TOKEN_EMAIL" }
+      }
+    });
+  });
+}
