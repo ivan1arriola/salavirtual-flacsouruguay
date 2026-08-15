@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FLACSO Meet",
-    short_name: "FLACSO Meet",
+    name: "Sala Virtual FLACSO",
+    short_name: "Sala Virtual",
     description: "Gestión de reuniones académicas de FLACSO Uruguay.",
     start_url: "/",
     scope: "/",

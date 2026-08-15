@@ -69,11 +69,11 @@ export async function AppShell({
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <Link className="brand" href="/" aria-label="Gestor FLACSO Meet">
+        <Link className="brand" href="/" aria-label="Sala Virtual FLACSO">
           <span className="brand-mark" aria-hidden="true">F</span>
           <span>
             <strong>FLACSO Uruguay</strong>
-            <small>Gestor Meet</small>
+            <small>Sala Virtual</small>
           </span>
         </Link>
 
@@ -138,7 +138,7 @@ export async function AppShell({
         <header className="mobile-header">
           <Link className="mobile-brand" href="/">
             <span className="brand-mark">F</span>
-            <strong>Gestor Meet</strong>
+            <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
             <Link className="notification-mobile-link" href="/notificaciones" aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}>

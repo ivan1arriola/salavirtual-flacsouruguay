@@ -81,11 +81,11 @@ export async function invitarUsuario(
   try {
     const mail = await enviarCorreoConfigurado(db, {
       to: [input.email],
-      subject: "Invitación a FLACSO Meet",
+      subject: "Invitación a Sala Virtual FLACSO",
       text: [
         `Hola ${input.nombres},`,
         "",
-        "Administración te invitó a FLACSO Meet.",
+        "Administración te invitó a Sala Virtual FLACSO.",
         "Ingresá usando tu cuenta institucional de Google:",
         `${authConfig.baseUrl.replace(/\/$/, "")}/acceso`,
         "",

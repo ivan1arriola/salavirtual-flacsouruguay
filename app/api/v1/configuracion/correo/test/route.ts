@@ -35,9 +35,9 @@ export async function POST(request: Request) {
     }).format(new Date());
     const result = await enviarCorreoConfigurado(db, {
       to: [destinatario],
-      subject: "Prueba de correo · Gestor FLACSO Meet",
+      subject: "Prueba de correo · Sala Virtual FLACSO",
       text: [
-        "Este es un correo de prueba enviado desde el Gestor FLACSO Meet.",
+        "Este es un correo de prueba enviado desde Sala Virtual FLACSO.",
         "",
         `Solicitado por: ${session.user.email ?? actor.id}`,
         `Fecha: ${sentAt}`,

@@ -43,7 +43,7 @@ export default async function RestablecerContrasenaPage({
           <div className="login-panel-inner">
             <header className="login-header">
               <span className="login-lock"><KeyRound size={20} /></span>
-              <p className="eyebrow">FLACSO Meet</p>
+              <p className="eyebrow">Sala Virtual FLACSO</p>
               <h1 id="reset-title">Nueva contraseña</h1>
               <p>Ingresala dos veces para confirmar el cambio.</p>
             </header>

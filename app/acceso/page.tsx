@@ -79,7 +79,7 @@ export default async function AccesoPage({
             </span>
 
             <div>
-              <p>FLACSO Meet</p>
+              <p>Sala Virtual FLACSO</p>
               <h1 id="login-title">Iniciar sesión</h1>
             </div>
           </div>

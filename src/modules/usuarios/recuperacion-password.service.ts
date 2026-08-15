@@ -65,11 +65,11 @@ export async function solicitarRecuperacionPassword(
   try {
     const resultado = await enviarCorreoConfigurado(db, {
       to: [destino],
-      subject: "Restablecer contraseña · FLACSO Meet",
+      subject: "Restablecer contraseña · Sala Virtual FLACSO",
       text: [
         `Hola ${usuario.nombres},`,
         "",
-        "Recibimos una solicitud para restablecer tu contraseña de FLACSO Meet.",
+        "Recibimos una solicitud para restablecer tu contraseña de Sala Virtual FLACSO.",
         "",
         `Abrí este enlace para elegir una nueva contraseña: ${url.toString()}`,
         "",

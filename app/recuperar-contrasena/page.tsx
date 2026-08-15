@@ -37,7 +37,7 @@ export default async function RecuperarContrasenaPage({
           <div className="login-panel-inner">
             <header className="login-header">
               <span className="login-lock"><KeyRound size={20} /></span>
-              <p className="eyebrow">FLACSO Meet</p>
+              <p className="eyebrow">Sala Virtual FLACSO</p>
               <h1 id="recovery-title">Recuperar contraseña</h1>
               <p>Ingresá el correo asociado a tu cuenta.</p>
             </header>

@@ -81,7 +81,7 @@ function encodeMimeHeader(value: string): string {
 
 function fromHeader(address?: string): string {
   const from = address?.trim() || process.env.SMTP_FROM?.trim() || "noreply@flacso.edu.uy";
-  return `"Gestor FLACSO Meet" <${from}>`;
+  return `"Sala Virtual FLACSO" <${from}>`;
 }
 
 function buildRawGmailMessage(input: MailInput, from: string): string {

@@ -1,6 +1,6 @@
-# FLACSO Meet
+# Sala Virtual FLACSO
 
-Nueva plataforma web para gestionar solicitudes, agenda, asistencia, grabaciones y liquidaciones de reuniones academicas de FLACSO Uruguay.
+Plataforma web para gestionar solicitudes, agenda, asistencia, grabaciones y liquidaciones de reuniones académicas de FLACSO Uruguay.
 
 ## Fuente vigente
 

@@ -21,7 +21,7 @@ export function construirCorreoNotificacion(
     "",
     message.cuerpo,
     detail ? `\n${detail}` : null,
-    actionUrl ? `\nAbrir en el Gestor FLACSO Meet: ${actionUrl}` : null,
+    actionUrl ? `\nAbrir en Sala Virtual FLACSO: ${actionUrl}` : null,
     "",
     `Preferencias de notificación: ${preferencesUrl}`
   ].filter((line): line is string => line !== null).join("\n");
@@ -55,7 +55,7 @@ function htmlTemplate(input: Readonly<{
     ? `<div style="margin-top:20px;border:1px solid #d8dee8;border-radius:8px;background:#f7f9fb;padding:16px;color:#3f4b5c;font-size:14px;line-height:1.6;white-space:pre-line">${escapeHtml(input.detail)}</div>`
     : "";
   const action = input.actionUrl
-    ? `<p style="margin:24px 0 8px"><a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;border-radius:6px;background:#0f6f8f;color:#ffffff;padding:11px 18px;text-decoration:none;font-weight:700">Abrir en el Gestor Meet</a></p>`
+    ? `<p style="margin:24px 0 8px"><a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;border-radius:6px;background:#0f6f8f;color:#ffffff;padding:11px 18px;text-decoration:none;font-weight:700">Abrir Sala Virtual FLACSO</a></p>`
     : "";
   return `<!doctype html>
 <html lang="es">
@@ -66,7 +66,7 @@ function htmlTemplate(input: Readonly<{
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;border:1px solid #d8dee8;border-radius:10px;background:#ffffff;overflow:hidden">
           <tr><td style="border-bottom:4px solid #0f6f8f;padding:20px 24px">
             <strong style="font-size:18px">FLACSO Uruguay</strong><br>
-            <span style="color:#647083;font-size:13px">Gestor Meet</span>
+            <span style="color:#647083;font-size:13px">Sala Virtual FLACSO</span>
           </td></tr>
           <tr><td style="padding:28px 24px">
             <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25">${escapeHtml(input.title)}</h1>
@@ -75,7 +75,7 @@ function htmlTemplate(input: Readonly<{
             ${action}
           </td></tr>
           <tr><td style="border-top:1px solid #e3e7ed;padding:16px 24px;color:#647083;font-size:12px;line-height:1.5">
-            Este mensaje fue enviado automáticamente por el Gestor FLACSO Meet.<br>
+            Este mensaje fue enviado automáticamente por Sala Virtual FLACSO.<br>
             <a href="${escapeHtml(input.preferencesUrl)}" style="color:#0f6f8f">Administrar preferencias de notificación</a>
           </td></tr>
         </table>

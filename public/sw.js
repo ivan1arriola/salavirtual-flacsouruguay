@@ -1,4 +1,4 @@
-const CACHE_NAME = "flacso-meet-shell-v1";
+const CACHE_NAME = "sala-virtual-flacso-shell-v1";
 const SHELL_ASSETS = [
   "/offline.html",
   "/manifest.webmanifest",

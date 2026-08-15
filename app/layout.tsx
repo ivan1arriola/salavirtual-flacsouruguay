@@ -3,12 +3,12 @@ import { PwaRegister } from "@/src/components/pwa-register";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FLACSO Meet",
-  description: "Gestión de solicitudes, agenda y asistencia técnica para Google Meet.",
+  title: "Sala Virtual FLACSO",
+  description: "Gestión de solicitudes, agenda y asistencia técnica para FLACSO Uruguay.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "FLACSO Meet",
+    title: "Sala Virtual FLACSO",
     statusBarStyle: "default"
   },
   icons: {

@@ -69,7 +69,7 @@ export async function notificarUsuario(
     try {
       const email = construirCorreoNotificacion(
         message,
-        process.env.APP_BASE_URL ?? "https://salas-meet.flacso.edu.uy"
+        process.env.APP_BASE_URL ?? "https://salavirtual.flacso.edu.uy"
       );
       const result = await enviarCorreoConfigurado(db, {
         to: [recipient.email],
