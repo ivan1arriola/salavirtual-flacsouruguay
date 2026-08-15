@@ -23,15 +23,14 @@ describe("cuentas Google permitidas", () => {
     ).toBe(false);
   });
 
-  it("normaliza, limita al dominio FLACSO y elimina duplicados", () => {
+  it("normaliza cuentas Google y elimina duplicados", () => {
     expect(
       reemplazarCuentasGoogleSchema.parse({
         emails: ["DOCENTE@FLACSO.EDU.UY", "docente@flacso.edu.uy"]
       }).emails
     ).toEqual(["docente@flacso.edu.uy"]);
-    expect(() =>
-      reemplazarCuentasGoogleSchema.parse({ emails: ["persona@gmail.com"] })
-    ).toThrow();
+    expect(reemplazarCuentasGoogleSchema.parse({ emails: ["persona@gmail.com"] }).emails)
+      .toEqual(["persona@gmail.com"]);
   });
 
   it("exige al menos Google o password como metodo de acceso", () => {

@@ -30,7 +30,7 @@ export function GoogleAccountsForm({
       <div className="account-email-list">
         {emails.map((email, index) => (
           <div className="account-email-row" key={index}>
-            <input type="email" value={email} placeholder="usuario@flacso.edu.uy" onChange={(event) => setEmails(emails.map((current, position) => position === index ? event.target.value : current))} />
+            <input type="email" value={email} placeholder="persona@gmail.com" onChange={(event) => setEmails(emails.map((current, position) => position === index ? event.target.value : current))} />
             <button className="icon-button" type="button" title="Quitar cuenta" onClick={() => setEmails(emails.filter((_, position) => position !== index))}><Trash2 size={18} /><span className="sr-only">Quitar cuenta</span></button>
           </div>
         ))}

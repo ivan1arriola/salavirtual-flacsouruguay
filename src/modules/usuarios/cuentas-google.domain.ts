@@ -1,15 +1,12 @@
 import { z } from "zod";
 import type { RolUsuario } from "./roles";
 
-const emailFlacsoSchema = z
+const emailGoogleSchema = z
   .email()
-  .transform((email) => email.trim().toLowerCase())
-  .refine((email) => email.endsWith("@flacso.edu.uy"), {
-    message: "Solo se permiten cuentas del dominio flacso.edu.uy."
-  });
+  .transform((email) => email.trim().toLowerCase());
 
 export const reemplazarCuentasGoogleSchema = z.object({
-  emails: z.array(emailFlacsoSchema).transform((emails) => [...new Set(emails)])
+  emails: z.array(emailGoogleSchema).transform((emails) => [...new Set(emails)])
 });
 
 export type ActorGestionUsuarios = Readonly<{

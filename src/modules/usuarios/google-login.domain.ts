@@ -25,7 +25,7 @@ export function evaluarAccesoGoogle(
 ): UsuarioAutenticado | null {
   const email = perfil.email.trim().toLowerCase();
   if (
-    !esPerfilGoogleInstitucional(perfil) ||
+    !esPerfilGoogleVerificado(perfil) ||
     !cuenta ||
     (cuenta.providerAccountId !== null && cuenta.providerAccountId !== perfil.subject) ||
     cuenta.email.trim().toLowerCase() !== email ||
@@ -44,11 +44,15 @@ export function evaluarAccesoGoogle(
   };
 }
 
-export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
-  const email = perfil.email.trim().toLowerCase();
+export function esPerfilGoogleVerificado(perfil: PerfilGoogle): boolean {
   return Boolean(perfil.subject.trim()) &&
     perfil.emailVerificado &&
-    email.endsWith("@flacso.edu.uy");
+    Boolean(perfil.email.trim());
+}
+
+export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
+  return esPerfilGoogleVerificado(perfil) &&
+    perfil.email.trim().toLowerCase().endsWith("@flacso.edu.uy");
 }
 
 export function resolverVinculacionSubjectGoogle(

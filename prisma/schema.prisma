@@ -45,6 +45,7 @@ model Usuario {
   asistenteTecnico                  AsistenteTecnico?
   notificaciones                    Notificacion[]
   preferenciasNotificacion          PreferenciaNotificacion[]
+  solicitudesAccesoGoogleAprobadas  SolicitudAccesoGoogle[]       @relation("SolicitudesAccesoGoogleAprobadas")
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -535,6 +536,23 @@ model CuentaGoogleFlacso {
   @@index([dominio])
 }
 
+model SolicitudAccesoGoogle {
+  id                    String                     @id @default(cuid())
+  email                 String                     @unique
+  providerAccountId     String                     @unique
+  nombres               String
+  apellidos             String?
+  imagenUrl             String?
+  estado                EstadoSolicitudAccesoGoogle @default(PENDIENTE)
+  aprobadaPorUsuarioId  String?
+  aprobadaAt            DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  aprobadaPor           Usuario?                   @relation("SolicitudesAccesoGoogleAprobadas", fields: [aprobadaPorUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([estado, createdAt])
+}
+
 model SesionUsuario {
   sessionToken String   @unique
   userId       String
@@ -591,6 +609,11 @@ enum EstadoSolicitud {
   PROVISIONADA
   REQUIERE_REVISION
   CANCELADA
+}
+
+enum EstadoSolicitudAccesoGoogle {
+  PENDIENTE
+  APROBADA
 }
 
 enum EstadoInstancia {

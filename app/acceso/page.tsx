@@ -9,7 +9,8 @@ import "./acceso.css";
 const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
   CredentialsSignin: "El usuario o la contraseña no son correctos.",
   AccessDenied: "La cuenta no tiene acceso autorizado.",
-  OAuthCallbackError: "No se pudo completar el acceso con Google."
+  Configuration: "Tu solicitud de acceso fue registrada. Administración debe autorizarla antes de que puedas ingresar.",
+  OAuthCallbackError: "Tu solicitud de acceso fue registrada. Administración debe autorizarla antes de que puedas ingresar."
 });
 
 export default async function AccesoPage({
@@ -68,7 +69,7 @@ export default async function AccesoPage({
                   <GoogleMark />
                   Continuar con Google
                 </button>
-                <p className="institutional-access-note">Usá tu cuenta institucional <strong>@flacso.edu.uy</strong></p>
+                <p className="institutional-access-note">Las cuentas externas requieren autorización de Administración.</p>
               </form>
             ) : null}
 

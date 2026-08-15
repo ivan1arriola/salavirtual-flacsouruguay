@@ -62,7 +62,7 @@ export async function reemplazarCuentasGooglePermitidas(
         cantidadCuentasGoogle: emails.length
       })
     ) {
-      throw new Error("El usuario debe conservar una cuenta FLACSO o una contrasena.");
+      throw new Error("El usuario debe conservar una cuenta Google o una contrasena.");
     }
 
     await tx.cuentaGoogleFlacso.deleteMany({
@@ -77,7 +77,7 @@ export async function reemplazarCuentasGooglePermitidas(
         create: {
           userId: usuario.id,
           email,
-          dominio: "flacso.edu.uy"
+          dominio: dominioEmail(email)
         },
         update: {
           userId: usuario.id
@@ -106,4 +106,8 @@ export async function reemplazarCuentasGooglePermitidas(
 
     return emails;
   });
+}
+
+function dominioEmail(email: string): string {
+  return email.split("@")[1] ?? "";
 }

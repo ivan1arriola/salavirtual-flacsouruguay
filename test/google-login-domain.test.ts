@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluarAccesoGoogle,
   esPerfilGoogleInstitucional,
+  esPerfilGoogleVerificado,
   resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
   type PerfilGoogle
@@ -32,21 +33,29 @@ describe("login funcional con Google", () => {
     expect(evaluarAccesoGoogle(perfil, cuenta)?.id).toBe("docente");
   });
 
-  it("rechaza cuentas externas, no verificadas o no vinculadas", () => {
-    expect(
-      evaluarAccesoGoogle({ ...perfil, email: "docente@gmail.com" }, cuenta)
-    ).toBeNull();
+  it("acepta cuentas externas verificadas cuando están vinculadas", () => {
+    const cuentaExterna = { ...cuenta, email: "docente@gmail.com" };
+    expect(evaluarAccesoGoogle({ ...perfil, email: "docente@gmail.com" }, cuentaExterna)?.id).toBe("docente");
+  });
+
+  it("rechaza perfiles no verificados o no vinculados", () => {
     expect(evaluarAccesoGoogle({ ...perfil, emailVerificado: false }, cuenta)).toBeNull();
     expect(evaluarAccesoGoogle(perfil, null)).toBeNull();
   });
 
-  it("habilita el autorregistro solamente para perfiles Google verificados de FLACSO", () => {
-    expect(esPerfilGoogleInstitucional(perfil)).toBe(true);
-    expect(esPerfilGoogleInstitucional({ ...perfil, email: "persona@gmail.com" })).toBe(false);
-    expect(esPerfilGoogleInstitucional({ ...perfil, emailVerificado: false })).toBe(false);
+  it("habilita el autorregistro para cualquier perfil Google verificado con email", () => {
+    expect(esPerfilGoogleVerificado(perfil)).toBe(true);
+    expect(esPerfilGoogleVerificado({ ...perfil, email: "persona@gmail.com" })).toBe(true);
+    expect(esPerfilGoogleVerificado({ ...perfil, emailVerificado: false })).toBe(false);
+    expect(esPerfilGoogleVerificado({ ...perfil, email: "" })).toBe(false);
   });
 
-  it("permite revalidar el subject usando un correo institucional verificado", () => {
+  it("distingue los perfiles institucionales para el autorregistro inmediato", () => {
+    expect(esPerfilGoogleInstitucional(perfil)).toBe(true);
+    expect(esPerfilGoogleInstitucional({ ...perfil, email: "persona@gmail.com" })).toBe(false);
+  });
+
+  it("permite revalidar el subject de una cuenta Google", () => {
     expect(resolverVinculacionSubjectGoogle(null, "subject-nuevo", false)).toBe("REVINCULAR");
     expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", false)).toBe("REVINCULAR");
     expect(resolverVinculacionSubjectGoogle("subject-nuevo", "subject-nuevo", false)).toBe("MANTENER");

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/src/lib/db";
-import { enviarInvitacion } from "./actions";
+import { aprobarSolicitudAccesoGoogle, enviarInvitacion } from "./actions";
 
 const USER_TYPES = [
   { value: "ADMINISTRACION", label: "Administración", title: "Administración", icon: ShieldCheck },
@@ -20,7 +20,7 @@ export default async function UsuariosPage({
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const query = await searchParams;
   const selectedType = isUserType(query.tipo) ? query.tipo : "DOCENTE";
-  const [users, groupedCounts, programs] = await Promise.all([
+  const [users, groupedCounts, programs, solicitudesPendientes] = await Promise.all([
     db.usuario.findMany({
       where: { rol: selectedType },
       orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
@@ -34,6 +34,10 @@ export default async function UsuariosPage({
       where: { activo: true },
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true }
+    }),
+    db.solicitudAccesoGoogle.findMany({
+      where: { estado: "PENDIENTE" },
+      orderBy: { createdAt: "asc" }
     })
   ]);
   const selected = USER_TYPES.find(({ value }) => value === selectedType) ?? USER_TYPES[1];
@@ -48,7 +52,25 @@ export default async function UsuariosPage({
 
       {query.estado === "invitacion-enviada" ? <p className="form-notice">La invitación fue creada y enviada.</p> : null}
       {query.estado === "invitacion-creada" ? <p className="form-notice">El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.</p> : null}
+      {query.estado === "solicitud-aprobada" ? <p className="form-notice">La solicitud fue aprobada y el usuario fue creado.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
+
+      {solicitudesPendientes.length ? (
+        <section className="content-section">
+          <div className="section-heading"><div><h2>Solicitudes de acceso pendientes</h2><p>Las cuentas externas requieren autorización antes de poder ingresar.</p></div></div>
+          <div className="table-wrap"><table className="data-table">
+            <thead><tr><th>Persona</th><th>Cuenta Google</th><th>Solicitada</th><th>Autorizar como</th></tr></thead>
+            <tbody>{solicitudesPendientes.map((solicitud) => (
+              <tr key={solicitud.id}>
+                <td><strong>{solicitud.nombres} {solicitud.apellidos}</strong></td>
+                <td>{solicitud.email}</td>
+                <td>{solicitud.createdAt.toLocaleDateString("es-UY")}</td>
+                <td><form action={aprobarSolicitudAccesoGoogle} className="inline-form"><input name="solicitudId" type="hidden" value={solicitud.id} /><select name="rol" defaultValue="DOCENTE"><option value="DOCENTE">Docente</option><option value="ASISTENTE_TECNICO">Asistente técnico</option><option value="ADMINISTRACION">Administración</option></select><button className="primary-action" type="submit">Aprobar</button></form></td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        </section>
+      ) : null}
 
       <details className="content-section invitation-panel">
         <summary>Invitar una persona</summary>
@@ -88,7 +110,7 @@ export default async function UsuariosPage({
         </div>
         <div className="table-wrap">
           <table className="data-table">
-            <thead><tr><th>Usuario</th><th>Cuentas FLACSO</th><th>Acceso</th><th></th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Cuentas Google</th><th>Acceso</th><th></th></tr></thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>

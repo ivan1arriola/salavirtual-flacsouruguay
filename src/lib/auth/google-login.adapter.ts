@@ -1,6 +1,7 @@
 import { db } from "@/src/lib/db";
 import {
   esPerfilGoogleInstitucional,
+  esPerfilGoogleVerificado,
   evaluarAccesoGoogle,
   resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
@@ -9,7 +10,7 @@ import {
 import { registrarInicioSesionUsuario } from "@/src/modules/usuarios/estado-asistente.service";
 
 export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
-  if (!esPerfilGoogleInstitucional(perfil)) return null;
+  if (!esPerfilGoogleVerificado(perfil)) return null;
   const email = perfil.email.trim().toLowerCase();
   const now = new Date();
 
@@ -57,6 +58,28 @@ export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
       return existingAccount;
     }
 
+    if (!esPerfilGoogleInstitucional(perfil)) {
+      await tx.solicitudAccesoGoogle.upsert({
+        where: { email },
+        create: {
+          email,
+          providerAccountId: perfil.subject,
+          nombres: nombresGoogle(perfil, email),
+          apellidos: apellidosGoogle(perfil),
+          imagenUrl: null
+        },
+        update: {
+          providerAccountId: perfil.subject,
+          nombres: nombresGoogle(perfil, email),
+          apellidos: apellidosGoogle(perfil),
+          estado: "PENDIENTE",
+          aprobadaPorUsuarioId: null,
+          aprobadaAt: null
+        }
+      });
+      return null;
+    }
+
     const existingUser = await tx.usuario.findFirst({
       where: { emailPrincipal: { equals: email, mode: "insensitive" } },
       include: { docente: { select: { id: true } } }
@@ -83,7 +106,7 @@ export async function resolverUsuarioGoogle(perfil: PerfilGoogle) {
       data: {
         userId: user.id,
         email,
-        dominio: "flacso.edu.uy",
+        dominio: dominioEmail(email),
         providerAccountId: perfil.subject,
         emailVerificadoAt: now,
         ultimoAccesoAt: now
@@ -172,4 +195,8 @@ function apellidosGoogle(perfil: PerfilGoogle): string | null {
   if (perfil.apellidos?.trim()) return perfil.apellidos.trim();
   const parts = perfil.nombre?.trim().split(/\s+/) ?? [];
   return parts.length > 1 ? parts.slice(1).join(" ") : null;
+}
+
+function dominioEmail(email: string): string {
+  return email.split("@")[1] ?? "";
 }
