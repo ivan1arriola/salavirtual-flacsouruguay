@@ -32,7 +32,7 @@ export default async function RestablecerContrasenaPage({
             <p>El enlace recibido por correo es temporal y se invalida automáticamente después de usarlo.</p>
           </div>
           <ul className="login-feature-list" aria-label="Características de seguridad">
-            <li><ShieldCheck size={19} /><span><strong>Protegida</strong><small>Contraseña cifrada con bcrypt</small></span></li>
+            <li><ShieldCheck size={19} /><span><strong>Protegida</strong><small>Hash seguro con bcrypt</small></span></li>
             <li><KeyRound size={19} /><span><strong>8 caracteres</strong><small>Mínimo requerido</small></span></li>
             <li><KeyRound size={19} /><span><strong>Un solo uso</strong><small>El enlace queda invalidado</small></span></li>
           </ul>
