@@ -269,6 +269,22 @@
   color: #9aa5b4;
 }
 
+.login-password-recovery {
+  margin: -1px 0 7px;
+  text-align: right;
+  font-size: 0.72rem;
+}
+
+.login-inline-link {
+  color: #176c78;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-inline-link:hover {
+  text-decoration: underline;
+}
+
 .login-submit-button {
   margin-top: 2px;
   border-color: #163970;
@@ -280,11 +296,27 @@
   background: #0d2955;
 }
 
-.login-error {
+.login-error,
+.login-success {
   margin-bottom: 14px;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.login-error {
   border: 1px solid #ecc8c8;
   border-left: 4px solid #a63c3c;
-  border-radius: 7px;
+  background: #fff9f9;
+  color: #7a2727;
+}
+
+.login-success {
+  border: 1px solid #b9ddd3;
+  border-left: 4px solid #176c78;
+  background: #f5fbf9;
+  color: #245b55;
 }
 
 .login-help {
@@ -443,7 +475,6 @@
   .login-header h1 {
     font-size: 1.65rem;
   }
-
 }
 
 @media (max-width: 360px) {
