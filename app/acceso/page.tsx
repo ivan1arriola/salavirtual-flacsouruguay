@@ -1,9 +1,4 @@
-import {
-  CalendarDays,
-  LockKeyhole,
-  ShieldCheck,
-  Video
-} from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -19,15 +14,11 @@ import "./acceso.css";
 
 const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
   CredentialsSignin: "El usuario o la contraseña no son correctos.",
-
-  AccessDenied:
-    "Esta cuenta no tiene acceso autorizado a FLACSO Meet.",
-
+  AccessDenied: "Esta cuenta no tiene acceso autorizado.",
   Configuration:
-    "Tu solicitud de acceso fue registrada. Administración debe autorizarla antes de que puedas ingresar.",
-
+    "Tu solicitud de acceso fue registrada y deberá ser autorizada.",
   OAuthCallbackError:
-    "Tu solicitud de acceso fue registrada. Administración debe autorizarla antes de que puedas ingresar."
+    "Tu solicitud de acceso fue registrada y deberá ser autorizada."
 });
 
 type AccesoPageProps = Readonly<{
@@ -62,243 +53,125 @@ export default async function AccesoPage({
   return (
     <main className="login-shell">
       <section
-        className="login-experience"
+        className="login-card"
         aria-labelledby="login-title"
       >
-        <BrandPanel />
+        <header className="login-header">
+          <a
+            className="login-logo-link"
+            href="https://flacso.edu.uy/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="FLACSO Uruguay"
+          >
+            <img
+              className="login-logo"
+              src="https://flacso.edu.uy/wp-content/uploads/2026/04/cropped-flacso_20_anos_horizontal_azul.png"
+              alt="FLACSO Uruguay"
+              width="842"
+              height="336"
+            />
+          </a>
 
-        <div className="login-panel">
-          <div className="login-panel-inner">
-            <header className="login-header">
-              <span
-                className="login-lock"
-                aria-hidden="true"
+          <div className="login-product">
+            <span className="login-product-icon">
+              <LockKeyhole size={18} />
+            </span>
+
+            <div>
+              <p>FLACSO Meet</p>
+              <h1 id="login-title">Iniciar sesión</h1>
+            </div>
+          </div>
+        </header>
+
+        {cambiar === "1" ? (
+          <RememberedAccounts />
+        ) : null}
+
+        {mensaje ? (
+          <p className="login-error" role="alert">
+            {mensaje}
+          </p>
+        ) : null}
+
+        {restablecida === "1" ? (
+          <p className="login-success" role="status">
+            Tu contraseña fue actualizada.
+          </p>
+        ) : null}
+
+        {authConfig.google ? (
+          <>
+            <form action={iniciarSesionGoogle}>
+              <button
+                className="login-google-button"
+                type="submit"
               >
-                <LockKeyhole size={20} />
-              </span>
+                <GoogleMark />
+                Continuar con Google
+              </button>
+            </form>
 
-              <p className="eyebrow">
-                FLACSO Meet
-              </p>
+            <div className="login-separator">
+              <span>o</span>
+            </div>
+          </>
+        ) : null}
 
-              <h1 id="login-title">
-                Iniciar sesión
-              </h1>
+        <form
+          className="login-form"
+          action={iniciarSesionLocal}
+        >
+          <div className="login-field">
+            <label htmlFor="usuario">
+              Usuario o correo
+            </label>
 
-              <p>
-                Accedé a la gestión de reuniones y actividades de
-                FLACSO Uruguay.
-              </p>
-            </header>
+            <input
+              id="usuario"
+              name="usuario"
+              type="text"
+              autoComplete="username"
+              placeholder="usuario@flacso.edu.uy"
+              defaultValue={usuario ?? ""}
+              required
+            />
+          </div>
 
-            {cambiar === "1" ? (
-              <RememberedAccounts />
-            ) : null}
-
-            {mensaje ? (
-              <p
-                className="login-error"
-                role="alert"
-              >
-                {mensaje}
-              </p>
-            ) : null}
-
-            {restablecida === "1" ? (
-              <p
-                className="login-success"
-                role="status"
-              >
-                Tu contraseña fue actualizada. Ya podés iniciar sesión
-                con la nueva contraseña.
-              </p>
-            ) : null}
-
-            {authConfig.google ? (
-              <>
-                <form action={iniciarSesionGoogle}>
-                  <button
-                    className="google-button login-google-button"
-                    type="submit"
-                  >
-                    <GoogleMark />
-
-                    <span>
-                      Continuar con Google
-                    </span>
-                  </button>
-
-                  <p className="institutional-access-note">
-                    Podés utilizar una cuenta de Google autorizada por
-                    FLACSO Uruguay.
-                  </p>
-                </form>
-
-                <div
-                  className="login-separator"
-                  aria-hidden="true"
-                >
-                  <span>
-                    o ingresá con usuario y contraseña
-                  </span>
-                </div>
-              </>
-            ) : null}
-
-            <form
-              className="login-form"
-              action={iniciarSesionLocal}
-            >
-              <label htmlFor="usuario">
-                Usuario o correo
-              </label>
-
-              <input
-                id="usuario"
-                name="usuario"
-                type="text"
-                autoComplete="username"
-                placeholder="usuario@flacso.edu.uy"
-                defaultValue={usuario ?? ""}
-                required
-              />
-
+          <div className="login-field">
+            <div className="login-password-heading">
               <label htmlFor="password">
                 Contraseña
               </label>
 
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Tu contraseña"
-                required
-              />
-
-              <p className="login-password-recovery">
-                <a
-                  className="login-inline-link"
-                  href="/recuperar-contrasena"
-                >
-                  ¿Olvidaste tu contraseña?
-                </a>
-              </p>
-
-              <button
-                className="login-submit-button"
-                type="submit"
+              <a
+                className="login-inline-link"
+                href="/recuperar-contrasena"
               >
-                Ingresar
-              </button>
-            </form>
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
 
-            <p className="login-help">
-              ¿Necesitás acceso o tenés problemas para ingresar?
-              {" "}
-              Contactá a Administración.
-            </p>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              required
+            />
           </div>
-        </div>
+
+          <button
+            className="login-submit-button"
+            type="submit"
+          >
+            Ingresar
+          </button>
+        </form>
       </section>
     </main>
-  );
-}
-
-function BrandPanel() {
-  return (
-    <aside className="login-brand-panel">
-      <a
-        className="login-logo-wrap"
-        href="https://flacso.edu.uy/"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Ir al sitio web de FLACSO Uruguay"
-      >
-        <img
-          className="login-logo"
-          src="https://flacso.edu.uy/wp-content/uploads/2026/04/cropped-flacso_20_anos_horizontal_azul.png"
-          alt="FLACSO Uruguay"
-          width="842"
-          height="336"
-        />
-      </a>
-
-      <div className="login-brand-copy">
-        <p className="login-product-label">
-          Plataforma institucional
-        </p>
-
-        <h2>
-          Reuniones académicas, organizadas en un solo lugar.
-        </h2>
-
-        <p>
-          Coordiná encuentros, salas de Google Meet, asistencia
-          técnica y grabaciones para los programas de FLACSO Uruguay.
-        </p>
-      </div>
-
-      <ul
-        className="login-feature-list"
-        aria-label="Funciones de FLACSO Meet"
-      >
-        <li>
-          <CalendarDays
-            size={19}
-            aria-hidden="true"
-          />
-
-          <span>
-            <strong>
-              Agenda coordinada
-            </strong>
-
-            <small>
-              Reuniones y programas
-            </small>
-          </span>
-        </li>
-
-        <li>
-          <Video
-            size={19}
-            aria-hidden="true"
-          />
-
-          <span>
-            <strong>
-              Google Meet
-            </strong>
-
-            <small>
-              Salas y grabaciones
-            </small>
-          </span>
-        </li>
-
-        <li>
-          <ShieldCheck
-            size={19}
-            aria-hidden="true"
-          />
-
-          <span>
-            <strong>
-              Acceso seguro
-            </strong>
-
-            <small>
-              Perfiles y permisos
-            </small>
-          </span>
-        </li>
-      </ul>
-
-      <p className="login-brand-footer">
-        FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales
-      </p>
-    </aside>
   );
 }
 
