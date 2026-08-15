@@ -15,7 +15,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt"
   },
   pages: {
-    signIn: "/acceso"
+    signIn: "/acceso",
+    error: "/acceso"
   },
   providers: [
     Credentials({
@@ -54,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 apellidos: profile.family_name
               });
               if (!usuario) {
-                throw new Error("La cuenta Google debe pertenecer a FLACSO y estar activa.");
+                throw new Error("La cuenta Google todavía no tiene acceso autorizado.");
               }
 
               return {
