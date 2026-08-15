@@ -40,3 +40,29 @@ export async function PATCH(request: Request) {
   });
   return NextResponse.json({ updated: result.count });
 }
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo) {
+    return NextResponse.json({ error: "La sesion esta desactualizada." }, { status: 401 });
+  }
+
+  const body = (await request.json().catch(() => ({}))) as {
+    notificationId?: string;
+  };
+  if (!body.notificationId?.trim()) {
+    return NextResponse.json({ error: "notificationId es obligatorio." }, { status: 400 });
+  }
+
+  const result = await db.notificacion.deleteMany({
+    where: { id: body.notificationId, usuarioId: actor.id }
+  });
+  return NextResponse.json({ deleted: result.count });
+}

@@ -616,6 +616,12 @@
   gap: 4px;
 }
 
+.notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

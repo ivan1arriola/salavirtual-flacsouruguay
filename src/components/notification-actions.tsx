@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -70,5 +70,47 @@ export function NotificationReadAllButton() {
       <CheckCheck size={17} aria-hidden="true" />
       Marcar todas como leidas
     </button>
+  );
+}
+
+export function NotificationDeleteButton({
+  notificationId
+}: Readonly<{ notificationId: string }>) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function remove() {
+    if (!window.confirm("¿Borrar esta notificación?")) return;
+    setError("");
+    startTransition(async () => {
+      const response = await fetch("/api/v1/notificaciones", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId })
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        setError(result.error ?? "No se pudo borrar la notificación.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <span className="notification-action-wrap">
+      <button
+        className="icon-button"
+        disabled={pending}
+        onClick={remove}
+        title="Borrar notificación"
+        type="button"
+      >
+        <Trash2 size={17} aria-hidden="true" />
+        <span className="sr-only">Borrar notificación</span>
+      </button>
+      {error ? <small className="inline-error" role="alert">{error}</small> : null}
+    </span>
   );
 }

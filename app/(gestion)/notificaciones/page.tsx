@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   NotificationReadAllButton,
-  NotificationReadButton
+  NotificationReadButton,
+  NotificationDeleteButton
 } from "@/src/components/notification-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -83,11 +84,14 @@ export default async function NotificacionesPage({
                   ) : (
                     <span className="notification-copy">{content}</span>
                   )}
-                  {notification.leidaAt ? (
-                    <span className="status status-neutral">Leida</span>
-                  ) : (
-                    <NotificationReadButton notificationId={notification.id} />
-                  )}
+                  <span className="notification-actions">
+                    {notification.leidaAt ? (
+                      <span className="status status-neutral">Leida</span>
+                    ) : (
+                      <NotificationReadButton notificationId={notification.id} />
+                    )}
+                    <NotificationDeleteButton notificationId={notification.id} />
+                  </span>
                 </article>
               );
             })}
