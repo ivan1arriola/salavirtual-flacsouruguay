@@ -15,13 +15,13 @@ const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
 
 export default async function AccesoPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ error?: string; usuario?: string; cambiar?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ error?: string; usuario?: string; cambiar?: string; restablecida?: string }> }>) {
   const session = await auth();
   if (session?.user) redirect("/");
 
-  const { error, usuario, cambiar } = await searchParams;
+  const { error, usuario, cambiar, restablecida } = await searchParams;
   const mensaje = error
-    ? MENSAJES_ERROR[error] ?? "No se pudo iniciar sesion."
+    ? MENSAJES_ERROR[error] ?? "No se pudo iniciar sesión."
     : null;
 
   return (
@@ -62,6 +62,9 @@ export default async function AccesoPage({
             {cambiar === "1" ? <RememberedAccounts /> : null}
 
             {mensaje ? <p className="login-error" role="alert">{mensaje}</p> : null}
+            {restablecida === "1" ? (
+              <p className="login-success" role="status">Tu contraseña fue actualizada. Ya podés iniciar sesión con la nueva contraseña.</p>
+            ) : null}
 
             {authConfig.google ? (
               <form action={iniciarSesionGoogle}>
@@ -96,11 +99,12 @@ export default async function AccesoPage({
                 placeholder="Tu contraseña"
                 required
               />
+              <p className="login-password-recovery"><a className="login-inline-link" href="/recuperar-contrasena">¿Olvidaste tu contraseña?</a></p>
 
               <button className="login-submit-button" type="submit">Ingresar</button>
             </form>
 
-            <p className="login-help">Si no podés ingresar, contactá a Administración.</p>
+            <p className="login-help">Si tenés otro problema de acceso, contactá a Administración.</p>
           </div>
         </div>
       </section>
