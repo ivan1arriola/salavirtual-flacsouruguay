@@ -5,11 +5,14 @@ import { authConfig } from "@/src/lib/auth/config";
 import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
 import {
   hashTokenRecuperacion,
+  identifierRecuperacionPassword,
+  RECUPERACION_PASSWORD_IDENTIFIER_PREFIX,
   RECUPERACION_PASSWORD_REENVIO_MS,
   RECUPERACION_PASSWORD_TTL_MS,
   restablecerPasswordSchema,
   solicitudRecuperacionPasswordSchema,
-  tokenRecuperacionVigente
+  tokenRecuperacionVigente,
+  usuarioIdDesdeIdentifierRecuperacion
 } from "./recuperacion-password.domain";
 
 export async function solicitarRecuperacionPassword(
@@ -28,36 +31,30 @@ export async function solicitarRecuperacionPassword(
         { cuentasGoogle: { some: { email: { equals: input.email, mode: "insensitive" } } } }
       ]
     },
-    select: {
-      id: true,
-      nombres: true,
-      emailPrincipal: true,
-      recuperacionesPassword: {
-        where: { utilizadoAt: null },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { createdAt: true }
-      }
-    }
+    select: { id: true, nombres: true, emailPrincipal: true }
   });
 
   // La respuesta pública siempre es la misma, exista o no la cuenta.
   if (!usuario) return;
 
-  const ultimaSolicitud = usuario.recuperacionesPassword[0]?.createdAt;
-  if (ultimaSolicitud && ahora.getTime() - ultimaSolicitud.getTime() < RECUPERACION_PASSWORD_REENVIO_MS) {
-    return;
-  }
+  const identifier = identifierRecuperacionPassword(usuario.id);
+  const limiteReenvio = new Date(
+    ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS - RECUPERACION_PASSWORD_REENVIO_MS
+  );
+  const solicitudReciente = await db.tokenVerificacion.findFirst({
+    where: { identifier, expires: { gt: limiteReenvio } },
+    select: { identifier: true }
+  });
+  if (solicitudReciente) return;
 
   const token = randomBytes(32).toString("base64url");
   const tokenHash = hashTokenRecuperacion(token);
-  const expiraAt = new Date(ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS);
-  const recuperacion = await db.$transaction(async (tx) => {
-    await tx.recuperacionPassword.deleteMany({
-      where: { usuarioId: usuario.id, utilizadoAt: null }
-    });
-    return tx.recuperacionPassword.create({
-      data: { usuarioId: usuario.id, tokenHash, expiraAt }
+  const expires = new Date(ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS);
+
+  await db.$transaction(async (tx) => {
+    await tx.tokenVerificacion.deleteMany({ where: { identifier } });
+    await tx.tokenVerificacion.create({
+      data: { identifier, token: tokenHash, expires }
     });
   });
 
@@ -82,10 +79,10 @@ export async function solicitarRecuperacionPassword(
     });
 
     if (!resultado.sent) {
-      await db.recuperacionPassword.deleteMany({ where: { id: recuperacion.id } });
+      await db.tokenVerificacion.deleteMany({ where: { identifier, token: tokenHash } });
     }
   } catch (error) {
-    await db.recuperacionPassword.deleteMany({ where: { id: recuperacion.id } }).catch(() => undefined);
+    await db.tokenVerificacion.deleteMany({ where: { identifier, token: tokenHash } }).catch(() => undefined);
     console.warn("No se pudo enviar el correo de recuperación de contraseña", error);
   }
 }
@@ -97,42 +94,36 @@ export async function restablecerPassword(
 ): Promise<void> {
   const input = restablecerPasswordSchema.parse(rawInput);
   const tokenHash = hashTokenRecuperacion(input.token);
-  const recuperacion = await db.recuperacionPassword.findUnique({
-    where: { tokenHash },
-    select: {
-      id: true,
-      usuarioId: true,
-      expiraAt: true,
-      utilizadoAt: true,
-      usuario: { select: { activo: true, fusionadoEnId: true } }
-    }
+  const recuperacion = await db.tokenVerificacion.findFirst({
+    where: {
+      token: tokenHash,
+      identifier: { startsWith: RECUPERACION_PASSWORD_IDENTIFIER_PREFIX }
+    },
+    select: { identifier: true, token: true, expires: true }
   });
+  const usuarioId = recuperacion
+    ? usuarioIdDesdeIdentifierRecuperacion(recuperacion.identifier)
+    : null;
 
-  if (
-    !recuperacion ||
-    !tokenRecuperacionVigente(recuperacion, ahora) ||
-    !recuperacion.usuario.activo ||
-    recuperacion.usuario.fusionadoEnId
-  ) {
+  if (!recuperacion || !usuarioId || !tokenRecuperacionVigente(recuperacion, ahora)) {
     throw new Error("El enlace de recuperación no es válido o ya venció.");
   }
 
   const passwordHash = await hash(input.passwordNueva, 12);
   await db.$transaction(async (tx) => {
-    const consumido = await tx.recuperacionPassword.updateMany({
+    const consumido = await tx.tokenVerificacion.deleteMany({
       where: {
-        id: recuperacion.id,
-        utilizadoAt: null,
-        expiraAt: { gt: ahora }
-      },
-      data: { utilizadoAt: ahora }
+        identifier: recuperacion.identifier,
+        token: recuperacion.token,
+        expires: { gt: ahora }
+      }
     });
     if (consumido.count !== 1) {
       throw new Error("El enlace de recuperación no es válido o ya venció.");
     }
 
     const actualizado = await tx.usuario.updateMany({
-      where: { id: recuperacion.usuarioId, activo: true, fusionadoEnId: null },
+      where: { id: usuarioId, activo: true, fusionadoEnId: null },
       data: {
         passwordHash,
         passwordInicialCifrada: null,
@@ -143,19 +134,13 @@ export async function restablecerPassword(
       throw new Error("La cuenta ya no está disponible.");
     }
 
-    await tx.recuperacionPassword.updateMany({
-      where: {
-        usuarioId: recuperacion.usuarioId,
-        utilizadoAt: null
-      },
-      data: { utilizadoAt: ahora }
-    });
+    await tx.tokenVerificacion.deleteMany({ where: { identifier: recuperacion.identifier } });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: null,
         accion: "PASSWORD_RECUPERADA",
         entidadTipo: "Usuario",
-        entidadId: recuperacion.usuarioId,
+        entidadId: usuarioId,
         valorNuevo: { metodo: "TOKEN_EMAIL" }
       }
     });
