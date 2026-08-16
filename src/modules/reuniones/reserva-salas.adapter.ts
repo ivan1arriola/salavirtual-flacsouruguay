@@ -11,3 +11,11 @@ export async function bloquearReservaSalas(
 ): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:salas:${proveedorId}`}))`;
 }
+
+/** Serializes structural changes to one meeting series. */
+export async function bloquearSolicitudSala(
+  tx: Prisma.TransactionClient,
+  solicitudId: string
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:solicitud:${solicitudId}`}))`;
+}

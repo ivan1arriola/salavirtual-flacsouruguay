@@ -26,34 +26,36 @@ const emailListSchema = z.preprocess(
     }
     return value;
   },
-  z.array(z.email().transform((email) => email.toLowerCase())).default([])
+  z.array(z.email().transform((email) => email.toLowerCase())).max(50).default([])
 );
 
 export const crearReunionesSchema = z
   .object({
-    titulo: z.string().trim().min(3),
-    descripcion: z.string().trim().optional(),
+    titulo: z.string().trim().min(3).max(300),
+    descripcion: z.string().trim().max(4000).optional(),
     docenteProgramaId: z.string().trim().min(1),
-    cohostCuentaIds: z.array(z.string().trim().min(1)).default([]),
+    cohostCuentaIds: z.array(z.string().trim().min(1)).max(50).default([]),
     cohostEmailsManual: emailListSchema,
     asistenteTecnicoId: z.string().trim().min(1).optional(),
     requiereAsistenciaTecnica: z.boolean().default(false),
     requiereGrabacion: z.boolean().default(false),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
-    timezone: z.string().trim().min(1),
+    timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
     codigoMeet: z.string().trim().min(3).optional(),
-    instancias: z.array(instanciaSchema).min(1)
+    instancias: z.array(instanciaSchema).min(1).max(100)
   })
   .superRefine(({ instancias, timezone }, context) => {
-    instancias.forEach(({ inicio, fin }, index) => {
-      if (!pertenecenAlMismoDia(inicio, fin, timezone)) {
-        context.addIssue({
-          code: "custom",
-          message: "El inicio y el fin deben ser del mismo dia.",
-          path: ["instancias", index, "fin"]
-        });
-      }
-    });
+    if (esTimezoneIanaValida(timezone)) {
+      instancias.forEach(({ inicio, fin }, index) => {
+        if (!pertenecenAlMismoDia(inicio, fin, timezone)) {
+          context.addIssue({
+            code: "custom",
+            message: "El inicio y el fin deben ser del mismo dia.",
+            path: ["instancias", index, "fin"]
+          });
+        }
+      });
+    }
     instancias.forEach((instancia, index) => {
       const previousOverlap = instancias.slice(0, index).some((previous) =>
         instancia.inicio < previous.fin && instancia.fin > previous.inicio
@@ -69,6 +71,15 @@ export const crearReunionesSchema = z
   });
 
 export type CrearReunionesInput = Readonly<z.infer<typeof crearReunionesSchema>>;
+
+function esTimezoneIanaValida(timezone: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const claveIdempotenciaCreacionSchema = z.uuid();
 

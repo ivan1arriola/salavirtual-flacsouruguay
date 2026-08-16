@@ -9,7 +9,7 @@ import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
-import { obtenerTarifaVigente } from "../asistencia/tarifas.adapter";
+import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
 export type ActorReunion = Readonly<{
   id: string;
@@ -102,25 +102,10 @@ export async function crearReuniones(
     }
     await bloquearReservaSalas(tx, proveedorMeet.id);
 
-    const assistant = asistenteTecnicoId
-      ? await tx.asistenteTecnico.findUnique({
-          where: { id: asistenteTecnicoId },
-          select: {
-            id: true,
-            usuarioId: true,
-            cesadoHastaProximoInicioSesion: true,
-            usuario: { select: { activo: true, rol: true } }
-          }
-        })
+    const reservaAsistente = asistenteTecnicoId
+      ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, input.instancias)
       : null;
-    if (
-      asistenteTecnicoId &&
-      (!assistant?.usuario.activo ||
-        assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
-        assistant.cesadoHastaProximoInicioSesion)
-    ) {
-      throw new Error("El asistente técnico seleccionado no está disponible.");
-    }
+    const assistant = reservaAsistente?.assistant ?? null;
 
     const automaticCohostUserIds = [
       docentePrograma.docente.usuarioId,
@@ -236,7 +221,7 @@ export async function crearReuniones(
           });
         }
         if (asistenteTecnicoId) {
-          const tarifa = await obtenerTarifaVigente(tx, input.modalidad);
+          const tarifa = reservaAsistente!.tarifa;
           await tx.asignacionAsistenciaTecnica.create({
             data: {
               instanciaSalaId: instancia.id,

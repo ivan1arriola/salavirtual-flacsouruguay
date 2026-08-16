@@ -51,7 +51,12 @@ export async function recalcularSolicitud(
       }
     }
   });
-  if (meetings.length === 0) return;
+  if (meetings.length === 0) {
+    // Normal flows protect this invariant with the solicitud advisory lock.
+    // Silently preserving aggregate values would hide a migration/manual-data
+    // corruption and make later decisions use stale dates and flags.
+    throw new Error(`La solicitud ${solicitudId} no tiene instancias activas; requiere reparación de datos.`);
+  }
   const estadosIntegracion = meetings.flatMap(({ eventosProveedor }) =>
     eventosProveedor.map(({ estadoIntegracion }) => estadoIntegracion)
   );

@@ -11,7 +11,7 @@ El modelo evita repetir datos derivados y separa responsabilidades:
 - `Docente` / `AsistenteTecnico`: perfiles operativos opcionales de un usuario.
 - `UnidadAcademica` / `Programa`: estructura institucional.
 - `DocentePrograma`: asociacion explicita entre docente y programa.
-- `SolicitudSala`: pedido academico originado desde un `DocentePrograma`.
+- `SolicitudSala`: raíz agregada de una serie académica originada desde un `DocentePrograma`.
 - `InstanciaSala`: ocurrencia programada.
 - `ProveedorReunion`: Meet operativo o Zoom historico.
 - `EventoProveedor`: identificadores, enlaces y payloads externos.
@@ -81,10 +81,13 @@ inconsistencias.
 | Cohosts | `CohostReunion` |
 | Asistente tecnico asignado | `AsignacionAsistenciaTecnica` |
 
-Los campos de modalidad, zona horaria, asistencia y grabacion en
-`SolicitudSala` expresan el pedido original. Sus equivalentes en
-`InstanciaSala` expresan la programacion efectiva y pueden diferir por
-ocurrencia. No son dos fuentes para el mismo hecho.
+`SolicitudSala` es la raíz del agregado. Sus fechas, cantidad, tipo de
+instancias, asistencia y grabación son valores agregados actuales, recalculados
+desde las instancias activas dentro de la misma transacción que las modifica.
+`InstanciaSala` es la fuente de verdad de cada ocurrencia. El flujo normal no
+permite una solicitud sin instancias; si aparece por una migración o una
+intervención manual, el recálculo falla explícitamente para no conservar datos
+agregados obsoletos.
 
 `TarifaAsistenciaTecnica` es una entidad versionada por modalidad. La tarifa vigente es
 siempre la ultima creada; al agregar una nueva, las anteriores quedan como

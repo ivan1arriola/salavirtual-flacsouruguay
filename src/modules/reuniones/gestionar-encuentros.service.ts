@@ -11,6 +11,8 @@ import {
   puedeGestionarEncuentros
 } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
+import { bloquearSolicitudSala } from "./reserva-salas.adapter";
+import { pertenecenAlMismoDia } from "./periodos.domain";
 import {
   auditarEncuentro as auditar,
   cargarCredencialesEncuentro,
@@ -66,6 +68,21 @@ export async function agregarEncuentro(
     eventosProveedor.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
   )[0] ?? null;
   return dependencies.db.$transaction(async (tx) => {
+    await bloquearSolicitudSala(tx, solicitudId);
+    const serie = await tx.solicitudSala.findUnique({
+      where: { id: solicitudId },
+      include: {
+        docentePrograma: { include: { docente: true } },
+        instancias: { include: { eventosProveedor: true, cohosts: { select: { cuentaGoogleId: true } }, cohostEmails: { select: { email: true } } }, orderBy: { ordinal: "asc" } }
+      }
+    });
+    validarGestion(actor, serie?.docentePrograma.docente.usuarioId);
+    if (!serie || input.inicio <= new Date() || !pertenecenAlMismoDia(input.inicio, input.fin, serie.timezone)) {
+      throw new Error("El encuentro debe comenzar en el futuro y finalizar el mismo día de la serie.");
+    }
+    if (serie.instancias.some((item) => item.estado === "PROGRAMADA" && input.inicio < item.finProgramadoAt && input.fin > item.inicioProgramadoAt)) {
+      throw new Error("El nuevo encuentro se superpone con otro de la misma serie.");
+    }
     await bloquearReservaSalas(tx, provider.id);
     const [hosts, conflicts] = await Promise.all([
       tx.cuentaProveedor.findMany({
@@ -89,9 +106,10 @@ export async function agregarEncuentro(
         }
       })
     ]);
+    const seriePreferredHost = serie.instancias.flatMap(({ eventosProveedor }) => eventosProveedor.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : []))[0] ?? null;
     const hostId = elegirCuentaHostParaPeriodos(
-      preferredHost,
-      preferredHost ? hosts.filter(({ id }) => id === preferredHost) : hosts,
+      seriePreferredHost,
+      seriePreferredHost ? hosts.filter(({ id }) => id === seriePreferredHost) : hosts,
       conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
         cuentaProveedorId,
         inicio: instancia.inicioProgramadoAt,
@@ -100,20 +118,20 @@ export async function agregarEncuentro(
       [input]
     );
     if (!hostId) {
-      throw new Error(preferredHost
+      throw new Error(seriePreferredHost
         ? "La sala de esta serie no está disponible en ese horario."
         : "No hay una sala Meet libre para ese horario.");
     }
 
-    const ordinal = (request.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0)) + 1;
+    const ordinal = (serie.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0)) + 1;
     const meeting = await tx.instanciaSala.create({
       data: {
-        solicitudSalaId: request.id,
+        solicitudSalaId: serie.id,
         ordinal,
-        descripcion: input.descripcion || request.descripcion,
+        descripcion: input.descripcion || serie.descripcion,
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
-        timezone: request.timezone,
+        timezone: serie.timezone,
         requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
         requiereGrabacion: input.requiereGrabacion
       }
@@ -121,21 +139,21 @@ export async function agregarEncuentro(
     const event = await tx.eventoProveedor.create({
       data: { instanciaSalaId: meeting.id, proveedorId: provider.id, cuentaProveedorId: hostId }
     });
-    const cohostIds = request.instancias[0]?.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId) ?? [];
+    const cohostIds = cohostsComunes(serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)));
     if (cohostIds.length) {
       await tx.cohostReunion.createMany({
         data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId }))
       });
     }
     const cohostEmails = normalizeCohostEmails(
-      request.instancias[0]?.cohostEmails.map(({ email }) => email) ?? []
+      cohostsComunes(serie.instancias.map(({ cohostEmails }) => cohostEmails.map(({ email }) => email)))
     );
     if (cohostEmails.length) {
       await tx.cohostEmailReunion.createMany({
         data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email }))
       });
     }
-    await recalcularSolicitud(tx, request.id);
+    await recalcularSolicitud(tx, serie.id);
     await auditar(tx, actor.id, "ENCUENTRO_AGREGADO", meeting.id, null, {
       inicio: input.inicio.toISOString(),
       fin: input.fin.toISOString(),
@@ -163,6 +181,8 @@ export async function actualizarEncuentro(
   if (input.accion !== "CAMBIAR_ASISTENCIA") {
     if (input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
     await dependencies.db.$transaction(async (tx) => {
+      await bloquearSolicitudSala(tx, solicitudId);
+      if (!pertenecenAlMismoDia(input.inicio, input.fin, meeting.timezone)) throw new Error("El encuentro debe finalizar el mismo día de la serie.");
       if (event?.cuentaProveedorId) {
         await bloquearReservaSalas(tx, event.proveedorId);
         const [host, conflicts] = await Promise.all([
@@ -198,24 +218,6 @@ export async function actualizarEncuentro(
         );
         if (!available) throw new Error("La sala Meet ya alcanzó su límite en ese horario.");
       }
-      if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
-        const credentials = await cargarCredencialesEncuentro(
-          dependencies.db,
-          dependencies.descifrar,
-          event.cuentaProveedor.emailOrganizador
-        );
-        await dependencies.crearProvider(credentials).actualizarEvento(
-          event.cuentaProveedor.emailOrganizador,
-          event.externalEventId,
-          {
-            titulo: meeting.solicitud.titulo,
-            descripcion: input.descripcion ?? meeting.descripcion ?? meeting.solicitud.descripcion ?? "",
-            inicio: input.inicio,
-            fin: input.fin,
-            timezone: meeting.timezone
-          }
-        );
-      }
       await tx.instanciaSala.update({
         where: { id: meeting.id },
         data: {
@@ -224,6 +226,9 @@ export async function actualizarEncuentro(
           ...(input.descripcion !== undefined ? { descripcion: input.descripcion || null } : {})
         }
       });
+      if (event?.externalEventId) {
+        await tx.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "PENDIENTE", errorIntegracion: "Pendiente de sincronizar la reprogramación con Google Calendar." } });
+      }
       await recalcularSolicitud(tx, solicitudId);
       await auditar(tx, actor.id, "ENCUENTRO_REPROGRAMADO", meeting.id, {
         inicio: meeting.inicioProgramadoAt.toISOString(),
@@ -235,7 +240,19 @@ export async function actualizarEncuentro(
         descripcion: input.descripcion === undefined ? meeting.descripcion : input.descripcion || null
       });
     });
-    return { warning: null };
+    if (!event?.externalEventId || !event.cuentaProveedor?.emailOrganizador) return { warning: null };
+    try {
+      const credentials = await cargarCredencialesEncuentro(dependencies.db, dependencies.descifrar, event.cuentaProveedor.emailOrganizador);
+      await dependencies.crearProvider(credentials).actualizarEvento(event.cuentaProveedor.emailOrganizador, event.externalEventId, {
+        titulo: meeting.solicitud.titulo, descripcion: input.descripcion ?? meeting.descripcion ?? meeting.solicitud.descripcion ?? "", inicio: input.inicio, fin: input.fin, timezone: meeting.timezone
+      });
+      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "SINCRONIZADA", errorIntegracion: null, sincronizadoAt: new Date() } });
+      return { warning: null };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Error desconocido de Google Calendar.";
+      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "ERROR", errorIntegracion: `Reprogramación pendiente: ${detail}` } });
+      return { warning: `La reprogramación quedó pendiente de sincronización con Google: ${detail}` };
+    }
   }
 
   await dependencies.db.$transaction(async (tx) => {
@@ -310,6 +327,9 @@ export async function eliminarEncuentro(
     }
   }
   await dependencies.db.$transaction(async (tx) => {
+    await bloquearSolicitudSala(tx, solicitudId);
+    const countAfterLock = await tx.instanciaSala.count({ where: { solicitudSalaId: solicitudId } });
+    if (countAfterLock <= 1) throw new Error("Una Reunión debe conservar al menos un encuentro.");
     await auditar(tx, actor.id, "ENCUENTRO_ELIMINADO", meeting.id, {
       inicio: meeting.inicioProgramadoAt.toISOString(),
       fin: meeting.finProgramadoAt.toISOString()
@@ -385,6 +405,7 @@ export async function eliminarReunionCompleta(
   }
 
   await dependencies.db.$transaction(async (tx) => {
+    await bloquearSolicitudSala(tx, solicitudId);
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actor.id,
@@ -421,4 +442,12 @@ function esEventoCalendarInexistente(error: unknown): boolean {
     candidate.status === 410 ||
     candidate.response?.status === 404 ||
     candidate.response?.status === 410;
+}
+
+/** A series has no separate cohost-default entity.  Only values common to all
+ * existing instances are stable defaults; an exceptional first instance never
+ * becomes the default for later ones. */
+function cohostsComunes(values: readonly (readonly string[])[]): readonly string[] {
+  if (values.length === 0) return [];
+  return values[0].filter((value) => values.every((current) => current.includes(value)));
 }

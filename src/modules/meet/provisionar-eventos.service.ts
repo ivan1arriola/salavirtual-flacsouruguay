@@ -1,10 +1,10 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { normalizeCohostEmails } from "./cohosts.domain";
 import { extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider } from "./provider";
 import { recalcularSolicitud } from "../reuniones/encuentros-persistence.adapter";
-import { claveSerieReunion } from "../reuniones/serie-reunion.domain";
 
 export type ProvisionDependencies = Readonly<{
   db: PrismaClient;
@@ -79,11 +79,7 @@ async function provisionarEventosMeetInterno(
         where: {
           proveedor: { tipo: "GOOGLE_MEET" },
           instancia: {
-            solicitud: {
-              docenteProgramaId: grupo.serie.docenteProgramaId,
-              titulo: grupo.serie.titulo,
-              createdAt: grupo.serie.createdAt
-            }
+            solicitudSalaId: grupo.solicitudSalaId
           },
           estadoIntegracion: "SINCRONIZADA",
           codigoReunion: { not: null },
@@ -119,7 +115,7 @@ async function provisionarEventosMeetInterno(
             privateKey,
             subject: hostEmail,
           });
-          const result = await provider.provisionarEvento({
+          const request = {
             titulo: evento.instancia.solicitud.titulo,
             descripcion: evento.instancia.descripcion ?? evento.instancia.solicitud.descripcion ?? undefined,
             inicio: evento.instancia.inicioProgramadoAt,
@@ -129,12 +125,39 @@ async function provisionarEventosMeetInterno(
             conferenceData,
             cohostEmails: cohostEmailsDeInstancia(evento.instancia),
             requiereAsistenciaTecnica: evento.instancia.requiereAsistenciaTecnica,
-          });
+            // Google accepts lowercase base32hex ids. This is deterministic for
+            // the EventoProveedor, so a lost POST response cannot create a
+            // different Calendar event on retry.
+            calendarEventId: calendarEventId(evento.id)
+          } as const;
+          let externalEventId = evento.externalEventId;
+          if (!externalEventId) {
+            const created = await provider.crearEventoCalendar(request);
+            externalEventId = created.externalEventId;
+            // This write is deliberately before polling/configuring Meet.
+            await dependencies.db.eventoProveedor.update({
+              where: { id: evento.id },
+              data: {
+                externalEventId,
+                payloadUltimo: JSON.parse(JSON.stringify(created.payload)),
+                estadoIntegracion: "PENDIENTE",
+                errorIntegracion: null
+              }
+            });
+          }
+          let result = await provider.obtenerEvento(hostEmail, externalEventId);
+          for (const delay of [250, 500, 1000, 2000]) {
+            if (result) break;
+            await esperar(delay);
+            result = await provider.obtenerEvento(hostEmail, externalEventId);
+          }
+          if (!result) throw new Error("Google Calendar todavía no terminó de generar el enlace Meet.");
+          await provider.configurarEventoMeet(request, result);
           conferenceData ??= extraerConferenceData(result.payload);
           await dependencies.db.eventoProveedor.update({
             where: { id: evento.id },
             data: {
-              externalEventId: result.externalEventId,
+              externalEventId,
               codigoReunion: result.codigoReunion,
               joinUrl: result.joinUrl,
               payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
@@ -188,21 +211,29 @@ type EventoMeetProvisionable = Prisma.EventoProveedorGetPayload<{
 function agruparPorSerie(
   eventos: readonly EventoMeetProvisionable[]
 ): readonly Readonly<{
-  serie: Pick<EventoMeetProvisionable["instancia"]["solicitud"], "docenteProgramaId" | "titulo" | "createdAt">;
+  solicitudSalaId: string;
   eventos: readonly EventoMeetProvisionable[];
 }>[] {
   const grupos = new Map<string, EventoMeetProvisionable[]>();
   for (const evento of eventos) {
-    const key = claveSerieReunion(evento.instancia.solicitud);
+    const key = evento.instancia.solicitudSalaId;
     grupos.set(key, [...(grupos.get(key) ?? []), evento]);
   }
   return [...grupos.values()].map((eventos) => ({
-    serie: eventos[0].instancia.solicitud,
+    solicitudSalaId: eventos[0].instancia.solicitudSalaId,
     eventos: [...eventos].sort(
       (left, right) =>
         left.instancia.inicioProgramadoAt.getTime() - right.instancia.inicioProgramadoAt.getTime()
     )
   }));
+}
+
+function calendarEventId(eventoProveedorId: string): string {
+  return `a${createHash("sha256").update(eventoProveedorId).digest("hex")}`;
+}
+
+function esperar(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function cohostEmailsDeInstancia(

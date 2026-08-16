@@ -165,6 +165,15 @@ describe("dias derivados de reuniones", () => {
     expect(result.success).toBe(false);
   });
 
+  it("valida timezone IANA y limita el tamaño de una alta", () => {
+    const base = {
+      titulo: "Clase", docenteProgramaId: "dp", modalidad: "VIRTUAL",
+      timezone: "No/Es-Una-Zona", instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
+    };
+    expect(crearReunionesSchema.safeParse(base).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({ ...base, timezone: "America/Montevideo", instancias: Array.from({ length: 101 }, () => base.instancias[0]) }).success).toBe(false);
+  });
+
   it("normaliza cohosts manuales sin exigir sala elegida a mano", () => {
     const result = crearReunionesSchema.parse({
       titulo: "Clase",

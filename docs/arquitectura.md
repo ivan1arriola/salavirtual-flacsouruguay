@@ -5,6 +5,13 @@
 - La entidad academica principal es la `SolicitudSala`.
 - Cada solicitud genera una o mas `InstanciaSala`.
 - La integracion externa vive en `EventoProveedor`.
+- El `EventoProveedor` conserva su `externalEventId` inmediatamente después del
+  POST a Calendar. La creación, el polling de la conferencia y la configuración
+  de Meet son pasos reintentables separados; los reintentos nunca hacen POST si
+  ya existe ese id.
+- Las modificaciones estructurales de una serie toman un advisory lock por
+  `SolicitudSala`; después del lock se relee el agregado antes de decidir
+  ordinales, solapamientos y mínimos de instancias.
 - Google Meet es el proveedor operativo.
 - Zoom queda como proveedor historico, sin crear nuevas solicitudes operativas.
 - La UI debe ser ligera: CSS propio, componentes pequeños y dependencias justificadas.

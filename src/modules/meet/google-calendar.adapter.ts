@@ -79,33 +79,27 @@ export function crearGoogleCalendarProvider(
   });
 
   return {
-    async provisionarEvento(request) {
+    async crearEventoCalendar(request) {
       const eventsUrl = calendarEventsUrl(request.calendarId);
       const response = await auth.request<CalendarEvent>({
         url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
         method: "POST",
-        data: crearCalendarEvent(request, randomUUID())
+        data: crearCalendarEvent(request, request.calendarEventId ?? randomUUID())
       });
       const eventId = response.data.id;
       if (!eventId) throw new Error("Google Calendar no devolvio el ID del evento.");
 
-      const immediate = extraerMeetProvisionado(response.data);
-      if (immediate) {
-        return finalizarProvision(meetAuth, immediate, request);
-      }
-
-      for (const delay of [250, 500, 1000, 2000]) {
-        await sleep(delay);
-        const current = await auth.request<CalendarEvent>({
-          url: `${eventsUrl}/${encodeURIComponent(eventId)}`,
-          method: "GET"
-        });
-        const provisioned = extraerMeetProvisionado(current.data);
-        if (provisioned) {
-          return finalizarProvision(meetAuth, provisioned, request);
-        }
-      }
-      throw new Error("Google Calendar no termino de generar el enlace Meet.");
+      return { externalEventId: eventId, payload: response.data };
+    },
+    async obtenerEvento(calendarId, externalEventId) {
+      const current = await auth.request<CalendarEvent>({
+        url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}`,
+        method: "GET"
+      });
+      return extraerMeetProvisionado(current.data);
+    },
+    async configurarEventoMeet(request, evento) {
+      await finalizarProvision(meetAuth, evento, request);
     },
     async cancelarEvento(calendarId, externalEventId) {
       await auth.request({
@@ -133,18 +127,9 @@ async function finalizarProvision(
   result: MeetProvisionResult,
   request: MeetProvisionRequest
 ): Promise<MeetProvisionResult> {
-  try {
-    const spaceName = await configurarEspacioMeet(auth, result.codigoReunion, request);
-    await configurarCohostsMeet(auth, spaceName, request.cohostEmails ?? []);
-    return result;
-  } catch (error) {
-    return {
-      ...result,
-      warning: error instanceof Error
-        ? `Enlace creado, pero la configuración de Meet quedó incompleta: ${error.message}`
-        : "Enlace creado, pero la configuración de Meet quedó incompleta."
-    };
-  }
+  const spaceName = await configurarEspacioMeet(auth, result.codigoReunion, request);
+  await configurarCohostsMeet(auth, spaceName, request.cohostEmails ?? []);
+  return result;
 }
 
 async function configurarEspacioMeet(
@@ -207,8 +192,4 @@ function isAlreadyCohostError(error: unknown): boolean {
 
 function calendarEventsUrl(calendarId: string): string {
   return `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`;
-}
-
-function sleep(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

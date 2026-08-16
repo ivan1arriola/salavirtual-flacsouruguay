@@ -5,6 +5,7 @@ export function crearCalendarEvent(
   requestId: string
 ) {
   return {
+    ...(request.calendarEventId ? { id: request.calendarEventId } : {}),
     summary: request.titulo,
     description: request.descripcion,
     start: {

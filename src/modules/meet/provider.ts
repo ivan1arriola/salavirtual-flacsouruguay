@@ -9,6 +9,8 @@ export type MeetProvisionRequest = Readonly<{
   conferenceData?: Readonly<Record<string, unknown>>;
   cohostEmails?: readonly string[];
   requiereAsistenciaTecnica?: boolean;
+  /** Stable event id supplied by the application for retry-safe Calendar POSTs. */
+  calendarEventId?: string;
 }>;
 
 export type MeetProvisionResult = Readonly<{
@@ -20,9 +22,9 @@ export type MeetProvisionResult = Readonly<{
 }>;
 
 export type MeetProvider = Readonly<{
-  provisionarEvento: (
-    request: MeetProvisionRequest,
-  ) => Promise<MeetProvisionResult>;
+  crearEventoCalendar: (request: MeetProvisionRequest) => Promise<Readonly<{ externalEventId: string; payload: unknown }>>;
+  obtenerEvento: (calendarId: string, externalEventId: string) => Promise<MeetProvisionResult | null>;
+  configurarEventoMeet: (request: MeetProvisionRequest, evento: MeetProvisionResult) => Promise<void>;
   cancelarEvento: (
     calendarId: string,
     externalEventId: string,

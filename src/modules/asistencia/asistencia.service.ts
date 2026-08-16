@@ -3,20 +3,17 @@ import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import {
   asignacionAsistenciaSchema,
-  cumpleSeparacionMinimaAsistencias,
   disponibilidadSemanalSchema,
   estadoInteresParaAccion,
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   postulacionAsistenciaSchema,
-  SEPARACION_MINIMA_ASISTENCIAS_MINUTOS
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
 import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
-import { bloquearAgendaAsistente } from "./reserva-asistentes.adapter";
-import { obtenerTarifaVigente } from "./tarifas.adapter";
+import { reservarAsistenteDisponible } from "./reserva-asistencia.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -241,46 +238,9 @@ export async function asignarAsistentePostulado(
     ) {
       throw new Error("El perfil seleccionado no corresponde a un asistente técnico disponible.");
     }
-    await bloquearAgendaAsistente(tx, assistant.id);
-    const separacionMs = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
-    const asignacionesCercanas = await tx.asignacionAsistenciaTecnica.findMany({
-      where: {
-        asistenteTecnicoId: assistant.id,
-        instanciaSalaId: { not: meeting.id },
-        estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: {
-          estado: "PROGRAMADA",
-          finProgramadoAt: {
-            gte: new Date(meeting.inicioProgramadoAt.getTime() - separacionMs)
-          },
-          inicioProgramadoAt: {
-            lte: new Date(meeting.finProgramadoAt.getTime() + separacionMs)
-          }
-        }
-      },
-      select: {
-        instancia: {
-          select: {
-            inicioProgramadoAt: true,
-            finProgramadoAt: true
-          }
-        }
-      }
-    });
-    const tieneConflicto = asignacionesCercanas.some(({ instancia }) =>
-      !cumpleSeparacionMinimaAsistencias(
-        { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
-        { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt }
-      )
-    );
-    if (tieneConflicto) {
-      throw new Error(
-        `El asistente necesita al menos ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos entre reuniones.`
-      );
-    }
-    const tarifa = await obtenerTarifaVigente(
-      tx,
-      meeting.solicitud.modalidad
+    const { tarifa } = await reservarAsistenteDisponible(
+      tx, assistant.id, meeting.solicitud.modalidad,
+      [{ inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt }], meeting.id
     );
     const previousAssignment = meeting.asignaciones[0] ?? null;
     if (previousAssignment?.asistenteTecnicoId === assistant.id) {
