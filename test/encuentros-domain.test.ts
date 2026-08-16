@@ -29,12 +29,12 @@ describe("gestión funcional de encuentros", () => {
     expect(elegirCuentaHost("s2", [{ id: "s2", prioridad: 2 }, { id: "s1", prioridad: 1 }], ["s2"])).toBe("s1");
   });
 
-  it("rechaza una reprogramacion que cruza de dia", () => {
+  it("deja la validación de timezone al servicio, que conoce la serie", () => {
     expect(actualizarEncuentroSchema.safeParse({
       accion: "EDITAR_FECHA",
       inicio: "2026-08-03T23:00:00-03:00",
       fin: "2026-08-04T00:30:00-03:00"
-    }).success).toBe(false);
+    }).success).toBe(true);
   });
 
   it("permite editar la descripción propia de un encuentro", () => {

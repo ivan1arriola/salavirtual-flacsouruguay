@@ -202,6 +202,7 @@ export async function crearReuniones(
             proveedorId: proveedorMeet.id,
             cuentaProveedorId: cuentaHostId,
             codigoReunion: input.codigoMeet,
+            operacionPendiente: input.codigoMeet ? "CONFIGURAR_MEET" : "PROVISIONAR",
           },
         });
         if (cohostIds.length > 0) {

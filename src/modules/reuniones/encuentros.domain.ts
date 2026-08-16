@@ -1,8 +1,5 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
-import { pertenecenAlMismoDia } from "./periodos.domain";
-
-const TIMEZONE_MONTEVIDEO = "America/Montevideo";
 
 const periodoFields = {
   inicio: z.coerce.date(),
@@ -16,8 +13,6 @@ export const agregarEncuentroSchema = z.object({
   requiereGrabacion: z.boolean().default(false)
 }).refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
   message: "La hora de fin debe ser posterior al inicio."
-}).refine(({ inicio, fin }) => pertenecenAlMismoDia(inicio, fin, TIMEZONE_MONTEVIDEO), {
-  message: "El inicio y el fin deben ser del mismo dia."
 });
 
 export const actualizarEncuentroSchema = z.union([
@@ -28,9 +23,6 @@ export const actualizarEncuentroSchema = z.union([
   })
     .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
       message: "La hora de fin debe ser posterior al inicio."
-    })
-    .refine(({ inicio, fin }) => pertenecenAlMismoDia(inicio, fin, TIMEZONE_MONTEVIDEO), {
-      message: "El inicio y el fin deben ser del mismo dia."
     }),
   z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistenciaTecnica: z.boolean() })
 ]);

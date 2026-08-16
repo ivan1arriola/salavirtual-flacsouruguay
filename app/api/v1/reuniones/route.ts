@@ -41,8 +41,14 @@ export async function POST(request: Request) {
       claveIdempotenciaCreacion,
     );
     if (result.reutilizada) {
+      const provisionamiento = await provisionarEventosMeet(
+        { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
+        result.eventoProveedorIds,
+      );
       const { eventoProveedorIds: _, ...reunion } = result;
-      return NextResponse.json({ ...reunion, provisionamiento: [] }, { status: 200 });
+      // A replay resumes pending provider work but deliberately does not send
+      // the "Reunión creada" notification again.
+      return NextResponse.json({ ...reunion, provisionamiento }, { status: 200 });
     }
     const provisionamiento = await provisionarEventosMeet(
       {

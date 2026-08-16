@@ -270,6 +270,8 @@ model EventoProveedor {
   payloadUltimo           Json?
   sincronizadoAt          DateTime?
   estadoIntegracion       EstadoIntegracion @default(PENDIENTE)
+  operacionPendiente      OperacionIntegracionProveedor?
+  reclamoIntegracionAt    DateTime?
   errorIntegracion        String?
   conferenceRecordName    String?
   driveFolderId           String?
@@ -629,6 +631,16 @@ enum EstadoIntegracion {
   SINCRONIZADA
   ERROR
   HISTORICA
+}
+
+/// Operation that must be applied at the provider.  It is intentionally
+/// independent from EstadoIntegracion: an ERROR is meaningful only together
+/// with the operation that can safely be retried.
+enum OperacionIntegracionProveedor {
+  PROVISIONAR
+  REPROGRAMAR
+  CONFIGURAR_MEET
+  CANCELAR
 }
 
 enum OrigenGrabacion {

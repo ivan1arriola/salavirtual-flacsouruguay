@@ -19,3 +19,11 @@ export async function bloquearSolicitudSala(
 ): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:solicitud:${solicitudId}`}))`;
 }
+
+/** Serializes the short claim phase of an external provider operation. */
+export async function bloquearEventoProveedor(
+  tx: Prisma.TransactionClient,
+  eventoProveedorId: string
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:evento-proveedor:${eventoProveedorId}`}))`;
+}

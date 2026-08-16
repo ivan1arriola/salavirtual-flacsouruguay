@@ -81,11 +81,22 @@ export function crearGoogleCalendarProvider(
   return {
     async crearEventoCalendar(request) {
       const eventsUrl = calendarEventsUrl(request.calendarId);
-      const response = await auth.request<CalendarEvent>({
-        url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
-        method: "POST",
-        data: crearCalendarEvent(request, request.calendarEventId ?? randomUUID())
-      });
+      let response: { data: CalendarEvent };
+      try {
+        response = await auth.request<CalendarEvent>({
+          url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
+          method: "POST",
+          data: crearCalendarEvent(request, request.calendarEventId ?? randomUUID())
+        });
+      } catch (error) {
+        if (!request.calendarEventId || !isAlreadyCalendarEvent(error)) throw error;
+        // Calendar accepted the first POST but its response was lost.  A 409
+        // for the deterministic id is therefore recovered by reading it.
+        response = await auth.request<CalendarEvent>({
+          url: `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`,
+          method: "GET"
+        });
+      }
       const eventId = response.data.id;
       if (!eventId) throw new Error("Google Calendar no devolvio el ID del evento.");
 
@@ -188,6 +199,12 @@ function isAlreadyCohostError(error: unknown): boolean {
   const candidate = error as { code?: unknown; response?: { status?: unknown; data?: unknown } };
   if (candidate.code === 409 || candidate.response?.status === 409) return true;
   return JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
+}
+
+function isAlreadyCalendarEvent(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; response?: { status?: unknown; data?: unknown } };
+  return candidate.code === 409 || candidate.response?.status === 409 || JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
 }
 
 function calendarEventsUrl(calendarId: string): string {

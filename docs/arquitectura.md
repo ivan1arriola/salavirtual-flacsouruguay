@@ -9,6 +9,14 @@
   POST a Calendar. La creación, el polling de la conferencia y la configuración
   de Meet son pasos reintentables separados; los reintentos nunca hacen POST si
   ya existe ese id.
+- `estadoIntegracion` describe el resultado de la última sincronización y
+  `operacionPendiente` describe el efecto que falta aplicar (`PROVISIONAR`,
+  `REPROGRAMAR`, `CONFIGURAR_MEET` o `CANCELAR`). Los retries no interpretan
+  mensajes de error: ejecutan únicamente esa operación persistida.
+- Un claim corto protegido por advisory lock evita que dos workers sincronicen
+  el mismo `EventoProveedor`; las llamadas HTTP ocurren fuera de transacciones.
+- Las eliminaciones son cancelaciones lógicas hasta que Calendar confirma cada
+  DELETE, conservando la información necesaria para reintentar.
 - Las modificaciones estructurales de una serie toman un advisory lock por
   `SolicitudSala`; después del lock se relee el agregado antes de decidir
   ordinales, solapamientos y mínimos de instancias.

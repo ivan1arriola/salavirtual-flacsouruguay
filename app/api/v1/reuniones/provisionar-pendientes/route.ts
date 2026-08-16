@@ -4,7 +4,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
-import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
+import { sincronizarEventosPendientes } from "@/src/modules/meet/provisionar-eventos.service";
 
 export const runtime = "nodejs";
 
@@ -23,15 +23,11 @@ export async function POST() {
   const events = await db.eventoProveedor.findMany({
     where: {
       proveedor: { tipo: "GOOGLE_MEET" },
-      estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
-      instancia: {
-        inicioProgramadoAt: { gte: new Date() },
-        estado: "PROGRAMADA"
-      }
+      operacionPendiente: { not: null }
     },
     select: { id: true }
   });
-  const results = await provisionarEventosMeet(
+  const results = await sincronizarEventosPendientes(
     {
       db,
       descifrar: descifrarConfiguracion,

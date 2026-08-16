@@ -137,7 +137,7 @@ export async function agregarEncuentro(
       }
     });
     const event = await tx.eventoProveedor.create({
-      data: { instanciaSalaId: meeting.id, proveedorId: provider.id, cuentaProveedorId: hostId }
+      data: { instanciaSalaId: meeting.id, proveedorId: provider.id, cuentaProveedorId: hostId, operacionPendiente: "PROVISIONAR" }
     });
     const cohostIds = cohostsComunes(serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)));
     if (cohostIds.length) {
@@ -182,7 +182,17 @@ export async function actualizarEncuentro(
     if (input.inicio <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
     await dependencies.db.$transaction(async (tx) => {
       await bloquearSolicitudSala(tx, solicitudId);
-      if (!pertenecenAlMismoDia(input.inicio, input.fin, meeting.timezone)) throw new Error("El encuentro debe finalizar el mismo día de la serie.");
+      const actual = await tx.instanciaSala.findFirst({
+        where: { id: instanciaId, solicitudSalaId: solicitudId },
+        include: { solicitud: { include: { docentePrograma: { include: { docente: true } } } }, eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } } }
+      });
+      validarGestion(actor, actual?.solicitud.docentePrograma.docente.usuarioId);
+      if (!actual || actual.estado !== "PROGRAMADA") throw new Error("El encuentro no se puede modificar.");
+      if (actual.inicioProgramadoAt <= new Date()) throw new Error("El encuentro debe comenzar en el futuro.");
+      if (await tx.instanciaSala.count({ where: { solicitudSalaId: solicitudId, id: { not: instanciaId }, estado: "PROGRAMADA", inicioProgramadoAt: { lt: input.fin }, finProgramadoAt: { gt: input.inicio } } })) {
+        throw new Error("La serie no puede tener encuentros superpuestos.");
+      }
+      if (!pertenecenAlMismoDia(input.inicio, input.fin, actual.timezone)) throw new Error("El encuentro debe finalizar el mismo día de la serie.");
       if (event?.cuentaProveedorId) {
         await bloquearReservaSalas(tx, event.proveedorId);
         const [host, conflicts] = await Promise.all([
@@ -227,7 +237,7 @@ export async function actualizarEncuentro(
         }
       });
       if (event?.externalEventId) {
-        await tx.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "PENDIENTE", errorIntegracion: "Pendiente de sincronizar la reprogramación con Google Calendar." } });
+        await tx.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "PENDIENTE", operacionPendiente: "REPROGRAMAR", reclamoIntegracionAt: null, errorIntegracion: null } });
       }
       await recalcularSolicitud(tx, solicitudId);
       await auditar(tx, actor.id, "ENCUENTRO_REPROGRAMADO", meeting.id, {
@@ -246,11 +256,11 @@ export async function actualizarEncuentro(
       await dependencies.crearProvider(credentials).actualizarEvento(event.cuentaProveedor.emailOrganizador, event.externalEventId, {
         titulo: meeting.solicitud.titulo, descripcion: input.descripcion ?? meeting.descripcion ?? meeting.solicitud.descripcion ?? "", inicio: input.inicio, fin: input.fin, timezone: meeting.timezone
       });
-      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "SINCRONIZADA", errorIntegracion: null, sincronizadoAt: new Date() } });
+      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "SINCRONIZADA", operacionPendiente: null, reclamoIntegracionAt: null, errorIntegracion: null, sincronizadoAt: new Date() } });
       return { warning: null };
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Error desconocido de Google Calendar.";
-      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "ERROR", errorIntegracion: `Reprogramación pendiente: ${detail}` } });
+      await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "ERROR", operacionPendiente: "REPROGRAMAR", reclamoIntegracionAt: null, errorIntegracion: detail } });
       return { warning: `La reprogramación quedó pendiente de sincronización con Google: ${detail}` };
     }
   }
@@ -273,6 +283,9 @@ export async function actualizarEncuentro(
       ]);
     }
     await recalcularSolicitud(tx, solicitudId);
+    if (event?.codigoReunion) {
+      await tx.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "PENDIENTE", operacionPendiente: "CONFIGURAR_MEET", reclamoIntegracionAt: null, errorIntegracion: null } });
+    }
     await auditar(tx, actor.id, input.requiereAsistenciaTecnica ? "ASISTENCIA_SOLICITADA" : "ASISTENCIA_CANCELADA", meeting.id, {
       requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica
     }, { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica });
@@ -288,9 +301,11 @@ export async function actualizarEncuentro(
     await dependencies.configurarEspacio(credentials, event.codigoReunion, {
       requiereAsistenciaTecnica: input.requiereAsistenciaTecnica
     });
+    await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "SINCRONIZADA", operacionPendiente: null, reclamoIntegracionAt: null, errorIntegracion: null, sincronizadoAt: new Date() } });
     return { warning: null };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Error desconocido de Google Workspace.";
+    if (event) await dependencies.db.eventoProveedor.update({ where: { id: event.id }, data: { estadoIntegracion: "ERROR", operacionPendiente: "CONFIGURAR_MEET", reclamoIntegracionAt: null, errorIntegracion: detail } });
     return {
       warning: `La asistencia técnica se actualizó en la app, pero Google Meet no pudo sincronizarse: ${detail}`
     };
@@ -310,31 +325,16 @@ export async function eliminarEncuentro(
   }
   const count = await dependencies.db.instanciaSala.count({ where: { solicitudSalaId: solicitudId } });
   if (count <= 1) throw new Error("Una Reunión debe conservar al menos un encuentro.");
-  const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-  if (event?.externalEventId && event.cuentaProveedor?.emailOrganizador) {
-    const credentials = await cargarCredencialesEncuentro(
-      dependencies.db,
-      dependencies.descifrar,
-      event.cuentaProveedor.emailOrganizador
-    );
-    try {
-      await dependencies.crearProvider(credentials).cancelarEvento(
-        event.cuentaProveedor.emailOrganizador,
-        event.externalEventId
-      );
-    } catch (error) {
-      if (!esEventoCalendarInexistente(error)) throw error;
-    }
-  }
   await dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
-    const countAfterLock = await tx.instanciaSala.count({ where: { solicitudSalaId: solicitudId } });
+    const countAfterLock = await tx.instanciaSala.count({ where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } } });
     if (countAfterLock <= 1) throw new Error("Una Reunión debe conservar al menos un encuentro.");
     await auditar(tx, actor.id, "ENCUENTRO_ELIMINADO", meeting.id, {
       inicio: meeting.inicioProgramadoAt.toISOString(),
       fin: meeting.finProgramadoAt.toISOString()
     }, null);
-    await tx.instanciaSala.delete({ where: { id: meeting.id } });
+    await tx.instanciaSala.update({ where: { id: meeting.id }, data: { estado: "CANCELADA" } });
+    await tx.eventoProveedor.updateMany({ where: { instanciaSalaId: meeting.id }, data: { estadoIntegracion: "PENDIENTE", operacionPendiente: "CANCELAR", reclamoIntegracionAt: null, errorIntegracion: null } });
     await recalcularSolicitud(tx, solicitudId);
   });
 }
@@ -367,43 +367,6 @@ export async function eliminarReunionCompleta(
     throw new Error("La reunión tiene liquidaciones asociadas y no se puede eliminar.");
   }
 
-  const calendarEvents = request.instancias.flatMap(({ eventosProveedor }) =>
-    eventosProveedor.flatMap((event) =>
-      event.proveedor.tipo === "GOOGLE_MEET" &&
-      event.externalEventId &&
-      event.cuentaProveedor?.emailOrganizador
-        ? [{
-            calendarId: event.cuentaProveedor.emailOrganizador,
-            externalEventId: event.externalEventId
-          }]
-        : []
-    )
-  );
-  const eventosPorCalendario = new Map<string, typeof calendarEvents>();
-  for (const event of calendarEvents) {
-    eventosPorCalendario.set(event.calendarId, [
-      ...(eventosPorCalendario.get(event.calendarId) ?? []),
-      event
-    ]);
-  }
-  for (const [calendarId, events] of eventosPorCalendario) {
-    const credentials = await cargarCredencialesEncuentro(
-      dependencies.db,
-      dependencies.descifrar,
-      calendarId
-    );
-    const provider = dependencies.crearProvider(credentials);
-    for (const { externalEventId } of events) {
-      try {
-        await conReintentosPorLimiteGoogle(() =>
-          provider.cancelarEvento(calendarId, externalEventId)
-        );
-      } catch (error) {
-        if (!esEventoCalendarInexistente(error)) throw error;
-      }
-    }
-  }
-
   await dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
     await tx.auditoria.create({
@@ -419,7 +382,9 @@ export async function eliminarReunionCompleta(
         valorNuevo: Prisma.JsonNull
       }
     });
-    await tx.solicitudSala.delete({ where: { id: request.id } });
+    await tx.instanciaSala.updateMany({ where: { solicitudSalaId: request.id }, data: { estado: "CANCELADA" } });
+    await tx.eventoProveedor.updateMany({ where: { instancia: { solicitudSalaId: request.id } }, data: { estadoIntegracion: "PENDIENTE", operacionPendiente: "CANCELAR", reclamoIntegracionAt: null, errorIntegracion: null } });
+    await tx.solicitudSala.update({ where: { id: request.id }, data: { estado: "CANCELADA", canceladaAt: new Date(), canceladaMotivo: "Eliminación solicitada; cancelaciones Google pendientes." } });
   });
 }
 

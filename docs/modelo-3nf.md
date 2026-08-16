@@ -81,6 +81,12 @@ inconsistencias.
 | Cohosts | `CohostReunion` |
 | Asistente tecnico asignado | `AsignacionAsistenciaTecnica` |
 
+`EventoProveedor.estadoIntegracion` no es una máquina de tareas. La tarea
+pendiente se registra separadamente en `operacionPendiente`, lo que permite
+reintentar una reprogramación, configuración Meet o cancelación sin recrear el
+evento Calendar. Los errores heredados ambiguos se dejan sin operación para
+revisión manual durante la migración.
+
 `SolicitudSala` es la raíz del agregado. Sus fechas, cantidad, tipo de
 instancias, asistencia y grabación son valores agregados actuales, recalculados
 desde las instancias activas dentro de la misma transacción que las modifica.
