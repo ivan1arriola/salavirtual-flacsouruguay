@@ -2,9 +2,7 @@ import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
 import { pertenecenAlMismoDia } from "./periodos.domain";
 
-export type FechaReunion = Readonly<{
-  inicioProgramadoAt: Date;
-}>;
+export type FechaReunion = Readonly<{ inicioProgramadoAt: Date }>;
 
 const instanciaSchema = z
   .object({
@@ -19,10 +17,7 @@ const instanciaSchema = z
 const emailListSchema = z.preprocess(
   (value) => {
     if (typeof value === "string") {
-      return value
-        .split(/[\n,;]+/)
-        .map((item) => item.trim().toLowerCase())
-        .filter(Boolean);
+      return value.split(/[\n,;]+/).map((item) => item.trim().toLowerCase()).filter(Boolean);
     }
     return value;
   },
@@ -41,7 +36,6 @@ export const crearReunionesSchema = z
     requiereGrabacion: z.boolean().default(false),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
-    codigoMeet: z.string().trim().min(3).optional(),
     instancias: z.array(instanciaSchema).min(1).max(100)
   })
   .superRefine(({ instancias, timezone }, context) => {
@@ -114,36 +108,20 @@ export function resolverAsignacionInicial(
 }
 
 const DIAS = Object.freeze([
-  "domingo",
-  "lunes",
-  "martes",
-  "miercoles",
-  "jueves",
-  "viernes",
-  "sabado"
+  "domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"
 ] as const);
 
 export function diasDeReunion(
   reuniones: readonly FechaReunion[],
   timezone: string
 ): readonly string[] {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    weekday: "short"
-  });
+  const formatter = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" });
   const dayIndex: Readonly<Record<string, number>> = Object.freeze({
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6
   });
   const indexes = reuniones
     .map(({ inicioProgramadoAt }) => dayIndex[formatter.format(inicioProgramadoAt)])
     .filter((index): index is number => index !== undefined);
-
   const uniqueIndexes = new Set(indexes);
   return DIAS.filter((_, index) => uniqueIndexes.has(index));
 }

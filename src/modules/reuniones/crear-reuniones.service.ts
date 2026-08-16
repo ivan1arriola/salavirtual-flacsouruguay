@@ -1,5 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
 import {
+  ConflictApiError,
+  ForbiddenApiError,
+  IntegrationApiError,
+  NotFoundApiError,
+  ValidationApiError,
+} from "@/src/lib/http/api-error";
+import {
   crearReunionesSchema,
   diasDeReunion,
   puedeCrearReuniones,
@@ -11,31 +18,31 @@ import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
-export type ActorReunion = Readonly<{
-  id: string;
-  rol: RolUsuario;
-}>;
+export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
 
 export async function crearReuniones(
   db: PrismaClient,
   actor: ActorReunion,
   rawInput: unknown,
   claveIdempotenciaCreacion?: string,
-): Promise<
-  Readonly<{
-    solicitudId: string;
-    reuniones: number;
-    dias: readonly string[];
-    eventoProveedorIds: readonly string[];
-    reutilizada: boolean;
-  }>
-> {
+): Promise<Readonly<{
+  solicitudId: string;
+  reuniones: number;
+  dias: readonly string[];
+  eventoProveedorIds: readonly string[];
+  reutilizada: boolean;
+}>> {
   const input = crearReunionesSchema.parse(rawInput);
-  const asistenteTecnicoId = resolverAsignacionInicial(
-    actor.rol,
-    input.requiereAsistenciaTecnica,
-    input.asistenteTecnicoId
-  );
+  let asistenteTecnicoId: string | null;
+  try {
+    asistenteTecnicoId = resolverAsignacionInicial(
+      actor.rol,
+      input.requiereAsistenciaTecnica,
+      input.asistenteTecnicoId,
+    );
+  } catch (error) {
+    throw new ValidationApiError(error instanceof Error ? error.message : "Asignación inicial inválida.");
+  }
 
   return db.$transaction(async (tx) => {
     if (claveIdempotenciaCreacion) {
@@ -50,14 +57,14 @@ export async function crearReuniones(
             orderBy: { ordinal: "asc" },
             select: {
               inicioProgramadoAt: true,
-              eventosProveedor: { select: { id: true } }
-            }
-          }
-        }
+              eventosProveedor: { select: { id: true } },
+            },
+          },
+        },
       });
       if (existente) {
         if (existente.creadaPorUsuarioId !== actor.id) {
-          throw new Error("La clave de creación ya fue utilizada por otro usuario.");
+          throw new ConflictApiError("La clave de creación ya fue utilizada por otro usuario.");
         }
         return {
           solicitudId: existente.id,
@@ -66,7 +73,7 @@ export async function crearReuniones(
           eventoProveedorIds: existente.instancias.flatMap(({ eventosProveedor }) =>
             eventosProveedor.map(({ id }) => id)
           ),
-          reutilizada: true
+          reutilizada: true,
         };
       }
     }
@@ -79,29 +86,18 @@ export async function crearReuniones(
           programa: { select: { activo: true } },
         },
       }),
-      tx.proveedorReunion.findUnique({
-        where: { tipo: "GOOGLE_MEET" },
-      }),
+      tx.proveedorReunion.findUnique({ where: { tipo: "GOOGLE_MEET" } }),
     ]);
-    if (!docentePrograma?.activo || !docentePrograma.programa.activo) {
-      throw new Error("La asociacion docente-programa no esta activa.");
+    if (!docentePrograma) throw new NotFoundApiError("La asociación docente-programa no existe.");
+    if (!docentePrograma.activo || !docentePrograma.programa.activo) {
+      throw new ConflictApiError("La asociación docente-programa no está activa.");
     }
-    if (
-      !puedeCrearReuniones(
-        actor.rol,
-        actor.id,
-        docentePrograma.docente.usuarioId,
-      )
-    ) {
-      throw new Error(
-        "No tiene permisos para crear reuniones de este docente.",
-      );
+    if (!puedeCrearReuniones(actor.rol, actor.id, docentePrograma.docente.usuarioId)) {
+      throw new ForbiddenApiError("No tiene permisos para crear reuniones de este docente.");
     }
-    if (!proveedorMeet) {
-      throw new Error("Google Meet no está configurado como proveedor.");
-    }
-    await bloquearReservaSalas(tx, proveedorMeet.id);
+    if (!proveedorMeet) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
 
+    await bloquearReservaSalas(tx, proveedorMeet.id);
     const reservaAsistente = asistenteTecnicoId
       ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, input.instancias)
       : null;
@@ -109,7 +105,7 @@ export async function crearReuniones(
 
     const automaticCohostUserIds = [
       docentePrograma.docente.usuarioId,
-      ...(assistant ? [assistant.usuarioId] : [])
+      ...(assistant ? [assistant.usuarioId] : []),
     ];
     const [cohosts, automaticCohosts, hosts, occupiedHosts] = await Promise.all([
       tx.cuentaGoogleFlacso.findMany({
@@ -123,7 +119,7 @@ export async function crearReuniones(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-        select: { id: true, prioridad: true, limiteConcurrente: true }
+        select: { id: true, prioridad: true, limiteConcurrente: true },
       }),
       tx.eventoProveedor.findMany({
         where: {
@@ -133,19 +129,20 @@ export async function crearReuniones(
             estado: "PROGRAMADA",
             OR: input.instancias.map(({ inicio, fin }) => ({
               inicioProgramadoAt: { lt: fin },
-              finProgramadoAt: { gt: inicio }
-            }))
-          }
+              finProgramadoAt: { gt: inicio },
+            })),
+          },
         },
         select: {
           cuentaProveedorId: true,
-          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
-        }
-      })
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
+        },
+      }),
     ]);
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
-      throw new Error("Una o mas cuentas cohost no existen.");
+      throw new ValidationApiError("Una o más cuentas cohost no existen.");
     }
+
     const cohostIds = [...new Set([...cohosts, ...automaticCohosts].map(({ id }) => id))];
     const cuentaHostId = elegirCuentaHostParaPeriodos(
       null,
@@ -153,13 +150,14 @@ export async function crearReuniones(
       occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
         cuentaProveedorId,
         inicio: instancia.inicioProgramadoAt,
-        fin: instancia.finProgramadoAt
+        fin: instancia.finProgramadoAt,
       }] : []),
-      input.instancias
+      input.instancias,
     );
     if (!cuentaHostId) {
-      throw new Error("No hay una sala Meet libre para todas las fechas solicitadas.");
+      throw new ConflictApiError("No hay una sala Meet libre para todas las fechas solicitadas.");
     }
+
     const manualCohostEmails = normalizeCohostEmails(input.cohostEmailsManual);
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
@@ -201,24 +199,17 @@ export async function crearReuniones(
             instanciaSalaId: instancia.id,
             proveedorId: proveedorMeet.id,
             cuentaProveedorId: cuentaHostId,
-            codigoReunion: input.codigoMeet,
-            operacionPendiente: input.codigoMeet ? "CONFIGURAR_MEET" : "PROVISIONAR",
+            operacionPendiente: "PROVISIONAR",
           },
         });
         if (cohostIds.length > 0) {
           await tx.cohostReunion.createMany({
-            data: cohostIds.map((id) => ({
-              instanciaSalaId: instancia.id,
-              cuentaGoogleId: id,
-            })),
+            data: cohostIds.map((id) => ({ instanciaSalaId: instancia.id, cuentaGoogleId: id })),
           });
         }
         if (manualCohostEmails.length > 0) {
           await tx.cohostEmailReunion.createMany({
-            data: manualCohostEmails.map((email) => ({
-              instanciaSalaId: instancia.id,
-              email
-            }))
+            data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email })),
           });
         }
         if (asistenteTecnicoId) {

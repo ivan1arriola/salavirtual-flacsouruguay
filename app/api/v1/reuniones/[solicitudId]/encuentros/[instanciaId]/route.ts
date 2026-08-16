@@ -3,7 +3,12 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { configurarGoogleMeetExistente, crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
+import { toHttpError } from "@/src/lib/http/api-error";
+import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
+import {
+  sincronizarEventosPendientes,
+  type ProvisionResult,
+} from "@/src/modules/meet/provisionar-eventos.service";
 import { actualizarEncuentro, eliminarEncuentro } from "@/src/modules/reuniones/gestionar-encuentros.service";
 
 type RouteContext = Readonly<{
@@ -21,36 +26,41 @@ export async function DELETE(request: Request, context: RouteContext) {
 async function execute(request: Request, context: RouteContext, method: "PATCH" | "DELETE") {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { solicitudId, instanciaId } = await context.params;
-    const dependencies = {
-      db,
-      descifrar: descifrarConfiguracion,
-      crearProvider: crearGoogleCalendarProvider,
-      configurarEspacio: configurarGoogleMeetExistente
-    };
-    let warning: string | null = null;
-    if (method === "DELETE") {
-      await eliminarEncuentro(dependencies, actor, solicitudId, instanciaId);
-    } else {
-      const result = await actualizarEncuentro(
-        dependencies,
+
+    const local = method === "DELETE"
+      ? await eliminarEncuentro({ db }, actor, solicitudId, instanciaId)
+      : await actualizarEncuentro(
+        { db },
         actor,
         solicitudId,
         instanciaId,
-        await request.json().catch(() => null)
+        await request.json().catch(() => null),
       );
-      warning = result.warning;
-    }
+
+    const sincronizacion = await sincronizarEventosPendientes(
+      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
+      local.eventoProveedorIds,
+    );
+    const warning = advertenciaSincronizacion(sincronizacion);
+
     return NextResponse.json({
-      message: warning ?? (method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado."),
-      warning
+      message: method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado.",
+      warning,
+      sincronizacion,
     });
   } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "No se pudo gestionar el encuentro."
-    }, { status: 400 });
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
+}
+
+function advertenciaSincronizacion(results: readonly ProvisionResult[]): string | null {
+  const pendientes = results.filter(({ estado }) => estado !== "SINCRONIZADA");
+  if (pendientes.length === 0) return null;
+  return "El cambio quedó guardado en la aplicación, pero Google todavía tiene sincronizaciones pendientes.";
 }
