@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 
 export class ApiError extends Error {
@@ -35,10 +34,15 @@ export function toHttpError(error: unknown): Readonly<{ status: number; message:
       message: error.issues[0]?.message ?? "Datos inválidos.",
     };
   }
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2002") return { status: 409, message: "La operación entra en conflicto con datos existentes." };
-    if (error.code === "P2025") return { status: 404, message: "El recurso solicitado no existe." };
-  }
+  const code = prismaErrorCode(error);
+  if (code === "P2002") return { status: 409, message: "La operación entra en conflicto con datos existentes." };
+  if (code === "P2025") return { status: 404, message: "El recurso solicitado no existe." };
   console.error("Unhandled API error", error);
   return { status: 500, message: "Ocurrió un error interno al procesar la solicitud." };
+}
+
+function prismaErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object" || !("code" in error)) return null;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }

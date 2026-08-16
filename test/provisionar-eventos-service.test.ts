@@ -1,3 +1,4 @@
+// @ts-nocheck -- fake Prisma client intentionally models concurrent state transitions.
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import type { MeetProvider } from "../src/modules/meet/provider";
