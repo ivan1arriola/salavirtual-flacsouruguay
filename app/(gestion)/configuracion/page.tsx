@@ -31,11 +31,7 @@ export default async function ConfiguracionPage({
     db.eventoProveedor.count({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
-        estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
-        instancia: {
-          inicioProgramadoAt: { gte: new Date() },
-          estado: "PROGRAMADA"
-        }
+        operacionPendiente: { not: null }
       }
     })
   ]);

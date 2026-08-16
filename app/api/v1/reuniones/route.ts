@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { toHttpError } from "@/src/lib/http/api-error";
 import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
@@ -14,9 +15,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const input = await request.json().catch(() => null);
   const idempotencyHeader = request.headers.get("Idempotency-Key");
 
@@ -40,24 +39,15 @@ export async function POST(request: Request) {
       input,
       claveIdempotenciaCreacion,
     );
-    if (result.reutilizada) {
-      const provisionamiento = await provisionarEventosMeet(
-        { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-        result.eventoProveedorIds,
-      );
-      const { eventoProveedorIds: _, ...reunion } = result;
-      // A replay resumes pending provider work but deliberately does not send
-      // the "Reunión creada" notification again.
-      return NextResponse.json({ ...reunion, provisionamiento }, { status: 200 });
-    }
     const provisionamiento = await provisionarEventosMeet(
-      {
-        db,
-        descifrar: descifrarConfiguracion,
-        crearProvider: crearGoogleCalendarProvider,
-      },
+      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       result.eventoProveedorIds,
     );
+    if (result.reutilizada) {
+      const { eventoProveedorIds: _, ...reunion } = result;
+      return NextResponse.json({ ...reunion, provisionamiento }, { status: 200 });
+    }
+
     const advertencias: string[] = [];
     try {
       await notificarReunionCreada(result.solicitudId);
@@ -71,8 +61,8 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Datos invalidos.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 
@@ -142,10 +132,7 @@ async function notificarReunionCreada(solicitudId: string) {
   );
 
   const assignedAssistants = solicitud.instancias.flatMap((instancia) =>
-    instancia.asignaciones.map((assignment) => ({
-      instancia,
-      assistant: assignment.asistenteTecnico
-    }))
+    instancia.asignaciones.map((assignment) => ({ instancia, assistant: assignment.asistenteTecnico }))
   );
   for (const { instancia, assistant } of assignedAssistants) {
     const assistantName = [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" ");
