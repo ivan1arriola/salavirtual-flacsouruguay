@@ -6,7 +6,7 @@ export const RECUPERACION_PASSWORD_REENVIO_MS = 2 * 60 * 1000;
 export const RECUPERACION_PASSWORD_IDENTIFIER_PREFIX = "password-reset:";
 
 export const solicitudRecuperacionPasswordSchema = z.object({
-  email: z.email("Ingresá un correo electrónico válido.").trim().transform((value) => value.toLowerCase())
+  email: z.string().trim().email("Ingresá un correo electrónico válido.").transform((value) => value.toLowerCase())
 });
 
 export const restablecerPasswordSchema = z.object({
@@ -34,7 +34,7 @@ export function usuarioIdDesdeIdentifierRecuperacion(identifier: string): string
 
 export function tokenRecuperacionVigente(
   token: Readonly<{ expires: Date }>,
-  ahora = new Date()
+  ahora: Date
 ): boolean {
   return token.expires.getTime() > ahora.getTime();
 }
