@@ -3,17 +3,18 @@ import {
   BookOpen,
   CalendarCheck2,
   CalendarDays,
+  CalendarPlus,
   CalendarRange,
   GitCompareArrows,
   Hand,
   History,
   LayoutDashboard,
   LogOut,
+  Menu,
   Settings,
   UserRoundCheck,
   Users,
-  Video,
-  Waypoints
+  Video
 } from "lucide-react";
 import type { Session } from "next-auth";
 import Link from "next/link";
@@ -25,9 +26,14 @@ import { db } from "@/src/lib/db";
 const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/reuniones", label: "Agenda", icon: CalendarDays },
-  { href: "/reuniones/nueva", label: "Nueva reunión", icon: Waypoints },
   { href: "/grabaciones", label: "Grabaciones", icon: Video }
 ] as const;
+
+const createMeetingNav = {
+  href: "/reuniones/nueva",
+  label: "Nueva reunión",
+  icon: CalendarPlus
+} as const;
 
 const adminNav = [
   { href: "/asistencia-tecnica", label: "Asistencia técnica", icon: Hand },
@@ -52,11 +58,12 @@ export async function AppShell({
   user,
   children
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
-  const operationalNav = user.role === "ASISTENTE_TECNICO"
+  const operationalNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
     ? assistantNav
     : user.role === "DOCENTE"
-      ? [...primaryNav.slice(0, 3), ...teacherNav, ...primaryNav.slice(3)]
+      ? [primaryNav[0], primaryNav[1], ...teacherNav, primaryNav[2]]
       : primaryNav;
+  const canCreateMeeting = user.role !== "ASISTENTE_TECNICO";
   const rememberedAccount = {
     id: user.id,
     nombre: user.name ?? user.email ?? user.id,
@@ -65,6 +72,20 @@ export async function AppShell({
   const unreadNotifications = await db.notificacion.count({
     where: { usuarioId: user.id, leidaAt: null }
   });
+  const mobilePrimaryNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
+    ? assistantNav.slice(0, 4)
+    : user.role === "DOCENTE"
+      ? [primaryNav[0], primaryNav[1], createMeetingNav, teacherNav[0]]
+      : [primaryNav[0], primaryNav[1], createMeetingNav, primaryNav[2]];
+  const mobileMoreNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
+    ? [assistantNav[4], { href: "/notificaciones", label: "Notificaciones", icon: Bell }]
+    : user.role === "DOCENTE"
+      ? [primaryNav[2], { href: "/notificaciones", label: "Notificaciones", icon: Bell }]
+      : [
+          ...adminNav,
+          ...archiveNav,
+          { href: "/notificaciones", label: "Notificaciones", icon: Bell }
+        ];
 
   return (
     <div className="app-frame">
@@ -79,6 +100,12 @@ export async function AppShell({
 
         <div className="sidebar-navigation">
           <SidebarGroup label={user.role === "ASISTENTE_TECNICO" ? "Trabajo" : "Principal"} items={operationalNav} />
+          {canCreateMeeting ? (
+            <Link className="sidebar-create-action" href={createMeetingNav.href}>
+              <CalendarPlus size={18} aria-hidden="true" />
+              <span>Nueva reunión</span>
+            </Link>
+          ) : null}
           {user.role === "ADMINISTRACION" ? (
             <>
               <SidebarGroup label="Operación" items={adminNav.slice(0, 2)} />
@@ -151,34 +178,36 @@ export async function AppShell({
             </Link>
           </span>
         </header>
-        {user.role === "ADMINISTRACION" ? (
-          <nav className="mobile-secondary-nav" aria-label="Navegación de administración">
-            {adminNav.map(({ href, label, icon: Icon }) => (
-              <Link href={href} key={href}>
-                <Icon size={16} aria-hidden="true" />
-                <span>{label}</span>
-              </Link>
-            ))}
-            {archiveNav.map(({ href, label, icon: Icon }) => (
-              <Link href={href} key={href}>
-                <Icon size={16} aria-hidden="true" />
-                <span>{label}</span>
-              </Link>
-            ))}
-          </nav>
-        ) : null}
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
-          {operationalNav.slice(0, 4).map(({ href, label, icon: Icon }) => (
+          {mobilePrimaryNav.map(({ href, label, icon: Icon }) => (
             <Link href={href} key={href}>
               <Icon size={20} aria-hidden="true" />
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>
             </Link>
           ))}
-          <Link href="/notificaciones">
-            <Bell size={20} aria-hidden="true" />
-            <span>Alertas</span>
-          </Link>
+          <details className="mobile-nav-more">
+            <summary>
+              <Menu size={20} aria-hidden="true" />
+              <span>Más</span>
+              {unreadNotifications > 0 ? <strong className="mobile-more-badge">{unreadNotifications}</strong> : null}
+            </summary>
+            <div className="mobile-more-menu">
+              <div className="mobile-more-heading">
+                <span>Más opciones</span>
+                <small>{roleLabel(user.role)}</small>
+              </div>
+              <nav aria-label="Más opciones">
+                {mobileMoreNav.map(({ href, label, icon: Icon }) => (
+                  <Link href={href} key={href}>
+                    <Icon size={18} aria-hidden="true" />
+                    <span>{label}</span>
+                    {href === "/notificaciones" && unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </details>
         </nav>
       </div>
     </div>
