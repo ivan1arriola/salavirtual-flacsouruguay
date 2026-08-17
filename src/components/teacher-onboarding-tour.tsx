@@ -6,7 +6,7 @@ import { driver, type DriveStep } from "driver.js";
 
 export const RESTART_TEACHER_TOUR_EVENT = "salavirtual:restart-teacher-tour";
 
-const TOUR_VERSION = "v2";
+const TOUR_VERSION = "v3";
 
 function firstVisible(selector: string): Element | undefined {
   return Array.from(document.querySelectorAll(selector)).find((element) => {
@@ -72,73 +72,109 @@ function meetingSteps(): DriveStep[] {
   return [
     step("#datos-academicos", {
       title: "1. Datos académicos",
-      description: "Empezá identificando la actividad. Escribí un título claro, elegí el programa correspondiente y, si lo necesitás, agregá una descripción general. Esa descripción se utilizará como información común para toda la serie.",
+      description: "Primero identificá qué actividad vas a programar. En esta sección definís el nombre, el programa académico, la modalidad y la información general de la reunión.",
+      side: "bottom",
+      align: "start"
+    }),
+    step('#datos-academicos input[name="titulo"]', {
+      title: "Título de la reunión",
+      description: "Escribí un nombre que permita reconocer la actividad fácilmente en la Agenda y en Google Calendar. Por ejemplo: “Clase 4 – Políticas sociales” o “Seminario de metodología”.",
+      side: "bottom",
+      align: "start"
+    }),
+    step('#datos-academicos select[name="docenteProgramaId"]', {
+      title: "Programa y docente",
+      description: "Seleccioná el programa al que pertenece la actividad. La lista depende de los programas que tengas asociados en Mis programas, por eso es importante mantener esa sección actualizada.",
       side: "bottom",
       align: "start"
     }),
     step("#datos-academicos .modality-choice", {
-      title: "Modalidad de la actividad",
-      description: "Elegí Virtual cuando todos participen por Google Meet. Elegí Híbrida cuando parte de la actividad sea presencial y también haya participantes conectados de forma remota.",
+      title: "Modalidad",
+      description: "Elegí Virtual cuando todas las personas participen por Google Meet. Elegí Híbrida cuando la actividad combine participantes presenciales y remotos.",
       side: "bottom",
       align: "start"
     }),
-    step("#fechas .date-mode-selector", {
-      title: "2. Elegí cómo cargar las fechas",
-      description: "Hay tres formas de programar los encuentros. Elegí la que mejor represente la actividad: una sola fecha, una serie semanal regular o varias fechas cargadas manualmente.",
+    step('#datos-academicos textarea[name="descripcion"]', {
+      title: "Descripción general",
+      description: "Este campo es opcional. Usalo para información común a toda la reunión o serie. Si después dejás vacía la descripción de un encuentro particular, se utilizará esta descripción general.",
       side: "top",
       align: "start"
     }),
-    step("#fechas .date-mode-selector label:nth-of-type(1)", {
+    step("#fechas .date-mode-selector", {
+      title: "2. Definir las fechas",
+      description: "Elegí cómo querés construir el calendario de la actividad. Todos los horarios de esta sección se interpretan en UTC-3, hora de Montevideo.",
+      side: "top",
+      align: "start"
+    }),
+    step('#fechas label:has(input[name="dateMode"][value="SINGLE"])', {
       title: "Una fecha",
-      description: "Usá esta opción para una actividad que ocurre una sola vez. Solo tenés que indicar la fecha, la hora de inicio y la hora de fin. También podés agregar una descripción específica para ese encuentro.",
+      description: "Elegí Una fecha para una actividad que ocurre una sola vez. Vas a cargar una fecha, una hora de inicio y una hora de fin.",
       side: "bottom",
       align: "start"
     }),
-    step("#fechas .date-mode-selector label:nth-of-type(2)", {
+    step('#fechas label:has(input[name="dateMode"][value="RECURRENT"])', {
       title: "Repetición semanal",
-      description: "Usala para cursos que se repiten regularmente. Definís una fecha inicial y final, el horario común y los días de la semana. Después tocás Generar vista previa y podés revisar cada encuentro, cambiar fechas u horarios, quitar una fecha o agregar excepciones.",
+      description: "Esta opción sirve para cursos regulares. Indicás el período completo, el horario y los días de la semana. Después generás una vista previa y podés corregir encuentros individuales, quitar fechas o agregar excepciones.",
       side: "bottom",
       align: "start"
     }),
-    step("#fechas .date-mode-selector label:nth-of-type(3)", {
+    step('#fechas label:has(input[name="dateMode"][value="MANUAL"])', {
       title: "Fechas específicas",
-      description: "Elegí esta modalidad cuando no haya una periodicidad fija. Cargás cada encuentro por separado y podés usar Agregar otra fecha para incorporar todas las instancias necesarias.",
+      description: "Usala cuando las fechas no sigan una regla semanal. Podés cargar cada encuentro por separado y agregar tantas fechas como necesites.",
       side: "bottom",
       align: "start"
     }),
     step("#fechas .date-row:first-child", {
-      title: "Fecha, horario y descripción",
-      description: "Completá la fecha y las horas de inicio y fin. Todos los horarios se interpretan en UTC-3, hora de Montevideo. La descripción del encuentro es opcional: si la dejás vacía, se utilizará la descripción general ingresada arriba.",
+      title: "Fecha y horario del encuentro",
+      description: "Para cada encuentro completá Fecha, Hora de inicio y Hora de fin. En una serie, cada fila representa un encuentro independiente y puede ajustarse sin modificar las demás.",
+      side: "top",
+      align: "start"
+    }),
+    step("#fechas .date-row:first-child .date-description", {
+      title: "Descripción del encuentro",
+      description: "Es opcional y sirve para indicar el tema de esa clase, un invitado o una observación particular. Si queda vacía, Sala Virtual utilizará la descripción general de la reunión.",
+      side: "top",
+      align: "start"
+    }),
+    step("#organizacion", {
+      title: "3. Organización",
+      description: "En esta sección indicás qué apoyos necesita la actividad. La cuenta que organizará Google Meet se administra automáticamente, así que no tenés que seleccionar una sala manualmente.",
       side: "top",
       align: "start"
     }),
     step("#organizacion .auto-room-note", {
-      title: "3. Sala Meet automática",
-      description: "No tenés que elegir una cuenta de sala manualmente. Al crear la reunión, Sala Virtual buscará una cuenta institucional disponible y generará el evento de Google Calendar y el enlace de Google Meet para cada encuentro.",
+      title: "Sala Meet automática",
+      description: "Al crear la reunión, Sala Virtual busca una cuenta institucional disponible y genera el evento de Google Calendar y el enlace de Meet. En una serie, distintos encuentros pueden usar cuentas de sala diferentes según la disponibilidad.",
       side: "top",
       align: "start"
     }),
-    step("#organizacion .check-field:nth-of-type(1)", {
+    step('#organizacion label:has(input[name="requiereAsistenciaTecnica"])', {
       title: "Asistencia técnica",
-      description: "Marcá esta opción cuando necesites que un asistente técnico acompañe el encuentro. Para Docentes, la solicitud queda abierta a postulaciones y posteriormente podrás consultar si ya existe una persona asignada.",
+      description: "Marcala cuando necesites apoyo durante el encuentro. Para el rol Docente, la solicitud queda abierta a postulaciones de asistentes técnicos. Después podrás consultar desde la reunión si alguien ya fue asignado.",
       side: "top",
       align: "start"
     }),
-    step("#organizacion .check-field:nth-of-type(2)", {
+    step('#organizacion label:has(input[name="requiereGrabacion"])', {
       title: "Grabación",
-      description: "Marcá Grabación cuando la actividad deba quedar registrada. Esta opción deja asentado el requerimiento en Sala Virtual; al comenzar el encuentro conviene verificar en Google Meet que la grabación haya sido iniciada correctamente.",
+      description: "Marcala cuando el encuentro deba grabarse. Esta opción registra el requerimiento en Sala Virtual. Al comenzar la actividad, verificá en Google Meet que la grabación haya sido iniciada correctamente.",
       side: "top",
       align: "start"
     }),
     step("#organizacion .cohost-disclosure", {
-      title: "Cohosts",
-      description: "Esta sección es opcional. Abrila si otras personas necesitan permisos de coorganización. Podés elegir cuentas ya guardadas o escribir otros correos separados por comas.",
+      title: "Cohosts opcionales",
+      description: "Abrí esta sección solamente si otras personas necesitan permisos de coorganización. Podés seleccionar cuentas guardadas o ingresar otros correos. Los correos manuales pueden escribirse separados por comas.",
       side: "top",
       align: "start"
     }),
-    step(".meeting-form .form-actions", {
-      title: "Revisá y creá la reunión",
-      description: "Antes de confirmar, revisá la cantidad de encuentros y los datos cargados. El botón indicará si vas a crear una reunión o varios encuentros. Durante la creación no vuelvas a presionarlo: Sala Virtual guardará la actividad y configurará Google Calendar y Meet automáticamente.",
+    step(".meeting-form .meeting-form-submit-summary", {
+      title: "Resumen antes de crear",
+      description: "Acá podés comprobar cuántos encuentros se van a crear. Si todavía no definiste fechas, Sala Virtual te lo indicará antes de permitir la creación.",
+      side: "top",
+      align: "start"
+    }),
+    step('.meeting-form .form-actions button[type="submit"]', {
+      title: "Crear la reunión",
+      description: "Cuando todo esté correcto, confirmá desde este botón. Sala Virtual guardará la actividad, asignará las cuentas disponibles, creará los eventos de Google Calendar y configurará los enlaces de Google Meet. Mientras aparece “Creando reunión…”, no vuelvas a presionar el botón.",
       side: "top",
       align: "center"
     })
