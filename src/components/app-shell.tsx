@@ -54,7 +54,6 @@ const assistantNav = [
 ] as const;
 
 const teacherNav = [{ href: "/mis-programas", label: "Mis programas", icon: BookOpen }] as const;
-const archiveNav = [{ href: "/historico", label: "Histórico Zoom", icon: History }] as const;
 
 export async function AppShell({
   user,
@@ -83,7 +82,7 @@ export async function AppShell({
     ? [assistantNav[4]]
     : user.role === "DOCENTE"
       ? [primaryNav[2]]
-      : [...adminNav, ...archiveNav];
+      : adminNav;
 
   return (
     <div className="app-frame">
@@ -134,20 +133,6 @@ export async function AppShell({
             {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
           </SidebarLink>
         </nav>
-
-        {user.role === "ADMINISTRACION" ? (
-          <details className="archive-nav">
-            <summary>Archivo</summary>
-            <nav className="side-nav" aria-label="Navegación de archivo">
-              {archiveNav.map(({ href, label, icon: Icon }) => (
-                <SidebarLink href={href} key={href}>
-                  <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
-                  <span>{label}</span>
-                </SidebarLink>
-              ))}
-            </nav>
-          </details>
-        ) : null}
 
         <div className="account-block">
           <ProfileMenu user={user} account={rememberedAccount} />
