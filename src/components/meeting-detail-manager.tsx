@@ -76,8 +76,8 @@ export function MeetingDetailManager({
     }
   }
 
-  function add(formData: FormData) {
-    return request(solicitudId, "", {
+  async function add(formData: FormData): Promise<void> {
+    await request(solicitudId, "", {
       method: "POST",
       body: JSON.stringify({
         inicio: localMontevideoToIso(formData, "horaInicio"),
