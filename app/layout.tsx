@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/src/components/pwa-register";
+import "driver.js/dist/driver.css";
 import "./globals.css";
 import "./brand.css";
+import "./tour.css";
 
 export const metadata: Metadata = {
   title: "Sala Virtual FLACSO",

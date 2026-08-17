@@ -21,6 +21,7 @@ import { AppLogoMark } from "@/src/components/app-logo";
 import { ProfileMenu } from "@/src/components/profile-menu";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { SidebarLink } from "@/src/components/sidebar-link";
+import { TeacherOnboardingTour } from "@/src/components/teacher-onboarding-tour";
 import { db } from "@/src/lib/db";
 
 const primaryNav = [
@@ -85,6 +86,8 @@ export async function AppShell({
 
   return (
     <div className="app-frame">
+      {user.role === "DOCENTE" ? <TeacherOnboardingTour userId={user.id} /> : null}
+
       <aside className="sidebar">
         <Link className="brand" href="/" aria-label="Sala Virtual FLACSO">
           <AppLogoMark className="brand-app-logo" size={38} />
@@ -95,23 +98,35 @@ export async function AppShell({
         </Link>
 
         <div className="sidebar-navigation">
-          <SidebarGroup label={user.role === "ASISTENTE_TECNICO" ? "Trabajo" : "Principal"} items={operationalNav} />
+          <SidebarGroup
+            label={user.role === "ASISTENTE_TECNICO" ? "Trabajo" : "Principal"}
+            items={operationalNav}
+            role={user.role}
+          />
           {canCreateMeeting ? (
-            <Link className="sidebar-create-action" href={createMeetingNav.href}>
+            <Link
+              className="sidebar-create-action"
+              data-tour={user.role === "DOCENTE" ? "teacher-create" : undefined}
+              href={createMeetingNav.href}
+            >
               <CalendarPlus size={18} aria-hidden="true" />
               <span>Nueva reunión</span>
             </Link>
           ) : null}
           {user.role === "ADMINISTRACION" ? (
             <>
-              <SidebarGroup label="Operación" items={adminNav.slice(0, 2)} />
-              <SidebarGroup label="Administración" items={adminNav.slice(2)} />
+              <SidebarGroup label="Operación" items={adminNav.slice(0, 2)} role={user.role} />
+              <SidebarGroup label="Administración" items={adminNav.slice(2)} role={user.role} />
             </>
           ) : null}
         </div>
 
         <nav className="side-nav sidebar-utility-nav" aria-label="Cuenta y notificaciones">
-          <SidebarLink className="notification-nav-link" href="/notificaciones">
+          <SidebarLink
+            className="notification-nav-link"
+            dataTour={user.role === "DOCENTE" ? "teacher-notifications" : undefined}
+            href="/notificaciones"
+          >
             <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
             <span>Notificaciones</span>
             {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
@@ -144,7 +159,12 @@ export async function AppShell({
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
-            <Link className="notification-mobile-link" href="/notificaciones" aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}>
+            <Link
+              className="notification-mobile-link"
+              data-tour={user.role === "DOCENTE" ? "teacher-notifications" : undefined}
+              href="/notificaciones"
+              aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}
+            >
               <Bell size={18} aria-hidden="true" />
               {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
             </Link>
@@ -154,12 +174,20 @@ export async function AppShell({
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {mobilePrimaryNav.map(({ href, label, icon: Icon }) => (
-            <SidebarLink exact={href === "/" || href === "/reuniones"} href={href} key={href}>
+            <SidebarLink
+              dataTour={user.role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+              exact={href === "/" || href === "/reuniones"}
+              href={href}
+              key={href}
+            >
               <Icon size={20} aria-hidden="true" />
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>
             </SidebarLink>
           ))}
-          <DismissibleDetails className="mobile-nav-more">
+          <DismissibleDetails
+            className="mobile-nav-more"
+            dataTour={user.role === "DOCENTE" ? "teacher-more" : undefined}
+          >
             <summary>
               <Menu size={20} aria-hidden="true" />
               <span>Más</span>
@@ -171,7 +199,11 @@ export async function AppShell({
               </div>
               <nav aria-label="Más opciones">
                 {mobileMoreNav.map(({ href, label, icon: Icon }) => (
-                  <SidebarLink href={href} key={href}>
+                  <SidebarLink
+                    dataTour={user.role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+                    href={href}
+                    key={href}
+                  >
                     <Icon size={18} aria-hidden="true" />
                     <span>{label}</span>
                   </SidebarLink>
@@ -193,14 +225,24 @@ type NavigationItem = Readonly<{
 
 function SidebarGroup({
   label,
-  items
-}: Readonly<{ label: string; items: readonly NavigationItem[] }>) {
+  items,
+  role
+}: Readonly<{
+  label: string;
+  items: readonly NavigationItem[];
+  role: Session["user"]["role"];
+}>) {
   return (
     <section className="sidebar-group" aria-label={label}>
       <p>{label}</p>
       <nav className="side-nav">
         {items.map(({ href, label: itemLabel, icon: Icon }) => (
-          <SidebarLink exact={href === "/" || href === "/reuniones"} href={href} key={href}>
+          <SidebarLink
+            dataTour={role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+            exact={href === "/" || href === "/reuniones"}
+            href={href}
+            key={href}
+          >
             <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
             <span>{itemLabel}</span>
           </SidebarLink>
@@ -208,6 +250,14 @@ function SidebarGroup({
       </nav>
     </section>
   );
+}
+
+function teacherTourForHref(href: string): string | undefined {
+  if (href === "/reuniones") return "teacher-agenda";
+  if (href === "/reuniones/nueva") return "teacher-create";
+  if (href === "/mis-programas") return "teacher-programs";
+  if (href === "/grabaciones") return "teacher-recordings";
+  return undefined;
 }
 
 function roleLabel(role: Session["user"]["role"]): string {

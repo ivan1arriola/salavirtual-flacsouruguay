@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
+import { TeacherTutorialButton } from "@/src/components/teacher-tutorial-button";
 import type { CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
 
 export function ProfileMenu({
@@ -19,7 +20,10 @@ export function ProfileMenu({
   const className = ["profile-menu", compact ? "profile-menu-compact" : null].filter(Boolean).join(" ");
 
   return (
-    <DismissibleDetails className={className}>
+    <DismissibleDetails
+      className={className}
+      dataTour={user.role === "DOCENTE" ? "teacher-profile" : undefined}
+    >
       <summary aria-label="Abrir menú de perfil">
         <span className="avatar" aria-hidden="true">
           <UserAvatarContent imageUrl={user.image} name={displayName} />
@@ -53,6 +57,7 @@ export function ProfileMenu({
             <span>Mi perfil</span>
           </Link>
           <AccountSwitcher account={account} />
+          {user.role === "DOCENTE" ? <TeacherTutorialButton /> : null}
           <form
             action={async () => {
               "use server";

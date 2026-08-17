@@ -1,0 +1,65 @@
+.driver-popover.flacso-tour {
+  max-width: 360px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.flacso-tour .driver-popover-title {
+  color: var(--brand);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.flacso-tour .driver-popover-description {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.flacso-tour .driver-popover-footer {
+  margin-top: 16px;
+}
+
+.flacso-tour .driver-popover-next-btn,
+.flacso-tour .driver-popover-prev-btn {
+  border-radius: 9px;
+  padding: 7px 12px;
+  font: inherit;
+  text-shadow: none;
+}
+
+.flacso-tour .driver-popover-next-btn {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.flacso-tour .driver-popover-next-btn:hover {
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
+}
+
+.flacso-tour .driver-popover-prev-btn {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.flacso-tour .driver-popover-progress-text {
+  color: var(--muted);
+}
+
+.flacso-tour .driver-popover-close-btn {
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .driver-popover.flacso-tour {
+    max-width: calc(100vw - 32px);
+    padding: 16px;
+  }
+}
