@@ -1,0 +1,93 @@
+import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import type { Session } from "next-auth";
+import Link from "next/link";
+import { signOut } from "@/auth";
+import { AccountSwitcher } from "@/src/components/account-switcher";
+import type { CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
+
+export function ProfileMenu({
+  user,
+  account,
+  compact = false
+}: Readonly<{
+  user: Session["user"];
+  account: CuentaRecordada;
+  compact?: boolean;
+}>) {
+  const displayName = user.name ?? user.email ?? user.id;
+
+  return (
+    <details className={["profile-menu", compact ? "profile-menu-compact" : null].filter(Boolean).join(" ")}>
+      <summary aria-label="Abrir menú de perfil">
+        <span className="avatar" aria-hidden="true">
+          <UserAvatarContent imageUrl={user.image} name={displayName} />
+        </span>
+        {!compact ? (
+          <>
+            <span className="account-copy">
+              <strong>{displayName}</strong>
+              <small>{roleLabel(user.role)}</small>
+            </span>
+            <ChevronDown className="profile-menu-chevron" size={17} aria-hidden="true" />
+          </>
+        ) : null}
+      </summary>
+
+      <div className="profile-menu-card">
+        <div className="profile-menu-identity">
+          <span className="avatar profile-menu-avatar" aria-hidden="true">
+            <UserAvatarContent imageUrl={user.image} name={displayName} />
+          </span>
+          <span>
+            <strong>{displayName}</strong>
+            <small>{user.email ?? roleLabel(user.role)}</small>
+            <em>{roleLabel(user.role)}</em>
+          </span>
+        </div>
+
+        <div className="profile-menu-actions">
+          <Link className="profile-menu-action" href="/mi-perfil">
+            <UserRound size={18} aria-hidden="true" />
+            <span>Mi perfil</span>
+          </Link>
+          <AccountSwitcher account={account} />
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/acceso" });
+            }}
+          >
+            <button className="profile-menu-action profile-menu-logout" type="submit">
+              <LogOut size={18} aria-hidden="true" />
+              <span>Cerrar sesión</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function roleLabel(role: Session["user"]["role"]): string {
+  if (role === "ADMINISTRACION") return "Administración";
+  if (role === "ASISTENTE_TECNICO") return "Asistencia técnica";
+  return "Docente";
+}
+
+function UserAvatarContent({
+  imageUrl,
+  name
+}: Readonly<{ imageUrl?: string | null; name: string }>) {
+  return (
+    <>
+      <span className="avatar-fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+      {imageUrl ? (
+        <span
+          className="avatar-image"
+          style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})` }}
+          aria-hidden="true"
+        />
+      ) : null}
+    </>
+  );
+}
