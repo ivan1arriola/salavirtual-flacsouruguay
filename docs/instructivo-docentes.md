@@ -185,15 +185,7 @@ No necesitás elegir manualmente una cuenta de Google Meet.
 
 Sala Virtual selecciona automáticamente una cuenta disponible de FLACSO y genera el enlace correspondiente.
 
-Las cuentas configuradas van desde:
-
-`sa​la01@flacso.edu.uy`
-
-hasta:
-
-`sa​la10@flacso.edu.uy`
-
-> Las cuentas reales no contienen espacios ni caracteres adicionales: `sala01@flacso.edu.uy` a `sala10@flacso.edu.uy`.
+Las cuentas configuradas van desde `sala01@flacso.edu.uy` hasta `sala10@flacso.edu.uy`.
 
 La cuenta puede variar entre diferentes encuentros de una misma serie según la disponibilidad existente.
 
