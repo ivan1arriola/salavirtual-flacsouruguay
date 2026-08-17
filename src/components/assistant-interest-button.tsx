@@ -33,7 +33,7 @@ export function AssistantInterestButton({
   }
 
   return (
-    <div className="row-action">
+    <div className="row-action" data-tour="assistant-interest">
       <button
         className={interested ? "secondary-action" : "primary-action"}
         disabled={pending}
