@@ -3,7 +3,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
-import { ProfileMenuDisclosure } from "@/src/components/profile-menu-disclosure";
+import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import type { CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
 
 export function ProfileMenu({
@@ -16,12 +16,10 @@ export function ProfileMenu({
   compact?: boolean;
 }>) {
   const displayName = user.name ?? user.email ?? user.id;
-  const className = ["profile-menu", compact ? "profile-menu-compact" : null]
-    .filter(Boolean)
-    .join(" ");
+  const className = ["profile-menu", compact ? "profile-menu-compact" : null].filter(Boolean).join(" ");
 
   return (
-    <ProfileMenuDisclosure className={className}>
+    <DismissibleDetails className={className}>
       <summary aria-label="Abrir menú de perfil">
         <span className="avatar" aria-hidden="true">
           <UserAvatarContent imageUrl={user.image} name={displayName} />
@@ -68,7 +66,7 @@ export function ProfileMenu({
           </form>
         </div>
       </div>
-    </ProfileMenuDisclosure>
+    </DismissibleDetails>
   );
 }
 
