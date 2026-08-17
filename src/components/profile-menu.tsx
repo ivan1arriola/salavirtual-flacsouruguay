@@ -3,6 +3,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
+import { AssistantTutorialButton } from "@/src/components/assistant-tutorial-button";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { TeacherTutorialButton } from "@/src/components/teacher-tutorial-button";
 import type { CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
@@ -22,7 +23,7 @@ export function ProfileMenu({
   return (
     <DismissibleDetails
       className={className}
-      dataTour={user.role === "DOCENTE" ? "teacher-profile" : undefined}
+      dataTour={profileTourForRole(user.role)}
     >
       <summary aria-label="Abrir menú de perfil">
         <span className="avatar" aria-hidden="true">
@@ -58,6 +59,7 @@ export function ProfileMenu({
           </Link>
           <AccountSwitcher account={account} />
           {user.role === "DOCENTE" ? <TeacherTutorialButton /> : null}
+          {user.role === "ASISTENTE_TECNICO" ? <AssistantTutorialButton /> : null}
           <form
             action={async () => {
               "use server";
@@ -73,6 +75,12 @@ export function ProfileMenu({
       </div>
     </DismissibleDetails>
   );
+}
+
+function profileTourForRole(role: Session["user"]["role"]): string | undefined {
+  if (role === "DOCENTE") return "teacher-profile";
+  if (role === "ASISTENTE_TECNICO") return "assistant-profile";
+  return undefined;
 }
 
 function roleLabel(role: Session["user"]["role"]): string {
