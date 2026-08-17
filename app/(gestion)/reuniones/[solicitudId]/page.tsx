@@ -1,4 +1,5 @@
-import { CalendarRange } from "lucide-react";
+import { ArrowLeft, CalendarRange } from "lucide-react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
@@ -60,7 +61,10 @@ export default async function ReunionDetailPage({
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   return (
     <>
-      <header className="page-header">
+      <Link className="meeting-detail-back" href="/reuniones">
+        <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
+      </Link>
+      <header className="page-header meeting-detail-header">
         <div>
           <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
           <h1>{request.titulo}</h1>
@@ -68,7 +72,7 @@ export default async function ReunionDetailPage({
         </div>
         <CalendarRange size={28} color="var(--brand)" aria-hidden="true" />
       </header>
-      <section className="meeting-overview" aria-label="Datos de la Reunión">
+      <section className="meeting-overview" aria-label="Datos de la reunión">
         <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
         <div><span>Estado</span><strong>{request.estado.toLowerCase().replaceAll("_", " ")}</strong></div>
         <div><span>Zona horaria</span><strong>UTC-3 · Montevideo</strong></div>
