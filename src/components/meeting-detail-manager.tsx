@@ -1,6 +1,17 @@
 "use client";
 
-import { CalendarClock, CalendarPlus, History, LoaderCircle, Save, Trash2, UserRoundMinus, UserRoundPlus } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarPlus,
+  History,
+  LoaderCircle,
+  Pencil,
+  Save,
+  Trash2,
+  UserRoundMinus,
+  UserRoundPlus,
+  X
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
@@ -38,10 +49,11 @@ export function MeetingDetailManager({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
   const removingAllRef = useRef(false);
 
-  async function request(requestId: string, id: string, init: RequestInit) {
+  async function request(requestId: string, id: string, init: RequestInit): Promise<boolean> {
     setBusy(id);
     setMessage("");
     try {
@@ -51,9 +63,14 @@ export function MeetingDetailManager({
       });
       const result = await response.json().catch(() => ({}));
       setMessage(response.ok ? result.message ?? "Cambios guardados." : result.error ?? "No se pudo completar la operación.");
-      if (response.ok) router.refresh();
+      if (response.ok) {
+        router.refresh();
+        return true;
+      }
+      return false;
     } catch {
       setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
+      return false;
     } finally {
       setBusy(null);
     }
@@ -72,8 +89,8 @@ export function MeetingDetailManager({
     });
   }
 
-  function edit(id: string, formData: FormData) {
-    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+  async function edit(id: string, formData: FormData) {
+    const updated = await request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
       body: JSON.stringify({
         accion: "EDITAR_ENCUENTRO",
@@ -82,6 +99,7 @@ export function MeetingDetailManager({
         descripcion: formData.get("descripcion") ?? ""
       })
     });
+    if (updated) setEditingId(null);
   }
 
   function changeAssistance(id: string, value: boolean) {
@@ -132,25 +150,129 @@ export function MeetingDetailManager({
 
   return (
     <>
-      <section className="meeting-danger-zone">
+      {message ? (
+        <p className="meeting-detail-feedback" aria-live="polite">{message}</p>
+      ) : null}
+
+      <section className="encounter-list-heading">
         <div>
-          <h2>Eliminar reunión completa</h2>
-          <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
-          {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
-          {message ? <p className="form-message meeting-detail-message" role={busy === "all" ? "status" : "alert"}>{message}</p> : null}
+          <h2>{vistaTemporal === "PROXIMOS" ? "Próximos encuentros y de hoy" : "Encuentros pasados"}</h2>
+          <p>{visibleMeetings.length} instancias ordenadas cronológicamente.</p>
         </div>
-        <button
-          className="secondary-action danger-action"
-          disabled={!canRemoveAll || busy !== null}
-          onClick={removeAll}
-          title={removeAllBlockedReason || "Eliminar reunión completa"}
-          type="button"
-        >
-          {busy === "all" ? <LoaderCircle className="button-spinner" size={17} /> : <Trash2 size={17} />}
-          {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar todo"}
-        </button>
+        <div className="encounter-list-tools">
+          <div className="encounter-time-filter" aria-label="Filtrar encuentros">
+            <button
+              aria-pressed={vistaTemporal === "PROXIMOS"}
+              className={vistaTemporal === "PROXIMOS" ? "active" : ""}
+              onClick={() => setVistaTemporal("PROXIMOS")}
+              type="button"
+            >
+              <CalendarClock size={16} />Próximas <span>{proximos.length}</span>
+            </button>
+            <button
+              aria-pressed={vistaTemporal === "PASADOS"}
+              className={vistaTemporal === "PASADOS" ? "active" : ""}
+              onClick={() => setVistaTemporal("PASADOS")}
+              type="button"
+            >
+              <History size={16} />Pasadas <span>{pasados.length}</span>
+            </button>
+          </div>
+          <a className="secondary-action encounter-add-shortcut" href="#agregar-encuentro">
+            <CalendarPlus size={16} />Agregar
+          </a>
+        </div>
       </section>
-      <section className="content-section add-encounter-section">
+
+      <div className="encounter-list">
+        {visibleMeetings.length === 0 ? (
+          <div className="content-section empty-state encounter-empty-state">
+            <CalendarClock size={22} aria-hidden="true" />
+            <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : "No hay encuentros pasados."}</p>
+          </div>
+        ) : null}
+        {visibleMeetings.map((meeting) => {
+          const editing = editingId === meeting.id;
+          return (
+            <article className={`encounter-item encounter-card is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
+              <header>
+                <span className="encounter-title">
+                  <strong>Encuentro {meeting.ordinal}</strong>
+                  <small className="encounter-date-summary">{meeting.fechaLegible} · {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
+                </span>
+                <div className="encounter-statuses">
+                  {meeting.esDeHoy ? <span className="status status-warning">Hoy</span> : null}
+                  <span className={`encounter-time-status ${meeting.temporalidad.toLowerCase().replace("_", "-")}`}>{temporalLabel(meeting.temporalidad)}</span>
+                  <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
+                </div>
+              </header>
+
+              {!editing ? (
+                <>
+                  <div className="encounter-read-body">
+                    <div className="encounter-read-primary">
+                      <span className="encounter-read-label">Descripción</span>
+                      <p>{meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}</p>
+                    </div>
+                    <dl className="encounter-facts">
+                      <div>
+                        <dt>Cuenta Google</dt>
+                        <dd>{meeting.cuentaGoogle}</dd>
+                      </div>
+                      <div>
+                        <dt>Código Meet</dt>
+                        <dd>{meeting.codigoMeet ?? "Pendiente"}</dd>
+                      </div>
+                      <div>
+                        <dt>Asistencia técnica</dt>
+                        <dd>{meeting.asistenteTecnico
+                          ? meeting.asistenteTecnico
+                          : meeting.requiereAsistenciaTecnica
+                            ? `${meeting.postulantes} ${meeting.postulantes === 1 ? "postulación" : "postulaciones"}`
+                            : "No requiere"}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <footer className="encounter-card-actions">
+                    <div className="encounter-card-primary-actions">
+                      {meeting.joinUrl ? <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} /> : <span className="muted-text">Enlace Meet pendiente</span>}
+                    </div>
+                    <div className="encounter-card-secondary-actions">
+                      {meeting.editable ? (
+                        <button className="secondary-action" disabled={busy !== null} onClick={() => setEditingId(meeting.id)} type="button">
+                          <Pencil size={16} />Editar
+                        </button>
+                      ) : null}
+                      {meeting.requiereAsistenciaTecnica ? (
+                        <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia</button>
+                      ) : (
+                        <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
+                      )}
+                      <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar reunión para borrar la serie completa" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
+                    </div>
+                  </footer>
+                </>
+              ) : (
+                <div className="encounter-editor">
+                  <div className="encounter-editor-heading">
+                    <div><strong>Editar encuentro</strong><small>Modificá solo los datos que necesites.</small></div>
+                    <button className="icon-button" onClick={() => setEditingId(null)} title="Cerrar edición" type="button"><X size={17} /><span className="sr-only">Cerrar edición</span></button>
+                  </div>
+                  <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
+                    <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
+                    <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
+                    <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" defaultValue={meeting.fin.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
+                    <button className="primary-action" disabled={!meeting.editable || busy !== null} type="submit">{busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}Guardar</button>
+                    <label className="field encounter-description-field"><span>Descripción del encuentro</span><textarea name="descripcion" defaultValue={meeting.descripcion ?? ""} disabled={!meeting.editable || busy !== null} placeholder="Tema, docente o indicaciones específicas" rows={3} /></label>
+                  </form>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      <section className="content-section add-encounter-section" id="agregar-encuentro">
         <div className="section-heading"><div><h2>Agregar encuentro</h2><p>Se asignará una sala Meet disponible.</p></div></div>
         <form className="encounter-add-form" action={add}>
           <label className="field"><span>Fecha</span><input name="fecha" type="date" required /></label>
@@ -163,75 +285,28 @@ export function MeetingDetailManager({
         </form>
       </section>
 
-      <section className="encounter-list-heading">
-        <div>
-          <h2>{vistaTemporal === "PROXIMOS" ? "Próximos encuentros y de hoy" : "Encuentros pasados"}</h2>
-          <p>{visibleMeetings.length} instancias ordenadas cronológicamente.</p>
-        </div>
-        <div className="encounter-time-filter" aria-label="Filtrar encuentros">
-          <button
-            aria-pressed={vistaTemporal === "PROXIMOS"}
-            className={vistaTemporal === "PROXIMOS" ? "active" : ""}
-            onClick={() => setVistaTemporal("PROXIMOS")}
-            type="button"
-          >
-            <CalendarClock size={16} />Próximas y de hoy <span>{proximos.length}</span>
-          </button>
-          <button
-            aria-pressed={vistaTemporal === "PASADOS"}
-            className={vistaTemporal === "PASADOS" ? "active" : ""}
-            onClick={() => setVistaTemporal("PASADOS")}
-            type="button"
-          >
-            <History size={16} />Pasadas <span>{pasados.length}</span>
-          </button>
-        </div>
-      </section>
-      <div className="encounter-list">
-        {visibleMeetings.length === 0 ? (
-          <div className="content-section empty-state encounter-empty-state">
-            <CalendarClock size={22} aria-hidden="true" />
-            <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : "No hay encuentros pasados."}</p>
-          </div>
-        ) : null}
-        {visibleMeetings.map((meeting) => (
-          <article className={`encounter-item is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
-            <header>
-              <span className="encounter-title">
-                <strong>Encuentro {meeting.ordinal}</strong>
-                <small className="encounter-date-summary">{meeting.fechaLegible}</small>
-                <small className="encounter-google-account">{meeting.cuentaGoogle}{meeting.codigoMeet ? ` · ${meeting.codigoMeet}` : ""}</small>
-              </span>
-              <div className="encounter-statuses">
-                <span className={`encounter-time-status ${meeting.temporalidad.toLowerCase().replace("_", "-")}`}>{temporalLabel(meeting.temporalidad)}</span>
-                <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
-              </div>
-            </header>
-            <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
-              <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
-              <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
-              <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" defaultValue={meeting.fin.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
-              <button className="secondary-action" disabled={!meeting.editable || busy !== null} type="submit"><Save size={16} />Guardar cambios</button>
-              <label className="field encounter-description-field"><span>Descripción del encuentro</span><textarea name="descripcion" defaultValue={meeting.descripcion ?? ""} disabled={!meeting.editable || busy !== null} placeholder="Tema, docente o indicaciones específicas" rows={3} /></label>
-            </form>
-            <div className="encounter-assistance">
-              <span>
-                <strong>{meeting.requiereAsistenciaTecnica ? "Asistencia técnica solicitada" : "Sin asistencia técnica"}</strong>
-                <small>{meeting.asistenteTecnico ? `Asignada a ${meeting.asistenteTecnico}` : meeting.requiereAsistenciaTecnica ? `${meeting.postulantes} postulaciones` : ""}</small>
-              </span>
-              <div className="encounter-actions">
-                {meeting.requiereAsistenciaTecnica ? (
-                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia técnica</button>
-                ) : (
-                  <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia técnica</button>
-                )}
-                {meeting.joinUrl ? <MeetLinkActions openClassName="secondary-action" url={meeting.joinUrl} /> : null}
-                <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar todo para borrar esta reunión" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
-              </div>
+      <section className="meeting-advanced-actions">
+        <details>
+          <summary>Acciones avanzadas</summary>
+          <div className="meeting-danger-zone">
+            <div>
+              <h2>Eliminar reunión completa</h2>
+              <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
+              {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
             </div>
-          </article>
-        ))}
-      </div>
+            <button
+              className="secondary-action danger-action"
+              disabled={!canRemoveAll || busy !== null}
+              onClick={removeAll}
+              title={removeAllBlockedReason || "Eliminar reunión completa"}
+              type="button"
+            >
+              {busy === "all" ? <LoaderCircle className="button-spinner" size={17} /> : <Trash2 size={17} />}
+              {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar reunión"}
+            </button>
+          </div>
+        </details>
+      </section>
     </>
   );
 }
