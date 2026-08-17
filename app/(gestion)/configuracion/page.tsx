@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle2, KeyRound, MailCheck, Settings, Video } from "lucide-react";
+import { BookOpen, CheckCircle2, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -6,8 +6,9 @@ import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
+import { formatDateTime } from "@/src/lib/ui/format";
 
-type SettingsSection = "workspace" | "salas" | "programas" | "correo";
+type SettingsSection = "workspace" | "salas" | "programas" | "correo" | "historico";
 
 export default async function ConfiguracionPage({
   searchParams
@@ -15,7 +16,10 @@ export default async function ConfiguracionPage({
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const requestedSection = (await searchParams).seccion;
-  const section: SettingsSection = requestedSection === "salas" || requestedSection === "programas" || requestedSection === "correo"
+  const section: SettingsSection = requestedSection === "salas"
+    || requestedSection === "programas"
+    || requestedSection === "correo"
+    || requestedSection === "historico"
     ? requestedSection
     : "workspace";
   const [configuration, hosts, programs, pendingMeet] = await Promise.all([
@@ -35,6 +39,30 @@ export default async function ConfiguracionPage({
       }
     })
   ]);
+  const historicalMeetings = section === "historico"
+    ? await db.eventoProveedor.findMany({
+        where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
+        orderBy: { instancia: { inicioProgramadoAt: "desc" } },
+        take: 100,
+        include: {
+          cuentaProveedor: true,
+          instancia: {
+            include: {
+              solicitud: {
+                include: {
+                  docentePrograma: {
+                    include: {
+                      programa: true,
+                      docente: { include: { usuario: true } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
+    : [];
 
   return (
     <>
@@ -71,6 +99,13 @@ export default async function ConfiguracionPage({
           href="/configuracion?seccion=correo"
           icon={MailCheck}
           label="Correo"
+        />
+        <SettingsSectionLink
+          active={section === "historico"}
+          description="Registros migrados de la plataforma anterior"
+          href="/configuracion?seccion=historico"
+          icon={History}
+          label="Histórico Zoom"
         />
       </nav>
 
@@ -124,6 +159,34 @@ export default async function ConfiguracionPage({
 
       {section === "correo" ? (
         <EmailTestForm defaultRecipient={session.user.email ?? ""} />
+      ) : null}
+
+      {section === "historico" ? (
+        <section className="content-section">
+          <div className="section-heading">
+            <div><h2>Histórico Zoom</h2><p>Registros migrados de la plataforma anterior. Solo consulta.</p></div>
+          </div>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Cuenta</th><th>Código Zoom</th></tr></thead>
+              <tbody>
+                {historicalMeetings.map((event) => {
+                  const request = event.instancia.solicitud;
+                  const association = request.docentePrograma;
+                  return (
+                    <tr key={event.id}>
+                      <td className="date-cell">{formatDateTime(event.instancia.inicioProgramadoAt)}</td>
+                      <td><strong>{request.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
+                      <td>{association.programa.nombre}</td>
+                      <td>{event.cuentaProveedor?.emailOrganizador ?? event.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
+                      <td>{event.codigoReunion ?? "No disponible"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
     </>
   );
