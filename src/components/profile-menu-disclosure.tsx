@@ -4,9 +4,11 @@ import { useEffect, useRef } from "react";
 
 export function DismissibleDetails({
   className,
+  dataTour,
   children
 }: Readonly<{
   className: string;
+  dataTour?: string;
   children: React.ReactNode;
 }>) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -53,7 +55,7 @@ export function DismissibleDetails({
   }, []);
 
   return (
-    <details className={className} ref={detailsRef}>
+    <details className={className} data-tour={dataTour} ref={detailsRef}>
       {children}
     </details>
   );

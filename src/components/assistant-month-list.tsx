@@ -110,7 +110,12 @@ export function AssistantMonthList({
                 {meeting.completada ? "Completada" : "Pendiente"}
               </span>
               {meeting.completada ? (
-                <button className="report-button" type="button" onClick={() => openReport(meeting)}>
+                <button
+                  className="report-button"
+                  data-tour="assistant-close-assistance"
+                  type="button"
+                  onClick={() => openReport(meeting)}
+                >
                   <FilePenLine size={16} />
                   {meeting.cierreConfirmado ? "Ajustar cierre" : "Finalizar asistencia técnica"}
                 </button>

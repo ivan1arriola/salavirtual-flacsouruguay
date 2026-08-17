@@ -36,7 +36,7 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
   ] as const;
 
   return (
-    <div className="assistant-dashboard">
+    <div className="assistant-dashboard" data-tour="assistant-dashboard">
       <section className="next-opening">
         <div>
           <p className="page-eyebrow">Próxima cobertura</p>

@@ -35,7 +35,7 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
   ).length;
 
   return (
-    <div className="role-dashboard teacher-dashboard">
+    <div className="role-dashboard teacher-dashboard" data-tour="teacher-dashboard">
       <header className="role-dashboard-hero">
         <div>
           <p className="page-eyebrow">{formatShortDate(now)}</p>
@@ -43,8 +43,8 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
           <p>Próximas clases y actividades asociadas a tus programas.</p>
         </div>
         <div className="role-dashboard-actions">
-          <Link className="secondary-action" href="/reuniones">Ver agenda</Link>
-          <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={17} />Nueva reunión</Link>
+          <Link className="secondary-action" data-tour="teacher-agenda" href="/reuniones">Ver agenda</Link>
+          <Link className="primary-action" data-tour="teacher-create" href="/reuniones/nueva"><CalendarPlus size={17} />Nueva reunión</Link>
         </div>
       </header>
 

@@ -92,7 +92,10 @@ export default async function AgendaAbiertaPage() {
         <Hand size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
-      <section className="content-section">
+      <section
+        className="content-section"
+        data-tour={actor.rol === "ASISTENTE_TECNICO" ? "assistant-open-list" : undefined}
+      >
         {meetings.length === 0 ? (
           <div className="empty-state"><Hand size={24} aria-hidden="true" /><p>No hay reuniones abiertas para postulación.</p></div>
         ) : (

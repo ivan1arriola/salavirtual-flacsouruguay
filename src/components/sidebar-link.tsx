@@ -7,11 +7,13 @@ export function SidebarLink({
   href,
   exact = false,
   className,
+  dataTour,
   children
 }: Readonly<{
   href: string;
   exact?: boolean;
   className?: string;
+  dataTour?: string;
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
@@ -21,6 +23,7 @@ export function SidebarLink({
     <Link
       aria-current={active ? "page" : undefined}
       className={[className, active ? "is-active" : null].filter(Boolean).join(" ") || undefined}
+      data-tour={dataTour}
       href={href}
     >
       {children}

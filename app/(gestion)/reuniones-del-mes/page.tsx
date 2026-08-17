@@ -30,13 +30,15 @@ export default async function ReunionesDelMesPage() {
         <RefreshButton />
       </header>
 
-      <section className="assistant-mode-grid" aria-label="Resumen del mes">
-        <div className="mode-summary virtual-summary"><Clock3 size={28} /><span><small>Virtuales</small><strong>{formatMinutes(summary.minutosVirtuales)}</strong><b>{formatMoney(summary.montoVirtual)}</b></span></div>
-        <div className="mode-summary hybrid-summary"><Clock3 size={28} /><span><small>Híbridas</small><strong>{formatMinutes(summary.minutosHibridos)}</strong><b>{formatMoney(summary.montoHibrido)}</b></span></div>
-      </section>
-      <div className="estimated-total">Cotización total estimada: <strong>{formatMoney(summary.monto)}</strong></div>
+      <div data-tour="assistant-month-summary">
+        <section className="assistant-mode-grid" aria-label="Resumen del mes">
+          <div className="mode-summary virtual-summary"><Clock3 size={28} /><span><small>Virtuales</small><strong>{formatMinutes(summary.minutosVirtuales)}</strong><b>{formatMoney(summary.montoVirtual)}</b></span></div>
+          <div className="mode-summary hybrid-summary"><Clock3 size={28} /><span><small>Híbridas</small><strong>{formatMinutes(summary.minutosHibridos)}</strong><b>{formatMoney(summary.montoHibrido)}</b></span></div>
+        </section>
+        <div className="estimated-total">Cotización total estimada: <strong>{formatMoney(summary.monto)}</strong></div>
+      </div>
 
-      <section className="month-meetings">
+      <section className="month-meetings" data-tour="assistant-month-list">
         {meetings.length === 0
           ? <div className="empty-state"><CalendarRange size={24} /><p>No tenés reuniones asignadas este mes.</p></div>
           : <AssistantMonthList meetings={meetings} />}
