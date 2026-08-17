@@ -144,7 +144,7 @@ function meetingSteps(): DriveStep[] {
     }),
     step("#organizacion .auto-room-note", {
       title: "Sala Meet automática",
-      description: "Al crear una serie, Sala Virtual busca una misma cuenta institucional que esté libre en todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie. Si ninguna cuenta está disponible para todo el conjunto, tendrás que ajustar las fechas u horarios antes de crearla.",
+      description: "Al crear una serie, Sala Virtual busca una misma cuenta institucional que esté libre en todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie.",
       side: "top",
       align: "start"
     }),
