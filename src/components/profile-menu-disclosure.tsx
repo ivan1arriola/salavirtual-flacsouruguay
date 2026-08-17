@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export function ProfileMenuDisclosure({
+export function DismissibleDetails({
   className,
   children
 }: Readonly<{
@@ -57,4 +57,14 @@ export function ProfileMenuDisclosure({
       {children}
     </details>
   );
+}
+
+export function ProfileMenuDisclosure({
+  className,
+  children
+}: Readonly<{
+  className: string;
+  children: React.ReactNode;
+}>) {
+  return <DismissibleDetails className={className}>{children}</DismissibleDetails>;
 }
