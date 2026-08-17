@@ -18,6 +18,7 @@ import {
 import type { Session } from "next-auth";
 import Link from "next/link";
 import { AppLogoMark } from "@/src/components/app-logo";
+import { AssistantOnboardingTour } from "@/src/components/assistant-onboarding-tour";
 import { ProfileMenu } from "@/src/components/profile-menu";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { SidebarLink } from "@/src/components/sidebar-link";
@@ -87,6 +88,7 @@ export async function AppShell({
   return (
     <div className="app-frame">
       {user.role === "DOCENTE" ? <TeacherOnboardingTour userId={user.id} /> : null}
+      {user.role === "ASISTENTE_TECNICO" ? <AssistantOnboardingTour userId={user.id} /> : null}
 
       <aside className="sidebar">
         <Link className="brand" href="/" aria-label="Sala Virtual FLACSO">
@@ -124,7 +126,7 @@ export async function AppShell({
         <nav className="side-nav sidebar-utility-nav" aria-label="Cuenta y notificaciones">
           <SidebarLink
             className="notification-nav-link"
-            dataTour={user.role === "DOCENTE" ? "teacher-notifications" : undefined}
+            dataTour={notificationTourForRole(user.role)}
             href="/notificaciones"
           >
             <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
@@ -161,7 +163,7 @@ export async function AppShell({
           <span className="mobile-account-actions">
             <Link
               className="notification-mobile-link"
-              data-tour={user.role === "DOCENTE" ? "teacher-notifications" : undefined}
+              data-tour={notificationTourForRole(user.role)}
               href="/notificaciones"
               aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}
             >
@@ -175,7 +177,7 @@ export async function AppShell({
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {mobilePrimaryNav.map(({ href, label, icon: Icon }) => (
             <SidebarLink
-              dataTour={user.role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+              dataTour={tourForHref(user.role, href)}
               exact={href === "/" || href === "/reuniones"}
               href={href}
               key={href}
@@ -186,7 +188,7 @@ export async function AppShell({
           ))}
           <DismissibleDetails
             className="mobile-nav-more"
-            dataTour={user.role === "DOCENTE" ? "teacher-more" : undefined}
+            dataTour={moreTourForRole(user.role)}
           >
             <summary>
               <Menu size={20} aria-hidden="true" />
@@ -200,7 +202,7 @@ export async function AppShell({
               <nav aria-label="Más opciones">
                 {mobileMoreNav.map(({ href, label, icon: Icon }) => (
                   <SidebarLink
-                    dataTour={user.role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+                    dataTour={tourForHref(user.role, href)}
                     href={href}
                     key={href}
                   >
@@ -238,7 +240,7 @@ function SidebarGroup({
       <nav className="side-nav">
         {items.map(({ href, label: itemLabel, icon: Icon }) => (
           <SidebarLink
-            dataTour={role === "DOCENTE" ? teacherTourForHref(href) : undefined}
+            dataTour={tourForHref(role, href)}
             exact={href === "/" || href === "/reuniones"}
             href={href}
             key={href}
@@ -252,11 +254,32 @@ function SidebarGroup({
   );
 }
 
-function teacherTourForHref(href: string): string | undefined {
-  if (href === "/reuniones") return "teacher-agenda";
-  if (href === "/reuniones/nueva") return "teacher-create";
-  if (href === "/mis-programas") return "teacher-programs";
-  if (href === "/grabaciones") return "teacher-recordings";
+function tourForHref(role: Session["user"]["role"], href: string): string | undefined {
+  if (role === "DOCENTE") {
+    if (href === "/reuniones") return "teacher-agenda";
+    if (href === "/reuniones/nueva") return "teacher-create";
+    if (href === "/mis-programas") return "teacher-programs";
+    if (href === "/grabaciones") return "teacher-recordings";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    if (href === "/mi-agenda") return "assistant-my-agenda";
+    if (href === "/agenda-abierta") return "assistant-open-agenda";
+    if (href === "/reuniones-del-mes") return "assistant-month";
+    if (href === "/grabaciones") return "assistant-recordings";
+    if (href === "/mi-historico") return "assistant-history";
+  }
+  return undefined;
+}
+
+function notificationTourForRole(role: Session["user"]["role"]): string | undefined {
+  if (role === "DOCENTE") return "teacher-notifications";
+  if (role === "ASISTENTE_TECNICO") return "assistant-notifications";
+  return undefined;
+}
+
+function moreTourForRole(role: Session["user"]["role"]): string | undefined {
+  if (role === "DOCENTE") return "teacher-more";
+  if (role === "ASISTENTE_TECNICO") return "assistant-more";
   return undefined;
 }
 
