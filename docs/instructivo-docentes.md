@@ -187,7 +187,7 @@ Sala Virtual selecciona automáticamente una cuenta disponible de FLACSO y gener
 
 Las cuentas configuradas van desde `sala01@flacso.edu.uy` hasta `sala10@flacso.edu.uy`.
 
-La cuenta puede variar entre diferentes encuentros de una misma serie según la disponibilidad existente.
+Al crear una serie, Sala Virtual busca una misma cuenta que esté disponible para todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie. Si no existe una cuenta libre para todo el conjunto, será necesario ajustar las fechas u horarios antes de crearla.
 
 ### Asistencia técnica
 
@@ -278,7 +278,7 @@ Una vez completados los datos, seleccioná:
 - **Crear reunión**, si se trata de un único encuentro; o
 - **Crear X encuentros**, si estás creando una serie.
 
-Sala Virtual registra la reunión, busca una cuenta de sala disponible, crea los eventos en Google Calendar, solicita a Google la creación de Meet y guarda el código y el enlace de acceso.
+Sala Virtual registra la reunión, busca una misma cuenta de sala disponible para todas las fechas de la serie, crea los eventos en Google Calendar, solicita a Google la creación de Meet y guarda el código y el enlace de acceso.
 
 Si Google todavía está procesando la configuración, la reunión puede quedar guardada con la integración pendiente. Sala Virtual indicará esa situación en pantalla.
 
