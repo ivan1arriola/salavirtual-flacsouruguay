@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeCohostEmails } from "./cohosts.domain";
-import { extraerConferenceData } from "./google-calendar.domain";
+import { eventoCalendarCoincideConSolicitud, extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
 import type { MeetProvider, MeetProvisionRequest, MeetProvisionResult } from "./provider";
 import { bloquearEventoProveedor } from "../reuniones/reserva-salas.adapter";
@@ -174,6 +174,7 @@ type Claim = Readonly<{
   event: EventoReclamable;
   operacion: OperacionPendiente;
   at: Date;
+  token: string;
 }>;
 
 async function reclamarEvento(db: PrismaClient, id: string): Promise<Claim | null> {
@@ -198,22 +199,25 @@ async function reclamarEvento(db: PrismaClient, id: string): Promise<Claim | nul
     }
 
     const at = new Date();
+    const token = randomUUID();
     const operacion = event.operacionPendiente as OperacionPendiente;
     const updated = await tx.eventoProveedor.updateMany({
       where: {
         id,
         operacionPendiente: operacion,
         reclamoIntegracionAt: event.reclamoIntegracionAt,
+        reclamoIntegracionToken: event.reclamoIntegracionToken,
         updatedAt: event.updatedAt,
       },
       data: {
         reclamoIntegracionAt: at,
+        reclamoIntegracionToken: token,
         estadoIntegracion: "PENDIENTE",
         errorIntegracion: null,
       },
     });
     if (updated.count !== 1) return null;
-    return { event, operacion, at };
+    return { event, operacion, at, token };
   });
 }
 
@@ -266,6 +270,9 @@ async function reprogramarYReconciliar(
   await provider.actualizarEvento(request.calendarId, event.externalEventId, request);
   const result = await obtenerConReintentos(provider, request.calendarId, event.externalEventId);
   if (!result) throw new Error("Google Calendar no confirmó el evento reprogramado.");
+  if (!eventoCalendarCoincideConSolicitud(result.payload, request)) {
+    throw new Error("Google Calendar todavía no refleja la reprogramación solicitada.");
+  }
   await provider.configurarEventoMeet(request, result);
   return result;
 }
@@ -325,11 +332,13 @@ async function finalizarOperacion(
         id: claim.event.id,
         operacionPendiente: claim.operacion,
         reclamoIntegracionAt: claim.at,
+        reclamoIntegracionToken: claim.token,
       },
       data: {
         estadoIntegracion: "SINCRONIZADA",
         operacionPendiente: null,
         reclamoIntegracionAt: null,
+        reclamoIntegracionToken: null,
         errorIntegracion: null,
         sincronizadoAt: new Date(),
         ...(result ? {
@@ -344,15 +353,25 @@ async function finalizarOperacion(
 
     const current = await tx.eventoProveedor.findUnique({
       where: { id: claim.event.id },
-      select: { instancia: { select: { solicitudSalaId: true, estado: true } } },
+      select: { instancia: { select: { solicitudSalaId: true, estado: true, solicitud: { select: { estado: true } } } } },
     });
     if (!cancelacion && current && current.instancia.estado !== "CANCELADA") {
       await recalcularSolicitud(tx, current.instancia.solicitudSalaId);
     }
+    if (cancelacion && current?.instancia.solicitud.estado === "CANCELADA") {
+      const pendientes = await tx.eventoProveedor.count({
+        where: { instancia: { solicitudSalaId: current.instancia.solicitudSalaId }, operacionPendiente: "CANCELAR" },
+      });
+      if (pendientes === 0) {
+        await tx.solicitudSala.update({
+          where: { id: current.instancia.solicitudSalaId },
+          data: { canceladaMotivo: "Cancelación confirmada en Google Calendar." },
+        });
+      }
+    }
     return true;
   });
 
-  if (!completed) await asegurarReconciliacionActual(db, claim.event.id);
   return completed;
 }
 
@@ -367,11 +386,13 @@ async function registrarErrorReclamado(
         id: claim.event.id,
         operacionPendiente: claim.operacion,
         reclamoIntegracionAt: claim.at,
+        reclamoIntegracionToken: claim.token,
       },
       data: {
         estadoIntegracion: "ERROR",
         errorIntegracion: error,
         reclamoIntegracionAt: null,
+        reclamoIntegracionToken: null,
       },
     });
     if (updated.count !== 1) return false;
@@ -386,7 +407,6 @@ async function registrarErrorReclamado(
   });
 
   if (!applied) {
-    await asegurarReconciliacionActual(db, claim.event.id);
     return { eventoProveedorId: claim.event.id, estado: "EN_PROCESO" };
   }
   return { eventoProveedorId: claim.event.id, estado: "ERROR", error };
@@ -403,16 +423,17 @@ async function registrarErrorSinClaim(
       select: {
         operacionPendiente: true,
         reclamoIntegracionAt: true,
+        reclamoIntegracionToken: true,
         estadoIntegracion: true,
         errorIntegracion: true,
         instancia: { select: { solicitudSalaId: true, estado: true } },
       },
     });
     if (!current?.operacionPendiente) return resultadoSinOperacion(id, current ?? undefined);
-    if (current.reclamoIntegracionAt) return { eventoProveedorId: id, estado: "EN_PROCESO" };
+    if (current.reclamoIntegracionAt || current.reclamoIntegracionToken) return { eventoProveedorId: id, estado: "EN_PROCESO" };
 
     const updated = await tx.eventoProveedor.updateMany({
-      where: { id, operacionPendiente: current.operacionPendiente, reclamoIntegracionAt: null },
+      where: { id, operacionPendiente: current.operacionPendiente, reclamoIntegracionAt: null, reclamoIntegracionToken: null },
       data: { estadoIntegracion: "ERROR", errorIntegracion: error },
     });
     if (updated.count !== 1) return { eventoProveedorId: id, estado: "EN_PROCESO" };
@@ -420,59 +441,6 @@ async function registrarErrorSinClaim(
       await recalcularSolicitud(tx, current.instancia.solicitudSalaId);
     }
     return { eventoProveedorId: id, estado: "ERROR", error };
-  });
-}
-
-async function asegurarReconciliacionActual(db: PrismaClient, id: string): Promise<void> {
-  await db.$transaction(async (tx) => {
-    const current = await tx.eventoProveedor.findUnique({
-      where: { id },
-      select: {
-        externalEventId: true,
-        operacionPendiente: true,
-        reclamoIntegracionAt: true,
-        instancia: { select: { estado: true, solicitudSalaId: true } },
-      },
-    });
-    if (!current) return;
-
-    if (current.reclamoIntegracionAt) {
-      const invalidated = await tx.eventoProveedor.updateMany({
-        where: {
-          id,
-          operacionPendiente: current.operacionPendiente,
-          reclamoIntegracionAt: current.reclamoIntegracionAt,
-        },
-        data: {
-          estadoIntegracion: "PENDIENTE",
-          reclamoIntegracionAt: null,
-          errorIntegracion: null,
-        },
-      });
-      if (invalidated.count === 1 && current.instancia.estado !== "CANCELADA") {
-        await recalcularSolicitud(tx, current.instancia.solicitudSalaId);
-      }
-      return;
-    }
-    if (current.operacionPendiente) return;
-
-    const operacion: OperacionPendiente = current.instancia.estado === "CANCELADA"
-      ? "CANCELAR"
-      : current.externalEventId
-        ? "REPROGRAMAR"
-        : "PROVISIONAR";
-
-    const updated = await tx.eventoProveedor.updateMany({
-      where: { id, operacionPendiente: null, reclamoIntegracionAt: null },
-      data: {
-        estadoIntegracion: "PENDIENTE",
-        operacionPendiente: operacion,
-        errorIntegracion: null,
-      },
-    });
-    if (updated.count === 1 && current.instancia.estado !== "CANCELADA") {
-      await recalcularSolicitud(tx, current.instancia.solicitudSalaId);
-    }
   });
 }
 

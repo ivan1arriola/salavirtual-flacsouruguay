@@ -14,9 +14,17 @@
   `REPROGRAMAR`, `CONFIGURAR_MEET` o `CANCELAR`). Los retries no interpretan
   mensajes de error: ejecutan únicamente esa operación persistida.
 - Un claim corto protegido por advisory lock evita que dos workers sincronicen
-  el mismo `EventoProveedor`; las llamadas HTTP ocurren fuera de transacciones.
+  el mismo `EventoProveedor`; cada claim tiene un token único y las llamadas
+  HTTP tienen timeout menor al lease. Las llamadas HTTP ocurren fuera de
+  transacciones y un worker obsoleto nunca modifica ni reabre el estado vigente.
 - Las eliminaciones son cancelaciones lógicas hasta que Calendar confirma cada
   DELETE, conservando la información necesaria para reintentar.
+- Las respuestas HTTP usan `202 Accepted` cuando el cambio local se confirmó
+  pero Google aún está pendiente. Administración puede asignar explícitamente
+  una operación a eventos históricos ambiguos; nunca se infiere desde errores.
+- Un encuentro agregado a una serie no hereda automáticamente el asistente de
+  otras fechas: cada instancia requiere una asignación propia con validación de
+  agenda y tarifa.
 - Las modificaciones estructurales de una serie toman un advisory lock por
   `SolicitudSala`; después del lock se relee el agregado antes de decidir
   ordinales, solapamientos y mínimos de instancias.

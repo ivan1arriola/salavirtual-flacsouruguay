@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { JWT } from "google-auth-library";
 import {
   crearCalendarEvent,
@@ -13,6 +12,7 @@ const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
+const GOOGLE_HTTP_TIMEOUT_MS = 60_000;
 
 export type GoogleCalendarCredentials = Readonly<{
   serviceAccountEmail: string;
@@ -35,6 +35,7 @@ export async function compartirConferenciaGoogleCalendar(
   const response = await auth.request<CalendarEvent>({
     url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?conferenceDataVersion=1&sendUpdates=none`,
     method: "PATCH",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
     data: { conferenceData }
   });
   const result = extraerMeetProvisionado(response.data);
@@ -86,15 +87,17 @@ export function crearGoogleCalendarProvider(
         response = await auth.request<CalendarEvent>({
           url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
           method: "POST",
-          data: crearCalendarEvent(request, request.calendarEventId ?? randomUUID())
+          timeout: GOOGLE_HTTP_TIMEOUT_MS,
+          data: crearCalendarEvent(request, request.calendarEventId)
         });
       } catch (error) {
-        if (!request.calendarEventId || !isAlreadyCalendarEvent(error)) throw error;
+        if (!isAlreadyCalendarEvent(error)) throw error;
         // Calendar accepted the first POST but its response was lost.  A 409
         // for the deterministic id is therefore recovered by reading it.
         response = await auth.request<CalendarEvent>({
           url: `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`,
-          method: "GET"
+          method: "GET",
+          timeout: GOOGLE_HTTP_TIMEOUT_MS
         });
       }
       const eventId = response.data.id;
@@ -105,7 +108,8 @@ export function crearGoogleCalendarProvider(
     async obtenerEvento(calendarId, externalEventId) {
       const current = await auth.request<CalendarEvent>({
         url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}`,
-        method: "GET"
+        method: "GET",
+        timeout: GOOGLE_HTTP_TIMEOUT_MS
       });
       return extraerMeetProvisionado(current.data);
     },
@@ -115,13 +119,15 @@ export function crearGoogleCalendarProvider(
     async cancelarEvento(calendarId, externalEventId) {
       await auth.request({
         url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
-        method: "DELETE"
+        method: "DELETE",
+        timeout: GOOGLE_HTTP_TIMEOUT_MS
       });
     },
     async actualizarEvento(calendarId, externalEventId, request) {
       await auth.request({
         url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
         method: "PATCH",
+        timeout: GOOGLE_HTTP_TIMEOUT_MS,
         data: {
           summary: request.titulo,
           description: request.descripcion,
@@ -152,7 +158,8 @@ async function configurarEspacioMeet(
   const configurarModeracion = Boolean(request.cohostEmails?.length);
   const current = await auth.request<{ name?: string }>({
     url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
-    method: "GET"
+    method: "GET",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS
   });
   if (!current.data.name) throw new Error("Google Meet no devolvió el ID del espacio.");
   const config = {
@@ -169,6 +176,7 @@ async function configurarEspacioMeet(
     await auth.request({
       url: `${MEET_API}/${current.data.name}?updateMask=${encodeURIComponent(updateMask)}`,
       method: "PATCH",
+      timeout: GOOGLE_HTTP_TIMEOUT_MS,
       data: { name: current.data.name, config }
     });
   }
@@ -185,6 +193,7 @@ async function configurarCohostsMeet(
       await auth.request({
         url: `${MEET_BETA_API}/${spaceName}/members`,
         method: "POST",
+        timeout: GOOGLE_HTTP_TIMEOUT_MS,
         data: { email, role: "COHOST" }
       });
     } catch (error) {

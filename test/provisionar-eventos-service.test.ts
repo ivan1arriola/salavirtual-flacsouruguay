@@ -18,6 +18,7 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
       estadoIntegracion: operation ? "PENDIENTE" : "SINCRONIZADA",
       operacionPendiente: operation,
       reclamoIntegracionAt: null as Date | null,
+      reclamoIntegracionToken: null as string | null,
       errorIntegracion: null as string | null,
       sincronizadoAt: null as Date | null,
       updatedAt: new Date("2026-08-16T20:00:00Z"),
@@ -36,6 +37,7 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
           id: "request-1",
           titulo: "Clase",
           descripcion: null,
+          estado: options?.estadoInstancia === "CANCELADA" ? "CANCELADA" : "PROVISIONANDO",
         },
         cohosts: [] as Array<{ cuentaGoogle: { email: string } }>,
         cohostEmails: [] as Array<{ email: string }>,
@@ -52,6 +54,7 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
     if (where.id && where.id !== state.event.id) return false;
     if ("operacionPendiente" in where && where.operacionPendiente !== state.event.operacionPendiente) return false;
     if ("reclamoIntegracionAt" in where && !sameDate(where.reclamoIntegracionAt, state.event.reclamoIntegracionAt)) return false;
+    if ("reclamoIntegracionToken" in where && where.reclamoIntegracionToken !== state.event.reclamoIntegracionToken) return false;
     if ("updatedAt" in where && !sameDate(where.updatedAt, state.event.updatedAt)) return false;
     return true;
   };
@@ -74,6 +77,7 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
         estadoIntegracion: state.event.estadoIntegracion,
         operacionPendiente: state.event.operacionPendiente,
         reclamoIntegracionAt: state.event.reclamoIntegracionAt,
+        reclamoIntegracionToken: state.event.reclamoIntegracionToken,
         errorIntegracion: state.event.errorIntegracion,
       }]),
       findUnique: vi.fn(async () => state.event),
@@ -87,6 +91,7 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
         apply(data);
         return { count: 1 };
       }),
+      count: vi.fn(async () => state.event.operacionPendiente === "CANCELAR" ? 1 : 0),
     },
     instanciaSala: {
       findMany: vi.fn(async () => state.event.instancia.estado === "CANCELADA" ? [] : [{
@@ -119,7 +124,13 @@ function meetResult() {
     externalEventId: "calendar-1",
     codigoReunion: "abc-defg-hij",
     joinUrl: "https://meet.google.com/abc-defg-hij",
-    payload: { id: "calendar-1" },
+    payload: {
+      id: "calendar-1",
+      summary: "Clase",
+      description: "",
+      start: { dateTime: "2026-08-20T16:00:00.000Z", timeZone: "America/Montevideo" },
+      end: { dateTime: "2026-08-20T17:00:00.000Z", timeZone: "America/Montevideo" },
+    },
   };
 }
 
@@ -172,7 +183,7 @@ describe("sincronizarEventosPendientes", () => {
     expect(f.state.event.operacionPendiente).toBe("CANCELAR");
   });
 
-  it("reencola una reconciliación si un worker viejo termina después de una reprogramación más nueva", async () => {
+  it("un worker viejo no reabre una operación que otro worker ya sincronizó", async () => {
     const f = fixture("REPROGRAMAR", { externalEventId: "calendar-1" });
     const p = provider({
       actualizarEvento: vi.fn(async () => {
@@ -180,6 +191,7 @@ describe("sincronizarEventosPendientes", () => {
         f.state.event.instancia.finProgramadoAt = new Date("2026-08-20T19:00:00Z");
         f.state.event.operacionPendiente = null;
         f.state.event.reclamoIntegracionAt = null;
+        f.state.event.reclamoIntegracionToken = null;
         f.state.event.estadoIntegracion = "SINCRONIZADA";
         f.state.event.updatedAt = new Date(f.state.event.updatedAt.getTime() + 50);
       }),
@@ -192,17 +204,18 @@ describe("sincronizarEventosPendientes", () => {
     }, ["event-1"]);
 
     expect(results[0]?.estado).toBe("EN_PROCESO");
-    expect(f.state.event.operacionPendiente).toBe("REPROGRAMAR");
-    expect(f.state.event.estadoIntegracion).toBe("PENDIENTE");
+    expect(f.state.event.operacionPendiente).toBeNull();
+    expect(f.state.event.estadoIntegracion).toBe("SINCRONIZADA");
   });
 
 
-  it("invalida un claim más nuevo si un worker obsoleto acaba de aplicar un efecto externo", async () => {
+  it("un worker obsoleto no invalida el claim más nuevo", async () => {
     const f = fixture("REPROGRAMAR", { externalEventId: "calendar-1" });
     const p = provider({
       actualizarEvento: vi.fn(async () => {
         f.state.event.operacionPendiente = "REPROGRAMAR";
         f.state.event.reclamoIntegracionAt = new Date("2026-08-16T20:05:00Z");
+        f.state.event.reclamoIntegracionToken = "new-worker";
         f.state.event.estadoIntegracion = "PENDIENTE";
         f.state.event.updatedAt = new Date(f.state.event.updatedAt.getTime() + 50);
       }),
@@ -216,7 +229,8 @@ describe("sincronizarEventosPendientes", () => {
 
     expect(results[0]?.estado).toBe("EN_PROCESO");
     expect(f.state.event.operacionPendiente).toBe("REPROGRAMAR");
-    expect(f.state.event.reclamoIntegracionAt).toBeNull();
+    expect(f.state.event.reclamoIntegracionAt).toEqual(new Date("2026-08-16T20:05:00Z"));
+    expect(f.state.event.reclamoIntegracionToken).toBe("new-worker");
     expect(f.state.event.estadoIntegracion).toBe("PENDIENTE");
   });
 
@@ -240,6 +254,27 @@ describe("sincronizarEventosPendientes", () => {
     expect(second[0]?.estado).toBe("SINCRONIZADA");
     expect(f.state.event.operacionPendiente).toBeNull();
     expect(f.state.event.estadoIntegracion).toBe("SINCRONIZADA");
+  });
+
+  it("no declara sincronizada una reprogramación si Calendar conserva el horario anterior", async () => {
+    const f = fixture("REPROGRAMAR", { externalEventId: "calendar-1" });
+    const stale = meetResult();
+    const p = provider({
+      obtenerEvento: vi.fn(async () => ({
+        ...stale,
+        payload: {
+          ...stale.payload,
+          start: { dateTime: "2026-08-20T14:00:00.000Z", timeZone: "America/Montevideo" },
+          end: { dateTime: "2026-08-20T15:00:00.000Z", timeZone: "America/Montevideo" },
+        },
+      })),
+    });
+    const result = await sincronizarEventosPendientes({
+      db: f.db, descifrar: () => "private-key", crearProvider: () => p,
+    }, ["event-1"]);
+
+    expect(result[0]?.estado).toBe("ERROR");
+    expect(f.state.event.operacionPendiente).toBe("REPROGRAMAR");
   });
 
   it("considera 404 de Calendar como cancelación idempotente exitosa", async () => {

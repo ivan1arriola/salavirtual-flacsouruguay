@@ -272,6 +272,7 @@ model EventoProveedor {
   estadoIntegracion       EstadoIntegracion @default(PENDIENTE)
   operacionPendiente      OperacionIntegracionProveedor?
   reclamoIntegracionAt    DateTime?
+  reclamoIntegracionToken String?
   errorIntegracion        String?
   conferenceRecordName    String?
   driveFolderId           String?

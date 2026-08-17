@@ -52,7 +52,7 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
       message: method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado.",
       warning,
       sincronizacion,
-    });
+    }, { status: sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });

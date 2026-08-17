@@ -45,7 +45,10 @@ export async function POST(request: Request) {
     );
     if (result.reutilizada) {
       const { eventoProveedorIds: _, ...reunion } = result;
-      return NextResponse.json({ ...reunion, provisionamiento }, { status: 200 });
+      return NextResponse.json(
+        { ...reunion, provisionamiento },
+        { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 },
+      );
     }
 
     const advertencias: string[] = [];
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
     const { eventoProveedorIds: _, ...reunion } = result;
     return NextResponse.json(
       { ...reunion, provisionamiento, ...(advertencias.length > 0 ? { advertencias } : {}) },
-      { status: 201 }
+      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 }
     );
   } catch (error) {
     const mapped = toHttpError(error);

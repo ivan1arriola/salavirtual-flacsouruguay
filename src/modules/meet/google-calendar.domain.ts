@@ -5,7 +5,7 @@ export function crearCalendarEvent(
   requestId: string
 ) {
   return {
-    ...(request.calendarEventId ? { id: request.calendarEventId } : {}),
+    id: request.calendarEventId,
     summary: request.titulo,
     description: request.descripcion,
     start: {
@@ -41,6 +41,10 @@ export function extraerConferenceData(
 
 export type CalendarEvent = Readonly<{
   id?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  start?: Readonly<{ dateTime?: string | null; timeZone?: string | null }> | null;
+  end?: Readonly<{ dateTime?: string | null; timeZone?: string | null }> | null;
   hangoutLink?: string | null;
   conferenceData?: Readonly<{
     conferenceId?: string | null;
@@ -67,4 +71,20 @@ export function extraerMeetProvisionado(
     joinUrl: event.hangoutLink,
     payload: event
   };
+}
+
+export function eventoCalendarCoincideConSolicitud(
+  payload: unknown,
+  request: Pick<MeetProvisionRequest, "titulo" | "descripcion" | "inicio" | "fin" | "timezone">,
+): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const event = payload as CalendarEvent;
+  const start = event.start?.dateTime ? Date.parse(event.start.dateTime) : Number.NaN;
+  const end = event.end?.dateTime ? Date.parse(event.end.dateTime) : Number.NaN;
+  return event.summary === request.titulo &&
+    (event.description ?? "") === (request.descripcion ?? "") &&
+    start === request.inicio.getTime() &&
+    end === request.fin.getTime() &&
+    event.start?.timeZone === request.timezone &&
+    event.end?.timeZone === request.timezone;
 }

@@ -10,7 +10,7 @@ export type MeetProvisionRequest = Readonly<{
   cohostEmails?: readonly string[];
   requiereAsistenciaTecnica?: boolean;
   /** Stable event id supplied by the application for retry-safe Calendar POSTs. */
-  calendarEventId?: string;
+  calendarEventId: string;
 }>;
 
 export type MeetProvisionResult = Readonly<{

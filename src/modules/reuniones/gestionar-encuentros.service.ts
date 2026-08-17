@@ -126,6 +126,9 @@ export async function agregarEncuentro(
         requiereGrabacion: input.requiereGrabacion,
       },
     });
+    // Política explícita: una instancia agregada no hereda asignaciones de
+    // asistencia de otras fechas. Queda abierta para una asignación propia,
+    // que validará agenda y tarifa mediante reservarAsistenteDisponible.
     const event = await tx.eventoProveedor.create({
       data: {
         instanciaSalaId: meeting.id,
@@ -337,6 +340,7 @@ export async function eliminarEncuentro(
           estadoIntegracion: "PENDIENTE",
           operacionPendiente: "CANCELAR",
           reclamoIntegracionAt: null,
+          reclamoIntegracionToken: null,
           errorIntegracion: null,
         },
       });
@@ -404,6 +408,7 @@ export async function eliminarReunionCompleta(
           estadoIntegracion: "PENDIENTE",
           operacionPendiente: "CANCELAR",
           reclamoIntegracionAt: null,
+          reclamoIntegracionToken: null,
           errorIntegracion: null,
         },
       });
@@ -445,6 +450,7 @@ async function marcarOperacionPendiente(
       estadoIntegracion: "PENDIENTE",
       operacionPendiente,
       reclamoIntegracionAt: null,
+      reclamoIntegracionToken: null,
       errorIntegracion: null,
     },
   });

@@ -31,7 +31,10 @@ export async function POST(request: Request, context: RouteContext) {
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       [result.eventoProveedorId],
     );
-    return NextResponse.json({ ...result, provisionamiento }, { status: 201 });
+    return NextResponse.json(
+      { ...result, provisionamiento },
+      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 },
+    );
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
@@ -54,7 +57,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       message: "Reunión eliminada.",
       warning: advertenciaSincronizacion(sincronizacion),
       sincronizacion,
-    });
+    }, { status: sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });

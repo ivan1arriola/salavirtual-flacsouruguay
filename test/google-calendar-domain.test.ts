@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   crearCalendarEvent,
+  eventoCalendarCoincideConSolicitud,
   extraerConferenceData,
   extraerMeetProvisionado
 } from "../src/modules/meet/google-calendar.domain";
@@ -13,7 +14,8 @@ describe("evento Google Calendar puro", () => {
         inicio: new Date("2026-08-03T13:00:00.000Z"),
         fin: new Date("2026-08-03T15:00:00.000Z"),
         timezone: "America/Montevideo",
-        calendarId: "sala01@flacso.edu.uy"
+        calendarId: "sala01@flacso.edu.uy",
+        calendarEventId: "calendar-request-1"
       },
       "request-1"
     );
@@ -49,6 +51,7 @@ describe("evento Google Calendar puro", () => {
       fin: new Date("2026-08-03T15:00:00.000Z"),
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
+      calendarEventId: "calendar-cohosts",
       cohostEmails: ["docente@flacso.edu.uy", "web@flacso.edu.uy"]
     }, "request-cohosts");
 
@@ -70,11 +73,29 @@ describe("evento Google Calendar puro", () => {
       fin: new Date("2026-08-10T15:00:00.000Z"),
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
+      calendarEventId: "calendar-shared",
       conferenceData
     }, "unused-for-shared-space");
 
     expect(event.conferenceData).toBe(conferenceData);
     expect(extraerConferenceData({ conferenceData })).toEqual(conferenceData);
     expect(extraerConferenceData({})).toBeUndefined();
+  });
+
+  it("verifica que Calendar refleje exactamente la reprogramación local", () => {
+    const request = {
+      titulo: "Clase", descripcion: "Tema", inicio: new Date("2026-08-20T16:00:00Z"),
+      fin: new Date("2026-08-20T17:00:00Z"), timezone: "America/Montevideo",
+    };
+    expect(eventoCalendarCoincideConSolicitud({
+      summary: "Clase", description: "Tema",
+      start: { dateTime: "2026-08-20T16:00:00Z", timeZone: "America/Montevideo" },
+      end: { dateTime: "2026-08-20T17:00:00Z", timeZone: "America/Montevideo" },
+    }, request)).toBe(true);
+    expect(eventoCalendarCoincideConSolicitud({
+      summary: "Clase", description: "Tema",
+      start: { dateTime: "2026-08-20T14:00:00Z", timeZone: "America/Montevideo" },
+      end: { dateTime: "2026-08-20T15:00:00Z", timeZone: "America/Montevideo" },
+    }, request)).toBe(false);
   });
 });
