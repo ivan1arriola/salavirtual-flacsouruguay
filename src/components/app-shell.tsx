@@ -19,6 +19,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { AppLogoMark } from "@/src/components/app-logo";
 import { ProfileMenu } from "@/src/components/profile-menu";
+import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { SidebarLink } from "@/src/components/sidebar-link";
 import { db } from "@/src/lib/db";
 
@@ -158,7 +159,7 @@ export async function AppShell({
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>
             </SidebarLink>
           ))}
-          <details className="mobile-nav-more">
+          <DismissibleDetails className="mobile-nav-more">
             <summary>
               <Menu size={20} aria-hidden="true" />
               <span>Más</span>
@@ -177,7 +178,7 @@ export async function AppShell({
                 ))}
               </nav>
             </div>
-          </details>
+          </DismissibleDetails>
         </nav>
       </div>
     </div>
