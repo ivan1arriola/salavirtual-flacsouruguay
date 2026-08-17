@@ -9,7 +9,6 @@ import {
   Hand,
   History,
   LayoutDashboard,
-  LogOut,
   Menu,
   Settings,
   UserRoundCheck,
@@ -18,8 +17,8 @@ import {
 } from "lucide-react";
 import type { Session } from "next-auth";
 import Link from "next/link";
-import { signOut } from "@/auth";
-import { AccountSwitcher } from "@/src/components/account-switcher";
+import { AppLogoMark } from "@/src/components/app-logo";
+import { ProfileMenu } from "@/src/components/profile-menu";
 import { SidebarLink } from "@/src/components/sidebar-link";
 import { db } from "@/src/lib/db";
 
@@ -87,7 +86,7 @@ export async function AppShell({
     <div className="app-frame">
       <aside className="sidebar">
         <Link className="brand" href="/" aria-label="Sala Virtual FLACSO">
-          <span className="brand-mark" aria-hidden="true">F</span>
+          <AppLogoMark className="brand-app-logo" size={38} />
           <span>
             <strong>FLACSO Uruguay</strong>
             <small>Sala Virtual</small>
@@ -133,34 +132,14 @@ export async function AppShell({
         ) : null}
 
         <div className="account-block">
-          <SidebarLink className="account-profile-link" href="/mi-perfil">
-            <span className="avatar" aria-hidden="true">
-              <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
-            </span>
-            <span className="account-copy">
-              <strong>{user.name ?? user.id}</strong>
-              <small>{roleLabel(user.role)} · Mi perfil</small>
-            </span>
-          </SidebarLink>
-          <AccountSwitcher account={rememberedAccount} />
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/acceso" });
-            }}
-          >
-            <button className="icon-button" type="submit" title="Cerrar sesión">
-              <LogOut size={18} aria-hidden="true" />
-              <span className="sr-only">Cerrar sesión</span>
-            </button>
-          </form>
+          <ProfileMenu user={user} account={rememberedAccount} />
         </div>
       </aside>
 
       <div className="app-content">
         <header className="mobile-header">
-          <Link className="mobile-brand" href="/">
-            <span className="brand-mark">F</span>
+          <Link className="mobile-brand" href="/" aria-label="Sala Virtual FLACSO">
+            <AppLogoMark className="mobile-app-logo" size={34} />
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
@@ -168,19 +147,16 @@ export async function AppShell({
               <Bell size={18} aria-hidden="true" />
               {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
             </Link>
-            <AccountSwitcher account={rememberedAccount} />
-            <Link className="avatar" href="/mi-perfil" aria-label="Mi perfil">
-              <UserAvatarContent imageUrl={user.image} name={user.name ?? user.email ?? "U"} />
-            </Link>
+            <ProfileMenu compact user={user} account={rememberedAccount} />
           </span>
         </header>
         <main className="workspace">{children}</main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {mobilePrimaryNav.map(({ href, label, icon: Icon }) => (
-            <Link href={href} key={href}>
+            <SidebarLink exact={href === "/" || href === "/reuniones"} href={href} key={href}>
               <Icon size={20} aria-hidden="true" />
               <span>{label === "Nueva reunión" ? "Nueva" : label}</span>
-            </Link>
+            </SidebarLink>
           ))}
           <details className="mobile-nav-more">
             <summary>
@@ -194,10 +170,10 @@ export async function AppShell({
               </div>
               <nav aria-label="Más opciones">
                 {mobileMoreNav.map(({ href, label, icon: Icon }) => (
-                  <Link href={href} key={href}>
+                  <SidebarLink href={href} key={href}>
                     <Icon size={18} aria-hidden="true" />
                     <span>{label}</span>
-                  </Link>
+                  </SidebarLink>
                 ))}
               </nav>
             </div>
@@ -237,22 +213,4 @@ function roleLabel(role: Session["user"]["role"]): string {
   if (role === "ADMINISTRACION") return "Administración";
   if (role === "ASISTENTE_TECNICO") return "Asistencia técnica";
   return "Docente";
-}
-
-function UserAvatarContent({
-  imageUrl,
-  name
-}: Readonly<{ imageUrl?: string | null; name: string }>) {
-  return (
-    <>
-      <span className="avatar-fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
-      {imageUrl ? (
-        <span
-          className="avatar-image"
-          style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-    </>
-  );
 }

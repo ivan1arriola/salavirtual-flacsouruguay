@@ -27,14 +27,13 @@ export function AccountSwitcher({ account }: Readonly<{ account: CuentaRecordada
 
   return (
     <button
-      className="icon-button"
+      className="profile-menu-action"
       disabled={pending}
       onClick={switchAccount}
-      title="Cambiar cuenta"
       type="button"
     >
       <Repeat2 size={18} aria-hidden="true" />
-      <span className="sr-only">Cambiar cuenta</span>
+      <span>{pending ? "Cambiando cuenta…" : "Cambiar cuenta"}</span>
     </button>
   );
 }
