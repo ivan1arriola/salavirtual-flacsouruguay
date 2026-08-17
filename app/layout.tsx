@@ -13,7 +13,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default"
   },
   icons: {
-    icon: "/icon-192x192.png",
+    icon: [
+      { url: "/app-logo.svg", type: "image/svg+xml" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" }
+    ],
     apple: "/apple-touch-icon.png"
   }
 };
