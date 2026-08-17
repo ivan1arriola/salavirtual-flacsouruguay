@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/src/components/pwa-register";
 import "./globals.css";
+import "./brand.css";
 
 export const metadata: Metadata = {
   title: "Sala Virtual FLACSO",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f6f8f",
+  themeColor: "#163970",
   colorScheme: "light"
 };
 
