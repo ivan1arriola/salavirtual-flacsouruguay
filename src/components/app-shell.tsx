@@ -78,14 +78,10 @@ export async function AppShell({
       ? [primaryNav[0], primaryNav[1], createMeetingNav, teacherNav[0]]
       : [primaryNav[0], primaryNav[1], createMeetingNav, primaryNav[2]];
   const mobileMoreNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
-    ? [assistantNav[4], { href: "/notificaciones", label: "Notificaciones", icon: Bell }]
+    ? [assistantNav[4]]
     : user.role === "DOCENTE"
-      ? [primaryNav[2], { href: "/notificaciones", label: "Notificaciones", icon: Bell }]
-      : [
-          ...adminNav,
-          ...archiveNav,
-          { href: "/notificaciones", label: "Notificaciones", icon: Bell }
-        ];
+      ? [primaryNav[2]]
+      : [...adminNav, ...archiveNav];
 
   return (
     <div className="app-frame">
@@ -190,7 +186,6 @@ export async function AppShell({
             <summary>
               <Menu size={20} aria-hidden="true" />
               <span>Más</span>
-              {unreadNotifications > 0 ? <strong className="mobile-more-badge">{unreadNotifications}</strong> : null}
             </summary>
             <div className="mobile-more-menu">
               <div className="mobile-more-heading">
@@ -202,7 +197,6 @@ export async function AppShell({
                   <Link href={href} key={href}>
                     <Icon size={18} aria-hidden="true" />
                     <span>{label}</span>
-                    {href === "/notificaciones" && unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
                   </Link>
                 ))}
               </nav>
