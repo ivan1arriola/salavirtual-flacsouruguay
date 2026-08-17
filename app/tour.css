@@ -8,13 +8,6 @@
   box-shadow: var(--shadow-md);
 }
 
-.driver-popover.flacso-tour,
-.driver-popover.flacso-tour * {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-
 .flacso-tour .driver-popover-title {
   color: var(--brand);
   font-size: 1.05rem;
@@ -37,7 +30,6 @@
   padding: 7px 12px;
   font: inherit;
   text-shadow: none;
-  touch-action: manipulation;
 }
 
 .flacso-tour .driver-popover-next-btn {
@@ -63,7 +55,6 @@
 
 .flacso-tour .driver-popover-close-btn {
   color: var(--muted);
-  touch-action: manipulation;
 }
 
 @media (max-width: 640px) {
