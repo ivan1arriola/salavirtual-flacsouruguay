@@ -9,7 +9,7 @@ import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.s
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
 import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
-import { formatDateTime } from "@/src/lib/ui/format";
+import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 
 export const runtime = "nodejs";
 
@@ -100,9 +100,15 @@ async function notificarReunionCreada(solicitudId: string) {
   const docenteNombre = [docenteUsuario.nombres, docenteUsuario.apellidos].filter(Boolean).join(" ");
   const instancias = solicitud.instancias.map((instancia) => {
     const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const inicioFecha = formatShortDate(instancia.inicioProgramadoAt);
+    const finFecha = formatShortDate(instancia.finProgramadoAt);
+    const inicio = `${capitalizar(inicioFecha)}, ${formatTime(instancia.inicioProgramadoAt)}`;
+    const fin = inicioFecha === finFecha
+      ? formatTime(instancia.finProgramadoAt)
+      : `${capitalizar(finFecha)}, ${formatTime(instancia.finProgramadoAt)}`;
     return {
-      inicio: formatDateTime(instancia.inicioProgramadoAt),
-      fin: formatDateTime(instancia.finProgramadoAt),
+      inicio,
+      fin,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
       meet: meet?.codigoReunion,
       joinUrl: meet?.joinUrl
@@ -130,7 +136,8 @@ async function notificarReunionCreada(solicitudId: string) {
       href: `/reuniones/${solicitud.id}`,
       metadata: { solicitudId: solicitud.id },
       emailSubject: `Reunión creada: ${solicitud.titulo}`,
-      emailText: detailsText
+      emailText: detailsText,
+      emailActionLabel: "Ver reunión"
     }
   );
 
@@ -149,7 +156,8 @@ async function notificarReunionCreada(solicitudId: string) {
         href: "/mi-agenda",
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Te asignaron una asistencia técnica: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`
+        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`,
+        emailActionLabel: "Abrir mi agenda"
       }
     );
     await notificarUsuarios(
@@ -165,7 +173,8 @@ async function notificarReunionCreada(solicitudId: string) {
         href: `/reuniones/${solicitud.id}`,
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Asistencia técnica asignada: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`
+        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`,
+        emailActionLabel: "Ver reunión"
       }
     );
   }
@@ -191,7 +200,12 @@ async function notificarReunionCreada(solicitudId: string) {
       href: "/agenda-abierta",
       metadata: { solicitudId: solicitud.id },
       emailSubject: `Asistencia técnica requerida: ${solicitud.titulo}`,
-      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.`
+      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.`,
+      emailActionLabel: "Ver agenda abierta"
     }
   );
+}
+
+function capitalizar(value: string): string {
+  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value;
 }
