@@ -32,6 +32,17 @@ export type FilaAsistenciaMeet = Readonly<{
   fin: string;
 }>;
 
+export type RegistroConferenciaMeet = Readonly<{
+  name: string;
+  startTime: string;
+  endTime?: string;
+}>;
+
+export type SesionParticipanteMeet = Readonly<{
+  startTime: string;
+  endTime?: string;
+}>;
+
 const ETIQUETAS: Readonly<Record<TipoArtefactoMeet, string>> = {
   GRABACION: "video",
   LISTA_ASISTENCIA: "lista-asistencia",
@@ -39,6 +50,18 @@ const ETIQUETAS: Readonly<Record<TipoArtefactoMeet, string>> = {
   NOTAS: "notas",
   OTRO: "archivo"
 };
+
+const ETIQUETAS_UI: Readonly<Record<TipoArtefactoMeet, string>> = {
+  GRABACION: "Grabación",
+  LISTA_ASISTENCIA: "Asistencia",
+  TRANSCRIPCION: "Transcripción",
+  NOTAS: "Notas de Meet",
+  OTRO: "Archivo"
+};
+
+export function etiquetaTipoArtefactoMeet(tipo: TipoArtefactoMeet): string {
+  return ETIQUETAS_UI[tipo];
+}
 
 export function nombreCarpetaReunion(datos: DatosCarpetaReunion): string {
   return `${fechaLocalToken(datos.inicio, datos.timezone)} - ${textoSeguro(datos.titulo)}`;
@@ -51,6 +74,36 @@ export function nombreArchivoReunion(datos: DatosNombreArtefacto): string {
   const indice = String(datos.indice).padStart(2, "0");
   const extension = extensionSegura(datos.extension);
   return `${fecha}_${codigo}_${ETIQUETAS[datos.tipo]}_${indice}_${titulo}${extension}`;
+}
+
+export function elegirConferenciaMeet(
+  records: readonly RegistroConferenciaMeet[],
+  inicio: Date,
+  fin: Date
+): RegistroConferenciaMeet | null {
+  if (records.length === 0) return null;
+  const inicioMs = inicio.getTime();
+  const finMs = fin.getTime();
+  const superpuestas = records.filter((record) => {
+    const recordStart = Date.parse(record.startTime);
+    const recordEnd = record.endTime ? Date.parse(record.endTime) : Number.POSITIVE_INFINITY;
+    return recordStart <= finMs && recordEnd >= inicioMs;
+  });
+  const candidates = superpuestas.length > 0 ? superpuestas : records;
+  return candidates.reduce<RegistroConferenciaMeet | null>((selected, current) => {
+    if (!selected) return current;
+    const currentDistance = Math.abs(Date.parse(current.startTime) - inicioMs);
+    const selectedDistance = Math.abs(Date.parse(selected.startTime) - inicioMs);
+    return currentDistance < selectedDistance ? current : selected;
+  }, null);
+}
+
+export function asistenciaMeetCompleta(
+  sesionesPorParticipante: readonly (readonly SesionParticipanteMeet[])[]
+): boolean {
+  return sesionesPorParticipante.length > 0 && sesionesPorParticipante.every(
+    (sesiones) => sesiones.length > 0 && sesiones.every(({ endTime }) => Boolean(endTime))
+  );
 }
 
 export function crearHtmlAsistencia(filas: readonly FilaAsistenciaMeet[]): string {
