@@ -3,7 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/src/lib/db";
-import { aprobarSolicitudAccesoGoogle, enviarInvitacion } from "./actions";
+import {
+  aprobarSolicitudAccesoGoogle,
+  enviarInvitacion,
+  rechazarSolicitudAccesoGoogle
+} from "./actions";
 
 const USER_TYPES = [
   { value: "ADMINISTRACION", label: "Administración", title: "Administración", icon: ShieldCheck },
@@ -53,19 +57,34 @@ export default async function UsuariosPage({
       {query.estado === "invitacion-enviada" ? <p className="form-notice">La invitación fue creada y enviada.</p> : null}
       {query.estado === "invitacion-creada" ? <p className="form-notice">El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.</p> : null}
       {query.estado === "solicitud-aprobada" ? <p className="form-notice">La solicitud fue aprobada y el usuario fue creado.</p> : null}
+      {query.estado === "solicitud-rechazada" ? <p className="form-notice">La solicitud fue rechazada y eliminada de pendientes.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
       {solicitudesPendientes.length ? (
         <section className="content-section">
           <div className="section-heading"><div><h2>Solicitudes de acceso pendientes</h2><p>Las cuentas externas requieren autorización antes de poder ingresar.</p></div></div>
           <div className="table-wrap"><table className="data-table">
-            <thead><tr><th>Persona</th><th>Cuenta Google</th><th>Solicitada</th><th>Autorizar como</th></tr></thead>
+            <thead><tr><th>Persona</th><th>Cuenta Google</th><th>Solicitada</th><th>Acciones</th></tr></thead>
             <tbody>{solicitudesPendientes.map((solicitud) => (
               <tr key={solicitud.id}>
                 <td><strong>{solicitud.nombres} {solicitud.apellidos}</strong></td>
                 <td>{solicitud.email}</td>
                 <td>{solicitud.createdAt.toLocaleDateString("es-UY")}</td>
-                <td><form action={aprobarSolicitudAccesoGoogle} className="inline-form"><input name="solicitudId" type="hidden" value={solicitud.id} /><select name="rol" defaultValue="DOCENTE"><option value="DOCENTE">Docente</option><option value="ASISTENTE_TECNICO">Asistente técnico</option><option value="ADMINISTRACION">Administración</option></select><button className="primary-action" type="submit">Aprobar</button></form></td>
+                <td>
+                  <form action={aprobarSolicitudAccesoGoogle} className="inline-form">
+                    <input name="solicitudId" type="hidden" value={solicitud.id} />
+                    <select name="rol" defaultValue="DOCENTE">
+                      <option value="DOCENTE">Docente</option>
+                      <option value="ASISTENTE_TECNICO">Asistente técnico</option>
+                      <option value="ADMINISTRACION">Administración</option>
+                    </select>
+                    <button className="primary-action" type="submit">Aprobar</button>
+                  </form>
+                  <form action={rechazarSolicitudAccesoGoogle} className="inline-form">
+                    <input name="solicitudId" type="hidden" value={solicitud.id} />
+                    <button className="secondary-action" type="submit">Rechazar</button>
+                  </form>
+                </td>
               </tr>
             ))}</tbody>
           </table></div>
@@ -78,12 +97,12 @@ export default async function UsuariosPage({
           <div className="form-grid">
             <label className="field"><span>Nombre</span><input name="nombres" required maxLength={100} /></label>
             <label className="field"><span>Apellido</span><input name="apellidos" maxLength={120} /></label>
-            <label className="field"><span>Correo FLACSO</span><input name="email" type="email" required placeholder="persona@flacso.edu.uy" /></label>
+            <label className="field"><span>Correo</span><input name="email" type="email" required placeholder="persona@ejemplo.com" /></label>
             <label className="field"><span>Rol</span><select name="rol" defaultValue="DOCENTE"><option value="DOCENTE">Docente</option><option value="ASISTENTE_TECNICO">Asistente técnico</option><option value="ADMINISTRACION">Administración</option></select></label>
             <label className="field"><span>Programa existente (si es docente)</span><select name="programaId" defaultValue=""><option value="">Seleccionar</option>{programs.map(({ id, nombre }) => <option key={id} value={id}>{nombre}</option>)}</select></label>
             <label className="field"><span>O crear programa</span><input name="programaNuevo" maxLength={180} placeholder="Nombre del programa" /></label>
           </div>
-          <p className="invitation-help">Para docentes elegí un programa o escribí uno nuevo. Para otros roles dejá ambos campos vacíos.</p>
+          <p className="invitation-help">Podés invitar cualquier dirección de correo. Para docentes elegí un programa o escribí uno nuevo; para otros roles dejá ambos campos vacíos.</p>
           <div className="form-actions"><span /><button className="primary-action" type="submit">Crear y enviar invitación</button></div>
         </form>
       </details>
