@@ -5,7 +5,6 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
 import { crearGoogleMeetArtifactsClient } from "@/src/modules/meet/google-meet-artifacts.adapter";
-import { obtenerEstadoGrabacionMeet } from "@/src/modules/meet/google-meet-recording-status.adapter";
 import { sincronizarArtefactosMeet } from "@/src/modules/meet/sincronizar-artefactos.service";
 
 export const runtime = "nodejs";
@@ -74,8 +73,7 @@ async function executeSynchronization() {
     {
       db,
       descifrar: descifrarConfiguracion,
-      crearClient: crearGoogleMeetArtifactsClient,
-      obtenerEstadoGrabacion: obtenerEstadoGrabacionMeet
+      crearClient: crearGoogleMeetArtifactsClient
     },
     events.map(({ id }) => id)
   );
@@ -84,7 +82,8 @@ async function executeSynchronization() {
     sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADO").length,
     sinRegistroFinalizado: results.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO").length,
     artefactosPendientes: results.filter(({ estado }) => estado === "ARTEFACTOS_PENDIENTES").length,
-    noGrabadas: results.filter(({ estado }) => estado === "GRABACION_NO_REALIZADA").length,
+    grabacionesPendientes: results.filter(({ grabacion }) => grabacion === "PENDIENTE").length,
+    noGrabadas: results.filter(({ grabacion }) => grabacion === "NO_REALIZADA").length,
     errores: results.filter(({ estado }) => estado === "ERROR").length,
     archivos: results.reduce((total, result) => total + result.archivos, 0)
   });
