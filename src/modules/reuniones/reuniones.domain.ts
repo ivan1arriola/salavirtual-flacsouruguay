@@ -3,6 +3,7 @@ import type { RolUsuario } from "../usuarios/roles";
 import { pertenecenAlMismoDia } from "./periodos.domain";
 
 export type FechaReunion = Readonly<{ inicioProgramadoAt: Date }>;
+export type PeriodoReunion = Readonly<{ inicio: Date }>;
 
 const instanciaSchema = z
   .object({
@@ -76,6 +77,13 @@ function esTimezoneIanaValida(timezone: string): boolean {
 }
 
 export const claveIdempotenciaCreacionSchema = z.uuid();
+
+export function encuentrosComienzanEnFuturo(
+  encuentros: readonly PeriodoReunion[],
+  ahora: Date
+): boolean {
+  return encuentros.every(({ inicio }) => inicio > ahora);
+}
 
 export function puedeAbrirCreacionReuniones(rol: RolUsuario): boolean {
   return rol === "ADMINISTRACION" || rol === "DOCENTE";
