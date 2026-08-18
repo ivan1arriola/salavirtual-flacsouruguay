@@ -1,5 +1,6 @@
 import type { PrismaClient, TipoArchivoReunion } from "@prisma/client";
 import type { crearGoogleMeetArtifactsClient, GoogleArtifact, MovedDriveFile } from "./google-meet-artifacts.adapter";
+import type { EstadoGrabacionMeet, RecordingStatusCredentials } from "./google-meet-recording-status.adapter";
 import {
   nombreArchivoReunion,
   nombreCarpetaReunion,
@@ -16,11 +17,15 @@ export type SyncArtifactsDependencies = Readonly<{
     privateKey: string;
     subject: string;
   }>) => ArtifactsClient;
+  obtenerEstadoGrabacion?: (
+    credentials: RecordingStatusCredentials,
+    conferenceName: string
+  ) => Promise<EstadoGrabacionMeet>;
 }>;
 
 export type SyncArtifactsResult = Readonly<{
   eventoProveedorId: string;
-  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ARTEFACTOS_PENDIENTES" | "ERROR";
+  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ARTEFACTOS_PENDIENTES" | "GRABACION_NO_REALIZADA" | "ERROR";
   archivos: number;
   error?: string;
 }>;
@@ -92,7 +97,8 @@ async function sincronizarEvento(
     return registrarError(dependencies.db, event.id, "La reunión no tiene host o código Meet.");
   }
   try {
-    const client = dependencies.crearClient({ serviceAccountEmail, privateKey, subject: hostEmail });
+    const credentials = { serviceAccountEmail, privateKey, subject: hostEmail };
+    const client = dependencies.crearClient(credentials);
     const conference = event.conferenceRecordName
       ? await client.obtenerConferencia(event.conferenceRecordName)
       : await client.buscarConferencia(
@@ -122,6 +128,7 @@ async function sincronizarEvento(
     };
     let synchronized = 0;
     let pending = artifacts.pendientes;
+    let grabacionNoRealizada = false;
 
     for (const [type, items] of [
       [TIPOS_ARTEFACTO_SINCRONIZABLES[0], artifacts.recordings],
@@ -140,7 +147,14 @@ async function sincronizarEvento(
 
     const tieneGrabacion = event.archivos.some(({ tipo }) => tipo === "GRABACION") || artifacts.recordings.length > 0;
     if (event.instancia.requiereGrabacion && !tieneGrabacion) {
-      pending += 1;
+      const estadoGrabacion = dependencies.obtenerEstadoGrabacion
+        ? await dependencies.obtenerEstadoGrabacion(credentials, conference.name)
+        : "PROCESANDO";
+      if (estadoGrabacion === "AUSENTE") {
+        grabacionNoRealizada = true;
+      } else {
+        pending += 1;
+      }
     }
 
     const attendanceResource = `${conference.name}/attendance`;
@@ -194,7 +208,11 @@ async function sincronizarEvento(
         errorArchivos: null
       }
     });
-    return { eventoProveedorId: event.id, estado: "SINCRONIZADO", archivos: synchronized };
+    return {
+      eventoProveedorId: event.id,
+      estado: grabacionNoRealizada ? "GRABACION_NO_REALIZADA" : "SINCRONIZADO",
+      archivos: synchronized
+    };
   } catch (error) {
     return registrarError(
       dependencies.db,
