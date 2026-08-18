@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buscarRolAnterior,
   esRolUsuario,
+  mapearRolAnterior,
   puedeAdministrar
 } from "../src/modules/usuarios/roles";
 import { vincularCuentaGoogleSchema } from "../src/modules/usuarios/types";
@@ -19,15 +20,30 @@ describe("migracion funcional de roles", () => {
     expect(buscarRolAnterior("ASISTENTE_ZOOM")).toBe("ASISTENTE_TECNICO");
   });
 
+  it("normaliza espacios y mayúsculas y conserva DOCENTE", () => {
+    expect(buscarRolAnterior("  administrador ")).toBe("ADMINISTRACION");
+    expect(buscarRolAnterior("docente")).toBe("DOCENTE");
+    expect(buscarRolAnterior("sin-rol")).toBeNull();
+  });
+
+  it("mapea roles anteriores y rechaza valores desconocidos", () => {
+    expect(mapearRolAnterior("asistente_zoom")).toBe("ASISTENTE_TECNICO");
+    expect(() => mapearRolAnterior("INVITADO")).toThrow("Rol anterior desconocido: INVITADO");
+  });
+
   it("reserva la administracion al rol neutral", () => {
     expect(puedeAdministrar("ADMINISTRACION")).toBe(true);
     expect(puedeAdministrar("DOCENTE")).toBe(false);
+    expect(puedeAdministrar("ASISTENTE_TECNICO")).toBe(false);
   });
 
   it("estrecha valores externos a roles conocidos", () => {
+    expect(esRolUsuario("ADMINISTRACION")).toBe(true);
     expect(esRolUsuario("ASISTENTE_TECNICO")).toBe(true);
+    expect(esRolUsuario("DOCENTE")).toBe(true);
     expect(esRolUsuario("CONTADURIA")).toBe(false);
     expect(esRolUsuario({ rol: "DOCENTE" })).toBe(false);
+    expect(esRolUsuario(null)).toBe(false);
   });
 });
 

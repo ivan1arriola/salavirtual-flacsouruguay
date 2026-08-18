@@ -37,7 +37,7 @@ export function WorkspaceDelegationForm({ subject }: Readonly<{ subject: string 
           <input type="email" name="serviceAccountSubject" defaultValue={subject} required />
         </label>
         <div className="field field-wide config-scopes">
-          <span>Scopes autorizados</span>
+          <span>Scopes requeridos</span>
           <code>calendar.events</code>
           <code>drive</code>
           <code>meetings.space.settings</code>

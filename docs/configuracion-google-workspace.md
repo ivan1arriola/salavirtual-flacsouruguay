@@ -12,11 +12,11 @@ cuenta de servicio actua en nombre de esa sala mediante delegacion de dominio.
 ## Google Cloud
 
 1. Crear o elegir un proyecto de Google Cloud de FLACSO.
-2. Habilitar Google Calendar API.
+2. Habilitar Google Calendar API, Google Meet REST API, Google Drive API y Gmail API.
 3. Crear una cuenta de servicio.
 4. Activar `Domain-wide delegation` para esa cuenta.
 5. Crear y descargar una clave JSON. Debe custodiarse como secreto.
-6. Copiar el `OAuth 2 Client ID` de la cuenta de servicio.
+6. Copiar el `OAuth 2 Client ID` numerico de la cuenta de servicio.
 
 ## Google Admin
 
@@ -24,14 +24,23 @@ Una persona con permisos de superadministracion debe abrir:
 
 `Seguridad > Control de acceso y datos > Controles de API > Delegacion de todo el dominio`
 
-Agregar el Client ID de la cuenta de servicio y autorizar este scope:
+Agregar el Client ID numerico de la cuenta de servicio y autorizar todos estos scopes:
 
 ```text
-https://www.googleapis.com/auth/calendar.events
+https://www.googleapis.com/auth/calendar.events,
+https://www.googleapis.com/auth/drive,
+https://www.googleapis.com/auth/meetings.space.settings,
+https://www.googleapis.com/auth/meetings.space.readonly,
+https://www.googleapis.com/auth/gmail.send
 ```
 
-Las diez cuentas `salaNN` deben tener Google Calendar habilitado y una edicion
-de Workspace que permita crear reuniones Meet.
+Las diez cuentas `salaNN` deben tener Google Calendar y Google Meet habilitados
+y una edicion de Workspace que permita crear reuniones Meet.
+
+Despues de modificar la delegacion puede haber un tiempo de propagacion en
+Google Workspace. En el gestor, `Configuracion > Google Workspace > Validacion
+de scopes` permite comprobar cada scope individualmente usando una cuenta host
+activa, de la misma forma en que se ejecuta la provision real de reuniones.
 
 ## Configuracion del gestor
 
@@ -59,7 +68,8 @@ Al crear una reunion, el gestor:
 2. Crea un evento independiente en el calendario de la sala host.
 3. Solicita a Google un Meet nuevo para ese evento.
 4. Guarda el ID externo, codigo Meet y enlace de acceso.
-5. Conserva un error reintentable si Google rechaza la operacion.
+5. Configura el espacio Meet con los scopes especificos de Meet.
+6. Conserva un error reintentable si Google rechaza la operacion.
 
 Google puede responder con la conferencia en estado pendiente. El adaptador
 vuelve a consultar el evento durante unos segundos antes de marcar un error.
