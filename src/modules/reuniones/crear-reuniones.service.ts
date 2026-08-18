@@ -9,6 +9,7 @@ import {
 import {
   crearReunionesSchema,
   diasDeReunion,
+  encuentrosComienzanEnFuturo,
   puedeCrearReuniones,
   resolverAsignacionInicial,
 } from "./reuniones.domain";
@@ -78,8 +79,7 @@ export async function crearReuniones(
       }
     }
 
-    const ahora = new Date();
-    if (input.instancias.some(({ inicio }) => inicio <= ahora)) {
+    if (!encuentrosComienzanEnFuturo(input.instancias, new Date())) {
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
 
