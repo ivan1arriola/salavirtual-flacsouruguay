@@ -78,6 +78,11 @@ export async function crearReuniones(
       }
     }
 
+    const ahora = new Date();
+    if (input.instancias.some(({ inicio }) => inicio <= ahora)) {
+      throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
+    }
+
     const [docentePrograma, proveedorMeet] = await Promise.all([
       tx.docentePrograma.findUnique({
         where: { id: input.docenteProgramaId },
