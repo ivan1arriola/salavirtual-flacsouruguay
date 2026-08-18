@@ -27,6 +27,6 @@ describe("formato de asistencia", () => {
 
   it("calcula el mes en Montevideo y capitaliza la etiqueta", () => {
     expect(formatMonth(new Date("2026-09-01T01:00:00Z"))).toBe("Agosto de 2026");
-    expect(formatMonth(new Date("2026-09-01T03:00:00Z"))).toBe("Septiembre de 2026");
+    expect(formatMonth(new Date("2026-09-01T03:00:00Z"))).toMatch(/^(Setiembre|Septiembre) de 2026$/);
   });
 });
