@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
+import { MeetingIntegrationProblems } from "@/src/components/meeting-integration-problems";
 import { MeetingRoomCredentials } from "@/src/components/meeting-room-credentials";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -94,6 +95,17 @@ export default async function ReunionDetailPage({
     ? [{ cuenta: meeting.cuentaGoogle, contrasena: meeting.contrasenaSala, ordinal: meeting.ordinal }]
     : []
   );
+  const integrationProblems = meetings.flatMap((meeting, index) => {
+    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    if (!event || event.estadoIntegracion !== "ERROR") return [];
+    return [{
+      eventoProveedorId: event.id,
+      ordinal: index + 1,
+      fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
+      hasMeet: Boolean(event.joinUrl || event.codigoReunion),
+      error: event.errorIntegracion,
+    }];
+  });
 
   return (
     <>
@@ -116,6 +128,10 @@ export default async function ReunionDetailPage({
         {request.descripcion ? <p>{request.descripcion}</p> : null}
       </section>
       <MeetingRoomCredentials credentials={roomCredentials} />
+      <MeetingIntegrationProblems
+        problems={integrationProblems}
+        canRepair={actor.rol === "ADMINISTRACION"}
+      />
       <MeetingDetailManager
         solicitudId={request.id}
         requestIds={seriesRequests.map(({ id }) => id)}

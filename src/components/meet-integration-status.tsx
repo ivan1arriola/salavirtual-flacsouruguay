@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
+import { AlertTriangle, Clock3 } from "lucide-react";
 
 type MeetIntegrationStatusProps = Readonly<{
   status?: "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
@@ -9,15 +9,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
   if (status === "PENDIENTE") {
     return (
       <span className="status status-warning">
-        <Clock3 size={14} aria-hidden="true" /> Reserva · Meet pendiente
-      </span>
-    );
-  }
-
-  if (status === "SINCRONIZADA") {
-    return (
-      <span className="status status-ok">
-        <CheckCircle2 size={14} aria-hidden="true" /> Meet creado
+        <Clock3 size={14} aria-hidden="true" /> Meet pendiente
       </span>
     );
   }
@@ -25,7 +17,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
   if (status === "ERROR" && hasMeet) {
     return (
       <span className="status status-warning">
-        <AlertTriangle size={14} aria-hidden="true" /> Meet creado · configuración pendiente
+        <AlertTriangle size={14} aria-hidden="true" /> Configuración de Meet pendiente
       </span>
     );
   }
@@ -38,7 +30,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
     );
   }
 
-  return <span className="status status-neutral">Sin reserva Meet</span>;
+  return null;
 }
 
 export function MeetPendingNotice() {
