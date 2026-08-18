@@ -151,7 +151,7 @@ async function sincronizarEvento(
           uploaded
         );
         synchronized += 1;
-      } else if (conferenceTerminadaHaceMasDe(conference.endTime, 24)) {
+      } else if (conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
         throw new Error(
           attendance.participantes === 0
             ? "Google Meet no devolvió participantes para generar la asistencia después de 24 horas."
