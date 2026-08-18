@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
+import { MeetingRoomCredentials } from "@/src/components/meeting-room-credentials";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
+import { contrasenaSalaFlacso } from "@/src/modules/notificaciones/notificaciones.service";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 
 export default async function ReunionDetailPage({
@@ -59,6 +61,40 @@ export default async function ReunionDetailPage({
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
+  const meetingViews = meetings.map((meeting, index) => {
+    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const assignment = meeting.asignaciones[0];
+    const cuentaGoogle = event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Cuenta pendiente";
+
+    return {
+      id: meeting.id,
+      solicitudId: meeting.solicitudId,
+      encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
+      ordinal: index + 1,
+      descripcion: meeting.descripcion,
+      inicio: toLocalInput(meeting.inicioProgramadoAt),
+      fin: toLocalInput(meeting.finProgramadoAt),
+      fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
+      estado: meeting.estado,
+      requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
+      asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
+      postulantes: meeting.postulaciones.length,
+      cuentaGoogle,
+      contrasenaSala: contrasenaSalaFlacso(cuentaGoogle),
+      codigoMeet: event?.codigoReunion ?? null,
+      joinUrl: event?.joinUrl ?? null,
+      editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
+      esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
+      temporalidad: meeting.finProgramadoAt < now
+        ? "PASADO" as const
+        : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const
+    };
+  });
+  const roomCredentials = meetingViews.flatMap((meeting) => meeting.contrasenaSala
+    ? [{ cuenta: meeting.cuentaGoogle, contrasena: meeting.contrasenaSala, ordinal: meeting.ordinal }]
+    : []
+  );
+
   return (
     <>
       <Link className="meeting-detail-back" href="/reuniones">
@@ -79,35 +115,11 @@ export default async function ReunionDetailPage({
         <div><span>Encuentros</span><strong>{meetings.length}</strong></div>
         {request.descripcion ? <p>{request.descripcion}</p> : null}
       </section>
+      <MeetingRoomCredentials credentials={roomCredentials} />
       <MeetingDetailManager
         solicitudId={request.id}
         requestIds={seriesRequests.map(({ id }) => id)}
-        meetings={meetings.map((meeting, index) => {
-          const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-          const assignment = meeting.asignaciones[0];
-          return {
-            id: meeting.id,
-            solicitudId: meeting.solicitudId,
-            encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
-            ordinal: index + 1,
-            descripcion: meeting.descripcion,
-            inicio: toLocalInput(meeting.inicioProgramadoAt),
-            fin: toLocalInput(meeting.finProgramadoAt),
-            fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
-            estado: meeting.estado,
-            requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
-            asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
-            postulantes: meeting.postulaciones.length,
-            cuentaGoogle: event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Cuenta pendiente",
-            codigoMeet: event?.codigoReunion ?? null,
-            joinUrl: event?.joinUrl ?? null,
-            editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
-            esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
-            temporalidad: meeting.finProgramadoAt < now
-              ? "PASADO" as const
-              : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const
-          };
-        })}
+        meetings={meetingViews.map(({ contrasenaSala: _, ...meeting }) => meeting)}
       />
     </>
   );
