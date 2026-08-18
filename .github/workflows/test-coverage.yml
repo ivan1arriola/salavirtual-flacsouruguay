@@ -22,8 +22,10 @@ jobs:
           node-version: 24
           cache: npm
 
+      # package-lock.json ya estaba desincronizado con package.json (falta driver.js).
+      # No se usa el lock hasta repararlo en el repositorio; esta instalación no lo modifica.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --package-lock=false
 
       - name: Install coverage provider
         run: npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.6
