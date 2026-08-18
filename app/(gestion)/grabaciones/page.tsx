@@ -8,6 +8,7 @@ import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   listarArchivosMeetVisibles,
+  listarGrabacionesNoRealizadasVisibles,
   listarGrabacionesPendientesVisibles
 } from "@/src/modules/meet/grabaciones.adapter";
 import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
@@ -21,9 +22,10 @@ export default async function GrabacionesPage() {
   const canSynchronize = puedeSincronizarGrabaciones(actor.rol);
   const now = new Date();
   const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const [artifacts, pendingRecordings, finishedMeet, workspaceConfiguration] = await Promise.all([
+  const [artifacts, pendingRecordings, missingRecordings, finishedMeet, workspaceConfiguration] = await Promise.all([
     listarArchivosMeetVisibles(db, actor),
     listarGrabacionesPendientesVisibles(db, actor, since, now),
+    listarGrabacionesNoRealizadasVisibles(db, actor, since, now),
     canSynchronize
       ? db.eventoProveedor.count({
           where: {
@@ -49,7 +51,8 @@ export default async function GrabacionesPage() {
     transcripciones: artifacts.filter(({ tipo }) => tipo === "TRANSCRIPCION").length,
     asistencias: artifacts.filter(({ tipo }) => tipo === "LISTA_ASISTENCIA").length,
     notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length,
-    pendientes: pendingRecordings.length
+    pendientes: pendingRecordings.length,
+    noGrabadas: missingRecordings.length
   };
 
   return (
@@ -59,7 +62,9 @@ export default async function GrabacionesPage() {
           <p className="page-eyebrow">Google Meet</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {artifacts.length} archivos disponibles · {counts.grabaciones} grabaciones · {counts.transcripciones} transcripciones · {counts.asistencias} listas de asistencia · {counts.notas} notas · {counts.pendientes} grabaciones pendientes.
+            {artifacts.length} archivos disponibles · {counts.grabaciones} grabaciones · {counts.transcripciones} transcripciones · {counts.asistencias} listas de asistencia · {counts.notas} notas
+            {counts.pendientes > 0 ? ` · ${counts.pendientes} pendientes` : ""}
+            {counts.noGrabadas > 0 ? ` · ${counts.noGrabadas} no grabadas` : ""}.
           </p>
         </div>
         {generalFolderId ? (
@@ -85,7 +90,7 @@ export default async function GrabacionesPage() {
           <div className="section-heading">
             <div>
               <h2>Grabaciones pendientes</h2>
-              <p>Encuentros que debían grabarse pero cuyo archivo todavía no fue generado por Google Meet.</p>
+              <p>Encuentros que debían grabarse y todavía tienen archivos pendientes de Google Meet.</p>
             </div>
           </div>
           <div className="table-wrap">
@@ -102,12 +107,12 @@ export default async function GrabacionesPage() {
                       <td>{association.programa.nombre}</td>
                       <td><span className="status status-warning"><Video size={14} aria-hidden="true" />Grabación pendiente</span></td>
                       <td>
-                        <strong>Google Meet todavía no generó el archivo.</strong>
+                        <strong>La grabación todavía no está disponible.</strong>
                         <small>
                           {event.errorArchivos
                             ? `La última revisión tuvo una incidencia: ${event.errorArchivos}`
                             : event.conferenceRecordName
-                              ? "La conferencia ya fue detectada y seguirá revisándose automáticamente."
+                              ? "La conferencia ya fue detectada y se seguirá revisando hasta que Google termine de procesar sus archivos."
                               : "Todavía se está esperando el registro finalizado de la conferencia."}
                         </small>
                       </td>
@@ -124,6 +129,52 @@ export default async function GrabacionesPage() {
                         ) : event.errorArchivos ? (
                           <span className="status status-error"><AlertTriangle size={14} aria-hidden="true" />Revisión con error</span>
                         ) : <span className="muted-text">Carpeta pendiente</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {missingRecordings.length > 0 ? (
+        <section className="content-section">
+          <div className="section-heading">
+            <div>
+              <h2>Reuniones que no se grabaron</h2>
+              <p>Google Meet terminó de procesar la conferencia sin registrar ninguna sesión de grabación.</p>
+            </div>
+          </div>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Detalle</th><th>Carpeta</th></tr></thead>
+              <tbody>
+                {missingRecordings.map((event) => {
+                  const meeting = event.instancia;
+                  const association = meeting.solicitud.docentePrograma;
+                  return (
+                    <tr key={event.id}>
+                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
+                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
+                      <td>{association.programa.nombre}</td>
+                      <td><span className="status status-error"><AlertTriangle size={14} aria-hidden="true" />No se grabó</span></td>
+                      <td>
+                        <strong>No hubo una sesión de grabación en Meet.</strong>
+                        <small>La reunión requería grabación, pero Google no registró que el host, un cohost u otro participante autorizado iniciara una.</small>
+                      </td>
+                      <td>
+                        {event.driveFolderId ? (
+                          <a
+                            className="text-link recording-folder-link"
+                            href={driveFolderUrl(event.driveFolderId)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
+                          </a>
+                        ) : <span className="muted-text">Sin carpeta</span>}
                       </td>
                     </tr>
                   );
