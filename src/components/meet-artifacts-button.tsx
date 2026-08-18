@@ -9,6 +9,7 @@ type SyncSummary = Readonly<{
   archivos: number;
   sinRegistroFinalizado: number;
   artefactosPendientes: number;
+  noGrabadas: number;
   errores: number;
 }>;
 
@@ -48,6 +49,11 @@ export function MeetArtifactsButton({ count }: Readonly<{ count: number }>) {
               Revisión terminada: {summary.procesadas} {summary.procesadas === 1 ? "reunión revisada" : "reuniones revisadas"}, {summary.archivos} {summary.archivos === 1 ? "archivo nuevo" : "archivos nuevos"}
               {` y ${summary.errores} ${summary.errores === 1 ? "error" : "errores"}.`}
             </small>
+            {summary.noGrabadas > 0 ? (
+              <small>
+                {summary.noGrabadas} {summary.noGrabadas === 1 ? "reunión que requería grabación terminó sin grabarse" : "reuniones que requerían grabación terminaron sin grabarse"}.
+              </small>
+            ) : null}
             {summary.artefactosPendientes > 0 ? (
               <small>
                 {summary.artefactosPendientes} {summary.artefactosPendientes === 1 ? "reunión tiene" : "reuniones tienen"} archivos que Google todavía está terminando de generar. Se volverán a revisar automáticamente.
