@@ -4,10 +4,7 @@ import { ROLES_USUARIO } from "./roles";
 export const invitarUsuarioSchema = z.object({
   nombres: z.string().trim().min(1).max(100),
   apellidos: z.string().trim().max(120).optional().transform((value) => value || null),
-  email: z.email().transform((email) => email.trim().toLowerCase()).refine(
-    (email) => email.endsWith("@flacso.edu.uy"),
-    "La invitación debe enviarse a un correo @flacso.edu.uy."
-  ),
+  email: z.email().transform((email) => email.trim().toLowerCase()),
   rol: z.enum(ROLES_USUARIO),
   programaId: z.string().trim().optional().transform((value) => value || null),
   programaNuevo: z.string().trim().max(180).optional().transform((value) => value || null)
