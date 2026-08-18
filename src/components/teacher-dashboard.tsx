@@ -74,7 +74,7 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
                     <td className="time-cell">{formatTime(meeting.inicioProgramadoAt)}</td>
                     <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link></td>
                     <td>{meeting.solicitud.docentePrograma.programa.nombre}</td>
-                    <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>{meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : null}</td>
+                    <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small><MeetIntegrationStatus status={meet?.estadoIntegracion} hasMeet={Boolean(meet?.joinUrl)} /></small>{meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : null}</td>
                     <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistenciaTecnica ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
                   </tr>
                 );
