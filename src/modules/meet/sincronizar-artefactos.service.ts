@@ -75,6 +75,7 @@ type SyncEvent = Readonly<{
     inicioProgramadoAt: Date;
     finProgramadoAt: Date;
     timezone: string;
+    requiereGrabacion: boolean;
     solicitud: Readonly<{ titulo: string }>;
   }>;
 }>;
@@ -135,6 +136,11 @@ async function sincronizarEvento(
         known.add(artifact.resourceName);
         synchronized += 1;
       }
+    }
+
+    const tieneGrabacion = event.archivos.some(({ tipo }) => tipo === "GRABACION") || artifacts.recordings.length > 0;
+    if (event.instancia.requiereGrabacion && !tieneGrabacion) {
+      pending += 1;
     }
 
     const attendanceResource = `${conference.name}/attendance`;
