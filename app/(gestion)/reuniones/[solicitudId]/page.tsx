@@ -9,7 +9,10 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
 import { contrasenaSalaFlacso } from "@/src/modules/notificaciones/notificaciones.service";
-import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
+import {
+  puedeCambiarAsistenciaEncuentro,
+  puedeGestionarEncuentros
+} from "@/src/modules/reuniones/encuentros.domain";
 
 export default async function ReunionDetailPage({
   params
@@ -85,6 +88,11 @@ export default async function ReunionDetailPage({
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
+      puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(
+        meeting.estado,
+        meeting.finProgramadoAt,
+        now
+      ),
       esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
       temporalidad: meeting.finProgramadoAt < now
         ? "PASADO" as const
