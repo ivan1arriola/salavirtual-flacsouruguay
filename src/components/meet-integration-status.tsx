@@ -9,19 +9,15 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
   if (status === "PENDIENTE") {
     return (
       <span className="status status-warning">
-        <Clock3 size={14} aria-hidden="true" /> Reserva · Meet pendiente
+        <Clock3 size={14} aria-hidden="true" /> Meet pendiente
       </span>
     );
-  }
-
-  if (status === "SINCRONIZADA") {
-    return <span className="status status-ok">Meet creado</span>;
   }
 
   if (status === "ERROR" && hasMeet) {
     return (
       <span className="status status-warning">
-        <AlertTriangle size={14} aria-hidden="true" /> Meet creado · configuración pendiente
+        <AlertTriangle size={14} aria-hidden="true" /> Configuración de Meet pendiente
       </span>
     );
   }
@@ -34,7 +30,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
     );
   }
 
-  return <span className="status status-neutral">Sin reserva Meet</span>;
+  return null;
 }
 
 export function MeetPendingNotice() {
