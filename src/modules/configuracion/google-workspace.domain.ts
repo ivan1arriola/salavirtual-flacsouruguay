@@ -45,7 +45,7 @@ export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("s
 ]);
 
 export const pruebaConfiguracionGoogleWorkspaceSchema = z.object({
-  objetivo: z.enum(["CREDENCIAL", "DELEGACION", "DRIVE"])
+  objetivo: z.enum(["CREDENCIAL", "DELEGACION", "SCOPES", "DRIVE"])
 });
 
 export type ConfiguracionGoogleWorkspaceInput = Readonly<
@@ -73,13 +73,16 @@ export function mensajeErrorGoogleWorkspace(error: unknown): string {
     return "Google no reconoce la cuenta de servicio configurada. Revisá que el email y la clave privada pertenezcan a una cuenta de servicio vigente del mismo proyecto.";
   }
   if (normalized.includes("unauthorized_client")) {
-    return "Google rechazó la delegación. En la Consola de administración autorizá el ID numérico del cliente de la cuenta de servicio con estos scopes: https://www.googleapis.com/auth/calendar.events, https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/meetings.space.settings, https://www.googleapis.com/auth/meetings.space.readonly y https://www.googleapis.com/auth/gmail.send. No uses el email como ID de cliente.";
+    return "Google rechazó la delegación. En la Consola de administración autorizá el ID numérico del cliente de la cuenta de servicio con los scopes requeridos. No uses el email como ID de cliente.";
   }
   if (normalized.includes("delegation denied")) {
     return "Google denegó la delegación del dominio. Revisá el ID numérico del cliente, el usuario delegado y los scopes autorizados.";
   }
+  if (normalized.includes("insufficient authentication scopes") || normalized.includes("insufficient oauth")) {
+    return "Faltan scopes OAuth en la delegación de todo el dominio. Usá Validar scopes en Configuración → Google Workspace para identificar cuáles faltan.";
+  }
   if (normalized.includes("insufficient") || normalized.includes("permission")) {
-    return "Google autenticó la cuenta, pero no puede escribir en la carpeta. Dale acceso de editor al usuario delegado y a las cuentas sala01 a sala10.";
+    return "Google autenticó la cuenta, pero la operación no tiene permisos suficientes. Revisá los scopes y los permisos del usuario delegado sobre el recurso.";
   }
   return message || "No se pudo completar la prueba con Google.";
 }
