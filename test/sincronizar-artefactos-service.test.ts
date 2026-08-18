@@ -11,6 +11,7 @@ const baseEvent = (overrides: Record<string, unknown> = {}) => ({
     inicioProgramadoAt: new Date("2026-08-18T21:00:00.000Z"),
     finProgramadoAt: new Date("2026-08-18T22:00:00.000Z"),
     timezone: "America/Montevideo",
+    requiereGrabacion: false,
     solicitud: { titulo: "Seminario de prueba" }
   },
   ...overrides
@@ -90,6 +91,50 @@ describe("sincronización robusta de artefactos Meet", () => {
       data: {
         conferenceRecordName: "conferenceRecords/c1",
         driveFolderId: "folder-1",
+        archivosSincronizadosAt: null,
+        errorArchivos: null
+      }
+    });
+  });
+
+  it("mantiene pendiente una grabación requerida hasta que Google genere el archivo", async () => {
+    const storage = fakeDb(baseEvent({
+      instancia: {
+        inicioProgramadoAt: new Date("2026-08-18T21:00:00.000Z"),
+        finProgramadoAt: new Date("2026-08-18T22:00:00.000Z"),
+        timezone: "America/Montevideo",
+        requiereGrabacion: true,
+        solicitud: { titulo: "Seminario de prueba" }
+      }
+    }));
+    const client = {
+      buscarConferencia: vi.fn(async () => ({
+        name: "conferenceRecords/recording-pending",
+        startTime: "2026-08-18T21:00:00.000Z",
+        endTime: "2026-08-18T22:05:00.000Z"
+      })),
+      obtenerConferencia: vi.fn(),
+      obtenerOCrearCarpeta: vi.fn(async () => "folder-pending"),
+      obtenerArtefactos: vi.fn(async () => ({ recordings: [], transcripts: [], notes: [], pendientes: 0 })),
+      obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
+      subirDocumentoGoogle: vi.fn(async () => ({
+        id: "attendance-doc",
+        name: "asistencia",
+        mimeType: "application/vnd.google-apps.document"
+      })),
+      moverArchivo: vi.fn()
+    };
+
+    const [result] = await sincronizarArtefactosMeet({
+      db: storage.db,
+      descifrar: () => "private-key",
+      crearClient: () => client as never
+    }, ["event-1"]);
+
+    expect(result).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", archivos: 1 });
+    expect(storage.updates.at(-1)).toMatchObject({
+      data: {
+        conferenceRecordName: "conferenceRecords/recording-pending",
         archivosSincronizadosAt: null,
         errorArchivos: null
       }
