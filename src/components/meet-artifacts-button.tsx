@@ -9,6 +9,7 @@ type SyncSummary = Readonly<{
   archivos: number;
   sinRegistroFinalizado: number;
   artefactosPendientes: number;
+  grabacionesPendientes: number;
   noGrabadas: number;
   errores: number;
 }>;
@@ -49,9 +50,14 @@ export function MeetArtifactsButton({ count }: Readonly<{ count: number }>) {
               Revisión terminada: {summary.procesadas} {summary.procesadas === 1 ? "reunión revisada" : "reuniones revisadas"}, {summary.archivos} {summary.archivos === 1 ? "archivo nuevo" : "archivos nuevos"}
               {` y ${summary.errores} ${summary.errores === 1 ? "error" : "errores"}.`}
             </small>
+            {summary.grabacionesPendientes > 0 ? (
+              <small>
+                {summary.grabacionesPendientes} {summary.grabacionesPendientes === 1 ? "grabación sigue procesándose" : "grabaciones siguen procesándose"} en Google Meet.
+              </small>
+            ) : null}
             {summary.noGrabadas > 0 ? (
               <small>
-                {summary.noGrabadas} {summary.noGrabadas === 1 ? "reunión que requería grabación terminó sin grabarse" : "reuniones que requerían grabación terminaron sin grabarse"}.
+                {summary.noGrabadas} {summary.noGrabadas === 1 ? "reunión que requería grabación terminó sin que nadie iniciara una grabación" : "reuniones que requerían grabación terminaron sin que nadie iniciara una grabación"}.
               </small>
             ) : null}
             {summary.artefactosPendientes > 0 ? (
