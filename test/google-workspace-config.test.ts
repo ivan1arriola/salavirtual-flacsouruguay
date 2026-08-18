@@ -3,6 +3,7 @@ import {
   configuracionGoogleWorkspaceSchema,
   mensajeErrorGoogleWorkspace,
   puedeConfigurarGoogleWorkspace,
+  pruebaConfiguracionGoogleWorkspaceSchema,
   seccionConfiguracionGoogleWorkspaceSchema
 } from "../src/modules/configuracion/google-workspace.domain";
 
@@ -68,14 +69,17 @@ describe("configuracion funcional de Google Workspace", () => {
     });
   });
 
+  it("acepta la prueba especifica de scopes", () => {
+    expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({ objetivo: "SCOPES" }))
+      .toEqual({ objetivo: "SCOPES" });
+  });
+
   it("explica como corregir unauthorized_client", () => {
     const message = mensajeErrorGoogleWorkspace(
       new Error("unauthorized_client: Client is unauthorized")
     );
     expect(message).toContain("ID numérico");
-    expect(message).toContain("https://www.googleapis.com/auth/drive");
-    expect(message).toContain("meetings.space.settings");
-    expect(message).toContain("https://www.googleapis.com/auth/gmail.send");
+    expect(message).toContain("scopes requeridos");
   });
 
   it("explica como corregir invalid_client", () => {
@@ -84,5 +88,13 @@ describe("configuracion funcional de Google Workspace", () => {
     );
     expect(message).toContain("cuenta de servicio");
     expect(message).toContain("email y la clave privada");
+  });
+
+  it("distingue scopes insuficientes de permisos de Drive", () => {
+    const message = mensajeErrorGoogleWorkspace(
+      new Error("Request had insufficient authentication scopes.")
+    );
+    expect(message).toContain("Faltan scopes OAuth");
+    expect(message).toContain("Validar scopes");
   });
 });
