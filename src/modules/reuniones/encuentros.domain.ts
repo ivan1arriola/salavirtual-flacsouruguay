@@ -36,6 +36,14 @@ export function puedeGestionarEncuentros(
     (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
 
+export function puedeCambiarAsistenciaEncuentro(
+  estado: string,
+  finProgramadoAt: Date,
+  ahora: Date
+): boolean {
+  return estado === "PROGRAMADA" && finProgramadoAt > ahora;
+}
+
 type EstadoIntegracionReunion = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
 type EstadoSolicitudReunion = "REGISTRADA" | "PROVISIONANDO" | "PROVISIONADA" | "REQUIERE_REVISION";
 

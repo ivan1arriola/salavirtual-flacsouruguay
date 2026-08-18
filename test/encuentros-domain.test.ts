@@ -3,6 +3,7 @@ import {
   actualizarEncuentroSchema,
   elegirCuentaHost,
   elegirCuentaHostParaPeriodos,
+  puedeCambiarAsistenciaEncuentro,
   puedeGestionarEncuentros,
   resolverEstadoSolicitudPorIntegraciones
 } from "../src/modules/reuniones/encuentros.domain";
@@ -19,6 +20,26 @@ describe("gestión funcional de encuentros", () => {
     expect(puedeGestionarEncuentros("ADMINISTRACION", "a", "d")).toBe(true);
     expect(puedeGestionarEncuentros("DOCENTE", "d", "d")).toBe(true);
     expect(puedeGestionarEncuentros("DOCENTE", "otro", "d")).toBe(false);
+  });
+
+  it("permite cambiar asistencia antes y durante el encuentro, pero no después", () => {
+    const ahora = new Date("2026-08-18T21:25:00Z");
+
+    expect(puedeCambiarAsistenciaEncuentro(
+      "PROGRAMADA",
+      new Date("2026-08-18T22:00:00Z"),
+      ahora
+    )).toBe(true);
+    expect(puedeCambiarAsistenciaEncuentro(
+      "PROGRAMADA",
+      new Date("2026-08-18T21:25:00Z"),
+      ahora
+    )).toBe(false);
+    expect(puedeCambiarAsistenciaEncuentro(
+      "FINALIZADA",
+      new Date("2026-08-18T22:00:00Z"),
+      ahora
+    )).toBe(false);
   });
 
   it("conserva la sala de la serie cuando está disponible", () => {
