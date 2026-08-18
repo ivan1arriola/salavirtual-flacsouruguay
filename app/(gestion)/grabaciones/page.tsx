@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, FolderOpen, NotebookText, Play, UsersRound, Video } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText, FolderOpen, NotebookText, Play, UsersRound, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -6,7 +6,10 @@ import { MeetArtifactsButton } from "@/src/components/meet-artifacts-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
-import { listarArchivosMeetVisibles } from "@/src/modules/meet/grabaciones.adapter";
+import {
+  listarArchivosMeetVisibles,
+  listarGrabacionesPendientesVisibles
+} from "@/src/modules/meet/grabaciones.adapter";
 import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
 import { etiquetaTipoArtefactoMeet, type TipoArtefactoMeet } from "@/src/modules/meet/meet-artifacts.domain";
 
@@ -17,18 +20,17 @@ export default async function GrabacionesPage() {
   if (!actor?.activo) redirect("/acceso");
   const canSynchronize = puedeSincronizarGrabaciones(actor.rol);
   const now = new Date();
-  const [artifacts, finishedMeet, workspaceConfiguration] = await Promise.all([
+  const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const [artifacts, pendingRecordings, finishedMeet, workspaceConfiguration] = await Promise.all([
     listarArchivosMeetVisibles(db, actor),
+    listarGrabacionesPendientesVisibles(db, actor, since, now),
     canSynchronize
       ? db.eventoProveedor.count({
           where: {
             proveedor: { tipo: "GOOGLE_MEET" },
             codigoReunion: { not: null },
             instancia: {
-              finProgramadoAt: {
-                gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-                lte: now
-              },
+              finProgramadoAt: { gte: since, lte: now },
               estado: { not: "CANCELADA" }
             }
           }
@@ -46,7 +48,8 @@ export default async function GrabacionesPage() {
     grabaciones: artifacts.filter(({ tipo }) => tipo === "GRABACION").length,
     transcripciones: artifacts.filter(({ tipo }) => tipo === "TRANSCRIPCION").length,
     asistencias: artifacts.filter(({ tipo }) => tipo === "LISTA_ASISTENCIA").length,
-    notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length
+    notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length,
+    pendientes: pendingRecordings.length
   };
 
   return (
@@ -56,7 +59,7 @@ export default async function GrabacionesPage() {
           <p className="page-eyebrow">Google Meet</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {artifacts.length} archivos disponibles · {counts.grabaciones} grabaciones · {counts.transcripciones} transcripciones · {counts.asistencias} listas de asistencia · {counts.notas} notas.
+            {artifacts.length} archivos disponibles · {counts.grabaciones} grabaciones · {counts.transcripciones} transcripciones · {counts.asistencias} listas de asistencia · {counts.notas} notas · {counts.pendientes} grabaciones pendientes.
           </p>
         </div>
         {generalFolderId ? (
@@ -74,6 +77,60 @@ export default async function GrabacionesPage() {
       {canSynchronize ? (
         <section className="content-section">
           <MeetArtifactsButton count={finishedMeet} />
+        </section>
+      ) : null}
+
+      {pendingRecordings.length > 0 ? (
+        <section className="content-section">
+          <div className="section-heading">
+            <div>
+              <h2>Grabaciones pendientes</h2>
+              <p>Encuentros que debían grabarse pero cuyo archivo todavía no fue generado por Google Meet.</p>
+            </div>
+          </div>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Detalle</th><th>Carpeta</th></tr></thead>
+              <tbody>
+                {pendingRecordings.map((event) => {
+                  const meeting = event.instancia;
+                  const association = meeting.solicitud.docentePrograma;
+                  return (
+                    <tr key={event.id}>
+                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
+                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
+                      <td>{association.programa.nombre}</td>
+                      <td><span className="status status-warning"><Video size={14} aria-hidden="true" />Grabación pendiente</span></td>
+                      <td>
+                        <strong>Google Meet todavía no generó el archivo.</strong>
+                        <small>
+                          {event.errorArchivos
+                            ? `La última revisión tuvo una incidencia: ${event.errorArchivos}`
+                            : event.conferenceRecordName
+                              ? "La conferencia ya fue detectada y seguirá revisándose automáticamente."
+                              : "Todavía se está esperando el registro finalizado de la conferencia."}
+                        </small>
+                      </td>
+                      <td>
+                        {event.driveFolderId ? (
+                          <a
+                            className="text-link recording-folder-link"
+                            href={driveFolderUrl(event.driveFolderId)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
+                          </a>
+                        ) : event.errorArchivos ? (
+                          <span className="status status-error"><AlertTriangle size={14} aria-hidden="true" />Revisión con error</span>
+                        ) : <span className="muted-text">Carpeta pendiente</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 
