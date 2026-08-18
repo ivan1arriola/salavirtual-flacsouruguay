@@ -17,6 +17,22 @@ type ServiceAccountCredential = Readonly<{
 type DelegatedCredential = ServiceAccountCredential &
   Readonly<{ subject: string }>;
 
+export type GoogleWorkspaceScopeValidation = Readonly<{
+  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "gmail.send";
+  label: string;
+  scope: string;
+  autorizado: boolean;
+  error?: string;
+}>;
+
+const REQUIRED_SCOPES: readonly Omit<GoogleWorkspaceScopeValidation, "autorizado" | "error">[] = [
+  { key: "calendar.events", label: "Google Calendar", scope: CALENDAR_SCOPE },
+  { key: "drive", label: "Google Drive", scope: DRIVE_SCOPE },
+  { key: "meetings.space.settings", label: "Meet · configuración", scope: MEET_SETTINGS_SCOPE },
+  { key: "meetings.space.readonly", label: "Meet · lectura", scope: MEET_READ_SCOPE },
+  { key: "gmail.send", label: "Gmail · envío", scope: GMAIL_SEND_SCOPE }
+];
+
 const WRITER_ROLES = new Set(["organizer", "fileOrganizer", "writer"]);
 
 export async function probarCredencialGoogle(
@@ -43,6 +59,24 @@ export async function probarDelegacionGoogle(
     method: "GET"
   });
   return `Delegación válida para ${credential.subject}: Calendar, Drive, Meet y Gmail autorizados.`;
+}
+
+export async function validarScopesGoogle(
+  credential: DelegatedCredential
+): Promise<readonly GoogleWorkspaceScopeValidation[]> {
+  return Promise.all(REQUIRED_SCOPES.map(async (required) => {
+    try {
+      const auth = crearJwt(credential, required.scope);
+      await auth.authorize();
+      return { ...required, autorizado: true };
+    } catch (error) {
+      return {
+        ...required,
+        autorizado: false,
+        error: mensajeScope(error)
+      };
+    }
+  }));
 }
 
 export async function probarDestinoDrive(
@@ -134,4 +168,16 @@ function crearJwt(
     scopes: typeof scope === "string" ? [scope] : [...scope],
     subject: credential.subject
   });
+}
+
+function mensajeScope(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const normalized = message.toLowerCase();
+  if (normalized.includes("access_denied") || normalized.includes("unauthorized_client")) {
+    return "No autorizado en la delegación de todo el dominio.";
+  }
+  if (normalized.includes("admin_policy_enforced")) {
+    return "Bloqueado por una política de Google Workspace.";
+  }
+  return message || "Google rechazó este scope.";
 }
