@@ -147,7 +147,7 @@ describe("plan funcional de migracion de usuarios", () => {
     const base = "ana.perez";
     const reservados = new Set([
       base,
-      ...Array.from({ length: 998 }, (_, index) => `${base}-${index + 2}`)
+      ...Array.from({ length: 999 }, (_, index) => `${base}-${index + 2}`)
     ]);
 
     expect(() => planificarMigracionUsuarios(
