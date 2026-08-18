@@ -39,10 +39,13 @@ export type MovedDriveFile = Readonly<{
   webViewLink?: string;
 }>;
 
+export type EstadoGrabacionMeet = "AUSENTE" | "PROCESANDO" | "GENERADA";
+
 export type MeetArtifactsScan = Readonly<{
   recordings: readonly GoogleArtifact[];
   transcripts: readonly GoogleArtifact[];
   notes: readonly GoogleArtifact[];
+  estadoGrabacion: EstadoGrabacionMeet;
   pendientes: number;
 }>;
 
@@ -104,10 +107,17 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
         item.state === "FILE_GENERATED" && item.docsDestination?.document
           ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
           : []);
+      const estadoGrabacion: EstadoGrabacionMeet = generatedRecordings.length > 0
+        ? "GENERADA"
+        : recordings.length > 0
+          ? "PROCESANDO"
+          : "AUSENTE";
+
       return {
         recordings: generatedRecordings,
         transcripts: generatedTranscripts,
         notes: generatedNotes,
+        estadoGrabacion,
         pendientes:
           recordings.length - generatedRecordings.length +
           transcripts.length - generatedTranscripts.length +
@@ -152,7 +162,7 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
         method: "GET"
       });
       if (listed.data.files?.[0]?.id) return listed.data.files[0].id;
-      const created = await requestGoogle<{ id?: string }>(auth, {
+      const created = await requestGoogle<{ id?: string }> (auth, {
         url: `${DRIVE_API}/files?fields=id&supportsAllDrives=true`,
         method: "POST",
         data: { name, mimeType: FOLDER_MIME, parents: [parentId] }
