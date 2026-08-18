@@ -10,7 +10,8 @@ import {
 import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
-  probarDestinoDrive
+  probarDestinoDrive,
+  validarScopesGoogle
 } from "@/src/modules/configuracion/google-workspace-test.adapter";
 
 export const runtime = "nodejs";
@@ -47,7 +48,8 @@ export async function POST(request: Request) {
       serviceAccountEmail: configuration.serviceAccountEmail,
       privateKey: descifrarConfiguracion(configuration.privateKeyCifrada)
     };
-    const hostEmails = objetivo === "DRIVE"
+    const needsHosts = objetivo === "DRIVE" || objetivo === "SCOPES";
+    const hostEmails = needsHosts
       ? (await db.cuentaProveedor.findMany({
           where: {
             proveedor: { tipo: "GOOGLE_MEET" },
@@ -58,6 +60,23 @@ export async function POST(request: Request) {
           orderBy: { prioridad: "asc" }
         })).flatMap(({ emailOrganizador }) => emailOrganizador ? [emailOrganizador] : [])
       : [];
+
+    if (objetivo === "SCOPES") {
+      const subject = hostEmails[0] ?? configuration.serviceAccountSubject;
+      if (!subject) {
+        throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet activa.");
+      }
+      const scopes = await validarScopesGoogle({ ...credential, subject });
+      const missing = scopes.filter(({ autorizado }) => !autorizado);
+      return NextResponse.json({
+        message: missing.length === 0
+          ? `Todos los scopes requeridos están autorizados para ${subject}.`
+          : `${missing.length} ${missing.length === 1 ? "scope requiere" : "scopes requieren"} autorización en Google Admin.`,
+        subject,
+        scopes
+      });
+    }
+
     const message = await ejecutarPrueba(objetivo, configuration, credential, hostEmails);
     return NextResponse.json({ message });
   } catch (error) {
