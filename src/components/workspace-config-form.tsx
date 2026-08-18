@@ -1,6 +1,7 @@
 import { WorkspaceCredentialForm } from "./workspace-credential-form";
 import { WorkspaceDelegationForm } from "./workspace-delegation-form";
 import { WorkspaceDriveForm } from "./workspace-drive-form";
+import { WorkspaceScopesValidator } from "./workspace-scopes-validator";
 import { WorkspaceStatusForm } from "./workspace-status-form";
 
 export type WorkspaceConfigVisible = Readonly<{
@@ -21,6 +22,7 @@ export function WorkspaceConfigForm({
         privateKeyConfigured={initial?.privateKeyConfigurada ?? false}
       />
       <WorkspaceDelegationForm subject={initial?.serviceAccountSubject ?? ""} />
+      <WorkspaceScopesValidator />
       <WorkspaceDriveForm folderId={initial?.driveDestinationId ?? ""} />
       <WorkspaceStatusForm active={initial?.activa ?? true} />
     </>
