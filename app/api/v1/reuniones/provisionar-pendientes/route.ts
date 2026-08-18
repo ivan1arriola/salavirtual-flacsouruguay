@@ -57,7 +57,7 @@ export async function POST(request: Request) {
             { status: 409 },
           );
         }
-        if (!(["PENDIENTE", "ERROR"] as const).includes(current.estadoIntegracion as "PENDIENTE" | "ERROR")) {
+        if (current.estadoIntegracion !== "PENDIENTE" && current.estadoIntegracion !== "ERROR") {
           return NextResponse.json(
             { error: "El evento no requiere reparación." },
             { status: 409 },
