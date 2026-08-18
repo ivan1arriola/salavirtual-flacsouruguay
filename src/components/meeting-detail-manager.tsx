@@ -37,6 +37,7 @@ type Encounter = Readonly<{
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
+  puedeCambiarAsistencia: boolean;
   esDeHoy: boolean;
   temporalidad: "PASADO" | "EN_CURSO" | "FUTURO";
 }>;
@@ -244,9 +245,9 @@ export function MeetingDetailManager({
                         </button>
                       ) : null}
                       {meeting.requiereAsistenciaTecnica ? (
-                        <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia</button>
+                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia</button>
                       ) : (
-                        <button className="secondary-action" disabled={!meeting.editable || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
+                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
                       )}
                       <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar reunión para borrar la serie completa" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
                     </div>
