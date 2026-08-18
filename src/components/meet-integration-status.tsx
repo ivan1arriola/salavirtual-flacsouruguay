@@ -2,9 +2,10 @@ import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
 
 type MeetIntegrationStatusProps = Readonly<{
   status?: "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
+  hasMeet?: boolean;
 }>;
 
-export function MeetIntegrationStatus({ status }: MeetIntegrationStatusProps) {
+export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrationStatusProps) {
   if (status === "PENDIENTE") {
     return (
       <span className="status status-warning">
@@ -17,6 +18,14 @@ export function MeetIntegrationStatus({ status }: MeetIntegrationStatusProps) {
     return (
       <span className="status status-ok">
         <CheckCircle2 size={14} aria-hidden="true" /> Meet creado
+      </span>
+    );
+  }
+
+  if (status === "ERROR" && hasMeet) {
+    return (
+      <span className="status status-warning">
+        <AlertTriangle size={14} aria-hidden="true" /> Meet creado · configuración pendiente
       </span>
     );
   }

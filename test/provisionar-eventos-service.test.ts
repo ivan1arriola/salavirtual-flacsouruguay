@@ -256,6 +256,27 @@ describe("sincronizarEventosPendientes", () => {
     expect(f.state.event.estadoIntegracion).toBe("SINCRONIZADA");
   });
 
+  it("conserva el enlace Meet si falla la configuración posterior a la creación", async () => {
+    const f = fixture("PROVISIONAR");
+    const p = provider({
+      configurarEventoMeet: vi.fn(async () => {
+        throw new Error("No se pudo configurar el espacio de Meet");
+      }),
+    });
+
+    const result = await sincronizarEventosPendientes({
+      db: f.db,
+      descifrar: () => "private-key",
+      crearProvider: () => p,
+    }, ["event-1"]);
+
+    expect(result[0]?.estado).toBe("ERROR");
+    expect(f.state.event.estadoIntegracion).toBe("ERROR");
+    expect(f.state.event.externalEventId).toBe("calendar-1");
+    expect(f.state.event.codigoReunion).toBe("abc-defg-hij");
+    expect(f.state.event.joinUrl).toBe("https://meet.google.com/abc-defg-hij");
+  });
+
   it("no declara sincronizada una reprogramación si Calendar conserva el horario anterior", async () => {
     const f = fixture("REPROGRAMAR", { externalEventId: "calendar-1" });
     const stale = meetResult();

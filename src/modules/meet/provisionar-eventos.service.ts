@@ -117,10 +117,10 @@ export async function sincronizarEventosPendientes(
           result = await provisionar(provider, dependencies.db, claim.event, request);
           break;
         case "REPROGRAMAR":
-          result = await reprogramarYReconciliar(provider, claim.event, request);
+          result = await reprogramarYReconciliar(provider, dependencies.db, claim.event, request);
           break;
         case "CONFIGURAR_MEET":
-          result = await configurarMeet(provider, claim.event, request);
+          result = await configurarMeet(provider, dependencies.db, claim.event, request);
           break;
         case "CANCELAR": {
           if (claim.event.externalEventId) {
@@ -257,12 +257,14 @@ async function provisionar(
 
   const result = await obtenerConReintentos(provider, request.calendarId, externalEventId);
   if (!result) throw new Error("Google Calendar todavía no terminó de generar el enlace Meet.");
+  await persistirMeetDetectado(db, event.id, result);
   await provider.configurarEventoMeet(request, result);
   return result;
 }
 
 async function reprogramarYReconciliar(
   provider: MeetProvider,
+  db: PrismaClient,
   event: EventoReclamable,
   request: MeetProvisionRequest,
 ): Promise<MeetProvisionResult> {
@@ -273,18 +275,21 @@ async function reprogramarYReconciliar(
   if (!eventoCalendarCoincideConSolicitud(result.payload, request)) {
     throw new Error("Google Calendar todavía no refleja la reprogramación solicitada.");
   }
+  await persistirMeetDetectado(db, event.id, result);
   await provider.configurarEventoMeet(request, result);
   return result;
 }
 
 async function configurarMeet(
   provider: MeetProvider,
+  db: PrismaClient,
   event: EventoReclamable,
   request: MeetProvisionRequest,
 ): Promise<MeetProvisionResult> {
   if (!event.externalEventId) throw new Error("No existe un evento Calendar para configurar Meet.");
   const result = await obtenerConReintentos(provider, request.calendarId, event.externalEventId);
   if (!result) throw new Error("Google Calendar todavía no confirmó el enlace Meet.");
+  await persistirMeetDetectado(db, event.id, result);
   await provider.configurarEventoMeet(request, result);
   return result;
 }
@@ -318,6 +323,22 @@ async function obtenerConReintentos(
     if (result) return result;
   }
   return null;
+}
+
+async function persistirMeetDetectado(
+  db: PrismaClient,
+  id: string,
+  result: MeetProvisionResult,
+): Promise<void> {
+  await db.eventoProveedor.update({
+    where: { id },
+    data: {
+      externalEventId: result.externalEventId,
+      codigoReunion: result.codigoReunion,
+      joinUrl: result.joinUrl,
+      payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
+    },
+  });
 }
 
 async function finalizarOperacion(

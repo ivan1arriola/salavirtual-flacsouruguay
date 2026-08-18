@@ -336,7 +336,7 @@ export default async function HomePage() {
                       </td>
                       <td className="meet-room-cell">
                         <strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong>
-                        <small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>
+                        <small><MeetIntegrationStatus status={meet?.estadoIntegracion} hasMeet={Boolean(meet?.joinUrl)} /></small>
                         {meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : <span className="muted-text">Link pendiente</span>}
                       </td>
                       <td>
