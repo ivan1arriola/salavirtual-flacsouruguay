@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 const revisionSchema = z.object({
   eventoProveedorId: z.string().min(1),
-  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]),
+  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -28,41 +28,79 @@ export async function POST(request: Request) {
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
     const body = await request.json().catch(() => null);
+    let targetIds: readonly string[] | null = null;
+
     if (body !== null) {
       const revision = revisionSchema.parse(body);
-      const assigned = await db.eventoProveedor.updateMany({
+      const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
           proveedor: { tipo: "GOOGLE_MEET" },
-          operacionPendiente: null,
-          estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
         },
-        data: {
-          operacionPendiente: revision.operacion,
-          estadoIntegracion: "PENDIENTE",
-          reclamoIntegracionAt: null,
-          reclamoIntegracionToken: null,
-          errorIntegracion: null,
+        select: {
+          id: true,
+          estadoIntegracion: true,
+          operacionPendiente: true,
         },
       });
-      if (assigned.count !== 1) {
-        return NextResponse.json(
-          { error: "El evento no requiere revisión manual o ya fue reclamado." },
-          { status: 409 },
-        );
+
+      if (!current) {
+        return NextResponse.json({ error: "El evento Meet no existe." }, { status: 404 });
       }
+
+      if (!current.operacionPendiente) {
+        if (!revision.operacion) {
+          return NextResponse.json(
+            { error: "El evento no tiene una operación pendiente para reintentar." },
+            { status: 409 },
+          );
+        }
+        if (!(["PENDIENTE", "ERROR"] as const).includes(current.estadoIntegracion as "PENDIENTE" | "ERROR")) {
+          return NextResponse.json(
+            { error: "El evento no requiere reparación." },
+            { status: 409 },
+          );
+        }
+
+        const assigned = await db.eventoProveedor.updateMany({
+          where: {
+            id: revision.eventoProveedorId,
+            proveedor: { tipo: "GOOGLE_MEET" },
+            operacionPendiente: null,
+            estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
+          },
+          data: {
+            operacionPendiente: revision.operacion,
+            estadoIntegracion: "PENDIENTE",
+            reclamoIntegracionAt: null,
+            reclamoIntegracionToken: null,
+            errorIntegracion: null,
+          },
+        });
+        if (assigned.count !== 1) {
+          return NextResponse.json(
+            { error: "El evento cambió mientras se intentaba preparar la reparación." },
+            { status: 409 },
+          );
+        }
+      }
+
+      targetIds = [revision.eventoProveedorId];
     }
-    const events = await db.eventoProveedor.findMany({
+
+    const ids = targetIds ?? (await db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
         operacionPendiente: { not: null },
       },
       select: { id: true },
-    });
+    })).map(({ id }) => id);
+
     const results = await sincronizarEventosPendientes(
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      events.map(({ id }) => id),
+      ids,
     );
     const payload = {
       procesadas: results.length,
@@ -71,6 +109,7 @@ export async function POST(request: Request) {
       pendientesConfiguracion: results.filter(({ estado }) => estado === "PENDIENTE_CONFIGURACION").length,
       requierenRevision: results.filter(({ estado }) => estado === "REQUIERE_REVISION").length,
       errores: results.filter(({ estado }) => estado === "ERROR").length,
+      resultados: results,
     };
     const pending = results.some(({ estado }) => estado !== "SINCRONIZADA");
     return NextResponse.json(payload, { status: pending ? 202 : 200 });
