@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm install --package-lock=false
 
-      - name: Install coverage provider
-        run: npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.6
+      - name: Install matching coverage provider
+        run: npm install --no-save --package-lock=false vitest@4.1.6 @vitest/coverage-v8@4.1.6
 
       - name: TypeScript
         run: npm run check
