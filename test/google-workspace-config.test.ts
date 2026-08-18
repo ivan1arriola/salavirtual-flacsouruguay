@@ -8,7 +8,7 @@ import {
 } from "../src/modules/configuracion/google-workspace.domain";
 
 describe("configuracion funcional de Google Workspace", () => {
-  it("reserva la configuracion a Administracion", () => {
+  it("reserva la configuracion a Administracion activa", () => {
     expect(
       puedeConfigurarGoogleWorkspace({
         id: "admin",
@@ -16,6 +16,13 @@ describe("configuracion funcional de Google Workspace", () => {
         activo: true
       })
     ).toBe(true);
+    expect(
+      puedeConfigurarGoogleWorkspace({
+        id: "admin-inactivo",
+        rol: "ADMINISTRACION",
+        activo: false
+      })
+    ).toBe(false);
     expect(
       puedeConfigurarGoogleWorkspace({
         id: "docente",
@@ -37,6 +44,16 @@ describe("configuracion funcional de Google Workspace", () => {
     expect(parsed.privateKey).toContain("\ncontenido\n");
   });
 
+  it("rechaza una clave privada que no tenga formato PEM", () => {
+    expect(() => configuracionGoogleWorkspaceSchema.parse({
+      serviceAccountEmail: "service@project.iam.gserviceaccount.com",
+      privateKey: "no-es-pem",
+      serviceAccountSubject: "usuario@flacso.edu.uy",
+      driveDestinationId: "drive-folder",
+      activa: true
+    })).toThrow("formato PEM");
+  });
+
   it("valida cada seccion sin exigir valores de las otras", () => {
     expect(
       seccionConfiguracionGoogleWorkspaceSchema.parse({
@@ -53,6 +70,12 @@ describe("configuracion funcional de Google Workspace", () => {
         driveDestinationId: "drive-folder"
       })
     ).toEqual({ seccion: "DRIVE", driveDestinationId: "drive-folder" });
+    expect(
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "ESTADO",
+        activa: false
+      })
+    ).toEqual({ seccion: "ESTADO", activa: false });
   });
 
   it("permite conservar una clave privada ya configurada sin exponerla", () => {
@@ -90,11 +113,26 @@ describe("configuracion funcional de Google Workspace", () => {
     expect(message).toContain("email y la clave privada");
   });
 
-  it("distingue scopes insuficientes de permisos de Drive", () => {
-    const message = mensajeErrorGoogleWorkspace(
+  it("explica cuando Google deniega la delegación del dominio", () => {
+    expect(mensajeErrorGoogleWorkspace(new Error("Delegation denied for user")))
+      .toContain("Google denegó la delegación del dominio");
+  });
+
+  it("distingue scopes insuficientes de permisos de recursos", () => {
+    const scopesMessage = mensajeErrorGoogleWorkspace(
       new Error("Request had insufficient authentication scopes.")
     );
-    expect(message).toContain("Faltan scopes OAuth");
-    expect(message).toContain("Validar scopes");
+    expect(scopesMessage).toContain("Faltan scopes OAuth");
+    expect(scopesMessage).toContain("Validar scopes");
+
+    const permissionMessage = mensajeErrorGoogleWorkspace(
+      new Error("insufficient permission to access resource")
+    );
+    expect(permissionMessage).toContain("operación no tiene permisos suficientes");
+  });
+
+  it("conserva errores desconocidos y usa fallback para mensajes vacíos", () => {
+    expect(mensajeErrorGoogleWorkspace(new Error("fallo específico"))).toBe("fallo específico");
+    expect(mensajeErrorGoogleWorkspace("")).toBe("No se pudo completar la prueba con Google.");
   });
 });
