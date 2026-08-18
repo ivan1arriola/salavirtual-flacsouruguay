@@ -114,7 +114,7 @@ export async function crearReuniones(
     ];
     const [cohosts, automaticCohosts, hosts, occupiedHosts] = await Promise.all([
       tx.cuentaGoogleFlacso.findMany({
-        where: { id: { in: input.cohostCuentaIds } },
+        where: { id: { in: input.cohostCuentaIds }, user: { activo: true } },
         select: { id: true },
       }),
       tx.cuentaGoogleFlacso.findMany({
@@ -145,7 +145,7 @@ export async function crearReuniones(
       }),
     ]);
     if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
-      throw new ValidationApiError("Una o más cuentas cohost no existen.");
+      throw new ValidationApiError("Una o más cuentas cohost no existen o están inactivas.");
     }
 
     const cohostIds = [...new Set([...cohosts, ...automaticCohosts].map(({ id }) => id))];
