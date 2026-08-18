@@ -82,6 +82,56 @@ export async function aprobarSolicitudAccesoGoogle(
   });
 }
 
+export async function rechazarSolicitudAccesoGoogle(
+  db: PrismaClient,
+  actor: SessionActor,
+  solicitudId: string
+): Promise<void> {
+  if (!actor.activo || !puedeAdministrar(actor.rol)) {
+    throw new Error("Solo Administración puede rechazar solicitudes de acceso.");
+  }
+
+  await db.$transaction(async (tx) => {
+    const admin = await tx.usuario.findUnique({
+      where: { id: actor.id },
+      select: { id: true, rol: true, activo: true }
+    });
+    if (!admin?.activo || !puedeAdministrar(admin.rol)) {
+      throw new Error("La sesión ya no tiene permisos de Administración.");
+    }
+
+    const solicitud = await tx.solicitudAccesoGoogle.findUnique({
+      where: { id: solicitudId },
+      select: { id: true, email: true, providerAccountId: true, estado: true }
+    });
+    if (!solicitud || solicitud.estado !== "PENDIENTE") {
+      throw new Error("La solicitud ya no está pendiente.");
+    }
+
+    const eliminada = await tx.solicitudAccesoGoogle.deleteMany({
+      where: { id: solicitud.id, estado: "PENDIENTE" }
+    });
+    if (eliminada.count !== 1) {
+      throw new Error("La solicitud ya no está pendiente.");
+    }
+
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: admin.id,
+        accion: "SOLICITUD_ACCESO_GOOGLE_RECHAZADA",
+        entidadTipo: "SolicitudAccesoGoogle",
+        entidadId: solicitud.id,
+        valorAnterior: {
+          email: solicitud.email,
+          providerAccountId: solicitud.providerAccountId,
+          estado: solicitud.estado
+        },
+        valorNuevo: { eliminada: true }
+      }
+    });
+  });
+}
+
 async function idDisponible(tx: Prisma.TransactionClient, email: string): Promise<string> {
   const base = email.split("@")[0]
     .normalize("NFKD")

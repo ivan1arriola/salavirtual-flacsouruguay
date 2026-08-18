@@ -52,7 +52,7 @@ export async function invitarUsuario(
         rol: input.rol,
         activo: true,
         cuentasGoogle: {
-          create: { email: input.email, dominio: "flacso.edu.uy" }
+          create: { email: input.email, dominio: dominioEmail(input.email) }
         },
         ...(input.rol === "DOCENTE"
           ? {
@@ -86,7 +86,7 @@ export async function invitarUsuario(
         `Hola ${input.nombres},`,
         "",
         "Administración te invitó a Sala Virtual FLACSO.",
-        "Ingresá usando tu cuenta institucional de Google:",
+        "Ingresá usando la cuenta de Google asociada a este correo:",
         `${authConfig.baseUrl.replace(/\/$/, "")}/acceso`,
         "",
         "No necesitás crear una contraseña."
@@ -127,4 +127,8 @@ async function idInvitadoDisponible(tx: Prisma.TransactionClient, email: string)
   const local = email.split("@")[0].slice(0, 50);
   const exists = await tx.usuario.findUnique({ where: { id: local }, select: { id: true } });
   return exists ? `${local.slice(0, 40)}-${randomUUID().slice(0, 8)}` : local;
+}
+
+function dominioEmail(email: string): string {
+  return email.split("@")[1] ?? "";
 }

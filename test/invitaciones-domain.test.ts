@@ -11,27 +11,21 @@ describe("invitaciones de usuarios", () => {
     expect(puedeInvitarUsuarios({ rol: "ADMINISTRACION", activo: false })).toBe(false);
   });
 
-  it("acepta un docente FLACSO con un programa existente", () => {
+  it("acepta un docente con un programa existente sin restringir el dominio", () => {
     expect(invitarUsuarioSchema.safeParse({
       nombres: "Ana",
       apellidos: "Pérez",
-      email: "ANA@FLACSO.EDU.UY",
+      email: "ANA@GMAIL.COM",
       rol: "DOCENTE",
       programaId: "programa",
       programaNuevo: ""
     }).success).toBe(true);
   });
 
-  it("rechaza correos externos y docentes sin programa", () => {
+  it("sigue exigiendo un programa para docentes", () => {
     expect(invitarUsuarioSchema.safeParse({
       nombres: "Ana",
       email: "ana@gmail.com",
-      rol: "DOCENTE",
-      programaId: "programa"
-    }).success).toBe(false);
-    expect(invitarUsuarioSchema.safeParse({
-      nombres: "Ana",
-      email: "ana@flacso.edu.uy",
       rol: "DOCENTE",
       programaId: "",
       programaNuevo: ""
