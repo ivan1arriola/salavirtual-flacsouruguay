@@ -83,7 +83,7 @@ export default async function ReunionesDocentePage({
                       <td><span className={`status status-${statusTone(meeting.estado)}`}>{statusLabel(meeting.estado)}</span></td>
                       <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistenciaTecnica ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
                       <td>
-                        <small><MeetIntegrationStatus status={meet?.estadoIntegracion} /></small>
+                        <small><MeetIntegrationStatus status={meet?.estadoIntegracion} hasMeet={Boolean(meet?.joinUrl)} /></small>
                         {meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : null}
                       </td>
                     </tr>
