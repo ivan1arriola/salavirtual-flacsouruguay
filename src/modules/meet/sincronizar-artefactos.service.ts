@@ -1,5 +1,9 @@
 import type { PrismaClient, TipoArchivoReunion } from "@prisma/client";
-import type { crearGoogleMeetArtifactsClient, GoogleArtifact, MovedDriveFile } from "./google-meet-artifacts.adapter";
+import type {
+  crearGoogleMeetArtifactsClient,
+  GoogleArtifact,
+  MovedDriveFile
+} from "./google-meet-artifacts.adapter";
 import {
   nombreArchivoReunion,
   nombreCarpetaReunion,
@@ -18,10 +22,17 @@ export type SyncArtifactsDependencies = Readonly<{
   }>) => ArtifactsClient;
 }>;
 
+export type EstadoResultadoGrabacion =
+  | "NO_REQUERIDA"
+  | "PENDIENTE"
+  | "DISPONIBLE"
+  | "NO_REALIZADA";
+
 export type SyncArtifactsResult = Readonly<{
   eventoProveedorId: string;
-  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ERROR";
+  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ARTEFACTOS_PENDIENTES" | "ERROR";
   archivos: number;
+  grabacion?: EstadoResultadoGrabacion;
   error?: string;
 }>;
 
@@ -51,18 +62,19 @@ export async function sincronizarArtefactosMeet(
     }
   });
 
-  return Promise.all(events.map((event) => sincronizarEvento(
+  return mapConLimite(events, 3, (event) => sincronizarEvento(
     dependencies,
     configuration.driveDestinationId!,
     configuration.serviceAccountEmail!,
     privateKey,
     event
-  )));
+  ));
 }
 
 type SyncEvent = Readonly<{
   id: string;
   codigoReunion: string | null;
+  conferenceRecordName: string | null;
   cuentaProveedor: Readonly<{ emailOrganizador: string | null }> | null;
   archivos: readonly Readonly<{
     id: string;
@@ -74,6 +86,7 @@ type SyncEvent = Readonly<{
     inicioProgramadoAt: Date;
     finProgramadoAt: Date;
     timezone: string;
+    requiereGrabacion: boolean;
     solicitud: Readonly<{ titulo: string }>;
   }>;
 }>;
@@ -90,14 +103,22 @@ async function sincronizarEvento(
     return registrarError(dependencies.db, event.id, "La reunión no tiene host o código Meet.");
   }
   try {
-    const client = dependencies.crearClient({ serviceAccountEmail, privateKey, subject: hostEmail });
-    const conference = await client.buscarConferencia(
-      event.codigoReunion,
-      event.instancia.inicioProgramadoAt,
-      event.instancia.finProgramadoAt
-    );
+    const credentials = { serviceAccountEmail, privateKey, subject: hostEmail };
+    const client = dependencies.crearClient(credentials);
+    const conference = event.conferenceRecordName
+      ? await client.obtenerConferencia(event.conferenceRecordName)
+      : await client.buscarConferencia(
+          event.codigoReunion,
+          event.instancia.inicioProgramadoAt,
+          event.instancia.finProgramadoAt
+        );
     if (!conference?.endTime) {
-      return { eventoProveedorId: event.id, estado: "SIN_REGISTRO_FINALIZADO", archivos: 0 };
+      return {
+        eventoProveedorId: event.id,
+        estado: "SIN_REGISTRO_FINALIZADO",
+        archivos: 0,
+        grabacion: event.instancia.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+      };
     }
 
     const folderName = nombreCarpetaReunion({
@@ -117,6 +138,7 @@ async function sincronizarEvento(
       codigoReunion: event.codigoReunion
     };
     let synchronized = 0;
+    let pending = artifacts.pendientes;
 
     for (const [type, items] of [
       [TIPOS_ARTEFACTO_SINCRONIZABLES[0], artifacts.recordings],
@@ -128,23 +150,61 @@ async function sincronizarEvento(
         const name = nombreArchivoReunion({ ...common, tipo: type, indice: index + 1, extension: artifact.extension });
         const moved = await client.moverArchivo(artifact.driveFileId, folderId, name);
         await registrarArchivo(dependencies.db, event.id, type, artifact, moved);
+        known.add(artifact.resourceName);
         synchronized += 1;
       }
     }
 
+    const existingRecording = event.archivos.some(({ tipo }) => tipo === "GRABACION");
+    const recordingState: EstadoResultadoGrabacion = existingRecording || artifacts.estadoGrabacion === "GENERADA"
+      ? "DISPONIBLE"
+      : artifacts.estadoGrabacion === "PROCESANDO"
+        ? "PENDIENTE"
+        : event.instancia.requiereGrabacion
+          ? "NO_REALIZADA"
+          : "NO_REQUERIDA";
+
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource)) {
-      const html = await client.obtenerDocumentoAsistencia(conference.name);
-      const name = nombreArchivoReunion({ ...common, tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2], indice: 1 });
-      const uploaded = await client.subirDocumentoGoogle(folderId, name, html);
-      await registrarArchivo(
-        dependencies.db,
-        event.id,
-        TIPOS_ARTEFACTO_SINCRONIZABLES[2],
-        { resourceName: attendanceResource, driveFileId: uploaded.id },
-        uploaded
-      );
-      synchronized += 1;
+      const attendance = await client.obtenerDocumentoAsistencia(conference.name);
+      if (attendance.completa) {
+        const name = nombreArchivoReunion({ ...common, tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2], indice: 1 });
+        const uploaded = await client.subirDocumentoGoogle(folderId, name, attendance.html);
+        await registrarArchivo(
+          dependencies.db,
+          event.id,
+          TIPOS_ARTEFACTO_SINCRONIZABLES[2],
+          { resourceName: attendanceResource, driveFileId: uploaded.id },
+          uploaded
+        );
+        synchronized += 1;
+      } else if (conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
+        throw new Error(
+          attendance.participantes === 0
+            ? "Google Meet no devolvió participantes para generar la asistencia después de 24 horas."
+            : "Google Meet todavía devuelve sesiones de asistencia incompletas después de 24 horas."
+        );
+      } else {
+        pending += 1;
+      }
+    }
+
+    if (pending > 0) {
+      await dependencies.db.eventoProveedor.update({
+        where: { id: event.id },
+        data: {
+          conferenceRecordName: conference.name,
+          driveFolderId: folderId,
+          archivosSincronizadosAt: null,
+          errorArchivos: null
+        }
+      });
+      return {
+        eventoProveedorId: event.id,
+        estado: "ARTEFACTOS_PENDIENTES",
+        archivos: synchronized,
+        grabacion: recordingState
+      };
     }
 
     await dependencies.db.eventoProveedor.update({
@@ -156,7 +216,12 @@ async function sincronizarEvento(
         errorArchivos: null
       }
     });
-    return { eventoProveedorId: event.id, estado: "SINCRONIZADO", archivos: synchronized };
+    return {
+      eventoProveedorId: event.id,
+      estado: "SINCRONIZADO",
+      archivos: synchronized,
+      grabacion: recordingState
+    };
   } catch (error) {
     return registrarError(
       dependencies.db,
@@ -210,4 +275,27 @@ async function registrarError(
 ): Promise<SyncArtifactsResult> {
   await db.eventoProveedor.update({ where: { id: eventoProveedorId }, data: { errorArchivos: error } });
   return { eventoProveedorId, estado: "ERROR", archivos: 0, error };
+}
+
+function conferenciaTerminadaHaceMasDe(endTime: string, hours: number): boolean {
+  return Date.now() - Date.parse(endTime) > hours * 60 * 60 * 1000;
+}
+
+async function mapConLimite<T, R>(
+  items: readonly T[],
+  limite: number,
+  operation: (item: T) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(limite, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await operation(items[index]!);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }

@@ -39,7 +39,7 @@ async function executeSynchronization() {
   const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const baseWhere = {
     proveedor: { tipo: "GOOGLE_MEET" as const },
-    estadoIntegracion: "SINCRONIZADA" as const,
+    codigoReunion: { not: null },
     instancia: {
       finProgramadoAt: { gte: since, lte: now },
       estado: { not: "CANCELADA" as const }
@@ -81,6 +81,9 @@ async function executeSynchronization() {
     procesadas: results.length,
     sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADO").length,
     sinRegistroFinalizado: results.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO").length,
+    artefactosPendientes: results.filter(({ estado }) => estado === "ARTEFACTOS_PENDIENTES").length,
+    grabacionesPendientes: results.filter(({ grabacion }) => grabacion === "PENDIENTE").length,
+    noGrabadas: results.filter(({ grabacion }) => grabacion === "NO_REALIZADA").length,
     errores: results.filter(({ estado }) => estado === "ERROR").length,
     archivos: results.reduce((total, result) => total + result.archivos, 0)
   });
