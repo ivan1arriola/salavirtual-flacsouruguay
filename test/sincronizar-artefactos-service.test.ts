@@ -57,6 +57,18 @@ function readyAttendance() {
   };
 }
 
+function requiredRecordingEvent() {
+  return baseEvent({
+    instancia: {
+      inicioProgramadoAt: new Date("2026-08-18T21:00:00.000Z"),
+      finProgramadoAt: new Date("2026-08-18T22:00:00.000Z"),
+      timezone: "America/Montevideo",
+      requiereGrabacion: true,
+      solicitud: { titulo: "Seminario de prueba" }
+    }
+  });
+}
+
 describe("sincronización robusta de artefactos Meet", () => {
   it("mantiene la reunión pendiente si Google todavía genera un artefacto", async () => {
     const storage = fakeDb(baseEvent());
@@ -68,7 +80,13 @@ describe("sincronización robusta de artefactos Meet", () => {
       })),
       obtenerConferencia: vi.fn(),
       obtenerOCrearCarpeta: vi.fn(async () => "folder-1"),
-      obtenerArtefactos: vi.fn(async () => ({ recordings: [], transcripts: [], notes: [], pendientes: 1 })),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "AUSENTE",
+        pendientes: 1
+      })),
       obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
       subirDocumentoGoogle: vi.fn(async () => ({
         id: "attendance-doc",
@@ -85,7 +103,11 @@ describe("sincronización robusta de artefactos Meet", () => {
       crearClient: () => client as never
     }, ["event-1"]);
 
-    expect(result).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", archivos: 1 });
+    expect(result).toMatchObject({
+      estado: "ARTEFACTOS_PENDIENTES",
+      archivos: 1,
+      grabacion: "NO_REQUERIDA"
+    });
     expect(storage.upserts).toHaveLength(1);
     expect(storage.updates.at(-1)).toMatchObject({
       data: {
@@ -97,16 +119,8 @@ describe("sincronización robusta de artefactos Meet", () => {
     });
   });
 
-  it("mantiene pendiente una grabación requerida hasta que Google genere el archivo", async () => {
-    const storage = fakeDb(baseEvent({
-      instancia: {
-        inicioProgramadoAt: new Date("2026-08-18T21:00:00.000Z"),
-        finProgramadoAt: new Date("2026-08-18T22:00:00.000Z"),
-        timezone: "America/Montevideo",
-        requiereGrabacion: true,
-        solicitud: { titulo: "Seminario de prueba" }
-      }
-    }));
+  it("marca pendiente si alguien inició la grabación pero Google todavía procesa el archivo", async () => {
+    const storage = fakeDb(requiredRecordingEvent());
     const client = {
       buscarConferencia: vi.fn(async () => ({
         name: "conferenceRecords/recording-pending",
@@ -115,7 +129,13 @@ describe("sincronización robusta de artefactos Meet", () => {
       })),
       obtenerConferencia: vi.fn(),
       obtenerOCrearCarpeta: vi.fn(async () => "folder-pending"),
-      obtenerArtefactos: vi.fn(async () => ({ recordings: [], transcripts: [], notes: [], pendientes: 0 })),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "PROCESANDO",
+        pendientes: 1
+      })),
       obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
       subirDocumentoGoogle: vi.fn(async () => ({
         id: "attendance-doc",
@@ -131,7 +151,11 @@ describe("sincronización robusta de artefactos Meet", () => {
       crearClient: () => client as never
     }, ["event-1"]);
 
-    expect(result).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", archivos: 1 });
+    expect(result).toMatchObject({
+      estado: "ARTEFACTOS_PENDIENTES",
+      archivos: 1,
+      grabacion: "PENDIENTE"
+    });
     expect(storage.updates.at(-1)).toMatchObject({
       data: {
         conferenceRecordName: "conferenceRecords/recording-pending",
@@ -141,8 +165,48 @@ describe("sincronización robusta de artefactos Meet", () => {
     });
   });
 
+  it("detecta una reunión requerida que terminó sin que nadie iniciara una grabación", async () => {
+    const storage = fakeDb(requiredRecordingEvent());
+    const client = {
+      buscarConferencia: vi.fn(async () => ({
+        name: "conferenceRecords/not-recorded",
+        startTime: "2026-08-18T21:00:00.000Z",
+        endTime: "2026-08-18T22:05:00.000Z"
+      })),
+      obtenerConferencia: vi.fn(),
+      obtenerOCrearCarpeta: vi.fn(async () => "folder-not-recorded"),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "AUSENTE",
+        pendientes: 0
+      })),
+      obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
+      subirDocumentoGoogle: vi.fn(async () => ({
+        id: "attendance-doc",
+        name: "asistencia",
+        mimeType: "application/vnd.google-apps.document"
+      })),
+      moverArchivo: vi.fn()
+    };
+
+    const [result] = await sincronizarArtefactosMeet({
+      db: storage.db,
+      descifrar: () => "private-key",
+      crearClient: () => client as never
+    }, ["event-1"]);
+
+    expect(result).toMatchObject({
+      estado: "SINCRONIZADO",
+      archivos: 1,
+      grabacion: "NO_REALIZADA"
+    });
+    expect((storage.updates.at(-1) as { data: { archivosSincronizadosAt: unknown } }).data.archivosSincronizadosAt).toBeInstanceOf(Date);
+  });
+
   it("sincroniza grabación, transcripción, notas y asistencia sin ocultar tipos", async () => {
-    const storage = fakeDb(baseEvent());
+    const storage = fakeDb(requiredRecordingEvent());
     const client = {
       buscarConferencia: vi.fn(async () => ({
         name: "conferenceRecords/c2",
@@ -155,6 +219,7 @@ describe("sincronización robusta de artefactos Meet", () => {
         recordings: [{ resourceName: "recording/r1", driveFileId: "video-1", extension: "mp4" }],
         transcripts: [{ resourceName: "transcript/t1", driveFileId: "doc-1" }],
         notes: [{ resourceName: "smartNotes/n1", driveFileId: "doc-2" }],
+        estadoGrabacion: "GENERADA",
         pendientes: 0
       })),
       obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
@@ -178,7 +243,7 @@ describe("sincronización robusta de artefactos Meet", () => {
       crearClient: () => client as never
     }, ["event-1"]);
 
-    expect(result).toMatchObject({ estado: "SINCRONIZADO", archivos: 4 });
+    expect(result).toMatchObject({ estado: "SINCRONIZADO", archivos: 4, grabacion: "DISPONIBLE" });
     expect(storage.upserts).toHaveLength(4);
     expect(storage.upserts.map((item) => (item as { create: { tipo: string } }).create.tipo)).toEqual([
       "GRABACION",
@@ -206,7 +271,13 @@ describe("sincronización robusta de artefactos Meet", () => {
         endTime: "2026-08-18T22:00:00.000Z"
       })),
       obtenerOCrearCarpeta: vi.fn(async () => "folder-existing"),
-      obtenerArtefactos: vi.fn(async () => ({ recordings: [], transcripts: [], notes: [], pendientes: 0 })),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "AUSENTE",
+        pendientes: 0
+      })),
       obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
       subirDocumentoGoogle: vi.fn(async () => ({
         id: "attendance-doc",
@@ -222,7 +293,7 @@ describe("sincronización robusta de artefactos Meet", () => {
       crearClient: () => client as never
     }, ["event-1"]);
 
-    expect(result?.estado).toBe("SINCRONIZADO");
+    expect(result).toMatchObject({ estado: "SINCRONIZADO", grabacion: "NO_REQUERIDA" });
     expect(client.obtenerConferencia).toHaveBeenCalledWith("conferenceRecords/existing");
     expect(client.buscarConferencia).not.toHaveBeenCalled();
   });
@@ -237,7 +308,13 @@ describe("sincronización robusta de artefactos Meet", () => {
       })),
       obtenerConferencia: vi.fn(),
       obtenerOCrearCarpeta: vi.fn(async () => "folder-old"),
-      obtenerArtefactos: vi.fn(async () => ({ recordings: [], transcripts: [], notes: [], pendientes: 0 })),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "AUSENTE",
+        pendientes: 0
+      })),
       obtenerDocumentoAsistencia: vi.fn(async () => ({
         html: "<html></html>",
         completa: false,
