@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
+import { AlertTriangle, Clock3 } from "lucide-react";
 
 type MeetIntegrationStatusProps = Readonly<{
   status?: "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
@@ -15,11 +15,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
   }
 
   if (status === "SINCRONIZADA") {
-    return (
-      <span className="status status-ok">
-        <CheckCircle2 size={14} aria-hidden="true" /> Meet creado
-      </span>
-    );
+    return <span className="status status-ok">Meet creado</span>;
   }
 
   if (status === "ERROR" && hasMeet) {
