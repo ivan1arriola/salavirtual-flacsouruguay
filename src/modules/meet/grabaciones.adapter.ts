@@ -47,6 +47,48 @@ export function listarGrabacionesPendientesVisibles(
     where: {
       proveedor: { tipo: "GOOGLE_MEET" },
       codigoReunion: { not: null },
+      archivosSincronizadosAt: null,
+      archivos: { none: { tipo: "GRABACION" } },
+      instancia: {
+        ...alcanceInstancias(actor),
+        requiereGrabacion: true,
+        estado: { not: "CANCELADA" },
+        finProgramadoAt: { gte: desde, lte: hasta }
+      }
+    },
+    orderBy: { instancia: { inicioProgramadoAt: "desc" } },
+    take: 100,
+    include: {
+      instancia: {
+        include: {
+          solicitud: {
+            include: {
+              docentePrograma: {
+                include: {
+                  programa: true,
+                  docente: { include: { usuario: true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+export function listarGrabacionesNoRealizadasVisibles(
+  db: PrismaClient,
+  actor: SessionActor,
+  desde: Date,
+  hasta: Date
+) {
+  return db.eventoProveedor.findMany({
+    where: {
+      proveedor: { tipo: "GOOGLE_MEET" },
+      codigoReunion: { not: null },
+      archivosSincronizadosAt: { not: null },
+      errorArchivos: null,
       archivos: { none: { tipo: "GRABACION" } },
       instancia: {
         ...alcanceInstancias(actor),
