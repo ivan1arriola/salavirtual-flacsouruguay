@@ -111,47 +111,6 @@
   stroke-width: 2.2;
 }
 
-.sidebar-utility-nav {
-  margin-top: 16px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
-
-.notification-nav-link strong,
-.notification-mobile-link strong {
-  min-width: 20px;
-  min-height: 20px;
-  display: grid;
-  place-items: center;
-  margin-left: auto;
-  border-radius: 999px;
-  background: #d74242;
-  color: #ffffff;
-  font-size: 0.68rem;
-  line-height: 1;
-  padding: 2px 5px;
-}
-
-.notification-mobile-link {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  color: var(--brand);
-}
-
-.notification-mobile-link strong {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 18px;
-  min-height: 18px;
-  font-size: 0.64rem;
-}
-
 .archive-nav {
   margin-top: 4px;
   padding-top: 10px;

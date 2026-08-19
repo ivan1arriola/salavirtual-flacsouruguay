@@ -29,6 +29,7 @@
 }
 
 .profile-menu > summary {
+  position: relative;
   width: 100%;
   min-height: 48px;
   display: flex;
@@ -39,6 +40,30 @@
   cursor: pointer;
   list-style: none;
   padding: 6px 7px;
+}
+
+.profile-menu-notification-count,
+.profile-menu-action-badge {
+  min-width: 20px;
+  min-height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #d74242;
+  color: #ffffff;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.profile-menu-notification-count {
+  flex: 0 0 auto;
+  margin-left: 1px;
+  box-shadow: 0 0 0 2px #163970;
+}
+
+.profile-menu-action-badge {
+  margin-left: auto;
 }
 
 .profile-menu > summary::-webkit-details-marker {
@@ -215,6 +240,15 @@
     justify-content: center;
     border-radius: 50%;
     padding: 2px;
+  }
+
+  .profile-menu-compact .profile-menu-notification-count {
+    position: absolute;
+    top: -4px;
+    right: -5px;
+    min-width: 18px;
+    min-height: 18px;
+    font-size: 0.62rem;
   }
 
   .profile-menu-compact > summary:hover,

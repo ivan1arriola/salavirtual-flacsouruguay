@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, Plus, Save, Video } from "lucide-react";
+import { KeyRound, Plus, Save, Trash2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -40,6 +40,18 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
       ...payloadFromForm(formData, false),
       notificarCambioPassword: formData.get("notificarCambioPassword") === "on"
     });
+    setSuccess(result.ok);
+    setMessage(result.message);
+    setSaving(null);
+    if (result.ok) router.refresh();
+  }
+
+  async function deleteHost(host: MeetHostVisible) {
+    if (!window.confirm(`¿Eliminar ${host.nombre}? Esta acción no se puede deshacer.`)) return;
+
+    setSaving(host.id);
+    setMessage(`Eliminando ${host.nombre}…`);
+    const result = await request("DELETE", { id: host.id });
     setSuccess(result.ok);
     setMessage(result.message);
     setSaving(null);
@@ -144,6 +156,14 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                 </div>
                 <footer className="form-actions">
                   <span className={`form-message${success ? " done" : ""}`} role="status">{saving === host.id ? message : ""}</span>
+                  <button
+                    className="secondary-action danger-action"
+                    type="button"
+                    disabled={saving !== null}
+                    onClick={() => deleteHost(host)}
+                  >
+                    <Trash2 size={17} />Eliminar
+                  </button>
                   <button className="primary-action" type="submit" disabled={saving !== null}><Save size={17} />Guardar cambios</button>
                 </footer>
               </form>
@@ -170,7 +190,7 @@ function payloadFromForm(formData: FormData, requirePassword: boolean) {
   };
 }
 
-async function request(method: "POST" | "PUT", payload: Record<string, unknown>) {
+async function request(method: "POST" | "PUT" | "DELETE", payload: Record<string, unknown>) {
   try {
     const response = await fetch("/api/v1/configuracion/salas-meet", {
       method,

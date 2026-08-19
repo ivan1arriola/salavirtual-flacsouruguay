@@ -1,5 +1,4 @@
 import {
-  Bell,
   BookOpen,
   CalendarCheck2,
   CalendarDays,
@@ -122,20 +121,8 @@ export async function AppShell({
           ) : null}
         </div>
 
-        <nav className="side-nav sidebar-utility-nav" aria-label="Cuenta y notificaciones">
-          <SidebarLink
-            className="notification-nav-link"
-            dataTour={notificationTourForRole(user.role)}
-            href="/notificaciones"
-          >
-            <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
-            <span>Notificaciones</span>
-            {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
-          </SidebarLink>
-        </nav>
-
         <div className="account-block">
-          <ProfileMenu user={user} account={rememberedAccount} />
+          <ProfileMenu user={user} account={rememberedAccount} unreadNotifications={unreadNotifications} />
         </div>
       </aside>
 
@@ -146,16 +133,7 @@ export async function AppShell({
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
-            <Link
-              className="notification-mobile-link"
-              data-tour={notificationTourForRole(user.role)}
-              href="/notificaciones"
-              aria-label={`Notificaciones${unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ""}`}
-            >
-              <Bell size={18} aria-hidden="true" />
-              {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
-            </Link>
-            <ProfileMenu compact user={user} account={rememberedAccount} />
+            <ProfileMenu compact user={user} account={rememberedAccount} unreadNotifications={unreadNotifications} />
           </span>
         </header>
         <main className="workspace">{children}</main>
@@ -253,12 +231,6 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     if (href === "/grabaciones") return "assistant-recordings";
     if (href === "/mi-historico") return "assistant-history";
   }
-  return undefined;
-}
-
-function notificationTourForRole(role: Session["user"]["role"]): string | undefined {
-  if (role === "DOCENTE") return "teacher-notifications";
-  if (role === "ASISTENTE_TECNICO") return "assistant-notifications";
   return undefined;
 }
 

@@ -350,8 +350,153 @@
   color: #923737;
 }
 
+.program-management-list {
+  display: grid;
+}
+
+.program-management-card {
+  border-top: 1px solid var(--line);
+}
+
+.program-management-card:first-child {
+  border-top: 0;
+}
+
+.program-management-card > summary {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  cursor: pointer;
+  list-style: none;
+  padding: 15px 18px;
+}
+
+.program-management-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.program-management-card > summary:hover {
+  background: #f7fafc;
+}
+
+.program-management-card[open] > summary {
+  background: #f3f8fb;
+}
+
+.program-management-name strong,
+.program-management-name small {
+  display: block;
+}
+
+.program-management-name strong {
+  color: var(--brand-strong);
+}
+
+.program-management-name small,
+.program-management-summary-meta > span:first-child {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.program-management-summary-meta,
+.program-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.program-management-card[open] .program-management-summary-meta svg {
+  transform: rotate(180deg);
+}
+
+.program-management-body {
+  border-top: 1px solid var(--line);
+  background: #fbfcfd;
+}
+
+.program-member-table .secondary-action {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 0.76rem;
+}
+
+.program-member-editors {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(420px, 1.15fr);
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding: 16px 18px 18px;
+}
+
+.program-member-editor {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 15px;
+}
+
+.program-member-invite {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.program-member-editor-heading,
+.program-member-invite .primary-action {
+  grid-column: 1 / -1;
+}
+
+.program-member-editor h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--brand-strong);
+  font-size: 0.94rem;
+}
+
+.program-member-editor p,
+.program-inactive-help {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.program-inactive-help {
+  border-top: 1px solid var(--line);
+  padding: 14px 18px;
+}
+
+@media (max-width: 900px) {
+  .program-member-editors {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .user-type-tabs {
     grid-template-columns: 1fr;
+  }
+
+  .program-management-card > summary,
+  .program-management-summary-meta {
+    align-items: flex-start;
+  }
+
+  .program-management-card > summary {
+    flex-direction: column;
+  }
+
+  .program-member-invite {
+    grid-template-columns: 1fr;
+  }
+
+  .program-member-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

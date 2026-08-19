@@ -49,13 +49,13 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="teacher-notifications"]', {
       title: "Notificaciones",
-      description: "Los avisos vinculados con tus reuniones aparecen acá. El número sobre la campana indica cuántas notificaciones todavía no leíste.",
+      description: "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="teacher-profile"]', {
       title: "Tu cuenta",
-      description: "Desde este menú podés abrir Mi perfil, cambiar tu contraseña y preferencias de notificaciones, cambiar de cuenta, repetir este tutorial o cerrar sesión.",
+      description: "Desde este menú podés abrir Notificaciones y Mi perfil, cambiar tu contraseña y preferencias, cambiar de cuenta, repetir este tutorial o cerrar sesión.",
       side: "top",
       align: "start"
     }),

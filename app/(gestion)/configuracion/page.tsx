@@ -5,25 +5,32 @@ import { auth } from "@/auth";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
+import { ProgramMembersConfig } from "@/src/components/program-members-config";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
+import {
+  agregarIntegrantePrograma,
+  invitarIntegrantePrograma,
+  quitarIntegrantePrograma
+} from "./actions";
 
 type SettingsSection = "workspace" | "salas" | "programas" | "correo" | "historico";
 
 export default async function ConfiguracionPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ seccion?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ seccion?: string; programa?: string; estado?: string; error?: string }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
-  const requestedSection = (await searchParams).seccion;
+  const query = await searchParams;
+  const requestedSection = query.seccion;
   const section: SettingsSection = requestedSection === "salas"
     || requestedSection === "programas"
     || requestedSection === "correo"
     || requestedSection === "historico"
     ? requestedSection
     : "workspace";
-  const [configuration, hosts, programs, pendingMeet] = await Promise.all([
+  const [configuration, hosts, programCount, pendingMeet] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -40,10 +47,7 @@ export default async function ConfiguracionPage({
         _count: { select: { eventosProveedor: true } }
       }
     }),
-    db.programa.findMany({
-      orderBy: { nombre: "asc" },
-      include: { _count: { select: { docentes: true } } }
-    }),
+    db.programa.count(),
     db.eventoProveedor.count({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
@@ -51,6 +55,42 @@ export default async function ConfiguracionPage({
       }
     })
   ]);
+  const [programs, teachers] = section === "programas"
+    ? await Promise.all([
+        db.programa.findMany({
+          orderBy: { nombre: "asc" },
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true,
+            activo: true,
+            docentes: {
+              where: { activo: true },
+              select: {
+                docente: {
+                  select: {
+                    usuario: {
+                      select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }),
+        db.usuario.findMany({
+          where: { rol: "DOCENTE", activo: true },
+          orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+          select: {
+            id: true,
+            nombres: true,
+            apellidos: true,
+            emailPrincipal: true,
+            activo: true
+          }
+        })
+      ])
+    : [[], []];
   const historicalMeetings = section === "historico"
     ? await db.eventoProveedor.findMany({
         where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
@@ -101,7 +141,7 @@ export default async function ConfiguracionPage({
         />
         <SettingsSectionLink
           active={section === "programas"}
-          description={`${programs.length} programas importados`}
+          description={`${programCount} programas importados`}
           href="/configuracion?seccion=programas"
           icon={BookOpen}
           label="Programas"
@@ -121,6 +161,12 @@ export default async function ConfiguracionPage({
           label="Histórico Zoom"
         />
       </nav>
+
+      {query.estado === "integrante-agregado" ? <p className="form-notice" role="status">La persona fue agregada al programa.</p> : null}
+      {query.estado === "integrante-quitado" ? <p className="form-notice" role="status">La persona fue quitada del programa. Su usuario y su historial se conservaron.</p> : null}
+      {query.estado === "invitacion-enviada" ? <p className="form-notice" role="status">La persona fue creada, asociada al programa e invitada por correo.</p> : null}
+      {query.estado === "invitacion-creada" ? <p className="form-notice" role="status">La persona fue creada y asociada. El correo de invitación no pudo enviarse.</p> : null}
+      {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
       {section === "workspace" ? (
         <div className="settings-grid settings-workspace-grid">
@@ -156,15 +202,26 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "programas" ? (
-        <section className="content-section">
-          <div className="section-heading"><div><h2>Programas</h2><p>Programas institucionales y cantidad de docentes asociados.</p></div></div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Programa</th><th>Código</th><th>Docentes</th><th>Estado</th></tr></thead>
-              <tbody>{programs.map((program) => <tr key={program.id}><td><strong>{program.nombre}</strong></td><td>{program.codigo ?? "—"}</td><td>{program._count.docentes}</td><td><span className={`status status-${program.activo ? "ok" : "error"}`}>{program.activo ? "Activo" : "Inactivo"}</span></td></tr>)}</tbody>
-            </table>
-          </div>
-        </section>
+        <ProgramMembersConfig
+          programs={programs.map((program) => ({
+            id: program.id,
+            nombre: program.nombre,
+            codigo: program.codigo,
+            activo: program.activo,
+            members: program.docentes.map(({ docente }) => docente.usuario)
+          }))}
+          teachers={teachers.map((teacher) => ({
+            id: teacher.id,
+            nombres: teacher.nombres,
+            apellidos: teacher.apellidos,
+            emailPrincipal: teacher.emailPrincipal,
+            activo: teacher.activo
+          }))}
+          expandedProgramId={query.programa}
+          addAction={agregarIntegrantePrograma}
+          inviteAction={invitarIntegrantePrograma}
+          removeAction={quitarIntegrantePrograma}
+        />
       ) : null}
 
       {section === "correo" ? (

@@ -62,13 +62,13 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="assistant-notifications"]', {
       title: "Notificaciones",
-      description: "Los avisos relacionados con postulaciones, asignaciones y actividad de tu cuenta aparecen acá.",
+      description: "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="assistant-profile"]', {
       title: "Tu cuenta",
-      description: "Desde este menú podés abrir Mi perfil, cambiar de cuenta, repetir el tutorial o cerrar sesión.",
+      description: "Desde este menú podés abrir Notificaciones y Mi perfil, cambiar de cuenta, repetir el tutorial o cerrar sesión.",
       side: "top",
       align: "start"
     })

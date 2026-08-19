@@ -29,6 +29,10 @@ const updateSchema = hostFields.extend({
   notificarCambioPassword: z.boolean().default(true)
 });
 
+const deleteSchema = z.object({
+  id: z.string().min(1)
+});
+
 type SafeHost = Readonly<{
   id: string;
   nombre: string;
@@ -222,6 +226,68 @@ export async function PUT(request: Request) {
       notificados,
       message: passwordMessage
     });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(request: Request) {
+  const actor = await requireAdmin();
+  if (actor instanceof NextResponse) return actor;
+
+  try {
+    const input = deleteSchema.parse(await request.json());
+    const now = new Date();
+    const deleted = await db.$transaction(async (tx) => {
+      const current = await tx.cuentaProveedor.findUnique({
+        where: { id: input.id },
+        include: {
+          proveedor: { select: { tipo: true } },
+          _count: { select: { eventosProveedor: true } }
+        }
+      });
+      if (!current || current.proveedor.tipo !== "GOOGLE_MEET") {
+        throw new Error("La cuenta Meet no existe.");
+      }
+
+      const activeMeetings = await tx.eventoProveedor.count({
+        where: {
+          cuentaProveedorId: current.id,
+          instancia: {
+            finProgramadoAt: { gte: now },
+            estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+          }
+        }
+      });
+      if (activeMeetings > 0) {
+        throw new Error(
+          `No se puede eliminar porque tiene ${activeMeetings} encuentro${activeMeetings === 1 ? "" : "s"} futuro${activeMeetings === 1 ? "" : "s"} o en curso. Desactivala primero y reasigná esos encuentros.`
+        );
+      }
+
+      await tx.cuentaProveedor.delete({ where: { id: current.id } });
+      await tx.auditoria.create({
+        data: {
+          actorUsuarioId: actor.id,
+          accion: "CUENTA_MEET_ELIMINADA",
+          entidadTipo: "CuentaProveedor",
+          entidadId: current.id,
+          valorAnterior: {
+            nombre: current.nombre,
+            emailOrganizador: current.emailOrganizador,
+            prioridad: current.prioridad,
+            limiteConcurrente: current.limiteConcurrente,
+            tieneLicencia: current.tieneLicencia,
+            activa: current.activa,
+            passwordConfigurada: Boolean(current.secretRef),
+            encuentrosHistoricosDesvinculados: current._count.eventosProveedor
+          }
+        }
+      });
+      return current;
+    });
+
+    return NextResponse.json({ message: `${deleted.nombre} fue eliminada.` });
   } catch (error) {
     return errorResponse(error);
   }
