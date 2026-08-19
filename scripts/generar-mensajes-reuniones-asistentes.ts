@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { descifrarConfiguracion } from "../src/lib/config/encryption";
 import {
   buildMeetingDigestEmail,
   firstName,
@@ -71,7 +72,7 @@ async function main(): Promise<void> {
             select: {
               joinUrl: true,
               codigoReunion: true,
-              cuentaProveedor: { select: { nombre: true, emailOrganizador: true } }
+              cuentaProveedor: { select: { nombre: true, emailOrganizador: true, secretRef: true } }
             }
           }
         }
@@ -136,7 +137,7 @@ async function main(): Promise<void> {
         joinUrl: meet?.joinUrl,
         codigoReunion: meet?.codigoReunion,
         usuarioSala: cuenta?.emailOrganizador,
-        passwordSala: passwordSala(cuenta),
+        passwordSala: passwordSala(cuenta, descifrarConfiguracion),
         observaciones,
         estadoAsignacion: assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada"
       });
