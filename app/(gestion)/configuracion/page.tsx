@@ -1,9 +1,10 @@
-import { BookOpen, CheckCircle2, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
+import { BookOpen, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { EmailTestForm } from "@/src/components/email-test-form";
+import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -26,7 +27,18 @@ export default async function ConfiguracionPage({
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
-      orderBy: { prioridad: "asc" }
+      orderBy: [{ prioridad: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        nombre: true,
+        emailOrganizador: true,
+        prioridad: true,
+        limiteConcurrente: true,
+        tieneLicencia: true,
+        activa: true,
+        secretRef: true,
+        _count: { select: { eventosProveedor: true } }
+      }
     }),
     db.programa.findMany({
       orderBy: { nombre: "asc" },
@@ -63,6 +75,7 @@ export default async function ConfiguracionPage({
         }
       })
     : [];
+  const availableHosts = hosts.filter((host) => host.activa && host.tieneLicencia).length;
 
   return (
     <>
@@ -81,7 +94,7 @@ export default async function ConfiguracionPage({
         />
         <SettingsSectionLink
           active={section === "salas"}
-          description={`${hosts.length} cuentas organizadoras`}
+          description={`${hosts.length} cuentas · ${availableHosts} disponibles`}
           href="/configuracion?seccion=salas"
           icon={Video}
           label="Salas Meet"
@@ -127,22 +140,19 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "salas" ? (
-        <section className="content-section">
-          <div className="section-heading"><div><h2>Salas organizadoras de Meet</h2><p>Cuentas utilizadas para crear y alojar reuniones.</p></div></div>
-          {hosts.length > 0 ? (
-            <ul className="settings-list">
-              {hosts.map((host) => (
-                <li key={host.id}>
-                  <span><strong>{host.nombre}</strong><small>{host.emailOrganizador}</small></span>
-                  <span className={`status status-${host.activa && host.tieneLicencia ? "ok" : "error"}`}>
-                    <CheckCircle2 size={14} />
-                    {host.activa && host.tieneLicencia ? "Disponible" : host.activa ? "Sin licencia" : "Inactiva"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : <div className="empty-state"><Video size={24} /><p>No hay salas Meet configuradas.</p></div>}
-        </section>
+        <MeetHostsConfig
+          hosts={hosts.map((host) => ({
+            id: host.id,
+            nombre: host.nombre,
+            emailOrganizador: host.emailOrganizador,
+            prioridad: host.prioridad,
+            limiteConcurrente: host.limiteConcurrente,
+            tieneLicencia: host.tieneLicencia,
+            activa: host.activa,
+            passwordConfigurada: Boolean(host.secretRef),
+            enUso: host._count.eventosProveedor > 0
+          }))}
+        />
       ) : null}
 
       {section === "programas" ? (
