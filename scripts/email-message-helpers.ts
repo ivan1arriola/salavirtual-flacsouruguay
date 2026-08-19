@@ -18,6 +18,7 @@ const timeFormatter = new Intl.DateTimeFormat("es-UY", {
 export type CuentaSala = Readonly<{
   nombre: string;
   emailOrganizador: string | null;
+  secretRef: string | null;
 }> | null | undefined;
 
 export type EmailMessage = Readonly<{
@@ -53,9 +54,16 @@ export function firstName(persona: Readonly<{ nombres: string }>): string {
   return persona.nombres.replace(/,+$/, "");
 }
 
-export function passwordSala(cuenta: CuentaSala): string | null {
-  const numero = obtenerNumeroSala(cuenta);
-  return numero ? `Sala${numero}FLACSO+` : null;
+export function passwordSala(
+  cuenta: CuentaSala,
+  descifrar: (value: string) => string
+): string | null {
+  if (!cuenta?.secretRef) return null;
+  try {
+    return descifrar(cuenta.secretRef);
+  } catch {
+    return null;
+  }
 }
 
 export function buildMeetingDigestEmail(input: Readonly<{
@@ -139,12 +147,6 @@ export function buildMeetingDigestEmail(input: Readonly<{
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function obtenerNumeroSala(cuenta: CuentaSala): string | null {
-  const source = [cuenta?.emailOrganizador, cuenta?.nombre].filter(Boolean).join(" ");
-  const match = source.match(/sala\s*0?(\d{1,2})/i);
-  return match ? match[1].padStart(2, "0") : null;
 }
 
 function detailRow(label: string, value: string): string {

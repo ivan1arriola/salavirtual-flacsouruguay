@@ -3,7 +3,8 @@ export const TIPOS_NOTIFICACION = Object.freeze([
   "ASISTENCIA_REQUERIDA",
   "ASISTENCIA_ASIGNACION",
   "ASISTENCIA_POSTULACION",
-  "ASISTENCIA_POSTULACION_RETIRADA"
+  "ASISTENCIA_POSTULACION_RETIRADA",
+  "CREDENCIALES_SALA_CAMBIADAS"
 ] as const);
 
 export type TipoNotificacion = (typeof TIPOS_NOTIFICACION)[number];
@@ -34,5 +35,7 @@ export function etiquetaTipoNotificacion(tipo: TipoNotificacion): string {
       return "Postulaciones de asistentes técnicos";
     case "ASISTENCIA_POSTULACION_RETIRADA":
       return "Retiros de postulación";
+    case "CREDENCIALES_SALA_CAMBIADAS":
+      return "Cambios de credenciales de salas Meet";
   }
 }

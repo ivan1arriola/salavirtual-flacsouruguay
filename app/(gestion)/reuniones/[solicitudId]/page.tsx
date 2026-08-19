@@ -6,9 +6,9 @@ import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
 import { MeetingIntegrationProblems } from "@/src/components/meeting-integration-problems";
 import { MeetingRoomCredentials } from "@/src/components/meeting-room-credentials";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
-import { contrasenaSalaFlacso } from "@/src/modules/notificaciones/notificaciones.service";
 import {
   puedeCambiarAsistenciaEncuentro,
   puedeGestionarEncuentros
@@ -84,7 +84,7 @@ export default async function ReunionDetailPage({
       asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
       postulantes: meeting.postulaciones.length,
       cuentaGoogle,
-      contrasenaSala: contrasenaSalaFlacso(cuentaGoogle),
+      contrasenaSala: passwordCuenta(event?.cuentaProveedor?.secretRef),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
@@ -147,6 +147,15 @@ export default async function ReunionDetailPage({
       />
     </>
   );
+}
+
+function passwordCuenta(secretRef: string | null | undefined): string | null {
+  if (!secretRef) return null;
+  try {
+    return descifrarConfiguracion(secretRef);
+  } catch {
+    return null;
+  }
 }
 
 function toLocalInput(date: Date): string {
