@@ -110,6 +110,7 @@ async function notificarReunionCreada(solicitudId: string) {
       inicio,
       fin,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
+      password: passwordCuenta(meet?.cuentaProveedor?.secretRef),
       meet: meet?.codigoReunion,
       joinUrl: meet?.joinUrl
     };
@@ -204,6 +205,16 @@ async function notificarReunionCreada(solicitudId: string) {
       emailActionLabel: "Ver agenda abierta"
     }
   );
+}
+
+function passwordCuenta(secretRef: string | null | undefined): string | null {
+  if (!secretRef) return null;
+  try {
+    return descifrarConfiguracion(secretRef);
+  } catch (error) {
+    console.warn("No se pudo descifrar la contraseña de una cuenta Meet", error);
+    return null;
+  }
 }
 
 function capitalizar(value: string): string {
