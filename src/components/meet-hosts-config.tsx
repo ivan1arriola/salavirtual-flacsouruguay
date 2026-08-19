@@ -74,8 +74,8 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
             <span>Límite concurrente</span>
             <input type="number" name="limiteConcurrente" min={1} max={100} placeholder="Sin límite adicional" />
           </label>
-          <label className="checkbox-field"><input type="checkbox" name="tieneLicencia" defaultChecked /><span>Disponible para alojar reuniones</span></label>
-          <label className="checkbox-field"><input type="checkbox" name="activa" defaultChecked /><span>Cuenta activa</span></label>
+          <label className="check-field"><input type="checkbox" name="tieneLicencia" defaultChecked /><span>Disponible para alojar reuniones</span></label>
+          <label className="check-field"><input type="checkbox" name="activa" defaultChecked /><span>Cuenta activa</span></label>
         </div>
         <footer className="form-actions">
           <span className={`form-message${success ? " done" : ""}`} role="status">{saving === "new" ? message : ""}</span>
@@ -87,7 +87,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
         <div className="section-heading">
           <div>
             <h2>Cuentas organizadoras</h2>
-            <p>Podés cambiar prioridad, disponibilidad y contraseña. Las cuentas ya usadas se reemplazan desactivándolas y agregando una nueva.</p>
+            <p>Podés cambiar prioridad, disponibilidad y contraseña. Después de cambiar una contraseña en Google Workspace, actualizala también acá para mantener las credenciales y avisos sincronizados.</p>
           </div>
           <Video size={22} aria-hidden="true" />
         </div>
@@ -138,9 +138,9 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                     <span>Límite concurrente</span>
                     <input type="number" name="limiteConcurrente" min={1} max={100} defaultValue={host.limiteConcurrente ?? ""} placeholder="Sin límite adicional" />
                   </label>
-                  <label className="checkbox-field"><input type="checkbox" name="tieneLicencia" defaultChecked={host.tieneLicencia} /><span>Disponible para alojar reuniones</span></label>
-                  <label className="checkbox-field"><input type="checkbox" name="activa" defaultChecked={host.activa} /><span>Cuenta activa</span></label>
-                  <label className="checkbox-field field-wide"><input type="checkbox" name="notificarCambioPassword" defaultChecked /><span>Si cambia la contraseña, notificar por el sistema y por correo a las personas con reuniones futuras en esta cuenta</span></label>
+                  <label className="check-field"><input type="checkbox" name="tieneLicencia" defaultChecked={host.tieneLicencia} /><span>Disponible para alojar reuniones</span></label>
+                  <label className="check-field"><input type="checkbox" name="activa" defaultChecked={host.activa} /><span>Cuenta activa</span></label>
+                  <label className="check-field field-wide"><input type="checkbox" name="notificarCambioPassword" defaultChecked /><span>Si cambia la contraseña, notificar por el sistema y por correo a las personas con reuniones futuras en esta cuenta</span></label>
                 </div>
                 <footer className="form-actions">
                   <span className={`form-message${success ? " done" : ""}`} role="status">{saving === host.id ? message : ""}</span>
@@ -157,7 +157,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
 }
 
 function payloadFromForm(formData: FormData, requirePassword: boolean) {
-  const password = String(formData.get("password") ?? "");
+  const password = String(formData.get("password") ?? "").trim();
   const limitRaw = String(formData.get("limiteConcurrente") ?? "").trim();
   return {
     nombre: String(formData.get("nombre") ?? ""),
