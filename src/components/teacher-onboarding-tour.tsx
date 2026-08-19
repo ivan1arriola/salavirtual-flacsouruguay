@@ -144,7 +144,7 @@ function meetingSteps(): DriveStep[] {
     }),
     step("#organizacion .auto-room-note", {
       title: "Sala Meet automática",
-      description: "Al crear la reunión, Sala Virtual busca una cuenta institucional disponible y genera el evento de Google Calendar y el enlace de Meet. En una serie, distintos encuentros pueden usar cuentas de sala diferentes según la disponibilidad.",
+      description: "Al crear una serie, Sala Virtual busca una misma cuenta institucional que esté libre en todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie.",
       side: "top",
       align: "start"
     }),
@@ -174,7 +174,7 @@ function meetingSteps(): DriveStep[] {
     }),
     step('.meeting-form .form-actions button[type="submit"]', {
       title: "Crear la reunión",
-      description: "Cuando todo esté correcto, confirmá desde este botón. Sala Virtual guardará la actividad, asignará las cuentas disponibles, creará los eventos de Google Calendar y configurará los enlaces de Google Meet. Mientras aparece “Creando reunión…”, no vuelvas a presionar el botón.",
+      description: "Cuando todo esté correcto, confirmá desde este botón. Sala Virtual guardará la actividad, asignará una misma cuenta de sala disponible para todas las fechas, creará los eventos de Google Calendar y configurará los enlaces de Google Meet. Mientras aparece “Creando reunión…”, no vuelvas a presionar el botón.",
       side: "top",
       align: "center"
     })

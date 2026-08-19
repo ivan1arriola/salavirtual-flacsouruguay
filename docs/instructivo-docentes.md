@@ -187,7 +187,7 @@ Sala Virtual selecciona automáticamente una cuenta disponible de FLACSO y gener
 
 Las cuentas configuradas van desde `sala01@flacso.edu.uy` hasta `sala10@flacso.edu.uy`.
 
-La cuenta puede variar entre diferentes encuentros de una misma serie según la disponibilidad existente.
+Al crear una serie, Sala Virtual busca una misma cuenta institucional que esté libre en todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie.
 
 ### Asistencia técnica
 
