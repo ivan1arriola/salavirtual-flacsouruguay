@@ -26,7 +26,8 @@ describe("notificaciones", () => {
     ["ASISTENCIA_REQUERIDA", "Reuniones abiertas a asistencia técnica"],
     ["ASISTENCIA_ASIGNACION", "Asignaciones de asistencia técnica"],
     ["ASISTENCIA_POSTULACION", "Postulaciones de asistentes técnicos"],
-    ["ASISTENCIA_POSTULACION_RETIRADA", "Retiros de postulación"]
+    ["ASISTENCIA_POSTULACION_RETIRADA", "Retiros de postulación"],
+    ["CREDENCIALES_SALA_CAMBIADAS", "Cambios de credenciales de salas Meet"]
   ] as const)("etiqueta %s correctamente", (tipo, expected) => {
     expect(etiquetaTipoNotificacion(tipo)).toBe(expected);
   });
