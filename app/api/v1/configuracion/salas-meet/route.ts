@@ -17,13 +17,15 @@ const hostFields = z.object({
   activa: z.boolean()
 });
 
+const passwordSchema = z.string().trim().min(8, "La contraseña debe tener al menos 8 caracteres.").max(200);
+
 const createSchema = hostFields.extend({
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres.").max(200)
+  password: passwordSchema
 });
 
 const updateSchema = hostFields.extend({
   id: z.string().min(1),
-  password: z.string().max(200).optional(),
+  password: z.union([z.literal(""), passwordSchema]).optional(),
   notificarCambioPassword: z.boolean().default(true)
 });
 
@@ -138,7 +140,7 @@ export async function PUT(request: Request) {
         if (duplicate) throw new Error("Ya existe una cuenta Meet con ese correo.");
       }
 
-      const password = input.password?.trim() || null;
+      const password = input.password || null;
       let passwordChanged = false;
       if (password) {
         if (!current.secretRef) {
@@ -207,12 +209,18 @@ export async function PUT(request: Request) {
       notificados = await notificarCambioPassword(result.host.id, result.host.nombre, result.host.emailOrganizador, result.password);
     }
 
+    const passwordMessage = !result.passwordChanged
+      ? "Sala Meet actualizada."
+      : !input.notificarCambioPassword
+        ? "Sala actualizada. El cambio de contraseña se guardó sin enviar avisos."
+        : notificados > 0
+          ? `Sala actualizada. Se notificó a ${notificados} persona${notificados === 1 ? "" : "s"}.`
+          : "Sala actualizada. No había personas con reuniones futuras para notificar.";
+
     return NextResponse.json({
       host: toSafeHost(result.host, result.enUso),
       notificados,
-      message: result.passwordChanged
-        ? `Sala actualizada. ${notificados > 0 ? `Se notificó a ${notificados} persona${notificados === 1 ? "" : "s"}.` : "No había personas con reuniones futuras para notificar."}`
-        : "Sala Meet actualizada."
+      message: passwordMessage
     });
   } catch (error) {
     return errorResponse(error);
