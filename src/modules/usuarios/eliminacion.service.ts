@@ -170,8 +170,7 @@ export async function eliminarUsuarioCompleto(
         accion: "USUARIO_ELIMINADO",
         entidadTipo: "Usuario",
         entidadId: id,
-        valorAnterior: { rol: usuario.rol },
-        valorNuevo: null
+        valorAnterior: { rol: usuario.rol }
       }
     });
 
