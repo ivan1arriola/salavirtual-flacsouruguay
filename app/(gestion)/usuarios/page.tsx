@@ -58,6 +58,7 @@ export default async function UsuariosPage({
       {query.estado === "invitacion-creada" ? <p className="form-notice">El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.</p> : null}
       {query.estado === "solicitud-aprobada" ? <p className="form-notice">La solicitud fue aprobada y el usuario fue creado.</p> : null}
       {query.estado === "solicitud-rechazada" ? <p className="form-notice">La solicitud fue rechazada y eliminada de pendientes.</p> : null}
+      {query.estado === "usuario-eliminado" ? <p className="form-notice">El usuario y sus datos asociados fueron eliminados.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
       {solicitudesPendientes.length ? (
