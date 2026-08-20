@@ -1,4 +1,4 @@
-import { ArrowLeft, UserRoundX } from "lucide-react";
+import { ArrowLeft, Trash2, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -6,13 +6,14 @@ import { GoogleAccountsForm } from "@/src/components/google-accounts-form";
 import { TeacherProgramsForm } from "@/src/components/teacher-programs-form";
 import { UserRoleForm } from "@/src/components/user-role-form";
 import { db } from "@/src/lib/db";
-import { cesarAsistenteUsuario, guardarProgramasUsuario } from "./actions";
+import { cesarAsistenteUsuario, eliminarUsuario, guardarProgramasUsuario } from "./actions";
 
 const messages: Readonly<Record<string, string>> = {
   "programas-guardados": "Los programas del docente fueron actualizados.",
   "error-programas": "No se pudieron actualizar los programas del docente.",
   "asistente-cesado": "El asistente técnico quedó cesado hasta su próximo inicio de sesión.",
-  "error-cese-asistente": "No se pudo cesar al asistente técnico."
+  "error-cese-asistente": "No se pudo cesar al asistente técnico.",
+  "error-eliminar": "No se pudo eliminar el usuario."
 };
 
 export default async function UsuarioPage({
@@ -20,7 +21,7 @@ export default async function UsuarioPage({
   searchParams
 }: Readonly<{
   params: Promise<{ usuarioId: string }>;
-  searchParams: Promise<{ estado?: string }>;
+  searchParams: Promise<{ estado?: string; error?: string }>;
 }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
@@ -41,7 +42,8 @@ export default async function UsuarioPage({
     })
   ]);
   if (!user) notFound();
-  const { estado } = await searchParams;
+  const { estado, error } = await searchParams;
+  const isSelf = session.user.id === user.id;
 
   return (
     <>
@@ -49,7 +51,11 @@ export default async function UsuarioPage({
       <header className="page-header">
         <div><p className="page-eyebrow">{user.rol.toLowerCase()}</p><h1>{user.nombres} {user.apellidos}</h1><p>Usuario local: {user.id}</p></div>
       </header>
-      {estado && messages[estado] ? <p className="form-notice" role="status">{messages[estado]}</p> : null}
+      {estado && messages[estado] ? (
+        <p className={`form-notice ${estado === "error-eliminar" ? "form-notice-error" : ""}`} role="status">
+          {estado === "error-eliminar" && error ? error : messages[estado]}
+        </p>
+      ) : null}
       <div className="user-settings">
         <UserRoleForm userId={user.id} initialRole={user.rol} />
         <GoogleAccountsForm
@@ -94,6 +100,51 @@ export default async function UsuarioPage({
             title="Programas del docente"
           />
         ) : null}
+
+        <section
+          className="form-section account-form"
+          style={{ borderColor: "#d8a0a0", background: "#fffafa" }}
+        >
+          <div className="section-heading compact-heading">
+            <div>
+              <h2 style={{ color: "#9f2f2f" }}>Zona de peligro</h2>
+              <p>
+                Elimina permanentemente la identidad y sus datos asociados: cuentas Google, sesiones, programas,
+                solicitudes y reuniones propias, asignaciones o liquidaciones de asistencia técnica y demás relaciones.
+                Esta operación no se puede deshacer.
+              </p>
+            </div>
+          </div>
+          {isSelf ? (
+            <p className="form-notice form-notice-error">No podés eliminar la cuenta con la que estás administrando el sistema.</p>
+          ) : (
+            <form action={eliminarUsuario}>
+              <input name="usuarioId" type="hidden" value={user.id} />
+              <label className="field">
+                <span>Escribí ELIMINAR para confirmar</span>
+                <input
+                  autoComplete="off"
+                  name="confirmacion"
+                  pattern="ELIMINAR"
+                  placeholder="ELIMINAR"
+                  required
+                />
+              </label>
+              <footer className="form-actions">
+                <span className="muted-text">
+                  Se conservará únicamente una entrada técnica de auditoría sin nombre ni correo de la persona eliminada.
+                </span>
+                <button
+                  className="secondary-action"
+                  style={{ borderColor: "#b42318", background: "#b42318", color: "#ffffff" }}
+                  type="submit"
+                >
+                  <Trash2 size={17} />Eliminar usuario y sus datos
+                </button>
+              </footer>
+            </form>
+          )}
+        </section>
       </div>
     </>
   );
