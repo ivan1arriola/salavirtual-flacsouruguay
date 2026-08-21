@@ -61,16 +61,17 @@ export async function POST(request: Request) {
         throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet.");
       }
 
-      const accounts = await Promise.all(scopeSubjects.map(async ({ subject, tipo, activa }) => {
+      const accounts = [];
+      for (const { subject, tipo, activa } of scopeSubjects) {
         const scopes = await validarScopesGoogle({ ...credential, subject });
-        return {
+        accounts.push({
           subject,
           tipo,
           activa,
           ok: scopes.every(({ autorizado }) => autorizado),
           scopes
-        };
-      }));
+        });
+      }
       const failedAccounts = accounts.filter(({ ok }) => !ok);
       const missingCount = accounts.reduce(
         (total, account) => total + account.scopes.filter(({ autorizado }) => !autorizado).length,
