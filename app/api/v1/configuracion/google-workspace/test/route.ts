@@ -16,6 +16,12 @@ import {
 
 export const runtime = "nodejs";
 
+type ScopeSubject = Readonly<{
+  subject: string;
+  tipo: "GENERAL" | "SALA";
+  activa: boolean;
+}>;
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMINISTRACION") {
@@ -48,8 +54,39 @@ export async function POST(request: Request) {
       serviceAccountEmail: configuration.serviceAccountEmail,
       privateKey: descifrarConfiguracion(configuration.privateKeyCifrada)
     };
-    const needsHosts = objetivo === "DRIVE" || objetivo === "SCOPES";
-    const hostEmails = needsHosts
+
+    if (objetivo === "SCOPES") {
+      const scopeSubjects = await obtenerSujetosScopes(configuration.serviceAccountSubject);
+      if (scopeSubjects.length === 0) {
+        throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet.");
+      }
+
+      const accounts = await Promise.all(scopeSubjects.map(async ({ subject, tipo, activa }) => {
+        const scopes = await validarScopesGoogle({ ...credential, subject });
+        return {
+          subject,
+          tipo,
+          activa,
+          ok: scopes.every(({ autorizado }) => autorizado),
+          scopes
+        };
+      }));
+      const failedAccounts = accounts.filter(({ ok }) => !ok);
+      const missingCount = accounts.reduce(
+        (total, account) => total + account.scopes.filter(({ autorizado }) => !autorizado).length,
+        0
+      );
+      const roomCount = accounts.filter(({ tipo }) => tipo === "SALA").length;
+
+      return NextResponse.json({
+        message: missingCount === 0
+          ? `Todos los scopes requeridos están autorizados en ${roomCount} ${roomCount === 1 ? "cuenta sala" : "cuentas sala"}${accounts.some(({ tipo }) => tipo === "GENERAL") ? " y en la cuenta delegada general" : ""}.`
+          : `${missingCount} ${missingCount === 1 ? "autorización de scope falta" : "autorizaciones de scope faltan"} en ${failedAccounts.length} ${failedAccounts.length === 1 ? "cuenta" : "cuentas"}.`,
+        accounts
+      });
+    }
+
+    const hostEmails = objetivo === "DRIVE"
       ? (await db.cuentaProveedor.findMany({
           where: {
             proveedor: { tipo: "GOOGLE_MEET" },
@@ -61,22 +98,6 @@ export async function POST(request: Request) {
         })).flatMap(({ emailOrganizador }) => emailOrganizador ? [emailOrganizador] : [])
       : [];
 
-    if (objetivo === "SCOPES") {
-      const subject = hostEmails[0] ?? configuration.serviceAccountSubject;
-      if (!subject) {
-        throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet activa.");
-      }
-      const scopes = await validarScopesGoogle({ ...credential, subject });
-      const missing = scopes.filter(({ autorizado }) => !autorizado);
-      return NextResponse.json({
-        message: missing.length === 0
-          ? `Todos los scopes requeridos están autorizados para ${subject}.`
-          : `${missing.length} ${missing.length === 1 ? "scope requiere" : "scopes requieren"} autorización en Google Admin.`,
-        subject,
-        scopes
-      });
-    }
-
     const message = await ejecutarPrueba(objetivo, configuration, credential, hostEmails);
     return NextResponse.json({ message });
   } catch (error) {
@@ -85,6 +106,35 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+}
+
+async function obtenerSujetosScopes(serviceAccountSubject: string | null): Promise<readonly ScopeSubject[]> {
+  const hosts = await db.cuentaProveedor.findMany({
+    where: {
+      proveedor: { tipo: "GOOGLE_MEET" },
+      emailOrganizador: { not: null }
+    },
+    select: { emailOrganizador: true, activa: true },
+    orderBy: { prioridad: "asc" }
+  });
+
+  const seen = new Set<string>();
+  const result: ScopeSubject[] = [];
+  const add = (candidate: ScopeSubject) => {
+    const key = candidate.subject.trim().toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    result.push({ ...candidate, subject: candidate.subject.trim() });
+  };
+
+  if (serviceAccountSubject?.trim()) {
+    add({ subject: serviceAccountSubject, tipo: "GENERAL", activa: true });
+  }
+  for (const host of hosts) {
+    if (!host.emailOrganizador) continue;
+    add({ subject: host.emailOrganizador, tipo: "SALA", activa: host.activa });
+  }
+  return result;
 }
 
 async function ejecutarPrueba(
