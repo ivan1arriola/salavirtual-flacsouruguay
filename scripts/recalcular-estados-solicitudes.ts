@@ -1,4 +1,5 @@
 import { db } from "../src/lib/db";
+import { estadoIntegracionEfectivo } from "../src/modules/meet/integration-health.domain";
 import { resolverEstadoSolicitudPorIntegraciones } from "../src/modules/reuniones/encuentros.domain";
 import { recalcularSolicitud } from "../src/modules/reuniones/encuentros-persistence.adapter";
 
@@ -12,14 +13,23 @@ async function main() {
       estado: true,
       instancias: {
         where: { estado: { not: "CANCELADA" } },
-        select: { eventosProveedor: { select: { estadoIntegracion: true } } }
+        select: {
+          eventosProveedor: {
+            select: {
+              estadoIntegracion: true,
+              joinUrl: true,
+              codigoReunion: true,
+              errorIntegracion: true
+            }
+          }
+        }
       }
     }
   });
   const changes = requests.flatMap((request) => {
     const expected = resolverEstadoSolicitudPorIntegraciones(
       request.instancias.flatMap(({ eventosProveedor }) =>
-        eventosProveedor.map(({ estadoIntegracion }) => estadoIntegracion)
+        eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
       )
     );
     return expected === request.estado ? [] : [{
