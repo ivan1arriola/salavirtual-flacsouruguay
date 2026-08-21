@@ -11,11 +11,18 @@ export type WorkspaceScopeValidation = Readonly<{
   error?: string;
 }>;
 
+export type WorkspaceScopeAccountValidation = Readonly<{
+  subject: string;
+  tipo: "GENERAL" | "SALA";
+  activa: boolean;
+  ok: boolean;
+  scopes: readonly WorkspaceScopeValidation[];
+}>;
+
 export type WorkspaceScopesResult = Readonly<{
   ok: boolean;
   message: string;
-  subject?: string;
-  scopes: readonly WorkspaceScopeValidation[];
+  accounts: readonly WorkspaceScopeAccountValidation[];
 }>;
 
 export async function saveWorkspaceSection(
@@ -44,24 +51,35 @@ export async function validateWorkspaceScopes(): Promise<WorkspaceScopesResult> 
       body: JSON.stringify({ objetivo: "SCOPES" })
     });
     const result = await response.json().catch(() => ({}));
-    const scopes = Array.isArray(result.scopes)
-      ? result.scopes as readonly WorkspaceScopeValidation[]
-      : [];
+    const accounts = Array.isArray(result.accounts)
+      ? result.accounts as readonly WorkspaceScopeAccountValidation[]
+      : legacyScopeAccounts(result);
     return {
-      ok: response.ok && scopes.length > 0 && scopes.every(({ autorizado }) => autorizado),
+      ok: response.ok && accounts.length > 0 && accounts.every(({ ok }) => ok),
       message: response.ok
         ? result.message ?? "Validación de scopes completada."
         : result.error ?? "No se pudieron validar los scopes.",
-      subject: typeof result.subject === "string" ? result.subject : undefined,
-      scopes
+      accounts
     };
   } catch {
     return {
       ok: false,
       message: "No se pudo conectar con el servidor.",
-      scopes: []
+      accounts: []
     };
   }
+}
+
+function legacyScopeAccounts(result: Record<string, unknown>): readonly WorkspaceScopeAccountValidation[] {
+  if (typeof result.subject !== "string" || !Array.isArray(result.scopes)) return [];
+  const scopes = result.scopes as readonly WorkspaceScopeValidation[];
+  return [{
+    subject: result.subject,
+    tipo: "SALA",
+    activa: true,
+    ok: scopes.length > 0 && scopes.every(({ autorizado }) => autorizado),
+    scopes
+  }];
 }
 
 export async function prepareDriveHostAccess(): Promise<ApiResult> {
