@@ -10,6 +10,8 @@ import {
 export function WorkspaceScopesValidator() {
   const [result, setResult] = useState<WorkspaceScopesResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const missingScopes = result?.scopes.filter(({ autorizado }) => !autorizado) ?? [];
+  const meetSettingsMissing = missingScopes.some(({ key }) => key === "meetings.space.settings");
 
   async function validate() {
     setBusy(true);
@@ -35,6 +37,26 @@ export function WorkspaceScopesValidator() {
         <p className="form-message">Prueba realizada como <strong>{result.subject}</strong>.</p>
       ) : null}
 
+      {result && missingScopes.length > 0 ? (
+        <div role="alert">
+          <p className="form-message">
+            <strong>{missingScopes.length === 1 ? "Scope faltante detectado" : "Scopes faltantes detectados"}:</strong>{" "}
+            Google rechazó la autorización individual de {missingScopes.length === 1 ? "este permiso" : "estos permisos"}.
+          </p>
+          <div className="config-scopes" aria-label="Scopes faltantes">
+            {missingScopes.map((scope) => <code key={scope.key}>{scope.scope}</code>)}
+          </div>
+          {meetSettingsMissing ? (
+            <p className="form-message">
+              <strong>Meet · configuración</strong> es el scope que la app usa para modificar los ajustes de un Meet ya creado,
+              incluidos moderación, cohosts y reportes.
+            </p>
+          ) : null}
+        </div>
+      ) : result?.ok ? (
+        <p className="form-message done"><strong>No falta ningún scope.</strong> Google autorizó todos los permisos requeridos.</p>
+      ) : null}
+
       {result?.scopes.length ? (
         <ul className="settings-list">
           {result.scopes.map((scope) => (
@@ -48,7 +70,7 @@ export function WorkspaceScopesValidator() {
                 {scope.autorizado
                   ? <CheckCircle2 size={14} aria-hidden="true" />
                   : <CircleAlert size={14} aria-hidden="true" />}
-                {scope.autorizado ? "Autorizado" : "Falta autorización"}
+                {scope.autorizado ? "Autorizado" : "Falta este scope"}
               </span>
             </li>
           ))}
