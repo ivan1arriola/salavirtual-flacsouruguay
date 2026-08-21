@@ -67,18 +67,18 @@ export function PendingMeetButton({
 
   return (
     <div className="pending-provision">
-      <div className="pending-provision-detail">
+      <div>
         <strong>{count} {count === 1 ? "operación pendiente" : "operaciones pendientes"} con Google</strong>
         <small>{message || "Son tareas técnicas pendientes; el total por sí solo no implica que haya reuniones rotas."}</small>
         {breakdown.length ? (
-          <ul className="pending-provision-breakdown" aria-label="Detalle de operaciones pendientes">
+          <ul className="settings-list" aria-label="Detalle de operaciones pendientes">
             {breakdown.map(({ operation, count: operationCount, label, description }) => (
               <li key={operation}>
-                <strong>{operationCount}</strong>
                 <span>
-                  <b>{label}</b>
+                  <strong>{label}</strong>
                   <small>{description}</small>
                 </span>
+                <span className="status status-warning">{operationCount}</span>
               </li>
             ))}
           </ul>
