@@ -1,8 +1,33 @@
 "use client";
 
-import { Check, CheckCheck, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+
+export function NotificationMarkReadOnOpen({
+  unreadCount
+}: Readonly<{ unreadCount: number }>) {
+  const router = useRouter();
+  const sent = useRef(false);
+
+  useEffect(() => {
+    if (unreadCount === 0 || sent.current) return;
+    sent.current = true;
+
+    void fetch("/api/v1/notificaciones", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true })
+    }).then((response) => {
+      if (response.ok) router.refresh();
+      else sent.current = false;
+    }).catch(() => {
+      sent.current = false;
+    });
+  }, [router, unreadCount]);
+
+  return null;
+}
 
 export function NotificationReadButton({
   notificationId
@@ -21,7 +46,7 @@ export function NotificationReadButton({
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        setError(result.error ?? "No se pudo marcar como leida.");
+        setError(result.error ?? "No se pudo marcar como leída.");
         return;
       }
       router.refresh();
@@ -34,42 +59,14 @@ export function NotificationReadButton({
         className="icon-button"
         disabled={pending}
         onClick={markRead}
-        title="Marcar como leida"
+        title="Marcar como leída"
         type="button"
       >
         <Check size={17} aria-hidden="true" />
-        <span className="sr-only">Marcar como leida</span>
+        <span className="sr-only">Marcar como leída</span>
       </button>
       {error ? <small className="inline-error" role="alert">{error}</small> : null}
     </span>
-  );
-}
-
-export function NotificationReadAllButton() {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  function markAllRead() {
-    startTransition(async () => {
-      const response = await fetch("/api/v1/notificaciones", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true })
-      });
-      if (response.ok) router.refresh();
-    });
-  }
-
-  return (
-    <button
-      className="secondary-action"
-      disabled={pending}
-      onClick={markAllRead}
-      type="button"
-    >
-      <CheckCheck size={17} aria-hidden="true" />
-      Marcar todas como leidas
-    </button>
   );
 }
 
