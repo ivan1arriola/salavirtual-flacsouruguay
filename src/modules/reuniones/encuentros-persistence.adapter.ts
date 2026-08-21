@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
+import { estadoIntegracionEfectivo } from "../meet/integration-health.domain";
 import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
 export function cargarEncuentro(
@@ -47,7 +48,12 @@ export async function recalcularSolicitud(
       requiereAsistenciaTecnica: true,
       requiereGrabacion: true,
       eventosProveedor: {
-        select: { estadoIntegracion: true }
+        select: {
+          estadoIntegracion: true,
+          joinUrl: true,
+          codigoReunion: true,
+          errorIntegracion: true
+        }
       }
     }
   });
@@ -58,7 +64,7 @@ export async function recalcularSolicitud(
     throw new Error(`La solicitud ${solicitudId} no tiene instancias activas; requiere reparación de datos.`);
   }
   const estadosIntegracion = meetings.flatMap(({ eventosProveedor }) =>
-    eventosProveedor.map(({ estadoIntegracion }) => estadoIntegracion)
+    eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
   );
   const estado = resolverEstadoSolicitudPorIntegraciones(estadosIntegracion);
   await tx.solicitudSala.update({

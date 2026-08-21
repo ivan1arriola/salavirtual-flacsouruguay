@@ -10,8 +10,13 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
 import {
+  estadoIntegracionEfectivo,
+  requiereAtencionIntegracionMeet
+} from "@/src/modules/meet/integration-health.domain";
+import {
   puedeCambiarAsistenciaEncuentro,
-  puedeGestionarEncuentros
+  puedeGestionarEncuentros,
+  resolverEstadoSolicitudPorIntegraciones
 } from "@/src/modules/reuniones/encuentros.domain";
 
 export default async function ReunionDetailPage({
@@ -64,6 +69,11 @@ export default async function ReunionDetailPage({
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
+  const estadoVisible = request.estado === "CANCELADA"
+    ? request.estado
+    : resolverEstadoSolicitudPorIntegraciones(
+      meetings.flatMap(({ eventosProveedor }) => eventosProveedor.map((event) => estadoIntegracionEfectivo(event)))
+    );
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
@@ -105,7 +115,7 @@ export default async function ReunionDetailPage({
   );
   const integrationProblems = meetings.flatMap((meeting, index) => {
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-    if (!event || event.estadoIntegracion !== "ERROR") return [];
+    if (!event || !requiereAtencionIntegracionMeet(event)) return [];
     return [{
       eventoProveedorId: event.id,
       ordinal: index + 1,
@@ -130,7 +140,7 @@ export default async function ReunionDetailPage({
       </header>
       <section className="meeting-overview" aria-label="Datos de la reunión">
         <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
-        <div><span>Estado</span><strong>{request.estado.toLowerCase().replaceAll("_", " ")}</strong></div>
+        <div><span>Estado</span><strong>{estadoVisible.toLowerCase().replaceAll("_", " ")}</strong></div>
         <div><span>Zona horaria</span><strong>UTC-3 · Montevideo</strong></div>
         <div><span>Encuentros</span><strong>{meetings.length}</strong></div>
         {request.descripcion ? <p>{request.descripcion}</p> : null}

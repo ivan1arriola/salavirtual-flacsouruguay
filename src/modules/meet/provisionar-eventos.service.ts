@@ -3,12 +3,20 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeCohostEmails } from "./cohosts.domain";
 import { eventoCalendarCoincideConSolicitud, extraerConferenceData } from "./google-calendar.domain";
 import type { GoogleCalendarCredentials } from "./google-calendar.adapter";
+import { esErrorDeScopesInsuficientes } from "./integration-health.domain";
 import type { MeetProvider, MeetProvisionRequest, MeetProvisionResult } from "./provider";
 import { bloquearEventoProveedor } from "../reuniones/reserva-salas.adapter";
 import { recalcularSolicitud } from "../reuniones/encuentros-persistence.adapter";
 
 const CLAIM_TIMEOUT_MS = 10 * 60_000;
 type OperacionPendiente = "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
+
+class MeetSettingsScopeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MeetSettingsScopeError";
+  }
+}
 
 export type ProvisionDependencies = Readonly<{
   db: PrismaClient;
@@ -146,10 +154,12 @@ export async function sincronizarEventosPendientes(
         ...(completed && result?.codigoReunion ? { codigoReunion: result.codigoReunion } : {}),
       });
     } catch (error) {
+      const detail = mensaje(error, "Error desconocido de Google.");
       results.push(await registrarErrorReclamado(
         dependencies.db,
         claim,
-        mensaje(error, "Error desconocido de Google."),
+        detail,
+        error instanceof MeetSettingsScopeError,
       ));
     }
   }
@@ -258,7 +268,7 @@ async function provisionar(
   const result = await obtenerConReintentos(provider, request.calendarId, externalEventId);
   if (!result) throw new Error("Google Calendar todavía no terminó de generar el enlace Meet.");
   await persistirMeetDetectado(db, event.id, result);
-  await provider.configurarEventoMeet(request, result);
+  await configurarAjustesMeet(provider, request, result);
   return result;
 }
 
@@ -276,7 +286,7 @@ async function reprogramarYReconciliar(
     throw new Error("Google Calendar todavía no refleja la reprogramación solicitada.");
   }
   await persistirMeetDetectado(db, event.id, result);
-  await provider.configurarEventoMeet(request, result);
+  await configurarAjustesMeet(provider, request, result);
   return result;
 }
 
@@ -290,8 +300,22 @@ async function configurarMeet(
   const result = await obtenerConReintentos(provider, request.calendarId, event.externalEventId);
   if (!result) throw new Error("Google Calendar todavía no confirmó el enlace Meet.");
   await persistirMeetDetectado(db, event.id, result);
-  await provider.configurarEventoMeet(request, result);
+  await configurarAjustesMeet(provider, request, result);
   return result;
+}
+
+async function configurarAjustesMeet(
+  provider: MeetProvider,
+  request: MeetProvisionRequest,
+  result: MeetProvisionResult,
+): Promise<void> {
+  try {
+    await provider.configurarEventoMeet(request, result);
+  } catch (error) {
+    const detail = mensaje(error, "No se pudo configurar el espacio de Meet.");
+    if (esErrorDeScopesInsuficientes(detail)) throw new MeetSettingsScopeError(detail);
+    throw error;
+  }
 }
 
 function solicitudProvider(event: EventoReclamable): MeetProvisionRequest {
@@ -400,8 +424,18 @@ async function registrarErrorReclamado(
   db: PrismaClient,
   claim: Claim,
   error: string,
+  scopeConfiguracionMeet = false,
 ): Promise<ProvisionResult> {
-  const applied = await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
+    const current = await tx.eventoProveedor.findUnique({
+      where: { id: claim.event.id },
+      select: {
+        joinUrl: true,
+        codigoReunion: true,
+        instancia: { select: { solicitudSalaId: true, estado: true } },
+      },
+    });
+    const noBloqueante = scopeConfiguracionMeet && Boolean(current?.joinUrl || current?.codigoReunion);
     const updated = await tx.eventoProveedor.updateMany({
       where: {
         id: claim.event.id,
@@ -410,27 +444,23 @@ async function registrarErrorReclamado(
         reclamoIntegracionToken: claim.token,
       },
       data: {
-        estadoIntegracion: "ERROR",
+        estadoIntegracion: noBloqueante ? "SINCRONIZADA" : "ERROR",
         errorIntegracion: error,
         reclamoIntegracionAt: null,
         reclamoIntegracionToken: null,
       },
     });
-    if (updated.count !== 1) return false;
-    const current = await tx.eventoProveedor.findUnique({
-      where: { id: claim.event.id },
-      select: { instancia: { select: { solicitudSalaId: true, estado: true } } },
-    });
+    if (updated.count !== 1) return null;
     if (current && current.instancia.estado !== "CANCELADA") {
       await recalcularSolicitud(tx, current.instancia.solicitudSalaId);
     }
-    return true;
+    return noBloqueante ? "PENDIENTE_CONFIGURACION" as const : "ERROR" as const;
   });
 
-  if (!applied) {
+  if (!outcome) {
     return { eventoProveedorId: claim.event.id, estado: "EN_PROCESO" };
   }
-  return { eventoProveedorId: claim.event.id, estado: "ERROR", error };
+  return { eventoProveedorId: claim.event.id, estado: outcome, error };
 }
 
 async function registrarErrorSinClaim(
