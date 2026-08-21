@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
-  NotificationReadAllButton,
+  NotificationMarkReadOnOpen,
   NotificationReadButton,
   NotificationDeleteButton
 } from "@/src/components/notification-actions";
@@ -38,20 +38,22 @@ export default async function NotificacionesPage({
 
   return (
     <>
+      <NotificationMarkReadOnOpen unreadCount={unreadCount} />
+
       <header className="page-header">
         <div>
           <p className="page-eyebrow">Actividad</p>
           <h1>Notificaciones</h1>
           <p>{unreadCount} sin leer.</p>
         </div>
-        {unreadCount > 0 ? <NotificationReadAllButton /> : <Bell size={28} color="var(--brand)" aria-hidden="true" />}
+        <Bell size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
       <form className="filter-bar notification-filter" method="get">
         <Bell size={18} aria-hidden="true" />
         <select aria-label="Filtrar notificaciones" name="estado" defaultValue={estado}>
           <option value="todas">Todas</option>
-          <option value="no-leidas">No leidas</option>
+          <option value="no-leidas">No leídas</option>
         </select>
         <button className="secondary-action" type="submit">Filtrar</button>
       </form>
@@ -86,7 +88,7 @@ export default async function NotificacionesPage({
                   )}
                   <span className="notification-actions">
                     {notification.leidaAt ? (
-                      <span className="status status-neutral">Leida</span>
+                      <span className="status status-neutral">Leída</span>
                     ) : (
                       <NotificationReadButton notificationId={notification.id} />
                     )}
