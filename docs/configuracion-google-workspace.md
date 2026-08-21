@@ -34,13 +34,27 @@ https://www.googleapis.com/auth/meetings.space.readonly,
 https://www.googleapis.com/auth/gmail.send
 ```
 
+Estos son los scopes que utiliza actualmente Sala Virtual:
+
+- `calendar.events`: crear, modificar y cancelar los eventos de las salas.
+- `drive`: localizar, mover, crear y reproducir archivos y carpetas de grabaciones y documentos.
+- `meetings.space.settings`: leer y modificar la configuracion de Meets creados desde Calendar, incluidos ajustes y cohosts.
+- `meetings.space.readonly`: consultar espacios, conference records, participantes, grabaciones, transcripciones y notas.
+- `gmail.send`: enviar notificaciones por Gmail API.
+
+`meetings.space.created` no es un requisito actual: Sala Virtual no crea el espacio con
+`spaces.create`; solicita la conferencia desde Google Calendar. Del mismo modo,
+`drive.meet.readonly` no sustituye a `drive`, porque la aplicacion tambien necesita
+operaciones de escritura y organizacion de archivos.
+
 Las diez cuentas `salaNN` deben tener Google Calendar y Google Meet habilitados
 y una edicion de Workspace que permita crear reuniones Meet.
 
 Despues de modificar la delegacion puede haber un tiempo de propagacion en
 Google Workspace. En el gestor, `Configuracion > Google Workspace > Validacion
-de scopes` permite comprobar cada scope individualmente usando una cuenta host
-activa, de la misma forma en que se ejecuta la provision real de reuniones.
+de scopes` comprueba cada scope individualmente en todas las cuentas sala
+configuradas y tambien en la cuenta delegada general. La interfaz identifica
+exactamente que cuenta y que scope requieren atencion.
 
 ## Configuracion del gestor
 
