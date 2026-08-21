@@ -30,7 +30,7 @@ export default async function ConfiguracionPage({
     || requestedSection === "historico"
     ? requestedSection
     : "workspace";
-  const [configuration, hosts, programCount, pendingMeet] = await Promise.all([
+  const [configuration, hosts, programCount, pendingMeetOperations] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -48,11 +48,12 @@ export default async function ConfiguracionPage({
       }
     }),
     db.programa.count(),
-    db.eventoProveedor.count({
+    db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
         operacionPendiente: { not: null }
-      }
+      },
+      select: { operacionPendiente: true }
     })
   ]);
   const [programs, teachers] = section === "programas"
@@ -171,7 +172,11 @@ export default async function ConfiguracionPage({
       {section === "workspace" ? (
         <div className="settings-grid settings-workspace-grid">
           <section className="content-section settings-wide">
-            <PendingMeetButton count={pendingMeet} />
+            <PendingMeetButton
+              operations={pendingMeetOperations.flatMap(({ operacionPendiente }) =>
+                operacionPendiente ? [operacionPendiente] : []
+              )}
+            />
           </section>
           <WorkspaceConfigForm
             initial={configuration ? {
