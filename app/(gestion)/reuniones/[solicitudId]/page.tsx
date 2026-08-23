@@ -15,9 +15,9 @@ import {
 } from "@/src/modules/meet/integration-health.domain";
 import {
   puedeCambiarAsistenciaEncuentro,
-  puedeGestionarEncuentros,
   resolverEstadoSolicitudPorIntegraciones
 } from "@/src/modules/reuniones/encuentros.domain";
+import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 
 export default async function ReunionDetailPage({
   params
@@ -33,11 +33,7 @@ export default async function ReunionDetailPage({
       docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
     }
   });
-  if (!request || !puedeGestionarEncuentros(
-    actor.rol,
-    actor.id,
-    request.docentePrograma.docente.usuarioId
-  )) notFound();
+  if (!request || !await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) notFound();
 
   const now = new Date();
   const seriesRequests = await db.solicitudSala.findMany({
