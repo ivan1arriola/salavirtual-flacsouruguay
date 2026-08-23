@@ -13,7 +13,19 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
     where: {
       estado: "PROGRAMADA",
       finProgramadoAt: { gte: now },
-      solicitud: { docentePrograma: { docente: { usuarioId: user.id } } }
+      solicitud: {
+        docentePrograma: {
+          programa: {
+            activo: true,
+            docentes: {
+              some: {
+                activo: true,
+                docente: { usuarioId: user.id }
+              }
+            }
+          }
+        }
+      }
     },
     orderBy: { inicioProgramadoAt: "asc" },
     take: 10,

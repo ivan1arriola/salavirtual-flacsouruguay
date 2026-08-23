@@ -14,11 +14,11 @@ import {
   actualizarEncuentroSchema,
   agregarEncuentroSchema,
   elegirCuentaHostParaPeriodos,
-  puedeGestionarEncuentros,
 } from "./encuentros.domain";
 import { bloquearReservaSalas, bloquearSolicitudSala } from "./reserva-salas.adapter";
 import { pertenecenAlMismoDia } from "./periodos.domain";
 import { auditarEncuentro as auditar, recalcularSolicitud } from "./encuentros-persistence.adapter";
+import { puedeGestionarPrograma } from "./permisos-programa.service";
 
 export type GestionEncuentrosDependencies = Readonly<{
   db: PrismaClient;
@@ -60,7 +60,7 @@ export async function agregarEncuentro(
       },
     });
     if (!serie) throw new NotFoundApiError("La reunión no existe.");
-    validarGestion(actor, serie.docentePrograma.docente.usuarioId);
+    await validarGestion(tx, actor, serie.docentePrograma.programaId);
     if (input.inicio <= new Date()) throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
     if (!pertenecenAlMismoDia(input.inicio, input.fin, serie.timezone)) {
       throw new ValidationApiError("El encuentro debe finalizar el mismo día de la serie.");
@@ -180,7 +180,7 @@ export async function actualizarEncuentro(
     await bloquearSolicitudSala(tx, solicitudId);
     const actual = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
     if (!actual) throw new NotFoundApiError("El encuentro no existe.");
-    validarGestion(actor, actual.solicitud.docentePrograma.docente.usuarioId);
+    await validarGestion(tx, actor, actual.solicitud.docentePrograma.programaId);
     if (actual.estado !== "PROGRAMADA") throw new ConflictApiError("El encuentro no se puede modificar.");
 
     const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
@@ -314,7 +314,7 @@ export async function eliminarEncuentro(
     await bloquearSolicitudSala(tx, solicitudId);
     const meeting = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
     if (!meeting) throw new NotFoundApiError("El encuentro no existe.");
-    validarGestion(actor, meeting.solicitud.docentePrograma.docente.usuarioId);
+    await validarGestion(tx, actor, meeting.solicitud.docentePrograma.programaId);
     if (meeting.estado !== "PROGRAMADA" || meeting.inicioProgramadoAt <= new Date()) {
       throw new ConflictApiError("Solo se pueden eliminar encuentros futuros y programados.");
     }
@@ -370,7 +370,7 @@ export async function eliminarReunionCompleta(
       },
     });
     if (!request) throw new NotFoundApiError("La reunión no existe.");
-    validarGestion(actor, request.docentePrograma.docente.usuarioId);
+    await validarGestion(tx, actor, request.docentePrograma.programaId);
     if (request.instancias.some(({ estado, inicioProgramadoAt }) =>
       estado !== "PROGRAMADA" || inicioProgramadoAt <= new Date()
     )) {
@@ -456,8 +456,12 @@ async function marcarOperacionPendiente(
   });
 }
 
-function validarGestion(actor: SessionActor, docenteUsuarioId?: string): void {
-  if (!actor.activo || !docenteUsuarioId || !puedeGestionarEncuentros(actor.rol, actor.id, docenteUsuarioId)) {
+async function validarGestion(
+  tx: Prisma.TransactionClient,
+  actor: SessionActor,
+  programaId?: string
+): Promise<void> {
+  if (!programaId || !await puedeGestionarPrograma(tx, actor, programaId)) {
     throw new ForbiddenApiError("No tiene permisos para gestionar estos encuentros.");
   }
 }

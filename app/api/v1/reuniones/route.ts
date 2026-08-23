@@ -8,6 +8,7 @@ import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.
 import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
+import { destinatariosDocentesPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 
@@ -98,6 +99,11 @@ async function notificarReunionCreada(solicitudId: string) {
 
   const docenteUsuario = solicitud.docentePrograma.docente.usuario;
   const docenteNombre = [docenteUsuario.nombres, docenteUsuario.apellidos].filter(Boolean).join(" ");
+  const docentesPrograma = await destinatariosDocentesPrograma(db, solicitud.docentePrograma.programaId);
+  const responsablesPrograma = [
+    { usuarioId: solicitud.creadaPor.id, email: solicitud.creadaPor.emailPrincipal },
+    ...docentesPrograma
+  ];
   const instancias = solicitud.instancias.map((instancia) => {
     const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const inicioFecha = formatShortDate(instancia.inicioProgramadoAt);
@@ -126,10 +132,7 @@ async function notificarReunionCreada(solicitudId: string) {
   });
   await notificarUsuarios(
     db,
-    [
-      { usuarioId: solicitud.creadaPor.id, email: solicitud.creadaPor.emailPrincipal },
-      { usuarioId: docenteUsuario.id, email: docenteUsuario.emailPrincipal }
-    ],
+    responsablesPrograma,
     {
       tipo: "REUNION_CREADA",
       titulo: "Reunión creada",
@@ -163,10 +166,7 @@ async function notificarReunionCreada(solicitudId: string) {
     );
     await notificarUsuarios(
       db,
-      [
-        { usuarioId: solicitud.creadaPor.id, email: solicitud.creadaPor.emailPrincipal },
-        { usuarioId: docenteUsuario.id, email: docenteUsuario.emailPrincipal }
-      ],
+      responsablesPrograma,
       {
         tipo: "ASISTENCIA_ASIGNACION",
         titulo: "Asistencia técnica asignada",

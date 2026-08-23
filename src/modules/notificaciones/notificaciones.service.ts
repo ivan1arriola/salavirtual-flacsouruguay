@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { enviarCorreoConfigurado } from "../configuracion/correo.service";
+import { destinatariosDocentesPrograma } from "../reuniones/permisos-programa.service";
 import {
   PREFERENCIA_PREDETERMINADA,
   type PreferenciaCanales,
@@ -90,10 +91,33 @@ export async function notificarUsuarios(
   recipients: readonly NotificationRecipient[],
   message: NotificationMessage
 ): Promise<void> {
+  const programRecipients = await destinatariosProgramaParaNotificacion(db, message);
   const uniqueRecipients = Array.from(
-    new Map(recipients.map((recipient) => [recipient.usuarioId, recipient])).values()
+    new Map(
+      [...recipients, ...programRecipients].map((recipient) => [recipient.usuarioId, recipient])
+    ).values()
   );
   await Promise.all(uniqueRecipients.map((recipient) => notificarUsuario(db, recipient, message)));
+}
+
+async function destinatariosProgramaParaNotificacion(
+  db: Db,
+  message: NotificationMessage
+): Promise<readonly NotificationRecipient[]> {
+  if (
+    message.tipo !== "REUNION_CREADA" &&
+    message.tipo !== "ASISTENCIA_ASIGNACION"
+  ) return [];
+
+  const solicitudId = message.href?.match(/^\/reuniones\/([^/?#]+)/)?.[1];
+  if (!solicitudId) return [];
+
+  const request = await db.solicitudSala.findUnique({
+    where: { id: solicitudId },
+    select: { docentePrograma: { select: { programaId: true } } }
+  });
+  if (!request) return [];
+  return destinatariosDocentesPrograma(db, request.docentePrograma.programaId);
 }
 
 export function reunionEmailText(input: Readonly<{

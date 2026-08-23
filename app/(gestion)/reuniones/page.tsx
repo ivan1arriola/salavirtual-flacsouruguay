@@ -42,7 +42,19 @@ export default async function ReunionesPage({
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
   const teacherFilter = actor.rol === "DOCENTE"
-    ? { docentePrograma: { docente: { usuarioId: actor.id } } }
+    ? {
+        docentePrograma: {
+          programa: {
+            activo: true,
+            docentes: {
+              some: {
+                activo: true,
+                docente: { usuarioId: actor.id }
+              }
+            }
+          }
+        }
+      }
     : {};
   const meetings = await db.instanciaSala.findMany({
     where: {
@@ -257,7 +269,6 @@ export default async function ReunionesPage({
                   <span className={`status status-${statusTone(meeting.estado)}`}>{statusLabel(meeting.estado)}</span>
                 </div>
               </header>
-
               <div className="agenda-meeting-card-body">
                 <div className="agenda-meeting-primary">
                   <p className="agenda-program-label">{association.programa.nombre}</p>
