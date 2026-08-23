@@ -30,18 +30,19 @@ const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
 export default async function ReunionesPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ q?: string; vista?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ q?: string; vista?: string; programa?: string }> }>) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) redirect("/mi-agenda");
 
-  const { q = "", vista: vistaParam } = await searchParams;
+  const { q = "", vista: vistaParam, programa: programaParam = "" } = await searchParams;
   const vista = resolverVistaAgenda(vistaParam);
   const query = q.trim();
+  const programaId = actor.rol === "ADMINISTRACION" ? programaParam.trim() : "";
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
-  const teacherFilter = actor.rol === "DOCENTE"
+  const solicitudFilter = actor.rol === "DOCENTE"
     ? {
         docentePrograma: {
           programa: {
@@ -55,58 +56,71 @@ export default async function ReunionesPage({
           }
         }
       }
-    : {};
-  const meetings = await db.instanciaSala.findMany({
-    where: {
-      finProgramadoAt: { gte: now },
-      estado: { not: "CANCELADA" },
-      solicitud: teacherFilter,
-      ...(query ? {
-        OR: [
-          {
-            eventosProveedor: {
-              some: {
-                OR: [
-                  { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" as const } },
-                  { joinUrl: { contains: query, mode: "insensitive" as const } }
-                ]
+    : programaId
+      ? { docentePrograma: { programaId } }
+      : {};
+
+  const [meetings, programs] = await Promise.all([
+    db.instanciaSala.findMany({
+      where: {
+        finProgramadoAt: { gte: now },
+        estado: { not: "CANCELADA" },
+        solicitud: solicitudFilter,
+        ...(query ? {
+          OR: [
+            {
+              eventosProveedor: {
+                some: {
+                  OR: [
+                    { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" as const } },
+                    { joinUrl: { contains: query, mode: "insensitive" as const } }
+                  ]
+                }
               }
+            },
+            {
+              solicitud: { OR: [
+                { titulo: { contains: query, mode: "insensitive" as const } },
+                { docentePrograma: { programa: { nombre: { contains: query, mode: "insensitive" as const } } } },
+                { docentePrograma: { docente: { usuario: {
+                  OR: [
+                    { nombres: { contains: query, mode: "insensitive" as const } },
+                    { apellidos: { contains: query, mode: "insensitive" as const } }
+                  ]
+                } } } }
+              ] }
             }
-          },
-          {
-            solicitud: { OR: [
-            { titulo: { contains: query, mode: "insensitive" as const } },
-            { docentePrograma: { programa: { nombre: { contains: query, mode: "insensitive" as const } } } },
-            { docentePrograma: { docente: { usuario: {
-              OR: [
-                { nombres: { contains: query, mode: "insensitive" as const } },
-                { apellidos: { contains: query, mode: "insensitive" as const } }
-              ]
-            } } } }
-          ] }
-          }
-        ]
-      } : {})
-    },
-    orderBy: { inicioProgramadoAt: "asc" },
-    take: 500,
-    include: {
-      solicitud: {
-        include: {
-          docentePrograma: {
-            include: { programa: true, docente: { include: { usuario: true } } }
-          }
-        }
+          ]
+        } : {})
       },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-      asignaciones: {
-        where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-        include: { asistenteTecnico: { include: { usuario: true } } },
-        orderBy: { updatedAt: "desc" },
-        take: 1
+      orderBy: { inicioProgramadoAt: "asc" },
+      take: 500,
+      include: {
+        solicitud: {
+          include: {
+            docentePrograma: {
+              include: { programa: true, docente: { include: { usuario: true } } }
+            }
+          }
+        },
+        eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+        asignaciones: {
+          where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
+          include: { asistenteTecnico: { include: { usuario: true } } },
+          orderBy: { updatedAt: "desc" },
+          take: 1
+        }
       }
-    }
-  });
+    }),
+    actor.rol === "ADMINISTRACION"
+      ? db.programa.findMany({
+          where: { activo: true },
+          orderBy: { nombre: "asc" },
+          select: { id: true, nombre: true }
+        })
+      : Promise.resolve([])
+  ]);
+
   const duplicateCases = actor.rol === "ADMINISTRACION"
     ? await listarCasosRevisionDuplicados(db, now)
     : [];
@@ -148,12 +162,12 @@ export default async function ReunionesPage({
 
       <div className="agenda-controls">
         <nav className="agenda-view-switch" aria-label="Forma de visualizar la agenda">
-          <Link aria-current={vista === "series" ? "page" : undefined} className={vista === "series" ? "active" : ""} href={agendaHref("series", q)}>
+          <Link aria-current={vista === "series" ? "page" : undefined} className={vista === "series" ? "active" : ""} href={agendaHref("series", q, programaId)}>
             <CalendarRange size={17} />
             <span>Reuniones <small>por serie</small></span>
             <strong>{series.length}</strong>
           </Link>
-          <Link aria-current={vista === "encuentros" ? "page" : undefined} className={vista === "encuentros" ? "active" : ""} href={agendaHref("encuentros", q)}>
+          <Link aria-current={vista === "encuentros" ? "page" : undefined} className={vista === "encuentros" ? "active" : ""} href={agendaHref("encuentros", q, programaId)}>
             <List size={17} />
             <span>Encuentros <small>por instancia</small></span>
             <strong>{meetings.length}</strong>
@@ -162,8 +176,16 @@ export default async function ReunionesPage({
         <form className="filter-bar agenda-search" method="get">
           <Search size={18} aria-hidden="true" />
           <input name="vista" type="hidden" value={vista} />
+          {actor.rol === "ADMINISTRACION" ? (
+            <select aria-label="Filtrar por programa" defaultValue={programaId} name="programa">
+              <option value="">Todos los programas</option>
+              {programs.map((program) => (
+                <option key={program.id} value={program.id}>{program.nombre}</option>
+              ))}
+            </select>
+          ) : null}
           <input aria-label="Buscar reuniones" defaultValue={q} name="q" placeholder="Buscar por reunión, código Meet, programa o docente" type="search" />
-          <button className="secondary-action" type="submit">Buscar</button>
+          <button className="secondary-action" type="submit">Aplicar</button>
         </form>
       </div>
 
@@ -339,9 +361,10 @@ function startOfMontevideoDay(date: Date): Date {
   return new Date(`${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`);
 }
 
-function agendaHref(vista: "series" | "encuentros", query: string): string {
+function agendaHref(vista: "series" | "encuentros", query: string, programaId: string): string {
   const params = new URLSearchParams({ vista });
   if (query) params.set("q", query);
+  if (programaId) params.set("programa", programaId);
   return `/reuniones?${params.toString()}`;
 }
 
