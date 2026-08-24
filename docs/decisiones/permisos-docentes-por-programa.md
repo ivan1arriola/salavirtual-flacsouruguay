@@ -9,4 +9,4 @@ Las reuniones pertenecen operativamente a un programa, aunque `SolicitudSala` co
 - La persona que creó la reunión y el `DocentePrograma` usado al crearla se conservan para trazabilidad, presentación y auditoría, pero no limitan los permisos de otros docentes del mismo programa.
 - Los docentes del programa reciben las notificaciones de creación de reunión y de asignación de asistencia técnica dirigidas al detalle de esa reunión.
 
-Las restricciones temporales siguen vigentes: por ejemplo, no se puede eliminar un encuentro pasado ni una reunión con encuentros que ya comenzaron.
+La eliminación de una serie completa también se rige por el programa: cualquier docente activo del programa puede cancelarla completa, aunque tenga encuentros pasados o ya iniciados. La operación conserva la auditoría y sigue bloqueada si existen liquidaciones asociadas. La eliminación de un encuentro individual mantiene su restricción temporal y solo se permite para encuentros futuros y programados.

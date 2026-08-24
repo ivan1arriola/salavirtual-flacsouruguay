@@ -117,7 +117,7 @@ export function MeetingDetailManager({
 
   async function removeAll() {
     if (removingAllRef.current) return;
-    if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la reunión completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
+    if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la serie completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
     removingAllRef.current = true;
     setBusy("all");
     setMessage(`Eliminando ${meetings.length} encuentros de Google Calendar. Puede demorar unos minutos…`);
@@ -126,7 +126,7 @@ export function MeetingDetailManager({
         const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" });
         if (!response.ok) {
           const result = await response.json().catch(() => ({}));
-          throw new Error(result.error ?? "No se pudo eliminar la reunión completa.");
+          throw new Error(result.error ?? "No se pudo eliminar la serie completa.");
         }
       }
       router.push("/reuniones");
@@ -139,12 +139,10 @@ export function MeetingDetailManager({
     }
   }
 
-  const canRemoveAll = meetings.length > 0 && meetings.every(({ editable }) => editable);
+  const canRemoveAll = meetings.length > 0;
   const removeAllBlockedReason = meetings.length === 0
     ? "La reunión no tiene encuentros para eliminar."
-    : !canRemoveAll
-      ? "Solo se puede eliminar completa cuando todos los encuentros son futuros y programados."
-      : "";
+    : "";
   const proximos = filtrarEncuentrosPorVista(meetings, "PROXIMOS");
   const pasados = filtrarEncuentrosPorVista(meetings, "PASADOS");
   const visibleMeetings = vistaTemporal === "PROXIMOS" ? proximos : pasados;
@@ -291,19 +289,19 @@ export function MeetingDetailManager({
           <summary>Acciones avanzadas</summary>
           <div className="meeting-danger-zone">
             <div>
-              <h2>Eliminar reunión completa</h2>
-              <p>Elimina la reunión y todos sus encuentros futuros, incluidos sus eventos de Calendar.</p>
+              <h2>Eliminar serie completa</h2>
+              <p>Cancela la serie y todos sus eventos de Calendar, incluso si algún encuentro ya ocurrió.</p>
               {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
             </div>
             <button
               className="secondary-action danger-action"
               disabled={!canRemoveAll || busy !== null}
               onClick={removeAll}
-              title={removeAllBlockedReason || "Eliminar reunión completa"}
+              title={removeAllBlockedReason || "Eliminar serie completa"}
               type="button"
             >
               {busy === "all" ? <LoaderCircle className="button-spinner" size={17} /> : <Trash2 size={17} />}
-              {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar reunión"}
+              {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar serie"}
             </button>
           </div>
         </details>
