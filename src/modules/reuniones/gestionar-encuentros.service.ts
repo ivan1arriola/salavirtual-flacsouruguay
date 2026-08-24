@@ -371,11 +371,6 @@ export async function eliminarReunionCompleta(
     });
     if (!request) throw new NotFoundApiError("La reunión no existe.");
     await validarGestion(tx, actor, request.docentePrograma.programaId);
-    if (request.instancias.some(({ estado, inicioProgramadoAt }) =>
-      estado !== "PROGRAMADA" || inicioProgramadoAt <= new Date()
-    )) {
-      throw new ConflictApiError("Solo se puede eliminar una reunión si todos sus encuentros son futuros y programados.");
-    }
     if (request.instancias.some(({ detallesLiquidacion }) => detallesLiquidacion.length > 0)) {
       throw new ConflictApiError("La reunión tiene liquidaciones asociadas y no se puede eliminar.");
     }
