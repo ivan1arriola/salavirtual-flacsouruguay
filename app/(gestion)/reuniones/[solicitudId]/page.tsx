@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
 import { MeetingIntegrationProblems } from "@/src/components/meeting-integration-problems";
 import { MeetingRoomCredentials } from "@/src/components/meeting-room-credentials";
+import { SeriesManagement } from "@/src/components/series-management";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
@@ -17,7 +18,10 @@ import {
   puedeCambiarAsistenciaEncuentro,
   resolverEstadoSolicitudPorIntegraciones
 } from "@/src/modules/reuniones/encuentros.domain";
-import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
+import {
+  destinatariosDocentesPrograma,
+  puedeGestionarPrograma
+} from "@/src/modules/reuniones/permisos-programa.service";
 
 export default async function ReunionDetailPage({
   params
@@ -36,28 +40,38 @@ export default async function ReunionDetailPage({
   if (!request || !await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) notFound();
 
   const now = new Date();
-  const seriesRequests = await db.solicitudSala.findMany({
-    where: {
-      docenteProgramaId: request.docenteProgramaId,
-      titulo: request.titulo,
-      createdAt: request.createdAt
-    },
-    orderBy: { id: "asc" },
-    select: {
-      id: true,
-      instancias: {
-        orderBy: { inicioProgramadoAt: "asc" },
-        include: {
-          eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-          asignaciones: {
-            where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-            include: { asistenteTecnico: { include: { usuario: true } } }
-          },
-          postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
+  const [seriesRequests, cohostAccounts, programRecipients] = await Promise.all([
+    db.solicitudSala.findMany({
+      where: {
+        docenteProgramaId: request.docenteProgramaId,
+        titulo: request.titulo,
+        createdAt: request.createdAt
+      },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        instancias: {
+          orderBy: { inicioProgramadoAt: "asc" },
+          include: {
+            eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+            cohosts: { select: { cuentaGoogleId: true } },
+            cohostEmails: { select: { email: true } },
+            asignaciones: {
+              where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+              include: { asistenteTecnico: { include: { usuario: true } } }
+            },
+            postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
+          }
         }
       }
-    }
-  });
+    }),
+    db.cuentaGoogleFlacso.findMany({
+      where: { user: { activo: true } },
+      orderBy: { email: "asc" },
+      select: { id: true, email: true, userId: true }
+    }),
+    destinatariosDocentesPrograma(db, request.docentePrograma.programaId)
+  ]);
   const meetings = seriesRequests
     .flatMap((seriesRequest) => seriesRequest.instancias.map((meeting) => ({
       ...meeting,
@@ -65,6 +79,27 @@ export default async function ReunionDetailPage({
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
+  const manageableMeetings = meetings.filter((meeting) =>
+    meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now
+  );
+  const protectedUserIds = new Set([
+    request.docentePrograma.docente.usuario.id,
+    ...manageableMeetings.flatMap(({ asignaciones }) =>
+      asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.id)
+    )
+  ]);
+  const protectedCohostIds = new Set(
+    cohostAccounts
+      .filter(({ userId }) => protectedUserIds.has(userId))
+      .map(({ id }) => id)
+  );
+  const initialCohostCuentaIds = unique([
+    ...manageableMeetings.flatMap(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
+    ...protectedCohostIds
+  ]);
+  const initialManualCohostEmails = unique(
+    manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
+  );
   const estadoVisible = request.estado === "CANCELADA"
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
@@ -141,6 +176,18 @@ export default async function ReunionDetailPage({
         <div><span>Encuentros</span><strong>{meetings.length}</strong></div>
         {request.descripcion ? <p>{request.descripcion}</p> : null}
       </section>
+      <SeriesManagement
+        solicitudId={request.id}
+        cohostOptions={cohostAccounts.map(({ id, email }) => ({
+          id,
+          email,
+          required: protectedCohostIds.has(id)
+        }))}
+        initialCohostCuentaIds={initialCohostCuentaIds}
+        initialManualCohostEmails={initialManualCohostEmails}
+        programPeopleCount={programRecipients.length}
+        hasManageableMeetings={manageableMeetings.length > 0}
+      />
       <MeetingRoomCredentials credentials={roomCredentials} />
       <MeetingIntegrationProblems
         problems={integrationProblems}
@@ -166,4 +213,8 @@ function passwordCuenta(secretRef: string | null | undefined): string | null {
 
 function toLocalInput(date: Date): string {
   return new Date(date.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function unique(values: readonly string[]): readonly string[] {
+  return [...new Set(values)];
 }
