@@ -20,6 +20,24 @@ export type GoogleCalendarCredentials = Readonly<{
   subject: string;
 }>;
 
+type CalendarAttendee = Readonly<{
+  email: string;
+  optional?: boolean;
+  comment?: string;
+  displayName?: string;
+  responseStatus?: string;
+}>;
+
+type CalendarEventWithAttendees = CalendarEvent & Readonly<{
+  attendees?: readonly CalendarAttendee[];
+}>;
+
+type MeetSpaceMember = Readonly<{
+  name?: string;
+  email?: string;
+  role?: string;
+}>;
+
 export async function compartirConferenciaGoogleCalendar(
   credentials: GoogleCalendarCredentials,
   calendarId: string,
@@ -63,6 +81,54 @@ export async function configurarGoogleMeetExistente(
   await configurarCohostsMeet(auth, spaceName, settings.cohostEmails ?? []);
 }
 
+export async function sincronizarCohostsGoogleExistente(
+  credentials: GoogleCalendarCredentials,
+  input: Readonly<{
+    calendarId: string;
+    externalEventId: string;
+    codigoReunion?: string | null;
+    cohostsAnteriores: readonly string[];
+    cohostsDeseados: readonly string[];
+  }>
+): Promise<Readonly<Record<string, unknown>>> {
+  const calendarAuth = new JWT({
+    email: credentials.serviceAccountEmail,
+    key: credentials.privateKey,
+    scopes: [CALENDAR_SCOPE],
+    subject: credentials.subject
+  });
+  const meetAuth = new JWT({
+    email: credentials.serviceAccountEmail,
+    key: credentials.privateKey,
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
+    subject: credentials.subject
+  });
+  const eventUrl = `${calendarEventsUrl(input.calendarId)}/${encodeURIComponent(input.externalEventId)}`;
+  const current = await calendarAuth.request<CalendarEventWithAttendees>({
+    url: eventUrl,
+    method: "GET",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS
+  });
+  const desired = normalizarEmails(input.cohostsDeseados);
+  const previous = normalizarEmails(input.cohostsAnteriores);
+  const attendees = reconciliarAttendees(current.data.attendees ?? [], previous, desired);
+  const updated = mismosAttendees(current.data.attendees ?? [], attendees)
+    ? current.data
+    : (await calendarAuth.request<CalendarEventWithAttendees>({
+        url: `${eventUrl}?sendUpdates=all`,
+        method: "PATCH",
+        timeout: GOOGLE_HTTP_TIMEOUT_MS,
+        data: { attendees }
+      })).data;
+
+  if (input.codigoReunion) {
+    const spaceName = await configurarEspacioMeet(meetAuth, input.codigoReunion, { cohostEmails: desired });
+    await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
+  }
+
+  return JSON.parse(JSON.stringify(updated)) as Readonly<Record<string, unknown>>;
+}
+
 export function crearGoogleCalendarProvider(
   credentials: GoogleCalendarCredentials
 ): MeetProvider {
@@ -92,8 +158,6 @@ export function crearGoogleCalendarProvider(
         });
       } catch (error) {
         if (!isAlreadyCalendarEvent(error)) throw error;
-        // Calendar accepted the first POST but its response was lost.  A 409
-        // for the deterministic id is therefore recovered by reading it.
         response = await auth.request<CalendarEvent>({
           url: `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`,
           method: "GET",
@@ -203,11 +267,89 @@ async function configurarCohostsMeet(
   }));
 }
 
+async function reconciliarCohostsMeet(
+  auth: JWT,
+  spaceName: string,
+  previousEmails: readonly string[],
+  desiredEmails: readonly string[]
+): Promise<void> {
+  const previous = new Set(normalizarEmails(previousEmails));
+  const desired = new Set(normalizarEmails(desiredEmails));
+  const members = await listarMiembrosMeet(auth, spaceName);
+  const cohosts = members.filter(({ role }) => role === "COHOST");
+
+  await Promise.all(cohosts.flatMap((member) => {
+    const email = member.email?.trim().toLowerCase();
+    if (!member.name || !email || !previous.has(email) || desired.has(email)) return [];
+    return [auth.request({
+      url: `${MEET_BETA_API}/${member.name}`,
+      method: "DELETE",
+      timeout: GOOGLE_HTTP_TIMEOUT_MS
+    }).catch((error) => {
+      if (isNotFoundError(error)) return;
+      throw error;
+    })];
+  }));
+
+  const existing = new Set(cohosts.flatMap(({ email }) => email ? [email.trim().toLowerCase()] : []));
+  await configurarCohostsMeet(auth, spaceName, [...desired].filter((email) => !existing.has(email)));
+}
+
+async function listarMiembrosMeet(auth: JWT, spaceName: string): Promise<readonly MeetSpaceMember[]> {
+  const members: MeetSpaceMember[] = [];
+  let pageToken: string | undefined;
+  do {
+    const query = new URLSearchParams({ pageSize: "100" });
+    if (pageToken) query.set("pageToken", pageToken);
+    const response = await auth.request<{ members?: readonly MeetSpaceMember[]; nextPageToken?: string }>({
+      url: `${MEET_BETA_API}/${spaceName}/members?${query.toString()}`,
+      method: "GET",
+      timeout: GOOGLE_HTTP_TIMEOUT_MS
+    });
+    members.push(...(response.data.members ?? []));
+    pageToken = response.data.nextPageToken || undefined;
+  } while (pageToken);
+  return members;
+}
+
+function reconciliarAttendees(
+  current: readonly CalendarAttendee[],
+  previousEmails: readonly string[],
+  desiredEmails: readonly string[]
+): readonly CalendarAttendee[] {
+  const previous = new Set(normalizarEmails(previousEmails));
+  const result = new Map<string, CalendarAttendee>();
+  for (const attendee of current) {
+    const email = attendee.email.trim().toLowerCase();
+    if (!previous.has(email)) result.set(email, { ...attendee, email });
+  }
+  for (const email of normalizarEmails(desiredEmails)) result.set(email, { email });
+  return [...result.values()];
+}
+
+function mismosAttendees(left: readonly CalendarAttendee[], right: readonly CalendarAttendee[]): boolean {
+  const emails = (values: readonly CalendarAttendee[]) => values
+    .map(({ email }) => email.trim().toLowerCase())
+    .sort()
+    .join(",");
+  return emails(left) === emails(right);
+}
+
+function normalizarEmails(values: readonly string[]): readonly string[] {
+  return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
+}
+
 function isAlreadyCohostError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const candidate = error as { code?: unknown; response?: { status?: unknown; data?: unknown } };
   if (candidate.code === 409 || candidate.response?.status === 409) return true;
   return JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
+}
+
+function isNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; response?: { status?: unknown } };
+  return candidate.code === 404 || candidate.response?.status === 404;
 }
 
 function isAlreadyCalendarEvent(error: unknown): boolean {
