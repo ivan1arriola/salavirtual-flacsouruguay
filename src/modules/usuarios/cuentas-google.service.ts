@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import {
   puedeGestionarCuentasGoogle,
   reemplazarCuentasGoogleSchema,
+  resolverEmailPrincipal,
   tieneMetodoDeAcceso,
   type ActorGestionUsuarios
 } from "./cuentas-google.domain";
@@ -19,7 +20,7 @@ export async function reemplazarCuentasGooglePermitidas(
   if (!puedeGestionarCuentasGoogle(actor)) {
     throw new Error("Solo Administracion puede gestionar cuentas Google.");
   }
-  const { emails } = reemplazarCuentasGoogleSchema.parse(input);
+  const { emails, emailPrincipal: emailPrincipalSolicitado } = reemplazarCuentasGoogleSchema.parse(input);
 
   return dependencias.db.$transaction(async (tx) => {
     const actorActual = await tx.usuario.findUnique({
@@ -38,6 +39,8 @@ export async function reemplazarCuentasGooglePermitidas(
       select: {
         id: true,
         passwordHash: true,
+        emailPrincipal: true,
+        emailVerificadoAt: true,
         cuentasGoogle: {
           select: { email: true }
         }
@@ -46,6 +49,13 @@ export async function reemplazarCuentasGooglePermitidas(
     if (!usuario) {
       throw new Error("Usuario no encontrado.");
     }
+
+    const emailPrincipal = resolverEmailPrincipal({
+      emailsGoogle: emails,
+      emailPrincipalActual: usuario.emailPrincipal,
+      emailPrincipalSolicitado
+    });
+
     const cuentaDeOtroUsuario = await tx.cuentaGoogleFlacso.findFirst({
       where: {
         email: { in: emails },
@@ -56,6 +66,36 @@ export async function reemplazarCuentasGooglePermitidas(
     if (cuentaDeOtroUsuario) {
       throw new Error(`La cuenta ${cuentaDeOtroUsuario.email} ya pertenece a otro usuario.`);
     }
+
+    if (emailPrincipal) {
+      const [usuarioConMismoEmail, aliasDeOtroUsuario, googleDeOtroUsuario] = await Promise.all([
+        tx.usuario.findFirst({
+          where: {
+            id: { not: usuario.id },
+            emailPrincipal: { equals: emailPrincipal, mode: "insensitive" }
+          },
+          select: { id: true }
+        }),
+        tx.usuarioEmailAlias.findFirst({
+          where: {
+            usuarioId: { not: usuario.id },
+            email: { equals: emailPrincipal, mode: "insensitive" }
+          },
+          select: { id: true }
+        }),
+        tx.cuentaGoogleFlacso.findFirst({
+          where: {
+            userId: { not: usuario.id },
+            email: { equals: emailPrincipal, mode: "insensitive" }
+          },
+          select: { id: true }
+        })
+      ]);
+      if (usuarioConMismoEmail || aliasDeOtroUsuario || googleDeOtroUsuario) {
+        throw new Error(`El correo ${emailPrincipal} ya pertenece a otro usuario.`);
+      }
+    }
+
     if (
       !tieneMetodoDeAcceso({
         tienePassword: Boolean(usuario.passwordHash),
@@ -85,10 +125,23 @@ export async function reemplazarCuentasGooglePermitidas(
       });
     }
 
+    const emailPrincipalAnterior = usuario.emailPrincipal?.trim().toLowerCase() ?? null;
+    const cambioEmailPrincipal = emailPrincipalAnterior !== emailPrincipal;
+    const cuentaPrincipalGoogle = emailPrincipal && emails.includes(emailPrincipal)
+      ? await tx.cuentaGoogleFlacso.findUnique({
+          where: { email: emailPrincipal },
+          select: { emailVerificadoAt: true }
+        })
+      : null;
+
     await tx.usuario.update({
       where: { id: usuario.id },
       data: {
-        debeCambiarPassword: emails.length === 0
+        debeCambiarPassword: emails.length === 0,
+        emailPrincipal,
+        emailVerificadoAt: cambioEmailPrincipal
+          ? cuentaPrincipalGoogle?.emailVerificadoAt ?? null
+          : usuario.emailVerificadoAt
       }
     });
     await tx.auditoria.create({
@@ -98,9 +151,10 @@ export async function reemplazarCuentasGooglePermitidas(
         entidadTipo: "Usuario",
         entidadId: usuario.id,
         valorAnterior: {
-          emails: usuario.cuentasGoogle.map(({ email }) => email)
+          emails: usuario.cuentasGoogle.map(({ email }) => email),
+          emailPrincipal: usuario.emailPrincipal
         },
-        valorNuevo: { emails }
+        valorNuevo: { emails, emailPrincipal }
       }
     });
 
