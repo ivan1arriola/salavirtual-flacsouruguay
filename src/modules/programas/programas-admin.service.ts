@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { programaAdminSchema, puedeAdministrarProgramas } from "./programas-admin.domain";
 
@@ -149,7 +149,7 @@ export async function eliminarPrograma(
 }
 
 async function validarNombreDisponible(
-  tx: Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0],
+  tx: Prisma.TransactionClient,
   nombre: string,
   excluirId?: string
 ): Promise<void> {
@@ -164,7 +164,7 @@ async function validarNombreDisponible(
 }
 
 async function validarUnidadAcademica(
-  tx: Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0],
+  tx: Prisma.TransactionClient,
   unidadAcademicaId: string | null
 ): Promise<void> {
   if (!unidadAcademicaId) return;
