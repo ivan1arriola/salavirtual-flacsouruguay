@@ -2,15 +2,18 @@ import { BookOpen, History, KeyRound, MailCheck, Settings, Video } from "lucide-
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
+import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { ProgramMembersConfig } from "@/src/components/program-members-config";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
+  actualizarProgramaAdmin,
   agregarIntegrantePrograma,
+  crearProgramaAdmin,
+  eliminarProgramaAdmin,
   invitarIntegrantePrograma,
   quitarIntegrantePrograma
 } from "./actions";
@@ -56,7 +59,7 @@ export default async function ConfiguracionPage({
       select: { operacionPendiente: true }
     })
   ]);
-  const [programs, teachers] = section === "programas"
+  const [programs, teachers, academicUnits] = section === "programas"
     ? await Promise.all([
         db.programa.findMany({
           orderBy: { nombre: "asc" },
@@ -65,6 +68,8 @@ export default async function ConfiguracionPage({
             nombre: true,
             codigo: true,
             activo: true,
+            unidadAcademicaId: true,
+            unidadAcademica: { select: { id: true, nombre: true, activa: true } },
             docentes: {
               where: { activo: true },
               select: {
@@ -89,9 +94,13 @@ export default async function ConfiguracionPage({
             emailPrincipal: true,
             activo: true
           }
+        }),
+        db.unidadAcademica.findMany({
+          orderBy: { nombre: "asc" },
+          select: { id: true, nombre: true, activa: true }
         })
       ])
-    : [[], []];
+    : [[], [], []];
   const historicalMeetings = section === "historico"
     ? await db.eventoProveedor.findMany({
         where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
@@ -142,7 +151,7 @@ export default async function ConfiguracionPage({
         />
         <SettingsSectionLink
           active={section === "programas"}
-          description={`${programCount} programas importados`}
+          description={`${programCount} programas`}
           href="/configuracion?seccion=programas"
           icon={BookOpen}
           label="Programas"
@@ -163,6 +172,9 @@ export default async function ConfiguracionPage({
         />
       </nav>
 
+      {query.estado === "programa-creado" ? <p className="form-notice" role="status">El programa fue creado.</p> : null}
+      {query.estado === "programa-actualizado" ? <p className="form-notice" role="status">Los datos del programa fueron actualizados.</p> : null}
+      {query.estado === "programa-eliminado" ? <p className="form-notice" role="status">El programa fue eliminado.</p> : null}
       {query.estado === "integrante-agregado" ? <p className="form-notice" role="status">La persona fue agregada al programa.</p> : null}
       {query.estado === "integrante-quitado" ? <p className="form-notice" role="status">La persona fue quitada del programa. Su usuario y su historial se conservaron.</p> : null}
       {query.estado === "invitacion-enviada" ? <p className="form-notice" role="status">La persona fue creada, asociada al programa e invitada por correo.</p> : null}
@@ -213,8 +225,11 @@ export default async function ConfiguracionPage({
             nombre: program.nombre,
             codigo: program.codigo,
             activo: program.activo,
+            unidadAcademicaId: program.unidadAcademicaId,
+            unidadAcademica: program.unidadAcademica,
             members: program.docentes.map(({ docente }) => docente.usuario)
           }))}
+          academicUnits={academicUnits}
           teachers={teachers.map((teacher) => ({
             id: teacher.id,
             nombres: teacher.nombres,
@@ -223,6 +238,9 @@ export default async function ConfiguracionPage({
             activo: teacher.activo
           }))}
           expandedProgramId={query.programa}
+          createProgramAction={crearProgramaAdmin}
+          updateProgramAction={actualizarProgramaAdmin}
+          deleteProgramAction={eliminarProgramaAdmin}
           addAction={agregarIntegrantePrograma}
           inviteAction={invitarIntegrantePrograma}
           removeAction={quitarIntegrantePrograma}
