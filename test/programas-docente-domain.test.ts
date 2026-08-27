@@ -6,10 +6,11 @@ import {
 } from "../src/modules/usuarios/programas-docente.domain";
 
 describe("programas propios del docente", () => {
-  it("solo permite gestionarlos al docente activo", () => {
+  it("permite gestionarlos a docentes y Administracion activos", () => {
     expect(puedeGestionarProgramasPropios({ id: "d", rol: "DOCENTE", activo: true })).toBe(true);
-    expect(puedeGestionarProgramasPropios({ id: "a", rol: "ADMINISTRACION", activo: true })).toBe(false);
+    expect(puedeGestionarProgramasPropios({ id: "a", rol: "ADMINISTRACION", activo: true })).toBe(true);
     expect(puedeGestionarProgramasPropios({ id: "d", rol: "DOCENTE", activo: false })).toBe(false);
+    expect(puedeGestionarProgramasPropios({ id: "a", rol: "ASISTENTE_TECNICO", activo: true })).toBe(false);
   });
 
   it("permite a Administracion gestionar otro docente", () => {
