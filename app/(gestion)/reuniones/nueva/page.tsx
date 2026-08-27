@@ -1,3 +1,5 @@
+import { BookOpen } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingForm } from "@/src/components/meeting-form";
@@ -5,6 +7,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { puedeAbrirCreacionReuniones } from "@/src/modules/reuniones/reuniones.domain";
 import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-institucional.domain";
+import styles from "./nueva-reunion.module.css";
 
 export default async function NuevaReunionPage() {
   const session = await auth();
@@ -54,13 +57,20 @@ export default async function NuevaReunionPage() {
   }
 
   return (
-    <>
-      <header className="page-header">
-        <div>
+    <div className={styles.page}>
+      <header className={`${styles.header} page-header`}>
+        <div className={styles.headerCopy}>
           <p className="page-eyebrow">Sala Virtual</p>
           <h1>Nueva reunión</h1>
           <p>Completá los datos, definí las fechas y ajustá la organización.</p>
         </div>
+        <Link className={styles.programsAction} href="/mis-programas">
+          <BookOpen size={19} aria-hidden="true" />
+          <span>
+            <strong>Editar mis programas</strong>
+            <small>Revisar asociaciones académicas</small>
+          </span>
+        </Link>
       </header>
       <MeetingForm
         canAssignAssistant={actor.rol === "ADMINISTRACION"}
@@ -75,6 +85,6 @@ export default async function NuevaReunionPage() {
           teacher: `${docente.usuario.nombres} ${docente.usuario.apellidos ?? ""}`.trim()
         }))}
       />
-    </>
+    </div>
   );
 }
