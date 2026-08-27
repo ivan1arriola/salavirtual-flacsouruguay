@@ -12,7 +12,7 @@ export type ActorProgramasDocente = Readonly<{
 }>;
 
 export function puedeGestionarProgramasPropios(actor: ActorProgramasDocente): boolean {
-  return actor.activo && actor.rol === "DOCENTE";
+  return actor.activo && (actor.rol === "DOCENTE" || actor.rol === "ADMINISTRACION");
 }
 
 export function puedeGestionarProgramasDocente(
