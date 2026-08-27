@@ -15,6 +15,7 @@ import "./role-dashboard.css";
 import "./ux-polish.css";
 import "./brand-refresh.css";
 import "./profile-navigation-refresh.css";
+import "./agenda-refresh.css";
 
 export default async function GestionLayout({
   children
