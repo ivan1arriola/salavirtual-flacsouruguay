@@ -44,6 +44,13 @@ export default async function UsuarioPage({
   if (!user) notFound();
   const { estado, error } = await searchParams;
   const isSelf = session.user.id === user.id;
+  const googleEmails = user.cuentasGoogle.map(({ email }) => email);
+  const principalGoogle = user.emailPrincipal
+    ? googleEmails.find((email) => email.toLowerCase() === user.emailPrincipal?.toLowerCase())
+    : undefined;
+  const orderedGoogleEmails = principalGoogle
+    ? [principalGoogle, ...googleEmails.filter((email) => email !== principalGoogle)]
+    : googleEmails;
 
   return (
     <>
@@ -59,7 +66,8 @@ export default async function UsuarioPage({
       <div className="user-settings">
         <UserRoleForm userId={user.id} initialRole={user.rol} />
         <GoogleAccountsForm
-          initialEmails={user.cuentasGoogle.map(({ email }) => email)}
+          initialEmails={orderedGoogleEmails}
+          initialEmailPrincipal={user.emailPrincipal}
           hasPassword={Boolean(user.passwordHash)}
           userId={user.id}
         />
