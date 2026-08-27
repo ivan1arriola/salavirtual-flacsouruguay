@@ -12,7 +12,7 @@ export async function actualizarProgramasPropios(
   rawInput: unknown
 ): Promise<readonly string[]> {
   if (!puedeGestionarProgramasPropios(actor)) {
-    throw new Error("Solo los docentes pueden gestionar sus programas.");
+    throw new Error("No tenes permisos para gestionar tus programas.");
   }
   return actualizarProgramasDocente(db, actor, actor.id, rawInput);
 }
@@ -52,7 +52,16 @@ export async function actualizarProgramasDocente(
     if (!actorActual || !puedeGestionarProgramasDocente(actorActual, docenteUsuarioId)) {
       throw new Error("La sesion ya no tiene permisos para gestionar estos programas.");
     }
-    if (!usuario || usuario.rol !== "DOCENTE") throw new Error("El usuario no es docente.");
+
+    const puedeTenerPerfilDocente = Boolean(
+      usuario && (
+        usuario.rol === "DOCENTE" ||
+        (usuario.rol === "ADMINISTRACION" && usuario.id === actorActual.id)
+      )
+    );
+    if (!usuario || !puedeTenerPerfilDocente) {
+      throw new Error("El usuario no puede gestionar programas académicos propios.");
+    }
 
     const programasValidos = await tx.programa.count({
       where: { id: { in: programaIds }, activo: true }
