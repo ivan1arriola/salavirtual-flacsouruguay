@@ -5,8 +5,55 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import {
+  actualizarPrograma,
+  crearPrograma,
+  eliminarPrograma
+} from "@/src/modules/programas/programas-admin.service";
 import { invitarUsuario } from "@/src/modules/usuarios/invitaciones.service";
 import { actualizarProgramasDocente } from "@/src/modules/usuarios/programas-docente.service";
+
+export async function crearProgramaAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  let programaId = "";
+  try {
+    programaId = await crearPrograma(db, actor, programaInput(formData));
+  } catch (error) {
+    redirect(programRedirect("", undefined, errorMessage(error)));
+  }
+
+  revalidatePrograms();
+  redirect(programRedirect(programaId, "programa-creado"));
+}
+
+export async function actualizarProgramaAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const programaId = String(formData.get("programaId") ?? "");
+  try {
+    if (!programaId) throw new Error("Programa no válido.");
+    await actualizarPrograma(db, actor, programaId, programaInput(formData));
+  } catch (error) {
+    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+  }
+
+  revalidatePrograms();
+  redirect(programRedirect(programaId, "programa-actualizado"));
+}
+
+export async function eliminarProgramaAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const programaId = String(formData.get("programaId") ?? "");
+  const confirmacion = String(formData.get("confirmacion") ?? "");
+  try {
+    if (!programaId) throw new Error("Programa no válido.");
+    await eliminarPrograma(db, actor, programaId, confirmacion);
+  } catch (error) {
+    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+  }
+
+  revalidatePrograms();
+  redirect(programRedirect("", "programa-eliminado"));
+}
 
 export async function agregarIntegrantePrograma(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
@@ -94,11 +141,25 @@ async function programasActivosDelDocente(usuarioId: string): Promise<string[]> 
   return user.docente?.programas.map(({ programaId }) => programaId) ?? [];
 }
 
-function revalidateProgramMembership(usuarioId: string): void {
+function programaInput(formData: FormData) {
+  return {
+    nombre: formData.get("nombre"),
+    codigo: formData.get("codigo"),
+    unidadAcademicaId: formData.get("unidadAcademicaId"),
+    activo: formData.get("activo") === "on"
+  };
+}
+
+function revalidatePrograms(): void {
   revalidatePath("/configuracion");
+  revalidatePath("/mis-programas");
   revalidatePath("/usuarios");
-  revalidatePath(`/usuarios/${usuarioId}`);
   revalidatePath("/reuniones/nueva");
+}
+
+function revalidateProgramMembership(usuarioId: string): void {
+  revalidatePrograms();
+  revalidatePath(`/usuarios/${usuarioId}`);
 }
 
 function programRedirect(programaId: string, estado?: string, error?: string): string {
