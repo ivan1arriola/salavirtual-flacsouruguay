@@ -100,6 +100,21 @@ export async function notificarUsuarios(
   await Promise.all(uniqueRecipients.map((recipient) => notificarUsuario(db, recipient, message)));
 }
 
+export async function notificarAdministracion(
+  db: Db,
+  message: NotificationMessage
+): Promise<void> {
+  const admins = await db.usuario.findMany({
+    where: { rol: "ADMINISTRACION", activo: true },
+    select: { id: true, emailPrincipal: true }
+  });
+  const recipients = admins.map((admin) => ({
+    usuarioId: admin.id,
+    email: admin.emailPrincipal
+  }));
+  await notificarUsuarios(db, recipients, message);
+}
+
 async function destinatariosProgramaParaNotificacion(
   db: Db,
   message: NotificationMessage

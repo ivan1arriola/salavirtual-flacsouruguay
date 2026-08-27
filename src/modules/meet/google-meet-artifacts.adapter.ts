@@ -56,6 +56,19 @@ export type MeetAttendanceDocument = Readonly<{
   sesiones: number;
 }>;
 
+export type ParticipanteActivoMeet = Readonly<{
+  nombre: string;
+  email?: string;
+  user?: string;
+  tipo: "CUENTA_GOOGLE" | "ANONIMO" | "TELEFONO";
+}>;
+
+export type MeetActiveParticipantsScan = Readonly<{
+  conferenciaExiste: boolean;
+  conferenceName?: string;
+  participantesActivos: readonly ParticipanteActivoMeet[];
+}>;
+
 export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredentials) {
   const auth = new JWT({
     email: credentials.serviceAccountEmail,
@@ -78,6 +91,42 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
         "conferenceRecords"
       );
       return elegirConferenciaMeet(records, inicio, fin);
+    },
+
+    async obtenerParticipantesActivos(codigo: string, inicio: Date, fin: Date): Promise<MeetActiveParticipantsScan> {
+      const record = await this.buscarConferencia(codigo, inicio, fin);
+      if (!record) return { conferenciaExiste: false, participantesActivos: [] };
+
+      const participants = await listarPaginas<Participant>(
+        auth,
+        `${MEET_API}/${record.name}/participants?pageSize=250`,
+        "participants"
+      );
+      const sessionsByParticipant = await mapConLimite(participants, 8, (participant) =>
+        listarPaginas<ParticipantSession>(
+          auth,
+          `${MEET_API}/${participant.name}/participantSessions?pageSize=250`,
+          "participantSessions"
+        )
+      );
+      const participantesActivos: ParticipanteActivoMeet[] = [];
+      participants.forEach((participant, index) => {
+        const sessions = sessionsByParticipant[index] ?? [];
+        const hasActiveSession = sessions.some((session) => !session.endTime);
+        if (hasActiveSession) {
+          participantesActivos.push({
+            nombre: nombreParticipante(participant),
+            user: participant.signedinUser?.user,
+            tipo: tipoParticipante(participant)
+          });
+        }
+      });
+
+      return {
+        conferenciaExiste: true,
+        conferenceName: record.name,
+        participantesActivos
+      };
     },
 
     async obtenerConferencia(conferenceName: string): Promise<ConferenceRecord> {
