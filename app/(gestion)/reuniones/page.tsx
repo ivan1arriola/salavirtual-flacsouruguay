@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CalendarPlus,
   CalendarRange,
+  History,
   List,
   Search,
   UserRoundCheck,
@@ -27,19 +28,23 @@ import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain
 import { listarCasosRevisionDuplicados } from "@/src/modules/reuniones/duplicados.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
+type PeriodoAgenda = "proximas" | "anteriores";
 
 export default async function ReunionesPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ q?: string; vista?: string; programa?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ q?: string; vista?: string; programa?: string; periodo?: string }> }>) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) redirect("/mi-agenda");
 
-  const { q = "", vista: vistaParam, programa: programaParam = "" } = await searchParams;
+  const { q = "", vista: vistaParam, programa: programaParam = "", periodo: periodoParam } = await searchParams;
   const vista = resolverVistaAgenda(vistaParam);
   const query = q.trim();
   const programaId = actor.rol === "ADMINISTRACION" ? programaParam.trim() : "";
+  const periodo: PeriodoAgenda = actor.rol === "ADMINISTRACION" && periodoParam === "anteriores"
+    ? "anteriores"
+    : "proximas";
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
   const solicitudFilter = actor.rol === "DOCENTE"
@@ -63,7 +68,7 @@ export default async function ReunionesPage({
   const [meetings, programs] = await Promise.all([
     db.instanciaSala.findMany({
       where: {
-        finProgramadoAt: { gte: now },
+        finProgramadoAt: periodo === "anteriores" ? { lt: now } : { gte: now },
         estado: { not: "CANCELADA" },
         solicitud: solicitudFilter,
         ...(query ? {
@@ -93,7 +98,7 @@ export default async function ReunionesPage({
           ]
         } : {})
       },
-      orderBy: { inicioProgramadoAt: "asc" },
+      orderBy: { inicioProgramadoAt: periodo === "anteriores" ? "desc" : "asc" },
       take: 500,
       include: {
         solicitud: {
@@ -121,21 +126,27 @@ export default async function ReunionesPage({
       : Promise.resolve([])
   ]);
 
-  const duplicateCases = actor.rol === "ADMINISTRACION"
+  const duplicateCases = actor.rol === "ADMINISTRACION" && periodo === "proximas"
     ? await listarCasosRevisionDuplicados(db, now)
     : [];
   const unresolvedDuplicates = duplicateCases.filter(({ decision }) => decision !== "FALSO_POSITIVO");
-  const series = agruparEncuentrosPorSerie(meetings);
+  const meetingsForSeries = periodo === "anteriores" ? [...meetings].reverse() : meetings;
+  const series = agruparEncuentrosPorSerie(meetingsForSeries);
 
   const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const today = meetings.filter(({ inicioProgramadoAt }) => inicioProgramadoAt >= todayStart && inicioProgramadoAt < todayEnd).length;
   const nextWeek = meetings.filter(({ inicioProgramadoAt }) => inicioProgramadoAt < weekEnd).length;
+  const lastSevenDays = meetings.filter(({ finProgramadoAt }) => finProgramadoAt >= sevenDaysAgo).length;
+  const lastThirtyDays = meetings.filter(({ finProgramadoAt }) => finProgramadoAt >= thirtyDaysAgo).length;
   const pendingAssistance = meetings.filter(({ requiereAsistenciaTecnica, asignaciones }) => requiereAsistenciaTecnica && asignaciones.length === 0).length;
-  const hasPendingMeet = meetings.some(({ eventosProveedor }) =>
+  const hasPendingMeet = periodo === "proximas" && meetings.some(({ eventosProveedor }) =>
     eventosProveedor.some(({ proveedor, estadoIntegracion }) => proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE")
   );
+  const isHistory = periodo === "anteriores";
 
   return (
     <div className="meetings-agenda-page">
@@ -143,17 +154,42 @@ export default async function ReunionesPage({
         <div>
           <p className="page-eyebrow">{formatShortDate(now)}</p>
           <h1>Agenda de reuniones</h1>
-          <p>{actor.rol === "DOCENTE" ? "Tus próximas reuniones y accesos." : "Próximas reuniones, responsables y cobertura de asistencia técnica."}</p>
+          <p>{actor.rol === "DOCENTE"
+            ? "Tus próximas reuniones y accesos."
+            : isHistory
+              ? "Historial de reuniones realizadas, responsables y asistencia técnica."
+              : "Próximas reuniones, responsables y cobertura de asistencia técnica."}</p>
         </div>
         <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={18} />Nueva reunión</Link>
       </header>
 
+      {actor.rol === "ADMINISTRACION" ? (
+        <nav className="agenda-view-switch" aria-label="Período de reuniones">
+          <Link
+            aria-current={!isHistory ? "page" : undefined}
+            className={!isHistory ? "active" : ""}
+            href={periodoHref("proximas", vista, q, programaId)}
+          >
+            <CalendarDays size={17} />
+            <span>Próximas <small>desde ahora</small></span>
+          </Link>
+          <Link
+            aria-current={isHistory ? "page" : undefined}
+            className={isHistory ? "active" : ""}
+            href={periodoHref("anteriores", vista, q, programaId)}
+          >
+            <History size={17} />
+            <span>Anteriores <small>historial</small></span>
+          </Link>
+        </nav>
+      ) : null}
+
       <section className={`agenda-summary-grid ${actor.rol === "ADMINISTRACION" ? "admin-agenda-summary" : ""}`} aria-label="Resumen de agenda">
-        <article><CalendarDays size={19} /><span><small>{vista === "series" ? "Series próximas" : "Encuentros próximos"}</small><strong>{vista === "series" ? series.length : meetings.length}</strong></span></article>
-        <article><CalendarClock size={19} /><span><small>Hoy</small><strong>{today}</strong></span></article>
-        <article><CalendarDays size={19} /><span><small>Próximos 7 días</small><strong>{nextWeek}</strong></span></article>
+        <article><CalendarDays size={19} /><span><small>{vista === "series" ? (isHistory ? "Series anteriores" : "Series próximas") : (isHistory ? "Encuentros anteriores" : "Encuentros próximos")}</small><strong>{vista === "series" ? series.length : meetings.length}</strong></span></article>
+        <article><CalendarClock size={19} /><span><small>{isHistory ? "Últimos 7 días" : "Hoy"}</small><strong>{isHistory ? lastSevenDays : today}</strong></span></article>
+        <article><CalendarDays size={19} /><span><small>{isHistory ? "Últimos 30 días" : "Próximos 7 días"}</small><strong>{isHistory ? lastThirtyDays : nextWeek}</strong></span></article>
         <article className={pendingAssistance ? "is-warning" : ""}><UserRoundCheck size={19} /><span><small>Sin asistencia técnica</small><strong>{pendingAssistance}</strong></span></article>
-        {actor.rol === "ADMINISTRACION" ? (
+        {actor.rol === "ADMINISTRACION" && !isHistory ? (
           <Link className="agenda-summary-link" href="/reuniones/duplicados">
             <article className={unresolvedDuplicates.length ? "is-danger" : ""}><AlertTriangle size={19} /><span><small>Duplicados por revisar</small><strong>{unresolvedDuplicates.length}</strong></span></article>
           </Link>
@@ -162,12 +198,12 @@ export default async function ReunionesPage({
 
       <div className="agenda-controls">
         <nav className="agenda-view-switch" aria-label="Forma de visualizar la agenda">
-          <Link aria-current={vista === "series" ? "page" : undefined} className={vista === "series" ? "active" : ""} href={agendaHref("series", q, programaId)}>
+          <Link aria-current={vista === "series" ? "page" : undefined} className={vista === "series" ? "active" : ""} href={agendaHref("series", q, programaId, periodo)}>
             <CalendarRange size={17} />
             <span>Reuniones <small>por serie</small></span>
             <strong>{series.length}</strong>
           </Link>
-          <Link aria-current={vista === "encuentros" ? "page" : undefined} className={vista === "encuentros" ? "active" : ""} href={agendaHref("encuentros", q, programaId)}>
+          <Link aria-current={vista === "encuentros" ? "page" : undefined} className={vista === "encuentros" ? "active" : ""} href={agendaHref("encuentros", q, programaId, periodo)}>
             <List size={17} />
             <span>Encuentros <small>por instancia</small></span>
             <strong>{meetings.length}</strong>
@@ -176,6 +212,7 @@ export default async function ReunionesPage({
         <form className="filter-bar agenda-search" method="get">
           <Search size={18} aria-hidden="true" />
           <input name="vista" type="hidden" value={vista} />
+          {actor.rol === "ADMINISTRACION" ? <input name="periodo" type="hidden" value={periodo} /> : null}
           {actor.rol === "ADMINISTRACION" ? (
             <select aria-label="Filtrar por programa" defaultValue={programaId} name="programa">
               <option value="">Todos los programas</option>
@@ -192,7 +229,7 @@ export default async function ReunionesPage({
       {hasPendingMeet ? <MeetPendingNotice /> : null}
 
       {vista === "series" ? (
-        <section className="agenda-meeting-list" aria-label="Próximas reuniones por serie">
+        <section className="agenda-meeting-list" aria-label={isHistory ? "Reuniones anteriores por serie" : "Próximas reuniones por serie"}>
           {series.length === 0 ? (
             <div className="content-section empty-state"><CalendarDays size={24} /><p>No hay reuniones que coincidan con la búsqueda.</p></div>
           ) : series.map((seriesMeetings) => {
@@ -270,7 +307,7 @@ export default async function ReunionesPage({
             );
           })}
         </section>
-      ) : <section className="agenda-meeting-list" aria-label="Próximos encuentros">
+      ) : <section className="agenda-meeting-list" aria-label={isHistory ? "Encuentros anteriores" : "Próximos encuentros"}>
         {meetings.length === 0 ? (
           <div className="content-section empty-state"><CalendarDays size={24} /><p>No hay reuniones que coincidan con la búsqueda.</p></div>
         ) : meetings.map((meeting) => {
@@ -361,8 +398,17 @@ function startOfMontevideoDay(date: Date): Date {
   return new Date(`${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`);
 }
 
-function agendaHref(vista: "series" | "encuentros", query: string, programaId: string): string {
+function agendaHref(vista: "series" | "encuentros", query: string, programaId: string, periodo: PeriodoAgenda): string {
   const params = new URLSearchParams({ vista });
+  if (query) params.set("q", query);
+  if (programaId) params.set("programa", programaId);
+  if (periodo === "anteriores") params.set("periodo", periodo);
+  return `/reuniones?${params.toString()}`;
+}
+
+function periodoHref(periodo: PeriodoAgenda, vista: "series" | "encuentros", query: string, programaId: string): string {
+  const params = new URLSearchParams({ vista });
+  if (periodo === "anteriores") params.set("periodo", periodo);
   if (query) params.set("q", query);
   if (programaId) params.set("programa", programaId);
   return `/reuniones?${params.toString()}`;
