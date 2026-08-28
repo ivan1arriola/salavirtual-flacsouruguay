@@ -48,50 +48,12 @@ export type CasoRevisionDuplicado = PosibleReunionDuplicada & Readonly<{
 }>;
 
 export async function listarCasosRevisionDuplicados(
-  database: PrismaClient,
-  ahora: Date
+  _database: PrismaClient,
+  _ahora: Date
 ): Promise<readonly CasoRevisionDuplicado[]> {
-  const meetings = await database.instanciaSala.findMany({
-    where: {
-      finProgramadoAt: { gte: ahora },
-      estado: { notIn: ["CANCELADA", "NO_REALIZADA"] }
-    },
-    orderBy: { inicioProgramadoAt: "asc" },
-    select: candidateSelect
-  });
-  const risks = detectarPosiblesReunionesDuplicadas(meetings.map(toCandidate));
-  const keys = risks.map(({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id));
-  if (keys.length === 0) return [];
-
-  const reviews = await database.auditoria.findMany({
-    where: { entidadTipo: AUDIT_ENTITY, entidadId: { in: keys } },
-    orderBy: { createdAt: "desc" },
-    select: { entidadId: true, valorNuevo: true, createdAt: true }
-  });
-  const latestReviews = reviews.reduce<ReadonlyMap<string, Readonly<{
-    decision: DecisionRevisionDuplicado;
-    fingerprint: string;
-    createdAt: Date;
-  }>>>((result, review) => {
-    if (result.has(review.entidadId)) return result;
-    const parsed = readReview(review.valorNuevo);
-    return parsed
-      ? new Map(result).set(review.entidadId, { ...parsed, createdAt: review.createdAt })
-      : result;
-  }, new Map());
-
-  return risks.map((risk) => {
-    const key = claveRevisionDuplicado(risk.izquierda.id, risk.derecha.id);
-    const review = latestReviews.get(key);
-    const currentFingerprint = huellaRevisionDuplicado(risk);
-    const currentReview = review?.fingerprint === currentFingerprint ? review : null;
-    return {
-      ...risk,
-      clave: key,
-      decision: currentReview?.decision ?? null,
-      revisadoAt: currentReview?.createdAt ?? null
-    };
-  });
+  // Funcionalidad de detección de duplicados deprecada: se conserva el contrato
+  // para no romper rutas o integraciones existentes, pero no ejecuta consultas.
+  return [];
 }
 
 export async function revisarPosibleDuplicado(
