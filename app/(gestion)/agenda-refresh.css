@@ -59,6 +59,10 @@
   letter-spacing: -0.03em;
 }
 
+.agenda-summary-link[href="/reuniones/duplicados"] {
+  display: none;
+}
+
 .agenda-controls {
   grid-template-columns: minmax(350px, 0.8fr) minmax(520px, 1.65fr);
   gap: 14px;
