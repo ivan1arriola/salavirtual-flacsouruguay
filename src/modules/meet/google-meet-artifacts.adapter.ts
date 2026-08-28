@@ -258,7 +258,7 @@ export function crearGoogleMeetArtifactsClient(credentials: MeetArtifactCredenti
 type Recording = Readonly<{ name: string; state: string; startTime?: string; driveDestination?: { file?: string } }>;
 type Transcript = Readonly<{ name: string; state: string; startTime?: string; docsDestination?: { document?: string } }>;
 type SmartNote = Transcript;
-type Participant = Readonly<{ name: string; signedinUser?: { displayName?: string }; anonymousUser?: { displayName?: string }; phoneUser?: { displayName?: string } }>;
+type Participant = Readonly<{ name: string; signedinUser?: { displayName?: string; user?: string }; anonymousUser?: { displayName?: string }; phoneUser?: { displayName?: string } }>;
 type ParticipantSession = Readonly<{ startTime: string; endTime?: string }>;
 type GoogleRequestOptions = Readonly<{
   url: string;
