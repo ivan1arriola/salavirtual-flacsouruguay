@@ -4,18 +4,21 @@ import {
   etiquetaMes,
   formatearDuracion,
   periodoMesAnteriorUtc3
-} from "@/src/modules/asistencia/reporte-mensual.domain";
+} from "../src/modules/asistencia/reporte-mensual.domain";
 
 describe("reporte mensual de asistencia técnica", () => {
   it("calcula el mes anterior en horario de Montevideo", () => {
     const periodo = periodoMesAnteriorUtc3(new Date("2026-09-01T12:00:00.000Z"));
     expect(periodo.clave).toBe("2026-08");
-    expect(periodo.desde.toISOString()).toBe("2026-08-01T03:00:00.000Z");
-    expect(periodo.hasta.toISOString()).toBe("2026-09-01T03:00:00.000Z");
+    expect(periodo.desdeMs).toBe(Date.parse("2026-08-01T03:00:00.000Z"));
+    expect(periodo.hastaMs).toBe(Date.parse("2026-09-01T03:00:00.000Z"));
   });
 
   it("resuelve correctamente el cambio de año", () => {
-    expect(periodoMesAnteriorUtc3(new Date("2027-01-01T12:00:00.000Z")).clave).toBe("2026-12");
+    const periodo = periodoMesAnteriorUtc3(new Date("2027-01-01T12:00:00.000Z"));
+    expect(periodo.clave).toBe("2026-12");
+    expect(periodo.desdeMs).toBe(Date.parse("2026-12-01T03:00:00.000Z"));
+    expect(periodo.hastaMs).toBe(Date.parse("2027-01-01T03:00:00.000Z"));
   });
 
   it("formatea horas y minutos sin perder precisión administrativa", () => {
@@ -45,5 +48,6 @@ describe("reporte mensual de asistencia técnica", () => {
     expect(correo.text).toContain("3 h 30 min");
     expect(correo.text).toContain("3,50 horas");
     expect(correo.text).toContain("Reuniones: 3");
+    expect(correo.text).toContain("respondé a todos");
   });
 });
