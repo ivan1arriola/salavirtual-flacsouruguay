@@ -75,7 +75,7 @@ export function construirCorreoReporteMensual(input: Readonly<{
     `Híbrida: ${hibrida}`,
     "",
     "Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.",
-    "Si detectás una diferencia, respondé este correo para que Administración pueda revisarla."
+    "Si detectás una diferencia, respondé a todos para que Administración pueda revisarla."
   ].join("\n");
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.55;color:#1f2937;max-width:640px;margin:0 auto">
@@ -92,7 +92,7 @@ export function construirCorreoReporteMensual(input: Readonly<{
         </tbody>
       </table>
       <p style="color:#4b5563">Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.</p>
-      <p style="color:#4b5563">Si detectás una diferencia, respondé este correo para que Administración pueda revisarla.</p>
+      <p style="color:#4b5563">Si detectás una diferencia, respondé a todos para que Administración pueda revisarla.</p>
     </div>
   `.trim();
   return { subject, text, html };
