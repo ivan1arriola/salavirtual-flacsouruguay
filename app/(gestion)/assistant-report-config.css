@@ -1,3 +1,7 @@
+.settings-section-nav {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .assistant-report-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -83,6 +87,12 @@
   font-weight: 700;
 }
 
+@media (max-width: 1100px) {
+  .settings-section-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 680px) {
   .assistant-report-form {
     grid-template-columns: 1fr;
@@ -90,5 +100,11 @@
 
   .assistant-report-form .primary-action {
     width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .settings-section-nav {
+    grid-template-columns: 1fr;
   }
 }
