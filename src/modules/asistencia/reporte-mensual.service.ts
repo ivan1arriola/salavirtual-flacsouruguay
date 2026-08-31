@@ -22,13 +22,13 @@ export async function enviarReportesMensualesAsistencia(
   ahora = new Date()
 ): Promise<ResultadoReportesMensuales> {
   const periodo = periodoMesAnteriorUtc3(ahora);
-  const [asistentes, administradores, configuracion] = await Promise.all([
+  const [candidatos, administradores, configuracion] = await Promise.all([
     db.asistenteTecnico.findMany({
       orderBy: { usuario: { nombres: "asc" } },
       select: {
         id: true,
         usuarioId: true,
-        usuario: { select: { nombres: true, apellidos: true, emailPrincipal: true } }
+        usuario: { select: { nombres: true, apellidos: true, emailPrincipal: true, activo: true } }
       }
     }),
     db.usuario.findMany({
@@ -45,17 +45,13 @@ export async function enviarReportesMensualesAsistencia(
     ...administradores.flatMap(({ emailPrincipal }) => emailPrincipal ? [emailPrincipal] : []),
     ...(configuracion?.correosCopiaReporteMensual ?? [])
   ]);
+  let asistentes = 0;
   let enviados = 0;
   let yaProcesados = 0;
   let errores = 0;
   let sinCorreo = 0;
 
-  for (const asistente of asistentes) {
-    const destinatario = asistente.usuario.emailPrincipal?.trim().toLowerCase();
-    if (!destinatario) {
-      sinCorreo += 1;
-      continue;
-    }
+  for (const asistente of candidatos) {
     const registros = await obtenerAsistenciasEnRango(
       db,
       asistente.usuarioId,
@@ -64,6 +60,14 @@ export async function enviarReportesMensualesAsistencia(
       "asc",
       1000
     );
+    if (!asistente.usuario.activo && registros.length === 0) continue;
+    asistentes += 1;
+
+    const destinatario = asistente.usuario.emailPrincipal?.trim().toLowerCase();
+    if (!destinatario) {
+      sinCorreo += 1;
+      continue;
+    }
     const resumen = resumirAsistencias(registros);
     const copias = copiasBase.filter((email) => email !== destinatario);
     const reserva = await reservarEnvio(db, {
@@ -110,7 +114,7 @@ export async function enviarReportesMensualesAsistencia(
 
   return {
     periodo: periodo.clave,
-    asistentes: asistentes.length,
+    asistentes,
     enviados,
     yaProcesados,
     errores,
