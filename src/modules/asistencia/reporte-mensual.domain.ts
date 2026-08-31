@@ -1,9 +1,9 @@
-import { claveMesUtc3, rangoMesUtc3, type ResumenAsistencia } from "./resumen-personal.domain";
+import { claveMesUtc3, type ResumenAsistencia } from "./resumen-personal.domain";
 
 export type PeriodoReporteMensual = Readonly<{
   clave: string;
-  desde: Date;
-  hasta: Date;
+  desdeMs: number;
+  hastaMs: number;
 }>;
 
 export type CorreoReporteMensual = Readonly<{
@@ -13,13 +13,15 @@ export type CorreoReporteMensual = Readonly<{
 }>;
 
 export function periodoMesAnteriorUtc3(ahora: Date): PeriodoReporteMensual {
-  const mesActual = rangoMesUtc3(ahora);
-  const referenciaMesAnterior = new Date(mesActual.desdeMs - 1);
-  const mesAnterior = rangoMesUtc3(referenciaMesAnterior);
+  const [yearText, monthText] = claveMesUtc3(ahora).split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const previousYear = month === 1 ? year - 1 : year;
+  const previousMonth = month === 1 ? 12 : month - 1;
   return {
-    clave: claveMesUtc3(referenciaMesAnterior),
-    desde: new Date(mesAnterior.desdeMs),
-    hasta: new Date(mesAnterior.hastaMs)
+    clave: `${previousYear}-${String(previousMonth).padStart(2, "0")}`,
+    desdeMs: Date.UTC(previousYear, previousMonth - 1, 1, 3),
+    hastaMs: Date.UTC(year, month - 1, 1, 3)
   };
 }
 
@@ -50,7 +52,7 @@ export function etiquetaMes(periodo: string): string {
     month: "long",
     year: "numeric",
     timeZone: "America/Montevideo"
-  }).format(new Date(Date.UTC(year, month - 1, 15, 12)));
+  }).format(Date.UTC(year, month - 1, 15, 12));
 }
 
 export function construirCorreoReporteMensual(input: Readonly<{
