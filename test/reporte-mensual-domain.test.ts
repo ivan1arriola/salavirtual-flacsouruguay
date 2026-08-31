@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   construirCorreoReporteMensual,
+  etiquetaMes,
   formatearDuracion,
   periodoMesAnteriorUtc3
 } from "@/src/modules/asistencia/reporte-mensual.domain";
@@ -21,6 +22,10 @@ describe("reporte mensual de asistencia técnica", () => {
     expect(formatearDuracion(0)).toBe("0 h");
     expect(formatearDuracion(60)).toBe("1 h");
     expect(formatearDuracion(95)).toBe("1 h 35 min");
+  });
+
+  it("conserva una etiqueta inválida en lugar de inventar una fecha", () => {
+    expect(etiquetaMes("periodo-invalido")).toBe("periodo-invalido");
   });
 
   it("construye un correo con total y desglose", () => {
