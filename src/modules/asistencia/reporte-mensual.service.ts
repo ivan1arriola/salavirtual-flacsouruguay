@@ -24,7 +24,6 @@ export async function enviarReportesMensualesAsistencia(
   const periodo = periodoMesAnteriorUtc3(ahora);
   const [asistentes, administradores, configuracion] = await Promise.all([
     db.asistenteTecnico.findMany({
-      where: { usuario: { emailPrincipal: { not: null } } },
       orderBy: { usuario: { nombres: "asc" } },
       select: {
         id: true,
