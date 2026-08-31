@@ -21,13 +21,6 @@ Zoom queda como proveedor historico: se conserva para consulta, trazabilidad e i
 - Zoom como historico de reuniones, grabaciones y costos previos.
 - Base preparada para migracion incremental desde la plataforma Zoom actual.
 
-## Stack inicial
-
-- Next.js App Router + TypeScript
-- Prisma + PostgreSQL
-- Auth.js
-- Google Workspace APIs como integracion principal
-
 ## Correo transaccional
 
 Las notificaciones por correo usan la misma estrategia heredada de FLACSO Zoom: Gmail API con cuenta de servicio y delegacion de dominio. SMTP queda como fallback. Si no hay proveedor configurado, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo.
@@ -66,4 +59,5 @@ npm run dev
 - [Modelo 3NF](docs/modelo-3nf.md)
 - [Plan de migracion](docs/migracion-desde-flacso-zoom.md)
 - [Configuracion de Google Workspace](docs/configuracion-google-workspace.md)
+- [Reportes mensuales de asistencia tecnica](docs/reportes-mensuales-asistencia.md)
 - [UI ligera](docs/ui-ligera.md)
