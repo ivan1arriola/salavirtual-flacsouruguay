@@ -127,7 +127,10 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
       correosCopiaReporteMensual: formData.get("correosCopiaReporteMensual")
     });
   } catch (error) {
-    redirect(asistenciaRedirect(undefined, errorMessage(error)));
+    redirect(asistenciaRedirect(
+      undefined,
+      errorMessage(error, "No se pudo actualizar la configuración de asistencia técnica.")
+    ));
   }
 
   revalidatePath("/configuracion");
@@ -192,6 +195,6 @@ function asistenciaRedirect(estado?: string, error?: string): string {
   return `/configuracion?${params.toString()}`;
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "No se pudo actualizar la configuración.";
+function errorMessage(error: unknown, fallback = "No se pudo actualizar el programa."): string {
+  return error instanceof Error ? error.message : fallback;
 }
