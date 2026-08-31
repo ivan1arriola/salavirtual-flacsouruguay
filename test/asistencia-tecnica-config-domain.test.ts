@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizarCorreosCopiaReporte,
   puedeConfigurarAsistenciaTecnica
-} from "@/src/modules/configuracion/asistencia-tecnica.domain";
+} from "../src/modules/configuracion/asistencia-tecnica.domain";
 
 describe("configuración de reportes de asistencia técnica", () => {
   it("normaliza, valida y elimina correos repetidos", () => {
