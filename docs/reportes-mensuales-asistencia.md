@@ -12,6 +12,13 @@ Cada mensaje se envía de forma individual:
 
 Los destinatarios se normalizan y deduplican. Si un administrador también fue cargado en la lista adicional, recibe una sola copia.
 
+Se consideran destinatarios del período:
+
+- todos los asistentes técnicos con usuario activo, aunque hayan registrado 0 horas;
+- los asistentes con usuario inactivo únicamente cuando tuvieron asistencias válidas durante el mes informado.
+
+Así se conserva el último reporte de una persona que dejó de estar activa, pero no se le siguen enviando correos de 0 horas en meses posteriores.
+
 ## Fuente de las horas
 
 El reporte reutiliza el mismo cálculo que el histórico personal del asistente. Para cada asignación válida del período, los minutos se resuelven en este orden:
@@ -35,7 +42,7 @@ El correo muestra:
 - horas virtuales;
 - horas híbridas.
 
-También se envía un reporte de 0 horas cuando el asistente no tuvo asistencias válidas durante el mes.
+Los asistentes activos reciben también un reporte de 0 horas cuando no tuvieron asistencias válidas durante el mes.
 
 ## Idempotencia y trazabilidad
 
@@ -72,7 +79,7 @@ Devuelve un resumen con:
 }
 ```
 
-La respuesta es HTTP 500 si al menos un correo falla o existe un asistente sin correo principal. Esto permite que el planificador detecte el envío incompleto. Repetir la llamada es seguro para los reportes ya enviados.
+La respuesta es HTTP 500 si al menos un correo falla o existe un asistente elegible sin correo principal. Esto permite que el planificador detecte el envío incompleto. Repetir la llamada es seguro para los reportes ya enviados.
 
 ## Programación recomendada
 
