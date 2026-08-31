@@ -8,44 +8,45 @@ datasource db {
 }
 
 model Usuario {
-  id                                String                         @id
-  legacyZoomUserId                  String?                        @unique
-  nombres                           String
-  apellidos                         String?
-  telefono                          String?
-  emailPrincipal                    String?                        @unique
-  emailVerificadoAt                 DateTime?
-  imagenUrl                         String?
-  passwordHash                      String?
-  passwordInicialCifrada            String?                        @db.Text
-  debeCambiarPassword               Boolean                        @default(false)
-  rol                               RolUsuario                     @default(DOCENTE)
-  activo                            Boolean                        @default(true)
-  ultimoAccesoAt                    DateTime?
-  ultimoAccesoIp                    String?
-  ultimoAccesoAgente                String?
-  ultimoProveedor                   String?
-  fusionadoEnId                     String?
-  fusionadoAt                       DateTime?
-  createdAt                         DateTime                       @default(now())
-  updatedAt                         DateTime                       @updatedAt
-  fusionadoEn                       Usuario?                       @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
-  usuariosFusionados                Usuario[]                      @relation("UsuarioFusionDestino")
-  solicitudesCreadas                SolicitudSala[]                @relation("SolicitudCreadaPor")
-  auditorias                        Auditoria[]                    @relation("AuditoriaActor")
-  emailAliases                      UsuarioEmailAlias[]
-  cuentasGoogle                     CuentaGoogleFlacso[]
-  sesiones                          SesionUsuario[]
-  authenticators                    Authenticator[]
-  fusionesComoOrigen                UsuarioFusion[]                @relation("FusionUsuarioOrigen")
-  fusionesComoDestino               UsuarioFusion[]                @relation("FusionUsuarioDestino")
-  fusionesEjecutadas                UsuarioFusion[]                @relation("FusionEjecutadaPor")
-  configuracionesGoogleActualizadas ConfiguracionGoogleWorkspace[] @relation("ConfiguracionGoogleActualizadaPor")
-  docente                           Docente?
-  asistenteTecnico                  AsistenteTecnico?
-  notificaciones                    Notificacion[]
-  preferenciasNotificacion          PreferenciaNotificacion[]
-  solicitudesAccesoGoogleAprobadas  SolicitudAccesoGoogle[]       @relation("SolicitudesAccesoGoogleAprobadas")
+  id                                      String                           @id
+  legacyZoomUserId                        String?                          @unique
+  nombres                                 String
+  apellidos                               String?
+  telefono                                String?
+  emailPrincipal                          String?                          @unique
+  emailVerificadoAt                       DateTime?
+  imagenUrl                               String?
+  passwordHash                            String?
+  passwordInicialCifrada                  String?                          @db.Text
+  debeCambiarPassword                     Boolean                          @default(false)
+  rol                                     RolUsuario                       @default(DOCENTE)
+  activo                                  Boolean                          @default(true)
+  ultimoAccesoAt                          DateTime?
+  ultimoAccesoIp                          String?
+  ultimoAccesoAgente                      String?
+  ultimoProveedor                         String?
+  fusionadoEnId                           String?
+  fusionadoAt                             DateTime?
+  createdAt                               DateTime                         @default(now())
+  updatedAt                               DateTime                         @updatedAt
+  fusionadoEn                             Usuario?                         @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
+  usuariosFusionados                      Usuario[]                        @relation("UsuarioFusionDestino")
+  solicitudesCreadas                      SolicitudSala[]                  @relation("SolicitudCreadaPor")
+  auditorias                              Auditoria[]                      @relation("AuditoriaActor")
+  emailAliases                            UsuarioEmailAlias[]
+  cuentasGoogle                           CuentaGoogleFlacso[]
+  sesiones                                SesionUsuario[]
+  authenticators                          Authenticator[]
+  fusionesComoOrigen                      UsuarioFusion[]                  @relation("FusionUsuarioOrigen")
+  fusionesComoDestino                     UsuarioFusion[]                  @relation("FusionUsuarioDestino")
+  fusionesEjecutadas                      UsuarioFusion[]                  @relation("FusionEjecutadaPor")
+  configuracionesGoogleActualizadas       ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
+  configuracionesAsistenciaActualizadas   ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
+  docente                                 Docente?
+  asistenteTecnico                        AsistenteTecnico?
+  notificaciones                          Notificacion[]
+  preferenciasNotificacion                PreferenciaNotificacion[]
+  solicitudesAccesoGoogleAprobadas        SolicitudAccesoGoogle[]         @relation("SolicitudesAccesoGoogleAprobadas")
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -92,6 +93,17 @@ model ConfiguracionGoogleWorkspace {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   actualizadaPor        Usuario  @relation("ConfiguracionGoogleActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([actualizadaPorId, updatedAt])
+}
+
+model ConfiguracionAsistenciaTecnica {
+  id                          String   @id @default("principal")
+  correosCopiaReporteMensual  String[] @default([])
+  actualizadaPorId            String
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  actualizadaPor              Usuario  @relation("ConfiguracionAsistenciaActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
 
   @@index([actualizadaPorId, updatedAt])
 }
@@ -144,18 +156,41 @@ model DocentePrograma {
 
 /// Persona habilitada para realizar asistencias tecnicas en reuniones.
 model AsistenteTecnico {
-  id                             String                           @id @default(cuid())
-  usuarioId                      String                           @unique
-  slug                           String                           @unique
+  id                             String                            @id @default(cuid())
+  usuarioId                      String                            @unique
+  slug                           String                            @unique
   aliasOperativo                 String?
-  disponibleGeneral              Boolean                          @default(true)
-  cesadoHastaProximoInicioSesion Boolean                          @default(false)
+  disponibleGeneral              Boolean                           @default(true)
+  cesadoHastaProximoInicioSesion Boolean                           @default(false)
   datosPago                      String?
-  usuario                        Usuario                          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario                        Usuario                           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   disponibilidades               DisponibilidadAsistenteTecnico[]
   intereses                      PostulacionAsistenciaTecnica[]
   asignaciones                   AsignacionAsistenciaTecnica[]
   liquidaciones                  LiquidacionAsistenciaTecnica[]
+  reportesMensuales              EnvioReporteMensualAsistencia[]
+}
+
+model EnvioReporteMensualAsistencia {
+  id                 String                           @id @default(cuid())
+  asistenteTecnicoId String
+  periodo            String
+  estado             EstadoEnvioReporteMensual       @default(PENDIENTE)
+  minutosTotal       Int
+  minutosVirtuales   Int
+  minutosHibridos    Int
+  reuniones          Int
+  destinatario       String
+  copias             String[]                         @default([])
+  intentos           Int                              @default(1)
+  ultimoError        String?
+  enviadoAt          DateTime?
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+  asistenteTecnico   AsistenteTecnico                 @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
+
+  @@unique([asistenteTecnicoId, periodo])
+  @@index([periodo, estado])
 }
 
 model ProveedorReunion {
@@ -683,6 +718,12 @@ enum EstadoLiquidacionAsistenciaTecnica {
   APROBADA_ADMINISTRACION
   PAGADA
   ANULADA
+}
+
+enum EstadoEnvioReporteMensual {
+  PENDIENTE
+  ENVIADO
+  ERROR
 }
 
 enum SeveridadIncidencia {
