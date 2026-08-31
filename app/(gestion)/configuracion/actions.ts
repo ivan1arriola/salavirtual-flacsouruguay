@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { actualizarConfiguracionAsistenciaTecnica } from "@/src/modules/configuracion/asistencia-tecnica.service";
 import {
   actualizarPrograma,
   crearPrograma,
@@ -119,6 +120,20 @@ export async function invitarIntegrantePrograma(formData: FormData): Promise<voi
   redirect(programRedirect(programaId, estado));
 }
 
+export async function actualizarReportesAsistenciaAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  try {
+    await actualizarConfiguracionAsistenciaTecnica(db, actor, {
+      correosCopiaReporteMensual: formData.get("correosCopiaReporteMensual")
+    });
+  } catch (error) {
+    redirect(asistenciaRedirect(undefined, errorMessage(error)));
+  }
+
+  revalidatePath("/configuracion");
+  redirect(asistenciaRedirect("reportes-asistencia-actualizados"));
+}
+
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
@@ -170,6 +185,13 @@ function programRedirect(programaId: string, estado?: string, error?: string): s
   return `/configuracion?${params.toString()}`;
 }
 
+function asistenciaRedirect(estado?: string, error?: string): string {
+  const params = new URLSearchParams({ seccion: "asistencia" });
+  if (estado) params.set("estado", estado);
+  if (error) params.set("error", error);
+  return `/configuracion?${params.toString()}`;
+}
+
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "No se pudo actualizar el programa.";
+  return error instanceof Error ? error.message : "No se pudo actualizar la configuración.";
 }
