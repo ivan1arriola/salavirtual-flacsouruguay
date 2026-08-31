@@ -19,7 +19,7 @@ export function AssistantReportConfigForm({
         <Clock3 size={22} color="var(--brand)" aria-hidden="true" />
       </div>
 
-      <form action={action} className="settings-form">
+      <form action={action} className="assistant-report-form">
         <label className="field">
           <span>Correos adicionales en copia</span>
           <textarea
@@ -33,8 +33,8 @@ export function AssistantReportConfigForm({
         <button className="primary-action" type="submit">Guardar destinatarios</button>
       </form>
 
-      <div className="settings-summary">
-        <div className="section-heading">
+      <div className="assistant-report-admins">
+        <div className="assistant-report-admins-header">
           <div>
             <h3>Administradores incluidos automáticamente</h3>
             <p>Se usan las cuentas activas con rol Administración y correo configurado.</p>
