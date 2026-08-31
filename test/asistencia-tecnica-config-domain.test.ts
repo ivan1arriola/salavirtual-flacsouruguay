@@ -12,6 +12,14 @@ describe("configuración de reportes de asistencia técnica", () => {
     ]);
   });
 
+  it("admite arreglos y valores vacíos", () => {
+    expect(normalizarCorreosCopiaReporte(["UNO@FLACSO.EDU.UY", "dos@flacso.edu.uy"])).toEqual([
+      "uno@flacso.edu.uy",
+      "dos@flacso.edu.uy"
+    ]);
+    expect(normalizarCorreosCopiaReporte(null)).toEqual([]);
+  });
+
   it("rechaza correos inválidos", () => {
     expect(() => normalizarCorreosCopiaReporte("no-es-un-correo")).toThrow();
   });
