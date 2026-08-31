@@ -12,5 +12,6 @@ export async function GET(request: Request) {
   }
 
   const resultado = await enviarReportesMensualesAsistencia(db);
-  return NextResponse.json(resultado);
+  const incompleto = resultado.errores > 0 || resultado.sinCorreo > 0;
+  return NextResponse.json(resultado, { status: incompleto ? 500 : 200 });
 }
