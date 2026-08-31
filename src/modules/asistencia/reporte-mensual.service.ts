@@ -22,6 +22,7 @@ export async function enviarReportesMensualesAsistencia(
   ahora = new Date()
 ): Promise<ResultadoReportesMensuales> {
   const periodo = periodoMesAnteriorUtc3(ahora);
+  const rango = { desde: new Date(periodo.desdeMs), hasta: new Date(periodo.hastaMs) };
   const [candidatos, administradores, configuracion] = await Promise.all([
     db.asistenteTecnico.findMany({
       orderBy: { usuario: { nombres: "asc" } },
@@ -55,7 +56,7 @@ export async function enviarReportesMensualesAsistencia(
     const registros = await obtenerAsistenciasEnRango(
       db,
       asistente.usuarioId,
-      { desde: periodo.desde, hasta: periodo.hasta },
+      rango,
       ahora,
       "asc",
       1000
