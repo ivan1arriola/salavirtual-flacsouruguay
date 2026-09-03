@@ -3,6 +3,7 @@ import { JWT } from "google-auth-library";
 
 export type MailInput = Readonly<{
   to: readonly string[];
+  cc?: readonly string[];
   subject: string;
   text: string;
   html?: string;
@@ -88,6 +89,7 @@ function buildRawGmailMessage(input: MailInput, from: string): string {
   const headers = [
     `From: ${fromHeader(from)}`,
     `To: ${input.to.join(", ")}`,
+    ...(input.cc?.length ? [`Cc: ${input.cc.join(", ")}`] : []),
     `Subject: ${encodeMimeHeader(input.subject)}`,
     "MIME-Version: 1.0",
     input.html ? 'Content-Type: text/html; charset="UTF-8"' : 'Content-Type: text/plain; charset="UTF-8"'
@@ -133,9 +135,11 @@ export async function sendMail(
   options: Readonly<{ gmailCredential?: GmailMailCredential | null }> = {}
 ): Promise<MailSendResult> {
   const config = mailConfig();
-  const recipients = [...new Set(input.to.map((email) => email.trim().toLowerCase()).filter(Boolean))];
+  const recipients = normalizeAddresses(input.to);
   if (recipients.length === 0) return { sent: false, skipped: "sin-destinatarios" };
-  const normalizedInput = { ...input, to: recipients };
+  const recipientSet = new Set(recipients);
+  const copies = normalizeAddresses(input.cc ?? []).filter((email) => !recipientSet.has(email));
+  const normalizedInput = { ...input, to: recipients, cc: copies };
 
   if (await sendWithGmailApi(normalizedInput, options.gmailCredential)) {
     return { sent: true, transport: "GMAIL_API" };
@@ -151,9 +155,14 @@ export async function sendMail(
   await transporter.sendMail({
     from: fromHeader() || config.from,
     to: recipients.join(", "),
+    cc: copies.length ? copies.join(", ") : undefined,
     subject: input.subject,
     text: input.text,
     html: input.html
   });
   return { sent: true, transport: "SMTP" };
+}
+
+function normalizeAddresses(addresses: readonly string[]): string[] {
+  return [...new Set(addresses.map((email) => email.trim().toLowerCase()).filter(Boolean))];
 }

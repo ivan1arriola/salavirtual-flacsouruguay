@@ -1,7 +1,8 @@
-import { BookOpen, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
+import { BookOpen, Clock3, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AssistantReportConfigForm } from "@/src/components/assistant-report-config-form";
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
@@ -11,6 +12,7 @@ import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   actualizarProgramaAdmin,
+  actualizarReportesAsistenciaAdmin,
   agregarIntegrantePrograma,
   crearProgramaAdmin,
   eliminarProgramaAdmin,
@@ -18,7 +20,7 @@ import {
   quitarIntegrantePrograma
 } from "./actions";
 
-type SettingsSection = "workspace" | "salas" | "programas" | "correo" | "historico";
+type SettingsSection = "workspace" | "salas" | "programas" | "asistencia" | "correo" | "historico";
 
 export default async function ConfiguracionPage({
   searchParams
@@ -29,12 +31,14 @@ export default async function ConfiguracionPage({
   const requestedSection = query.seccion;
   const section: SettingsSection = requestedSection === "salas"
     || requestedSection === "programas"
+    || requestedSection === "asistencia"
     || requestedSection === "correo"
     || requestedSection === "historico"
     ? requestedSection
     : "workspace";
-  const [configuration, hosts, programCount, pendingMeetOperations] = await Promise.all([
+  const [configuration, assistantConfiguration, hosts, programCount, pendingMeetOperations] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
+    db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
@@ -101,6 +105,13 @@ export default async function ConfiguracionPage({
         })
       ])
     : [[], [], []];
+  const adminReportRecipients = section === "asistencia"
+    ? await db.usuario.findMany({
+        where: { rol: "ADMINISTRACION", activo: true, emailPrincipal: { not: null } },
+        orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+        select: { emailPrincipal: true }
+      })
+    : [];
   const historicalMeetings = section === "historico"
     ? await db.eventoProveedor.findMany({
         where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
@@ -157,6 +168,13 @@ export default async function ConfiguracionPage({
           label="Programas"
         />
         <SettingsSectionLink
+          active={section === "asistencia"}
+          description="Reportes mensuales y destinatarios"
+          href="/configuracion?seccion=asistencia"
+          icon={Clock3}
+          label="Asistencia técnica"
+        />
+        <SettingsSectionLink
           active={section === "correo"}
           description="Prueba de invitaciones y notificaciones"
           href="/configuracion?seccion=correo"
@@ -179,6 +197,7 @@ export default async function ConfiguracionPage({
       {query.estado === "integrante-quitado" ? <p className="form-notice" role="status">La persona fue quitada del programa. Su usuario y su historial se conservaron.</p> : null}
       {query.estado === "invitacion-enviada" ? <p className="form-notice" role="status">La persona fue creada, asociada al programa e invitada por correo.</p> : null}
       {query.estado === "invitacion-creada" ? <p className="form-notice" role="status">La persona fue creada y asociada. El correo de invitación no pudo enviarse.</p> : null}
+      {query.estado === "reportes-asistencia-actualizados" ? <p className="form-notice" role="status">Los destinatarios adicionales de los reportes fueron actualizados.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
       {section === "workspace" ? (
@@ -244,6 +263,14 @@ export default async function ConfiguracionPage({
           addAction={agregarIntegrantePrograma}
           inviteAction={invitarIntegrantePrograma}
           removeAction={quitarIntegrantePrograma}
+        />
+      ) : null}
+
+      {section === "asistencia" ? (
+        <AssistantReportConfigForm
+          emails={assistantConfiguration?.correosCopiaReporteMensual ?? []}
+          adminEmails={adminReportRecipients.flatMap(({ emailPrincipal }) => emailPrincipal ? [emailPrincipal] : [])}
+          action={actualizarReportesAsistenciaAdmin}
         />
       ) : null}
 
