@@ -123,7 +123,7 @@ function buildSheet(
       styleDataRow(row, rowIndex - firstDataRow);
 
       if (item.moneda === "UYU" && item.montoCalculado !== null) {
-        total += item.montoCalculado;
+        total += roundMoney(item.montoCalculado);
       } else {
         const amountCell = row.getCell(7);
         amountCell.fill = solid(item.moneda === "UYU" ? COLORS.warning : COLORS.danger);
@@ -146,7 +146,7 @@ function buildSheet(
     const totalCell = sheet.getCell(rowIndex, 7);
     totalCell.value = {
       formula: `SUM(G${firstDataRow}:G${lastDataRow})`,
-      result: total
+      result: roundMoney(total)
     };
     totalCell.numFmt = '"$" #,##0.00';
     totalCell.font = { bold: true, color: { argb: COLORS.navy } };
@@ -228,10 +228,12 @@ function styleDataRow(row: ExcelJS.Row, indexInGroup: number): void {
 function formulaAmount(rowIndex: number, item: FilaPlanillaPago): ExcelJS.CellFormulaValue {
   const result: string | number = item.moneda !== "UYU"
     ? `REVISAR ${item.moneda}`
-    : item.montoCalculado ?? "SIN TARIFA";
+    : item.montoCalculado === null
+      ? "SIN TARIFA"
+      : roundMoney(item.montoCalculado);
 
   return {
-    formula: `IF(J${rowIndex}<>"UYU","REVISAR "&J${rowIndex},IF(I${rowIndex}<>"",I${rowIndex},IF(H${rowIndex}="","SIN TARIFA",ROUND(E${rowIndex}*H${rowIndex},2))))`,
+    formula: `IF(J${rowIndex}<>"UYU","REVISAR "&J${rowIndex},IF(I${rowIndex}<>"",ROUND(I${rowIndex},2),IF(H${rowIndex}="","SIN TARIFA",ROUND(E${rowIndex}*H${rowIndex},2))))`,
     result
   };
 }
@@ -271,6 +273,10 @@ function fechaLocalExcel(fecha: Date): Date {
   const value = (type: "year" | "month" | "day") =>
     Number(parts.find((part) => part.type === type)?.value);
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function capitalize(value: string): string {
