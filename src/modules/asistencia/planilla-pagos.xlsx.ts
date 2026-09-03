@@ -11,18 +11,19 @@ const COLORS = {
   text: "FF20344D",
   muted: "FF637083",
   white: "FFFFFFFF",
+  alternate: "FFF7FAFC",
   warning: "FFFFF1D6",
   danger: "FFFDE7E7"
 } as const;
 
 const visibleColumns = [
-  { key: "asistente", header: "Asistente", width: 28 },
-  { key: "programa", header: "Programa", width: 34 },
-  { key: "reunion", header: "Reunión", width: 40 },
-  { key: "fecha", header: "Fecha", width: 14 },
-  { key: "horas", header: "Cantidad de horas", width: 18 },
-  { key: "modalidad", header: "Modalidad", width: 15 },
-  { key: "monto", header: "Valor calculado en pesos", width: 24 }
+  { header: "Asistente", width: 28 },
+  { header: "Programa", width: 34 },
+  { header: "Reunión", width: 40 },
+  { header: "Fecha", width: 14 },
+  { header: "Cantidad de horas", width: 18 },
+  { header: "Modalidad", width: 15 },
+  { header: "Valor calculado en pesos", width: 24 }
 ] as const;
 
 export async function crearPlanillaPagos(
@@ -31,7 +32,6 @@ export async function crearPlanillaPagos(
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Sala Virtual FLACSO Uruguay";
-  workbook.company = "FLACSO Uruguay";
   workbook.created = new Date();
   workbook.modified = new Date();
   workbook.calcProperties.fullCalcOnLoad = true;
@@ -64,9 +64,11 @@ function buildSheet(
   visibleColumns.forEach((column, index) => {
     sheet.getColumn(index + 1).width = column.width;
   });
-  sheet.getColumn(8).width = 14;
-  sheet.getColumn(9).width = 16;
-  sheet.getColumn(10).width = 10;
+
+  // Columnas auxiliares para que el valor visible pueda quedar calculado con fórmula.
+  sheet.getColumn(8).width = 14; // tarifa por hora
+  sheet.getColumn(9).width = 16; // monto confirmado
+  sheet.getColumn(10).width = 10; // moneda
   sheet.getColumn(8).hidden = true;
   sheet.getColumn(9).hidden = true;
   sheet.getColumn(10).hidden = true;
@@ -87,7 +89,11 @@ function buildSheet(
   }
 
   for (const [groupName, groupRowsValue] of groups) {
-    styleGroupTitle(sheet, rowIndex, groupKey === "asistente" ? `Asistente: ${groupName}` : `Programa: ${groupName}`);
+    styleGroupTitle(
+      sheet,
+      rowIndex,
+      groupKey === "asistente" ? `Asistente: ${groupName}` : `Programa: ${groupName}`
+    );
     rowIndex += 1;
     styleColumnHeader(sheet, rowIndex);
     rowIndex += 1;
@@ -114,18 +120,19 @@ function buildSheet(
       row.getCell(5).numFmt = "0.00";
       row.getCell(7).numFmt = '"$" #,##0.00';
       row.getCell(7).value = formulaAmount(rowIndex, item);
+      styleDataRow(row, rowIndex - firstDataRow);
 
       if (item.moneda === "UYU" && item.montoCalculado !== null) {
         total += item.montoCalculado;
       } else {
-        row.getCell(7).fill = solid(item.moneda === "UYU" ? COLORS.warning : COLORS.danger);
-        row.getCell(7).font = { bold: true, color: { argb: COLORS.text } };
-        row.getCell(7).note = item.moneda === "UYU"
+        const amountCell = row.getCell(7);
+        amountCell.fill = solid(item.moneda === "UYU" ? COLORS.warning : COLORS.danger);
+        amountCell.font = { bold: true, color: { argb: COLORS.text } };
+        amountCell.note = item.moneda === "UYU"
           ? "Esta reunión no tiene una tarifa aplicable ni un monto confirmado."
           : `El importe está registrado en ${item.moneda}; no se convierte automáticamente a pesos uruguayos.`;
       }
 
-      styleDataRow(row, rowIndex - firstDataRow);
       rowIndex += 1;
     }
 
@@ -161,6 +168,7 @@ function buildSheet(
 function addDocumentHeader(sheet: ExcelJS.Worksheet, periodo: PeriodoReporteMensual): void {
   const month = etiquetaMes(periodo.clave);
   const title = `Planilla de pagos de asistencia técnica — ${capitalize(month)}`;
+
   sheet.mergeCells("A1:G1");
   const titleCell = sheet.getCell("A1");
   titleCell.value = title;
@@ -171,7 +179,7 @@ function addDocumentHeader(sheet: ExcelJS.Worksheet, periodo: PeriodoReporteMens
 
   sheet.mergeCells("A2:G2");
   const subtitle = sheet.getCell("A2");
-  subtitle.value = "Los totales se calculan con fórmulas. Las tarifas y montos confirmados usados por cada fila quedan incluidos como columnas auxiliares ocultas.";
+  subtitle.value = "Los valores y los totales usan fórmulas. Las tarifas y montos confirmados quedan como columnas auxiliares ocultas para poder auditar el cálculo.";
   subtitle.fill = solid(COLORS.headerLight);
   subtitle.font = { size: 10, color: { argb: COLORS.muted } };
   subtitle.alignment = { wrapText: true, vertical: "middle" };
@@ -192,6 +200,7 @@ function styleColumnHeader(sheet: ExcelJS.Worksheet, rowIndex: number): void {
   const row = sheet.getRow(rowIndex);
   row.values = visibleColumns.map(({ header }) => header);
   row.height = 30;
+
   for (let column = 1; column <= 7; column += 1) {
     const cell = row.getCell(column);
     cell.fill = solid(COLORS.navy);
@@ -205,10 +214,8 @@ function styleDataRow(row: ExcelJS.Row, indexInGroup: number): void {
   row.height = 23;
   for (let column = 1; column <= 7; column += 1) {
     const cell = row.getCell(column);
-    if (!cell.fill || cell.fill.type === undefined) {
-      cell.fill = solid(indexInGroup % 2 === 0 ? COLORS.white : "FFF7FAFC");
-    }
-    cell.font = { ...cell.font, color: { argb: COLORS.text } };
+    cell.fill = solid(indexInGroup % 2 === 0 ? COLORS.white : COLORS.alternate);
+    cell.font = { color: { argb: COLORS.text } };
     cell.border = thinBorder();
     cell.alignment = {
       vertical: "middle",
@@ -222,6 +229,7 @@ function formulaAmount(rowIndex: number, item: FilaPlanillaPago): ExcelJS.CellFo
   const result: string | number = item.moneda !== "UYU"
     ? `REVISAR ${item.moneda}`
     : item.montoCalculado ?? "SIN TARIFA";
+
   return {
     formula: `IF(J${rowIndex}<>"UYU","REVISAR "&J${rowIndex},IF(I${rowIndex}<>"",I${rowIndex},IF(H${rowIndex}="","SIN TARIFA",ROUND(E${rowIndex}*H${rowIndex},2))))`,
     result
@@ -260,7 +268,8 @@ function fechaLocalExcel(fecha: Date): Date {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(fecha);
-  const value = (type: "year" | "month" | "day") => Number(parts.find((part) => part.type === type)?.value);
+  const value = (type: "year" | "month" | "day") =>
+    Number(parts.find((part) => part.type === type)?.value);
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
 }
 
