@@ -6,8 +6,11 @@ import {
 } from "../src/modules/reuniones/agenda-view.domain";
 
 function meeting(id: string, requestId: string, createdAt: string, title = "Diploma") {
+  const inicioProgramadoAt = new Date(createdAt);
   return {
     id,
+    inicioProgramadoAt,
+    finProgramadoAt: new Date(inicioProgramadoAt.getTime() + 60 * 60 * 1000),
     solicitud: {
       id: requestId,
       docenteProgramaId: "docente-programa-1",
@@ -34,6 +37,20 @@ describe("vista de agenda", () => {
     expect(agruparEncuentrosPorSerie(meetings).map((group) => group.map(({ id }) => id))).toEqual([
       ["i1", "i2"],
       ["i3"]
+    ]);
+  });
+
+  it("ordena las series históricas desde la más reciente", () => {
+    const meetings = [
+      meeting("i1", "s1", "2026-04-08T00:12:12.813Z"),
+      meeting("i2", "s2", "2026-08-06T19:22:03.643Z"),
+      meeting("i3", "s3", "2026-06-01T12:00:00.000Z")
+    ];
+
+    expect(agruparEncuentrosPorSerie(meetings, true).map((group) => group[0].id)).toEqual([
+      "i2",
+      "i3",
+      "i1"
     ]);
   });
 
