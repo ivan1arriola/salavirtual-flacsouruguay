@@ -1,4 +1,4 @@
-import { ChevronRight, UsersRound } from "lucide-react";
+import { ChevronRight, Download, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -7,6 +7,7 @@ import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
 import { obtenerResumenAsistentes } from "@/src/modules/asistencia/resumen-administracion.adapter";
 import { resolverPeriodoMes, resumirTotales, type MontoMoneda } from "@/src/modules/asistencia/resumen-administracion.domain";
+import { etiquetaMes, periodoMesAnteriorUtc3 } from "@/src/modules/asistencia/reporte-mensual.domain";
 
 export default async function AsistentesPage({
   searchParams
@@ -15,18 +16,25 @@ export default async function AsistentesPage({
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const query = await searchParams;
   const period = resolverPeriodoMes(query.mes, new Date());
+  const paymentPeriod = periodoMesAnteriorUtc3(new Date());
   const assistants = await obtenerResumenAsistentes(db, period);
   const totals = resumirTotales(assistants);
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header assistant-detail-header">
         <div>
           <p className="page-eyebrow">Administración</p>
           <h1>Asistentes técnicos</h1>
           <p>Asignaciones y pagos estimados de {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
-        <AssistantPeriodNav period={period} basePath="/asistentes" />
+        <div className="assistant-detail-actions">
+          <AssistantPeriodNav period={period} basePath="/asistentes" />
+          <a className="secondary-action" href="/api/v1/asistencia/planilla-pagos" title="Descargar planilla de pagos del mes anterior">
+            <Download size={17} />
+            Descargar pagos de {etiquetaMes(paymentPeriod.clave)}
+          </a>
+        </div>
       </header>
 
       <section className="metric-grid" aria-label="Totales del período">
