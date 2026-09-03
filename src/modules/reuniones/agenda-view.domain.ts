@@ -22,21 +22,37 @@ export function normalizarCodigoReunionBuscado(value: string): string {
 }
 
 export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
-  meetings: readonly T[]
+  meetings: readonly T[],
+  esHistorial = false
 ): readonly (readonly T[])[] {
   const groups = meetings.reduce<Readonly<Record<string, readonly T[]>>>((result, meeting) => {
     const key = claveSerieReunion(meeting.solicitud);
     return { ...result, [key]: [...(result[key] ?? []), meeting] };
   }, {});
   const grouped = Object.values(groups);
-  const now = new Date();
-  const esHistorial = meetings.length > 0 && meetings.every(
-    (meeting) => meeting.finProgramadoAt instanceof Date && meeting.finProgramadoAt < now
-  );
 
   if (!esHistorial) return grouped;
 
-  return [...grouped].sort((a, b) => fechaMasReciente(b) - fechaMasReciente(a));
+  return ordenarPorRecencia(grouped);
+}
+
+function ordenarPorRecencia<T extends EncuentroAgrupable>(
+  groups: readonly (readonly T[])[]
+): readonly (readonly T[])[] {
+  return groups.reduce<readonly (readonly T[])[]>((ordered, group) => {
+    const timestamp = fechaMasReciente(group);
+    const insertionIndex = ordered.findIndex(
+      (candidate) => fechaMasReciente(candidate) < timestamp
+    );
+
+    return insertionIndex < 0
+      ? [...ordered, group]
+      : [
+          ...ordered.slice(0, insertionIndex),
+          group,
+          ...ordered.slice(insertionIndex)
+        ];
+  }, []);
 }
 
 function fechaMasReciente<T extends EncuentroAgrupable>(meetings: readonly T[]): number {
