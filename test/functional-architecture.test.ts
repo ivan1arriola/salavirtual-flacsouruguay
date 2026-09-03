@@ -10,7 +10,8 @@ const PURE_MODULES = readdirSync(MODULES_ROOT, {
     (relativePath) =>
       relativePath.endsWith(".ts") &&
       !relativePath.endsWith(".service.ts") &&
-      !relativePath.endsWith(".adapter.ts")
+      !relativePath.endsWith(".adapter.ts") &&
+      !relativePath.endsWith(".xlsx.ts")
   )
   .slice()
   .sort();

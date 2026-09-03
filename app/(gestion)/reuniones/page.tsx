@@ -131,7 +131,7 @@ export default async function ReunionesPage({
     : [];
   const unresolvedDuplicates = duplicateCases.filter(({ decision }) => decision !== "FALSO_POSITIVO");
   const meetingsForSeries = periodo === "anteriores" ? [...meetings].reverse() : meetings;
-  const series = agruparEncuentrosPorSerie(meetingsForSeries);
+  const series = agruparEncuentrosPorSerie(meetingsForSeries, periodo === "anteriores");
 
   const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
