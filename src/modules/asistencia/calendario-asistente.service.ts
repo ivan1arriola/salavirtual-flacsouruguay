@@ -96,6 +96,7 @@ export async function sincronizarCalendarioAsistenteInstancia(
     instanciaId: meeting.id,
     estado: meeting.estado,
     requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
+    vigente: meeting.finProgramadoAt > new Date(),
     asignaciones: meeting.asignaciones,
   });
   if (plan.publicar.length === 0 && plan.eliminar.length === 0) return [];
@@ -109,30 +110,35 @@ export async function sincronizarCalendarioAsistenteInstancia(
     },
   });
   if (!config?.activa || !config.serviceAccountEmail || !config.privateKeyCifrada) {
-    return [...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
-      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR"))];
+    return [
+      ...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
+      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR")),
+    ];
   }
 
   let privateKey: string;
   try {
     privateKey = dependencies.descifrar(config.privateKeyCifrada);
   } catch {
-    return [...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
-      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR"))];
+    return [
+      ...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
+      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR")),
+    ];
   }
 
+  const serviceAccountEmail = config.serviceAccountEmail;
   const docente = [
     meeting.solicitud.docentePrograma.docente.usuario.nombres,
     meeting.solicitud.docentePrograma.docente.usuario.apellidos,
   ].filter(Boolean).join(" ") || null;
   const joinUrl = meeting.eventosProveedor[0]?.joinUrl ?? null;
 
-  const resultados = await Promise.all([
+  return Promise.all([
     ...plan.publicar.map(async ({ cuenta, eventId }) => ejecutar(
       cuenta,
       "PUBLICAR",
       async () => dependencies.publicarEvento(
-        credenciales(config.serviceAccountEmail!, privateKey, cuenta.email),
+        credenciales(serviceAccountEmail, privateKey, cuenta.email),
         {
           id: eventId,
           titulo: `Asistencia técnica · ${meeting.solicitud.titulo}`,
@@ -151,13 +157,11 @@ export async function sincronizarCalendarioAsistenteInstancia(
       cuenta,
       "ELIMINAR",
       async () => dependencies.eliminarEvento(
-        credenciales(config.serviceAccountEmail!, privateKey, cuenta.email),
+        credenciales(serviceAccountEmail, privateKey, cuenta.email),
         eventId,
       ),
     )),
   ]);
-
-  return resultados;
 }
 
 export async function sincronizarCalendariosAsistenteSolicitud(
@@ -192,6 +196,24 @@ export async function sincronizarCalendariosAsistenteUsuario(
   const uniqueIds = [...new Set(assistant.asignaciones.map(({ instanciaSalaId }) => instanciaSalaId))];
   const results = await Promise.all(
     uniqueIds.map((id) => sincronizarCalendarioAsistenteInstancia(dependencies, id)),
+  );
+  return results.flat();
+}
+
+export async function reconciliarCalendariosAsistentes(
+  dependencies: SincronizacionCalendarioAsistenteDependencies,
+  now = new Date(),
+): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
+  const instances = await dependencies.db.instanciaSala.findMany({
+    where: {
+      finProgramadoAt: { gte: now },
+      asignaciones: { some: {} },
+    },
+    select: { id: true },
+    orderBy: { inicioProgramadoAt: "asc" },
+  });
+  const results = await Promise.all(
+    instances.map(({ id }) => sincronizarCalendarioAsistenteInstancia(dependencies, id)),
   );
   return results.flat();
 }
