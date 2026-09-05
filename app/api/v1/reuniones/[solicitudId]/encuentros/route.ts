@@ -8,6 +8,7 @@ import {
   eliminarEventoCalendarioAsistente,
   publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendariosAsistenteSolicitud,
@@ -61,18 +62,26 @@ export async function DELETE(_request: Request, context: RouteContext) {
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       local.eventoProveedorIds,
     );
-    const calendarioAsistente = await sincronizarCalendariosAsistenteSolicitud({
-      db,
-      descifrar: descifrarConfiguracion,
-      publicarEvento: publicarEventoCalendarioAsistente,
-      eliminarEvento: eliminarEventoCalendarioAsistente,
-    }, solicitudId);
+    const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
+      sincronizarCalendariosAsistenteSolicitud({
+        db,
+        descifrar: descifrarConfiguracion,
+        publicarEvento: publicarEventoCalendarioAsistente,
+        eliminarEvento: eliminarEventoCalendarioAsistente,
+      }, solicitudId)
+    );
+    const calendarioAsistente = intentoCalendario.resultados;
     const hasPending = sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
+      intentoCalendario.error !== null ||
       hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
 
     return NextResponse.json({
       message: "Reunión eliminada.",
-      warning: advertenciaSincronizacion(sincronizacion, calendarioAsistente),
+      warning: advertenciaSincronizacion(
+        sincronizacion,
+        calendarioAsistente,
+        intentoCalendario.error,
+      ),
       sincronizacion,
       calendarioAsistente,
     }, { status: hasPending ? 202 : 200 });
@@ -85,12 +94,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
 function advertenciaSincronizacion(
   results: readonly ProvisionResult[],
   calendarioAsistente: readonly Readonly<{ estado: string }>[],
+  errorCalendario: string | null,
 ): string | null {
   const warnings: string[] = [];
   if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
     warnings.push("La reunión quedó cancelada en la aplicación, pero Google Meet todavía tiene cancelaciones pendientes.");
   }
-  if (calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
+  if (errorCalendario || calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
     warnings.push("Los calendarios de asistentes técnicos todavía tienen cancelaciones pendientes.");
   }
   return warnings.length > 0 ? warnings.join(" ") : null;
