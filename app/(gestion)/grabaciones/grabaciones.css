@@ -1,0 +1,434 @@
+.recordings-page {
+  display: grid;
+  gap: 20px;
+}
+
+.recordings-header {
+  margin-bottom: 0;
+}
+
+.recordings-header > div:first-child {
+  min-width: 0;
+}
+
+.recordings-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recordings-summary > div {
+  min-width: 0;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid #d5e0e8;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 14px;
+  box-shadow: 0 4px 14px rgba(31, 50, 76, 0.035);
+}
+
+.recordings-summary > div > svg {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #edf4f8;
+  color: var(--brand-secondary);
+  padding: 8px;
+}
+
+.recordings-summary span,
+.recordings-summary strong {
+  display: block;
+}
+
+.recordings-summary span {
+  min-width: 0;
+  color: #68788d;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.recordings-summary strong {
+  margin-bottom: 2px;
+  color: var(--brand-strong);
+  font-size: 1.24rem;
+  line-height: 1;
+}
+
+.recordings-sync-section {
+  overflow: hidden;
+}
+
+.recording-library {
+  display: grid;
+  gap: 16px;
+}
+
+.recording-meeting-card {
+  overflow: hidden;
+  border: 1px solid #d3dee7;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(31, 50, 76, 0.05);
+}
+
+.recording-meeting-header {
+  display: grid;
+  grid-template-columns: 150px minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+  border-bottom: 1px solid #dde6ed;
+  background:
+    radial-gradient(circle at 96% 0%, rgba(23, 108, 120, 0.08), transparent 15rem),
+    linear-gradient(90deg, #ffffff 0%, #f4f8fb 100%);
+  padding: 17px 20px;
+}
+
+.recording-meeting-date {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.recording-meeting-date span,
+.recording-meeting-date strong {
+  display: block;
+}
+
+.recording-meeting-date span {
+  color: #43556c;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.recording-meeting-date strong {
+  width: max-content;
+  border: 1px solid #c6d8e2;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #5b6e84;
+  padding: 3px 8px;
+  font-size: 0.67rem;
+  font-weight: 850;
+}
+
+.recording-meeting-title {
+  min-width: 0;
+}
+
+.recording-meeting-title p,
+.recording-meeting-title h2,
+.recording-meeting-title small {
+  display: block;
+  margin: 0;
+}
+
+.recording-meeting-title p {
+  margin-bottom: 4px;
+  color: var(--brand-secondary);
+  font-size: 0.69rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.recording-meeting-title h2 {
+  color: #172a46;
+  font-size: 1rem;
+  line-height: 1.32;
+}
+
+.recording-meeting-title small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.recording-meeting-folder {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.recording-meeting-folder .secondary-action {
+  width: auto;
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.recording-file-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  background: #f3f7fa;
+  padding: 14px;
+}
+
+.recording-file-card {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  overflow: hidden;
+  border: 1px solid #d8e1e8;
+  border-left: 4px solid #8392a6;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 13px;
+  box-shadow: 0 3px 10px rgba(31, 50, 76, 0.03);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.recording-file-card:hover {
+  border-color: #c2d2dd;
+  box-shadow: 0 7px 18px rgba(31, 50, 76, 0.065);
+  transform: translateY(-1px);
+}
+
+.recording-file-card.is-recording {
+  border-left-color: #176c78;
+}
+
+.recording-file-card.is-transcript {
+  border-left-color: #4b6fa8;
+}
+
+.recording-file-card.is-attendance {
+  border-left-color: #52745c;
+}
+
+.recording-file-card.is-notes {
+  border-left-color: #9b7134;
+}
+
+.recording-file-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #edf2f6;
+  color: #65758a;
+}
+
+.is-recording .recording-file-icon {
+  background: #e5f3f4;
+  color: #176c78;
+}
+
+.is-transcript .recording-file-icon {
+  background: #eaf0f9;
+  color: #4b6fa8;
+}
+
+.is-attendance .recording-file-icon {
+  background: #eaf2ec;
+  color: #52745c;
+}
+
+.is-notes .recording-file-icon {
+  background: #f7f0e5;
+  color: #8c642c;
+}
+
+.recording-file-copy {
+  min-width: 0;
+}
+
+.recording-file-label {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.recording-file-label strong {
+  min-width: 0;
+  color: #1e314d;
+  font-size: 0.83rem;
+  font-weight: 850;
+}
+
+.recording-file-label span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #f0f4f7;
+  color: #6b7a8d;
+  padding: 2px 6px;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.recording-file-copy > p {
+  display: -webkit-box;
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: #718095;
+  font-size: 0.69rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recording-file-action {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.recording-file-open {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #c5d4de;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--brand-strong);
+  padding: 6px 9px;
+  font-size: 0.71rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.recording-file-open:hover {
+  border-color: #9eb7c5;
+  background: #f3f8fa;
+  color: var(--brand-strong);
+  transform: translateY(-1px);
+}
+
+.recording-file-open.is-primary {
+  border-color: var(--brand-secondary);
+  background: var(--brand-secondary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(23, 108, 120, 0.13);
+}
+
+.recording-file-open.is-primary:hover {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.recording-file-open:focus-visible,
+.recording-meeting-folder a:focus-visible {
+  outline: 3px solid rgba(23, 108, 120, 0.18);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1120px) {
+  .recordings-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recording-meeting-header {
+    grid-template-columns: 135px minmax(0, 1fr);
+  }
+
+  .recording-meeting-folder {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .recording-file-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .recordings-page {
+    gap: 16px;
+  }
+
+  .recording-meeting-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .recording-meeting-date {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .recording-meeting-folder {
+    grid-column: 1;
+  }
+
+  .recording-file-grid {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .recordings-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+
+  .recordings-summary > div {
+    min-height: 62px;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .recordings-summary > div > svg {
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+  }
+
+  .recording-meeting-folder,
+  .recording-meeting-folder .secondary-action {
+    width: 100%;
+  }
+
+  .recording-file-card {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .recording-file-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .recording-file-action {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .recording-file-open {
+    width: 100%;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 390px) {
+  .recordings-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .recording-file-label {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
