@@ -11,6 +11,7 @@ import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendarioAsistenteInstancia,
 } from "@/src/modules/asistencia/calendario-asistente.service";
+import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   eliminarEventoCalendarioAsistente,
   publicarEventoCalendarioAsistente,
@@ -46,13 +47,16 @@ export async function POST(request: Request) {
       warnings.push(error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.");
     }
 
-    const calendarioAsistente = await sincronizarCalendarioAsistenteInstancia({
-      db,
-      descifrar: descifrarConfiguracion,
-      publicarEvento: publicarEventoCalendarioAsistente,
-      eliminarEvento: eliminarEventoCalendarioAsistente,
-    }, assignment.instanciaSalaId);
-    if (hayErroresSincronizacionCalendarioAsistente(calendarioAsistente)) {
+    const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
+      sincronizarCalendarioAsistenteInstancia({
+        db,
+        descifrar: descifrarConfiguracion,
+        publicarEvento: publicarEventoCalendarioAsistente,
+        eliminarEvento: eliminarEventoCalendarioAsistente,
+      }, assignment.instanciaSalaId)
+    );
+    const calendarioAsistente = intentoCalendario.resultados;
+    if (intentoCalendario.error || hayErroresSincronizacionCalendarioAsistente(calendarioAsistente)) {
       warnings.push("La asignación quedó guardada, pero Google Calendar todavía tiene sincronizaciones pendientes.");
     }
 
