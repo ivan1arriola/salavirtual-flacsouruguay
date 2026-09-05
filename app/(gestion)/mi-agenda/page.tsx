@@ -4,7 +4,9 @@ import { auth } from "@/auth";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { formatMonth } from "@/src/lib/ui/assistant-format";
 import { formatDateTime } from "@/src/lib/ui/format";
+import { claveMesUtc3 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 export default async function MiAgendaPage() {
   const session = await auth();
@@ -50,6 +52,15 @@ export default async function MiAgendaPage() {
     }
   });
 
+  const periods = [...new Set(
+    assignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt))
+  )].map((clave) => ({
+    clave,
+    assignments: assignments.filter(
+      ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
+    )
+  }));
+
   return (
     <>
       <header className="page-header">
@@ -61,39 +72,52 @@ export default async function MiAgendaPage() {
         <CalendarCheck2 size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
-      <section className="content-section">
-        {assignments.length === 0 ? (
+      {assignments.length === 0 ? (
+        <section className="content-section">
           <div className="empty-state">
             <CalendarCheck2 size={24} aria-hidden="true" />
             <p>No tenés reuniones asignadas próximamente.</p>
           </div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Estado</th><th>Acceso</th></tr></thead>
-              <tbody>
-                {assignments.map((assignment) => {
-                  const meeting = assignment.instancia;
-                  const association = meeting.solicitud.docentePrograma;
-                  const meet = meeting.eventosProveedor.find(
-                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
-                  );
-                  return (
-                    <tr key={assignment.id}>
-                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                      <td>{association.programa.nombre}</td>
-                      <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
-                      <td><span className="status status-ok">Asignada</span></td>
-                      <td>{meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : <span className="muted-text">—</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        </section>
+      ) : (
+        <div className="period-list">
+          {periods.map((period) => (
+            <section className="content-section" key={period.clave}>
+              <div className="section-heading">
+                <div>
+                  <h2>{formatMonth(period.assignments[0].instancia.inicioProgramadoAt)}</h2>
+                  <p>{period.assignments.length} {period.assignments.length === 1 ? "reunión asignada" : "reuniones asignadas"}.</p>
+                </div>
+              </div>
+
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Estado</th><th>Acceso</th></tr></thead>
+                  <tbody>
+                    {period.assignments.map((assignment) => {
+                      const meeting = assignment.instancia;
+                      const association = meeting.solicitud.docentePrograma;
+                      const meet = meeting.eventosProveedor.find(
+                        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                      );
+                      return (
+                        <tr key={assignment.id}>
+                          <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
+                          <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
+                          <td>{association.programa.nombre}</td>
+                          <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
+                          <td><span className="status status-ok">Asignada</span></td>
+                          <td>{meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : <span className="muted-text">—</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
     </>
   );
 }
