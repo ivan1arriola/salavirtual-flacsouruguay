@@ -86,6 +86,17 @@ describe("calendario de asistentes técnicos", () => {
     expect(accounts).toEqual([]);
   });
 
+  it("no vuelve a publicar encuentros que ya finalizaron", () => {
+    const accounts = cuentasCalendarioDeseadas({
+      estado: "PROGRAMADA",
+      requiereAsistenciaTecnica: true,
+      vigente: false,
+      asignaciones: [assignment()],
+    });
+
+    expect(accounts).toEqual([]);
+  });
+
   it("al reasignar elimina el evento del asistente anterior y publica el del nuevo", () => {
     const previous = { ...linkedAccount, id: "google-old", email: "anterior@flacso.edu.uy" };
     const current = { ...linkedAccount, id: "google-new", email: "nuevo@flacso.edu.uy", providerAccountId: "subject-2" };
