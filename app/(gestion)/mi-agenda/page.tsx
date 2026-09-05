@@ -5,7 +5,7 @@ import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatMonth } from "@/src/lib/ui/assistant-format";
-import { formatDateTime } from "@/src/lib/ui/format";
+import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { claveMesUtc3 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 export default async function MiAgendaPage() {
@@ -60,16 +60,27 @@ export default async function MiAgendaPage() {
       ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
     )
   }));
+  const nextAssignment = assignments[0];
 
   return (
-    <>
-      <header className="page-header">
+    <div className="assistant-agenda-page">
+      <header className="page-header assistant-agenda-header">
         <div>
           <p className="page-eyebrow">Asistencia técnica</p>
           <h1>Mi agenda</h1>
-          <p>{assignments.length} reuniones asignadas.</p>
+          <p>{assignments.length} {assignments.length === 1 ? "reunión próxima" : "reuniones próximas"}.</p>
         </div>
-        <CalendarCheck2 size={28} color="var(--brand)" aria-hidden="true" />
+        {nextAssignment ? (
+          <div className="assistant-agenda-next-summary">
+            <CalendarCheck2 size={19} aria-hidden="true" />
+            <span>
+              <small>Próxima reunión</small>
+              <strong>{formatDate(nextAssignment.instancia.inicioProgramadoAt)} · {formatTime(nextAssignment.instancia.inicioProgramadoAt)}</strong>
+            </span>
+          </div>
+        ) : (
+          <CalendarCheck2 size={28} color="var(--brand)" aria-hidden="true" />
+        )}
       </header>
 
       {assignments.length === 0 ? (
@@ -80,44 +91,76 @@ export default async function MiAgendaPage() {
           </div>
         </section>
       ) : (
-        <div className="period-list">
+        <div className="period-list assistant-agenda-periods">
           {periods.map((period) => (
-            <section className="content-section" key={period.clave}>
-              <div className="section-heading">
+            <section className="content-section assistant-agenda-month" key={period.clave}>
+              <div className="section-heading assistant-agenda-month-heading">
                 <div>
+                  <p className="assistant-agenda-month-eyebrow">Agenda mensual</p>
                   <h2>{formatMonth(period.assignments[0].instancia.inicioProgramadoAt)}</h2>
-                  <p>{period.assignments.length} {period.assignments.length === 1 ? "reunión asignada" : "reuniones asignadas"}.</p>
                 </div>
+                <span className="assistant-agenda-count">
+                  {period.assignments.length} {period.assignments.length === 1 ? "reunión" : "reuniones"}
+                </span>
               </div>
 
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Meet</th><th>Estado</th><th>Acceso</th></tr></thead>
-                  <tbody>
-                    {period.assignments.map((assignment) => {
-                      const meeting = assignment.instancia;
-                      const association = meeting.solicitud.docentePrograma;
-                      const meet = meeting.eventosProveedor.find(
-                        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
-                      );
-                      return (
-                        <tr key={assignment.id}>
-                          <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                          <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                          <td>{association.programa.nombre}</td>
-                          <td><strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong><small>{meet?.codigoReunion ?? "Meet pendiente"}</small></td>
-                          <td><span className="status status-ok">Asignada</span></td>
-                          <td>{meet?.joinUrl ? <MeetLinkActions iconOnly openClassName="icon-link" url={meet.joinUrl} /> : <span className="muted-text">—</span>}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="assistant-agenda-list">
+                {period.assignments.map((assignment) => {
+                  const meeting = assignment.instancia;
+                  const association = meeting.solicitud.docentePrograma;
+                  const teacher = association.docente.usuario;
+                  const meet = meeting.eventosProveedor.find(
+                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                  );
+                  const isNext = assignment.id === nextAssignment?.id;
+                  const roomName = meet?.cuentaProveedor?.emailOrganizador
+                    ?? meet?.cuentaProveedor?.nombre
+                    ?? "Sin cuenta asignada";
+
+                  return (
+                    <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`} key={assignment.id}>
+                      <div className="assistant-agenda-date-block">
+                        <span>{formatDate(meeting.inicioProgramadoAt)}</span>
+                        <strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</strong>
+                        {isNext ? <em>Próxima</em> : null}
+                      </div>
+
+                      <div className="assistant-agenda-main">
+                        <div className="assistant-agenda-main-meta">
+                          <span>{association.programa.nombre}</span>
+                          <span className="assistant-agenda-mode">
+                            {meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                          </span>
+                        </div>
+                        <h3>{meeting.solicitud.titulo}</h3>
+                        <p>{teacher.nombres} {teacher.apellidos}</p>
+                      </div>
+
+                      <div className="assistant-agenda-room">
+                        <span>Cuenta Meet</span>
+                        <strong>{roomName}</strong>
+                        <small>{meet?.codigoReunion ?? "Meet pendiente"}</small>
+                      </div>
+
+                      <div className="assistant-agenda-action">
+                        {meet?.joinUrl ? (
+                          <MeetLinkActions
+                            className="assistant-agenda-link-actions"
+                            openClassName="assistant-agenda-open-meet"
+                            url={meet.joinUrl}
+                          />
+                        ) : (
+                          <span className="status status-warning">Meet pendiente</span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
