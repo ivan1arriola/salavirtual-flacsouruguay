@@ -1,5 +1,4 @@
-import { AlertTriangle, ExternalLink, FileText, FolderOpen, NotebookText, Play, UsersRound, Video } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, ExternalLink, FileText, FolderOpen, NotebookText, UsersRound, Video } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetArtifactsButton } from "@/src/components/meet-artifacts-button";
@@ -261,20 +260,15 @@ export default async function GrabacionesPage() {
                         <p title={artifact.nombre}>{artifact.nombre}</p>
                       </div>
                       <div className="recording-file-action">
-                        {artifact.tipo === "GRABACION" ? (
-                          <Link className="recording-file-open is-primary" href={`/grabaciones/${artifact.id}`}>
-                            <Play size={16} fill="currentColor" />Reproducir
-                          </Link>
-                        ) : (
-                          <a
-                            className="recording-file-open"
-                            href={artifact.webViewUrl ?? driveFileUrl(artifact.driveFileId)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <ExternalLink size={16} />Abrir archivo
-                          </a>
-                        )}
+                        <a
+                          className={`recording-file-open ${artifact.tipo === "GRABACION" ? "is-primary" : ""}`.trim()}
+                          href={artifact.webViewUrl ?? driveFileUrl(artifact.driveFileId)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <ExternalLink size={16} />
+                          {artifact.tipo === "GRABACION" ? "Abrir grabación" : "Abrir archivo"}
+                        </a>
                       </div>
                     </article>
                   ))}
