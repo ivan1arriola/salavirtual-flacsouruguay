@@ -82,6 +82,26 @@ y Drive. Para crear reuniones, el gestor suplanta dinamicamente a la cuenta
 host seleccionada. Para sincronizar asignaciones de asistencia, suplanta
 dinamicamente a la cuenta Google vinculada del asistente tecnico.
 
+## Sincronizacion de calendarios de asistentes
+
+La sincronizacion principal es reactiva: se ejecuta al asignar o reasignar un
+asistente, al reprogramar o cancelar encuentros, al cancelar una serie y al
+vincular una cuenta Google de un asistente con reuniones futuras.
+
+Si Google Calendar o la infraestructura de sincronizacion falla despues de que el
+cambio local fue guardado, la operacion local no se revierte ni se reporta como
+fallida. La API devuelve el cambio guardado y marca la sincronizacion como
+pendiente para un reintento posterior.
+
+Como red de seguridad, Vercel ejecuta diariamente:
+
+`GET /api/v1/asistencia/sincronizar-calendarios`
+
+El cron esta protegido con `CRON_SECRET` y vuelve a reconciliar reuniones futuras
+con asignaciones. El proyecto usa el plan Hobby de Vercel, por lo que este cron de
+recuperacion se mantiene en una ejecucion diaria; la sincronizacion inmediata no
+depende de este cron.
+
 ## Resultado
 
 Al crear una reunion, el gestor:
