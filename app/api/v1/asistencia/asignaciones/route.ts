@@ -7,6 +7,14 @@ import {
   asignarAsistentePostulado,
   sincronizarCohostsDeInstancia
 } from "@/src/modules/asistencia/asistencia.service";
+import {
+  hayErroresSincronizacionCalendarioAsistente,
+  sincronizarCalendarioAsistenteInstancia,
+} from "@/src/modules/asistencia/calendario-asistente.service";
+import {
+  eliminarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente,
+} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
 
 export async function POST(request: Request) {
@@ -27,7 +35,7 @@ export async function POST(request: Request) {
       actor,
       await request.json().catch(() => null)
     );
-    let warning: string | null = null;
+    const warnings: string[] = [];
     try {
       await sincronizarCohostsDeInstancia({
         db,
@@ -35,9 +43,24 @@ export async function POST(request: Request) {
         configurarEspacio: configurarGoogleMeetExistente
       }, assignment.instanciaSalaId);
     } catch (error) {
-      warning = error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.";
+      warnings.push(error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.");
     }
-    return NextResponse.json({ assignment, warning }, { status: 201 });
+
+    const calendarioAsistente = await sincronizarCalendarioAsistenteInstancia({
+      db,
+      descifrar: descifrarConfiguracion,
+      publicarEvento: publicarEventoCalendarioAsistente,
+      eliminarEvento: eliminarEventoCalendarioAsistente,
+    }, assignment.instanciaSalaId);
+    if (hayErroresSincronizacionCalendarioAsistente(calendarioAsistente)) {
+      warnings.push("La asignación quedó guardada, pero Google Calendar todavía tiene sincronizaciones pendientes.");
+    }
+
+    return NextResponse.json({
+      assignment,
+      warning: warnings.length > 0 ? warnings.join(" ") : null,
+      calendarioAsistente,
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Datos inválidos." },
