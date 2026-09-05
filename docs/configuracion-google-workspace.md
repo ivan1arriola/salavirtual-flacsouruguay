@@ -36,7 +36,7 @@ https://www.googleapis.com/auth/gmail.send
 
 Estos son los scopes que utiliza actualmente Sala Virtual:
 
-- `calendar.events`: crear, modificar y cancelar los eventos de las salas.
+- `calendar.events`: crear, modificar y cancelar los eventos de las salas y mantener sincronizados los calendarios de asistentes tecnicos con cuenta Google vinculada.
 - `drive`: localizar, mover, crear y reproducir archivos y carpetas de grabaciones y documentos.
 - `meetings.space.settings`: leer y modificar la configuracion de Meets creados desde Calendar, incluidos ajustes y cohosts.
 - `meetings.space.readonly`: consultar espacios, conference records, participantes, grabaciones, transcripciones y notas.
@@ -49,6 +49,13 @@ operaciones de escritura y organizacion de archivos.
 
 Las diez cuentas `salaNN` deben tener Google Calendar y Google Meet habilitados
 y una edicion de Workspace que permita crear reuniones Meet.
+
+Los asistentes tecnicos no reciben una opcion general para gestionar calendarios.
+Cuando un usuario activo con rol `ASISTENTE_TECNICO` tiene una `CuentaGoogleFlacso`
+realmente vinculada y verificada, Sala Virtual suplanta esa cuenta exclusivamente
+para mantener sus asignaciones sincronizadas en `primary`. La aplicacion publica o
+actualiza el evento al asignar/reprogramar y lo elimina al reasignar o cancelar.
+Los demas roles no participan de este flujo.
 
 Despues de modificar la delegacion puede haber un tiempo de propagacion en
 Google Workspace. En el gestor, `Configuracion > Google Workspace > Validacion
@@ -72,7 +79,28 @@ Administracion guarda mediante `PUT /api/v1/configuracion/google-workspace`:
 
 `serviceAccountSubject` queda reservado para operaciones generales de Workspace
 y Drive. Para crear reuniones, el gestor suplanta dinamicamente a la cuenta
-host seleccionada.
+host seleccionada. Para sincronizar asignaciones de asistencia, suplanta
+dinamicamente a la cuenta Google vinculada del asistente tecnico.
+
+## Sincronizacion de calendarios de asistentes
+
+La sincronizacion principal es reactiva: se ejecuta al asignar o reasignar un
+asistente, al reprogramar o cancelar encuentros, al cancelar una serie y al
+vincular una cuenta Google de un asistente con reuniones futuras.
+
+Si Google Calendar o la infraestructura de sincronizacion falla despues de que el
+cambio local fue guardado, la operacion local no se revierte ni se reporta como
+fallida. La API devuelve el cambio guardado y marca la sincronizacion como
+pendiente para un reintento posterior.
+
+Como red de seguridad, Vercel ejecuta diariamente:
+
+`GET /api/v1/asistencia/sincronizar-calendarios`
+
+El cron esta protegido con `CRON_SECRET` y vuelve a reconciliar reuniones futuras
+con asignaciones. El proyecto usa el plan Hobby de Vercel, por lo que este cron de
+recuperacion se mantiene en una ejecucion diaria; la sincronizacion inmediata no
+depende de este cron.
 
 ## Resultado
 
@@ -83,7 +111,8 @@ Al crear una reunion, el gestor:
 3. Solicita a Google un Meet nuevo para ese evento.
 4. Guarda el ID externo, codigo Meet y enlace de acceso.
 5. Configura el espacio Meet con los scopes especificos de Meet.
-6. Conserva un error reintentable si Google rechaza la operacion.
+6. Si existe un asistente tecnico asignado con Google vinculado, publica el encuentro en su calendario principal.
+7. Conserva un error reintentable si Google rechaza la operacion.
 
 Google puede responder con la conferencia en estado pendiente. El adaptador
 vuelve a consultar el evento durante unos segundos antes de marcar un error.

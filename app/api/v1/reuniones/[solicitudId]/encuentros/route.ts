@@ -4,6 +4,15 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
+import {
+  eliminarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente,
+} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
+import {
+  hayErroresSincronizacionCalendarioAsistente,
+  sincronizarCalendariosAsistenteSolicitud,
+} from "@/src/modules/asistencia/calendario-asistente.service";
 import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import {
   provisionarEventosMeet,
@@ -53,19 +62,46 @@ export async function DELETE(_request: Request, context: RouteContext) {
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       local.eventoProveedorIds,
     );
+    const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
+      sincronizarCalendariosAsistenteSolicitud({
+        db,
+        descifrar: descifrarConfiguracion,
+        publicarEvento: publicarEventoCalendarioAsistente,
+        eliminarEvento: eliminarEventoCalendarioAsistente,
+      }, solicitudId)
+    );
+    const calendarioAsistente = intentoCalendario.resultados;
+    const hasPending = sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
+      intentoCalendario.error !== null ||
+      hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
+
     return NextResponse.json({
       message: "Reunión eliminada.",
-      warning: advertenciaSincronizacion(sincronizacion),
+      warning: advertenciaSincronizacion(
+        sincronizacion,
+        calendarioAsistente,
+        intentoCalendario.error,
+      ),
       sincronizacion,
-    }, { status: sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 });
+      calendarioAsistente,
+    }, { status: hasPending ? 202 : 200 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 
-function advertenciaSincronizacion(results: readonly ProvisionResult[]): string | null {
-  return results.some(({ estado }) => estado !== "SINCRONIZADA")
-    ? "La reunión quedó cancelada en la aplicación, pero Google todavía tiene cancelaciones pendientes."
-    : null;
+function advertenciaSincronizacion(
+  results: readonly ProvisionResult[],
+  calendarioAsistente: readonly Readonly<{ estado: string }>[],
+  errorCalendario: string | null,
+): string | null {
+  const warnings: string[] = [];
+  if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
+    warnings.push("La reunión quedó cancelada en la aplicación, pero Google Meet todavía tiene cancelaciones pendientes.");
+  }
+  if (errorCalendario || calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
+    warnings.push("Los calendarios de asistentes técnicos todavía tienen cancelaciones pendientes.");
+  }
+  return warnings.length > 0 ? warnings.join(" ") : null;
 }
