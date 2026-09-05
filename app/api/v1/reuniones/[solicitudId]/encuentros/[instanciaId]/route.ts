@@ -4,6 +4,14 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
+import {
+  eliminarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente,
+} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import {
+  hayErroresSincronizacionCalendarioAsistente,
+  sincronizarCalendarioAsistenteInstancia,
+} from "@/src/modules/asistencia/calendario-asistente.service";
 import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import {
   sincronizarEventosPendientes,
@@ -46,21 +54,38 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       local.eventoProveedorIds,
     );
-    const warning = advertenciaSincronizacion(sincronizacion);
+    const calendarioAsistente = await sincronizarCalendarioAsistenteInstancia({
+      db,
+      descifrar: descifrarConfiguracion,
+      publicarEvento: publicarEventoCalendarioAsistente,
+      eliminarEvento: eliminarEventoCalendarioAsistente,
+    }, instanciaId);
+    const warning = advertenciaSincronizacion(sincronizacion, calendarioAsistente);
+    const hasPending = sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
+      hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
 
     return NextResponse.json({
       message: method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado.",
       warning,
       sincronizacion,
-    }, { status: sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 });
+      calendarioAsistente,
+    }, { status: hasPending ? 202 : 200 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 
-function advertenciaSincronizacion(results: readonly ProvisionResult[]): string | null {
-  const pendientes = results.filter(({ estado }) => estado !== "SINCRONIZADA");
-  if (pendientes.length === 0) return null;
-  return "El cambio quedó guardado en la aplicación, pero Google todavía tiene sincronizaciones pendientes.";
+function advertenciaSincronizacion(
+  results: readonly ProvisionResult[],
+  calendarioAsistente: readonly Readonly<{ estado: string }>[],
+): string | null {
+  const warnings: string[] = [];
+  if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
+    warnings.push("El cambio quedó guardado en la aplicación, pero Google Meet todavía tiene sincronizaciones pendientes.");
+  }
+  if (calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
+    warnings.push("El calendario del asistente técnico todavía tiene sincronizaciones pendientes.");
+  }
+  return warnings.length > 0 ? warnings.join(" ") : null;
 }
