@@ -18,6 +18,7 @@ import "./ux-polish.css";
 import "./brand-refresh.css";
 import "./profile-navigation-refresh.css";
 import "./agenda-refresh.css";
+import "./assistant-agenda.css";
 
 export default async function GestionLayout({
   children
