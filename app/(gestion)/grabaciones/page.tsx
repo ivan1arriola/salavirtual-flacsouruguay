@@ -13,6 +13,7 @@ import {
 } from "@/src/modules/meet/grabaciones.adapter";
 import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
 import { etiquetaTipoArtefactoMeet, type TipoArtefactoMeet } from "@/src/modules/meet/meet-artifacts.domain";
+import "./grabaciones.css";
 
 export default async function GrabacionesPage() {
   const session = await auth();
@@ -54,17 +55,28 @@ export default async function GrabacionesPage() {
     pendientes: pendingRecordings.length,
     noGrabadas: missingRecordings.length
   };
+  const artifactGroups = artifacts.reduce<Array<{ instanciaId: string; artifacts: typeof artifacts }>>(
+    (groups, artifact) => {
+      const instanciaId = artifact.eventoProveedor.instancia.id;
+      const existing = groups.find((group) => group.instanciaId === instanciaId);
+      if (existing) {
+        existing.artifacts.push(artifact);
+      } else {
+        groups.push({ instanciaId, artifacts: [artifact] });
+      }
+      return groups;
+    },
+    []
+  );
 
   return (
-    <>
-      <header className="page-header">
+    <div className="recordings-page">
+      <header className="page-header recordings-header">
         <div>
           <p className="page-eyebrow">Google Meet</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {artifacts.length} archivos disponibles · {counts.grabaciones} grabaciones · {counts.transcripciones} transcripciones · {counts.asistencias} listas de asistencia · {counts.notas} notas
-            {counts.pendientes > 0 ? ` · ${counts.pendientes} pendientes` : ""}
-            {counts.noGrabadas > 0 ? ` · ${counts.noGrabadas} no grabadas` : ""}.
+            {artifacts.length} {artifacts.length === 1 ? "archivo disponible" : "archivos disponibles"} en {artifactGroups.length} {artifactGroups.length === 1 ? "reunión" : "reuniones"}.
           </p>
         </div>
         {generalFolderId ? (
@@ -79,8 +91,17 @@ export default async function GrabacionesPage() {
         ) : <Video size={28} color="var(--brand)" aria-hidden="true" />}
       </header>
 
+      {artifacts.length > 0 ? (
+        <section className="recordings-summary" aria-label="Resumen de archivos disponibles">
+          <div><Video size={18} /><span><strong>{counts.grabaciones}</strong>Grabaciones</span></div>
+          <div><FileText size={18} /><span><strong>{counts.transcripciones}</strong>Transcripciones</span></div>
+          <div><UsersRound size={18} /><span><strong>{counts.asistencias}</strong>Asistencias</span></div>
+          <div><NotebookText size={18} /><span><strong>{counts.notas}</strong>Notas</span></div>
+        </section>
+      ) : null}
+
       {canSynchronize ? (
-        <section className="content-section">
+        <section className="content-section recordings-sync-section">
           <MeetArtifactsButton count={finishedMeet} />
         </section>
       ) : null}
@@ -185,71 +206,110 @@ export default async function GrabacionesPage() {
         </section>
       ) : null}
 
-      <section className="content-section">
-        {artifacts.length === 0 ? (
+      {artifacts.length === 0 ? (
+        <section className="content-section">
           <div className="empty-state"><Video size={24} /><p>Todavía no hay archivos de Meet disponibles.</p></div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Tipo</th><th>Archivo</th><th>Carpeta</th><th>Abrir</th></tr></thead>
-              <tbody>
-                {artifacts.map((artifact) => {
-                  const meeting = artifact.eventoProveedor.instancia;
-                  const association = meeting.solicitud.docentePrograma;
-                  return (
-                    <tr key={artifact.id}>
-                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                      <td>{association.programa.nombre}</td>
-                      <td><span className="status status-neutral">{artifactTypeIcon(artifact.tipo)}{etiquetaTipoArtefactoMeet(artifact.tipo)}</span></td>
-                      <td><strong>{artifact.nombre}</strong><small>{artifactDetail(artifact.mimeType, artifact.tamanoBytes)}</small></td>
-                      <td>
-                        {artifact.eventoProveedor.driveFolderId ? (
-                          <a
-                            className="text-link recording-folder-link"
-                            href={driveFolderUrl(artifact.eventoProveedor.driveFolderId)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
-                          </a>
-                        ) : <span className="muted-text">No disponible</span>}
-                      </td>
-                      <td>
+        </section>
+      ) : (
+        <section className="recording-library" aria-label="Archivos agrupados por reunión">
+          {artifactGroups.map((group) => {
+            const firstArtifact = group.artifacts[0];
+            const meeting = firstArtifact.eventoProveedor.instancia;
+            const association = meeting.solicitud.docentePrograma;
+            const folderId = group.artifacts.find(({ eventoProveedor }) => eventoProveedor.driveFolderId)?.eventoProveedor.driveFolderId ?? null;
+            const orderedArtifacts = [...group.artifacts].sort(
+              (left, right) => artifactSortOrder(left.tipo) - artifactSortOrder(right.tipo)
+            );
+
+            return (
+              <article className="recording-meeting-card" key={group.instanciaId}>
+                <header className="recording-meeting-header">
+                  <div className="recording-meeting-date">
+                    <span>{formatDateTime(meeting.inicioProgramadoAt)}</span>
+                    <strong>{group.artifacts.length} {group.artifacts.length === 1 ? "archivo" : "archivos"}</strong>
+                  </div>
+                  <div className="recording-meeting-title">
+                    <p>{association.programa.nombre}</p>
+                    <h2>{meeting.solicitud.titulo}</h2>
+                    <small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small>
+                  </div>
+                  <div className="recording-meeting-folder">
+                    {folderId ? (
+                      <a
+                        className="secondary-action"
+                        href={driveFolderUrl(folderId)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <FolderOpen size={16} />Carpeta de la reunión<ExternalLink size={13} />
+                      </a>
+                    ) : <span className="muted-text">Carpeta no disponible</span>}
+                  </div>
+                </header>
+
+                <div className="recording-file-grid">
+                  {orderedArtifacts.map((artifact) => (
+                    <article className={`recording-file-card ${artifactToneClass(artifact.tipo)}`} key={artifact.id}>
+                      <div className="recording-file-icon" aria-hidden="true">
+                        {artifactTypeIcon(artifact.tipo, 20)}
+                      </div>
+                      <div className="recording-file-copy">
+                        <div className="recording-file-label">
+                          <strong>{etiquetaTipoArtefactoMeet(artifact.tipo)}</strong>
+                          <span>{artifactDetail(artifact.mimeType, artifact.tamanoBytes)}</span>
+                        </div>
+                        <p title={artifact.nombre}>{artifact.nombre}</p>
+                      </div>
+                      <div className="recording-file-action">
                         {artifact.tipo === "GRABACION" ? (
-                          <Link className="icon-link" href={`/grabaciones/${artifact.id}`} title="Reproducir grabación">
-                            <Play size={17} fill="currentColor" /><span className="sr-only">Reproducir grabación</span>
+                          <Link className="recording-file-open is-primary" href={`/grabaciones/${artifact.id}`}>
+                            <Play size={16} fill="currentColor" />Reproducir
                           </Link>
                         ) : (
                           <a
-                            className="icon-link"
+                            className="recording-file-open"
                             href={artifact.webViewUrl ?? driveFileUrl(artifact.driveFileId)}
                             target="_blank"
                             rel="noreferrer"
-                            title={`Abrir ${etiquetaTipoArtefactoMeet(artifact.tipo).toLowerCase()}`}
                           >
-                            <ExternalLink size={17} /><span className="sr-only">Abrir archivo</span>
+                            <ExternalLink size={16} />Abrir archivo
                           </a>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </div>
   );
 }
 
-function artifactTypeIcon(tipo: TipoArtefactoMeet) {
-  if (tipo === "GRABACION") return <Video size={14} aria-hidden="true" />;
-  if (tipo === "TRANSCRIPCION") return <FileText size={14} aria-hidden="true" />;
-  if (tipo === "LISTA_ASISTENCIA") return <UsersRound size={14} aria-hidden="true" />;
-  if (tipo === "NOTAS") return <NotebookText size={14} aria-hidden="true" />;
-  return <FileText size={14} aria-hidden="true" />;
+function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {
+  if (tipo === "GRABACION") return <Video size={size} aria-hidden="true" />;
+  if (tipo === "TRANSCRIPCION") return <FileText size={size} aria-hidden="true" />;
+  if (tipo === "LISTA_ASISTENCIA") return <UsersRound size={size} aria-hidden="true" />;
+  if (tipo === "NOTAS") return <NotebookText size={size} aria-hidden="true" />;
+  return <FileText size={size} aria-hidden="true" />;
+}
+
+function artifactToneClass(tipo: TipoArtefactoMeet): string {
+  if (tipo === "GRABACION") return "is-recording";
+  if (tipo === "TRANSCRIPCION") return "is-transcript";
+  if (tipo === "LISTA_ASISTENCIA") return "is-attendance";
+  if (tipo === "NOTAS") return "is-notes";
+  return "";
+}
+
+function artifactSortOrder(tipo: TipoArtefactoMeet): number {
+  if (tipo === "GRABACION") return 0;
+  if (tipo === "TRANSCRIPCION") return 1;
+  if (tipo === "LISTA_ASISTENCIA") return 2;
+  if (tipo === "NOTAS") return 3;
+  return 4;
 }
 
 function artifactDetail(mimeType: string | null, bytes: bigint | null): string {
