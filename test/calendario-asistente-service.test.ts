@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { intentarSincronizacionCalendarioAsistente } from "../src/modules/asistencia/calendario-asistente.service";
+import { intentarSincronizacionCalendarioAsistente } from "../src/modules/asistencia/calendario-asistente-safe.service";
 
 describe("sincronizacion segura del calendario de asistentes", () => {
   it("devuelve resultados cuando la sincronizacion termina correctamente", async () => {
