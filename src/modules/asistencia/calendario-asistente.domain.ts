@@ -26,6 +26,7 @@ export type AsignacionCalendarioAsistente = Readonly<{
 export type SnapshotCalendarioAsistente = Readonly<{
   estado: string;
   requiereAsistenciaTecnica: boolean;
+  vigente?: boolean;
   asignaciones: readonly AsignacionCalendarioAsistente[];
 }>;
 
@@ -43,7 +44,7 @@ export function idEventoCalendarioAsistente(instanciaId: string, cuentaGoogleId:
 }
 
 export function cuentasCalendarioDeseadas(snapshot: SnapshotCalendarioAsistente): readonly CuentaCalendarioAsistente[] {
-  if (snapshot.estado !== "PROGRAMADA" || !snapshot.requiereAsistenciaTecnica) return [];
+  if (snapshot.estado !== "PROGRAMADA" || !snapshot.requiereAsistenciaTecnica || snapshot.vigente === false) return [];
 
   const cuentas = new Map<string, CuentaCalendarioAsistente>();
   for (const asignacion of snapshot.asignaciones) {
