@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "node scripts/vercel-should-build.mjs"
+  "ignoreCommand": "node scripts/vercel-should-build.mjs",
+  "crons": [
+    {
+      "path": "/api/v1/asistencia/sincronizar-calendarios",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }
