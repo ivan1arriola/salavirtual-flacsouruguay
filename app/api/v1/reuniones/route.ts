@@ -8,6 +8,7 @@ import {
   eliminarEventoCalendarioAsistente,
   publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendariosAsistenteSolicitud,
@@ -52,13 +53,17 @@ export async function POST(request: Request) {
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       result.eventoProveedorIds,
     );
-    const calendarioAsistente = await sincronizarCalendariosAsistenteSolicitud({
-      db,
-      descifrar: descifrarConfiguracion,
-      publicarEvento: publicarEventoCalendarioAsistente,
-      eliminarEvento: eliminarEventoCalendarioAsistente,
-    }, result.solicitudId);
-    const calendarPending = hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
+    const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
+      sincronizarCalendariosAsistenteSolicitud({
+        db,
+        descifrar: descifrarConfiguracion,
+        publicarEvento: publicarEventoCalendarioAsistente,
+        eliminarEvento: eliminarEventoCalendarioAsistente,
+      }, result.solicitudId)
+    );
+    const calendarioAsistente = intentoCalendario.resultados;
+    const calendarPending = intentoCalendario.error !== null ||
+      hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
 
     if (result.reutilizada) {
       const { eventoProveedorIds: _, ...reunion } = result;
