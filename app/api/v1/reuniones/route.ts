@@ -4,6 +4,14 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
+import {
+  eliminarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente,
+} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import {
+  hayErroresSincronizacionCalendarioAsistente,
+  sincronizarCalendariosAsistenteSolicitud,
+} from "@/src/modules/asistencia/calendario-asistente.service";
 import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
@@ -44,15 +52,26 @@ export async function POST(request: Request) {
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
       result.eventoProveedorIds,
     );
+    const calendarioAsistente = await sincronizarCalendariosAsistenteSolicitud({
+      db,
+      descifrar: descifrarConfiguracion,
+      publicarEvento: publicarEventoCalendarioAsistente,
+      eliminarEvento: eliminarEventoCalendarioAsistente,
+    }, result.solicitudId);
+    const calendarPending = hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
+
     if (result.reutilizada) {
       const { eventoProveedorIds: _, ...reunion } = result;
       return NextResponse.json(
-        { ...reunion, provisionamiento },
-        { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 200 },
+        { ...reunion, provisionamiento, calendarioAsistente },
+        { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 200 },
       );
     }
 
     const advertencias: string[] = [];
+    if (calendarPending) {
+      advertencias.push("La reunión se creó, pero el calendario del asistente técnico todavía tiene sincronizaciones pendientes.");
+    }
     try {
       await notificarReunionCreada(result.solicitudId);
     } catch (error) {
@@ -61,8 +80,8 @@ export async function POST(request: Request) {
     }
     const { eventoProveedorIds: _, ...reunion } = result;
     return NextResponse.json(
-      { ...reunion, provisionamiento, ...(advertencias.length > 0 ? { advertencias } : {}) },
-      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 }
+      { ...reunion, provisionamiento, calendarioAsistente, ...(advertencias.length > 0 ? { advertencias } : {}) },
+      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 201 }
     );
   } catch (error) {
     const mapped = toHttpError(error);
