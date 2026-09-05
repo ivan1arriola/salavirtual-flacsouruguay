@@ -35,11 +35,12 @@ export async function publicarEventoCalendarioAsistente(
     });
   } catch (error) {
     if (!esEstadoGoogle(error, 409)) throw error;
+    const { id: _eventId, ...updatePayload } = payload;
     await auth.request({
       url: `${eventsUrl}/${encodeURIComponent(event.id)}?sendUpdates=none`,
       method: "PATCH",
       timeout: GOOGLE_HTTP_TIMEOUT_MS,
-      data: payload,
+      data: updatePayload,
     });
   }
 }
