@@ -1,4 +1,5 @@
-import { AlertTriangle, ExternalLink, FileText, FolderOpen, NotebookText, UsersRound, Video } from "lucide-react";
+import { AlertTriangle, ChevronDown, ExternalLink, FileText, FolderOpen, NotebookText, UsersRound, Video } from "lucide-react";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetArtifactsButton } from "@/src/components/meet-artifacts-button";
@@ -43,6 +44,7 @@ export default async function GrabacionesPage() {
       select: { activa: true, driveDestinationId: true }
     })
   ]);
+
   const generalFolderId = workspaceConfiguration?.activa
     ? workspaceConfiguration.driveDestinationId
     : null;
@@ -50,22 +52,30 @@ export default async function GrabacionesPage() {
     grabaciones: artifacts.filter(({ tipo }) => tipo === "GRABACION").length,
     transcripciones: artifacts.filter(({ tipo }) => tipo === "TRANSCRIPCION").length,
     asistencias: artifacts.filter(({ tipo }) => tipo === "LISTA_ASISTENCIA").length,
-    notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length,
-    pendientes: pendingRecordings.length,
-    noGrabadas: missingRecordings.length
+    notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length
   };
   const artifactGroups = artifacts.reduce<Array<{ instanciaId: string; artifacts: typeof artifacts }>>(
     (groups, artifact) => {
       const instanciaId = artifact.eventoProveedor.instancia.id;
       const existing = groups.find((group) => group.instanciaId === instanciaId);
-      if (existing) {
-        existing.artifacts.push(artifact);
-      } else {
-        groups.push({ instanciaId, artifacts: [artifact] });
-      }
+      if (existing) existing.artifacts.push(artifact);
+      else groups.push({ instanciaId, artifacts: [artifact] });
       return groups;
     },
     []
+  );
+
+  const pendingByMeeting = groupRecordingEventsByMeeting(pendingRecordings);
+  const missingByMeeting = groupRecordingEventsByMeeting(missingRecordings);
+  const missingMeetingIds = new Set(missingByMeeting.map((group) => group.instanciaId));
+  const incidentGroups = [
+    ...missingByMeeting.map((group) => ({ ...group, kind: "missing" as const })),
+    ...pendingByMeeting
+      .filter((group) => !missingMeetingIds.has(group.instanciaId))
+      .map((group) => ({ ...group, kind: "pending" as const }))
+  ].sort(
+    (left, right) =>
+      right.events[0].instancia.inicioProgramadoAt.getTime() - left.events[0].instancia.inicioProgramadoAt.getTime()
   );
 
   return (
@@ -79,128 +89,81 @@ export default async function GrabacionesPage() {
           </p>
         </div>
         {generalFolderId ? (
-          <a
-            className="primary-action"
-            href={driveFolderUrl(generalFolderId)}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="primary-action" href={driveFolderUrl(generalFolderId)} target="_blank" rel="noreferrer">
             <FolderOpen size={18} />Carpeta general
           </a>
         ) : <Video size={28} color="var(--brand)" aria-hidden="true" />}
       </header>
 
-      {artifacts.length > 0 ? (
-        <section className="recordings-summary" aria-label="Resumen de archivos disponibles">
-          <div><Video size={18} /><span><strong>{counts.grabaciones}</strong>Grabaciones</span></div>
-          <div><FileText size={18} /><span><strong>{counts.transcripciones}</strong>Transcripciones</span></div>
-          <div><UsersRound size={18} /><span><strong>{counts.asistencias}</strong>Asistencias</span></div>
-          <div><NotebookText size={18} /><span><strong>{counts.notas}</strong>Notas</span></div>
-        </section>
-      ) : null}
+      <section className="recordings-toolbar" aria-label="Resumen de archivos y acciones">
+        <div className="recordings-summary-compact">
+          <SummaryPill icon={<Video size={15} />} count={counts.grabaciones} label="Grabaciones" />
+          <SummaryPill icon={<FileText size={15} />} count={counts.transcripciones} label="Transcripciones" />
+          <SummaryPill icon={<UsersRound size={15} />} count={counts.asistencias} label="Asistencias" />
+          <SummaryPill icon={<NotebookText size={15} />} count={counts.notas} label="Notas" />
+          {incidentGroups.length > 0 ? (
+            <span className="summary-pill is-warning"><AlertTriangle size={15} /><strong>{incidentGroups.length}</strong><span>Incidencias</span></span>
+          ) : null}
+        </div>
+        {canSynchronize ? <MeetArtifactsButton count={finishedMeet} /> : null}
+      </section>
 
-      {canSynchronize ? (
-        <section className="content-section recordings-sync-section">
-          <MeetArtifactsButton count={finishedMeet} />
-        </section>
-      ) : null}
-
-      {pendingRecordings.length > 0 ? (
-        <section className="content-section">
-          <div className="section-heading">
+      {incidentGroups.length > 0 ? (
+        <section className="recording-incidents content-section">
+          <div className="section-heading recording-incidents-heading">
             <div>
-              <h2>Grabaciones pendientes</h2>
-              <p>Encuentros que debían grabarse y todavía tienen archivos pendientes de Google Meet.</p>
+              <h2>Incidencias de grabación <span className="section-count">{incidentGroups.length}</span></h2>
+              <p>Pendientes de procesamiento o reuniones en las que Meet no registró una grabación.</p>
             </div>
           </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Detalle</th><th>Carpeta</th></tr></thead>
-              <tbody>
-                {pendingRecordings.map((event) => {
-                  const meeting = event.instancia;
-                  const association = meeting.solicitud.docentePrograma;
-                  return (
-                    <tr key={event.id}>
-                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                      <td>{association.programa.nombre}</td>
-                      <td><span className="status status-warning"><Video size={14} aria-hidden="true" />Grabación pendiente</span></td>
-                      <td>
-                        <strong>La grabación todavía no está disponible.</strong>
-                        <small>
-                          {event.errorArchivos
-                            ? `La última revisión tuvo una incidencia: ${event.errorArchivos}`
-                            : event.conferenceRecordName
-                              ? "La conferencia ya fue detectada y se seguirá revisando hasta que Google termine de procesar sus archivos."
+          <div className="incident-list">
+            {incidentGroups.map((group) => {
+              const event = group.events[0];
+              const meeting = event.instancia;
+              const association = meeting.solicitud.docentePrograma;
+              const folderId = group.events.find(({ driveFolderId }) => driveFolderId)?.driveFolderId ?? null;
+              const error = group.events.find(({ errorArchivos }) => errorArchivos)?.errorArchivos ?? null;
+              const detectedConference = group.events.some(({ conferenceRecordName }) => Boolean(conferenceRecordName));
+              const isMissing = group.kind === "missing";
+
+              return (
+                <details className={`incident-row ${isMissing ? "is-error" : "is-pending"}`} key={`${group.kind}-${group.instanciaId}`}>
+                  <summary>
+                    <div className="incident-date">{formatDateTime(meeting.inicioProgramadoAt)}</div>
+                    <div className="incident-main">
+                      <strong>{meeting.solicitud.titulo}</strong>
+                      <span>{association.programa.nombre} · {association.docente.usuario.nombres} {association.docente.usuario.apellidos}</span>
+                    </div>
+                    <span className={`incident-status ${isMissing ? "is-error" : "is-pending"}`}>
+                      {isMissing ? <AlertTriangle size={14} /> : <Video size={14} />}
+                      {isMissing ? "No se grabó" : "Pendiente"}
+                    </span>
+                    <span className="incident-expand" aria-hidden="true"><ChevronDown size={18} /></span>
+                  </summary>
+                  <div className="incident-detail">
+                    <div>
+                      <strong>{isMissing ? "Meet no registró una sesión de grabación." : "La grabación todavía no está disponible."}</strong>
+                      <p>
+                        {isMissing
+                          ? "La reunión requería grabación, pero Google no registró que un participante autorizado iniciara una."
+                          : error
+                            ? `La última revisión tuvo una incidencia: ${error}`
+                            : detectedConference
+                              ? "La conferencia ya fue detectada. Se seguirá revisando hasta que Google termine de procesar sus archivos."
                               : "Todavía se está esperando el registro finalizado de la conferencia."}
-                        </small>
-                      </td>
-                      <td>
-                        {event.driveFolderId ? (
-                          <a
-                            className="text-link recording-folder-link"
-                            href={driveFolderUrl(event.driveFolderId)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
-                          </a>
-                        ) : event.errorArchivos ? (
-                          <span className="status status-error"><AlertTriangle size={14} aria-hidden="true" />Revisión con error</span>
-                        ) : <span className="muted-text">Carpeta pendiente</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {missingRecordings.length > 0 ? (
-        <section className="content-section">
-          <div className="section-heading">
-            <div>
-              <h2>Reuniones que no se grabaron</h2>
-              <p>Google Meet terminó de procesar la conferencia sin registrar ninguna sesión de grabación.</p>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Detalle</th><th>Carpeta</th></tr></thead>
-              <tbody>
-                {missingRecordings.map((event) => {
-                  const meeting = event.instancia;
-                  const association = meeting.solicitud.docentePrograma;
-                  return (
-                    <tr key={event.id}>
-                      <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                      <td>{association.programa.nombre}</td>
-                      <td><span className="status status-error"><AlertTriangle size={14} aria-hidden="true" />No se grabó</span></td>
-                      <td>
-                        <strong>No hubo una sesión de grabación en Meet.</strong>
-                        <small>La reunión requería grabación, pero Google no registró que el host, un cohost u otro participante autorizado iniciara una.</small>
-                      </td>
-                      <td>
-                        {event.driveFolderId ? (
-                          <a
-                            className="text-link recording-folder-link"
-                            href={driveFolderUrl(event.driveFolderId)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
-                          </a>
-                        ) : <span className="muted-text">Sin carpeta</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </p>
+                    </div>
+                    <div className="incident-actions">
+                      {folderId ? (
+                        <a className="text-link recording-folder-link" href={driveFolderUrl(folderId)} target="_blank" rel="noreferrer">
+                          <FolderOpen size={16} />Abrir carpeta<ExternalLink size={13} />
+                        </a>
+                      ) : <span className="muted-text">{isMissing ? "Sin carpeta" : "Carpeta pendiente"}</span>}
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -211,6 +174,10 @@ export default async function GrabacionesPage() {
         </section>
       ) : (
         <section className="recording-library" aria-label="Archivos agrupados por reunión">
+          <div className="recording-library-heading">
+            <h2>Archivos disponibles</h2>
+            <span>{artifactGroups.length} {artifactGroups.length === 1 ? "reunión" : "reuniones"}</span>
+          </div>
           {artifactGroups.map((group) => {
             const firstArtifact = group.artifacts[0];
             const meeting = firstArtifact.eventoProveedor.instancia;
@@ -234,12 +201,7 @@ export default async function GrabacionesPage() {
                   </div>
                   <div className="recording-meeting-folder">
                     {folderId ? (
-                      <a
-                        className="secondary-action"
-                        href={driveFolderUrl(folderId)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a className="secondary-action" href={driveFolderUrl(folderId)} target="_blank" rel="noreferrer">
                         <FolderOpen size={16} />Carpeta de la reunión<ExternalLink size={13} />
                       </a>
                     ) : <span className="muted-text">Carpeta no disponible</span>}
@@ -249,9 +211,7 @@ export default async function GrabacionesPage() {
                 <div className="recording-file-grid">
                   {orderedArtifacts.map((artifact) => (
                     <article className={`recording-file-card ${artifactToneClass(artifact.tipo)}`} key={artifact.id}>
-                      <div className="recording-file-icon" aria-hidden="true">
-                        {artifactTypeIcon(artifact.tipo, 20)}
-                      </div>
+                      <div className="recording-file-icon" aria-hidden="true">{artifactTypeIcon(artifact.tipo, 20)}</div>
                       <div className="recording-file-copy">
                         <div className="recording-file-label">
                           <strong>{etiquetaTipoArtefactoMeet(artifact.tipo)}</strong>
@@ -260,14 +220,8 @@ export default async function GrabacionesPage() {
                         <p title={artifact.nombre}>{artifact.nombre}</p>
                       </div>
                       <div className="recording-file-action">
-                        <a
-                          className={`recording-file-open ${artifact.tipo === "GRABACION" ? "is-primary" : ""}`.trim()}
-                          href={artifact.webViewUrl ?? driveFileUrl(artifact.driveFileId)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink size={16} />
-                          {artifact.tipo === "GRABACION" ? "Abrir grabación" : "Abrir archivo"}
+                        <a className={`recording-file-open ${artifact.tipo === "GRABACION" ? "is-primary" : ""}`.trim()} href={artifact.webViewUrl ?? driveFileUrl(artifact.driveFileId)} target="_blank" rel="noreferrer">
+                          <ExternalLink size={16} />{artifact.tipo === "GRABACION" ? "Abrir grabación" : "Abrir archivo"}
                         </a>
                       </div>
                     </article>
@@ -280,6 +234,20 @@ export default async function GrabacionesPage() {
       )}
     </div>
   );
+}
+
+function SummaryPill({ icon, count, label }: { icon: ReactNode; count: number; label: string }) {
+  return <span className="summary-pill">{icon}<strong>{count}</strong><span>{label}</span></span>;
+}
+
+function groupRecordingEventsByMeeting<T extends { instancia: { id: string } }>(events: T[]) {
+  return events.reduce<Array<{ instanciaId: string; events: T[] }>>((groups, event) => {
+    const instanciaId = event.instancia.id;
+    const existing = groups.find((group) => group.instanciaId === instanciaId);
+    if (existing) existing.events.push(event);
+    else groups.push({ instanciaId, events: [event] });
+    return groups;
+  }, []);
 }
 
 function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {
@@ -314,9 +282,7 @@ function artifactDetail(mimeType: string | null, bytes: bigint | null): string {
 function formatFileSize(bytes: bigint | null): string {
   if (bytes === null) return "Tamaño no disponible";
   const megabytes = Number(bytes) / (1024 * 1024);
-  return megabytes >= 1024
-    ? `${(megabytes / 1024).toFixed(1)} GB`
-    : `${megabytes.toFixed(1)} MB`;
+  return megabytes >= 1024 ? `${(megabytes / 1024).toFixed(1)} GB` : `${megabytes.toFixed(1)} MB`;
 }
 
 function driveFolderUrl(folderId: string): string {
