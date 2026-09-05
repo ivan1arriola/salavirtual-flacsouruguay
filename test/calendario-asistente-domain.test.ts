@@ -3,7 +3,7 @@ import {
   cuentasCalendarioDeseadas,
   idEventoCalendarioAsistente,
   planificarSincronizacionCalendarioAsistente,
-} from "@/src/modules/asistencia/calendario-asistente.domain";
+} from "../src/modules/asistencia/calendario-asistente.domain";
 
 const linkedAccount = {
   id: "google-1",
