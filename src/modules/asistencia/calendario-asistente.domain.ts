@@ -46,45 +46,52 @@ export function idEventoCalendarioAsistente(instanciaId: string, cuentaGoogleId:
 export function cuentasCalendarioDeseadas(snapshot: SnapshotCalendarioAsistente): readonly CuentaCalendarioAsistente[] {
   if (snapshot.estado !== "PROGRAMADA" || !snapshot.requiereAsistenciaTecnica || snapshot.vigente === false) return [];
 
-  const cuentas = new Map<string, CuentaCalendarioAsistente>();
-  for (const asignacion of snapshot.asignaciones) {
-    if (!ACTIVE_ASSIGNMENTS.has(asignacion.estado)) continue;
-    const usuario = asignacion.asistenteTecnico.usuario;
-    if (usuario.rol !== "ASISTENTE_TECNICO" || !usuario.activo || usuario.fusionadoEnId) continue;
-
-    for (const cuenta of usuario.cuentasGoogle) {
-      if (!cuenta.providerAccountId || !cuenta.emailVerificadoAt) continue;
-      cuentas.set(cuenta.id, cuenta);
-    }
-  }
-  return [...cuentas.values()];
+  return cuentasUnicas(
+    snapshot.asignaciones
+      .filter(({ estado }) => ACTIVE_ASSIGNMENTS.has(estado))
+      .filter(({ asistenteTecnico }) => {
+        const usuario = asistenteTecnico.usuario;
+        return usuario.rol === "ASISTENTE_TECNICO" && usuario.activo && !usuario.fusionadoEnId;
+      })
+      .flatMap(({ asistenteTecnico }) => asistenteTecnico.usuario.cuentasGoogle)
+      .filter(esCuentaGoogleVinculada),
+  );
 }
 
 export function planificarSincronizacionCalendarioAsistente(
   snapshot: SnapshotCalendarioAsistente & Readonly<{ instanciaId: string }>,
 ): PlanCalendarioAsistente {
-  const desired = new Map(cuentasCalendarioDeseadas(snapshot).map((cuenta) => [cuenta.id, cuenta]));
-  const historical = new Map<string, CuentaCalendarioAsistente>();
-
-  for (const asignacion of snapshot.asignaciones) {
-    const usuario = asignacion.asistenteTecnico.usuario;
-    if (usuario.rol !== "ASISTENTE_TECNICO") continue;
-    for (const cuenta of usuario.cuentasGoogle) {
-      if (!cuenta.providerAccountId || !cuenta.emailVerificadoAt) continue;
-      historical.set(cuenta.id, cuenta);
-    }
-  }
+  const desired = cuentasCalendarioDeseadas(snapshot);
+  const desiredIds = desired.map(({ id }) => id);
+  const historical = cuentasUnicas(
+    snapshot.asignaciones
+      .filter(({ asistenteTecnico }) => asistenteTecnico.usuario.rol === "ASISTENTE_TECNICO")
+      .flatMap(({ asistenteTecnico }) => asistenteTecnico.usuario.cuentasGoogle)
+      .filter(esCuentaGoogleVinculada),
+  );
 
   return {
-    publicar: [...desired.values()].map((cuenta) => ({
+    publicar: desired.map((cuenta) => ({
       cuenta,
       eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
     })),
-    eliminar: [...historical.values()]
-      .filter((cuenta) => !desired.has(cuenta.id))
+    eliminar: historical
+      .filter(({ id }) => !desiredIds.includes(id))
       .map((cuenta) => ({
         cuenta,
         eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
       })),
   };
+}
+
+function esCuentaGoogleVinculada(cuenta: CuentaCalendarioAsistente): boolean {
+  return Boolean(cuenta.providerAccountId && cuenta.emailVerificadoAt);
+}
+
+function cuentasUnicas(
+  cuentas: readonly CuentaCalendarioAsistente[],
+): readonly CuentaCalendarioAsistente[] {
+  return cuentas.filter(
+    (cuenta, index, all) => all.findIndex(({ id }) => id === cuenta.id) === index,
+  );
 }
