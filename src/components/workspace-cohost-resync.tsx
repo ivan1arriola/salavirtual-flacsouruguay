@@ -3,13 +3,7 @@
 import { CheckCircle2, LoaderCircle, RefreshCw, TriangleAlert, UsersRound } from "lucide-react";
 import { useState } from "react";
 
-type SyncFailure = Readonly<{
-  instanciaSalaId: string;
-  titulo: string;
-  inicio: string;
-  error: string;
-}>;
-
+type SyncFailure = Readonly<{ instanciaSalaId: string; titulo: string; inicio: string; error: string }>;
 type SyncResult = Readonly<{
   reunionesActivas: number;
   candidatas: number;
@@ -26,10 +20,7 @@ export function WorkspaceCohostResync() {
   const [error, setError] = useState("");
 
   async function resync() {
-    if (!window.confirm(
-      "Se volverán a aplicar en Google Meet los cohosts ya guardados de todas las reuniones activas y futuras. No se modificarán fechas, enlaces ni asignaciones. ¿Continuar?"
-    )) return;
-
+    if (!window.confirm("Se reaplicarán en Google Meet los cohosts ya guardados de todas las reuniones activas y futuras. No se modificarán fechas, enlaces ni asignaciones. ¿Continuar?")) return;
     setBusy(true);
     setResult(null);
     setError("");
@@ -39,59 +30,62 @@ export function WorkspaceCohostResync() {
       if (!response.ok) throw new Error(payload.error ?? "No se pudieron sincronizar los cohosts.");
       setResult(payload as SyncResult);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudieron sincronizar los cohosts.");
+      const message = caught instanceof Error ? caught.message : "No se pudieron sincronizar los cohosts.";
+      setError(message === "Failed to fetch" ? "No se pudo conectar con el servidor. Recargá la página e intentá nuevamente." : message);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="form-section workspace-config" aria-labelledby="workspace-cohost-resync-title">
+    <section className="form-section workspace-config workspace-resync-section" aria-labelledby="workspace-cohost-resync-title">
       <header className="form-section-title">
         <UsersRound size={22} aria-hidden="true" />
         <div>
           <h2 id="workspace-cohost-resync-title">Reuniones existentes</h2>
-          <p>Reaplicá en Google Meet los cohosts que ya están guardados en Sala Virtual.</p>
+          <p>Reaplicá permisos de cohost a reuniones que ya fueron creadas.</p>
         </div>
       </header>
 
-      <div className="auto-room-note">
-        <RefreshCw size={20} aria-hidden="true" />
+      <div className="workspace-resync-action">
+        <div className="workspace-resync-icon"><RefreshCw size={20} aria-hidden="true" /></div>
         <div>
-          <strong>Sincronizar cohosts existentes</strong>
-          <span>Recorre los encuentros activos y futuros con un Meet ya creado. No cambia quiénes son cohosts: solamente vuelve a aplicar esa configuración en Google.</span>
+          <strong>Sincronizar cohosts</strong>
+          <span>Usa los cohosts guardados en Sala Virtual y los vuelve a aplicar en cada Meet activo o futuro.</span>
+          <small>No cambia fechas, enlaces, salas ni asignaciones.</small>
         </div>
         <button className="secondary-action" disabled={busy} onClick={resync} type="button">
           {busy ? <LoaderCircle className="button-spinner" size={17} /> : <RefreshCw size={17} />}
-          {busy ? "Sincronizando…" : "Sincronizar cohosts"}
+          {busy ? "Sincronizando…" : "Sincronizar"}
         </button>
       </div>
 
-      {error ? <p className="form-message" role="alert"><TriangleAlert size={16} aria-hidden="true" /> {error}</p> : null}
+      {error ? (
+        <div className="workspace-resync-feedback is-error" role="alert">
+          <TriangleAlert size={17} aria-hidden="true" /><span>{error}</span>
+        </div>
+      ) : null}
 
       {result ? (
-        <div style={{ marginTop: 12 }}>
-          <p className={`form-message${result.fallidas === 0 ? " done" : ""}`} role="status">
-            {result.fallidas === 0 ? <CheckCircle2 size={16} aria-hidden="true" /> : <TriangleAlert size={16} aria-hidden="true" />} {" "}
-            <strong>{result.message}</strong>{" "}
-            {result.candidatas} candidatas · {result.sincronizadas} sincronizadas · {result.omitidas} omitidas{result.fallidas > 0 ? ` · ${result.fallidas} con error` : ""}.
-          </p>
-          {result.errores.length > 0 ? (
-            <details style={{ marginTop: 10 }}>
-              <summary>Ver reuniones con error</summary>
-              <ul className="settings-list" style={{ marginTop: 8 }}>
-                {result.errores.map((item) => (
-                  <li key={item.instanciaSalaId} style={{ alignItems: "flex-start" }}>
-                    <span>
+        <div className={`workspace-resync-feedback${result.fallidas === 0 ? " is-success" : " is-warning"}`} role="status">
+          {result.fallidas === 0 ? <CheckCircle2 size={17} /> : <TriangleAlert size={17} />}
+          <div>
+            <strong>{result.message}</strong>
+            <span>{result.sincronizadas} sincronizadas · {result.fallidas} con error · {result.omitidas} omitidas</span>
+            {result.errores.length > 0 ? (
+              <details>
+                <summary>Ver reuniones con error</summary>
+                <ul>
+                  {result.errores.map((item) => (
+                    <li key={item.instanciaSalaId}>
                       <strong>{item.titulo}</strong>
-                      <small>{new Date(item.inicio).toLocaleString("es-UY")}</small>
-                      <small style={{ overflowWrap: "anywhere" }}>{item.error}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : null}
+                      <small>{new Date(item.inicio).toLocaleString("es-UY")} · {item.error}</small>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

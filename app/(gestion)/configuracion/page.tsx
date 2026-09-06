@@ -140,7 +140,7 @@ export default async function ConfiguracionPage({
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header settings-page-header">
         <div><p className="page-eyebrow">Administración</p><h1>Configuración</h1><p>Cada área se administra por separado.</p></div>
         <Settings size={28} color="var(--brand)" />
       </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CircleAlert, LoaderCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CircleAlert, Code2, Info, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import {
   validateWorkspaceScopes,
@@ -8,13 +8,14 @@ import {
   type WorkspaceScopesResult
 } from "./workspace-config.client";
 
-const WRAPPABLE_CODE_STYLE = {
-  display: "block",
-  maxWidth: "100%",
-  overflowWrap: "anywhere",
-  whiteSpace: "normal",
-  wordBreak: "break-word"
-} as const;
+const SCOPE_LABELS = [
+  ["Calendar", "calendar.events", "https://www.googleapis.com/auth/calendar.events"],
+  ["Drive", "drive", "https://www.googleapis.com/auth/drive"],
+  ["Meet · ajustes", "meetings.space.settings", "https://www.googleapis.com/auth/meetings.space.settings"],
+  ["Meet · lectura", "meetings.space.readonly", "https://www.googleapis.com/auth/meetings.space.readonly"],
+  ["Meet · cohosts", "meetings.space.created", "https://www.googleapis.com/auth/meetings.space.created"],
+  ["Gmail", "gmail.send", "https://www.googleapis.com/auth/gmail.send"],
+] as const;
 
 export function WorkspaceScopesValidator() {
   const [result, setResult] = useState<WorkspaceScopesResult | null>(null);
@@ -23,9 +24,7 @@ export function WorkspaceScopesValidator() {
   const roomAccounts = accounts.filter(({ tipo }) => tipo === "SALA");
   const okRooms = roomAccounts.filter(({ ok }) => ok).length;
   const missingScopes = accounts.flatMap((account) =>
-    account.scopes
-      .filter(({ autorizado }) => !autorizado)
-      .map((scope) => ({ account, scope }))
+    account.scopes.filter(({ autorizado }) => !autorizado).map((scope) => ({ account, scope }))
   );
 
   async function validate() {
@@ -39,146 +38,88 @@ export function WorkspaceScopesValidator() {
   }
 
   return (
-    <section
-      className="form-section workspace-config"
-      aria-labelledby="workspace-scopes-title"
-      style={{ minWidth: 0, maxWidth: "100%" }}
-    >
+    <section className="form-section workspace-config workspace-scopes-card" aria-labelledby="workspace-scopes-title">
       <header className="form-section-title">
         <ShieldCheck size={22} aria-hidden="true" />
-        <div style={{ minWidth: 0 }}>
-          <h2 id="workspace-scopes-title">Validación de scopes</h2>
-          <p>Comprueba la delegación OAuth en cada cuenta sala y en la cuenta delegada general.</p>
+        <div>
+          <h2 id="workspace-scopes-title">Permisos de Google</h2>
+          <p>Verificá que todas las salas puedan usar Calendar, Drive, Meet y Gmail.</p>
         </div>
       </header>
 
-      {result ? (
-        <div style={{ minWidth: 0 }}>
-          <p className={`form-message${result.ok ? " done" : ""}`}>
-            <strong>{okRooms}/{roomAccounts.length} cuentas sala</strong> tienen todos los scopes requeridos.
-          </p>
-
-          {missingScopes.length > 0 ? (
-            <div role="alert" style={{ minWidth: 0 }}>
-              <p className="form-message">
-                <strong>{missingScopes.length === 1 ? "Falta una autorización" : `Faltan ${missingScopes.length} autorizaciones`}.</strong>{" "}
-                Se muestran abiertas las cuentas que requieren atención.
-              </p>
-              <div className="config-scopes" aria-label="Scopes faltantes por cuenta" style={{ minWidth: 0 }}>
-                {missingScopes.map(({ account, scope }) => (
-                  <code key={`${account.subject}-${scope.key}`} style={WRAPPABLE_CODE_STYLE}>
-                    {account.subject} · {scope.scope}
-                  </code>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="form-message done">
-              <strong>No falta ningún scope.</strong> Todas las cuentas comprobadas aceptaron los permisos requeridos.
-            </p>
-          )}
-
-          <div style={{ display: "grid", gap: 10, marginTop: 14, minWidth: 0 }}>
-            {accounts.map((account) => (
-              <ScopeAccountDetails account={account} key={`${account.tipo}-${account.subject}`} />
-            ))}
+      {!result ? (
+        <div className="workspace-scopes-overview">
+          <div className="workspace-scope-chips" aria-label="Permisos requeridos">
+            {SCOPE_LABELS.map(([label, key]) => <span key={key}>{label}</span>)}
           </div>
+
+          <div className="workspace-preview-note">
+            <Info size={17} aria-hidden="true" />
+            <div>
+              <strong>Cohosts por API</strong>
+              <span>El permiso “Meet · cohosts” requiere además que el proyecto esté habilitado en Google Workspace Developer Preview.</span>
+            </div>
+          </div>
+
+          <details className="workspace-technical-details">
+            <summary><Code2 size={16} aria-hidden="true" /> Ver scopes OAuth</summary>
+            <div className="config-scopes workspace-scope-code-list">
+              {SCOPE_LABELS.map(([, key, scope]) => (
+                <code key={key}>{scope}</code>
+              ))}
+            </div>
+          </details>
         </div>
       ) : (
-        <div style={{ minWidth: 0 }}>
-          <p className="form-message">
-            Se comprobarán Calendar, Drive, configuración, lectura y gestión de cohosts de Meet, y envío por Gmail para todas las cuentas configuradas.
-          </p>
-          <div className="config-scopes" style={{ minWidth: 0 }}>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/calendar.events</code>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/drive</code>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.settings</code>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.readonly</code>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.created</code>
-            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/gmail.send</code>
+        <div className="workspace-validation-results">
+          <div className={`workspace-validation-summary${result.ok ? " is-ok" : " is-warning"}`}>
+            {result.ok ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}
+            <div>
+              <strong>{okRooms}/{roomAccounts.length} cuentas sala correctas</strong>
+              <span>{missingScopes.length === 0 ? "Todos los permisos requeridos están autorizados." : `${missingScopes.length} autorizaciones requieren atención.`}</span>
+            </div>
           </div>
-          <p className="form-message">
-            <strong>Nota:</strong> <code>meetings.space.created</code> es necesario para administrar miembros/cohosts mediante <code>spaces.members</code>. Esta función de Google Meet está en Developer Preview, por lo que además el proyecto de Google Cloud debe estar habilitado para el programa de Preview.
-          </p>
+
+          {accounts.map((account) => <ScopeAccountDetails account={account} key={`${account.tipo}-${account.subject}`} />)}
         </div>
       )}
 
-      <footer className="form-actions" style={{ minWidth: 0 }}>
-        <span
-          className={`form-message${result?.ok ? " done" : ""}`}
-          role="status"
-          style={{ minWidth: 0, overflowWrap: "anywhere" }}
-        >
-          {result?.message ?? "La prueba no modifica datos ni crea reuniones."}
+      <footer className="form-actions workspace-validation-actions">
+        <span className={`form-message${result?.ok ? " done" : ""}`} role="status">
+          {result?.message ?? "La prueba es segura: no modifica datos ni crea reuniones."}
         </span>
         <button className="secondary-action" disabled={busy} onClick={validate} type="button">
           {busy ? <LoaderCircle className="button-spinner" size={17} /> : <ShieldCheck size={17} />}
-          {busy ? "Validando todas…" : "Validar todas las cuentas"}
+          {busy ? "Validando…" : result ? "Validar nuevamente" : "Validar cuentas"}
         </button>
       </footer>
     </section>
   );
 }
 
-function ScopeAccountDetails({
-  account
-}: Readonly<{ account: WorkspaceScopeAccountValidation }>) {
+function ScopeAccountDetails({ account }: Readonly<{ account: WorkspaceScopeAccountValidation }>) {
   return (
-    <details
-      open={!account.ok}
-      style={{
-        minWidth: 0,
-        overflow: "hidden",
-        border: "1px solid var(--line)",
-        borderRadius: 8,
-        background: "#fff"
-      }}
-    >
-      <summary
-        style={{
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          cursor: "pointer",
-          padding: "11px 13px"
-        }}
-      >
-        <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+    <details className="workspace-scope-account" open={!account.ok}>
+      <summary>
+        <span>
           <strong>{account.subject}</strong>
-          <small style={{ display: "block", color: "var(--muted)" }}>
-            {account.tipo === "GENERAL" ? "Cuenta delegada general" : account.activa ? "Cuenta sala activa" : "Cuenta sala inactiva"}
-          </small>
+          <small>{account.tipo === "GENERAL" ? "Cuenta delegada" : account.activa ? "Sala activa" : "Sala inactiva"}</small>
         </span>
-        <span className={`status status-${account.ok ? "ok" : "error"}`} style={{ flex: "0 0 auto" }}>
-          {account.ok
-            ? <CheckCircle2 size={14} aria-hidden="true" />
-            : <CircleAlert size={14} aria-hidden="true" />}
+        <span className={`status status-${account.ok ? "ok" : "error"}`}>
+          {account.ok ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}
           {account.ok ? "Correcta" : "Revisar"}
         </span>
       </summary>
-
-      <ul className="settings-list" style={{ minWidth: 0, maxWidth: "100%", borderTop: "1px solid var(--line)" }}>
+      <ul className="settings-list workspace-scope-account-list">
         {account.scopes.map((scope) => (
-          <li key={scope.key} style={{ minWidth: 0, flexWrap: "wrap" }}>
-            <span style={{ minWidth: 0, flex: "1 1 240px", maxWidth: "100%" }}>
+          <li key={scope.key}>
+            <span>
               <strong>{scope.label}</strong>
-              <small style={{ minWidth: 0, maxWidth: "100%" }}>
-                <code style={WRAPPABLE_CODE_STYLE}>{scope.scope}</code>
-              </small>
-              {!scope.autorizado && scope.error ? (
-                <small style={{ overflowWrap: "anywhere" }}>{scope.error}</small>
-              ) : null}
+              {!scope.autorizado && scope.error ? <small>{scope.error}</small> : null}
             </span>
-            <span
-              className={`status status-${scope.autorizado ? "ok" : "error"}`}
-              style={{ flex: "0 0 auto" }}
-            >
-              {scope.autorizado
-                ? <CheckCircle2 size={14} aria-hidden="true" />
-                : <CircleAlert size={14} aria-hidden="true" />}
-              {scope.autorizado ? "Autorizado" : "Falta este scope"}
+            <span className={`status status-${scope.autorizado ? "ok" : "error"}`}>
+              {scope.autorizado ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}
+              {scope.autorizado ? "Autorizado" : "Falta"}
             </span>
           </li>
         ))}
