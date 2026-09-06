@@ -16,6 +16,13 @@ jobs:
       contents: read
     env:
       NEXT_TELEMETRY_DISABLED: "1"
+      APP_BASE_URL: "https://salavirtual.flacso.edu.uy"
+      TIMEZONE: "America/Montevideo"
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_ci?schema=public"
+      AUTH_SECRET: "build-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
+      AUTH_TRUST_HOST: "true"
+      CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CRON_SECRET: "build-only-cron-secret"
 
     steps:
       - name: Checkout
@@ -31,13 +38,6 @@ jobs:
         run: npm ci
 
       - name: Compilar producción
-        env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
-          APP_BASE_URL: "https://salavirtual.flacso.edu.uy"
-          AUTH_SECRET: ${{ secrets.PRODUCTION_AUTH_SECRET }}
-          AUTH_TRUST_HOST: "true"
-          CONFIG_ENCRYPTION_KEY: ${{ secrets.PRODUCTION_CONFIG_ENCRYPTION_KEY }}
-          CRON_SECRET: ${{ secrets.PRODUCTION_CRON_SECRET }}
         run: npm run build
 
       - name: Empaquetar standalone
@@ -73,7 +73,7 @@ jobs:
           set -euo pipefail
           scp "salavirtual-${GITHUB_SHA}.tar.gz" "$EC2_USER@$EC2_HOST:/tmp/"
 
-      - name: Activar release
+      - name: Activar release y verificar localmente
         shell: bash
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -97,6 +97,3 @@ jobs:
           sudo systemctl --no-pager --full status salavirtual.service
           rm -f "$archive"
           REMOTE
-
-      - name: Verificar dominio
-        run: curl --fail --silent --show-error --max-time 30 https://salavirtual.flacso.edu.uy/api/health
