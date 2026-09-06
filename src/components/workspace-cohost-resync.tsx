@@ -7,6 +7,7 @@ type SyncFailure = Readonly<{ instanciaSalaId: string; titulo: string; inicio: s
 type SyncResult = Readonly<{
   reunionesActivas: number;
   candidatas: number;
+  cohostsAgregados: number;
   sincronizadas: number;
   omitidas: number;
   fallidas: number;
@@ -20,17 +21,20 @@ export function WorkspaceCohostResync() {
   const [error, setError] = useState("");
 
   async function resync() {
-    if (!window.confirm("Se reaplicarán en Google Meet los cohosts ya guardados de todas las reuniones activas y futuras. No se modificarán fechas, enlaces ni asignaciones. ¿Continuar?")) return;
+    if (!window.confirm(
+      "Se agregarán como cohosts el solicitante y los asistentes técnicos asignados de las reuniones activas y futuras. Se conservarán los cohosts existentes y luego se intentará sincronizar con Google Meet. ¿Continuar?"
+    )) return;
+
     setBusy(true);
     setResult(null);
     setError("");
     try {
       const response = await fetch("/api/v1/configuracion/google-workspace/resincronizar-cohosts", { method: "POST" });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error ?? "No se pudieron sincronizar los cohosts.");
+      if (!response.ok) throw new Error(payload.error ?? "No se pudieron actualizar los cohosts.");
       setResult(payload as SyncResult);
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "No se pudieron sincronizar los cohosts.";
+      const message = caught instanceof Error ? caught.message : "No se pudieron actualizar los cohosts.";
       setError(message === "Failed to fetch" ? "No se pudo conectar con el servidor. Recargá la página e intentá nuevamente." : message);
     } finally {
       setBusy(false);
@@ -43,20 +47,20 @@ export function WorkspaceCohostResync() {
         <UsersRound size={22} aria-hidden="true" />
         <div>
           <h2 id="workspace-cohost-resync-title">Reuniones existentes</h2>
-          <p>Reaplicá permisos de cohost a reuniones que ya fueron creadas.</p>
+          <p>Completá los permisos de las reuniones que ya fueron creadas.</p>
         </div>
       </header>
 
       <div className="workspace-resync-action">
         <div className="workspace-resync-icon"><RefreshCw size={20} aria-hidden="true" /></div>
         <div>
-          <strong>Sincronizar cohosts</strong>
-          <span>Usa los cohosts guardados en Sala Virtual y los vuelve a aplicar en cada Meet activo o futuro.</span>
+          <strong>Actualizar cohosts</strong>
+          <span>Agrega al solicitante y a los asistentes técnicos asignados, y conserva los demás cohosts que ya tenga la reunión.</span>
           <small>No cambia fechas, enlaces, salas ni asignaciones.</small>
         </div>
         <button className="secondary-action" disabled={busy} onClick={resync} type="button">
           {busy ? <LoaderCircle className="button-spinner" size={17} /> : <RefreshCw size={17} />}
-          {busy ? "Sincronizando…" : "Sincronizar"}
+          {busy ? "Actualizando…" : "Actualizar"}
         </button>
       </div>
 
@@ -71,10 +75,12 @@ export function WorkspaceCohostResync() {
           {result.fallidas === 0 ? <CheckCircle2 size={17} /> : <TriangleAlert size={17} />}
           <div>
             <strong>{result.message}</strong>
-            <span>{result.sincronizadas} sincronizadas · {result.fallidas} con error · {result.omitidas} omitidas</span>
+            <span>
+              {result.cohostsAgregados} cohosts agregados · {result.sincronizadas} sincronizadas · {result.fallidas} con error · {result.omitidas} omitidas
+            </span>
             {result.errores.length > 0 ? (
               <details>
-                <summary>Ver reuniones con error</summary>
+                <summary>Ver reuniones pendientes</summary>
                 <ul>
                   {result.errores.map((item) => (
                     <li key={item.instanciaSalaId}>
