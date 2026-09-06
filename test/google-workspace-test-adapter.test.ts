@@ -44,6 +44,7 @@ const scopes = {
   drive: "https://www.googleapis.com/auth/drive",
   meetSettings: "https://www.googleapis.com/auth/meetings.space.settings",
   meetRead: "https://www.googleapis.com/auth/meetings.space.readonly",
+  meetCreated: "https://www.googleapis.com/auth/meetings.space.created",
   gmail: "https://www.googleapis.com/auth/gmail.send"
 };
 
@@ -73,7 +74,7 @@ describe("pruebas de Google Workspace", () => {
 
     expect(google.options[0]).toMatchObject({
       subject: credential.subject,
-      scopes: [scopes.calendar, scopes.drive, scopes.meetSettings, scopes.meetRead, scopes.gmail]
+      scopes: [scopes.calendar, scopes.drive, scopes.meetSettings, scopes.meetRead, scopes.meetCreated, scopes.gmail]
     });
     expect(google.request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -84,17 +85,18 @@ describe("pruebas de Google Workspace", () => {
     );
   });
 
-  it("valida los cinco scopes por separado", async () => {
+  it("valida los seis scopes por separado", async () => {
     const result = await validarScopesGoogle(credential);
 
-    expect(result).toHaveLength(5);
+    expect(result).toHaveLength(6);
     expect(result.every(({ autorizado }) => autorizado)).toBe(true);
-    expect(google.authorize).toHaveBeenCalledTimes(5);
+    expect(google.authorize).toHaveBeenCalledTimes(6);
     expect(google.options.map(({ scopes: requested }) => requested)).toEqual([
       [scopes.calendar],
       [scopes.drive],
       [scopes.meetSettings],
       [scopes.meetRead],
+      [scopes.meetCreated],
       [scopes.gmail]
     ]);
   });
@@ -119,7 +121,7 @@ describe("pruebas de Google Workspace", () => {
       autorizado: false,
       error: "Bloqueado por una política de Google Workspace."
     });
-    expect(result.filter(({ autorizado }) => autorizado)).toHaveLength(3);
+    expect(result.filter(({ autorizado }) => autorizado)).toHaveLength(4);
   });
 
   it("conserva el detalle de un error de scope desconocido", async () => {
