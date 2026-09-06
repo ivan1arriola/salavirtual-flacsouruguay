@@ -1,5 +1,5 @@
-name: "CI · Pre-deploy · Vercel"
-run-name: "Pre-deploy · ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || 'main' }} · ${{ github.head_ref || github.ref_name }}"
+name: "CI · Sala Virtual"
+run-name: "CI · ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || 'main' }} · ${{ github.head_ref || github.ref_name }}"
 
 on:
   pull_request:
@@ -8,15 +8,14 @@ on:
       - main
 
 concurrency:
-  group: predeploy-${{ github.event.pull_request.number || github.ref }}
+  group: ci-salavirtual-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: "1/2 · Validaciones antes de Vercel"
-    if: ${{ !contains(github.event.head_commit.message || '', '[vercel-deploy:verified]') }}
+    name: "Validaciones"
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
     env:
@@ -28,7 +27,6 @@ jobs:
       AUTH_SECRET: "ci-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
       AUTH_TRUST_HOST: "true"
       CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-      CRON_SECRET: "ci-only-cron-secret-not-for-production"
 
     steps:
       - name: "Checkout"
@@ -48,18 +46,9 @@ jobs:
           set -euo pipefail
           echo "Node: $(node --version)"
           echo "npm:  $(npm --version)"
-          if ! npm install --package-lock=false; then
-            echo "::error title=Dependencias inválidas::npm no pudo instalar las dependencias. Vercel queda bloqueado."
-            exit 1
-          fi
-          if ! npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.6; then
-            echo "::error title=Cobertura no instalable::No se pudo instalar @vitest/coverage-v8 4.1.6. Vercel queda bloqueado."
-            exit 1
-          fi
-          if ! npm ls --depth=0; then
-            echo "::error title=Árbol de dependencias inconsistente::npm ls detectó dependencias faltantes o inválidas. Vercel queda bloqueado."
-            exit 1
-          fi
+          npm install --package-lock=false
+          npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.6
+          npm ls --depth=0
 
       - name: "2/6 · Esquema y Prisma"
         id: schema
@@ -68,64 +57,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! npm run validate:schema; then
-            echo "::error title=Contrato de esquema inválido::Falló npm run validate:schema. Vercel queda bloqueado."
-            exit 1
-          fi
-          if ! npx prisma validate; then
-            echo "::error title=Prisma inválido::prisma validate detectó un problema en el esquema. Vercel queda bloqueado."
-            exit 1
-          fi
+          npm run validate:schema
+          npx prisma validate
 
       - name: "3/6 · TypeScript"
         id: typescript
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! npm run check; then
-            echo "::error title=TypeScript inválido::Falló tsc --noEmit. Corrige los errores de tipos antes de desplegar."
-            exit 1
-          fi
+        run: npm run check
 
       - name: "4/6 · Tests + cobertura ≥ 80%"
         id: tests
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! npx vitest run --coverage; then
-            echo "::error title=Tests o cobertura fallaron::Vitest falló o la cobertura quedó por debajo del 80 %. Vercel queda bloqueado."
-            exit 1
-          fi
+        run: npx vitest run --coverage
 
       - name: "5/6 · Auditoría crítica de dependencias"
         id: audit
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! npm audit --omit=dev --audit-level=critical; then
-            echo "::error title=Vulnerabilidad crítica::npm audit detectó al menos una vulnerabilidad crítica en dependencias de producción. Vercel queda bloqueado."
-            exit 1
-          fi
+        run: npm audit --omit=dev --audit-level=critical
 
       - name: "6/6 · Build de producción Next.js"
         id: build
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! npm run build; then
-            echo "::error title=Build de producción inválido::npm run build falló. Este control detecta antes de Vercel errores de imports, dependencias, Prisma y compilación de Next.js."
-            exit 1
-          fi
+        run: npm run build
 
-      - name: "Guardar reporte de cobertura"
+      - name: "Guardar cobertura"
         if: always() && steps.install.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
@@ -134,7 +93,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: "Resumen y decisión de despliegue"
+      - name: "Resumen"
         if: always()
         shell: bash
         env:
@@ -157,7 +116,7 @@ jobs:
           }
 
           {
-            echo "## CI · Pre-deploy"
+            echo "## CI · Sala Virtual"
             echo
             echo "Commit: \`${GITHUB_SHA}\`"
             echo
@@ -169,7 +128,6 @@ jobs:
             echo "| Tests + cobertura | $(label "$TESTS_OUTCOME") |"
             echo "| Auditoría crítica | $(label "$AUDIT_OUTCOME") |"
             echo "| Build de producción | $(label "$BUILD_OUTCOME") |"
-            echo
           } >> "$GITHUB_STEP_SUMMARY"
 
           failed=()
@@ -178,69 +136,20 @@ jobs:
           [[ "$TYPESCRIPT_OUTCOME" == "success" ]] || failed+=("TypeScript")
           [[ "$TESTS_OUTCOME" == "success" ]] || failed+=("tests/cobertura")
           [[ "$AUDIT_OUTCOME" == "success" ]] || failed+=("auditoría crítica")
-          [[ "$BUILD_OUTCOME" == "success" ]] || failed+=("build de producción")
+          [[ "$BUILD_OUTCOME" == "success" ]] || failed+=("build")
 
           if (( ${#failed[@]} > 0 )); then
             failures=$(IFS=', '; echo "${failed[*]}")
-            echo "Vercel: BLOQUEADO por ${failures}." >> "$GITHUB_STEP_SUMMARY"
-            echo "::error title=Vercel bloqueado::Fallaron controles previos: ${failures}. No se autoriza ningún build de Vercel."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Deploy EC2: BLOQUEADO por ${failures}." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=CI falló::No se desplegará a EC2: ${failures}."
             exit 1
           fi
 
           if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
-            echo "Vercel: APROBADO. El siguiente job generará la marca de despliegue." >> "$GITHUB_STEP_SUMMARY"
-            echo "::notice title=Pre-deploy aprobado::Todos los controles pasaron. Se puede autorizar Vercel."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Deploy EC2: APROBADO. El workflow de despliegue se ejecutará automáticamente." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Vercel: no se despliega desde PR. Al fusionar a main se volverá a validar." >> "$GITHUB_STEP_SUMMARY"
-            echo "::notice title=PR validado::Todos los controles pasaron. Vercel seguirá bloqueado hasta que main también apruebe."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "PR validado. El despliegue solo ocurre después de un push a main." >> "$GITHUB_STEP_SUMMARY"
           fi
-
-  authorize-vercel:
-    name: "2/2 · Autorizar despliegue Vercel"
-    needs: quality
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[vercel-deploy:verified]') }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: write
-
-    steps:
-      - name: "Checkout del commit validado"
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 2
-
-      - name: "Verificar que main no cambió durante la CI"
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main
-          remote_sha=$(git rev-parse origin/main)
-          if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
-            echo "::error title=main cambió durante la validación::Se validó ${GITHUB_SHA}, pero main ahora apunta a ${remote_sha}. No se autoriza Vercel; el commit nuevo tendrá su propia CI."
-            exit 1
-          fi
-
-      - name: "Crear marca de despliegue verificado"
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          short_sha="${GITHUB_SHA:0:7}"
-          git commit --allow-empty -m "chore(deploy): autorizar Vercel para ${short_sha} [vercel-deploy:verified]"
-          if ! git push origin HEAD:main; then
-            echo "::error title=No se pudo autorizar Vercel::GitHub no pudo publicar la marca de despliegue en main. El código quedó validado, pero Vercel seguirá bloqueado."
-            exit 1
-          fi
-
-      - name: "Resumen de autorización"
-        shell: bash
-        run: |
-          {
-            echo "## Vercel autorizado"
-            echo
-            echo "El commit \`${GITHUB_SHA}\` superó todos los controles previos."
-            echo "Se publicó un commit vacío con la marca \`[vercel-deploy:verified]\`; solo ese commit puede iniciar el build de producción en Vercel."
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "::notice title=Vercel autorizado::La CI terminó correctamente y se publicó la marca de despliegue verificado."
