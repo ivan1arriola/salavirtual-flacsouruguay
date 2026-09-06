@@ -165,7 +165,7 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
     expect(createdCohostEmails.map((c) => c.email)).toContain("admin@flacso.edu.uy");
   });
 
-  it("con asistencia tecnica y asistente asignado: solo el asistente es anfitrión (no el docente ni el solicitante)", async () => {
+  it("con asistencia tecnica y asistente asignado: agrega al solicitante y al asistente como cohosts", async () => {
     const { db, createdCohostReuniones, createdCohostEmails } = createMockDb();
 
     await crearReuniones(
@@ -180,12 +180,12 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
 
     const assignedIds = createdCohostReuniones.map((c) => c.cuentaGoogleId);
     expect(assignedIds).toContain("google-asistente-1");
+    expect(assignedIds).toContain("google-actor-1");
     expect(assignedIds).not.toContain("google-docente-1");
-    expect(assignedIds).not.toContain("google-actor-1");
     expect(createdCohostEmails).toHaveLength(0);
   });
 
-  it("con asistencia tecnica pendiente (abierta a postulaciones): no asigna cohosts mientras tanto", async () => {
+  it("con asistencia tecnica pendiente: mantiene al solicitante como cohost", async () => {
     const { db, createdCohostReuniones, createdCohostEmails } = createMockDb();
 
     await crearReuniones(
@@ -198,7 +198,20 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
       }
     );
 
-    expect(createdCohostReuniones).toHaveLength(0);
+    expect(createdCohostReuniones.map((c) => c.cuentaGoogleId)).toContain("google-actor-1");
     expect(createdCohostEmails).toHaveLength(0);
+  });
+
+  it("con asistencia tecnica: usa el email principal del solicitante como fallback", async () => {
+    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb({ actorGoogleAccounts: [] });
+
+    await crearReuniones(
+      db as never,
+      { id: "actor-user-admin", rol: "ADMINISTRACION" },
+      { ...baseInput, requiereAsistenciaTecnica: true, asistenteTecnicoId: "asistente-1" }
+    );
+
+    expect(createdCohostReuniones.map((c) => c.cuentaGoogleId)).toContain("google-asistente-1");
+    expect(createdCohostEmails.map((c) => c.email)).toContain("admin@flacso.edu.uy");
   });
 });

@@ -137,22 +137,35 @@ export async function crearReuniones(
     let manualCohostEmails: readonly string[] = [];
 
     if (input.requiereAsistenciaTecnica) {
-      if (assistant) {
-        // Al solicitar asistencia técnica y haber asistente designado, este es el anfitrión
-        const assistantAccounts = await tx.cuentaGoogleFlacso.findMany({
-          where: { userId: assistant.usuarioId, user: { activo: true } },
-          select: { id: true },
-        });
-        if (assistantAccounts.length > 0) {
-          cohostIds = assistantAccounts.map(({ id }) => id);
-        } else if (assistant.usuario.emailPrincipal) {
-          manualCohostEmails = [assistant.usuario.emailPrincipal.toLowerCase()];
-        }
-      } else {
-        // Mientras no esté designado el asistente técnico, no se asigna cohost
-        cohostIds = [];
-        manualCohostEmails = [];
+      // Con asistencia técnica, el solicitante siempre conserva permisos de cohost.
+      // Cuando hay asistente asignado, también se agrega como cohost.
+      const userIds = [actor.id, ...(assistant ? [assistant.usuarioId] : [])];
+      const [accounts, actorUser] = await Promise.all([
+        tx.cuentaGoogleFlacso.findMany({
+          where: { userId: { in: [...new Set(userIds)] }, user: { activo: true } },
+          select: { id: true, userId: true },
+        }),
+        tx.usuario.findUnique({
+          where: { id: actor.id },
+          select: { emailPrincipal: true },
+        }),
+      ]);
+      const usersWithGoogleAccount = new Set(accounts.map(({ userId }) => userId));
+      const fallbackEmails: string[] = [];
+
+      if (!usersWithGoogleAccount.has(actor.id) && actorUser?.emailPrincipal) {
+        fallbackEmails.push(actorUser.emailPrincipal);
       }
+      if (
+        assistant &&
+        !usersWithGoogleAccount.has(assistant.usuarioId) &&
+        assistant.usuario.emailPrincipal
+      ) {
+        fallbackEmails.push(assistant.usuario.emailPrincipal);
+      }
+
+      cohostIds = [...new Set(accounts.map(({ id }) => id))];
+      manualCohostEmails = normalizeCohostEmails(fallbackEmails);
     } else {
       // Sin asistencia técnica: el solicitante designa al anfitrión y se incluye a sí mismo automáticamente
       const designatedHostUserIds: string[] = [];
