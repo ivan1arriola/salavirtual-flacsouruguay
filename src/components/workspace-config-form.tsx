@@ -2,6 +2,7 @@ import { WorkspaceCredentialForm } from "./workspace-credential-form";
 import { WorkspaceDelegationForm } from "./workspace-delegation-form";
 import { WorkspaceDriveForm } from "./workspace-drive-form";
 import { WorkspaceScopesValidator } from "./workspace-scopes-validator";
+import { WorkspaceCohostResync } from "./workspace-cohost-resync";
 import { WorkspaceStatusForm } from "./workspace-status-form";
 
 export type WorkspaceConfigVisible = Readonly<{
@@ -23,6 +24,7 @@ export function WorkspaceConfigForm({
       />
       <WorkspaceDelegationForm subject={initial?.serviceAccountSubject ?? ""} />
       <WorkspaceScopesValidator />
+      <WorkspaceCohostResync />
       <WorkspaceDriveForm folderId={initial?.driveDestinationId ?? ""} />
       <WorkspaceStatusForm active={initial?.activa ?? true} />
     </>
