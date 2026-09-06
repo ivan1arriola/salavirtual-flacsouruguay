@@ -1,0 +1,27 @@
+[Unit]
+Description=Sala Virtual FLACSO (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=salavirtual
+Group=salavirtual
+WorkingDirectory=/srv/apps/salavirtual-flacso/current
+Environment=NODE_ENV=production
+Environment=PORT=3101
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/srv/apps/salavirtual-flacso/shared/.env.production
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGINT
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/apps/salavirtual-flacso
+
+[Install]
+WantedBy=multi-user.target
