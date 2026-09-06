@@ -140,11 +140,17 @@ async function notificarReunionCreada(solicitudId: string) {
       inicio,
       fin,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
-      password: passwordCuenta(meet?.cuentaProveedor?.secretRef),
       meet: meet?.codigoReunion,
       joinUrl: meet?.joinUrl
     };
   });
+  const firstAssignedAssistant = solicitud.instancias
+    .flatMap((i) => i.asignaciones)
+    .find((a) => a.asistenteTecnico)?.asistenteTecnico;
+  const initialAssistantName = firstAssignedAssistant
+    ? [firstAssignedAssistant.usuario.nombres, firstAssignedAssistant.usuario.apellidos].filter(Boolean).join(" ")
+    : null;
+
   const detailsText = reunionEmailText({
     titulo: solicitud.titulo,
     programa: solicitud.docentePrograma.programa.nombre,
@@ -152,6 +158,7 @@ async function notificarReunionCreada(solicitudId: string) {
     modalidad: solicitud.modalidad,
     requiereAsistenciaTecnica: solicitud.requiereAsistenciaTecnica,
     requiereGrabacion: solicitud.requiereGrabacion,
+    asistenteTecnico: initialAssistantName,
     instancias
   });
   await notificarUsuarios(
@@ -184,7 +191,7 @@ async function notificarReunionCreada(solicitudId: string) {
         href: "/mi-agenda",
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Te asignaron una asistencia técnica: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`,
+        emailText: `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada para contar con permisos de moderación, admisión y grabación.`,
         emailActionLabel: "Abrir mi agenda"
       }
     );
@@ -198,7 +205,7 @@ async function notificarReunionCreada(solicitudId: string) {
         href: `/reuniones/${solicitud.id}`,
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Asistencia técnica asignada: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistente técnico asignado: ${assistantName || assistant.usuario.id}`,
+        emailText: `${detailsText}\n\nAsistencia técnica confirmada con: ${assistantName || assistant.usuario.id}.\n• El/la asistente técnico/a ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
         emailActionLabel: "Ver reunión"
       }
     );
@@ -225,7 +232,7 @@ async function notificarReunionCreada(solicitudId: string) {
       href: "/agenda-abierta",
       metadata: { solicitudId: solicitud.id },
       emailSubject: `Asistencia técnica requerida: ${solicitud.titulo}`,
-      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.`,
+      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.\nAl ser asignado/a, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para ingresar directamente a dar cobertura sin requerir credenciales de sala.`,
       emailActionLabel: "Ver agenda abierta"
     }
   );

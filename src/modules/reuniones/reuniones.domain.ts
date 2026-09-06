@@ -30,6 +30,9 @@ export const crearReunionesSchema = z
     titulo: z.string().trim().min(3).max(300),
     descripcion: z.string().trim().max(4000).optional(),
     docenteProgramaId: z.string().trim().min(1),
+    hostTipo: z.enum(["DOCENTE", "OTRA_CUENTA", "OTRO_CORREO"]).default("DOCENTE"),
+    hostCuentaId: z.string().trim().min(1).optional(),
+    hostEmail: z.string().trim().email().toLowerCase().optional(),
     cohostCuentaIds: z.array(z.string().trim().min(1)).max(50).default([]),
     cohostEmailsManual: emailListSchema,
     asistenteTecnicoId: z.string().trim().min(1).optional(),
@@ -39,7 +42,23 @@ export const crearReunionesSchema = z
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
     instancias: z.array(instanciaSchema).min(1).max(100)
   })
-  .superRefine(({ instancias, timezone }, context) => {
+  .superRefine(({ instancias, timezone, requiereAsistenciaTecnica, hostTipo, hostCuentaId, hostEmail }, context) => {
+    if (!requiereAsistenciaTecnica) {
+      if (hostTipo === "OTRA_CUENTA" && !hostCuentaId) {
+        context.addIssue({
+          code: "custom",
+          message: "Debe seleccionar una cuenta Google para el anfitrión.",
+          path: ["hostCuentaId"]
+        });
+      }
+      if (hostTipo === "OTRO_CORREO" && !hostEmail) {
+        context.addIssue({
+          code: "custom",
+          message: "Debe ingresar un correo válido para el anfitrión.",
+          path: ["hostEmail"]
+        });
+      }
+    }
     if (esTimezoneIanaValida(timezone)) {
       instancias.forEach(({ inicio, fin }, index) => {
         if (!pertenecenAlMismoDia(inicio, fin, timezone)) {

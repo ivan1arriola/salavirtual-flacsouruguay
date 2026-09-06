@@ -47,13 +47,19 @@ export function MeetingForm({
   programs,
   assistants,
   cohosts,
-  canAssignAssistant
+  canAssignAssistant,
+  currentUser
 }: Readonly<{
-  programs: readonly (Option & { teacher: string })[];
+  programs: readonly (Option & { teacher: string; teacherEmail?: string })[];
   assistants: readonly Option[];
   cohosts: readonly Readonly<{ id: string; email: string }>[];
   canAssignAssistant: boolean;
+  currentUser?: Readonly<{ id: string; email?: string | null; rol: string }>;
 }>) {
+  const [selectedProgramId, setSelectedProgramId] = useState<string>(programs.length === 1 ? programs[0].id : "");
+  const [hostTipo, setHostTipo] = useState<"DOCENTE" | "OTRA_CUENTA" | "OTRO_CORREO">("DOCENTE");
+  const [hostCuentaId, setHostCuentaId] = useState<string>("");
+  const [hostEmail, setHostEmail] = useState<string>("");
   const [dates, setDates] = useState<readonly MeetingDate[]>([EMPTY_DATE]);
   const [dateMode, setDateMode] = useState<MeetingDateMode>("SINGLE");
   const [recurrence, setRecurrence] = useState<RecurrenceState>({
@@ -73,6 +79,8 @@ export function MeetingForm({
   const submittingRef = useRef(false);
   const idempotencyKeyRef = useRef<string>("");
   const recurrenceReviewRef = useRef<HTMLDivElement>(null);
+
+  const selectedProgram = programs.find((p) => p.id === selectedProgramId);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,12 +104,15 @@ export function MeetingForm({
           titulo: formData.get("titulo"),
           descripcion: formData.get("descripcion") || undefined,
           docenteProgramaId: formData.get("docenteProgramaId"),
-          cohostCuentaIds: formData.getAll("cohostCuentaIds"),
-          cohostEmailsManual: formData.get("cohostEmailsManual"),
-          asistenteTecnicoId: canAssignAssistant && assistanceMode === "ASSIGN"
+          hostTipo: !requiresAssistance ? hostTipo : undefined,
+          hostCuentaId: !requiresAssistance && hostTipo === "OTRA_CUENTA" ? hostCuentaId || undefined : undefined,
+          hostEmail: !requiresAssistance && hostTipo === "OTRO_CORREO" ? hostEmail || undefined : undefined,
+          cohostCuentaIds: !requiresAssistance ? formData.getAll("cohostCuentaIds") : [],
+          cohostEmailsManual: !requiresAssistance ? formData.get("cohostEmailsManual") : undefined,
+          asistenteTecnicoId: canAssignAssistant && requiresAssistance && assistanceMode === "ASSIGN"
             ? formData.get("asistenteTecnicoId") || undefined
             : undefined,
-          requiereAsistenciaTecnica: formData.get("requiereAsistenciaTecnica") === "on",
+          requiereAsistenciaTecnica: requiresAssistance,
           requiereGrabacion: formData.get("requiereGrabacion") === "on",
           modalidad: formData.get("modalidad"),
           timezone: "America/Montevideo",
@@ -174,7 +185,12 @@ export function MeetingForm({
         <div className="form-grid">
           <Field label="Título"><input name="titulo" placeholder="Ej. Seminario de metodología" required minLength={3} /></Field>
           <Field label="Programa y docente">
-            <select name="docenteProgramaId" required defaultValue={programs.length === 1 ? programs[0].id : ""}>
+            <select
+              name="docenteProgramaId"
+              required
+              value={selectedProgramId}
+              onChange={(e) => setSelectedProgramId(e.target.value)}
+            >
               <option value="" disabled>Seleccionar</option>
               {programs.map((option) => <option value={option.id} key={option.id}>{option.label} — {option.teacher}</option>)}
             </select>
@@ -269,42 +285,142 @@ export function MeetingForm({
         <div className="form-grid">
           <div className="auto-room-note field-wide">
             <Video size={20} aria-hidden="true" />
-            <div><strong>Sala Meet automática</strong><span>Elegiremos una cuenta disponible y generaremos los enlaces al crear la reunión.</span></div>
+            <div>
+              <strong>Sala Meet automática con licencias de FLACSO</strong>
+              <span>Elegiremos una sala disponible y configuraremos Google Meet. Los anfitriones y asistentes ingresan directamente con su propia cuenta de Google sin necesidad de usar las contraseñas de las salas.</span>
+            </div>
           </div>
-          <label className="check-field"><input name="requiereAsistenciaTecnica" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span className="option-copy"><strong>Asistencia técnica</strong><small>Solicitar apoyo durante el encuentro</small></span></label>
+          <label className="check-field"><input name="requiereAsistenciaTecnica" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span className="option-copy"><strong>Asistencia técnica</strong><small>Solicitar apoyo de un asistente durante el encuentro</small></span></label>
           <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span className="option-copy"><strong>Grabación</strong><small>Marcar que el encuentro debe grabarse</small></span></label>
-          {requiresAssistance && canAssignAssistant ? (
-            <fieldset className="field field-wide assistance-choice">
-              <legend>Cobertura de asistencia técnica</legend>
-              <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
-              <label className={assistants.length === 0 ? "is-disabled" : ""}><input type="radio" name="modoAsistencia" value="ASSIGN" disabled={assistants.length === 0} checked={assistanceMode === "ASSIGN"} onChange={() => setAssistanceMode("ASSIGN")} /><span className="option-copy"><strong>Asignar ahora</strong><small>{assistants.length > 0 ? `${assistants.length} asistentes disponibles` : "No hay asistentes disponibles"}</small></span></label>
-            </fieldset>
-          ) : null}
-          {requiresAssistance && !canAssignAssistant ? (
-            <div className="field field-wide"><span>Cobertura de asistencia técnica</span><div><span className="status status-warning">Abierta a postulaciones</span></div></div>
-          ) : null}
-          {requiresAssistance && canAssignAssistant && assistanceMode === "ASSIGN" ? (
-            <Field label="Asistente técnico" wide>
-              <select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente técnico</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select>
-            </Field>
-          ) : null}
-          <details className="cohost-disclosure field-wide">
-            <summary>
-              <div><strong>Cohosts (opcional)</strong><small>Agregá personas con permisos de coorganización.</small></div>
-              <span>{cohosts.length} cuentas guardadas</span><ChevronDown size={18} aria-hidden="true" />
-            </summary>
-            <div className="cohost-disclosure-content">
-              {cohosts.length ? (
-                <fieldset className="field checkbox-list">
-                  <legend>Cuentas guardadas</legend>
-                  {cohosts.map((cohost) => <label key={cohost.id}><input type="checkbox" name="cohostCuentaIds" value={cohost.id} /><span>{cohost.email}</span></label>)}
+
+          {requiresAssistance ? (
+            <>
+              {canAssignAssistant ? (
+                <fieldset className="field field-wide assistance-choice">
+                  <legend>Cobertura de asistencia técnica</legend>
+                  <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
+                  <label className={assistants.length === 0 ? "is-disabled" : ""}><input type="radio" name="modoAsistencia" value="ASSIGN" disabled={assistants.length === 0} checked={assistanceMode === "ASSIGN"} onChange={() => setAssistanceMode("ASSIGN")} /><span className="option-copy"><strong>Asignar ahora</strong><small>{assistants.length > 0 ? `${assistants.length} asistentes disponibles` : "No hay asistentes disponibles"}</small></span></label>
                 </fieldset>
+              ) : (
+                <div className="field field-wide"><span>Cobertura de asistencia técnica</span><div><span className="status status-warning">Abierta a postulaciones</span></div></div>
+              )}
+              {canAssignAssistant && assistanceMode === "ASSIGN" ? (
+                <Field label="Asistente técnico" wide>
+                  <select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente técnico</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select>
+                </Field>
               ) : null}
               <Field label="Otros correos">
                 <textarea name="cohostEmailsManual" placeholder="correo@flacso.edu.uy, otro@flacso.edu.uy" rows={2} />
               </Field>
+              <div className="auto-room-note field-wide" style={{ background: "#f5f9fa", borderColor: "#cde4ec" }}>
+                <UsersRound size={18} aria-hidden="true" />
+                <div>
+                  <strong>Anfitrión asignado por asistencia técnica</strong>
+                  <span>La persona que sea designada como asistente técnico será el anfitrión de la sala en Google Meet. Mientras esté abierta a postulaciones, no se asignarán anfitriones preliminares.</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="field-wide" style={{ display: "grid", gap: "14px" }}>
+              <fieldset className="field field-wide" style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "14px", background: "#fff" }}>
+                <legend style={{ fontWeight: 700, padding: "0 6px" }}>Anfitrión de la reunión (obligatorio)</legend>
+                <p style={{ color: "var(--muted)", fontSize: "0.82rem", margin: "0 0 12px 0" }}>
+                  Al no requerir asistencia técnica, indicá quién será el anfitrión en Google Meet:
+                </p>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="hostTipo"
+                      value="DOCENTE"
+                      checked={hostTipo === "DOCENTE"}
+                      onChange={() => setHostTipo("DOCENTE")}
+                    />
+                    <span className="option-copy">
+                      <strong>Docente del programa</strong>
+                      <small>{selectedProgram ? `${selectedProgram.teacher}${selectedProgram.teacherEmail ? ` (${selectedProgram.teacherEmail})` : ""}` : "Docente del programa seleccionado"}</small>
+                    </span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="hostTipo"
+                      value="OTRA_CUENTA"
+                      checked={hostTipo === "OTRA_CUENTA"}
+                      onChange={() => setHostTipo("OTRA_CUENTA")}
+                    />
+                    <span className="option-copy">
+                      <strong>Otra cuenta institucional guardada</strong>
+                      <small>Seleccionar de las cuentas Google registradas</small>
+                    </span>
+                  </label>
+                  {hostTipo === "OTRA_CUENTA" ? (
+                    <div style={{ marginLeft: "24px", marginTop: "4px" }}>
+                      <select
+                        name="hostCuentaId"
+                        required={hostTipo === "OTRA_CUENTA"}
+                        value={hostCuentaId}
+                        onChange={(e) => setHostCuentaId(e.target.value)}
+                        style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid var(--line)" }}
+                      >
+                        <option value="" disabled>Seleccionar cuenta Google del anfitrión</option>
+                        {cohosts.map((c) => (
+                          <option value={c.id} key={c.id}>{c.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="hostTipo"
+                      value="OTRO_CORREO"
+                      checked={hostTipo === "OTRO_CORREO"}
+                      onChange={() => setHostTipo("OTRO_CORREO")}
+                    />
+                    <span className="option-copy">
+                      <strong>Otro correo electrónico</strong>
+                      <small>Ingresar dirección de correo de Google</small>
+                    </span>
+                  </label>
+                  {hostTipo === "OTRO_CORREO" ? (
+                    <div style={{ marginLeft: "24px", marginTop: "4px" }}>
+                      <input
+                        type="email"
+                        name="hostEmail"
+                        placeholder="anfitrion@flacso.edu.uy"
+                        required={hostTipo === "OTRO_CORREO"}
+                        value={hostEmail}
+                        onChange={(e) => setHostEmail(e.target.value)}
+                        style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid var(--line)" }}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <div style={{ marginTop: "12px", padding: "8px 12px", background: "#f0f7f5", borderRadius: "6px", border: "1px solid #cce8e0", fontSize: "0.8rem", color: "#19634e" }}>
+                  <strong>Autoinclusión:</strong> Tu usuario {currentUser?.email ? `(${currentUser.email})` : ""} también se agregará automáticamente como anfitrión de la reunión.
+                </div>
+              </fieldset>
+
+              <details className="cohost-disclosure field-wide">
+                <summary>
+                  <div><strong>Cohosts adicionales (opcional)</strong><small>Otras personas secundarias con permisos de coorganización.</small></div>
+                  <span>{cohosts.length} cuentas guardadas</span><ChevronDown size={18} aria-hidden="true" />
+                </summary>
+                <div className="cohost-disclosure-content">
+                  {cohosts.length ? (
+                    <fieldset className="field checkbox-list">
+                      <legend>Cuentas guardadas</legend>
+                      {cohosts.map((cohost) => <label key={cohost.id}><input type="checkbox" name="cohostCuentaIds" value={cohost.id} /><span>{cohost.email}</span></label>)}
+                    </fieldset>
+                  ) : null}
+                  <Field label="Otros correos">
+                    <textarea name="cohostEmailsManual" placeholder="correo@flacso.edu.uy, otro@flacso.edu.uy" rows={2} />
+                  </Field>
+                </div>
+              </details>
             </div>
-          </details>
+          )}
         </div>
       </FormSection>
 

@@ -33,7 +33,7 @@ describe("correo de notificaciones", () => {
     expect(email.html).not.toContain("<script>");
   });
 
-  it("incluye la contraseña configurada de la sala en los detalles de la reunión", () => {
+  it("incluye la contraseña configurada de la sala en los detalles de la reunión si se proporciona", () => {
     const detalle = reunionEmailText({
       titulo: "Prueba",
       programa: "Programa de prueba",
@@ -51,7 +51,7 @@ describe("correo de notificaciones", () => {
       }]
     });
 
-    expect(detalle).toContain("Usuario: host-principal@flacso.edu.uy");
+    expect(detalle).toContain("Sala: host-principal@flacso.edu.uy");
     expect(detalle).toContain("Contraseña: Clave-actualizada-2026+");
     expect(detalle).toContain("Martes, 18 de agosto, 18:15 – 21:15");
     expect(detalle).toContain("Código de Meet: ids-zrev-eas");
@@ -67,7 +67,76 @@ describe("correo de notificaciones", () => {
       }]
     });
 
-    expect(detalle).toContain("Usuario: host-secundario@flacso.edu.uy");
+    expect(detalle).toContain("Sala: host-secundario@flacso.edu.uy");
     expect(detalle).not.toContain("Contraseña:");
+  });
+
+  it("explica cómo acceder a la reunión cuando no requiere asistencia técnica", () => {
+    const detalle = reunionEmailText({
+      titulo: "Taller de Investigación",
+      programa: "Doctorado",
+      docente: "Dra. García",
+      requiereAsistenciaTecnica: false,
+      instancias: [{
+        inicio: "Lunes, 15 de setiembre, 18:00",
+        fin: "20:00",
+        sala: "sala01@flacso.edu.uy",
+        joinUrl: "https://meet.google.com/abc-defg-hij"
+      }]
+    });
+
+    expect(detalle).toContain("¿CÓMO ACCEDER A LA REUNIÓN?");
+    expect(detalle).toContain("No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña");
+    expect(detalle).toContain("Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host)");
+    expect(detalle).toContain("Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet");
+    expect(detalle).toContain("Asistencia técnica: no requerida");
+  });
+
+  it("explica cómo acceder cuando requiere asistencia técnica con y sin asistente asignado", () => {
+    const pendiente = reunionEmailText({
+      titulo: "Seminario Abierto",
+      requiereAsistenciaTecnica: true,
+      instancias: [{
+        inicio: "Miércoles, 17 de setiembre, 19:00",
+        fin: "21:00",
+        joinUrl: "https://meet.google.com/xyz-uvwx-rst"
+      }]
+    });
+    expect(pendiente).toContain("Asistencia técnica: la reunión requiere asistencia técnica (pendiente de asignación)");
+
+    const asignada = reunionEmailText({
+      titulo: "Seminario Abierto",
+      requiereAsistenciaTecnica: true,
+      asistenteTecnico: "Juan Asistente",
+      instancias: [{
+        inicio: "Miércoles, 17 de setiembre, 19:00",
+        fin: "21:00",
+        joinUrl: "https://meet.google.com/xyz-uvwx-rst"
+      }]
+    });
+    expect(asignada).toContain("Asistencia técnica: asignada a Juan Asistente");
+  });
+
+  it("maqueta en el correo HTML una tarjeta destacada para las instrucciones de acceso y enlaces clicables", () => {
+    const emailText = reunionEmailText({
+      titulo: "Clase Magistral",
+      instancias: [{
+        inicio: "Jueves, 18 de setiembre, 18:00",
+        fin: "20:00",
+        joinUrl: "https://meet.google.com/aaa-bbbb-ccc"
+      }]
+    });
+
+    const email = construirCorreoNotificacion({
+      tipo: "REUNION_CREADA",
+      titulo: "Reunión creada",
+      cuerpo: "La reunión ha sido creada exitosamente.",
+      emailText,
+      href: "/reuniones/123"
+    }, "https://salas-meet.flacso.edu.uy");
+
+    expect(email.html).toContain("¿Cómo acceder?");
+    expect(email.html).toContain("border-left:5px solid #167e9f");
+    expect(email.html).toContain('href="https://meet.google.com/aaa-bbbb-ccc"');
   });
 });

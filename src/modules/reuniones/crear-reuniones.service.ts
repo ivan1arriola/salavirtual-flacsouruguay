@@ -108,19 +108,7 @@ export async function crearReuniones(
       : null;
     const assistant = reservaAsistente?.assistant ?? null;
 
-    const automaticCohostUserIds = [
-      docentePrograma.docente.usuarioId,
-      ...(assistant ? [assistant.usuarioId] : []),
-    ];
-    const [cohosts, automaticCohosts, hosts, occupiedHosts] = await Promise.all([
-      tx.cuentaGoogleFlacso.findMany({
-        where: { id: { in: input.cohostCuentaIds }, user: { activo: true } },
-        select: { id: true },
-      }),
-      tx.cuentaGoogleFlacso.findMany({
-        where: { userId: { in: automaticCohostUserIds }, user: { activo: true } },
-        select: { id: true },
-      }),
+    const [hosts, occupiedHosts] = await Promise.all([
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
@@ -144,11 +132,94 @@ export async function crearReuniones(
         },
       }),
     ]);
-    if (cohosts.length !== new Set(input.cohostCuentaIds).size) {
-      throw new ValidationApiError("Una o más cuentas cohost no existen o están inactivas.");
+
+    let cohostIds: readonly string[] = [];
+    let manualCohostEmails: readonly string[] = [];
+
+    if (input.requiereAsistenciaTecnica) {
+      if (assistant) {
+        // Al solicitar asistencia técnica y haber asistente designado, este es el anfitrión
+        const assistantAccounts = await tx.cuentaGoogleFlacso.findMany({
+          where: { userId: assistant.usuarioId, user: { activo: true } },
+          select: { id: true },
+        });
+        if (assistantAccounts.length > 0) {
+          cohostIds = assistantAccounts.map(({ id }) => id);
+        } else if (assistant.usuario.emailPrincipal) {
+          manualCohostEmails = [assistant.usuario.emailPrincipal.toLowerCase()];
+        }
+      } else {
+        // Mientras no esté designado el asistente técnico, no se asigna cohost
+        cohostIds = [];
+        manualCohostEmails = [];
+      }
+    } else {
+      // Sin asistencia técnica: el solicitante designa al anfitrión y se incluye a sí mismo automáticamente
+      const designatedHostUserIds: string[] = [];
+      const extraCohostCuentaIds = new Set(input.cohostCuentaIds);
+      const extraEmails = [...input.cohostEmailsManual];
+
+      if (input.hostTipo === "DOCENTE") {
+        designatedHostUserIds.push(docentePrograma.docente.usuarioId);
+      } else if (input.hostTipo === "OTRA_CUENTA" && input.hostCuentaId) {
+        extraCohostCuentaIds.add(input.hostCuentaId);
+      } else if (input.hostTipo === "OTRO_CORREO" && input.hostEmail) {
+        extraEmails.push(input.hostEmail);
+      }
+
+      // El solicitante también se pone como anfitrión automáticamente
+      designatedHostUserIds.push(actor.id);
+
+      const [actorAndDesignatedAccounts, explicitAccounts, actorUser, docenteUser] = await Promise.all([
+        tx.cuentaGoogleFlacso.findMany({
+          where: { userId: { in: [...new Set(designatedHostUserIds)] }, user: { activo: true } },
+          select: { id: true, userId: true },
+        }),
+        extraCohostCuentaIds.size > 0
+          ? tx.cuentaGoogleFlacso.findMany({
+              where: { id: { in: [...extraCohostCuentaIds] }, user: { activo: true } },
+              select: { id: true },
+            })
+          : Promise.resolve([]),
+        tx.usuario.findUnique({
+          where: { id: actor.id },
+          select: { emailPrincipal: true },
+        }),
+        input.hostTipo === "DOCENTE"
+          ? tx.usuario.findUnique({
+              where: { id: docentePrograma.docente.usuarioId },
+              select: { emailPrincipal: true },
+            })
+          : Promise.resolve(null),
+      ]);
+
+      if (explicitAccounts.length !== extraCohostCuentaIds.size) {
+        throw new ValidationApiError("Una o más cuentas cohost no existen o están inactivas.");
+      }
+
+      const actorHasGoogleAccount = actorAndDesignatedAccounts.some(({ userId }) => userId === actor.id);
+      if (!actorHasGoogleAccount && actorUser?.emailPrincipal) {
+        extraEmails.push(actorUser.emailPrincipal);
+      }
+
+      if (input.hostTipo === "DOCENTE") {
+        const docenteHasGoogleAccount = actorAndDesignatedAccounts.some(({ userId }) => userId === docentePrograma.docente.usuarioId);
+        if (!docenteHasGoogleAccount && docenteUser?.emailPrincipal) {
+          extraEmails.push(docenteUser.emailPrincipal);
+        }
+      }
+
+      cohostIds = [...new Set([
+        ...actorAndDesignatedAccounts.map(({ id }) => id),
+        ...explicitAccounts.map(({ id }) => id),
+      ])];
+      manualCohostEmails = normalizeCohostEmails(extraEmails);
+
+      if (cohostIds.length === 0 && manualCohostEmails.length === 0) {
+        throw new ValidationApiError("Debe especificarse al menos una cuenta con permisos de anfitrión.");
+      }
     }
 
-    const cohostIds = [...new Set([...cohosts, ...automaticCohosts].map(({ id }) => id))];
     const cuentaHostId = elegirCuentaHostParaPeriodos(
       null,
       hosts,
@@ -163,7 +234,6 @@ export async function crearReuniones(
       throw new ConflictApiError("No hay una sala Meet libre para todas las fechas solicitadas.");
     }
 
-    const manualCohostEmails = normalizeCohostEmails(input.cohostEmailsManual);
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
     const solicitud = await tx.solicitudSala.create({

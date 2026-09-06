@@ -54,9 +54,7 @@ function htmlTemplate(input: Readonly<{
   actionLabel: string;
   preferencesUrl: string;
 }>): string {
-  const detail = input.detail
-    ? `<div style="margin-top:24px;border:1px solid #d7dee8;border-radius:12px;background:#f7f9fc;padding:20px;color:#27364a;font-size:14px;line-height:1.7;white-space:pre-line;word-break:break-word"><div style="margin-bottom:10px;color:#163970;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Información de la reunión</div>${escapeHtml(input.detail)}</div>`
-    : "";
+  const detail = input.detail ? renderDetailHtml(input.detail) : "";
   const action = input.actionUrl
     ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:24px"><tr><td bgcolor="#167e9f" style="border-radius:8px"><a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;padding:12px 20px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none">${escapeHtml(input.actionLabel)}</a></td></tr></table>`
     : "";
@@ -109,3 +107,30 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+function renderDetailHtml(rawDetail: string): string {
+  const parts = rawDetail.split(/(?=\n\n(?:¿CÓMO ACCEDER|INSTRUCCIONES DE ACCESO|INSTRUCCIONES PARA))/i);
+  if (parts.length > 1) {
+    const mainInfo = parts[0].trim();
+    const accessInfo = parts.slice(1).join("\n\n").trim();
+    return `
+<div style="margin-top:24px;border:1px solid #d7dee8;border-radius:12px;background:#f7f9fc;padding:20px;color:#27364a;font-size:14px;line-height:1.7;white-space:pre-line;word-break:break-word">
+  <div style="margin-bottom:10px;color:#163970;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Información de la reunión</div>
+  ${linkifyEscaped(escapeHtml(mainInfo))}
+</div>
+<div style="margin-top:16px;border:1px solid #bce2ee;border-left:5px solid #167e9f;border-radius:12px;background:#f0f8fb;padding:20px;color:#163970;font-size:14px;line-height:1.7;white-space:pre-line;word-break:break-word">
+  <div style="margin-bottom:10px;color:#163970;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">¿Cómo acceder?</div>
+  ${linkifyEscaped(escapeHtml(accessInfo))}
+</div>`.trim();
+  }
+
+  return `<div style="margin-top:24px;border:1px solid #d7dee8;border-radius:12px;background:#f7f9fc;padding:20px;color:#27364a;font-size:14px;line-height:1.7;white-space:pre-line;word-break:break-word"><div style="margin-bottom:10px;color:#163970;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Información de la reunión</div>${linkifyEscaped(escapeHtml(rawDetail))}</div>`;
+}
+
+function linkifyEscaped(escapedText: string): string {
+  return escapedText.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" style="color:#167e9f;text-decoration:underline;font-weight:600" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+}
+

@@ -12,7 +12,8 @@ import {
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
-import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
+import { formatShortDate, formatTime } from "@/src/lib/ui/format";
+import { notificarUsuario, notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { reservarAsistenteDisponible } from "./reserva-asistencia.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
@@ -161,17 +162,33 @@ export async function asignarAsistentePostulado(
           finProgramadoAt: true,
           estado: true,
           inicioProgramadoAt: true,
+          eventosProveedor: {
+            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            select: {
+              codigoReunion: true,
+              joinUrl: true,
+              cuentaProveedor: {
+                select: {
+                  nombre: true,
+                  emailOrganizador: true
+                }
+              }
+            },
+            take: 1
+          },
           solicitud: {
             select: {
               id: true,
               titulo: true,
               modalidad: true,
+              requiereGrabacion: true,
               creadaPor: { select: { id: true, emailPrincipal: true } },
               docentePrograma: {
                 select: {
+                  programa: { select: { nombre: true } },
                   docente: {
                     select: {
-                      usuario: { select: { id: true, emailPrincipal: true } }
+                      usuario: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true } }
                     }
                   }
                 }
@@ -260,6 +277,14 @@ export async function asignarAsistentePostulado(
           }
         });
       }
+      if (previousAssignment.asistenteTecnico.usuario.emailPrincipal) {
+        await tx.cohostEmailReunion.deleteMany({
+          where: {
+            instanciaSalaId: meeting.id,
+            email: previousAssignment.asistenteTecnico.usuario.emailPrincipal.toLowerCase()
+          }
+        });
+      }
     }
     const assignment = await tx.asignacionAsistenciaTecnica.upsert({
       where: {
@@ -292,6 +317,14 @@ export async function asignarAsistentePostulado(
         })),
         skipDuplicates: true
       });
+    } else if (assistant.usuario.emailPrincipal) {
+      await tx.cohostEmailReunion.createMany({
+        data: [{
+          instanciaSalaId: meeting.id,
+          email: assistant.usuario.emailPrincipal.toLowerCase()
+        }],
+        skipDuplicates: true
+      });
     }
     await tx.auditoria.create({
       data: {
@@ -305,13 +338,42 @@ export async function asignarAsistentePostulado(
         valorNuevo: { asistenteTecnicoId: assistant.id, estado: assignment.estado }
       }
     });
+    const assistantFullName = [
+      assistant.usuario.nombres,
+      assistant.usuario.apellidos
+    ].filter(Boolean).join(" ") || "la persona asignada";
+
+    const meet = meeting.eventosProveedor?.[0];
+    const inicioFecha = formatShortDate(meeting.inicioProgramadoAt);
+    const finFecha = formatShortDate(meeting.finProgramadoAt);
+    const inicio = `${inicioFecha.length > 0 ? inicioFecha[0].toUpperCase() + inicioFecha.slice(1) : inicioFecha}, ${formatTime(meeting.inicioProgramadoAt)}`;
+    const fin = inicioFecha === finFecha
+      ? formatTime(meeting.finProgramadoAt)
+      : `${finFecha.length > 0 ? finFecha[0].toUpperCase() + finFecha.slice(1) : finFecha}, ${formatTime(meeting.finProgramadoAt)}`;
+    const docenteUsuario = meeting.solicitud.docentePrograma.docente.usuario;
+    const docenteNombre = [docenteUsuario.nombres, docenteUsuario.apellidos].filter(Boolean).join(" ");
+
+    const meetingDetailsText = reunionEmailText({
+      titulo: meeting.solicitud.titulo,
+      programa: meeting.solicitud.docentePrograma.programa.nombre,
+      docente: docenteNombre,
+      modalidad: meeting.solicitud.modalidad,
+      requiereAsistenciaTecnica: true,
+      requiereGrabacion: meeting.solicitud.requiereGrabacion,
+      asistenteTecnico: assistantFullName,
+      instancias: [{
+        inicio,
+        fin,
+        sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
+        meet: meet?.codigoReunion,
+        joinUrl: meet?.joinUrl
+      }]
+    });
+
     const assignmentMessage = {
       tipo: "ASISTENCIA_ASIGNACION" as const,
       titulo: "Asistencia técnica asignada",
-      cuerpo: `${meeting.solicitud.titulo} quedó asignada a ${[
-        assistant.usuario.nombres,
-        assistant.usuario.apellidos
-      ].filter(Boolean).join(" ") || "la persona asignada"}.`,
+      cuerpo: `${meeting.solicitud.titulo} quedó asignada a ${assistantFullName}.`,
       href: "/mi-agenda",
       metadata: {
         instanciaSalaId: meeting.id,
@@ -332,7 +394,9 @@ export async function asignarAsistentePostulado(
           cuerpo: `La cobertura de ${meeting.solicitud.titulo} fue reasignada a otra persona.`,
           href: "/mi-agenda",
           metadata: { instanciaSalaId: meeting.id, estado: "CANCELADO" },
-          emailSubject: "Cambio en una asistencia técnica asignada"
+          emailSubject: `Cambio en una asistencia técnica asignada: ${meeting.solicitud.titulo}`,
+          emailText: `Se reasignó la cobertura de la reunión "${meeting.solicitud.titulo}" a otra persona. Se han removido tus permisos de co-anfitrión en la sala de Meet correspondiente.`,
+          emailActionLabel: "Abrir mi agenda"
         }
       } : null,
       assistantNotification: {
@@ -345,7 +409,9 @@ export async function asignarAsistentePostulado(
           titulo: "Te asignaron una reunión",
           cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
           href: "/mi-agenda",
-          emailSubject: "Te asignaron una asistencia técnica"
+          emailSubject: `Te asignaron una asistencia técnica: ${meeting.solicitud.titulo}`,
+          emailText: `${meetingDetailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada en Sala Virtual para contar con permisos de moderación, admisión y grabación.`,
+          emailActionLabel: "Abrir mi agenda"
         }
       },
       responsibleNotification: {
@@ -362,7 +428,9 @@ export async function asignarAsistentePostulado(
         message: {
           ...assignmentMessage,
           href: `/reuniones/${meeting.solicitud.id}`,
-          emailSubject: "Asistencia técnica asignada para una reunión"
+          emailSubject: `Asistencia técnica asignada: ${meeting.solicitud.titulo}`,
+          emailText: `${meetingDetailsText}\n\nAsistencia técnica confirmada con: ${assistantFullName}.\n• El/la asistente técnico/a ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
+          emailActionLabel: "Ver reunión"
         }
       }
     };
@@ -460,7 +528,9 @@ export async function renotificarAsistentesDisponibles(
           instanciaSalaId: meeting.id,
           inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
         },
-        emailSubject: "Recordatorio de cobertura de asistencia técnica disponible"
+        emailSubject: `Recordatorio de cobertura de asistencia técnica disponible: ${meeting.solicitud.titulo}`,
+        emailText: `La reunión "${meeting.solicitud.titulo}" (${meeting.solicitud.docentePrograma.programa.nombre}) requiere asistencia técnica y está disponible para postularse en Agenda abierta.\n\nAl asignarte la reunión, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para que ingreses directamente a brindar soporte y moderación sin requerir credenciales de sala.`,
+        emailActionLabel: "Ver agenda abierta"
       }
     };
   });

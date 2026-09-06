@@ -22,7 +22,7 @@ export async function reservarAsistenteDisponible(
       id: true,
       usuarioId: true,
       cesadoHastaProximoInicioSesion: true,
-      usuario: { select: { activo: true, rol: true } }
+      usuario: { select: { activo: true, rol: true, emailPrincipal: true } }
     }
   });
   if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO" || assistant.cesadoHastaProximoInicioSesion) {

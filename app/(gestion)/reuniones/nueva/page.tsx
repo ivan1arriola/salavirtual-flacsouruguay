@@ -74,6 +74,7 @@ export default async function NuevaReunionPage() {
       </header>
       <MeetingForm
         canAssignAssistant={actor.rol === "ADMINISTRACION"}
+        currentUser={{ id: actor.id, email: session.user.email, rol: actor.rol }}
         assistants={assistants.map(({ id, usuario }) => ({
           id,
           label: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim()
@@ -82,7 +83,8 @@ export default async function NuevaReunionPage() {
         programs={associations.map(({ id, docente, programa }) => ({
           id,
           label: programa.nombre,
-          teacher: `${docente.usuario.nombres} ${docente.usuario.apellidos ?? ""}`.trim()
+          teacher: `${docente.usuario.nombres} ${docente.usuario.apellidos ?? ""}`.trim(),
+          teacherEmail: docente.usuario.emailPrincipal ?? undefined
         }))}
       />
     </div>

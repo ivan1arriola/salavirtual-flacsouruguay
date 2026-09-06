@@ -189,6 +189,7 @@ export default async function ReunionDetailPage({
         hasManageableMeetings={manageableMeetings.length > 0}
       />
       <MeetingRoomCredentials credentials={roomCredentials} />
+      {actor.rol === "ADMINISTRACION" ? <MeetingRoomCredentials credentials={roomCredentials} /> : null}
       <MeetingIntegrationProblems
         problems={integrationProblems}
         canRepair={actor.rol === "ADMINISTRACION"}

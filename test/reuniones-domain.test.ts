@@ -224,4 +224,52 @@ describe("dias derivados de reuniones", () => {
     expect(puedeVerAgendaCompleta("DOCENTE")).toBe(true);
     expect(puedeVerAgendaCompleta("ASISTENTE_TECNICO")).toBe(false);
   });
+
+  it("valida la especificacion de anfitrión cuando no requiere asistencia tecnica", () => {
+    const base = {
+      titulo: "Seminario",
+      docenteProgramaId: "dp1",
+      requiereAsistenciaTecnica: false,
+      modalidad: "VIRTUAL" as const,
+      timezone: "America/Montevideo",
+      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
+    };
+
+    // Por defecto hostTipo es DOCENTE y es válido
+    const resultDocente = crearReunionesSchema.safeParse(base);
+    expect(resultDocente.success).toBe(true);
+    if (resultDocente.success) {
+      expect(resultDocente.data.hostTipo).toBe("DOCENTE");
+    }
+
+    // Si elige OTRA_CUENTA sin hostCuentaId, falla
+    const resultCuentaInvalida = crearReunionesSchema.safeParse({
+      ...base,
+      hostTipo: "OTRA_CUENTA"
+    });
+    expect(resultCuentaInvalida.success).toBe(false);
+
+    // Si elige OTRA_CUENTA con hostCuentaId, pasa
+    const resultCuentaValida = crearReunionesSchema.safeParse({
+      ...base,
+      hostTipo: "OTRA_CUENTA",
+      hostCuentaId: "cuenta-google-1"
+    });
+    expect(resultCuentaValida.success).toBe(true);
+
+    // Si elige OTRO_CORREO sin hostEmail, falla
+    const resultCorreoInvalido = crearReunionesSchema.safeParse({
+      ...base,
+      hostTipo: "OTRO_CORREO"
+    });
+    expect(resultCorreoInvalido.success).toBe(false);
+
+    // Si elige OTRO_CORREO con hostEmail, pasa
+    const resultCorreoValido = crearReunionesSchema.safeParse({
+      ...base,
+      hostTipo: "OTRO_CORREO",
+      hostEmail: "anfitrion@flacso.edu.uy"
+    });
+    expect(resultCorreoValido.success).toBe(true);
+  });
 });

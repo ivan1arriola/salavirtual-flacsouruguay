@@ -135,13 +135,15 @@ async function destinatariosProgramaParaNotificacion(
   return destinatariosDocentesPrograma(db, request.docentePrograma.programaId);
 }
 
-export function reunionEmailText(input: Readonly<{
+export type ReunionEmailInput = Readonly<{
   titulo: string;
   programa?: string | null;
   docente?: string | null;
   modalidad?: string | null;
   requiereAsistenciaTecnica?: boolean;
   requiereGrabacion?: boolean;
+  anfitrionDesignado?: string | null;
+  asistenteTecnico?: string | null;
   instancias: readonly Readonly<{
     inicio: string;
     fin: string;
@@ -150,7 +152,9 @@ export function reunionEmailText(input: Readonly<{
     meet?: string | null;
     joinUrl?: string | null;
   }>[];
-}>): string {
+}>;
+
+export function reunionEmailText(input: ReunionEmailInput): string {
   const lines = [
     "DATOS DE LA REUNIÓN",
     `Reunión: ${input.titulo}`,
@@ -159,18 +163,45 @@ export function reunionEmailText(input: Readonly<{
     input.modalidad ? `Modalidad: ${input.modalidad}` : null,
     `Asistencia técnica: ${input.requiereAsistenciaTecnica ? "requerida" : "no requerida"}`,
     `Grabación: ${input.requiereGrabacion ? "requerida" : "no requerida"}`,
+    input.anfitrionDesignado ? `Anfitrión designado: ${input.anfitrionDesignado}` : null,
+    input.asistenteTecnico ? `Asistente técnico: ${input.asistenteTecnico}` : null,
     "",
     input.instancias.length === 1 ? "ENCUENTRO" : "ENCUENTROS"
   ].filter((line): line is string => line !== null);
 
   input.instancias.forEach((item, index) => {
     lines.push(`${index + 1}. ${item.inicio} – ${item.fin}`);
-    if (item.sala) lines.push(`   Usuario: ${item.sala}`);
+    if (item.sala) lines.push(`   Sala: ${item.sala}`);
     if (item.password) lines.push(`   Contraseña: ${item.password}`);
     if (item.meet) lines.push(`   Código de Meet: ${item.meet}`);
     if (item.joinUrl) lines.push(`   Acceso: ${item.joinUrl}`);
     if (index < input.instancias.length - 1) lines.push("");
   });
+
+  lines.push("");
+  lines.push("¿CÓMO ACCEDER A LA REUNIÓN?");
+  lines.push("• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.");
+  lines.push(
+    "• Anfitriones y docentes: ingresen al enlace de Google Meet directamente con su cuenta de Google asignada. Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host) para iniciar la sesión, admitir participantes y gestionar la grabación."
+  );
+  lines.push(
+    "• Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet provisto."
+  );
+  if (input.requiereAsistenciaTecnica) {
+    if (input.asistenteTecnico) {
+      lines.push(
+        `• Asistencia técnica: asignada a ${input.asistenteTecnico}. El/la asistente técnico/a ingresará como anfitrión/co-anfitrión para brindar soporte y moderar la sesión.`
+      );
+    } else {
+      lines.push(
+        "• Asistencia técnica: la reunión requiere asistencia técnica (pendiente de asignación). Quien sea designado/a como asistente técnico/a ingresará como anfitrión/co-anfitrión de la sesión."
+      );
+    }
+  } else {
+    lines.push(
+      "• Asistencia técnica: no requerida. Quien solicitó la reunión y el/la docente o anfitrión designado cuentan con permisos de anfitrión en Google Meet."
+    );
+  }
 
   return lines.join("\n");
 }

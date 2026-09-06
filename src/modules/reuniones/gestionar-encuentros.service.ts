@@ -138,21 +138,23 @@ export async function agregarEncuentro(
       },
     });
 
-    const cohostIds = cohostsComunes(
-      serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
-    );
-    if (cohostIds.length) {
-      await tx.cohostReunion.createMany({
-        data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId })),
-      });
-    }
-    const cohostEmails = normalizeCohostEmails(
-      cohostsComunes(serie.instancias.map(({ cohostEmails }) => cohostEmails.map(({ email }) => email))),
-    );
-    if (cohostEmails.length) {
-      await tx.cohostEmailReunion.createMany({
-        data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
-      });
+    if (!input.requiereAsistenciaTecnica) {
+      const cohostIds = cohostsComunes(
+        serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
+      );
+      if (cohostIds.length) {
+        await tx.cohostReunion.createMany({
+          data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId })),
+        });
+      }
+      const cohostEmails = normalizeCohostEmails(
+        cohostsComunes(serie.instancias.map(({ cohostEmails }) => cohostEmails.map(({ email }) => email))),
+      );
+      if (cohostEmails.length) {
+        await tx.cohostEmailReunion.createMany({
+          data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
+        });
+      }
     }
 
     await recalcularSolicitud(tx, serie.id);

@@ -68,6 +68,16 @@ export async function renotificarSerieAlPrograma(
         select: {
           inicioProgramadoAt: true,
           finProgramadoAt: true,
+          asignaciones: {
+            where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+            select: {
+              asistenteTecnico: {
+                select: {
+                  usuario: { select: { nombres: true, apellidos: true } }
+                }
+              }
+            }
+          },
           eventosProveedor: {
             where: { proveedor: { tipo: "GOOGLE_MEET" } },
             select: {
@@ -94,6 +104,13 @@ export async function renotificarSerieAlPrograma(
     throw new ConflictApiError("La serie no tiene encuentros activos o futuros para notificar.");
   }
 
+  const firstAssigned = meetings
+    .flatMap((m) => m.asignaciones)
+    .find((a) => a.asistenteTecnico)?.asistenteTecnico;
+  const assistantName = firstAssigned
+    ? [firstAssigned.usuario.nombres, firstAssigned.usuario.apellidos].filter(Boolean).join(" ")
+    : null;
+
   const teacher = request.docentePrograma.docente.usuario;
   const teacherName = [teacher.nombres, teacher.apellidos].filter(Boolean).join(" ");
   const detailsText = reunionEmailText({
@@ -103,6 +120,7 @@ export async function renotificarSerieAlPrograma(
     modalidad: request.modalidad,
     requiereAsistenciaTecnica: request.requiereAsistenciaTecnica,
     requiereGrabacion: request.requiereGrabacion,
+    asistenteTecnico: assistantName,
     instancias: meetings.map((meeting) => {
       const meet = meeting.eventosProveedor[0];
       const inicioFecha = formatShortDate(meeting.inicioProgramadoAt);
@@ -113,7 +131,6 @@ export async function renotificarSerieAlPrograma(
           ? formatTime(meeting.finProgramadoAt)
           : `${capitalizar(finFecha)}, ${formatTime(meeting.finProgramadoAt)}`,
         sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
-        password: passwordCuenta(dependencies.descifrar, meet?.cuentaProveedor?.secretRef),
         meet: meet?.codigoReunion,
         joinUrl: meet?.joinUrl,
       };
