@@ -9,6 +9,7 @@ import type { MeetProvider, MeetProvisionRequest, MeetProvisionResult } from "./
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.settings";
 const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
+const MEET_CREATED_SCOPE = "https://www.googleapis.com/auth/meetings.space.created";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
@@ -74,7 +75,7 @@ export async function configurarGoogleMeetExistente(
   const auth = new JWT({
     email: credentials.serviceAccountEmail,
     key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
     subject: credentials.subject
   });
   const spaceName = await configurarEspacioMeet(auth, codigoReunion, settings);
@@ -100,7 +101,7 @@ export async function sincronizarCohostsGoogleExistente(
   const meetAuth = new JWT({
     email: credentials.serviceAccountEmail,
     key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
     subject: credentials.subject
   });
   const eventUrl = `${calendarEventsUrl(input.calendarId)}/${encodeURIComponent(input.externalEventId)}`;
@@ -141,7 +142,7 @@ export function crearGoogleCalendarProvider(
   const meetAuth = new JWT({
     email: credentials.serviceAccountEmail,
     key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
     subject: credentials.subject
   });
 

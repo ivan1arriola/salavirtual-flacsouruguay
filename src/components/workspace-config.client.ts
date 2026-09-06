@@ -4,7 +4,7 @@ export type WorkspaceTestTarget = Exclude<WorkspaceSection, "ESTADO">;
 type ApiResult = Readonly<{ ok: boolean; message: string }>;
 
 export type WorkspaceScopeValidation = Readonly<{
-  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "gmail.send";
+  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "meetings.space.created" | "gmail.send";
   label: string;
   scope: string;
   autorizado: boolean;

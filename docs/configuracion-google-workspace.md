@@ -31,6 +31,7 @@ https://www.googleapis.com/auth/calendar.events,
 https://www.googleapis.com/auth/drive,
 https://www.googleapis.com/auth/meetings.space.settings,
 https://www.googleapis.com/auth/meetings.space.readonly,
+https://www.googleapis.com/auth/meetings.space.created,
 https://www.googleapis.com/auth/gmail.send
 ```
 
@@ -40,10 +41,15 @@ Estos son los scopes que utiliza actualmente Sala Virtual:
 - `drive`: localizar, mover, crear y reproducir archivos y carpetas de grabaciones y documentos.
 - `meetings.space.settings`: leer y modificar la configuracion de Meets creados desde Calendar, incluidos ajustes y cohosts.
 - `meetings.space.readonly`: consultar espacios, conference records, participantes, grabaciones, transcripciones y notas.
+- `meetings.space.created`: administrar los miembros de un espacio Meet y asignar o quitar cohosts mediante `spaces.members`.
 - `gmail.send`: enviar notificaciones por Gmail API.
 
-`meetings.space.created` no es un requisito actual: Sala Virtual no crea el espacio con
-`spaces.create`; solicita la conferencia desde Google Calendar. Del mismo modo,
+La gestion de miembros/cohosts mediante `spaces.members` pertenece al Developer Preview
+de Google Meet. Ademas de autorizar `meetings.space.created` en la delegacion de todo el
+dominio, el proyecto de Google Cloud usado por Sala Virtual debe estar habilitado en el
+Google Workspace Developer Preview Program. Mientras ese acceso no este activo, Calendar
+puede invitar a la persona pero Google Meet no la promovera a cohost.
+
 `drive.meet.readonly` no sustituye a `drive`, porque la aplicacion tambien necesita
 operaciones de escritura y organizacion de archivos.
 

@@ -87,17 +87,18 @@ export function WorkspaceScopesValidator() {
       ) : (
         <div style={{ minWidth: 0 }}>
           <p className="form-message">
-            Se comprobarán Calendar, Drive, configuración y lectura de Meet, y envío por Gmail para todas las cuentas configuradas.
+            Se comprobarán Calendar, Drive, configuración, lectura y gestión de cohosts de Meet, y envío por Gmail para todas las cuentas configuradas.
           </p>
           <div className="config-scopes" style={{ minWidth: 0 }}>
             <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/calendar.events</code>
             <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/drive</code>
             <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.settings</code>
             <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.readonly</code>
+            <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/meetings.space.created</code>
             <code style={WRAPPABLE_CODE_STYLE}>https://www.googleapis.com/auth/gmail.send</code>
           </div>
           <p className="form-message">
-            <strong>Nota:</strong> <code>meetings.space.created</code> no es requerido actualmente porque Sala Virtual crea los Meets mediante Google Calendar, no mediante <code>spaces.create</code>. El scope <code>drive</code> ya cubre las operaciones de archivos que necesita la app.
+            <strong>Nota:</strong> <code>meetings.space.created</code> es necesario para administrar miembros/cohosts mediante <code>spaces.members</code>. Esta función de Google Meet está en Developer Preview, por lo que además el proyecto de Google Cloud debe estar habilitado para el programa de Preview.
           </p>
         </div>
       )}
