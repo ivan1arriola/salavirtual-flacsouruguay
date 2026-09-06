@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { db } from "../src/lib/db";
+import { normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
 
 const applyChanges = process.argv.includes("--apply");
 const syncGoogle = process.argv.includes("--sync-google") && !process.argv.includes("--no-sync-google");
@@ -20,15 +21,10 @@ async function main(): Promise<void> {
       },
       solicitud: {
         select: {
-          docentePrograma: {
+          creadaPor: {
             select: {
-              docente: {
-                select: {
-                  usuario: {
-                    select: { cuentasGoogle: { select: { id: true } } }
-                  }
-                }
-              }
+              emailPrincipal: true,
+              cuentasGoogle: { select: { id: true } }
             }
           }
         }
@@ -38,28 +34,44 @@ async function main(): Promise<void> {
         select: {
           asistenteTecnico: {
             select: {
-              usuario: { select: { cuentasGoogle: { select: { id: true } } } }
+              usuario: {
+                select: {
+                  emailPrincipal: true,
+                  cuentasGoogle: { select: { id: true } }
+                }
+              }
             }
           }
         }
       },
-      cohosts: { select: { cuentaGoogleId: true } }
+      cohosts: { select: { cuentaGoogleId: true } },
+      cohostEmails: { select: { email: true } }
     }
   });
 
   const plan = meetings.flatMap((meeting) => {
-    const expected = new Set([
-      ...meeting.solicitud.docentePrograma.docente.usuario.cuentasGoogle.map(({ id }) => id),
-      ...meeting.asignaciones.flatMap(({ asistenteTecnico }) =>
-        asistenteTecnico.usuario.cuentasGoogle.map(({ id }) => id)
+    const requester = meeting.solicitud.creadaPor;
+    const assistants = meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario);
+    const expectedAccountIds = new Set([
+      ...requester.cuentasGoogle.map(({ id }) => id),
+      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ id }) => id))
+    ]);
+    const expectedEmails = normalizeCohostEmails([
+      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+      ...assistants.flatMap((assistant) =>
+        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
       )
     ]);
-    const current = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
-    const missing = [...expected].filter((id) => !current.has(id));
-    return missing.length
+    const currentAccountIds = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
+    const currentEmails = new Set(meeting.cohostEmails.map(({ email }) => email.toLowerCase()));
+    const missingAccountIds = [...expectedAccountIds].filter((id) => !currentAccountIds.has(id));
+    const missingEmails = expectedEmails.filter((email) => !currentEmails.has(email));
+
+    return missingAccountIds.length || missingEmails.length
       ? [{
           instanciaSalaId: meeting.id,
-          missing,
+          missingAccountIds,
+          missingEmails,
           hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
         }]
       : [];
@@ -69,8 +81,10 @@ async function main(): Promise<void> {
     mode: applyChanges ? "apply" : "dry-run",
     syncGoogle,
     syncAllGoogle,
+    meetingsReviewed: meetings.length,
     instancesToUpdate: plan.length,
-    cohostsToAdd: plan.reduce((total, item) => total + item.missing.length, 0),
+    googleAccountsToAdd: plan.reduce((total, item) => total + item.missingAccountIds.length, 0),
+    emailCohostsToAdd: plan.reduce((total, item) => total + item.missingEmails.length, 0),
     instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
     instancesToSyncWithGoogle: syncAllGoogle
       ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
@@ -80,11 +94,20 @@ async function main(): Promise<void> {
   if (!applyChanges) return;
 
   for (const item of plan) {
-    if (item.missing.length > 0) {
+    if (item.missingAccountIds.length > 0) {
       await db.cohostReunion.createMany({
-        data: item.missing.map((cuentaGoogleId) => ({
+        data: item.missingAccountIds.map((cuentaGoogleId) => ({
           instanciaSalaId: item.instanciaSalaId,
           cuentaGoogleId
+        })),
+        skipDuplicates: true
+      });
+    }
+    if (item.missingEmails.length > 0) {
+      await db.cohostEmailReunion.createMany({
+        data: item.missingEmails.map((email) => ({
+          instanciaSalaId: item.instanciaSalaId,
+          email
         })),
         skipDuplicates: true
       });
