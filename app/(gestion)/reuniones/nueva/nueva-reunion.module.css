@@ -350,3 +350,185 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Mobile creation flow: keep navigation useful without consuming the screen. */
+@media (max-width: 760px) {
+  .header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .headerCopy > p:last-child {
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  .programsAction {
+    width: max-content;
+    max-width: 100%;
+    min-height: 40px;
+    align-self: flex-start;
+    border-radius: 999px;
+    padding: 7px 11px;
+    box-shadow: none;
+  }
+
+  .page :global(.meeting-form) {
+    gap: 10px;
+  }
+
+  .page :global(.meeting-form-steps) {
+    position: sticky;
+    z-index: 24;
+    top: 66px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 5px 16px rgb(31 50 76 / 8%);
+  }
+
+  .page :global(.meeting-form-steps a) {
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 5px;
+  }
+
+  .page :global(.meeting-form-steps a div) {
+    min-width: 0;
+    display: block;
+  }
+
+  .page :global(.meeting-form-steps a > span) {
+    width: 25px;
+    height: 25px;
+    flex-basis: 25px;
+    font-size: 0.7rem;
+  }
+
+  .page :global(.meeting-form-steps strong) {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    text-align: left;
+  }
+
+  .page :global(.meeting-form-steps small) {
+    display: none;
+  }
+
+  .page :global(.form-section) {
+    scroll-margin-top: 126px;
+    border-radius: 11px;
+    padding: 15px;
+  }
+
+  .page :global(.form-section-title) {
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 11px;
+  }
+
+  .page :global(.form-section-title small) {
+    font-size: 0.74rem;
+  }
+
+  .page :global(.form-actions) {
+    z-index: 24;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
+    padding: 8px 9px;
+    box-shadow: 0 8px 24px rgb(24 33 47 / 14%);
+  }
+
+  .page :global(.form-actions .primary-action) {
+    width: auto;
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px 11px;
+    white-space: nowrap;
+  }
+
+  .page :global(.meeting-form-submit-summary) {
+    gap: 1px;
+  }
+
+  .page :global(.meeting-form-submit-summary strong) {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .page :global(.meeting-form-submit-summary span) {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 520px) {
+  .programsAction small {
+    display: none;
+  }
+
+  .programsAction strong {
+    font-size: 0.78rem;
+  }
+
+  .page :global(.form-section) {
+    padding: 13px;
+  }
+
+  .page :global(.form-section-title > span) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .page :global(.form-section-title h2) {
+    font-size: 0.98rem;
+  }
+
+  .page :global(.modality-choice) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page :global(.modality-choice label) {
+    min-height: 52px;
+    padding: 8px 9px;
+  }
+
+  .page :global(.form-actions) {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .page :global(.meeting-form-submit-summary span) {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .page :global(.meeting-form-steps a) {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 52px;
+  }
+
+  .page :global(.meeting-form-steps strong) {
+    font-size: 0.67rem;
+    text-align: center;
+  }
+
+  .page :global(.modality-choice) {
+    grid-template-columns: 1fr;
+  }
+
+  .page :global(.form-actions .primary-action) {
+    padding-inline: 9px;
+    font-size: 0.78rem;
+  }
+}
