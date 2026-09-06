@@ -1,0 +1,99 @@
+name: "Deploy · EC2"
+run-name: "Deploy EC2 · ${{ github.ref_name }} · ${{ github.sha }}"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ec2-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      APP_BASE_URL: "https://salavirtual.flacso.edu.uy"
+      TIMEZONE: "America/Montevideo"
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_ci?schema=public"
+      AUTH_SECRET: "build-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
+      AUTH_TRUST_HOST: "true"
+      CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CRON_SECRET: "build-only-cron-secret"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Node.js 24 + caché npm
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar producción
+        run: npm run build
+
+      - name: Empaquetar standalone
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/.next
+          cp -a .next/standalone/. release/
+          cp -a .next/static release/.next/static
+          if [[ -d public ]]; then
+            cp -a public release/public
+          fi
+          tar -C release -czf salavirtual-${GITHUB_SHA}.tar.gz .
+
+      - name: Configurar SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Subir release
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          set -euo pipefail
+          scp "salavirtual-${GITHUB_SHA}.tar.gz" "$EC2_USER@$EC2_HOST:/tmp/"
+
+      - name: Activar release y verificar localmente
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          set -euo pipefail
+          ssh "$EC2_USER@$EC2_HOST" "SHA='$GITHUB_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          base=/srv/apps/salavirtual-flacso
+          release="$base/releases/$SHA"
+          archive="/tmp/salavirtual-$SHA.tar.gz"
+
+          sudo install -d -o salavirtual -g salavirtual "$base/releases" "$base/shared"
+          sudo install -d -o salavirtual -g salavirtual "$release"
+          sudo tar -xzf "$archive" -C "$release"
+          sudo chown -R salavirtual:salavirtual "$release"
+          sudo ln -sfn "$release" "$base/current"
+          sudo systemctl restart salavirtual.service
+          sleep 3
+          curl --fail --silent --show-error http://127.0.0.1:3101/api/health
+          sudo systemctl --no-pager --full status salavirtual.service
+          rm -f "$archive"
+          REMOTE

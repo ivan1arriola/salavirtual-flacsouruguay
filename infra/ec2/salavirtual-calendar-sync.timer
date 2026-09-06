@@ -1,0 +1,11 @@
+[Unit]
+Description=Sala Virtual FLACSO - sincronización diaria de calendarios
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 UTC
+Persistent=true
+RandomizedDelaySec=30
+Unit=salavirtual-calendar-sync.service
+
+[Install]
+WantedBy=timers.target

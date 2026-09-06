@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 
-const HEALTH_STATUS = Object.freeze({
-  ok: true,
-  app: "flacso-meet"
-});
+import { db } from "@/src/lib/db";
 
-export function GET() {
-  return NextResponse.json(HEALTH_STATUS);
+export const runtime = "nodejs";
+
+export async function GET() {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return NextResponse.json({ ok: true, app: "flacso-meet", database: "ok" });
+  } catch {
+    return NextResponse.json(
+      { ok: false, app: "flacso-meet", database: "unavailable" },
+      { status: 503 }
+    );
+  }
 }
