@@ -1,0 +1,105 @@
+/* Agrupación visual por día y cebrado suave para la agenda. */
+
+.agenda-day-heading,
+.agenda-day-card {
+  --agenda-day-accent: #7c9bb8;
+  --agenda-day-tint: #eaf2f8;
+}
+
+.agenda-day-heading {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  border: 1px solid color-mix(in srgb, var(--agenda-day-accent) 28%, #dfe6eb);
+  border-left: 4px solid var(--agenda-day-accent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--agenda-day-tint) 42%, #ffffff);
+  padding: 8px 12px;
+}
+
+.agenda-day-heading > span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--agenda-day-accent) 12%, #ffffff);
+  color: color-mix(in srgb, var(--agenda-day-accent) 78%, #334155);
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.agenda-day-heading > strong {
+  color: #2e4054;
+  font-size: 0.86rem;
+  text-transform: capitalize;
+}
+
+.agenda-day-heading.is-today {
+  border-left-width: 5px;
+}
+
+.agenda-day-heading.is-today > span {
+  background: color-mix(in srgb, var(--agenda-day-accent) 18%, #ffffff);
+  color: #24465e;
+}
+
+.agenda-day-card {
+  border-left: 4px solid color-mix(in srgb, var(--agenda-day-accent) 58%, #cfd9e1);
+}
+
+.agenda-day-card .agenda-meeting-card-header {
+  background: color-mix(in srgb, var(--agenda-day-tint) 22%, #ffffff);
+}
+
+.agenda-day-card .agenda-meeting-card-body {
+  background: color-mix(in srgb, var(--agenda-day-tint) 8%, #ffffff);
+}
+
+.agenda-day-card.is-zebra .agenda-meeting-card-body {
+  background: color-mix(in srgb, var(--agenda-day-tint) 18%, #f8fafc);
+}
+
+.agenda-day-card .agenda-meeting-card-footer {
+  background: color-mix(in srgb, var(--agenda-day-tint) 9%, #fbfcfd);
+}
+
+.agenda-day-tone-0 {
+  --agenda-day-accent: #6f93b7;
+  --agenda-day-tint: #e8f1f9;
+}
+
+.agenda-day-tone-1 {
+  --agenda-day-accent: #6e9f98;
+  --agenda-day-tint: #e9f5f2;
+}
+
+.agenda-day-tone-2 {
+  --agenda-day-accent: #8a91b7;
+  --agenda-day-tint: #eff0f8;
+}
+
+.agenda-day-tone-3 {
+  --agenda-day-accent: #aa9270;
+  --agenda-day-tint: #f7f1e8;
+}
+
+.agenda-day-tone-4 {
+  --agenda-day-accent: #829e78;
+  --agenda-day-tint: #eef5eb;
+}
+
+@media (max-width: 520px) {
+  .agenda-day-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+
+  .agenda-day-heading > strong {
+    font-size: 0.8rem;
+  }
+}
