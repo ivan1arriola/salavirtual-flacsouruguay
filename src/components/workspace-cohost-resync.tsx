@@ -4,6 +4,7 @@ import { CheckCircle2, LoaderCircle, RefreshCw, TriangleAlert, UsersRound } from
 import { useState } from "react";
 
 type SyncFailure = Readonly<{ instanciaSalaId: string; titulo: string; inicio: string; error: string }>;
+type PendingExternal = Readonly<{ instanciaSalaId: string; titulo: string; inicio: string; emails: readonly string[] }>;
 type SyncResult = Readonly<{
   reunionesActivas: number;
   candidatas: number;
@@ -11,7 +12,10 @@ type SyncResult = Readonly<{
   sincronizadas: number;
   omitidas: number;
   fallidas: number;
+  cohostsExternosPendientes: number;
+  reunionesConExternos: number;
   errores: readonly SyncFailure[];
+  externos: readonly PendingExternal[];
   message: string;
 }>;
 
@@ -41,6 +45,8 @@ export function WorkspaceCohostResync() {
     }
   }
 
+  const hasWarnings = Boolean(result && (result.fallidas > 0 || result.cohostsExternosPendientes > 0));
+
   return (
     <section className="form-section workspace-config workspace-resync-section" aria-labelledby="workspace-cohost-resync-title">
       <header className="form-section-title">
@@ -56,7 +62,7 @@ export function WorkspaceCohostResync() {
         <div>
           <strong>Actualizar cohosts</strong>
           <span>Agrega al solicitante y a los asistentes técnicos asignados, y conserva los demás cohosts que ya tenga la reunión.</span>
-          <small>No cambia fechas, enlaces, salas ni asignaciones.</small>
+          <small>Los cohosts del dominio FLACSO se aplican automáticamente. Los externos quedan identificados para asignación manual mientras Google mantenga esta API en Developer Preview.</small>
         </div>
         <button className="secondary-action" disabled={busy} onClick={resync} type="button">
           {busy ? <LoaderCircle className="button-spinner" size={17} /> : <RefreshCw size={17} />}
@@ -71,16 +77,31 @@ export function WorkspaceCohostResync() {
       ) : null}
 
       {result ? (
-        <div className={`workspace-resync-feedback${result.fallidas === 0 ? " is-success" : " is-warning"}`} role="status">
-          {result.fallidas === 0 ? <CheckCircle2 size={17} /> : <TriangleAlert size={17} />}
+        <div className={`workspace-resync-feedback${hasWarnings ? " is-warning" : " is-success"}`} role="status">
+          {hasWarnings ? <TriangleAlert size={17} /> : <CheckCircle2 size={17} />}
           <div>
             <strong>{result.message}</strong>
             <span>
-              {result.cohostsAgregados} cohosts agregados · {result.sincronizadas} sincronizadas · {result.fallidas} con error · {result.omitidas} omitidas
+              {result.cohostsAgregados} cohosts agregados · {result.sincronizadas} sincronizadas · {result.cohostsExternosPendientes} externos pendientes · {result.fallidas} con error · {result.omitidas} omitidas
             </span>
+
+            {result.externos.length > 0 ? (
+              <details>
+                <summary>Ver cohosts externos pendientes</summary>
+                <ul>
+                  {result.externos.map((item) => (
+                    <li key={`external-${item.instanciaSalaId}`}>
+                      <strong>{item.titulo}</strong>
+                      <small>{new Date(item.inicio).toLocaleString("es-UY")} · {item.emails.join(", ")}</small>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+
             {result.errores.length > 0 ? (
               <details>
-                <summary>Ver reuniones pendientes</summary>
+                <summary>Ver reuniones con error de Google</summary>
                 <ul>
                   {result.errores.map((item) => (
                     <li key={item.instanciaSalaId}>
