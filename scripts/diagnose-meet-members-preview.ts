@@ -2,6 +2,11 @@ import { JWT } from "google-auth-library";
 import { db } from "../src/lib/db";
 import { descifrarConfiguracion } from "../src/lib/config/encryption";
 
+function argValue(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+}
+
 async function main() {
   const config = await db.configuracionGoogleWorkspace.findUnique({
     where: { id: "principal" },
@@ -48,7 +53,11 @@ async function main() {
   const spaceName = created.data.name;
   if (!spaceName) throw new Error("Meet no devolvió el nombre del espacio nuevo.");
 
-  const internalCohost = "web@flacso.edu.uy";
+  const internalCohost = argValue("cohost") ?? "sala01@flacso.edu.uy";
+  if (internalCohost.toLowerCase() === config.serviceAccountSubject.toLowerCase()) {
+    throw new Error("El cohost de prueba no puede ser la misma cuenta que crea el espacio.");
+  }
+
   const member = await auth.request<{
     name?: string;
     email?: string;
@@ -74,7 +83,8 @@ async function main() {
     createdSpace: Boolean(spaceName),
     meetingCode: created.data.meetingCode ?? null,
     meetingUri: created.data.meetingUri ?? null,
-    cohostCreated: member.data.email === internalCohost && member.data.role === "COHOST",
+    testCohost: internalCohost,
+    cohostCreated: member.data.email?.toLowerCase() === internalCohost.toLowerCase() && member.data.role === "COHOST",
     memberEmail: member.data.email ?? null,
     memberRole: member.data.role ?? null,
     listedMembers: listed.data.members?.map(({ email, role }) => ({ email, role })) ?? [],
