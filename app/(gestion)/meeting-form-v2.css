@@ -1,0 +1,431 @@
+.meeting-form-v2 .form-section {
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(31, 50, 76, 0.045);
+}
+
+.meeting-form-v2 .meeting-form-steps {
+  border-radius: 12px;
+}
+
+.organization-v2 {
+  display: grid;
+  gap: 16px;
+}
+
+.organization-support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.organization-choice-panel,
+.organization-subsection {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fbfdfe;
+  padding: 16px;
+}
+
+.organization-choice-panel h3,
+.organization-subsection h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+.organization-choice-panel > p,
+.organization-subsection-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.organization-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.organization-segmented label {
+  min-height: 68px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.organization-segmented label.is-selected {
+  border-color: var(--brand);
+  background: #f7fbfd;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 8%, transparent);
+}
+
+.organization-segmented input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--brand);
+}
+
+.organization-segmented strong,
+.organization-segmented small {
+  display: block;
+}
+
+.organization-segmented strong {
+  margin-bottom: 3px;
+  font-size: 0.8rem;
+}
+
+.organization-segmented small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.organization-assistance-config {
+  display: grid;
+  gap: 13px;
+  background: #fff;
+}
+
+.organization-assistance-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.organization-assistance-choice label {
+  margin: 0;
+}
+
+.organization-subsection-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.organization-subsection-heading h3 > span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.organization-access-section {
+  background: #fff;
+}
+
+.organization-access-note,
+.organization-google-warning,
+.organization-guest-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  border: 1px solid #cfe4fb;
+  border-radius: 10px;
+  background: #eef6ff;
+  padding: 12px 13px;
+}
+
+.organization-access-note > svg,
+.organization-google-warning > svg,
+.organization-guest-note > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.organization-access-note strong,
+.organization-access-note span,
+.organization-google-warning strong,
+.organization-google-warning span,
+.organization-guest-note strong,
+.organization-guest-note span {
+  display: block;
+}
+
+.organization-access-note strong,
+.organization-google-warning strong,
+.organization-guest-note strong {
+  font-size: 0.78rem;
+}
+
+.organization-access-note span,
+.organization-google-warning span,
+.organization-guest-note span {
+  margin-top: 2px;
+  color: #526779;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.teacher-cohost-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin-top: 12px;
+  border: 1px solid #bedfce;
+  border-radius: 11px;
+  background: #f7fcf9;
+  padding: 13px 14px;
+}
+
+.teacher-cohost-check {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #24745b;
+  color: #fff;
+}
+
+.teacher-cohost-card div {
+  min-width: 0;
+}
+
+.teacher-cohost-card small,
+.teacher-cohost-card strong,
+.teacher-cohost-card div > span {
+  display: block;
+}
+
+.teacher-cohost-card small {
+  color: #24745b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.teacher-cohost-card strong {
+  margin: 3px 0 1px;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.teacher-cohost-card div > span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.teacher-cohost-badge,
+.organization-count-pill {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.68rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.teacher-cohost-badge {
+  border: 1px solid #c6e3d7;
+  background: #eaf7f1;
+  color: #24745b;
+}
+
+.organization-count-pill {
+  background: #edf2f5;
+  color: #526071;
+}
+
+.organization-email-editor {
+  background: #fff;
+}
+
+.organization-google-warning {
+  border-color: #efd1a8;
+  background: #fff5e7;
+}
+
+.organization-google-warning > svg,
+.organization-google-warning strong {
+  color: #9a5719;
+}
+
+.organization-guest-note {
+  border-color: #dce6ee;
+  background: #f8fbfd;
+}
+
+.organization-guest-note > svg {
+  color: var(--brand);
+}
+
+.organization-email-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.organization-email-add-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.organization-email-add-row input:focus {
+  border-color: var(--brand);
+  outline: 2px solid color-mix(in srgb, var(--brand) 15%, transparent);
+  outline-offset: 1px;
+}
+
+.organization-email-add-row .secondary-action {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.organization-email-error {
+  min-height: 17px;
+  display: block;
+  margin-top: 5px;
+  color: #923737;
+  font-size: 0.7rem;
+}
+
+.organization-email-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.organization-email-chips > span {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f4f8fa;
+  padding: 6px 8px 6px 10px;
+  color: #3f4b5c;
+  font-size: 0.72rem;
+}
+
+.organization-email-chips strong {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organization-email-chips button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #718096;
+  padding: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.organization-email-chips button:hover {
+  background: #e4eaee;
+  color: #923737;
+}
+
+.meeting-form-actions-v2 {
+  min-height: 70px;
+}
+
+.meeting-form-summary-v2 {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+
+.meeting-form-summary-v2 > div {
+  display: grid;
+  gap: 1px;
+}
+
+.meeting-form-summary-v2 span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.meeting-form-summary-v2 strong {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .organization-support-grid,
+  .organization-assistance-choice {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-form-actions-v2 {
+    align-items: flex-end;
+  }
+
+  .meeting-form-summary-v2 {
+    gap: 8px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .organization-choice-panel,
+  .organization-subsection {
+    padding: 13px;
+  }
+
+  .organization-segmented,
+  .organization-email-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-cohost-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .teacher-cohost-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .organization-subsection-heading {
+    display: grid;
+    gap: 8px;
+  }
+
+  .organization-count-pill {
+    justify-self: start;
+  }
+
+  .meeting-form-actions-v2 {
+    position: static;
+    display: grid;
+  }
+
+  .meeting-form-actions-v2 .primary-action {
+    width: 100%;
+    justify-content: center;
+  }
+}

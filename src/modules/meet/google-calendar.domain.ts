@@ -1,6 +1,10 @@
 import type { MeetProvisionRequest, MeetProvisionResult } from "./provider";
 
 export function crearCalendarEvent(request: MeetProvisionRequest) {
+  const attendeeEmails = normalizeEmails([
+    ...(request.cohostEmails ?? []),
+    ...(request.guestEmails ?? []),
+  ]);
   return {
     id: request.calendarEventId,
     summary: request.titulo,
@@ -13,8 +17,8 @@ export function crearCalendarEvent(request: MeetProvisionRequest) {
       dateTime: request.fin.toISOString(),
       timeZone: request.timezone
     },
-    ...(request.cohostEmails?.length
-      ? { attendees: request.cohostEmails.map((email) => ({ email })) }
+    ...(attendeeEmails.length
+      ? { attendees: attendeeEmails.map((email) => ({ email })) }
       : {}),
     ...(request.conferenceData ? { conferenceData: request.conferenceData } : {})
   } as const;
@@ -54,6 +58,7 @@ export type CalendarEvent = Readonly<{
   start?: Readonly<{ dateTime?: string | null; timeZone?: string | null }> | null;
   end?: Readonly<{ dateTime?: string | null; timeZone?: string | null }> | null;
   hangoutLink?: string | null;
+  attendees?: readonly Readonly<{ email?: string | null }>[];
   conferenceData?: Readonly<{
     conferenceId?: string | null;
     entryPoints?: readonly Readonly<{
@@ -96,4 +101,8 @@ export function eventoCalendarCoincideConSolicitud(
     end === request.fin.getTime() &&
     event.start?.timeZone === request.timezone &&
     event.end?.timeZone === request.timezone;
+}
+
+function normalizeEmails(values: readonly string[]): readonly string[] {
+  return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
 }

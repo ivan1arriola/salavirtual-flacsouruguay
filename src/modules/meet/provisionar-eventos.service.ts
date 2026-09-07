@@ -320,6 +320,10 @@ async function configurarAjustesMeet(
 
 function solicitudProvider(event: EventoReclamable): MeetProvisionRequest {
   const { instancia } = event;
+  const cohostEmails = normalizeCohostEmails([
+    ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+    ...instancia.cohostEmails.map(({ email }) => email),
+  ]);
   return {
     titulo: instancia.solicitud.titulo,
     descripcion: instancia.descripcion ?? instancia.solicitud.descripcion ?? undefined,
@@ -327,13 +331,30 @@ function solicitudProvider(event: EventoReclamable): MeetProvisionRequest {
     fin: instancia.finProgramadoAt,
     timezone: instancia.timezone,
     calendarId: event.cuentaProveedor!.emailOrganizador!,
-    cohostEmails: normalizeCohostEmails([
-      ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...instancia.cohostEmails.map(({ email }) => email),
-    ]),
+    cohostEmails,
+    guestEmails: extraerInvitados(event.payloadUltimo, cohostEmails),
     requiereAsistenciaTecnica: instancia.requiereAsistenciaTecnica,
     calendarEventId: calendarEventId(event.id),
   };
+}
+
+function extraerInvitados(payload: unknown, cohostEmails: readonly string[]): readonly string[] {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+  const record = payload as {
+    salaVirtual?: { invitadosEmails?: unknown };
+    attendees?: readonly Readonly<{ email?: unknown }>[];
+  };
+  const cohostSet = new Set(normalizeCohostEmails(cohostEmails));
+  const configured = record.salaVirtual?.invitadosEmails;
+  if (Array.isArray(configured)) {
+    return normalizeCohostEmails(
+      configured.flatMap((value) => typeof value === "string" ? [value.trim()] : []).filter(Boolean),
+    ).filter((email) => !cohostSet.has(email));
+  }
+  const attendees = Array.isArray(record.attendees)
+    ? record.attendees.flatMap(({ email }) => typeof email === "string" ? [email.trim()] : []).filter(Boolean)
+    : [];
+  return normalizeCohostEmails(attendees).filter((email) => !cohostSet.has(email));
 }
 
 async function obtenerConReintentos(

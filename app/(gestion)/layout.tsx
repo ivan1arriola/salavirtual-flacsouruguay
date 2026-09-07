@@ -14,13 +14,13 @@ import "./assistant-dashboard.css";
 import "./assistant-report-config.css";
 import "./admin-assistants.css";
 import "./role-dashboard.css";
-import "./admin-upcoming-refresh.css";
 import "./ux-polish.css";
 import "./brand-refresh.css";
 import "./profile-navigation-refresh.css";
 import "./agenda-refresh.css";
 import "./agenda-v2.css";
 import "./assistant-agenda.css";
+import "./meeting-form-v2.css";
 
 export default async function GestionLayout({
   children

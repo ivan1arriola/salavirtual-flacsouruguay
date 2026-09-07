@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { crearReuniones } from "../src/modules/reuniones/crear-reuniones.service";
 
-describe("crearReuniones - nueva lógica de anfitriones", () => {
+describe("crearReuniones - cohosts e invitados", () => {
   const baseInput = {
     titulo: "Seminario de Investigación",
     docenteProgramaId: "dp-123",
@@ -21,7 +21,6 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
     actorGoogleAccounts = [{ id: "google-actor-1", userId: "actor-user-admin", email: "admin@flacso.edu.uy" }],
     docenteGoogleAccounts = [{ id: "google-docente-1", userId: "docente-user-1", email: "docente@flacso.edu.uy" }],
     assistantGoogleAccounts = [{ id: "google-asistente-1", userId: "asistente-user-1", email: "asistente@flacso.edu.uy" }],
-    actorEmailPrincipal = "admin@flacso.edu.uy",
     docenteEmailPrincipal = "docente@flacso.edu.uy"
   }: {
     docenteUserId?: string;
@@ -29,11 +28,11 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
     actorGoogleAccounts?: { id: string; userId: string; email: string }[];
     docenteGoogleAccounts?: { id: string; userId: string; email: string }[];
     assistantGoogleAccounts?: { id: string; userId: string; email: string }[];
-    actorEmailPrincipal?: string;
     docenteEmailPrincipal?: string;
   } = {}) {
     const createdCohostReuniones: { instanciaSalaId: string; cuentaGoogleId: string }[] = [];
     const createdCohostEmails: { instanciaSalaId: string; email: string }[] = [];
+    const createdEventos: Record<string, unknown>[] = [];
 
     const tx = {
       $executeRaw: vi.fn(),
@@ -69,27 +68,22 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
       },
       cuentaGoogleFlacso: {
         findMany: vi.fn().mockImplementation(({ where }) => {
+          const all = [...actorGoogleAccounts, ...docenteGoogleAccounts, ...assistantGoogleAccounts];
           if (where?.id?.in) {
             const ids = where.id.in as string[];
-            const all = [...actorGoogleAccounts, ...docenteGoogleAccounts, ...assistantGoogleAccounts];
-            return Promise.resolve(all.filter((a) => ids.includes(a.id)));
+            return Promise.resolve(all.filter((account) => ids.includes(account.id)));
           }
           if (where?.userId?.in) {
             const userIds = where.userId.in as string[];
-            const all = [...actorGoogleAccounts, ...docenteGoogleAccounts, ...assistantGoogleAccounts];
-            return Promise.resolve(all.filter((a) => userIds.includes(a.userId)));
-          }
-          if (where?.userId) {
-            const all = [...actorGoogleAccounts, ...docenteGoogleAccounts, ...assistantGoogleAccounts];
-            return Promise.resolve(all.filter((a) => a.userId === where.userId));
+            return Promise.resolve(all.filter((account) => userIds.includes(account.userId)));
           }
           return Promise.resolve([]);
         })
       },
       usuario: {
         findUnique: vi.fn().mockImplementation(({ where }) => {
-          if (where.id === actorUserId) return Promise.resolve({ emailPrincipal: actorEmailPrincipal });
           if (where.id === docenteUserId) return Promise.resolve({ emailPrincipal: docenteEmailPrincipal });
+          if (where.id === actorUserId) return Promise.resolve({ emailPrincipal: "admin@flacso.edu.uy" });
           return Promise.resolve(null);
         })
       },
@@ -98,7 +92,10 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
       },
       eventoProveedor: {
         findMany: vi.fn().mockResolvedValue([]),
-        create: vi.fn().mockResolvedValue({ id: "evento-1" })
+        create: vi.fn().mockImplementation(({ data }) => {
+          createdEventos.push(data);
+          return Promise.resolve({ id: "evento-1" });
+        })
       },
       instanciaSala: {
         create: vi.fn().mockResolvedValue({ id: "instancia-1" })
@@ -117,93 +114,40 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
       }
     };
 
-    const db = {
-      $transaction: vi.fn().mockImplementation((fn) => fn(tx))
-    };
-
-    return { db, tx, createdCohostReuniones, createdCohostEmails };
+    const db = { $transaction: vi.fn().mockImplementation((fn) => fn(tx)) };
+    return { db, createdCohostReuniones, createdCohostEmails, createdEventos };
   }
 
-  it("sin asistencia tecnica: agrega al docente designado y al solicitante (actor) como cohosts", async () => {
+  it("agrega siempre al docente como cohost y no incluye al creador por defecto", async () => {
     const { db, createdCohostReuniones } = createMockDb();
 
     const result = await crearReuniones(
       db as never,
       { id: "actor-user-admin", rol: "ADMINISTRACION" },
-      {
-        ...baseInput,
-        requiereAsistenciaTecnica: false,
-        hostTipo: "DOCENTE"
-      }
+      { ...baseInput, requiereAsistenciaTecnica: false }
     );
 
     expect(result.solicitudId).toBe("solicitud-123");
-    // Debe incluir tanto al docente como al solicitante
-    const assignedIds = createdCohostReuniones.map((c) => c.cuentaGoogleId);
+    const assignedIds = createdCohostReuniones.map(({ cuentaGoogleId }) => cuentaGoogleId);
     expect(assignedIds).toContain("google-docente-1");
-    expect(assignedIds).toContain("google-actor-1");
+    expect(assignedIds).not.toContain("google-actor-1");
   });
 
-  it("sin asistencia tecnica: agrega el email principal del solicitante si no tiene cuenta Google vinculada", async () => {
-    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb({
-      actorGoogleAccounts: [] // actor sin cuentaGoogleFlacso
-    });
+  it("usa el correo principal del docente como fallback cuando no tiene cuenta Google vinculada", async () => {
+    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb({ docenteGoogleAccounts: [] });
 
     await crearReuniones(
       db as never,
       { id: "actor-user-admin", rol: "ADMINISTRACION" },
-      {
-        ...baseInput,
-        requiereAsistenciaTecnica: false,
-        hostTipo: "DOCENTE"
-      }
+      { ...baseInput, requiereAsistenciaTecnica: false }
     );
 
-    // El docente tiene cuenta Google vinculada
-    expect(createdCohostReuniones.map((c) => c.cuentaGoogleId)).toContain("google-docente-1");
-    // El actor tiene email principal agregado a manual emails
-    expect(createdCohostEmails.map((c) => c.email)).toContain("admin@flacso.edu.uy");
+    expect(createdCohostReuniones).toHaveLength(0);
+    expect(createdCohostEmails.map(({ email }) => email)).toContain("docente@flacso.edu.uy");
   });
 
-  it("con asistencia tecnica y asistente asignado: agrega al solicitante y al asistente como cohosts", async () => {
-    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb();
-
-    await crearReuniones(
-      db as never,
-      { id: "actor-user-admin", rol: "ADMINISTRACION" },
-      {
-        ...baseInput,
-        requiereAsistenciaTecnica: true,
-        asistenteTecnicoId: "asistente-1"
-      }
-    );
-
-    const assignedIds = createdCohostReuniones.map((c) => c.cuentaGoogleId);
-    expect(assignedIds).toContain("google-asistente-1");
-    expect(assignedIds).toContain("google-actor-1");
-    expect(assignedIds).not.toContain("google-docente-1");
-    expect(createdCohostEmails).toHaveLength(0);
-  });
-
-  it("con asistencia tecnica pendiente: mantiene al solicitante como cohost", async () => {
-    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb();
-
-    await crearReuniones(
-      db as never,
-      { id: "actor-user-admin", rol: "ADMINISTRACION" },
-      {
-        ...baseInput,
-        requiereAsistenciaTecnica: true
-        // sin asistenteTecnicoId -> abierta
-      }
-    );
-
-    expect(createdCohostReuniones.map((c) => c.cuentaGoogleId)).toContain("google-actor-1");
-    expect(createdCohostEmails).toHaveLength(0);
-  });
-
-  it("con asistencia tecnica: usa el email principal del solicitante como fallback", async () => {
-    const { db, createdCohostReuniones, createdCohostEmails } = createMockDb({ actorGoogleAccounts: [] });
+  it("con asistencia asignada mantiene al docente y agrega al asistente como cohost técnico", async () => {
+    const { db, createdCohostReuniones } = createMockDb();
 
     await crearReuniones(
       db as never,
@@ -211,7 +155,40 @@ describe("crearReuniones - nueva lógica de anfitriones", () => {
       { ...baseInput, requiereAsistenciaTecnica: true, asistenteTecnicoId: "asistente-1" }
     );
 
-    expect(createdCohostReuniones.map((c) => c.cuentaGoogleId)).toContain("google-asistente-1");
-    expect(createdCohostEmails.map((c) => c.email)).toContain("admin@flacso.edu.uy");
+    const assignedIds = createdCohostReuniones.map(({ cuentaGoogleId }) => cuentaGoogleId);
+    expect(assignedIds).toContain("google-docente-1");
+    expect(assignedIds).toContain("google-asistente-1");
+    expect(assignedIds).not.toContain("google-actor-1");
+  });
+
+  it("con asistencia abierta mantiene al docente como cohost", async () => {
+    const { db, createdCohostReuniones } = createMockDb();
+
+    await crearReuniones(
+      db as never,
+      { id: "actor-user-admin", rol: "ADMINISTRACION" },
+      { ...baseInput, requiereAsistenciaTecnica: true }
+    );
+
+    expect(createdCohostReuniones.map(({ cuentaGoogleId }) => cuentaGoogleId)).toEqual(["google-docente-1"]);
+  });
+
+  it("guarda cohosts adicionales e invitados separados para Calendar", async () => {
+    const { db, createdCohostEmails, createdEventos } = createMockDb();
+
+    await crearReuniones(
+      db as never,
+      { id: "actor-user-admin", rol: "ADMINISTRACION" },
+      {
+        ...baseInput,
+        cohostEmailsManual: ["EXTERNO@GMAIL.COM"],
+        invitadosEmails: ["invitado@ejemplo.org", "externo@gmail.com"]
+      }
+    );
+
+    expect(createdCohostEmails.map(({ email }) => email)).toContain("externo@gmail.com");
+    expect(createdEventos[0]).toMatchObject({
+      payloadUltimo: { salaVirtual: { invitadosEmails: ["invitado@ejemplo.org"] } }
+    });
   });
 });

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { z } from "zod";
 import {
   ConflictApiError,
   ForbiddenApiError,
@@ -21,6 +22,16 @@ import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.se
 
 export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
 
+const invitadosEmailsSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value.split(/[\n,;]+/).map((item) => item.trim().toLowerCase()).filter(Boolean);
+    }
+    return value;
+  },
+  z.array(z.email().transform((email) => email.toLowerCase())).max(100).default([]),
+);
+
 export async function crearReuniones(
   db: PrismaClient,
   actor: ActorReunion,
@@ -34,6 +45,12 @@ export async function crearReuniones(
   reutilizada: boolean;
 }>> {
   const input = crearReunionesSchema.parse(rawInput);
+  const invitadosSolicitados = invitadosEmailsSchema.parse(
+    rawInput && typeof rawInput === "object" && "invitadosEmails" in rawInput
+      ? (rawInput as { invitadosEmails?: unknown }).invitadosEmails
+      : undefined,
+  );
+
   let asistenteTecnicoId: string | null;
   try {
     asistenteTecnicoId = resolverAsignacionInicial(
@@ -133,104 +150,54 @@ export async function crearReuniones(
       }),
     ]);
 
-    let cohostIds: readonly string[] = [];
-    let manualCohostEmails: readonly string[] = [];
+    // El docente es siempre cohost. Si hay un asistente ya asignado, también se agrega
+    // como cohost técnico. Los cohosts adicionales ingresados en el formulario se guardan
+    // como correos manuales y Google Meet validará que correspondan a cuentas Google.
+    const cohostUserIds = [
+      docentePrograma.docente.usuarioId,
+      ...(assistant ? [assistant.usuarioId] : []),
+    ];
+    const [linkedAccounts, docenteUser] = await Promise.all([
+      tx.cuentaGoogleFlacso.findMany({
+        where: { userId: { in: [...new Set(cohostUserIds)] }, user: { activo: true } },
+        select: { id: true, userId: true, email: true },
+      }),
+      tx.usuario.findUnique({
+        where: { id: docentePrograma.docente.usuarioId },
+        select: { emailPrincipal: true },
+      }),
+    ]);
 
-    if (input.requiereAsistenciaTecnica) {
-      // Con asistencia técnica, el solicitante siempre conserva permisos de cohost.
-      // Cuando hay asistente asignado, también se agrega como cohost.
-      const userIds = [actor.id, ...(assistant ? [assistant.usuarioId] : [])];
-      const [accounts, actorUser] = await Promise.all([
-        tx.cuentaGoogleFlacso.findMany({
-          where: { userId: { in: [...new Set(userIds)] }, user: { activo: true } },
-          select: { id: true, userId: true },
-        }),
-        tx.usuario.findUnique({
-          where: { id: actor.id },
-          select: { emailPrincipal: true },
-        }),
-      ]);
-      const usersWithGoogleAccount = new Set(accounts.map(({ userId }) => userId));
-      const fallbackEmails: string[] = [];
-
-      if (!usersWithGoogleAccount.has(actor.id) && actorUser?.emailPrincipal) {
-        fallbackEmails.push(actorUser.emailPrincipal);
+    const usersWithGoogleAccount = new Set(linkedAccounts.map(({ userId }) => userId));
+    const fallbackEmails: string[] = [];
+    if (!usersWithGoogleAccount.has(docentePrograma.docente.usuarioId)) {
+      if (!docenteUser?.emailPrincipal) {
+        throw new ValidationApiError("El docente no tiene una cuenta Google configurada para usar como cohost.");
       }
-      if (
-        assistant &&
-        !usersWithGoogleAccount.has(assistant.usuarioId) &&
-        assistant.usuario.emailPrincipal
-      ) {
-        fallbackEmails.push(assistant.usuario.emailPrincipal);
-      }
+      fallbackEmails.push(docenteUser.emailPrincipal);
+    }
+    if (
+      assistant &&
+      !usersWithGoogleAccount.has(assistant.usuarioId) &&
+      assistant.usuario.emailPrincipal
+    ) {
+      fallbackEmails.push(assistant.usuario.emailPrincipal);
+    }
 
-      cohostIds = [...new Set(accounts.map(({ id }) => id))];
-      manualCohostEmails = normalizeCohostEmails(fallbackEmails);
-    } else {
-      // Sin asistencia técnica: el solicitante designa al anfitrión y se incluye a sí mismo automáticamente
-      const designatedHostUserIds: string[] = [];
-      const extraCohostCuentaIds = new Set(input.cohostCuentaIds);
-      const extraEmails = [...input.cohostEmailsManual];
+    const cohostIds = [...new Set(linkedAccounts.map(({ id }) => id))];
+    const manualCohostEmails = normalizeCohostEmails([
+      ...input.cohostEmailsManual,
+      ...fallbackEmails,
+    ]);
+    const cohostEmailSet = new Set(normalizeCohostEmails([
+      ...linkedAccounts.map(({ email }) => email),
+      ...manualCohostEmails,
+    ]));
+    const invitadosEmails = normalizeCohostEmails(invitadosSolicitados)
+      .filter((email) => !cohostEmailSet.has(email));
 
-      if (input.hostTipo === "DOCENTE") {
-        designatedHostUserIds.push(docentePrograma.docente.usuarioId);
-      } else if (input.hostTipo === "OTRA_CUENTA" && input.hostCuentaId) {
-        extraCohostCuentaIds.add(input.hostCuentaId);
-      } else if (input.hostTipo === "OTRO_CORREO" && input.hostEmail) {
-        extraEmails.push(input.hostEmail);
-      }
-
-      // El solicitante también se pone como anfitrión automáticamente
-      designatedHostUserIds.push(actor.id);
-
-      const [actorAndDesignatedAccounts, explicitAccounts, actorUser, docenteUser] = await Promise.all([
-        tx.cuentaGoogleFlacso.findMany({
-          where: { userId: { in: [...new Set(designatedHostUserIds)] }, user: { activo: true } },
-          select: { id: true, userId: true },
-        }),
-        extraCohostCuentaIds.size > 0
-          ? tx.cuentaGoogleFlacso.findMany({
-              where: { id: { in: [...extraCohostCuentaIds] }, user: { activo: true } },
-              select: { id: true },
-            })
-          : Promise.resolve([]),
-        tx.usuario.findUnique({
-          where: { id: actor.id },
-          select: { emailPrincipal: true },
-        }),
-        input.hostTipo === "DOCENTE"
-          ? tx.usuario.findUnique({
-              where: { id: docentePrograma.docente.usuarioId },
-              select: { emailPrincipal: true },
-            })
-          : Promise.resolve(null),
-      ]);
-
-      if (explicitAccounts.length !== extraCohostCuentaIds.size) {
-        throw new ValidationApiError("Una o más cuentas cohost no existen o están inactivas.");
-      }
-
-      const actorHasGoogleAccount = actorAndDesignatedAccounts.some(({ userId }) => userId === actor.id);
-      if (!actorHasGoogleAccount && actorUser?.emailPrincipal) {
-        extraEmails.push(actorUser.emailPrincipal);
-      }
-
-      if (input.hostTipo === "DOCENTE") {
-        const docenteHasGoogleAccount = actorAndDesignatedAccounts.some(({ userId }) => userId === docentePrograma.docente.usuarioId);
-        if (!docenteHasGoogleAccount && docenteUser?.emailPrincipal) {
-          extraEmails.push(docenteUser.emailPrincipal);
-        }
-      }
-
-      cohostIds = [...new Set([
-        ...actorAndDesignatedAccounts.map(({ id }) => id),
-        ...explicitAccounts.map(({ id }) => id),
-      ])];
-      manualCohostEmails = normalizeCohostEmails(extraEmails);
-
-      if (cohostIds.length === 0 && manualCohostEmails.length === 0) {
-        throw new ValidationApiError("Debe especificarse al menos una cuenta con permisos de anfitrión.");
-      }
+    if (cohostIds.length === 0 && manualCohostEmails.length === 0) {
+      throw new ValidationApiError("El docente debe tener una cuenta Google válida para ser cohost.");
     }
 
     const cuentaHostId = elegirCuentaHostParaPeriodos(
@@ -288,6 +255,9 @@ export async function crearReuniones(
             proveedorId: proveedorMeet.id,
             cuentaProveedorId: cuentaHostId,
             operacionPendiente: "PROVISIONAR",
+            ...(invitadosEmails.length > 0
+              ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }
+              : {}),
           },
         });
         if (cohostIds.length > 0) {

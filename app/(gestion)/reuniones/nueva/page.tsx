@@ -2,7 +2,7 @@ import { BookOpen } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { MeetingForm } from "@/src/components/meeting-form";
+import { MeetingFormV2 } from "@/src/components/meeting-form-v2";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { puedeAbrirCreacionReuniones } from "@/src/modules/reuniones/reuniones.domain";
@@ -20,7 +20,7 @@ export default async function NuevaReunionPage() {
     redirect("/mi-agenda");
   }
 
-  const [associations, assistants, cohosts] = await Promise.all([
+  const [associations, assistants] = await Promise.all([
     db.docentePrograma.findMany({
       where: {
         activo: true,
@@ -30,7 +30,21 @@ export default async function NuevaReunionPage() {
           : {})
       },
       orderBy: { programa: { nombre: "asc" } },
-      include: { programa: true, docente: { include: { usuario: true } } }
+      include: {
+        programa: true,
+        docente: {
+          include: {
+            usuario: {
+              include: {
+                cuentasGoogle: {
+                  orderBy: { ultimoAccesoAt: "desc" },
+                  take: 1
+                }
+              }
+            }
+          }
+        }
+      }
     }),
     actor.rol === "ADMINISTRACION"
       ? db.asistenteTecnico.findMany({
@@ -41,12 +55,7 @@ export default async function NuevaReunionPage() {
           orderBy: { usuario: { nombres: "asc" } },
           include: { usuario: true }
         })
-      : Promise.resolve([]),
-    db.cuentaGoogleFlacso.findMany({
-      where: { user: { activo: true } },
-      orderBy: { email: "asc" },
-      select: { id: true, email: true }
-    })
+      : Promise.resolve([])
   ]);
 
   if (requiereCompletarRegistro({
@@ -72,19 +81,17 @@ export default async function NuevaReunionPage() {
           </span>
         </Link>
       </header>
-      <MeetingForm
+      <MeetingFormV2
         canAssignAssistant={actor.rol === "ADMINISTRACION"}
-        currentUser={{ id: actor.id, email: session.user.email, rol: actor.rol }}
         assistants={assistants.map(({ id, usuario }) => ({
           id,
           label: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim()
         }))}
-        cohosts={cohosts}
         programs={associations.map(({ id, docente, programa }) => ({
           id,
           label: programa.nombre,
           teacher: `${docente.usuario.nombres} ${docente.usuario.apellidos ?? ""}`.trim(),
-          teacherEmail: docente.usuario.emailPrincipal ?? undefined
+          teacherEmail: docente.usuario.cuentasGoogle[0]?.email ?? docente.usuario.emailPrincipal ?? undefined
         }))}
       />
     </div>

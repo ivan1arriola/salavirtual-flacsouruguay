@@ -7,7 +7,10 @@ export type MeetProvisionRequest = Readonly<{
   calendarId: string;
   /** Conference data from another Calendar event when a series shares one Meet space. */
   conferenceData?: Readonly<Record<string, unknown>>;
+  /** People who must receive Meet cohost permissions. They must be Google accounts. */
   cohostEmails?: readonly string[];
+  /** Calendar guests who receive the invitation but do not get Meet cohost permissions. */
+  guestEmails?: readonly string[];
   requiereAsistenciaTecnica?: boolean;
   /** Stable event id supplied by the application for retry-safe Calendar POSTs. */
   calendarEventId: string;

@@ -77,6 +77,24 @@ describe("evento Google Calendar puro", () => {
     ]);
   });
 
+  it("incluye invitados de Calendar sin duplicar los cohosts", () => {
+    const event = crearCalendarEvent({
+      titulo: "Seminario",
+      inicio: new Date("2026-08-03T13:00:00.000Z"),
+      fin: new Date("2026-08-03T15:00:00.000Z"),
+      timezone: "America/Montevideo",
+      calendarId: "sala01@flacso.edu.uy",
+      calendarEventId: "calendar-guests",
+      cohostEmails: ["DOCENTE@FLACSO.EDU.UY"],
+      guestEmails: ["invitado@ejemplo.org", "docente@flacso.edu.uy"]
+    });
+
+    expect(event.attendees).toEqual([
+      { email: "docente@flacso.edu.uy" },
+      { email: "invitado@ejemplo.org" }
+    ]);
+  });
+
   it("reutiliza la conferencia de la serie en un evento Calendar independiente", () => {
     const conferenceData = {
       conferenceId: "abc-defg-hij",
