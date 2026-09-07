@@ -3,10 +3,8 @@ import {
   CalendarCheck2,
   CalendarDays,
   CalendarPlus,
-  CalendarRange,
   GitCompareArrows,
   Hand,
-  History,
   LayoutDashboard,
   Menu,
   Settings,
@@ -227,9 +225,7 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     if (href === "/") return "assistant-dashboard";
     if (href === "/mi-agenda") return "assistant-my-agenda";
     if (href === "/agenda-abierta") return "assistant-open-agenda";
-    if (href === "/reuniones-del-mes") return "assistant-month";
     if (href === "/grabaciones") return "assistant-recordings";
-    if (href === "/mi-historico") return "assistant-history";
     if (href === "/mi-perfil") return "assistant-profile";
   }
   return undefined;
