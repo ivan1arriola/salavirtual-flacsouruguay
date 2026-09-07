@@ -12,6 +12,11 @@ const MEET_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.readonly",
 ] as const;
 
+function argValue(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length)?.trim() || undefined;
+}
+
 function requiredEnv(name: "GOOGLE_SERVICE_ACCOUNT_EMAIL" | "GOOGLE_PRIVATE_KEY"): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} es obligatorio para esta migración temporal.`);
@@ -25,11 +30,12 @@ function normalizePrivateKey(value: string): string {
 async function main(): Promise<void> {
   const serviceAccountEmail = requiredEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL");
   const privateKey = normalizePrivateKey(requiredEnv("GOOGLE_PRIVATE_KEY"));
+  const meetingFilter = argValue("meeting");
   const now = new Date();
 
   const meetings = await db.instanciaSala.findMany({
     where: {
-      inicioProgramadoAt: { gte: now },
+      ...(meetingFilter ? { id: meetingFilter } : { inicioProgramadoAt: { gte: now } }),
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
       eventosProveedor: { some: { proveedor: { tipo: "GOOGLE_MEET" } } },
     },
@@ -78,6 +84,10 @@ async function main(): Promise<void> {
     },
   });
 
+  if (meetingFilter && meetings.length === 0) {
+    throw new Error(`No se encontró una reunión activa con Google Meet para --meeting=${meetingFilter}.`);
+  }
+
   const plan = meetings.flatMap((meeting) => {
     const event = meeting.eventosProveedor[0];
     const organizer = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
@@ -113,10 +123,11 @@ async function main(): Promise<void> {
     mode: applyChanges ? "apply" : "dry-run",
     credentialSource: "temporary-env",
     serviceAccountEmail,
+    meetingFilter: meetingFilter ?? null,
     meetingsReviewed: meetings.length,
     meetingsToSync: plan.length,
     cohostAssignmentsRequested: plan.reduce((total, item) => total + item.desired.length, 0),
-    sample: plan.slice(0, 10).map((item) => ({
+    sample: plan.slice(0, meetingFilter ? 1 : 10).map((item) => ({
       instanciaSalaId: item.id,
       titulo: item.title,
       inicio: item.start.toISOString(),
