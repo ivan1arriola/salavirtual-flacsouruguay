@@ -1,9 +1,6 @@
 import type { MeetProvisionRequest, MeetProvisionResult } from "./provider";
 
-export function crearCalendarEvent(
-  request: MeetProvisionRequest,
-  requestId: string
-) {
+export function crearCalendarEvent(request: MeetProvisionRequest) {
   return {
     id: request.calendarEventId,
     summary: request.titulo,
@@ -19,12 +16,23 @@ export function crearCalendarEvent(
     ...(request.cohostEmails?.length
       ? { attendees: request.cohostEmails.map((email) => ({ email })) }
       : {}),
-    conferenceData: request.conferenceData ?? {
-      createRequest: {
-        requestId,
-        conferenceSolutionKey: { type: "hangoutsMeet" }
-      }
-    }
+    ...(request.conferenceData ? { conferenceData: request.conferenceData } : {})
+  } as const;
+}
+
+export function crearConferenceDataMeet(codigoReunion: string, joinUrl: string) {
+  return {
+    conferenceId: codigoReunion,
+    conferenceSolution: {
+      key: { type: "hangoutsMeet" },
+      name: "Google Meet"
+    },
+    entryPoints: [{
+      entryPointType: "video",
+      uri: joinUrl,
+      label: joinUrl.replace(/^https?:\/\//, ""),
+      meetingCode: codigoReunion
+    }]
   } as const;
 }
 
@@ -51,6 +59,7 @@ export type CalendarEvent = Readonly<{
     entryPoints?: readonly Readonly<{
       entryPointType?: string | null;
       meetingCode?: string | null;
+      uri?: string | null;
     }>[];
   }> | null;
 }>;

@@ -1,6 +1,7 @@
 import { JWT } from "google-auth-library";
 import {
   crearCalendarEvent,
+  crearConferenceDataMeet,
   extraerMeetProvisionado,
   type CalendarEvent
 } from "./google-calendar.domain";
@@ -37,6 +38,12 @@ type MeetSpaceMember = Readonly<{
   name?: string;
   email?: string;
   role?: string;
+}>;
+
+type MeetSpace = Readonly<{
+  name?: string;
+  meetingCode?: string;
+  meetingUri?: string;
 }>;
 
 export async function compartirConferenciaGoogleCalendar(
@@ -149,30 +156,67 @@ export function crearGoogleCalendarProvider(
   return {
     async crearEventoCalendar(request) {
       const eventsUrl = calendarEventsUrl(request.calendarId);
-      let response: { data: CalendarEvent };
-      try {
-        response = await auth.request<CalendarEvent>({
-          url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${request.cohostEmails?.length ? "all" : "none"}`,
-          method: "POST",
-          timeout: GOOGLE_HTTP_TIMEOUT_MS,
-          data: crearCalendarEvent(request, request.calendarEventId)
-        });
-      } catch (error) {
-        if (!isAlreadyCalendarEvent(error)) throw error;
-        response = await auth.request<CalendarEvent>({
-          url: `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`,
-          method: "GET",
-          timeout: GOOGLE_HTTP_TIMEOUT_MS
-        });
+      const eventUrl = `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`;
+      const existing = await obtenerEventoCalendarSiExiste(auth, eventUrl);
+      if (existing && extraerMeetProvisionado(existing)) {
+        return { externalEventId: existing.id!, payload: existing };
       }
+
+      let conferenceData = request.conferenceData;
+      let createdSpace: Required<Pick<MeetSpace, "name" | "meetingCode" | "meetingUri">> | null = null;
+      if (!conferenceData) {
+        createdSpace = await crearEspacioMeetAplicacion(meetAuth, request);
+        conferenceData = crearConferenceDataMeet(createdSpace.meetingCode, createdSpace.meetingUri);
+      }
+
+      const requestWithConference: MeetProvisionRequest = { ...request, conferenceData };
+      const sendUpdates = request.cohostEmails?.length ? "all" : "none";
+      let response: { data: CalendarEvent };
+
+      if (existing) {
+        response = await auth.request<CalendarEvent>({
+          url: `${eventUrl}?conferenceDataVersion=1&sendUpdates=${sendUpdates}`,
+          method: "PATCH",
+          timeout: GOOGLE_HTTP_TIMEOUT_MS,
+          data: { conferenceData }
+        });
+      } else {
+        try {
+          response = await auth.request<CalendarEvent>({
+            url: `${eventsUrl}?conferenceDataVersion=1&sendUpdates=${sendUpdates}`,
+            method: "POST",
+            timeout: GOOGLE_HTTP_TIMEOUT_MS,
+            data: crearCalendarEvent(requestWithConference)
+          });
+        } catch (error) {
+          if (!isAlreadyCalendarEvent(error)) throw error;
+          response = await auth.request<CalendarEvent>({
+            url: `${eventUrl}?conferenceDataVersion=1`,
+            method: "GET",
+            timeout: GOOGLE_HTTP_TIMEOUT_MS
+          });
+        }
+      }
+
       const eventId = response.data.id;
-      if (!eventId) throw new Error("Google Calendar no devolvio el ID del evento.");
+      if (!eventId) throw new Error("Google Calendar no devolvió el ID del evento.");
+
+      const provisioned = extraerMeetProvisionado(response.data);
+      if (!provisioned) {
+        throw new Error("Google Calendar no confirmó el espacio Meet creado por Sala Virtual.");
+      }
+      if (createdSpace && (
+        provisioned.codigoReunion !== createdSpace.meetingCode ||
+        provisioned.joinUrl !== createdSpace.meetingUri
+      )) {
+        throw new Error("Google Calendar vinculó una conferencia distinta al espacio Meet creado por Sala Virtual.");
+      }
 
       return { externalEventId: eventId, payload: response.data };
     },
     async obtenerEvento(calendarId, externalEventId) {
       const current = await auth.request<CalendarEvent>({
-        url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}`,
+        url: `${calendarEventsUrl(calendarId)}/${encodeURIComponent(externalEventId)}?conferenceDataVersion=1`,
         method: "GET",
         timeout: GOOGLE_HTTP_TIMEOUT_MS
       });
@@ -202,6 +246,59 @@ export function crearGoogleCalendarProvider(
       });
     }
   };
+}
+
+async function crearEspacioMeetAplicacion(
+  auth: JWT,
+  request: Pick<MeetProvisionRequest, "cohostEmails" | "requiereAsistenciaTecnica">
+): Promise<Required<Pick<MeetSpace, "name" | "meetingCode" | "meetingUri">>> {
+  const cohosts = normalizarEmails(request.cohostEmails ?? []);
+  const created = await auth.request<MeetSpace>({
+    url: `${MEET_API}/spaces`,
+    method: "POST",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    data: {
+      config: {
+        moderation: cohosts.length > 0 ? "ON" : "OFF",
+        accessType: "TRUSTED",
+        ...(request.requiereAsistenciaTecnica !== undefined
+          ? {
+              attendanceReportGenerationType: request.requiereAsistenciaTecnica
+                ? "GENERATE_REPORT"
+                : "DO_NOT_GENERATE"
+            }
+          : {})
+      }
+    }
+  });
+
+  const name = created.data.name;
+  const meetingCode = created.data.meetingCode;
+  const meetingUri = created.data.meetingUri;
+  if (!name || !meetingCode || !meetingUri) {
+    throw new Error("Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.");
+  }
+
+  await configurarCohostsMeet(auth, name, cohosts);
+  await verificarCohostsMeet(auth, name, cohosts);
+  return { name, meetingCode, meetingUri };
+}
+
+async function obtenerEventoCalendarSiExiste(
+  auth: JWT,
+  eventUrl: string
+): Promise<CalendarEvent | null> {
+  try {
+    const response = await auth.request<CalendarEvent>({
+      url: `${eventUrl}?conferenceDataVersion=1`,
+      method: "GET",
+      timeout: GOOGLE_HTTP_TIMEOUT_MS
+    });
+    return response.data;
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
 }
 
 async function finalizarProvision(
@@ -253,7 +350,7 @@ async function configurarCohostsMeet(
   spaceName: string,
   emails: readonly string[]
 ): Promise<void> {
-  await Promise.all(emails.map(async (email) => {
+  await Promise.all(normalizarEmails(emails).map(async (email) => {
     try {
       await auth.request({
         url: `${MEET_BETA_API}/${spaceName}/members`,
@@ -266,6 +363,25 @@ async function configurarCohostsMeet(
       throw error;
     }
   }));
+}
+
+async function verificarCohostsMeet(
+  auth: JWT,
+  spaceName: string,
+  desiredEmails: readonly string[]
+): Promise<void> {
+  const desired = normalizarEmails(desiredEmails);
+  if (desired.length === 0) return;
+  const members = await listarMiembrosMeet(auth, spaceName);
+  const actual = new Set(
+    members
+      .filter(({ role }) => role === "COHOST")
+      .flatMap(({ email }) => email ? [email.trim().toLowerCase()] : [])
+  );
+  const missing = desired.filter((email) => !actual.has(email));
+  if (missing.length > 0) {
+    throw new Error(`Google Meet no confirmó los cohosts: ${missing.join(", ")}`);
+  }
 }
 
 async function reconciliarCohostsMeet(
@@ -294,6 +410,7 @@ async function reconciliarCohostsMeet(
 
   const existing = new Set(cohosts.flatMap(({ email }) => email ? [email.trim().toLowerCase()] : []));
   await configurarCohostsMeet(auth, spaceName, [...desired].filter((email) => !existing.has(email)));
+  await verificarCohostsMeet(auth, spaceName, [...desired]);
 }
 
 async function listarMiembrosMeet(auth: JWT, spaceName: string): Promise<readonly MeetSpaceMember[]> {
