@@ -54,7 +54,16 @@ function enhanceAgenda(): void {
   root.querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
     .forEach((heading) => heading.remove());
 
-  const todayLabel = normalizeDateLabel(shortDateFormatter.format(new Date()));
+  const now = new Date();
+  const todayLabel = normalizeDateLabel(shortDateFormatter.format(now));
+  const tomorrowLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() + 86_400_000)));
+  const yesterdayLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() - 86_400_000)));
+
+  root.querySelectorAll<HTMLElement>(".agenda-cohost-block > small").forEach((note) => {
+    if (note.textContent?.includes("cuenta FLACSO")) {
+      note.textContent = note.textContent.replace("cuenta FLACSO", "cuenta Google");
+    }
+  });
 
   root.querySelectorAll<HTMLElement>(".agenda-meeting-list").forEach((list) => {
     const cards = [...list.querySelectorAll<HTMLElement>(":scope > .agenda-meeting-card")];
@@ -73,7 +82,11 @@ function enhanceAgenda(): void {
         previousDay = dayLabel;
         stripeIndex = 0;
         toneIndex = stableTone(dayLabel);
-        card.before(createDayHeading(dayLabel, dayLabel === todayLabel, toneIndex));
+        card.before(createDayHeading(
+          dayLabel,
+          relativeDayLabel(dayLabel, todayLabel, tomorrowLabel, yesterdayLabel),
+          toneIndex
+        ));
       }
 
       card.classList.add("agenda-day-card", DAY_TONE_CLASSES[toneIndex]);
@@ -92,22 +105,34 @@ function cleanupAgendaEnhancement(): void {
     .forEach((card) => clearDayClasses(card));
 }
 
-function createDayHeading(dayLabel: string, isToday: boolean, toneIndex: number): HTMLElement {
+function createDayHeading(dayLabel: string, relative: string, toneIndex: number): HTMLElement {
+  const isToday = relative === "Hoy";
   const heading = document.createElement("div");
   heading.className = `agenda-day-heading ${DAY_TONE_CLASSES[toneIndex]}${isToday ? " is-today" : ""}`;
   heading.dataset.agendaEnhanced = "true";
   heading.setAttribute("role", "heading");
   heading.setAttribute("aria-level", "2");
 
-  const relative = document.createElement("span");
-  relative.textContent = isToday ? "Hoy" : dayLabel;
+  const relativeLabel = document.createElement("span");
+  relativeLabel.textContent = relative;
 
   const date = document.createElement("strong");
-  date.textContent = isToday ? dayLabel : "";
+  date.textContent = dayLabel;
 
-  heading.append(relative);
-  if (isToday) heading.append(date);
+  heading.append(relativeLabel, date);
   return heading;
+}
+
+function relativeDayLabel(
+  dayLabel: string,
+  todayLabel: string,
+  tomorrowLabel: string,
+  yesterdayLabel: string
+): string {
+  if (dayLabel === todayLabel) return "Hoy";
+  if (dayLabel === tomorrowLabel) return "Mañana";
+  if (dayLabel === yesterdayLabel) return "Ayer";
+  return "Día";
 }
 
 function clearDayClasses(card: HTMLElement): void {
