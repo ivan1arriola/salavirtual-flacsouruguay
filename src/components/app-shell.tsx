@@ -24,7 +24,7 @@ import { db } from "@/src/lib/db";
 
 const primaryNav = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
-  { href: "/reuniones", label: "Agenda", icon: CalendarDays },
+  { href: "/reuniones", label: "Reuniones", icon: CalendarDays },
   { href: "/grabaciones", label: "Grabaciones", icon: Video }
 ] as const;
 
