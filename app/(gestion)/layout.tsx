@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AgendaDayEnhancer } from "@/src/components/agenda-day-enhancer";
 import { AppShell } from "@/src/components/app-shell";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -19,6 +20,7 @@ import "./brand-refresh.css";
 import "./profile-navigation-refresh.css";
 import "./agenda-refresh.css";
 import "./agenda-v2.css";
+import "./agenda-day-zebra.css";
 import "./assistant-agenda.css";
 import "./meeting-form-v2.css";
 import "./meeting-detail-v2.css";
@@ -61,6 +63,7 @@ export default async function GestionLayout({
       email: user.emailPrincipal ?? session.user.email,
       image: user.imagenUrl ?? session.user.image
     }}>
+      <AgendaDayEnhancer />
       {children}
     </AppShell>
   );
