@@ -115,6 +115,12 @@ export default async function HomePage() {
             }
           },
           eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+          cohosts: {
+            include: {
+              cuentaGoogle: { include: { user: true } }
+            }
+          },
+          cohostEmails: true,
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
             include: { asistenteTecnico: { include: { usuario: true } } },
@@ -360,58 +366,156 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="content-section dashboard-table-section admin-upcoming-section">
-        <div className="section-heading">
-          <div><h2>Próximas reuniones</h2><p>Información operativa y accesos rápidos.</p></div>
+      <section className="content-section admin-upcoming-section admin-upcoming-v2">
+        <div className="section-heading admin-upcoming-heading">
+          <div>
+            <h2>Próximas reuniones</h2>
+            <p>Accesos, cohosts y responsables en una vista operativa.</p>
+          </div>
           <Link className="text-link" href="/reuniones">Ver agenda <ArrowRight size={16} /></Link>
         </div>
+
+        <div className="admin-upcoming-guidance" role="note">
+          <strong>Acceso a Google Meet</strong>
+          <span>
+            Los cohosts ingresan con su propia cuenta FLACSO. La cuenta organizadora se muestra
+            únicamente como referencia y no debe usarse para iniciar sesión.
+          </span>
+        </div>
+
         {hasPendingMeet ? <MeetPendingNotice /> : null}
+
         {upcoming.length === 0 ? (
           <div className="empty-state"><CalendarDays size={24} /><p>No hay reuniones próximas.</p></div>
         ) : (
-          <div className="table-wrap">
-            <table className="data-table admin-upcoming-table">
-              <thead>
-                <tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Docente / Programa</th><th>Cuenta Google</th><th>Asistencia técnica</th><th>A cargo</th></tr>
-              </thead>
-              <tbody>
-                {upcoming.map((meeting) => {
-                  const association = meeting.solicitud.docentePrograma;
-                  const teacher = association.docente.usuario;
-                  const assignment = meeting.asignaciones[0];
-                  const assistant = assignment?.asistenteTecnico.usuario;
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-                  const responsible = meeting.solicitud.responsableNombre?.trim() ||
-                    `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim();
-                  return (
-                    <tr key={meeting.id}>
-                      <td className="date-cell">{formatDate(meeting.inicioProgramadoAt)}</td>
-                      <td className="time-cell">{formatTime(meeting.inicioProgramadoAt)}</td>
-                      <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link></td>
-                      <td>
-                        <Link className="teacher-meetings-link" href={`/docentes/${teacher.id}/reuniones`}>
-                          {teacher.nombres} {teacher.apellidos}
-                        </Link>
-                        <small>{association.programa.nombre}</small>
-                      </td>
-                      <td className="meet-room-cell">
-                        <strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</strong>
-                        <small><MeetIntegrationStatus status={meet?.estadoIntegracion} hasMeet={Boolean(meet?.joinUrl)} /></small>
-                        {meet?.joinUrl ? <CopyMeetLinkButton url={meet.joinUrl} /> : <span className="muted-text">Link pendiente</span>}
-                      </td>
-                      <td>
-                        {assistant ? (
-                          <><span className="status status-ok">Asignada</span><small>{assistant.nombres} {assistant.apellidos}</small></>
-                        ) : meeting.requiereAsistenciaTecnica ? (
-                          <span className="status status-warning"><AlertTriangle size={14} />Pendiente</span>
-                        ) : <span className="muted-text">No requiere</span>}
-                      </td>
-                      <td><strong>{responsible}</strong><small>Responsable</small></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="admin-upcoming-list">
+            {upcoming.map((meeting) => {
+              const association = meeting.solicitud.docentePrograma;
+              const teacher = association.docente.usuario;
+              const assignment = meeting.asignaciones[0];
+              const assistant = assignment?.asistenteTecnico.usuario;
+              const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+              const responsible = meeting.solicitud.responsableNombre?.trim() ||
+                `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim();
+              const cohosts = [
+                ...meeting.cohosts.map(({ cuentaGoogle }) => ({
+                  email: cuentaGoogle.email,
+                  name: [cuentaGoogle.user.nombres, cuentaGoogle.user.apellidos]
+                    .filter(Boolean)
+                    .join(" ")
+                })),
+                ...meeting.cohostEmails.map(({ email }) => ({ email, name: "" }))
+              ].filter((entry, index, entries) =>
+                entries.findIndex(
+                  (candidate) => candidate.email.toLowerCase() === entry.email.toLowerCase()
+                ) === index
+              );
+              const organizer =
+                meet?.cuentaProveedor?.emailOrganizador ??
+                meet?.cuentaProveedor?.nombre ??
+                "Pendiente";
+
+              return (
+                <article className="admin-upcoming-card" key={meeting.id}>
+                  <div className="admin-upcoming-when">
+                    <span className="admin-upcoming-calendar-icon"><CalendarDays size={19} /></span>
+                    <span>{formatDate(meeting.inicioProgramadoAt)}</span>
+                    <strong>{formatTime(meeting.inicioProgramadoAt)}</strong>
+                  </div>
+
+                  <div className="admin-upcoming-main">
+                    <Link
+                      className="admin-upcoming-title"
+                      href={`/reuniones/${meeting.solicitud.id}`}
+                    >
+                      {meeting.solicitud.titulo}
+                    </Link>
+                    <span className="admin-upcoming-modality">
+                      {meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                    </span>
+                  </div>
+
+                  <div className="admin-upcoming-academic">
+                    <div>
+                      <small>Docente</small>
+                      <Link
+                        className="teacher-meetings-link"
+                        href={`/docentes/${teacher.id}/reuniones`}
+                      >
+                        {teacher.nombres} {teacher.apellidos}
+                      </Link>
+                    </div>
+                    <div>
+                      <small>Programa</small>
+                      <strong>{association.programa.nombre}</strong>
+                    </div>
+                  </div>
+
+                  <div className="admin-upcoming-access">
+                    <div className={`admin-upcoming-cohosts ${cohosts.length ? "" : "is-missing"}`}>
+                      <small>Cohost{cohosts.length === 1 ? "" : "s"} · ingresar con cuenta FLACSO</small>
+                      {cohosts.length ? (
+                        <div className="admin-upcoming-cohost-list">
+                          {cohosts.slice(0, 2).map((cohost) => (
+                            <div className="admin-upcoming-cohost" key={cohost.email.toLowerCase()}>
+                              <strong>{cohost.name || cohost.email}</strong>
+                              {cohost.name ? <span>{cohost.email}</span> : null}
+                            </div>
+                          ))}
+                          {cohosts.length > 2 ? (
+                            <span className="admin-upcoming-more-cohosts">+{cohosts.length - 2} más</span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <strong>Sin cohost configurado</strong>
+                      )}
+                    </div>
+
+                    <div className="admin-upcoming-meet-actions">
+                      <MeetIntegrationStatus
+                        status={meet?.estadoIntegracion}
+                        hasMeet={Boolean(meet?.joinUrl)}
+                      />
+                      {meet?.joinUrl ? (
+                        <CopyMeetLinkButton url={meet.joinUrl} />
+                      ) : (
+                        <span className="muted-text">Link pendiente</span>
+                      )}
+                    </div>
+
+                    <div className="admin-upcoming-organizer">
+                      <small>Cuenta organizadora · solo referencia</small>
+                      <strong>{organizer}</strong>
+                      <span>No iniciar sesión con esta cuenta.</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-upcoming-operations">
+                    <div>
+                      <small>Asistencia técnica</small>
+                      {assistant ? (
+                        <>
+                          <span className="status status-ok">Asignada</span>
+                          <strong>{assistant.nombres} {assistant.apellidos}</strong>
+                          <em>Cohost técnico</em>
+                        </>
+                      ) : meeting.requiereAsistenciaTecnica ? (
+                        <span className="status status-warning">
+                          <AlertTriangle size={14} />Pendiente
+                        </span>
+                      ) : (
+                        <span className="admin-upcoming-neutral-status">No requiere</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <small>A cargo / Responsable</small>
+                      <strong>{responsible}</strong>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
