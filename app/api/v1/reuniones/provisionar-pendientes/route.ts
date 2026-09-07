@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 const revisionSchema = z.object({
   eventoProveedorId: z.string().min(1),
-  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional(),
+  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional()
 });
 
 export async function POST(request: Request) {
@@ -20,30 +20,38 @@ export async function POST(request: Request) {
   if (!session?.user || session.user.role !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email,
+      email: session.user.email
     });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json().catch(() => null);
+    const hasTargetPayload = Boolean(
+      body &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      Object.keys(body).length > 0
+    );
+
     let targetIds: readonly string[] | null = null;
 
-    if (body !== null) {
+    if (hasTargetPayload) {
       const revision = revisionSchema.parse(body);
       const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
-          proveedor: { tipo: "GOOGLE_MEET" },
+          proveedor: { tipo: "GOOGLE_MEET" }
         },
         select: {
           id: true,
           estadoIntegracion: true,
-          operacionPendiente: true,
-        },
+          operacionPendiente: true
+        }
       });
 
       if (!current) {
@@ -54,13 +62,13 @@ export async function POST(request: Request) {
         if (!revision.operacion) {
           return NextResponse.json(
             { error: "El evento no tiene una operación pendiente para reintentar." },
-            { status: 409 },
+            { status: 409 }
           );
         }
         if (current.estadoIntegracion !== "PENDIENTE" && current.estadoIntegracion !== "ERROR") {
           return NextResponse.json(
             { error: "El evento no requiere reparación." },
-            { status: 409 },
+            { status: 409 }
           );
         }
 
@@ -69,20 +77,20 @@ export async function POST(request: Request) {
             id: revision.eventoProveedorId,
             proveedor: { tipo: "GOOGLE_MEET" },
             operacionPendiente: null,
-            estadoIntegracion: { in: ["PENDIENTE", "ERROR"] },
+            estadoIntegracion: { in: ["PENDIENTE", "ERROR"] }
           },
           data: {
             operacionPendiente: revision.operacion,
             estadoIntegracion: "PENDIENTE",
             reclamoIntegracionAt: null,
             reclamoIntegracionToken: null,
-            errorIntegracion: null,
-          },
+            errorIntegracion: null
+          }
         });
         if (assigned.count !== 1) {
           return NextResponse.json(
             { error: "El evento cambió mientras se intentaba preparar la reparación." },
-            { status: 409 },
+            { status: 409 }
           );
         }
       }
@@ -93,14 +101,14 @@ export async function POST(request: Request) {
     const ids = targetIds ?? (await db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
-        operacionPendiente: { not: null },
+        operacionPendiente: { not: null }
       },
-      select: { id: true },
+      select: { id: true }
     })).map(({ id }) => id);
 
     const results = await sincronizarEventosPendientes(
       { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      ids,
+      ids
     );
     const payload = {
       procesadas: results.length,
@@ -109,7 +117,7 @@ export async function POST(request: Request) {
       pendientesConfiguracion: results.filter(({ estado }) => estado === "PENDIENTE_CONFIGURACION").length,
       requierenRevision: results.filter(({ estado }) => estado === "REQUIERE_REVISION").length,
       errores: results.filter(({ estado }) => estado === "ERROR").length,
-      resultados: results,
+      resultados: results
     };
     const pending = results.some(({ estado }) => estado !== "SINCRONIZADA");
     return NextResponse.json(payload, { status: pending ? 202 : 200 });
