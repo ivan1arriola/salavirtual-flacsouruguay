@@ -1,13 +1,17 @@
-import { ArrowLeft, CalendarRange } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CalendarRange,
+  UsersRound,
+  Video
+} from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/components/meeting-detail-manager";
 import { MeetingIntegrationProblems } from "@/src/components/meeting-integration-problems";
-import { MeetingRoomCredentials } from "@/src/components/meeting-room-credentials";
 import { SeriesManagement } from "@/src/components/series-management";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
-import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
 import {
@@ -30,6 +34,7 @@ export default async function ReunionDetailPage({
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
+
   const { solicitudId } = await params;
   const request = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
@@ -54,7 +59,13 @@ export default async function ReunionDetailPage({
           orderBy: { inicioProgramadoAt: "asc" },
           include: {
             eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-            cohosts: { select: { cuentaGoogleId: true } },
+            cohosts: {
+              include: {
+                cuentaGoogle: {
+                  include: { user: true }
+                }
+              }
+            },
             cohostEmails: { select: { email: true } },
             asignaciones: {
               where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -72,6 +83,7 @@ export default async function ReunionDetailPage({
     }),
     destinatariosDocentesPrograma(db, request.docentePrograma.programaId)
   ]);
+
   const meetings = seriesRequests
     .flatMap((seriesRequest) => seriesRequest.instancias.map((meeting) => ({
       ...meeting,
@@ -79,9 +91,11 @@ export default async function ReunionDetailPage({
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
+
   const manageableMeetings = meetings.filter((meeting) =>
     meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now
   );
+
   const protectedUserIds = new Set([
     request.docentePrograma.docente.usuario.id,
     ...manageableMeetings.flatMap(({ asignaciones }) =>
@@ -100,16 +114,24 @@ export default async function ReunionDetailPage({
   const initialManualCohostEmails = unique(
     manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
   );
+
   const estadoVisible = request.estado === "CANCELADA"
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
       meetings.flatMap(({ eventosProveedor }) => eventosProveedor.map((event) => estadoIntegracionEfectivo(event)))
     );
+
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const assignment = meeting.asignaciones[0];
-    const cuentaGoogle = event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Cuenta pendiente";
+    const organizerAccount = event?.cuentaProveedor?.emailOrganizador
+      ?? event?.cuentaProveedor?.nombre
+      ?? "Cuenta pendiente";
+    const cohostLabels = unique([
+      ...meeting.cohosts.map(({ cuentaGoogle }) => cohostLabel(cuentaGoogle)),
+      ...meeting.cohostEmails.map(({ email }) => email.toLowerCase())
+    ]);
 
     return {
       id: meeting.id,
@@ -122,10 +144,12 @@ export default async function ReunionDetailPage({
       fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
       estado: meeting.estado,
       requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
-      asistenteTecnico: assignment ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim() : null,
+      asistenteTecnico: assignment
+        ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim()
+        : null,
       postulantes: meeting.postulaciones.length,
-      cuentaGoogle,
-      contrasenaSala: passwordCuenta(event?.cuentaProveedor?.secretRef),
+      organizerAccount,
+      cohosts: cohostLabels,
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
@@ -140,10 +164,25 @@ export default async function ReunionDetailPage({
         : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const
     };
   });
-  const roomCredentials = meetingViews.flatMap((meeting) => meeting.contrasenaSala
-    ? [{ cuenta: meeting.cuentaGoogle, contrasena: meeting.contrasenaSala, ordinal: meeting.ordinal }]
-    : []
+
+  const nextMeeting = meetingViews.find((meeting) =>
+    meeting.temporalidad !== "PASADO"
+    && meeting.estado !== "CANCELADA"
+    && meeting.estado !== "NO_REALIZADA"
   );
+  const uniqueCohosts = unique(meetingViews.flatMap(({ cohosts }) => cohosts));
+  const teacherName = [
+    request.docentePrograma.docente.usuario.nombres,
+    request.docentePrograma.docente.usuario.apellidos
+  ].filter(Boolean).join(" ");
+  const assistanceSummary = nextMeeting
+    ? nextMeeting.asistenteTecnico
+      ? nextMeeting.asistenteTecnico
+      : nextMeeting.requiereAsistenciaTecnica
+        ? "Pendiente de asignación"
+        : "No requiere"
+    : "Sin próximos encuentros";
+
   const integrationProblems = meetings.flatMap((meeting, index) => {
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     if (!event || !requiereAtencionIntegracionMeet(event)) return [];
@@ -157,25 +196,89 @@ export default async function ReunionDetailPage({
   });
 
   return (
-    <>
+    <div className="meeting-detail-v2">
       <Link className="meeting-detail-back" href="/reuniones">
         <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
       </Link>
-      <header className="page-header meeting-detail-header">
-        <div>
-          <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
+
+      <section className="meeting-detail-hero">
+        <div className="meeting-detail-hero-copy">
+          <div className="meeting-detail-hero-topline">
+            <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
+            <span className={`status ${requestStatusClass(estadoVisible)}`}>
+              {requestStatusLabel(estadoVisible)}
+            </span>
+          </div>
           <h1>{request.titulo}</h1>
-          <p>{meetings.length} encuentros · {request.docentePrograma.docente.usuario.nombres} {request.docentePrograma.docente.usuario.apellidos}</p>
+          <div className="meeting-detail-identity">
+            <span>{teacherName}</span>
+            <span aria-hidden="true">·</span>
+            <span>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+            <span aria-hidden="true">·</span>
+            <span>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</span>
+          </div>
+          {request.descripcion ? <p className="meeting-detail-description">{request.descripcion}</p> : null}
         </div>
-        <CalendarRange size={28} color="var(--brand)" aria-hidden="true" />
-      </header>
-      <section className="meeting-overview" aria-label="Datos de la reunión">
-        <div><span>Modalidad</span><strong>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</strong></div>
-        <div><span>Estado</span><strong>{estadoVisible.toLowerCase().replaceAll("_", " ")}</strong></div>
-        <div><span>Zona horaria</span><strong>UTC-3 · Montevideo</strong></div>
-        <div><span>Encuentros</span><strong>{meetings.length}</strong></div>
-        {request.descripcion ? <p>{request.descripcion}</p> : null}
+
+        <div className="meeting-detail-hero-action">
+          {nextMeeting ? (
+            <>
+              <small>Próximo encuentro</small>
+              <strong>{nextMeeting.fechaLegible}</strong>
+              <span>{nextMeeting.inicio.slice(11, 16)}–{nextMeeting.fin.slice(11, 16)}</span>
+              {nextMeeting.joinUrl ? (
+                <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
+                  <Video size={17} aria-hidden="true" />Entrar a Meet
+                </a>
+              ) : (
+                <span className="meeting-detail-pending-link">El enlace de Meet todavía está pendiente.</span>
+              )}
+            </>
+          ) : (
+            <>
+              <small>Próximo encuentro</small>
+              <strong>No hay encuentros próximos</strong>
+              <span>Consultá la pestaña de pasados para ver el historial.</span>
+            </>
+          )}
+        </div>
       </section>
+
+      <section className="meeting-detail-summary" aria-label="Resumen de la serie">
+        <article>
+          <CalendarClock size={18} aria-hidden="true" />
+          <div>
+            <span>Próximo</span>
+            <strong>{nextMeeting ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}` : "Sin próximos"}</strong>
+            <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
+          </div>
+        </article>
+        <article>
+          <UsersRound size={18} aria-hidden="true" />
+          <div>
+            <span>Cohosts</span>
+            <strong>{uniqueCohosts.length}</strong>
+            <small>Ingresan con sus propias cuentas Google</small>
+          </div>
+        </article>
+        <article>
+          <UsersRound size={18} aria-hidden="true" />
+          <div>
+            <span>Asistencia técnica</span>
+            <strong>{assistanceSummary}</strong>
+            <small>{nextMeeting?.requiereAsistenciaTecnica ? "Para el próximo encuentro" : "Según cada encuentro"}</small>
+          </div>
+        </article>
+        <article>
+          <CalendarRange size={18} aria-hidden="true" />
+          <div>
+            <span>Serie</span>
+            <strong>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</strong>
+            <small>UTC-3 · Montevideo</small>
+          </div>
+        </article>
+      </section>
+
       <SeriesManagement
         solicitudId={request.id}
         cohostOptions={cohostAccounts.map(({ id, email }) => ({
@@ -188,28 +291,41 @@ export default async function ReunionDetailPage({
         programPeopleCount={programRecipients.length}
         hasManageableMeetings={manageableMeetings.length > 0}
       />
-      <MeetingRoomCredentials credentials={roomCredentials} />
-      {actor.rol === "ADMINISTRACION" ? <MeetingRoomCredentials credentials={roomCredentials} /> : null}
+
       <MeetingIntegrationProblems
         problems={integrationProblems}
         canRepair={actor.rol === "ADMINISTRACION"}
       />
+
       <MeetingDetailManager
         solicitudId={request.id}
         requestIds={seriesRequests.map(({ id }) => id)}
-        meetings={meetingViews.map(({ contrasenaSala: _, ...meeting }) => meeting)}
+        meetings={meetingViews}
       />
-    </>
+    </div>
   );
 }
 
-function passwordCuenta(secretRef: string | null | undefined): string | null {
-  if (!secretRef) return null;
-  try {
-    return descifrarConfiguracion(secretRef);
-  } catch {
-    return null;
-  }
+function cohostLabel(account: Readonly<{
+  email: string;
+  user: Readonly<{ nombres: string; apellidos: string | null }>;
+}>): string {
+  const name = [account.user.nombres, account.user.apellidos].filter(Boolean).join(" ").trim();
+  return name ? `${name} · ${account.email}` : account.email;
+}
+
+function requestStatusClass(status: string): string {
+  if (status === "CANCELADA") return "status-error";
+  if (status === "REQUIERE_REVISION") return "status-warning";
+  if (status === "PROVISIONADA") return "status-ok";
+  return "status-neutral";
+}
+
+function requestStatusLabel(status: string): string {
+  return status
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 }
 
 function toLocalInput(date: Date): string {
