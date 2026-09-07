@@ -7,6 +7,10 @@ function argValue(name: string): string | undefined {
   return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
 }
 
+function normalizePrivateKey(value: string): string {
+  return value.includes("\\n") ? value.replaceAll("\\n", "\n") : value;
+}
+
 async function main() {
   const config = await db.configuracionGoogleWorkspace.findUnique({
     where: { id: "principal" },
@@ -18,20 +22,33 @@ async function main() {
     },
   });
 
-  if (!config?.activa || !config.serviceAccountEmail || !config.privateKeyCifrada || !config.serviceAccountSubject) {
-    throw new Error("Google Workspace no está configurado completamente.");
+  const temporaryEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const temporaryKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
+  const temporarySubject = process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim();
+
+  const serviceAccountEmail = temporaryEmail || config?.serviceAccountEmail;
+  const privateKey = temporaryKey
+    ? normalizePrivateKey(temporaryKey)
+    : config?.privateKeyCifrada
+      ? descifrarConfiguracion(config.privateKeyCifrada)
+      : undefined;
+  const delegatedSubject = temporarySubject || config?.serviceAccountSubject;
+
+  if (!serviceAccountEmail || !privateKey || !delegatedSubject) {
+    throw new Error(
+      "Faltan credenciales. Define GOOGLE_SERVICE_ACCOUNT_EMAIL y GOOGLE_PRIVATE_KEY temporalmente o completa la configuración principal de Google Workspace."
+    );
   }
 
-  const key = descifrarConfiguracion(config.privateKeyCifrada);
   const auth = new JWT({
-    email: config.serviceAccountEmail,
-    key,
+    email: serviceAccountEmail,
+    key: privateKey,
     scopes: [
       "https://www.googleapis.com/auth/meetings.space.created",
       "https://www.googleapis.com/auth/meetings.space.settings",
       "https://www.googleapis.com/auth/meetings.space.readonly",
     ],
-    subject: config.serviceAccountSubject,
+    subject: delegatedSubject,
   });
 
   const created = await auth.request<{
@@ -54,7 +71,7 @@ async function main() {
   if (!spaceName) throw new Error("Meet no devolvió el nombre del espacio nuevo.");
 
   const internalCohost = argValue("cohost") ?? "sala01@flacso.edu.uy";
-  if (internalCohost.toLowerCase() === config.serviceAccountSubject.toLowerCase()) {
+  if (internalCohost.toLowerCase() === delegatedSubject.toLowerCase()) {
     throw new Error("El cohost de prueba no puede ser la misma cuenta que crea el espacio.");
   }
 
@@ -78,8 +95,9 @@ async function main() {
   });
 
   console.log(JSON.stringify({
-    serviceAccountEmail: config.serviceAccountEmail,
-    delegatedSubject: config.serviceAccountSubject,
+    credentialSource: temporaryEmail || temporaryKey ? "temporary-env" : "stored-config",
+    serviceAccountEmail,
+    delegatedSubject,
     createdSpace: Boolean(spaceName),
     meetingCode: created.data.meetingCode ?? null,
     meetingUri: created.data.meetingUri ?? null,
