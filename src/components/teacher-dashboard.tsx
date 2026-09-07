@@ -9,42 +9,61 @@ import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"] }>) {
   const now = new Date();
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const meetings = await db.instanciaSala.findMany({
-    where: {
-      estado: "PROGRAMADA",
-      finProgramadoAt: { gte: now },
-      solicitud: {
-        docentePrograma: {
-          programa: {
-            activo: true,
-            docentes: {
-              some: {
-                activo: true,
-                docente: { usuarioId: user.id }
-              }
+
+  const baseWhere = {
+    estado: "PROGRAMADA" as const,
+    finProgramadoAt: { gte: now },
+    solicitud: {
+      docentePrograma: {
+        programa: {
+          activo: true,
+          docentes: {
+            some: {
+              activo: true,
+              docente: { usuarioId: user.id }
             }
           }
         }
       }
-    },
-    orderBy: { inicioProgramadoAt: "asc" },
-    take: 10,
-    include: {
-      solicitud: { include: { docentePrograma: { include: { programa: true } } } },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-      asignaciones: {
-        where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        include: { asistenteTecnico: { include: { usuario: true } } },
-        take: 1
-      }
     }
-  });
-  const nextWeek = meetings.filter(({ inicioProgramadoAt }) => inicioProgramadoAt < weekEnd).length;
-  const pendingMeet = meetings.filter(({ eventosProveedor }) =>
-    eventosProveedor.some(({ proveedor, estadoIntegracion }) =>
-      proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion !== "SINCRONIZADA"
-    )
-  ).length;
+  };
+
+  const [totalUpcoming, nextWeek, pendingMeet, meetings] = await Promise.all([
+    db.instanciaSala.count({
+      where: baseWhere
+    }),
+    db.instanciaSala.count({
+      where: {
+        ...baseWhere,
+        inicioProgramadoAt: { lt: weekEnd }
+      }
+    }),
+    db.instanciaSala.count({
+      where: {
+        ...baseWhere,
+        eventosProveedor: {
+          some: {
+            proveedor: { tipo: "GOOGLE_MEET" },
+            estadoIntegracion: { not: "SINCRONIZADA" }
+          }
+        }
+      }
+    }),
+    db.instanciaSala.findMany({
+      where: baseWhere,
+      orderBy: { inicioProgramadoAt: "asc" },
+      take: 10,
+      include: {
+        solicitud: { include: { docentePrograma: { include: { programa: true } } } },
+        eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+        asignaciones: {
+          where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+          include: { asistenteTecnico: { include: { usuario: true } } },
+          take: 1
+        }
+      }
+    })
+  ]);
 
   return (
     <div className="role-dashboard teacher-dashboard" data-tour="teacher-dashboard">
@@ -61,7 +80,7 @@ export async function TeacherDashboard({ user }: Readonly<{ user: Session["user"
       </header>
 
       <section className="role-metrics" aria-label="Resumen de reuniones">
-        <article><CalendarDays size={20} /><span><small>Próximas</small><strong>{meetings.length}</strong></span></article>
+        <article><CalendarDays size={20} /><span><small>Próximas</small><strong>{totalUpcoming}</strong></span></article>
         <article><Clock3 size={20} /><span><small>En los próximos 7 días</small><strong>{nextWeek}</strong></span></article>
         <article className={pendingMeet ? "is-warning" : ""}><Video size={20} /><span><small>Meet pendientes</small><strong>{pendingMeet}</strong></span></article>
       </section>

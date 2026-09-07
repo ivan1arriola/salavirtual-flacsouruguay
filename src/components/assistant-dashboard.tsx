@@ -5,7 +5,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  Hand,
   Hourglass
 } from "lucide-react";
 import Link from "next/link";
@@ -15,15 +14,18 @@ import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
-import { formatDate, formatDateTime, formatTime } from "@/src/lib/ui/format";
+import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { obtenerDashboardAsistente } from "@/src/modules/asistencia/dashboard-asistente.adapter";
+import { formatTiempoRestante } from "@/src/modules/asistencia/dashboard-asistente.domain";
 
 export async function AssistantDashboard({ user }: Readonly<{ user: Session["user"] }>) {
   const actor = await resolveSessionActor(db, { id: user.id, email: user.email });
   if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
-  const dashboard = await obtenerDashboardAsistente(db, actor.id);
+  const ahora = new Date();
+  const dashboard = await obtenerDashboardAsistente(db, actor.id, ahora);
   if (!dashboard) redirect("/mi-perfil");
   const next = dashboard.nextMeeting;
+  const followingMeetings = dashboard.proximasCoberturas.slice(1, 6);
   const currentMinutes = dashboard.mesActual.minutosVirtuales + dashboard.mesActual.minutosHibridos;
   const previousMinutes = dashboard.mesAnterior.minutosVirtuales + dashboard.mesAnterior.minutosHibridos;
 
@@ -37,17 +39,42 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
 
   return (
     <div className="assistant-dashboard" data-tour="assistant-dashboard">
-      <section className="next-opening">
-        <div>
-          <p className="page-eyebrow">Próxima cobertura</p>
-          <h1>{next?.titulo ?? "Sin reuniones próximas"}</h1>
-          <p>{next ? `${formatDateTime(next.inicioAt)} · ${next.programa}` : "Tu agenda no tiene asignaciones futuras."}</p>
-        </div>
-        <div className="next-opening-actions">
-          <Link className="primary-action" href="/mi-agenda">Mi agenda</Link>
-          <Link className="secondary-action" href="/agenda-abierta">Agenda abierta</Link>
-        </div>
-      </section>
+      {next ? (
+        <section className="next-opening" aria-label="Próxima reunión">
+          <div>
+            <p className="page-eyebrow">
+              {formatTiempoRestante(next.inicioAt.getTime(), ahora.getTime())} · {formatDate(next.inicioAt)}
+            </p>
+            <h1>{next.titulo}</h1>
+            <p>
+              <strong>{formatTime(next.inicioAt)}–{formatTime(next.finAt)}</strong> · {next.programa} · {next.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"} · {next.sala}
+            </p>
+          </div>
+          <div className="next-opening-actions">
+            {next.joinUrl ? (
+              <MeetLinkActions
+                className="hero-meet-actions"
+                openClassName="primary-action"
+                url={next.joinUrl}
+              />
+            ) : (
+              <span className="status status-warning">Meet pendiente</span>
+            )}
+            <Link className="secondary-action" href="/mi-agenda">Ver agenda</Link>
+          </div>
+        </section>
+      ) : (
+        <section className="next-opening">
+          <div>
+            <p className="page-eyebrow">Próxima cobertura</p>
+            <h1>Sin reuniones próximas asignadas</h1>
+            <p>Tu agenda no tiene coberturas asignadas en este momento.</p>
+          </div>
+          <div className="next-opening-actions">
+            <Link className="primary-action" href="/agenda-abierta">Ver agenda abierta</Link>
+          </div>
+        </section>
+      )}
 
       <section className="assistant-dashboard-metrics" aria-label="Resumen personal">
         {metrics.map(({ label, value, copy, icon: Icon, tone }) => (
@@ -65,15 +92,18 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
 
       <section className="content-section dashboard-table-section assistant-coverages-card">
         <div className="section-heading">
-          <div><h2>Próximas coberturas</h2><p>Tus reuniones asignadas, ordenadas por fecha.</p></div>
-          <Link className="text-link" href="/mi-agenda">Ver agenda completa <ArrowRight size={16} /></Link>
+          <div>
+            <h2>Siguientes coberturas</h2>
+            <p>Tus próximas reuniones asignadas a continuación.</p>
+          </div>
+          <Link className="text-link" href="/mi-agenda">Ver agenda completa en Mi agenda <ArrowRight size={16} /></Link>
         </div>
-        {dashboard.proximasCoberturas.length > 0 ? (
+        {followingMeetings.length > 0 ? (
           <div className="table-wrap">
             <table className="data-table role-meetings-table assistant-coverages-table">
               <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Sala</th><th>Estado</th><th>Acceso</th></tr></thead>
               <tbody>
-                {dashboard.proximasCoberturas.map((meeting) => (
+                {followingMeetings.map((meeting) => (
                   <tr key={meeting.id}>
                     <td>{formatDate(meeting.inicioAt)}</td>
                     <td className="time-cell">{formatTime(meeting.inicioAt)}</td>
@@ -88,23 +118,12 @@ export async function AssistantDashboard({ user }: Readonly<{ user: Session["use
             </table>
           </div>
         ) : (
-          <div className="empty-state"><CalendarClock size={24} /><p>No tenés coberturas próximas asignadas.</p></div>
+          <div className="empty-state">
+            <CalendarClock size={24} />
+            <p>{next ? "No tenés más coberturas asignadas por ahora." : "No tenés coberturas próximas asignadas."}</p>
+          </div>
         )}
       </section>
-
-      {next ? (
-        <section className="next-meeting-detail compact-next-detail">
-          <div className="section-heading">
-            <div><h2>Detalle de la próxima</h2><p>{formatDateTime(next.inicioAt)} · {next.sala}</p></div>
-          </div>
-          <dl>
-            <div><dt>Modalidad</dt><dd>{next.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</dd></div>
-            <div><dt>Duración</dt><dd>{formatMinutes(Math.round((next.finAt.getTime() - next.inicioAt.getTime()) / 60_000))}</dd></div>
-            <div><dt>Fin</dt><dd>{formatDateTime(next.finAt)}</dd></div>
-          </dl>
-          {next.joinUrl ? <MeetLinkActions className="next-meet-link-actions" openClassName="primary-action meet-access" url={next.joinUrl} /> : null}
-        </section>
-      ) : null}
     </div>
   );
 }

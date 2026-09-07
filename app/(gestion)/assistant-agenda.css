@@ -3,6 +3,57 @@
   gap: 20px;
 }
 
+.assistant-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #d3e1e8;
+  padding-bottom: 0;
+  margin-top: 4px;
+}
+
+.assistant-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  text-decoration: none;
+  transition: all 120ms ease;
+}
+
+.assistant-tab:hover {
+  color: var(--brand-strong);
+  background: rgba(23, 108, 120, 0.04);
+}
+
+.assistant-tab.is-active {
+  color: var(--brand-strong);
+  border-bottom-color: var(--brand);
+  background: rgba(23, 108, 120, 0.06);
+}
+
+.tab-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+
+.assistant-tab.is-active .tab-pill {
+  background: var(--brand);
+  color: #ffffff;
+}
+
 .assistant-agenda-header {
   margin-bottom: 0;
 }
@@ -438,4 +489,253 @@
   .assistant-agenda-link-actions .copy-meet-button {
     width: 100%;
   }
+}
+
+/* Agenda Abierta - Tarjetas y Agrupación por Día */
+.open-agenda-summary-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  background: #f4f8fb;
+  border: 1px solid #c9dbe3;
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+
+.open-agenda-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #4a5c6e;
+}
+
+.open-agenda-summary-item strong {
+  color: var(--brand-strong);
+  font-weight: 800;
+}
+
+.open-agenda-day-group {
+  margin-bottom: 24px;
+}
+
+.open-agenda-day-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e1ecf1;
+}
+
+.open-agenda-day-header h2 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--brand-strong);
+  margin: 0;
+}
+
+.open-agenda-relative-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e3eff5;
+  color: var(--brand-secondary);
+}
+
+.open-agenda-relative-pill.is-today {
+  background: #d4edda;
+  color: #155724;
+}
+
+.open-agenda-relative-pill.is-tomorrow {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.open-agenda-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.open-agenda-card {
+  background: #ffffff;
+  border: 1px solid #d5e3ea;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(31, 50, 76, 0.035);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.open-agenda-card:hover {
+  border-color: #b5ced9;
+  box-shadow: 0 6px 20px rgba(31, 50, 76, 0.06);
+}
+
+.open-agenda-card.has-conflict {
+  border-left: 4px solid #dc3545;
+}
+
+.open-agenda-card.has-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.open-agenda-card.is-available {
+  border-left: 4px solid #10b981;
+}
+
+.open-agenda-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #5c6f82;
+}
+
+.open-agenda-card-meta .time-tag {
+  font-weight: 700;
+  color: var(--brand-strong);
+}
+
+.open-agenda-card-meta .mode-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #edf3f7;
+  color: #3b4e61;
+}
+
+.open-agenda-card-meta .mode-pill.mode-hibrida {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.open-agenda-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.open-agenda-card-program {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brand-secondary);
+}
+
+.open-agenda-card-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1a2a3a;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.open-agenda-card-teacher {
+  font-size: 0.82rem;
+  color: #5f7183;
+}
+
+.open-agenda-availability-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.availability-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.availability-tag.tone-green {
+  color: #059669;
+}
+
+.availability-tag.tone-amber {
+  color: #d97706;
+}
+
+.availability-tag.tone-red {
+  color: #dc2626;
+}
+
+.availability-detail {
+  font-size: 0.74rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.open-agenda-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Postulantes chips enrichments */
+.assignment-chip.tone-available {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.assignment-chip.tone-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.assignment-chip.tone-conflict {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  opacity: 0.75;
+}
+
+.applicant-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.applicant-status-dot.status-disponible {
+  background: #10b981;
+}
+
+.applicant-status-dot.status-muy_proximo {
+  background: #f59e0b;
+}
+
+.applicant-status-dot.status-conflicto {
+  background: #ef4444;
+}
+
+.applicant-load {
+  font-size: 0.68rem;
+  font-weight: 800;
+  margin-left: 5px;
+  opacity: 0.8;
 }

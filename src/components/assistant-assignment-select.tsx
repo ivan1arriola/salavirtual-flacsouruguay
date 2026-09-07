@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type AssistantOption = Readonly<{ id: string; name: string }>;
-type ApplicantOption = Readonly<{ id: string; name: string }>;
+export type ApplicantOption = Readonly<{
+  id: string;
+  name: string;
+  status?: "DISPONIBLE" | "MUY_PROXIMO" | "CONFLICTO";
+  monthlyMinutes?: number;
+  conflictDetail?: string;
+}>;
 type SuggestedAssistant = Readonly<{ id: string; name: string; reason: string }>;
 
 export function AssistantAssignmentSelect({
@@ -60,59 +66,83 @@ export function AssistantAssignmentSelect({
       ) : null}
       {editing ? (
         <>
-      <div className="assignment-applicants" aria-label="Postulantes">
-        <div className="assignment-contract-label">
-          <UserCheck size={15} aria-hidden="true" />
-          <span>Postulantes</span>
-          <strong>{applicants.length}</strong>
-        </div>
-        {applicants.length > 0 ? (
-          <div className="assignment-chip-list">
-            {applicants.map((applicant) => (
-              <button
-                className="assignment-chip"
-                disabled={pending || applicant.id === currentAssistantId}
-                key={applicant.id}
-                onClick={() => assign(applicant.id)}
-                title={`Asignar a ${applicant.name}`}
-                type="button"
-              >
-                {applicant.name}
-              </button>
-            ))}
+          <div className="assignment-applicants" aria-label="Postulantes">
+            <div className="assignment-contract-label">
+              <UserCheck size={15} aria-hidden="true" />
+              <span>Postulantes</span>
+              <strong>{applicants.length}</strong>
+            </div>
+            {applicants.length > 0 ? (
+              <div className="assignment-chip-list">
+                {applicants.map((applicant) => {
+                  const statusClass = applicant.status === "CONFLICTO"
+                    ? " tone-conflict"
+                    : applicant.status === "MUY_PROXIMO"
+                      ? " tone-warning"
+                      : applicant.status === "DISPONIBLE"
+                        ? " tone-available"
+                        : "";
+                  const hours = applicant.monthlyMinutes !== undefined
+                    ? `${Math.round(applicant.monthlyMinutes / 60)} h`
+                    : "";
+                  const title = applicant.conflictDetail
+                    ? `${applicant.name} (${applicant.conflictDetail})`
+                    : applicant.status === "DISPONIBLE"
+                      ? `Disponible · ${applicant.name}${hours ? ` (${hours} este mes)` : ""}`
+                      : `Asignar a ${applicant.name}`;
+                  return (
+                    <button
+                      className={`assignment-chip${statusClass}`}
+                      disabled={pending || applicant.id === currentAssistantId}
+                      key={applicant.id}
+                      onClick={() => assign(applicant.id)}
+                      title={title}
+                      type="button"
+                    >
+                      <span>{applicant.name}</span>
+                      {applicant.status ? (
+                        <span
+                          className={`applicant-status-dot status-${applicant.status.toLowerCase()}`}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      {hours ? <span className="applicant-load">{hours}</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <small className="muted-text">Sin postulantes</small>
+            )}
           </div>
-        ) : (
-          <small className="muted-text">Sin postulantes</small>
-        )}
-      </div>
-      {suggestedAssistant ? (
-        <button
-          className="assignment-suggestion"
-          disabled={pending || suggestedAssistant.id === currentAssistantId}
-          onClick={() => assign(suggestedAssistant.id)}
-          title={`Asignar sugerencia: ${suggestedAssistant.name}`}
-          type="button"
-        >
-          <Sparkles size={15} aria-hidden="true" />
-          <span>
-            <strong>{suggestedAssistant.name}</strong>
-            <small>{suggestedAssistant.reason}</small>
-          </span>
-        </button>
-      ) : null}
-      <select
-        aria-label={applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"}
-        defaultValue={currentAssistantId ?? ""}
-        disabled={pending}
-        onChange={(event) => assign(event.target.value)}
-      >
-        <option value="">{applicants.length > 0 ? "Asignar asistente técnico" : "Asignar manualmente"}</option>
-        {assistants.map((assistant) => (
-          <option key={assistant.id} value={assistant.id}>
-            {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}
-          </option>
-        ))}
-      </select>
+          {suggestedAssistant ? (
+            <button
+              className="assignment-suggestion"
+              disabled={pending || suggestedAssistant.id === currentAssistantId}
+              onClick={() => assign(suggestedAssistant.id)}
+              title={`Asignar sugerencia: ${suggestedAssistant.name}`}
+              type="button"
+            >
+              <Sparkles size={15} aria-hidden="true" />
+              <span>
+                <strong>{suggestedAssistant.name}</strong>
+                <small>{suggestedAssistant.reason}</small>
+              </span>
+            </button>
+          ) : null}
+          <select
+            aria-label={applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"}
+            defaultValue={currentAssistantId ?? ""}
+            disabled={pending}
+            onChange={(event) => assign(event.target.value)}
+          >
+            <option value="">{applicants.length > 0 ? "Asignar asistente técnico" : "Asignar manualmente"}</option>
+            {assistants.map((assistant) => (
+              <option key={assistant.id} value={assistant.id}>
+                {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}
+              </option>
+            ))}
+          </select>
         </>
       ) : null}
       {message ? <small className="inline-error" role="alert">{message}</small> : null}

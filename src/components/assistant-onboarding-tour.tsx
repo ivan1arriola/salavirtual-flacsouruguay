@@ -26,19 +26,19 @@ function homeSteps(): DriveStep[] {
   return [
     step('[data-tour="assistant-dashboard"]', {
       title: "Bienvenido a Sala Virtual",
-      description: "Este resumen muestra tus postulaciones, próximas coberturas, horas del mes y la siguiente reunión asignada.",
+      description: "Este resumen muestra tu próxima cobertura, requerimientos de atención y siguientes coberturas asignadas.",
       side: "bottom",
       align: "start"
     }),
     step('[data-tour="assistant-my-agenda"]', {
       title: "Mi agenda",
-      description: "Acá aparecen las reuniones que ya están asignadas a tu perfil, junto con la sala y el acceso a Google Meet.",
+      description: "Acá aparecen tus reuniones asignadas, el desglose del mes en curso y tu histórico personal.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="assistant-open-agenda"]', {
       title: "Agenda abierta",
-      description: "Consultá las reuniones que necesitan asistencia técnica y marcá aquellas en las que te interesa participar.",
+      description: "Consultá las reuniones que necesitan asistencia técnica, revisá disponibilidad o posibles conflictos y postuláte.",
       side: "right",
       align: "start"
     }),
@@ -63,8 +63,8 @@ function homeSteps(): DriveStep[] {
     step('[data-tour="assistant-notifications"]', {
       title: "Notificaciones",
       description: "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
-      side: "right",
-      align: "start"
+      side: "bottom",
+      align: "end"
     }),
     step('[data-tour="assistant-profile"]', {
       title: "Tu cuenta",

@@ -1,11 +1,20 @@
-import { Hand } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Hand } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AssistantAssignmentSelect } from "@/src/components/assistant-assignment-select";
+import { AssistantAssignmentSelect, type ApplicantOption } from "@/src/components/assistant-assignment-select";
 import { AssistantInterestButton } from "@/src/components/assistant-interest-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { formatDateTime } from "@/src/lib/ui/format";
+import { formatMinutes } from "@/src/lib/ui/assistant-format";
+import { formatDateTime, formatTime } from "@/src/lib/ui/format";
+import {
+  agruparPorFecha,
+  evaluarConflictoAsistencia,
+  ordenarPostulantesParaAdministracion,
+  type AsignacionExistente
+} from "@/src/modules/asistencia/agenda-abierta.domain";
+import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-personal.adapter";
+import { resumirAsistencias } from "@/src/modules/asistencia/resumen-personal.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -24,10 +33,11 @@ export default async function AgendaAbiertaPage() {
     : null;
   if (actor.rol === "ASISTENTE_TECNICO" && !assistant) redirect("/");
 
+  const ahora = new Date();
   const meetings = await db.instanciaSala.findMany({
     where: {
       requiereAsistenciaTecnica: true,
-      finProgramadoAt: { gte: new Date() },
+      finProgramadoAt: { gte: ahora },
       estado: "PROGRAMADA",
       asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
     },
@@ -47,7 +57,33 @@ export default async function AgendaAbiertaPage() {
     }
   });
   const meetingIds = meetings.map(({ id }) => id);
-  const [interests, assistantOptions] = await Promise.all([
+
+  const [assistantAssignments, personalMonth, interests, assistantOptions] = await Promise.all([
+    actor.rol === "ASISTENTE_TECNICO" && assistant
+      ? db.asignacionAsistenciaTecnica.findMany({
+          where: {
+            asistenteTecnicoId: assistant.id,
+            estado: { in: [...ACTIVE_ASSIGNMENTS] },
+            instancia: {
+              finProgramadoAt: { gte: ahora },
+              estado: "PROGRAMADA"
+            }
+          },
+          select: {
+            instancia: {
+              select: {
+                id: true,
+                inicioProgramadoAt: true,
+                finProgramadoAt: true,
+                solicitud: { select: { titulo: true } }
+              }
+            }
+          }
+        })
+      : Promise.resolve([]),
+    actor.rol === "ASISTENTE_TECNICO"
+      ? obtenerAsistenciasPersonales(db, actor.id, "MES_ACTUAL", ahora)
+      : Promise.resolve([]),
     actor.rol === "ASISTENTE_TECNICO"
       ? db.postulacionAsistenciaTecnica.findMany({
           where: { instanciaSalaId: { in: meetingIds }, asistenteTecnicoId: assistant?.id },
@@ -61,7 +97,28 @@ export default async function AgendaAbiertaPage() {
           },
           select: {
             instanciaSalaId: true,
-            asistenteTecnico: { select: { id: true, usuario: { select: { nombres: true, apellidos: true } } } }
+            asistenteTecnico: {
+              select: {
+                id: true,
+                usuario: { select: { nombres: true, apellidos: true } },
+                asignaciones: {
+                  where: {
+                    estado: { in: [...ACTIVE_ASSIGNMENTS] },
+                    instancia: { estado: "PROGRAMADA" }
+                  },
+                  select: {
+                    instancia: {
+                      select: {
+                        id: true,
+                        inicioProgramadoAt: true,
+                        finProgramadoAt: true,
+                        solicitud: { select: { titulo: true } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           orderBy: { createdAt: "asc" }
         }),
@@ -76,10 +133,26 @@ export default async function AgendaAbiertaPage() {
         })
       : Promise.resolve([])
   ]);
+
+  const monthSummary = resumirAsistencias(personalMonth);
+  const currentMonthMinutes = monthSummary.minutosVirtuales + monthSummary.minutosHibridos;
+  const activeApplicationsCount = actor.rol === "ASISTENTE_TECNICO"
+    ? interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").length
+    : 0;
+
+  const assignedList: AsignacionExistente[] = assistantAssignments.map(({ instancia }) => ({
+    id: instancia.id,
+    titulo: instancia.solicitud.titulo,
+    inicio: instancia.inicioProgramadoAt,
+    fin: instancia.finProgramadoAt
+  }));
+
   const assignableAssistants = assistantOptions.map((item) => ({
     id: item.id,
     name: [item.usuario.nombres, item.usuario.apellidos].filter(Boolean).join(" ")
   }));
+
+  const dayGroups = agruparPorFecha(meetings, ahora, "America/Montevideo");
 
   return (
     <>
@@ -92,53 +165,207 @@ export default async function AgendaAbiertaPage() {
         <Hand size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
+      {actor.rol === "ASISTENTE_TECNICO" ? (
+        <section className="open-agenda-summary-bar" aria-label="Resumen de disponibilidad">
+          <div className="open-agenda-summary-item">
+            <Clock3 size={18} aria-hidden="true" />
+            <span>Horas asignadas este mes: <strong>{formatMinutes(currentMonthMinutes)}</strong></span>
+          </div>
+          <div className="open-agenda-summary-item">
+            <Hand size={18} aria-hidden="true" />
+            <span>Reuniones abiertas: <strong>{meetings.length}</strong></span>
+          </div>
+          <div className="open-agenda-summary-item">
+            <CheckCircle2 size={18} aria-hidden="true" />
+            <span>Tus postulaciones: <strong>{activeApplicationsCount}</strong></span>
+          </div>
+        </section>
+      ) : null}
+
       <section
         className="content-section"
         data-tour={actor.rol === "ASISTENTE_TECNICO" ? "assistant-open-list" : undefined}
       >
         {meetings.length === 0 ? (
-          <div className="empty-state"><Hand size={24} aria-hidden="true" /><p>No hay reuniones abiertas para postulación.</p></div>
+          <div className="empty-state">
+            <Hand size={24} aria-hidden="true" />
+            <p>No hay reuniones abiertas para postulación.</p>
+          </div>
+        ) : actor.rol === "ASISTENTE_TECNICO" ? (
+          <div className="open-agenda-days-container">
+            {dayGroups.map((group) => (
+              <section className="open-agenda-day-group" key={group.claveFecha}>
+                <div className="open-agenda-day-header">
+                  <h2>{group.etiquetaFecha}</h2>
+                  <span
+                    className={`open-agenda-relative-pill${
+                      group.etiquetaRelativa === "Hoy"
+                        ? " is-today"
+                        : group.etiquetaRelativa === "Mañana"
+                          ? " is-tomorrow"
+                          : ""
+                    }`}
+                  >
+                    {group.etiquetaRelativa}
+                  </span>
+                </div>
+
+                <div className="open-agenda-card-grid">
+                  {group.items.map((meeting) => {
+                    const association = meeting.solicitud.docentePrograma;
+                    const teacher = association.docente.usuario;
+                    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                    const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
+                    const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
+
+                    const durationMin = Math.max(
+                      1,
+                      Math.round((meeting.finProgramadoAt.getTime() - meeting.inicioProgramadoAt.getTime()) / 60_000)
+                    );
+
+                    const conflict = evaluarConflictoAsistencia(
+                      { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
+                      assignedList
+                    );
+
+                    const cardStateClass = conflict.estado === "CONFLICTO"
+                      ? " has-conflict"
+                      : conflict.estado === "MUY_PROXIMO"
+                        ? " has-warning"
+                        : " is-available";
+
+                    return (
+                      <article className={`open-agenda-card${cardStateClass}`} key={meeting.id}>
+                        <div className="open-agenda-card-meta">
+                          <span className="time-tag">
+                            {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)} ({formatMinutes(durationMin)})
+                          </span>
+                          <span className={`mode-pill mode-${meeting.solicitud.modalidad.toLowerCase()}`}>
+                            {meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                          </span>
+                        </div>
+
+                        <div className="open-agenda-card-body">
+                          <span className="open-agenda-card-program">{association.programa.nombre}</span>
+                          <h3 className="open-agenda-card-title">{meeting.solicitud.titulo}</h3>
+                          <p className="open-agenda-card-teacher">Docente: {teacher.nombres} {teacher.apellidos}</p>
+                          {meet?.cuentaProveedor?.emailOrganizador || meet?.cuentaProveedor?.nombre ? (
+                            <small className="muted-text">
+                              Cuenta: {meet.cuentaProveedor.emailOrganizador ?? meet.cuentaProveedor.nombre}
+                            </small>
+                          ) : null}
+                        </div>
+
+                        <div className="open-agenda-availability-box">
+                          {conflict.estado === "DISPONIBLE" ? (
+                            <div className="availability-tag tone-green">
+                              <CheckCircle2 size={15} aria-hidden="true" />
+                              <span>{conflict.etiqueta} (sin superposiciones)</span>
+                            </div>
+                          ) : conflict.estado === "MUY_PROXIMO" ? (
+                            <>
+                              <div className="availability-tag tone-amber">
+                                <Clock3 size={15} aria-hidden="true" />
+                                <span>{conflict.etiqueta}</span>
+                              </div>
+                              <small className="availability-detail">{conflict.detalle}</small>
+                            </>
+                          ) : (
+                            <>
+                              <div className="availability-tag tone-red">
+                                <AlertTriangle size={15} aria-hidden="true" />
+                                <span>{conflict.etiqueta}</span>
+                              </div>
+                              <small className="availability-detail">{conflict.detalle}</small>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="open-agenda-card-actions">
+                          <AssistantInterestButton
+                            interested={Boolean(interested)}
+                            meetingId={meeting.id}
+                          />
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
         ) : (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Fecha y hora (UTC-3)</th><th>Reunión</th><th>Programa</th><th>Sala</th><th>{actor.rol === "ASISTENTE_TECNICO" ? "Postulación" : "Postulantes"}</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Fecha y hora (UTC-3)</th>
+                  <th>Reunión</th>
+                  <th>Programa</th>
+                  <th>Sala</th>
+                  <th>Postulantes ordenados por disponibilidad</th>
+                </tr>
+              </thead>
               <tbody>
                 {meetings.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-                  if (actor.rol === "ASISTENTE_TECNICO") {
-                    const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
-                    const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
-                    return (
-                      <tr key={meeting.id}>
-                        <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                        <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                        <td>{association.programa.nombre}</td>
-                        <td>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
-                        <td><AssistantInterestButton meetingId={meeting.id} interested={Boolean(interested)} /></td>
-                      </tr>
-                    );
-                  }
-                  const applicants = interests
+
+                  const meetingApplicants = interests
                     .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {
                       if (!("asistenteTecnico" in item)) return null;
+                      const ast = item.asistenteTecnico;
+
+                      const candPeriod = { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt };
+                      const astAssignments: AsignacionExistente[] = ast.asignaciones.map(({ instancia }) => ({
+                        id: instancia.id,
+                        titulo: instancia.solicitud.titulo,
+                        inicio: instancia.inicioProgramadoAt,
+                        fin: instancia.finProgramadoAt
+                      }));
+
+                      const conf = evaluarConflictoAsistencia(candPeriod, astAssignments);
+
+                      const meetingMonth = meeting.inicioProgramadoAt.getUTCMonth();
+                      const meetingYear = meeting.inicioProgramadoAt.getUTCFullYear();
+                      const monthlyMinutes = astAssignments
+                        .filter((a) => a.inicio.getUTCMonth() === meetingMonth && a.inicio.getUTCFullYear() === meetingYear)
+                        .reduce((acc, a) => acc + Math.round((a.fin.getTime() - a.inicio.getTime()) / 60_000), 0);
+
                       return {
-                        id: item.asistenteTecnico.id,
-                        name: [item.asistenteTecnico.usuario.nombres, item.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
+                        id: ast.id,
+                        name: [ast.usuario.nombres, ast.usuario.apellidos].filter(Boolean).join(" "),
+                        estadoDisponibilidad: conf.estado,
+                        etiquetaDisponibilidad: conf.etiqueta,
+                        minutosMensuales: monthlyMinutes,
+                        detalleConflicto: conf.estado !== "DISPONIBLE" ? conf.detalle : undefined
                       };
                     })
-                    .filter((item): item is { id: string; name: string } => Boolean(item));
+                    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+                  const sortedApplicants = ordenarPostulantesParaAdministracion(meetingApplicants);
+                  const applicantOptions: ApplicantOption[] = sortedApplicants.map((a) => ({
+                    id: a.id,
+                    name: a.name,
+                    status: a.estadoDisponibilidad,
+                    monthlyMinutes: a.minutosMensuales,
+                    conflictDetail: a.detalleConflicto
+                  }));
+
                   return (
                     <tr key={meeting.id}>
                       <td className="date-cell">{formatDateTime(meeting.inicioProgramadoAt)}</td>
-                      <td><strong>{meeting.solicitud.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
+                      <td>
+                        <strong>{meeting.solicitud.titulo}</strong>
+                        <small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small>
+                      </td>
                       <td>{association.programa.nombre}</td>
                       <td>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
                       <td>
                         <AssistantAssignmentSelect
+                          applicants={applicantOptions}
                           assistants={assignableAssistants}
-                          applicants={applicants}
                           meetingId={meeting.id}
                         />
                       </td>

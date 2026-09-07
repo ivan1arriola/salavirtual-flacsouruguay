@@ -45,11 +45,10 @@ const adminNav = [
 ] as const;
 
 const assistantNav = [
+  { href: "/", label: "Inicio", icon: LayoutDashboard },
   { href: "/mi-agenda", label: "Mi agenda", icon: CalendarCheck2 },
   { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
-  { href: "/reuniones-del-mes", label: "Reuniones del mes", icon: CalendarRange },
-  { href: "/grabaciones", label: "Grabaciones", icon: Video },
-  { href: "/mi-historico", label: "Mi histórico", icon: History }
+  { href: "/grabaciones", label: "Grabaciones", icon: Video }
 ] as const;
 
 const teacherNav = [{ href: "/mis-programas", label: "Mis programas", icon: BookOpen }] as const;
@@ -73,12 +72,12 @@ export async function AppShell({
     where: { usuarioId: user.id, leidaAt: null }
   });
   const mobilePrimaryNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
-    ? assistantNav.slice(0, 4)
+    ? assistantNav
     : user.role === "DOCENTE"
       ? [primaryNav[0], primaryNav[1], createMeetingNav, teacherNav[0]]
       : [primaryNav[0], primaryNav[1], createMeetingNav, primaryNav[2]];
   const mobileMoreNav: readonly NavigationItem[] = user.role === "ASISTENTE_TECNICO"
-    ? [assistantNav[4]]
+    ? [{ href: "/mi-perfil", label: "Mi perfil", icon: Settings }]
     : user.role === "DOCENTE"
       ? [primaryNav[2]]
       : adminNav;
@@ -225,11 +224,13 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     if (href === "/grabaciones") return "teacher-recordings";
   }
   if (role === "ASISTENTE_TECNICO") {
+    if (href === "/") return "assistant-dashboard";
     if (href === "/mi-agenda") return "assistant-my-agenda";
     if (href === "/agenda-abierta") return "assistant-open-agenda";
     if (href === "/reuniones-del-mes") return "assistant-month";
     if (href === "/grabaciones") return "assistant-recordings";
     if (href === "/mi-historico") return "assistant-history";
+    if (href === "/mi-perfil") return "assistant-profile";
   }
   return undefined;
 }
