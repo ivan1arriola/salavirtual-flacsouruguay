@@ -14,6 +14,7 @@ import "./assistant-dashboard.css";
 import "./assistant-report-config.css";
 import "./admin-assistants.css";
 import "./role-dashboard.css";
+import "./admin-upcoming-refresh.css";
 import "./ux-polish.css";
 import "./brand-refresh.css";
 import "./profile-navigation-refresh.css";
