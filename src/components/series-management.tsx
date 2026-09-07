@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, LoaderCircle, Save, UsersRound } from "lucide-react";
+import { BellRing, ChevronDown, LoaderCircle, Save, UsersRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -76,89 +76,108 @@ export function SeriesManagement({
       : current.filter((value) => value !== id));
   }
 
+  const manualCount = normalizeManualEmails(manualEmails).length;
+  const configuredCount = selectedIds.length + manualCount;
+
   return (
-    <section className="content-section series-management-section">
-      <div className="section-heading">
+    <details className="series-management-v2" id="administrar-serie">
+      <summary>
+        <span className="series-management-v2-icon"><UsersRound size={18} aria-hidden="true" /></span>
         <div>
-          <h2>Gestión de la serie</h2>
-          <p>Reenviá el aviso al programa o actualizá quiénes pueden coorganizar los próximos encuentros.</p>
+          <strong>Administrar serie</strong>
+          <small>Cohosts y notificaciones de los próximos encuentros</small>
         </div>
-      </div>
+        <span className="series-management-v2-count">{configuredCount} {configuredCount === 1 ? "cohost" : "cohosts"}</span>
+        <ChevronDown size={18} aria-hidden="true" />
+      </summary>
 
-      {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
+      <div className="series-management-v2-content">
+        {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
-      <div className="form-grid">
-        <div className="field field-wide">
-          <span>Notificar al programa</span>
-          <div className="auto-room-note">
-            <BellRing size={20} aria-hidden="true" />
+        <article className="series-tool-card">
+          <header>
+            <UsersRound size={19} aria-hidden="true" />
             <div>
-              <strong>Reenviar datos de la serie</strong>
-              <span>Envía nuevamente fechas, sala, enlace y credenciales a {programPeopleCount} {programPeopleCount === 1 ? "persona activa" : "personas activas"} del programa.</span>
+              <h3>Cohosts de la serie</h3>
+              <p>Se aplican a todos los encuentros activos y futuros.</p>
             </div>
-            <button
-              className="secondary-action"
-              disabled={busy !== null || programPeopleCount === 0 || !hasManageableMeetings}
-              onClick={notifyProgram}
-              type="button"
-            >
-              {busy === "notify" ? <LoaderCircle className="button-spinner" size={17} /> : <BellRing size={17} />}
-              {busy === "notify" ? "Enviando…" : "Reenviar aviso"}
-            </button>
-          </div>
-        </div>
+          </header>
 
-        <details className="cohost-disclosure field-wide">
-          <summary>
-            <div>
-              <strong>Cohosts de la serie</strong>
-              <small>Agregá o quitá cohosts en todos los encuentros activos y futuros.</small>
-            </div>
-            <span>{selectedIds.length + initialManualCohostEmails.length} configurados</span>
-            <UsersRound size={18} aria-hidden="true" />
-          </summary>
-          <div className="cohost-disclosure-content">
-            {cohostOptions.length > 0 ? (
-              <fieldset className="field checkbox-list">
-                <legend>Cuentas guardadas</legend>
-                {cohostOptions.map((cohost) => (
-                  <label key={cohost.id}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(cohost.id) || cohost.required}
-                      disabled={busy !== null || cohost.required || !hasManageableMeetings}
-                      onChange={(event) => toggleCohost(cohost.id, event.target.checked)}
-                    />
-                    <span>{cohost.email}{cohost.required ? " · automático" : ""}</span>
-                  </label>
-                ))}
-              </fieldset>
-            ) : null}
-            <label className="field">
-              <span>Otros correos</span>
-              <textarea
-                value={manualEmails}
-                disabled={busy !== null || !hasManageableMeetings}
-                onChange={(event) => setManualEmails(event.target.value)}
-                placeholder="correo@flacso.edu.uy, otro@flacso.edu.uy"
-                rows={3}
-              />
-            </label>
-            {!hasManageableMeetings ? (
-              <p className="muted-text">No hay encuentros activos o futuros para actualizar.</p>
-            ) : null}
-            <button
-              className="primary-action"
+          {cohostOptions.length > 0 ? (
+            <fieldset className="field checkbox-list series-cohost-list">
+              <legend>Cuentas institucionales</legend>
+              {cohostOptions.map((cohost) => (
+                <label key={cohost.id}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(cohost.id) || cohost.required}
+                    disabled={busy !== null || cohost.required || !hasManageableMeetings}
+                    onChange={(event) => toggleCohost(cohost.id, event.target.checked)}
+                  />
+                  <span>{cohost.email}{cohost.required ? " · automático" : ""}</span>
+                </label>
+              ))}
+            </fieldset>
+          ) : null}
+
+          <label className="field">
+            <span>Otros correos Google</span>
+            <textarea
+              value={manualEmails}
               disabled={busy !== null || !hasManageableMeetings}
-              onClick={saveCohosts}
-              type="button"
-            >
-              {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
-              {busy === "cohosts" ? "Guardando…" : "Guardar cohosts"}
-            </button>
+              onChange={(event) => setManualEmails(event.target.value)}
+              placeholder="correo@gmail.com, persona@organizacion.edu"
+              rows={3}
+            />
+          </label>
+
+          {!hasManageableMeetings ? (
+            <p className="muted-text">No hay encuentros activos o futuros para actualizar.</p>
+          ) : null}
+
+          <button
+            className="primary-action series-tool-action"
+            disabled={busy !== null || !hasManageableMeetings}
+            onClick={saveCohosts}
+            type="button"
+          >
+            {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
+            {busy === "cohosts" ? "Guardando…" : "Guardar cohosts"}
+          </button>
+        </article>
+
+        <article className="series-tool-card series-notify-card">
+          <header>
+            <BellRing size={19} aria-hidden="true" />
+            <div>
+              <h3>Reenviar aviso</h3>
+              <p>Vuelve a enviar las fechas y enlaces de Meet a las personas activas del programa.</p>
+            </div>
+          </header>
+          <div className="series-notify-summary">
+            <strong>{programPeopleCount}</strong>
+            <span>{programPeopleCount === 1 ? "persona recibirá el aviso" : "personas recibirán el aviso"}</span>
           </div>
-        </details>
+          <button
+            className="secondary-action series-tool-action"
+            disabled={busy !== null || programPeopleCount === 0 || !hasManageableMeetings}
+            onClick={notifyProgram}
+            type="button"
+          >
+            {busy === "notify" ? <LoaderCircle className="button-spinner" size={17} /> : <BellRing size={17} />}
+            {busy === "notify" ? "Enviando…" : "Reenviar aviso"}
+          </button>
+        </article>
       </div>
-    </section>
+    </details>
   );
+}
+
+function normalizeManualEmails(value: string): readonly string[] {
+  return [...new Set(
+    value
+      .split(/[\n,;]+/)
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  )];
 }
