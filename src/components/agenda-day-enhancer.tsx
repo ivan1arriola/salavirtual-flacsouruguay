@@ -36,15 +36,10 @@ export function AgendaDayEnhancer() {
 
     const apply = () => enhanceAgenda();
     apply();
-
     const timer = window.setInterval(apply, 30_000);
-    const observer = new MutationObserver(() => apply());
-    const root = document.querySelector(".meetings-agenda-page.agenda-v2");
-    if (root) observer.observe(root, { childList: true, subtree: true });
 
     return () => {
       window.clearInterval(timer);
-      observer.disconnect();
       cleanupAgendaEnhancement();
     };
   }, [pathname, searchKey]);
