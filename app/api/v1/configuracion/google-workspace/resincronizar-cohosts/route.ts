@@ -3,11 +3,18 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistencia.service";
 import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
 import { normalizeCohostEmails } from "@/src/modules/meet/cohosts.domain";
+import { cargarCredencialesEncuentro } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 
 export const runtime = "nodejs";
+
+type PendingExternal = Readonly<{
+  instanciaSalaId: string;
+  titulo: string;
+  inicio: string;
+  emails: readonly string[];
+}>;
 
 export async function POST() {
   const session = await auth();
@@ -35,7 +42,7 @@ export async function POST() {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { id: true } },
+              cuentasGoogle: { select: { id: true, email: true } },
             },
           },
         },
@@ -48,18 +55,26 @@ export async function POST() {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { id: true } },
+                  cuentasGoogle: { select: { id: true, email: true } },
                 },
               },
             },
           },
         },
       },
-      cohosts: { select: { cuentaGoogleId: true } },
+      cohosts: {
+        select: {
+          cuentaGoogleId: true,
+          cuentaGoogle: { select: { email: true } },
+        },
+      },
       cohostEmails: { select: { email: true } },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        select: { codigoReunion: true },
+        select: {
+          codigoReunion: true,
+          cuentaProveedor: { select: { emailOrganizador: true } },
+        },
         take: 1,
       },
     },
@@ -121,15 +136,54 @@ export async function POST() {
     inicio: string;
     error: string;
   }>> = [];
+  const pendingExternal: PendingExternal[] = [];
   let synced = 0;
 
   for (const meeting of candidates) {
+    const event = meeting.eventosProveedor[0];
+    if (!event?.codigoReunion || !event.cuentaProveedor?.emailOrganizador) continue;
+
+    const requester = meeting.solicitud.creadaPor;
+    const assistants = meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario);
+    const allDesiredEmails = normalizeCohostEmails([
+      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+      ...meeting.cohostEmails.map(({ email }) => email),
+      ...requester.cuentasGoogle.map(({ email }) => email),
+      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
+      ...assistants.flatMap((assistant) =>
+        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
+      ),
+    ]);
+
+    const organizerDomain = event.cuentaProveedor.emailOrganizador.split("@")[1]?.toLowerCase() ?? "";
+    const internalEmails = organizerDomain
+      ? allDesiredEmails.filter((email) => email.endsWith(`@${organizerDomain}`))
+      : allDesiredEmails;
+    const externalEmails = organizerDomain
+      ? allDesiredEmails.filter((email) => !email.endsWith(`@${organizerDomain}`))
+      : [];
+
+    if (externalEmails.length > 0) {
+      pendingExternal.push({
+        instanciaSalaId: meeting.id,
+        titulo: meeting.solicitud.titulo,
+        inicio: meeting.inicioProgramadoAt.toISOString(),
+        emails: externalEmails,
+      });
+    }
+
+    if (internalEmails.length === 0) continue;
+
     try {
-      await sincronizarCohostsDeInstancia({
+      const credentials = await cargarCredencialesEncuentro(
         db,
-        descifrar: descifrarConfiguracion,
-        configurarEspacio: configurarGoogleMeetExistente,
-      }, meeting.id);
+        descifrarConfiguracion,
+        event.cuentaProveedor.emailOrganizador,
+      );
+      await configurarGoogleMeetExistente(credentials, event.codigoReunion, {
+        cohostEmails: internalEmails,
+      });
       synced += 1;
     } catch (error) {
       failures.push({
@@ -142,6 +196,8 @@ export async function POST() {
   }
 
   const skipped = meetings.length - candidates.length;
+  const externalEmailCount = pendingExternal.reduce((total, item) => total + item.emails.length, 0);
+
   await db.auditoria.create({
     data: {
       actorUsuarioId: actor.id,
@@ -155,9 +211,22 @@ export async function POST() {
         sincronizadas: synced,
         omitidas: skipped,
         fallidas: failures.length,
+        cohostsExternosPendientes: externalEmailCount,
+        reunionesConExternos: pendingExternal.length,
       },
     },
   });
+
+  let message: string;
+  if (candidates.length === 0) {
+    message = "No hay reuniones activas o futuras con un Meet provisionado para sincronizar.";
+  } else if (failures.length > 0) {
+    message = `Se sincronizaron ${synced} reuniones; ${failures.length} todavía tienen un error de Google Meet.`;
+  } else if (externalEmailCount > 0) {
+    message = `Se sincronizaron ${synced} reuniones. ${externalEmailCount} cohosts externos requieren asignación manual mientras la API siga en Developer Preview.`;
+  } else {
+    message = `Se completaron los cohosts y se sincronizaron ${synced} ${synced === 1 ? "reunión" : "reuniones"}.`;
+  }
 
   return NextResponse.json({
     reunionesActivas: meetings.length,
@@ -166,11 +235,10 @@ export async function POST() {
     sincronizadas: synced,
     omitidas: skipped,
     fallidas: failures.length,
+    cohostsExternosPendientes: externalEmailCount,
+    reunionesConExternos: pendingExternal.length,
     errores: failures.slice(0, 20),
-    message: candidates.length === 0
-      ? "No hay reuniones activas o futuras con un Meet provisionado para sincronizar."
-      : failures.length === 0
-        ? `Se completaron los cohosts y se sincronizaron ${synced} ${synced === 1 ? "reunión" : "reuniones"}.`
-        : `Se agregaron ${cohostsAgregados} cohosts en Sala Virtual; ${synced} reuniones se sincronizaron con Google y ${failures.length} quedaron pendientes.`,
+    externos: pendingExternal.slice(0, 20),
+    message,
   });
 }
