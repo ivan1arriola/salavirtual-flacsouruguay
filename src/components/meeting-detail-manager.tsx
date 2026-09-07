@@ -10,6 +10,9 @@ import {
   Trash2,
   UserRoundMinus,
   UserRoundPlus,
+  UsersRound,
+  Video,
+  Wrench,
   X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,7 +36,8 @@ type Encounter = Readonly<{
   requiereAsistenciaTecnica: boolean;
   asistenteTecnico: string | null;
   postulantes: number;
-  cuentaGoogle: string;
+  organizerAccount: string;
+  cohosts: readonly string[];
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
@@ -52,7 +56,9 @@ export function MeetingDetailManager({
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
+  const [addingOpen, setAddingOpen] = useState(false);
   const removingAllRef = useRef(false);
+  const addSectionRef = useRef<HTMLDetailsElement>(null);
 
   async function request(requestId: string, id: string, init: RequestInit): Promise<boolean> {
     setBusy(id);
@@ -78,7 +84,7 @@ export function MeetingDetailManager({
   }
 
   async function add(formData: FormData): Promise<void> {
-    await request(solicitudId, "", {
+    const added = await request(solicitudId, "", {
       method: "POST",
       body: JSON.stringify({
         inicio: localMontevideoToIso(formData, "horaInicio"),
@@ -88,6 +94,7 @@ export function MeetingDetailManager({
         requiereGrabacion: formData.get("requiereGrabacion") === "on"
       })
     });
+    if (added) setAddingOpen(false);
   }
 
   async function edit(id: string, formData: FormData) {
@@ -139,6 +146,13 @@ export function MeetingDetailManager({
     }
   }
 
+  function openAddEncounter() {
+    setAddingOpen(true);
+    window.requestAnimationFrame(() => {
+      addSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
   const canRemoveAll = meetings.length > 0;
   const removeAllBlockedReason = meetings.length === 0
     ? "La reunión no tiene encuentros para eliminar."
@@ -148,15 +162,14 @@ export function MeetingDetailManager({
   const visibleMeetings = vistaTemporal === "PROXIMOS" ? proximos : pasados;
 
   return (
-    <>
-      {message ? (
-        <p className="meeting-detail-feedback" aria-live="polite">{message}</p>
-      ) : null}
+    <section className="meeting-encounters-v2" id="encuentros">
+      {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
-      <section className="encounter-list-heading">
+      <div className="encounter-list-heading encounter-list-heading-v2">
         <div>
-          <h2>{vistaTemporal === "PROXIMOS" ? "Próximos encuentros y de hoy" : "Encuentros pasados"}</h2>
-          <p>{visibleMeetings.length} instancias ordenadas cronológicamente.</p>
+          <p className="section-eyebrow">Cronograma</p>
+          <h2>Encuentros</h2>
+          <p>Entrá a Meet, revisá los cohosts o administrá cada fecha desde un solo lugar.</p>
         </div>
         <div className="encounter-list-tools">
           <div className="encounter-time-filter" aria-label="Filtrar encuentros">
@@ -166,7 +179,7 @@ export function MeetingDetailManager({
               onClick={() => setVistaTemporal("PROXIMOS")}
               type="button"
             >
-              <CalendarClock size={16} />Próximas <span>{proximos.length}</span>
+              <CalendarClock size={16} />Próximos <span>{proximos.length}</span>
             </button>
             <button
               aria-pressed={vistaTemporal === "PASADOS"}
@@ -174,94 +187,138 @@ export function MeetingDetailManager({
               onClick={() => setVistaTemporal("PASADOS")}
               type="button"
             >
-              <History size={16} />Pasadas <span>{pasados.length}</span>
+              <History size={16} />Pasados <span>{pasados.length}</span>
             </button>
           </div>
-          <a className="secondary-action encounter-add-shortcut" href="#agregar-encuentro">
+          <button className="secondary-action encounter-add-shortcut" type="button" onClick={openAddEncounter}>
             <CalendarPlus size={16} />Agregar
-          </a>
+          </button>
         </div>
-      </section>
+      </div>
 
-      <div className="encounter-list">
+      <div className="encounter-list encounter-list-v2">
         {visibleMeetings.length === 0 ? (
           <div className="content-section empty-state encounter-empty-state">
             <CalendarClock size={22} aria-hidden="true" />
             <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : "No hay encuentros pasados."}</p>
           </div>
         ) : null}
+
         {visibleMeetings.map((meeting) => {
           const editing = editingId === meeting.id;
+          const assistance = assistanceLabel(meeting);
           return (
-            <article className={`encounter-item encounter-card is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
-              <header>
-                <span className="encounter-title">
-                  <strong>Encuentro {meeting.ordinal}</strong>
-                  <small className="encounter-date-summary">{meeting.fechaLegible} · {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
-                </span>
+            <article className={`encounter-item encounter-card encounter-card-v2 is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
+              <header className="encounter-v2-header">
+                <div className="encounter-v2-heading">
+                  <span className="encounter-v2-number">{meeting.ordinal}</span>
+                  <div>
+                    <strong>Encuentro {meeting.ordinal}</strong>
+                    <span>{meeting.fechaLegible}</span>
+                    <small>{meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
+                  </div>
+                </div>
                 <div className="encounter-statuses">
                   {meeting.esDeHoy ? <span className="status status-warning">Hoy</span> : null}
                   <span className={`encounter-time-status ${meeting.temporalidad.toLowerCase().replace("_", "-")}`}>{temporalLabel(meeting.temporalidad)}</span>
-                  <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>{meeting.estado.toLowerCase().replaceAll("_", " ")}</span>
+                  <span className={`status status-${meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA" ? "error" : meeting.estado === "PROGRAMADA" ? "ok" : "neutral"}`}>
+                    {meeting.estado.toLowerCase().replaceAll("_", " ")}
+                  </span>
                 </div>
               </header>
 
               {!editing ? (
                 <>
-                  <div className="encounter-read-body">
-                    <div className="encounter-read-primary">
-                      <span className="encounter-read-label">Descripción</span>
-                      <p>{meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}</p>
+                  <div className="encounter-v2-body">
+                    <div className="encounter-v2-main">
+                      <div className="encounter-v2-description">
+                        <span>Detalle del encuentro</span>
+                        <p>{meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}</p>
+                      </div>
+
+                      <div className={`encounter-v2-meet ${meeting.joinUrl ? "is-ready" : "is-pending"}`}>
+                        <Video size={22} aria-hidden="true" />
+                        <div>
+                          <span>Google Meet</span>
+                          <strong>{meeting.codigoMeet ?? "Enlace pendiente"}</strong>
+                          <small>{meeting.joinUrl ? "La sala está lista para ingresar." : "Google todavía está terminando de configurar la sala."}</small>
+                        </div>
+                        <div className="encounter-v2-meet-actions">
+                          {meeting.joinUrl
+                            ? <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} />
+                            : <span className="muted-text">No disponible todavía</span>}
+                        </div>
+                      </div>
                     </div>
-                    <dl className="encounter-facts">
-                      <div>
-                        <dt>Cuenta Google</dt>
-                        <dd>{meeting.cuentaGoogle}</dd>
+
+                    <aside className="encounter-v2-people">
+                      <div className="encounter-v2-people-block">
+                        <div className="encounter-v2-people-title"><UsersRound size={17} /><span>Cohosts</span></div>
+                        {meeting.cohosts.length ? (
+                          <div className="encounter-v2-cohost-list">
+                            {meeting.cohosts.slice(0, 3).map((cohost) => <span key={cohost}>{cohost}</span>)}
+                            {meeting.cohosts.length > 3 ? <small>+{meeting.cohosts.length - 3} más</small> : null}
+                          </div>
+                        ) : <strong className="muted-text">Sin cohosts configurados</strong>}
                       </div>
-                      <div>
-                        <dt>Código Meet</dt>
-                        <dd>{meeting.codigoMeet ?? "Pendiente"}</dd>
+
+                      <div className="encounter-v2-people-block">
+                        <div className="encounter-v2-people-title"><Wrench size={17} /><span>Asistencia técnica</span></div>
+                        <strong>{assistance.title}</strong>
+                        {assistance.detail ? <small>{assistance.detail}</small> : null}
                       </div>
-                      <div>
-                        <dt>Asistencia técnica</dt>
-                        <dd>{meeting.asistenteTecnico
-                          ? meeting.asistenteTecnico
-                          : meeting.requiereAsistenciaTecnica
-                            ? `${meeting.postulantes} ${meeting.postulantes === 1 ? "postulación" : "postulaciones"}`
-                            : "No requiere"}</dd>
+
+                      <div className="encounter-v2-organizer-reference">
+                        <span>Cuenta organizadora · referencia técnica</span>
+                        <strong>{meeting.organizerAccount}</strong>
+                        <small>No es necesario iniciar sesión con esta cuenta.</small>
                       </div>
-                    </dl>
+                    </aside>
                   </div>
-                  <footer className="encounter-card-actions">
-                    <div className="encounter-card-primary-actions">
-                      {meeting.joinUrl ? <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} /> : <span className="muted-text">Enlace Meet pendiente</span>}
-                    </div>
+
+                  <footer className="encounter-card-actions encounter-card-actions-v2">
                     <div className="encounter-card-secondary-actions">
                       {meeting.editable ? (
                         <button className="secondary-action" disabled={busy !== null} onClick={() => setEditingId(meeting.id)} type="button">
-                          <Pencil size={16} />Editar
+                          <Pencil size={16} />Editar fecha
                         </button>
                       ) : null}
                       {meeting.requiereAsistenciaTecnica ? (
-                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button"><UserRoundMinus size={16} />Cancelar asistencia</button>
+                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button">
+                          <UserRoundMinus size={16} />Cancelar asistencia
+                        </button>
                       ) : (
-                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button"><UserRoundPlus size={16} />Pedir asistencia</button>
+                        <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button">
+                          <UserRoundPlus size={16} />Pedir asistencia
+                        </button>
                       )}
-                      <button className="icon-button danger-action" disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1} onClick={() => remove(meeting.id)} title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar reunión para borrar la serie completa" : "Eliminar encuentro"} type="button"><Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span></button>
+                      <button
+                        className="icon-button danger-action"
+                        disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1}
+                        onClick={() => remove(meeting.id)}
+                        title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar reunión para borrar la serie completa" : "Eliminar encuentro"}
+                        type="button"
+                      >
+                        <Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span>
+                      </button>
                     </div>
                   </footer>
                 </>
               ) : (
                 <div className="encounter-editor">
                   <div className="encounter-editor-heading">
-                    <div><strong>Editar encuentro</strong><small>Modificá solo los datos que necesites.</small></div>
-                    <button className="icon-button" onClick={() => setEditingId(null)} title="Cerrar edición" type="button"><X size={17} /><span className="sr-only">Cerrar edición</span></button>
+                    <div><strong>Editar encuentro</strong><small>Modificá fecha, horario o descripción.</small></div>
+                    <button className="icon-button" onClick={() => setEditingId(null)} title="Cerrar edición" type="button">
+                      <X size={17} /><span className="sr-only">Cerrar edición</span>
+                    </button>
                   </div>
                   <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
                     <label className="field"><span>Fecha</span><input name="fecha" type="date" defaultValue={meeting.inicio.slice(0, 10)} disabled={!meeting.editable || busy !== null} required /></label>
                     <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" defaultValue={meeting.inicio.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
                     <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" defaultValue={meeting.fin.slice(11, 16)} disabled={!meeting.editable || busy !== null} required /></label>
-                    <button className="primary-action" disabled={!meeting.editable || busy !== null} type="submit">{busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}Guardar</button>
+                    <button className="primary-action" disabled={!meeting.editable || busy !== null} type="submit">
+                      {busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}Guardar
+                    </button>
                     <label className="field encounter-description-field"><span>Descripción del encuentro</span><textarea name="descripcion" defaultValue={meeting.descripcion ?? ""} disabled={!meeting.editable || busy !== null} placeholder="Tema, docente o indicaciones específicas" rows={3} /></label>
                   </form>
                 </div>
@@ -271,8 +328,18 @@ export function MeetingDetailManager({
         })}
       </div>
 
-      <section className="content-section add-encounter-section" id="agregar-encuentro">
-        <div className="section-heading"><div><h2>Agregar encuentro</h2><p>Se asignará una sala Meet disponible.</p></div></div>
+      <details
+        className="content-section add-encounter-section add-encounter-v2"
+        id="agregar-encuentro"
+        open={addingOpen}
+        onToggle={(event) => setAddingOpen(event.currentTarget.open)}
+        ref={addSectionRef}
+      >
+        <summary>
+          <CalendarPlus size={18} aria-hidden="true" />
+          <div><strong>Agregar otro encuentro</strong><small>Creá una nueva fecha dentro de esta serie.</small></div>
+          <span>+</span>
+        </summary>
         <form className="encounter-add-form" action={add}>
           <label className="field"><span>Fecha</span><input name="fecha" type="date" required /></label>
           <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" required /></label>
@@ -282,7 +349,7 @@ export function MeetingDetailManager({
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
           <label className="field encounter-add-description"><span>Descripción del encuentro (opcional)</span><textarea name="descripcion" placeholder="Tema, docente o indicaciones específicas" rows={2} /></label>
         </form>
-      </section>
+      </details>
 
       <section className="meeting-advanced-actions">
         <details>
@@ -306,8 +373,23 @@ export function MeetingDetailManager({
           </div>
         </details>
       </section>
-    </>
+    </section>
   );
+}
+
+function assistanceLabel(meeting: Encounter): Readonly<{ title: string; detail?: string }> {
+  if (meeting.asistenteTecnico) {
+    return { title: meeting.asistenteTecnico, detail: "Asignado como cohost técnico." };
+  }
+  if (meeting.requiereAsistenciaTecnica) {
+    return {
+      title: "Pendiente de asignación",
+      detail: meeting.postulantes > 0
+        ? `${meeting.postulantes} ${meeting.postulantes === 1 ? "postulación disponible" : "postulaciones disponibles"}`
+        : "Todavía no hay postulaciones."
+    };
+  }
+  return { title: "No requiere" };
 }
 
 function temporalLabel(temporalidad: Encounter["temporalidad"]): string {
