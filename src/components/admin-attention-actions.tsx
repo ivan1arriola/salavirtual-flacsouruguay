@@ -21,13 +21,14 @@ export function AdminRetryMeetAction({
     setFeedback(null);
     startTransition(async () => {
       try {
-        const body = eventoProveedorId
-          ? JSON.stringify({ eventoProveedorId, operacion })
-          : JSON.stringify({});
         const response = await fetch("/api/v1/reuniones/provisionar-pendientes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body
+          ...(eventoProveedorId
+            ? {
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ eventoProveedorId, operacion })
+              }
+            : {})
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -215,4 +216,3 @@ export function AdminQuickAssignAction({
     </div>
   );
 }
-
