@@ -12,6 +12,10 @@ const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 const TIMEOUT_MS = 30_000;
+const MIGRATION_ACTIONS = [
+  "MEET_MIGRADO_A_ESPACIO_PREVIEW",
+  "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW",
+] as const;
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -102,7 +106,6 @@ type CalendarSnapshot = Readonly<{
   event: GoogleEvent;
   organizer: string;
   calendarUrl: string;
-  data: CalendarEvent;
   previousConferenceData: CalendarConferenceData;
 }>;
 
@@ -119,14 +122,9 @@ async function main(): Promise<void> {
   const privateKey = normalizePrivateKey(requiredEnv("GOOGLE_PRIVATE_KEY"));
   const meetings = await loadMeetings();
   const groups = buildPlans(meetings);
-
-  const preflight: Array<GroupPlan & { managed: boolean; managedBy?: string }> = [];
-  for (const group of groups) {
-    const managed = await detectManagedSpace(serviceAccountEmail, privateKey, group);
-    preflight.push({ ...group, ...managed });
-  }
-
-  const pending = preflight.filter(({ managed }) => !managed);
+  const migratedCodes = await loadMigratedCodes();
+  const pending = groups.filter(({ oldMeetingCode }) => !migratedCodes.has(oldMeetingCode));
+  const alreadyMigrated = groups.filter(({ oldMeetingCode }) => migratedCodes.has(oldMeetingCode));
   const selected = limit ? pending.slice(0, limit) : pending;
 
   console.log(JSON.stringify({
@@ -135,13 +133,14 @@ async function main(): Promise<void> {
     serviceAccountEmail,
     meetingsReviewed: meetings.length,
     currentSpaces: groups.length,
-    alreadyManagedSpaces: preflight.filter(({ managed }) => managed).length,
+    alreadyMigratedSpaces: alreadyMigrated.length,
     spacesToMigrate: pending.length,
     spacesSelected: selected.length,
     calendarEventsToPatch: selected.reduce((sum, group) => sum + group.meetings.length, 0),
     cohostAssignmentsRequested: selected.reduce((sum, group) => sum + group.desiredCohosts.length, 0),
     continueOnError,
     limit: limit ?? null,
+    skippedCodes: alreadyMigrated.map(({ oldMeetingCode }) => oldMeetingCode),
     sample: selected.slice(0, 12).map((group) => ({
       oldMeetingCode: group.oldMeetingCode,
       meetings: group.meetings.length,
@@ -193,6 +192,23 @@ async function main(): Promise<void> {
   }, null, 2));
 
   if (failures.length > 0) process.exitCode = 1;
+}
+
+async function loadMigratedCodes(): Promise<Set<string>> {
+  const rows = await db.auditoria.findMany({
+    where: { accion: { in: [...MIGRATION_ACTIONS] } },
+    select: { valorNuevo: true },
+  });
+  return new Set(rows.flatMap(({ valorNuevo }) => {
+    const code = auditMeetingCode(valorNuevo);
+    return code ? [code] : [];
+  }));
+}
+
+function auditMeetingCode(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const code = (value as Record<string, unknown>).codigoReunion;
+  return typeof code === "string" && code.trim() ? code.trim().toLowerCase() : null;
 }
 
 function loadMeetings() {
@@ -301,34 +317,6 @@ function desiredCohostsForMeeting(meeting: Meeting): readonly string[] {
       assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
     ),
   ]);
-}
-
-async function detectManagedSpace(
-  serviceAccountEmail: string,
-  privateKey: string,
-  group: GroupPlan,
-): Promise<{ managed: boolean; managedBy?: string }> {
-  for (const organizer of group.organizers) {
-    const auth = meetAuth(serviceAccountEmail, privateKey, organizer);
-    try {
-      const space = await withRateLimitRetries(() => auth.request<{ name?: string }>({
-        url: `${MEET_API}/spaces/${encodeURIComponent(group.oldMeetingCode)}`,
-        method: "GET",
-        timeout: TIMEOUT_MS,
-      }));
-      if (!space.data.name) continue;
-      await withRateLimitRetries(() => auth.request({
-        url: `${MEET_BETA_API}/${space.data.name}/members?pageSize=1`,
-        method: "GET",
-        timeout: TIMEOUT_MS,
-      }));
-      return { managed: true, managedBy: organizer };
-    } catch (error) {
-      if (isPermissionOrNotFound(error)) continue;
-      throw error;
-    }
-  }
-  return { managed: false };
 }
 
 async function migrateGroup(
@@ -523,7 +511,6 @@ async function loadCalendarSnapshots(
       event,
       organizer,
       calendarUrl,
-      data: current.data,
       previousConferenceData,
     });
   }
@@ -625,11 +612,6 @@ function statusOf(error: unknown): number | undefined {
 
 function isRateLimit(error: unknown): boolean {
   return statusOf(error) === 429;
-}
-
-function isPermissionOrNotFound(error: unknown): boolean {
-  const status = statusOf(error);
-  return status === 403 || status === 404;
 }
 
 function isAlreadyExists(error: unknown): boolean {
