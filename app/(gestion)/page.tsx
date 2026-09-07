@@ -52,7 +52,6 @@ export default async function HomePage() {
     integrationErrorExamples,
     pendingRecordingExamples,
     openIncidents,
-    duplicateCases
     duplicateCases,
     activeAssistants
   ] =
@@ -135,7 +134,6 @@ export default async function HomePage() {
         select: {
           id: true,
           inicioProgramadoAt: true,
-          solicitud: { select: { id: true, titulo: true } }
           solicitud: { select: { id: true, titulo: true } },
           postulaciones: {
             where: {
@@ -207,7 +205,6 @@ export default async function HomePage() {
           instancia: { select: { solicitud: { select: { id: true, titulo: true } } } }
         }
       }),
-      listarCasosRevisionDuplicados(db, now)
       listarCasosRevisionDuplicados(db, now),
       db.asistenteTecnico.findMany({
         where: {
@@ -258,7 +255,6 @@ export default async function HomePage() {
       title: "Reuniones sin asistencia técnica",
       detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
       href: "/asistencia-tecnica?estado=pendientes",
-      action: "Asignar asistencia técnica"
       action: "Asignar asistencia técnica",
       actionComponent: firstUncoveredMeeting ? (
         <AdminQuickAssignAction
@@ -276,7 +272,6 @@ export default async function HomePage() {
       title: "Errores de Google Meet",
       detail: integrationErrorExamples.map(({ instancia, errorIntegracion }) => `${instancia.solicitud.titulo} · ${errorIntegracion ?? "Error sin detalle"}`),
       href: "/configuracion",
-      action: "Resolver integración"
       action: "Resolver integración",
       actionComponent: <AdminRetryMeetAction />
     } : null,
@@ -288,7 +283,6 @@ export default async function HomePage() {
       title: "Posibles reuniones duplicadas",
       detail: duplicateRisks.slice(0, 3).map(({ izquierda, derecha }) => `${izquierda.titulo} / ${derecha.titulo}`),
       href: "/reuniones/duplicados",
-      action: "Comparar reuniones"
       action: "Comparar reuniones",
       actionComponent: null
     } : null,
@@ -300,7 +294,6 @@ export default async function HomePage() {
       title: "Grabaciones pendientes de sincronización",
       detail: pendingRecordingExamples.map(({ instancia }) => `${instancia.solicitud.titulo} · ${formatDate(instancia.inicioProgramadoAt)}`),
       href: "/grabaciones",
-      action: "Sincronizar archivos"
       action: "Sincronizar archivos",
       actionComponent: <AdminSyncRecordingsAction />
     } : null,
@@ -312,7 +305,6 @@ export default async function HomePage() {
       title: "Incidencias abiertas",
       detail: openIncidents.map(({ instancia, descripcion }) => `${instancia.solicitud.titulo} · ${descripcion}`),
       href: `/reuniones/${openIncidents[0].instancia.solicitud.id}`,
-      action: "Revisar incidencias"
       action: "Revisar incidencias",
       actionComponent: null
     } : null
@@ -351,7 +343,6 @@ export default async function HomePage() {
         </div>
         {attentionGroups.length ? (
           <div className="operations-attention-grid">
-            {attentionGroups.map(({ key, tone, icon: Icon, count, title, detail, href, action }) => (
             {attentionGroups.map(({ key, tone, icon: Icon, count, title, detail, href, action, actionComponent }) => (
               <article className={`operations-attention-card tone-${tone}`} key={key}>
                 <div className="operations-attention-card-heading">

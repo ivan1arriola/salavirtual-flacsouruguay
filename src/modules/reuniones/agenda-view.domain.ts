@@ -60,3 +60,59 @@ function fechaMasReciente<T extends EncuentroAgrupable>(meetings: readonly T[]):
 }
 
 import { claveSerieReunion } from "./serie-reunion.domain";
+
+export type InfoPaginacionAgenda = Readonly<{
+  paginaActual: number;
+  totalPaginas: number;
+  tamanoPagina: number;
+  totalElementos: number;
+  desdeElemento: number;
+  hastaElemento: number;
+  tieneAnterior: boolean;
+  tieneSiguiente: boolean;
+}>;
+
+export function resolverPaginacionAgenda(
+  pageParam: string | undefined,
+  pageSize = 50
+): Readonly<{ page: number; pageSize: number; skip: number }> {
+  const parsed = Number.parseInt(pageParam ?? "1", 10);
+  const page = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  return {
+    page,
+    pageSize,
+    skip: (page - 1) * pageSize
+  };
+}
+
+export function calcularInfoPaginacion(
+  totalElementos: number,
+  paginaActual: number,
+  tamanoPagina = 50
+): InfoPaginacionAgenda {
+  const totalPaginas = Math.max(1, Math.ceil(totalElementos / tamanoPagina));
+  const page = Math.min(Math.max(1, paginaActual), totalPaginas);
+  const desdeElemento = totalElementos === 0 ? 0 : (page - 1) * tamanoPagina + 1;
+  const hastaElemento = Math.min(page * tamanoPagina, totalElementos);
+
+  return {
+    paginaActual: page,
+    totalPaginas,
+    tamanoPagina,
+    totalElementos,
+    desdeElemento,
+    hastaElemento,
+    tieneAnterior: page > 1,
+    tieneSiguiente: page < totalPaginas
+  };
+}
+
+export function parsearFechaFiltro(
+  dateString: string | undefined,
+  isEnd = false
+): string | undefined {
+  if (!dateString) return undefined;
+  const trimmed = dateString.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return undefined;
+  return isEnd ? `${trimmed}T23:59:59.999-03:00` : `${trimmed}T00:00:00.000-03:00`;
+}

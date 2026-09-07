@@ -380,3 +380,103 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Pagination and Date Range Filters */
+.agenda-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agenda-date-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.agenda-date-label span {
+  font-weight: 600;
+  font-size: 0.74rem;
+  color: #6b7280;
+}
+
+.agenda-date-label input[type="date"] {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  font-size: 0.78rem;
+  color: #1f2937;
+}
+
+.agenda-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #dc2626;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 150ms ease;
+}
+
+.agenda-clear-filters:hover {
+  background: #fee2e2;
+}
+
+.agenda-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-top: 10px;
+  box-shadow: 0 4px 14px rgba(31, 50, 76, 0.03);
+}
+
+.pagination-info {
+  font-size: 0.82rem;
+  color: #5f6f83;
+}
+
+.pagination-info strong {
+  color: #1f2937;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.pagination-btn.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.pagination-current {
+  font-size: 0.8rem;
+  color: #4b5563;
+  padding-inline: 8px;
+}
+
