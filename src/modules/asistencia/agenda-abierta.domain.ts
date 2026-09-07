@@ -182,21 +182,14 @@ export function ordenarPostulantesParaAdministracion(
     CONFLICTO: 2
   } as const;
 
-  return postulantes.toSorted((a, b) => {
-    const diffEstado = prioridadEstado[a.estadoDisponibilidad] - prioridadEstado[b.estadoDisponibilidad];
-    if (diffEstado !== 0) return diffEstado;
   return postulantes.reduce<readonly PostulanteEvaluado[]>((ordered, candidate) => {
     const insertionIndex = ordered.findIndex((item) => {
       const diffEstado = prioridadEstado[candidate.estadoDisponibilidad] - prioridadEstado[item.estadoDisponibilidad];
       if (diffEstado !== 0) return diffEstado < 0;
 
-    const diffCarga = a.minutosMensuales - b.minutosMensuales;
-    if (diffCarga !== 0) return diffCarga;
       const diffCarga = candidate.minutosMensuales - item.minutosMensuales;
       if (diffCarga !== 0) return diffCarga < 0;
 
-    return a.name.localeCompare(b.name, "es");
-  });
       return candidate.name.localeCompare(item.name, "es") < 0;
     });
 

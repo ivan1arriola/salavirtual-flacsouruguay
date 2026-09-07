@@ -17,6 +17,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantDashboard } from "@/src/components/assistant-dashboard";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
+import {
+  AdminQuickAssignAction,
+  AdminRetryMeetAction,
+  AdminSyncRecordingsAction
+} from "@/src/components/admin-attention-actions";
 import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-integration-status";
 import { TeacherDashboard } from "@/src/components/teacher-dashboard";
 import { db } from "@/src/lib/db";
@@ -48,6 +53,8 @@ export default async function HomePage() {
     pendingRecordingExamples,
     openIncidents,
     duplicateCases
+    duplicateCases,
+    activeAssistants
   ] =
     await Promise.all([
       db.solicitudSala.count({
@@ -129,6 +136,22 @@ export default async function HomePage() {
           id: true,
           inicioProgramadoAt: true,
           solicitud: { select: { id: true, titulo: true } }
+          solicitud: { select: { id: true, titulo: true } },
+          postulaciones: {
+            where: {
+              estado: "ME_INTERESA",
+              asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
+            },
+            include: {
+              asistenteTecnico: {
+                select: {
+                  id: true,
+                  usuario: { select: { nombres: true, apellidos: true } }
+                }
+              }
+            },
+            take: 1
+          }
         }
       }),
       db.eventoProveedor.findMany({
@@ -140,7 +163,9 @@ export default async function HomePage() {
         orderBy: { instancia: { inicioProgramadoAt: "asc" } },
         take: 3,
         select: {
+          id: true,
           errorIntegracion: true,
+          operacionPendiente: true,
           instancia: {
             select: {
               inicioProgramadoAt: true,
@@ -183,8 +208,34 @@ export default async function HomePage() {
         }
       }),
       listarCasosRevisionDuplicados(db, now)
+      listarCasosRevisionDuplicados(db, now),
+      db.asistenteTecnico.findMany({
+        where: {
+          cesadoHastaProximoInicioSesion: false,
+          usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+        },
+        orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
+        select: {
+          id: true,
+          usuario: { select: { nombres: true, apellidos: true } }
+        }
+      })
     ]);
   const duplicateRisks = duplicateCases.filter(({ decision }) => decision !== "FALSO_POSITIVO");
+
+  const formattedAssistants = activeAssistants.map((ast) => ({
+    id: ast.id,
+    name: [ast.usuario.nombres, ast.usuario.apellidos].filter(Boolean).join(" ")
+  }));
+
+  const firstUncoveredMeeting = pendingCoverageExamples[0];
+  const firstApplicantAst = firstUncoveredMeeting?.postulaciones[0]?.asistenteTecnico;
+  const firstApplicant = firstApplicantAst
+    ? {
+        id: firstApplicantAst.id,
+        name: [firstApplicantAst.usuario.nombres, firstApplicantAst.usuario.apellidos].filter(Boolean).join(" ")
+      }
+    : null;
 
   const metrics = [
     { label: "Solicitudes abiertas", value: openRequests, copy: "En registro o provisión", icon: ClipboardList, tone: "neutral" },
@@ -208,6 +259,14 @@ export default async function HomePage() {
       detail: pendingCoverageExamples.map(({ solicitud, inicioProgramadoAt }) => `${solicitud.titulo} · ${formatDate(inicioProgramadoAt)} ${formatTime(inicioProgramadoAt)}`),
       href: "/asistencia-tecnica?estado=pendientes",
       action: "Asignar asistencia técnica"
+      action: "Asignar asistencia técnica",
+      actionComponent: firstUncoveredMeeting ? (
+        <AdminQuickAssignAction
+          assistants={formattedAssistants}
+          firstApplicant={firstApplicant}
+          meetingId={firstUncoveredMeeting.id}
+        />
+      ) : null
     } : null,
     integrationErrors ? {
       key: "meet-errors",
@@ -218,6 +277,8 @@ export default async function HomePage() {
       detail: integrationErrorExamples.map(({ instancia, errorIntegracion }) => `${instancia.solicitud.titulo} · ${errorIntegracion ?? "Error sin detalle"}`),
       href: "/configuracion",
       action: "Resolver integración"
+      action: "Resolver integración",
+      actionComponent: <AdminRetryMeetAction />
     } : null,
     duplicateRisks.length ? {
       key: "duplicates",
@@ -228,6 +289,8 @@ export default async function HomePage() {
       detail: duplicateRisks.slice(0, 3).map(({ izquierda, derecha }) => `${izquierda.titulo} / ${derecha.titulo}`),
       href: "/reuniones/duplicados",
       action: "Comparar reuniones"
+      action: "Comparar reuniones",
+      actionComponent: null
     } : null,
     pendingRecordingCount ? {
       key: "recordings",
@@ -238,6 +301,8 @@ export default async function HomePage() {
       detail: pendingRecordingExamples.map(({ instancia }) => `${instancia.solicitud.titulo} · ${formatDate(instancia.inicioProgramadoAt)}`),
       href: "/grabaciones",
       action: "Sincronizar archivos"
+      action: "Sincronizar archivos",
+      actionComponent: <AdminSyncRecordingsAction />
     } : null,
     openIncidentCount ? {
       key: "incidents",
@@ -248,6 +313,8 @@ export default async function HomePage() {
       detail: openIncidents.map(({ instancia, descripcion }) => `${instancia.solicitud.titulo} · ${descripcion}`),
       href: `/reuniones/${openIncidents[0].instancia.solicitud.id}`,
       action: "Revisar incidencias"
+      action: "Revisar incidencias",
+      actionComponent: null
     } : null
   ].filter((group): group is NonNullable<typeof group> => group !== null);
 
@@ -285,12 +352,14 @@ export default async function HomePage() {
         {attentionGroups.length ? (
           <div className="operations-attention-grid">
             {attentionGroups.map(({ key, tone, icon: Icon, count, title, detail, href, action }) => (
+            {attentionGroups.map(({ key, tone, icon: Icon, count, title, detail, href, action, actionComponent }) => (
               <article className={`operations-attention-card tone-${tone}`} key={key}>
                 <div className="operations-attention-card-heading">
                   <span><Icon size={18} /></span>
                   <div><strong>{title}</strong><small>{count} {count === 1 ? "caso" : "casos"}</small></div>
                 </div>
                 <ul>{detail.map((item, index) => <li key={`${key}-${index}`}>{item}</li>)}</ul>
+                {actionComponent}
                 <Link className="text-link" href={href}>{action}<ArrowRight size={15} /></Link>
               </article>
             ))}
