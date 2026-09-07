@@ -21,6 +21,7 @@ import "./agenda-refresh.css";
 import "./agenda-v2.css";
 import "./assistant-agenda.css";
 import "./meeting-form-v2.css";
+import "./meeting-detail-v2.css";
 
 export default async function GestionLayout({
   children
