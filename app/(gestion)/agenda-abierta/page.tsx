@@ -217,17 +217,14 @@ export default async function AgendaAbiertaPage() {
                     const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
                     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
                     const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
-
                     const durationMin = Math.max(
                       1,
                       Math.round((meeting.finProgramadoAt.getTime() - meeting.inicioProgramadoAt.getTime()) / 60_000)
                     );
-
                     const conflict = evaluarConflictoAsistencia(
                       { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
                       assignedList
                     );
-
                     const cardStateClass = conflict.estado === "CONFLICTO"
                       ? " has-conflict"
                       : conflict.estado === "MUY_PROXIMO"
@@ -283,6 +280,7 @@ export default async function AgendaAbiertaPage() {
 
                         <div className="open-agenda-card-actions">
                           <AssistantInterestButton
+                            disabledReason={conflict.estado === "CONFLICTO" ? conflict.detalle : undefined}
                             interested={Boolean(interested)}
                             meetingId={meeting.id}
                           />
@@ -310,13 +308,11 @@ export default async function AgendaAbiertaPage() {
                 {meetings.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-
                   const meetingApplicants = interests
                     .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {
                       if (!("asistenteTecnico" in item)) return null;
                       const ast = item.asistenteTecnico;
-
                       const candPeriod = { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt };
                       const astAssignments: AsignacionExistente[] = ast.asignaciones.map(({ instancia }) => ({
                         id: instancia.id,
@@ -324,9 +320,7 @@ export default async function AgendaAbiertaPage() {
                         inicio: instancia.inicioProgramadoAt,
                         fin: instancia.finProgramadoAt
                       }));
-
                       const conf = evaluarConflictoAsistencia(candPeriod, astAssignments);
-
                       const meetingMonth = meeting.inicioProgramadoAt.getUTCMonth();
                       const meetingYear = meeting.inicioProgramadoAt.getUTCFullYear();
                       const monthlyMinutes = astAssignments
