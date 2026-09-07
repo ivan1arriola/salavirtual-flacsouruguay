@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { AgendaDayEnhancer } from "@/src/components/agenda-day-enhancer";
 import { AppShell } from "@/src/components/app-shell";
@@ -63,7 +64,9 @@ export default async function GestionLayout({
       email: user.emailPrincipal ?? session.user.email,
       image: user.imagenUrl ?? session.user.image
     }}>
-      <AgendaDayEnhancer />
+      <Suspense fallback={null}>
+        <AgendaDayEnhancer />
+      </Suspense>
       {children}
     </AppShell>
   );
