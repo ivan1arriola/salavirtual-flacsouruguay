@@ -33,10 +33,8 @@ export async function GET(request: Request) {
   const now = new Date();
   const meetings = await db.instanciaSala.findMany({
     where: {
-      requiereAsistenciaTecnica: true,
       estado: "PROGRAMADA",
       finProgramadoAt: { gte: now },
-      solicitud: { estado: "PROVISIONADA" },
       asignaciones: {
         some: {
           asistenteTecnicoId: assistant.id,
