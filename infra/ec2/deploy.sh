@@ -49,9 +49,6 @@ fi
 
 cd "$SRC"
 
-echo "=== Redirección del dominio histórico ==="
-/bin/bash "$SRC/infra/ec2/configure-legacy-domain-redirect.sh" "$SRC"
-
 echo "=== Node ==="
 /usr/bin/node --version
 /usr/bin/npm --version
