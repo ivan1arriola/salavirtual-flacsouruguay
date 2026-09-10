@@ -8,18 +8,12 @@ HTTPS_SITE="/etc/apache2/sites-available/salas-meet-redirect-https.conf"
 CERTIFICATE="/etc/letsencrypt/live/${LEGACY_DOMAIN}/fullchain.pem"
 CHALLENGE_DIR="/var/lib/letsencrypt/.well-known/acme-challenge"
 
-for command in a2enmod a2ensite apache2ctl install systemctl; do
+for command in a2enmod a2ensite apache2ctl certbot install systemctl; do
   command -v "$command" >/dev/null || {
     echo "Falta el comando requerido: $command" >&2
     exit 1
   }
 done
-
-if ! command -v certbot >/dev/null; then
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get update
-  apt-get install --yes certbot
-fi
 
 install -d -m 0755 "$CHALLENGE_DIR"
 install -m 0644 "$SOURCE_DIR/infra/ec2/salas-meet-redirect-http.conf" "$HTTP_SITE"
