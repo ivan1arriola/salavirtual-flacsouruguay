@@ -15,6 +15,7 @@ export type CredencialLegacyGoogleWorkspace = Readonly<{
   id: string;
   serviceAccountEmail: string;
   privateKey: string;
+  serviceAccountSubject: string | null;
 }>;
 
 export async function actualizarSeccionGoogleWorkspace(
@@ -192,12 +193,18 @@ export async function cargarCredencialesLegacyGoogleWorkspace(
       privateKeyCifrada: { not: null },
     },
     orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-    select: { id: true, serviceAccountEmail: true, privateKeyCifrada: true },
+    select: {
+      id: true,
+      serviceAccountEmail: true,
+      privateKeyCifrada: true,
+      serviceAccountSubject: true,
+    },
   });
   return rows.flatMap((row) => row.serviceAccountEmail && row.privateKeyCifrada ? [{
     id: row.id,
     serviceAccountEmail: row.serviceAccountEmail,
     privateKey: descifrar(row.privateKeyCifrada),
+    serviceAccountSubject: row.serviceAccountSubject,
   }] : []);
 }
 
