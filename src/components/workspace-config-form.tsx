@@ -5,6 +5,7 @@ import { WorkspaceDriveForm } from "./workspace-drive-form";
 import { WorkspaceScopesValidator } from "./workspace-scopes-validator";
 import { WorkspaceCohostResync } from "./workspace-cohost-resync";
 import { WorkspaceStatusForm } from "./workspace-status-form";
+import { WorkspaceLegacyCredentials } from "./workspace-legacy-credentials";
 
 export type WorkspaceConfigVisible = Readonly<{
   serviceAccountEmail: string | null;
@@ -38,7 +39,14 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
         </div>
       </section>
 
-      <WorkspaceCredentialForm email={initial?.serviceAccountEmail ?? ""} privateKeyConfigured={initial?.privateKeyConfigurada ?? false} />
+      <WorkspaceCredentialForm
+        credentialId="principal"
+        email={initial?.serviceAccountEmail ?? ""}
+        privateKeyConfigured={initial?.privateKeyConfigurada ?? false}
+        title="Cuenta de servicio principal"
+        description="Es la única credencial autorizada para crear reuniones nuevas."
+      />
+      <WorkspaceLegacyCredentials />
       <WorkspaceDelegationForm subject={initial?.serviceAccountSubject ?? ""} />
       <WorkspaceScopesValidator />
       <WorkspaceDriveForm folderId={initial?.driveDestinationId ?? ""} />

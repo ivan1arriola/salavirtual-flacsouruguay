@@ -37,45 +37,6 @@ function mailConfig() {
   };
 }
 
-function stripWrappingQuotes(value: string): string {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
-}
-
-function normalizePrivateKey(raw: string): string {
-  return stripWrappingQuotes(raw).replace(/\r\n/g, "\n").replace(/\\n/g, "\n").trim();
-}
-
-function parseServiceAccountBlob(raw: string): Readonly<{ email: string; privateKey: string }> | null {
-  const candidate = stripWrappingQuotes(raw);
-  if (!candidate.startsWith("{") || !candidate.endsWith("}")) return null;
-  try {
-    const parsed = JSON.parse(candidate) as Record<string, unknown>;
-    const email = typeof parsed.client_email === "string" ? parsed.client_email.trim() : "";
-    const privateKey = typeof parsed.private_key === "string" ? parsed.private_key.trim() : "";
-    return email && privateKey ? { email, privateKey } : null;
-  } catch {
-    return null;
-  }
-}
-
-function gmailConfig() {
-  const rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
-  if (!rawPrivateKey) return null;
-  const blob = parseServiceAccountBlob(rawPrivateKey);
-  const serviceAccountEmail = blob?.email ?? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
-  const privateKey = normalizePrivateKey(blob?.privateKey ?? rawPrivateKey);
-  const subject = process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim() || process.env.SMTP_FROM?.trim();
-  if (!serviceAccountEmail || !privateKey || !subject) return null;
-  return { serviceAccountEmail, privateKey, subject };
-}
-
 function encodeMimeHeader(value: string): string {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
@@ -104,15 +65,14 @@ function buildRawGmailMessage(input: MailInput, from: string): string {
 
 async function sendWithGmailApi(
   input: MailInput,
-  configuredCredential: GmailMailCredential | null | undefined
+  configuredCredential: GmailMailCredential | null
 ): Promise<boolean> {
-  const config = configuredCredential === undefined ? gmailConfig() : configuredCredential;
-  if (!config) return false;
+  if (!configuredCredential) return false;
   const auth = new JWT({
-    email: config.serviceAccountEmail,
-    key: config.privateKey,
+    email: configuredCredential.serviceAccountEmail,
+    key: configuredCredential.privateKey,
     scopes: ["https://www.googleapis.com/auth/gmail.send"],
-    subject: config.subject
+    subject: configuredCredential.subject
   });
   const client = await auth.getRequestHeaders();
   const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
@@ -121,7 +81,7 @@ async function sendWithGmailApi(
       ...Object.fromEntries(client.entries()),
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ raw: buildRawGmailMessage(input, config.subject) })
+    body: JSON.stringify({ raw: buildRawGmailMessage(input, configuredCredential.subject) })
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -141,7 +101,7 @@ export async function sendMail(
   const copies = normalizeAddresses(input.cc ?? []).filter((email) => !recipientSet.has(email));
   const normalizedInput = { ...input, to: recipients, cc: copies };
 
-  if (await sendWithGmailApi(normalizedInput, options.gmailCredential)) {
+  if (await sendWithGmailApi(normalizedInput, options.gmailCredential ?? null)) {
     return { sent: true, transport: "GMAIL_API" };
   }
   if (!config) return { sent: false, skipped: "correo-no-configurado" };

@@ -12,7 +12,8 @@ La primera fase mantiene la `DATABASE_URL` de producción actual. Esto permite m
 - Apache hace reverse proxy a `127.0.0.1:3101`.
 - Sala Virtual se ejecuta como `salavirtual.service` con Node.js 24.
 - El release activo vive en `/srv/apps/salavirtual-flacso/current`.
-- Los secretos viven fuera del repositorio en `/srv/apps/salavirtual-flacso/shared/.env.production`.
+- Los secretos de infraestructura viven fuera del repositorio en `/srv/apps/salavirtual-flacso/shared/.env.production`.
+- Las credenciales de cuentas de servicio de Google Workspace se administran desde la UI y sus claves privadas se guardan cifradas en PostgreSQL.
 - El cron que Vercel ejecutaba a las `08:00 UTC` pasa a `salavirtual-calendar-sync.timer`.
 - GitHub Actions publica releases inmutables en `/srv/apps/salavirtual-flacso/releases/<sha>`.
 
@@ -45,7 +46,7 @@ Crear el archivo de entorno:
 sudo nano /srv/apps/salavirtual-flacso/shared/.env.production
 ```
 
-Copiar los valores de producción que actualmente usa Vercel. Como mínimo deben conservarse:
+Copiar los valores de producción que actualmente usa el runtime. Como mínimo deben conservarse:
 
 ```dotenv
 APP_BASE_URL="https://salavirtual.flacso.edu.uy"
@@ -58,11 +59,10 @@ AUTH_GOOGLE_ID="..."
 AUTH_GOOGLE_SECRET="..."
 CRON_SECRET="..."
 CONFIG_ENCRYPTION_KEY="..."
-GOOGLE_SERVICE_ACCOUNT_EMAIL="..."
-GOOGLE_PRIVATE_KEY="..."
-GOOGLE_SERVICE_ACCOUNT_SUBJECT="..."
 SMTP_FROM="..."
 ```
+
+`GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` y `GOOGLE_SERVICE_ACCOUNT_SUBJECT` no forman parte de la configuración de runtime. La cuenta Principal, las credenciales Legacy y la delegación se administran en **Configuración > Google Workspace**. `CONFIG_ENCRYPTION_KEY` sí debe permanecer en el entorno porque cifra las claves privadas almacenadas en PostgreSQL.
 
 Incluir también todas las variables opcionales realmente configuradas en producción: SMTP, VAPID, Zoom histórico, webhooks y carpetas de Drive.
 

@@ -4,13 +4,22 @@ import { KeyRound, Save, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import {
   saveWorkspaceSection,
-  testWorkspaceSection
+  testWorkspaceCredential
 } from "./workspace-config.client";
 
 export function WorkspaceCredentialForm({
   email,
-  privateKeyConfigured
-}: Readonly<{ email: string; privateKeyConfigured: boolean }>) {
+  privateKeyConfigured,
+  credentialId = "principal",
+  title = "Cuenta de servicio principal",
+  description = "Credencial usada para crear reuniones nuevas.",
+}: Readonly<{
+  email: string;
+  privateKeyConfigured: boolean;
+  credentialId?: string;
+  title?: string;
+  description?: string;
+}>) {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -18,6 +27,7 @@ export function WorkspaceCredentialForm({
     setMessage("Guardando…");
     const result = await saveWorkspaceSection({
       seccion: "CREDENCIAL",
+      credentialId,
       serviceAccountEmail: formData.get("serviceAccountEmail"),
       privateKey: formData.get("privateKey")
     });
@@ -27,7 +37,7 @@ export function WorkspaceCredentialForm({
 
   async function test() {
     setMessage("Probando credencial…");
-    const result = await testWorkspaceSection("CREDENCIAL");
+    const result = await testWorkspaceCredential(credentialId);
     setSuccess(result.ok);
     setMessage(result.message);
   }
@@ -36,7 +46,7 @@ export function WorkspaceCredentialForm({
     <form className="form-section workspace-config" action={save}>
       <header className="form-section-title">
         <KeyRound size={22} aria-hidden="true" />
-        <div><h2>Cuenta de servicio</h2><p>Email visible y clave privada protegida.</p></div>
+        <div><h2>{title}</h2><p>{description}</p></div>
       </header>
       <div className="form-grid">
         <label className="field field-wide">

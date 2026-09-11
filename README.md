@@ -28,16 +28,13 @@ Zoom queda como proveedor historico: se conserva para consulta, trazabilidad e i
 - Auth.js
 - Google Workspace APIs como integracion principal
 
-## Correo transaccional
+## Google Workspace y correo transaccional
 
-Las notificaciones por correo usan la misma estrategia heredada de FLACSO Zoom: Gmail API con cuenta de servicio y delegacion de dominio. SMTP queda como fallback. Si no hay proveedor configurado, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo.
+Las cuentas de servicio de Google Workspace se administran desde **Configuración > Google Workspace**. Sus claves privadas se guardan cifradas en PostgreSQL con `CONFIG_ENCRYPTION_KEY`; no se configuran como variables `GOOGLE_*` del runtime.
 
-Gmail API:
+La credencial **Principal** es la única autorizada para crear reuniones nuevas. Se pueden registrar credenciales **Legacy** para administrar espacios Meet históricos creados por proyectos anteriores. El fallback Legacy solo se intenta ante el error específico de permisos sobre `Member` de un Meet existente.
 
-- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-- `GOOGLE_PRIVATE_KEY`
-- `GOOGLE_SERVICE_ACCOUNT_SUBJECT`
-- `SMTP_FROM`
+Las notificaciones por correo usan Gmail API con la credencial Principal y la delegación configurada en la UI. SMTP queda como fallback. Si no hay proveedor configurado, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo.
 
 SMTP fallback:
 
@@ -59,6 +56,8 @@ npm run db:generate
 npm run db:push
 npm run dev
 ```
+
+Después del primer acceso, completar la integración en **Configuración > Google Workspace**.
 
 ## Documentacion
 

@@ -87,14 +87,43 @@ describe("configuracion funcional de Google Workspace", () => {
       })
     ).toEqual({
       seccion: "CREDENCIAL",
+      credentialId: "principal",
       serviceAccountEmail: "service@project.iam.gserviceaccount.com",
       privateKey: undefined
     });
   });
 
+  it("acepta credenciales historicas y rechaza ids ajenos al espacio reservado", () => {
+    expect(seccionConfiguracionGoogleWorkspaceSchema.parse({
+      seccion: "CREDENCIAL",
+      credentialId: "legacy:old-project",
+      serviceAccountEmail: "old@project.iam.gserviceaccount.com",
+      privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
+    })).toEqual({
+      seccion: "CREDENCIAL",
+      credentialId: "legacy:old-project",
+      serviceAccountEmail: "old@project.iam.gserviceaccount.com",
+      privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
+    });
+
+    expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
+      seccion: "CREDENCIAL",
+      credentialId: "otra-configuracion",
+      serviceAccountEmail: "old@project.iam.gserviceaccount.com",
+      privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
+    })).toThrow("Identificador de credencial inválido");
+  });
+
   it("acepta la prueba especifica de scopes", () => {
     expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({ objetivo: "SCOPES" }))
       .toEqual({ objetivo: "SCOPES" });
+  });
+
+  it("acepta probar una credencial Legacy concreta", () => {
+    expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({
+      objetivo: "CREDENCIAL",
+      credentialId: "legacy:old-project"
+    })).toEqual({ objetivo: "CREDENCIAL", credentialId: "legacy:old-project" });
   });
 
   it("explica como corregir unauthorized_client", () => {
