@@ -11,6 +11,11 @@ export type ResyncCohostFailure = Readonly<{
   error: string;
 }>;
 
+export type ResyncCohostLogEvent = Readonly<{
+  level: "INFO" | "WARN" | "ERROR";
+  message: string;
+}>;
+
 export type ResyncCohostResult = Readonly<{
   reunionesActivas: number;
   candidatas: number;
@@ -29,6 +34,7 @@ export type ResyncCohostDependencies = Readonly<{
   db: PrismaClient;
   descifrar: (value: string) => string;
   crearProvider: (credentials: GoogleCalendarCredentials) => MeetProvider;
+  onLog?: (event: ResyncCohostLogEvent) => void;
 }>;
 
 /**
@@ -41,6 +47,9 @@ export async function resincronizarCohostsReunionesExistentes(
   dependencies: ResyncCohostDependencies,
 ): Promise<ResyncCohostResult> {
   const { db } = dependencies;
+  const emit = (level: ResyncCohostLogEvent["level"], message: string) =>
+    dependencies.onLog?.({ level, message });
+
   const meetings = await db.instanciaSala.findMany({
     where: {
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
@@ -89,12 +98,15 @@ export async function resincronizarCohostsReunionesExistentes(
         select: {
           id: true,
           externalEventId: true,
+          codigoReunion: true,
           cuentaProveedor: { select: { emailOrganizador: true } },
         },
         take: 1,
       },
     },
   });
+
+  emit("INFO", `Inicio de resincronización: ${meetings.length} reuniones activas/futuras.`);
 
   let cohostsAgregados = 0;
   let sincronizadas = 0;
@@ -105,8 +117,11 @@ export async function resincronizarCohostsReunionesExistentes(
   for (const meeting of meetings) {
     const event = meeting.eventosProveedor[0];
     const organizer = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+    const meetingLabel = `${meeting.solicitud.titulo} | instancia=${meeting.id} | meet=${event?.codigoReunion ?? "sin-codigo"}`;
+
     if (!event?.externalEventId || !organizer) {
       omitidas += 1;
+      emit("WARN", `OMITIDA ${meetingLabel} | motivo=sin evento Calendar u organizador.`);
       continue;
     }
 
@@ -122,6 +137,11 @@ export async function resincronizarCohostsReunionesExistentes(
     const fallbackEmails = normalizeCohostEmails(users.flatMap((user) =>
       user.cuentasGoogle.length === 0 && user.emailPrincipal ? [user.emailPrincipal] : []
     )).filter((email) => email !== organizer);
+
+    emit(
+      "INFO",
+      `PROCESANDO ${meetingLabel} | host=${organizer} | cuentasGoogle=${accountIds.length} | emailsFallback=${fallbackEmails.length}.`,
+    );
 
     try {
       const added = await db.$transaction(async (tx) => {
@@ -160,11 +180,14 @@ export async function resincronizarCohostsReunionesExistentes(
 
       if (added === null) {
         omitidas += 1;
+        emit("WARN", `OMITIDA ${meetingLabel} | motivo=otra operación pendiente o reclamo activo.`);
         continue;
       }
 
       candidatas += 1;
       cohostsAgregados += added;
+      emit("INFO", `GOOGLE ${meetingLabel} | iniciando verificación Principal -> Legacy si corresponde.`);
+
       const [outcome] = await provisionarEventosMeet({
         db,
         descifrar: dependencies.descifrar,
@@ -177,17 +200,25 @@ export async function resincronizarCohostsReunionesExistentes(
         );
       }
       sincronizadas += 1;
+      emit("INFO", `OK ${meetingLabel} | cohostsNuevos=${added}.`);
     } catch (error) {
+      const detail = error instanceof Error ? error.message : "No se pudo verificar el rol en Google Meet.";
+      emit("ERROR", `ERROR ${meetingLabel} | ${detail}`);
       errores.push({
         instanciaSalaId: meeting.id,
         titulo: meeting.solicitud.titulo,
         inicio: meeting.inicioProgramadoAt.toISOString(),
-        error: error instanceof Error ? error.message : "No se pudo verificar el rol en Google Meet.",
+        error: detail,
       });
     }
   }
 
   const fallidas = errores.length;
+  emit(
+    fallidas > 0 ? "WARN" : "INFO",
+    `Fin de resincronización: sincronizadas=${sincronizadas}, errores=${fallidas}, omitidas=${omitidas}, cohostsAgregados=${cohostsAgregados}.`,
+  );
+
   return {
     reunionesActivas: meetings.length,
     candidatas,
