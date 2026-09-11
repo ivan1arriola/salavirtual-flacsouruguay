@@ -1,4 +1,7 @@
 import { JWT } from "google-auth-library";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
+import { db } from "@/src/lib/db";
+import { cargarCredencialesLegacyGoogleWorkspace } from "../configuracion/google-workspace.service";
 import { registrarVerificacionCohosts } from "./cohost-verification.domain";
 import {
   crearCalendarEvent,
@@ -80,17 +83,65 @@ export async function configurarGoogleMeetExistente(
     cohostEmails?: readonly string[];
   }>
 ): Promise<void> {
-  const auth = new JWT({
-    email: credentials.serviceAccountEmail,
-    key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
-    subject: credentials.subject
-  });
+  try {
+    await configurarGoogleMeetConCredencial(credentials, codigoReunion, settings);
+  } catch (error) {
+    if (!esErrorPermisoMember(error)) throw error;
+    let lastError: unknown = error;
+    for (const legacy of await credencialesLegacy(credentials.subject)) {
+      try {
+        await configurarGoogleMeetConCredencial(legacy, codigoReunion, settings);
+        return;
+      } catch (legacyError) {
+        lastError = legacyError;
+        if (!esErrorPermisoMember(legacyError)) throw legacyError;
+      }
+    }
+    throw lastError;
+  }
+}
+
+async function configurarGoogleMeetConCredencial(
+  credentials: GoogleCalendarCredentials,
+  codigoReunion: string,
+  settings: Readonly<{
+    requiereAsistenciaTecnica?: boolean;
+    cohostEmails?: readonly string[];
+  }>
+): Promise<void> {
+  const auth = crearMeetAuth(credentials);
   const spaceName = await configurarEspacioMeet(auth, codigoReunion, settings);
   await configurarCohostsMeet(auth, spaceName, settings.cohostEmails ?? []);
 }
 
 export async function sincronizarCohostsGoogleExistente(
+  credentials: GoogleCalendarCredentials,
+  input: Readonly<{
+    calendarId: string;
+    externalEventId: string;
+    codigoReunion?: string | null;
+    cohostsAnteriores: readonly string[];
+    cohostsDeseados: readonly string[];
+  }>
+): Promise<Readonly<Record<string, unknown>>> {
+  try {
+    return await sincronizarCohostsGoogleConCredencial(credentials, input);
+  } catch (error) {
+    if (!esErrorPermisoMember(error)) throw error;
+    let lastError: unknown = error;
+    for (const legacy of await credencialesLegacy(credentials.subject)) {
+      try {
+        return await sincronizarCohostsGoogleConCredencial(legacy, input);
+      } catch (legacyError) {
+        lastError = legacyError;
+        if (!esErrorPermisoMember(legacyError)) throw legacyError;
+      }
+    }
+    throw lastError;
+  }
+}
+
+async function sincronizarCohostsGoogleConCredencial(
   credentials: GoogleCalendarCredentials,
   input: Readonly<{
     calendarId: string;
@@ -106,12 +157,7 @@ export async function sincronizarCohostsGoogleExistente(
     scopes: [CALENDAR_SCOPE],
     subject: credentials.subject
   });
-  const meetAuth = new JWT({
-    email: credentials.serviceAccountEmail,
-    key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
-    subject: credentials.subject
-  });
+  const meetAuth = crearMeetAuth(credentials);
   const eventUrl = `${calendarEventsUrl(input.calendarId)}/${encodeURIComponent(input.externalEventId)}`;
   const current = await calendarAuth.request<CalendarEventWithAttendees>({
     url: eventUrl,
@@ -146,15 +192,12 @@ export function crearGoogleCalendarProvider(
     scopes: [CALENDAR_SCOPE],
     subject: credentials.subject
   });
-  const meetAuth = new JWT({
-    email: credentials.serviceAccountEmail,
-    key: credentials.privateKey,
-    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
-    subject: credentials.subject
-  });
+  const meetAuth = crearMeetAuth(credentials);
+  let provisioningAttempt = false;
 
   return {
     async crearEventoCalendar(request) {
+      provisioningAttempt = true;
       const eventsUrl = calendarEventsUrl(request.calendarId);
       const eventUrl = `${eventsUrl}/${encodeURIComponent(request.calendarEventId)}`;
       const existing = await obtenerEventoCalendarSiExiste(auth, eventUrl);
@@ -223,7 +266,22 @@ export function crearGoogleCalendarProvider(
       return extraerMeetProvisionado(current.data);
     },
     async configurarEventoMeet(request, evento) {
-      await finalizarProvision(meetAuth, evento, request);
+      try {
+        await finalizarProvision(meetAuth, evento, request);
+      } catch (error) {
+        if (provisioningAttempt || !esErrorPermisoMember(error)) throw error;
+        let lastError: unknown = error;
+        for (const legacy of await credencialesLegacy(credentials.subject)) {
+          try {
+            await finalizarProvision(crearMeetAuth(legacy), evento, request);
+            return;
+          } catch (legacyError) {
+            lastError = legacyError;
+            if (!esErrorPermisoMember(legacyError)) throw legacyError;
+          }
+        }
+        throw lastError;
+      }
     },
     async cancelarEvento(calendarId, externalEventId) {
       await auth.request({
@@ -246,6 +304,24 @@ export function crearGoogleCalendarProvider(
       });
     }
   };
+}
+
+async function credencialesLegacy(subject: string): Promise<readonly GoogleCalendarCredentials[]> {
+  const rows = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
+  return rows.map((credential) => ({
+    serviceAccountEmail: credential.serviceAccountEmail,
+    privateKey: credential.privateKey,
+    subject,
+  }));
+}
+
+function crearMeetAuth(credentials: GoogleCalendarCredentials): JWT {
+  return new JWT({
+    email: credentials.serviceAccountEmail,
+    key: credentials.privateKey,
+    scopes: [MEET_SETTINGS_SCOPE, MEET_READ_SCOPE, MEET_CREATED_SCOPE],
+    subject: credentials.subject
+  });
 }
 
 async function crearEspacioMeetAplicacion(
@@ -500,6 +576,21 @@ function isAlreadyCalendarEvent(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const candidate = error as { code?: unknown; response?: { status?: unknown; data?: unknown } };
   return candidate.code === 409 || candidate.response?.status === 409 || JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
+}
+
+function esErrorPermisoMember(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    message?: unknown;
+    response?: { status?: unknown; data?: unknown };
+  };
+  const status = candidate.response?.status ?? candidate.code;
+  const text = [
+    typeof candidate.message === "string" ? candidate.message : "",
+    JSON.stringify(candidate.response?.data ?? ""),
+  ].join(" ").toLowerCase();
+  return (status === 403 || text.includes("permission denied")) && text.includes("resource member");
 }
 
 function calendarEventsUrl(calendarId: string): string {
