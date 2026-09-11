@@ -31,6 +31,7 @@
     "unificar:links-series": "tsx scripts/unificar-links-series-futuras.ts --apply",
     "asignar:link-serie": "tsx scripts/asignar-link-meet-serie.ts",
     "actualizar:cohosts-serie": "tsx scripts/actualizar-cohosts-serie.ts",
+    "resync:cohosts": "tsx scripts/resincronizar-cohosts-existentes.ts",
     "backfill:auto-cohosts:dry": "tsx scripts/backfill-auto-cohosts.ts",
     "backfill:auto-cohosts:local": "tsx scripts/backfill-auto-cohosts.ts --apply --no-sync-google",
     "backfill:auto-cohosts": "tsx scripts/backfill-auto-cohosts.ts --apply --sync-google",
