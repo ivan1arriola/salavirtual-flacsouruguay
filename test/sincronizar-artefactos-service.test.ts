@@ -124,8 +124,8 @@ describe("sincronización robusta de artefactos Meet", () => {
     const client = {
       buscarConferencia: vi.fn(async () => ({
         name: "conferenceRecords/recording-pending",
-        startTime: "2026-08-18T21:00:00.000Z",
-        endTime: "2026-08-18T22:05:00.000Z"
+        startTime: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        endTime: new Date().toISOString()
       })),
       obtenerConferencia: vi.fn(),
       obtenerOCrearCarpeta: vi.fn(async () => "folder-pending"),
@@ -334,5 +334,107 @@ describe("sincronización robusta de artefactos Meet", () => {
     expect(result?.estado).toBe("ERROR");
     expect(result?.error).toContain("no devolvió participantes");
     expect(client.subirDocumentoGoogle).not.toHaveBeenCalled();
+  });
+
+  it("sincroniza la grabación aunque requiereGrabacion sea false si Google generó el video", async () => {
+    const storage = fakeDb(baseEvent({
+      instancia: {
+        inicioProgramadoAt: new Date("2026-08-18T21:00:00.000Z"),
+        finProgramadoAt: new Date("2026-08-18T22:00:00.000Z"),
+        timezone: "America/Montevideo",
+        requiereGrabacion: false,
+        solicitud: { titulo: "Clase no marcada para grabar" }
+      }
+    }));
+    const client = {
+      buscarConferencia: vi.fn(async () => ({
+        name: "conferenceRecords/c-unmarked",
+        startTime: "2026-08-18T21:00:00.000Z",
+        endTime: "2026-08-18T22:00:00.000Z"
+      })),
+      obtenerConferencia: vi.fn(),
+      obtenerOCrearCarpeta: vi.fn(async () => "folder-unmarked"),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [{
+          resourceName: "conferenceRecords/c-unmarked/recordings/r1",
+          driveFileId: "drive-video-1",
+          startTime: "2026-08-18T21:05:00.000Z",
+          extension: "mp4"
+        }],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "GENERADA" as const,
+        pendientes: 0
+      })),
+      obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
+      subirDocumentoGoogle: vi.fn(async () => ({
+        id: "attendance-doc",
+        name: "asistencia",
+        mimeType: "application/vnd.google-apps.document"
+      })),
+      moverArchivo: vi.fn(async (id: string, folderId: string, name: string) => ({
+        id,
+        name,
+        mimeType: "video/mp4",
+        webViewLink: `https://drive.google.com/file/${id}`
+      }))
+    };
+
+    const [result] = await sincronizarArtefactosMeet({
+      db: storage.db,
+      descifrar: () => "private-key",
+      crearClient: () => client as never
+    }, ["event-1"]);
+
+    expect(result).toMatchObject({
+      estado: "SINCRONIZADO",
+      grabacion: "DISPONIBLE",
+      archivos: 2
+    });
+    expect(client.moverArchivo).toHaveBeenCalledWith("drive-video-1", "folder-unmarked", expect.stringContaining("video_01"));
+  });
+
+  it("cierra limpiamente la sincronización después de 48 horas si los artefactos siguen pendientes sin emitir error", async () => {
+    const twoDaysAgo = new Date(Date.now() - 50 * 60 * 60 * 1000).toISOString();
+    const storage = fakeDb(baseEvent());
+    const client = {
+      buscarConferencia: vi.fn(async () => ({
+        name: "conferenceRecords/c-old-pending",
+        startTime: twoDaysAgo,
+        endTime: twoDaysAgo
+      })),
+      obtenerConferencia: vi.fn(),
+      obtenerOCrearCarpeta: vi.fn(async () => "folder-old"),
+      obtenerArtefactos: vi.fn(async () => ({
+        recordings: [],
+        transcripts: [],
+        notes: [],
+        estadoGrabacion: "AUSENTE" as const,
+        pendientes: 1
+      })),
+      obtenerDocumentoAsistencia: vi.fn(async () => readyAttendance()),
+      subirDocumentoGoogle: vi.fn(async () => ({
+        id: "attendance-doc",
+        name: "asistencia",
+        mimeType: "application/vnd.google-apps.document"
+      })),
+      moverArchivo: vi.fn()
+    };
+
+    const [result] = await sincronizarArtefactosMeet({
+      db: storage.db,
+      descifrar: () => "private-key",
+      crearClient: () => client as never
+    }, ["event-1"]);
+
+    expect(result?.estado).toBe("SINCRONIZADO");
+    expect(storage.updates.at(-1)).toMatchObject({
+      data: {
+        conferenceRecordName: "conferenceRecords/c-old-pending",
+        driveFolderId: "folder-old",
+        errorArchivos: null
+      }
+    });
+    expect((storage.updates.at(-1) as { data: { archivosSincronizadosAt: unknown } }).data.archivosSincronizadosAt).toBeInstanceOf(Date);
   });
 });

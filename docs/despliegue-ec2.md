@@ -81,9 +81,12 @@ Desde una copia del repositorio:
 sudo cp infra/ec2/salavirtual.service /etc/systemd/system/
 sudo cp infra/ec2/salavirtual-calendar-sync.service /etc/systemd/system/
 sudo cp infra/ec2/salavirtual-calendar-sync.timer /etc/systemd/system/
+sudo cp infra/ec2/salavirtual-artifacts-sync.service /etc/systemd/system/
+sudo cp infra/ec2/salavirtual-artifacts-sync.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable salavirtual.service
 sudo systemctl enable salavirtual-calendar-sync.timer
+sudo systemctl enable salavirtual-artifacts-sync.timer
 ```
 
 No iniciar todavía `salavirtual.service` hasta que exista el primer release.

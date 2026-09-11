@@ -189,7 +189,7 @@ async function sincronizarEvento(
       }
     }
 
-    if (pending > 0) {
+    if (pending > 0 && !conferenciaTerminadaHaceMasDe(conference.endTime, 48)) {
       await dependencies.db.eventoProveedor.update({
         where: { id: event.id },
         data: {

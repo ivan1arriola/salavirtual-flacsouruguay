@@ -520,6 +520,37 @@
   font-size: 0.76rem;
 }
 
+.encounter-v2-artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #f8fafc;
+  border: 1px solid #dbe4eb;
+}
+
+.encounter-v2-artifacts > span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--brand-secondary);
+}
+
+.encounter-v2-artifact-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.encounter-v2-artifact-buttons .secondary-action {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  gap: 6px;
+}
+
 .encounter-v2-people {
   min-width: 0;
   display: grid;

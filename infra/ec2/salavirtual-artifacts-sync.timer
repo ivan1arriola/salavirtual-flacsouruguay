@@ -1,0 +1,12 @@
+[Unit]
+Description=Sala Virtual FLACSO - timer de sincronización de grabaciones y artefactos Meet (cada 10 min)
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+RandomizedDelaySec=20
+Unit=salavirtual-artifacts-sync.service
+
+[Install]
+WantedBy=timers.target
+

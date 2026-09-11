@@ -59,7 +59,13 @@ export default async function ReunionDetailPage({
         instancias: {
           orderBy: { inicioProgramadoAt: "asc" },
           include: {
-            eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+            eventosProveedor: {
+              include: {
+                proveedor: true,
+                cuentaProveedor: true,
+                archivos: true
+              }
+            },
             cohosts: {
               include: {
                 cuentaGoogle: {
@@ -133,6 +139,9 @@ export default async function ReunionDetailPage({
       ...meeting.cohosts.map(({ cuentaGoogle }) => cohostLabel(cuentaGoogle)),
       ...meeting.cohostEmails.map(({ email }) => email.toLowerCase())
     ]);
+    const recordingFile = event?.archivos?.find((a) => a.tipo === "GRABACION");
+    const attendanceFile = event?.archivos?.find((a) => a.tipo === "LISTA_ASISTENCIA");
+    const driveFolderId = event?.driveFolderId ?? null;
 
     return {
       id: meeting.id,
@@ -157,6 +166,9 @@ export default async function ReunionDetailPage({
       ),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,
+      grabacionUrl: recordingFile?.webViewUrl ?? (recordingFile?.driveFileId ? `https://drive.google.com/open?id=${recordingFile.driveFileId}` : null),
+      asistenciaUrl: attendanceFile?.webViewUrl ?? (attendanceFile?.driveFileId ? `https://drive.google.com/open?id=${attendanceFile.driveFileId}` : null),
+      driveFolderUrl: driveFolderId ? `https://drive.google.com/drive/folders/${driveFolderId}` : null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
       puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(
         meeting.estado,

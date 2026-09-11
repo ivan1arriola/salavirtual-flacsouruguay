@@ -3,6 +3,7 @@
 import {
   CalendarClock,
   CalendarPlus,
+  FolderOpen,
   History,
   LoaderCircle,
   Pencil,
@@ -41,6 +42,9 @@ type Encounter = Readonly<{
   cohostsConfirmados?: boolean;
   codigoMeet: string | null;
   joinUrl: string | null;
+  grabacionUrl?: string | null;
+  asistenciaUrl?: string | null;
+  driveFolderUrl?: string | null;
   editable: boolean;
   puedeCambiarAsistencia: boolean;
   esDeHoy: boolean;
@@ -250,6 +254,47 @@ export function MeetingDetailManager({
                             : <span className="muted-text">No disponible todavía</span>}
                         </div>
                       </div>
+
+                      {meeting.temporalidad === "PASADO" && (meeting.grabacionUrl || meeting.asistenciaUrl || meeting.driveFolderUrl) ? (
+                        <div className="encounter-v2-artifacts">
+                          <span>Archivos y registros</span>
+                          <div className="encounter-v2-artifact-buttons">
+                            {meeting.grabacionUrl ? (
+                              <a
+                                className="secondary-action is-primary"
+                                href={meeting.grabacionUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <Video size={15} />
+                                Ver grabación
+                              </a>
+                            ) : null}
+                            {meeting.asistenciaUrl ? (
+                              <a
+                                className="secondary-action"
+                                href={meeting.asistenciaUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <UsersRound size={15} />
+                                Asistencia
+                              </a>
+                            ) : null}
+                            {meeting.driveFolderUrl ? (
+                              <a
+                                className="secondary-action"
+                                href={meeting.driveFolderUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <FolderOpen size={15} />
+                                Carpeta Drive
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
 
                     <aside className="encounter-v2-people">

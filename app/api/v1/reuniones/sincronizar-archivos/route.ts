@@ -36,48 +36,90 @@ export async function GET(request: Request) {
 
 async function executeSynchronization() {
   const now = new Date();
-  const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+  const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
   const baseWhere = {
     proveedor: { tipo: "GOOGLE_MEET" as const },
     codigoReunion: { not: null },
     instancia: {
-      finProgramadoAt: { gte: since, lte: now },
       estado: { not: "CANCELADA" as const }
     }
   };
-  const pending = await db.eventoProveedor.findMany({
+
+  const limit = 25;
+
+  // 1. Ventana Caliente (0 a 4 horas): prioridad alta para capturar artefactos frescos
+  const hotEvents = await db.eventoProveedor.findMany({
     where: {
       ...baseWhere,
-      OR: [{ archivosSincronizadosAt: null }, { errorArchivos: { not: null } }]
+      archivosSincronizadosAt: null,
+      instancia: {
+        ...baseWhere.instancia,
+        finProgramadoAt: { gte: fourHoursAgo, lte: now }
+      }
     },
-    orderBy: { instancia: { finProgramadoAt: "asc" } },
-    take: 25,
+    orderBy: { instancia: { finProgramadoAt: "desc" } },
+    take: limit,
     select: { id: true }
   });
-  const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  const review = pending.length < 25
+
+  const remainingAfterHot = limit - hotEvents.length;
+
+  // 2. Ventana Intermedia (4 a 48 horas): reuniones con artefactos aún pendientes o con error a reintentar
+  const intermediateEvents = remainingAfterHot > 0
     ? await db.eventoProveedor.findMany({
         where: {
           ...baseWhere,
-          id: { notIn: pending.map(({ id }) => id) },
-          archivosSincronizadosAt: { lte: cutoff },
-          errorArchivos: null
+          OR: [{ archivosSincronizadosAt: null }, { errorArchivos: { not: null } }],
+          instancia: {
+            ...baseWhere.instancia,
+            finProgramadoAt: { gte: fortyEightHoursAgo, lt: fourHoursAgo }
+          }
         },
-        orderBy: { archivosSincronizadosAt: "asc" },
-        take: 25 - pending.length,
+        orderBy: { instancia: { finProgramadoAt: "asc" } },
+        take: remainingAfterHot,
         select: { id: true }
       })
     : [];
-  const events = [...pending, ...review];
+
+  const remainingAfterIntermediate = remainingAfterHot - intermediateEvents.length;
+
+  // 3. Ventana de Cierre (> 48 horas hasta 30 días): finalizar ciclo limpiamente
+  const closingEvents = remainingAfterIntermediate > 0
+    ? await db.eventoProveedor.findMany({
+        where: {
+          ...baseWhere,
+          archivosSincronizadosAt: null,
+          instancia: {
+            ...baseWhere.instancia,
+            finProgramadoAt: { gte: thirtyDaysAgo, lt: fortyEightHoursAgo }
+          }
+        },
+        orderBy: { instancia: { finProgramadoAt: "asc" } },
+        take: remainingAfterIntermediate,
+        select: { id: true }
+      })
+    : [];
+
+  const eventIds = [...hotEvents, ...intermediateEvents, ...closingEvents].map(({ id }) => id);
   const results = await sincronizarArtefactosMeet(
     {
       db,
       descifrar: descifrarConfiguracion,
       crearClient: crearGoogleMeetArtifactsClient
     },
-    events.map(({ id }) => id)
+    eventIds
   );
+
   return NextResponse.json({
+    timestamp: now.toISOString(),
+    ventanas: {
+      caliente: hotEvents.length,
+      intermedia: intermediateEvents.length,
+      cierre: closingEvents.length
+    },
     procesadas: results.length,
     sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADO").length,
     sinRegistroFinalizado: results.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO").length,
