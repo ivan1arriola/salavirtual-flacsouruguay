@@ -37,33 +37,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { objetivo } = pruebaConfiguracionGoogleWorkspaceSchema.parse(
+    const { objetivo, credentialId } = pruebaConfiguracionGoogleWorkspaceSchema.parse(
       await request.json().catch(() => null)
     );
-    const configuration = await db.configuracionGoogleWorkspace.findUnique({
+    const principal = await db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" }
     });
-    if (
-      !configuration?.serviceAccountEmail ||
-      !configuration.privateKeyCifrada
-    ) {
+    if (!principal) throw new Error("Google Workspace no está configurado.");
+
+    const selected = objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal"
+      ? await db.configuracionGoogleWorkspace.findUnique({ where: { id: credentialId } })
+      : principal;
+    if (!selected?.serviceAccountEmail || !selected.privateKeyCifrada) {
       throw new Error("Primero guardá la cuenta de servicio y su clave privada.");
     }
 
     const credential = {
-      serviceAccountEmail: configuration.serviceAccountEmail,
-      privateKey: descifrarConfiguracion(configuration.privateKeyCifrada)
+      serviceAccountEmail: selected.serviceAccountEmail,
+      privateKey: descifrarConfiguracion(selected.privateKeyCifrada)
     };
 
     if (objetivo === "SCOPES") {
-      const scopeSubjects = await obtenerSujetosScopes(configuration.serviceAccountSubject);
+      if (!principal.serviceAccountEmail || !principal.privateKeyCifrada) {
+        throw new Error("Primero guardá la credencial Principal.");
+      }
+      const principalCredential = {
+        serviceAccountEmail: principal.serviceAccountEmail,
+        privateKey: descifrarConfiguracion(principal.privateKeyCifrada)
+      };
+      const scopeSubjects = await obtenerSujetosScopes(principal.serviceAccountSubject);
       if (scopeSubjects.length === 0) {
         throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet.");
       }
 
       const accounts = [];
       for (const { subject, tipo, activa } of scopeSubjects) {
-        const scopes = await validarScopesGoogle({ ...credential, subject });
+        const scopes = await validarScopesGoogle({ ...principalCredential, subject });
         accounts.push({
           subject,
           tipo,
@@ -99,7 +108,7 @@ export async function POST(request: Request) {
         })).flatMap(({ emailOrganizador }) => emailOrganizador ? [emailOrganizador] : [])
       : [];
 
-    const message = await ejecutarPrueba(objetivo, configuration, credential, hostEmails);
+    const message = await ejecutarPrueba(objetivo, principal, credential, hostEmails);
     return NextResponse.json({ message });
   } catch (error) {
     return NextResponse.json(
