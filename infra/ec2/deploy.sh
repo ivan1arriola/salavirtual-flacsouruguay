@@ -54,7 +54,11 @@ echo "=== Node ==="
 /usr/bin/npm --version
 
 echo "=== Dependencias ==="
-"${NPM[@]}" ci
+"${NPM[@]}" ci --include=dev
+if [[ ! -x "$SRC/node_modules/.bin/tsx" ]]; then
+  echo "Falta tsx después de npm ci --include=dev; los comandos administrativos no podrían ejecutarse." >&2
+  exit 6
+fi
 
 echo "=== Build ==="
 sudo -u ubuntu -H env \
