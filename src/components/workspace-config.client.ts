@@ -43,6 +43,13 @@ export async function testWorkspaceSection(
   }, "Prueba completada.");
 }
 
+export async function testWorkspaceCredential(credentialId: string): Promise<ApiResult> {
+  return requestWorkspace("/api/v1/configuracion/google-workspace/test", {
+    method: "POST",
+    body: JSON.stringify({ objetivo: "CREDENCIAL", credentialId })
+  }, "Credencial válida.");
+}
+
 export async function validateWorkspaceScopes(): Promise<WorkspaceScopesResult> {
   try {
     const response = await fetch("/api/v1/configuracion/google-workspace/test", {
