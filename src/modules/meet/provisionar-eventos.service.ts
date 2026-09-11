@@ -272,7 +272,7 @@ async function provisionar(
   await configurarAjustesMeet(provider, request, result);
   return {
     ...result,
-    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? [], new Date().toISOString()),
   };
 }
 
@@ -293,7 +293,7 @@ async function reprogramarYReconciliar(
   await configurarAjustesMeet(provider, request, result);
   return {
     ...result,
-    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? [], new Date().toISOString()),
   };
 }
 
@@ -310,7 +310,7 @@ async function configurarMeet(
   await configurarAjustesMeet(provider, request, result);
   return {
     ...result,
-    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? [], new Date().toISOString()),
   };
 }
 

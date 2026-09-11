@@ -134,7 +134,7 @@ export async function sincronizarCohostsGoogleExistente(
   if (!provisioned) throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
   const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, { cohostEmails: desired });
   await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
-  return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired);
+  return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired, new Date().toISOString());
 }
 
 export function crearGoogleCalendarProvider(

@@ -7,7 +7,7 @@ function record(value: unknown): Record<string, unknown> {
 
 /** Only call after the adapter has read COHOST roles back from Google Meet. */
 export function registrarVerificacionCohosts(
-  payload: unknown, codigoReunion: string, organizer: string, emails: readonly string[],
+  payload: unknown, codigoReunion: string, organizer: string, emails: readonly string[], verifiedAt: string,
 ) {
   const previous = record(payload);
   return {
@@ -18,7 +18,7 @@ export function registrarVerificacionCohosts(
         codigoReunion,
         organizer: organizer.trim().toLowerCase(),
         emails: normalizeCohostEmails(emails).filter((email) => email !== organizer.trim().toLowerCase()),
-        verifiedAt: new Date().toISOString(),
+        verifiedAt,
       },
     },
   };

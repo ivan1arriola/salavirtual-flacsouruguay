@@ -638,7 +638,7 @@ export async function sincronizarCohostsDeInstancia(
     await dependencies.db.eventoProveedor.update({
       where: { id: event.id },
       data: { payloadUltimo: JSON.parse(JSON.stringify(registrarVerificacionCohosts(
-        event.payloadUltimo, event.codigoReunion, credentials.subject, cohostEmails,
+        event.payloadUltimo, event.codigoReunion, credentials.subject, cohostEmails, new Date().toISOString(),
       ))) },
     });
   } catch (error) {
