@@ -108,7 +108,7 @@ async function main(): Promise<void> {
     console.error(`Credenciales LEGACY activas: ${legacies.length}`);
     for (const legacy of legacies) {
       console.error(
-        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`,
+        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"}`,
       );
     }
   }
@@ -227,9 +227,7 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
   for (const meeting of uniqueMeetings.values()) {
     console.error(`DIAGNOSTICO MEET | ${meeting.titulo} | meet=${meeting.codigoReunion} | host=${meeting.host}`);
     for (const credential of credentials) {
-      const subject = credential.label === "LEGACY"
-        ? credential.serviceAccountSubject?.trim().toLowerCase() || meeting.host
-        : meeting.host;
+      const subject = meeting.host;
       const outcome = await probarAccesoMembers(credential, subject, meeting.codigoReunion);
       console.error(
         `DIAGNOSTICO ${credential.label} | cuenta=${credential.serviceAccountEmail} | subject=${subject} | meet=${meeting.codigoReunion} | ${outcome}`,
