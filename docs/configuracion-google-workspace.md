@@ -15,7 +15,7 @@ cuenta de servicio actua en nombre de esa sala mediante delegacion de dominio.
 2. Habilitar Google Calendar API, Google Meet REST API, Google Drive API y Gmail API.
 3. Crear una cuenta de servicio.
 4. Activar `Domain-wide delegation` para esa cuenta.
-5. Crear y descargar una clave JSON. Debe custodiarse como secreto.
+5. Crear y descargar una clave JSON. Debe custodiarse como secreto hasta cargarla en Sala Virtual.
 6. Copiar el `OAuth 2 Client ID` numerico de la cuenta de servicio.
 
 ## Google Admin
@@ -71,22 +71,38 @@ exactamente que cuenta y que scope requieren atencion.
 
 ## Configuracion del gestor
 
-Administracion guarda mediante `PUT /api/v1/configuracion/google-workspace`:
+Las cuentas de servicio ya no se configuran mediante variables de entorno. Administracion
+las gestiona desde **Configuracion > Google Workspace**. Las claves privadas se cifran con
+`CONFIG_ENCRYPTION_KEY` antes de persistirse en PostgreSQL y nunca se devuelven por la API.
 
-```json
-{
-  "serviceAccountEmail": "cuenta-servicio@proyecto.iam.gserviceaccount.com",
-  "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
-  "serviceAccountSubject": "administracion@flacso.edu.uy",
-  "driveDestinationId": "ID_DE_LA_CARPETA_DRIVE",
-  "activa": true
-}
-```
+Existen dos clases operativas:
 
-`serviceAccountSubject` queda reservado para operaciones generales de Workspace
-y Drive. Para crear reuniones, el gestor suplanta dinamicamente a la cuenta
-host seleccionada. Para sincronizar asignaciones de asistencia, suplanta
+- **Principal** (`ConfiguracionGoogleWorkspace.id = principal`): es la unica credencial que puede crear reuniones nuevas y tambien se usa para Gmail API, Drive y las operaciones normales de Meet.
+- **Legacy** (`id` con prefijo `legacy:`): solo se usa como compatibilidad para espacios Meet historicos creados por proyectos/cuentas de servicio anteriores.
+
+Al cambiar el email de la Principal desde la UI es obligatorio cargar tambien la nueva clave
+privada. La credencial Principal anterior se archiva automaticamente como Legacy antes de
+completar la rotacion. Una Legacy puede probarse, editarse, reactivarse guardandola de nuevo
+o desactivarse desde la misma pantalla.
+
+La cuenta delegada general (`serviceAccountSubject`) y la carpeta de Drive siguen siendo
+configuracion general. Para crear o modificar reuniones, el gestor suplanta dinamicamente a
+la cuenta host `salaNN` seleccionada. Para sincronizar asignaciones de asistencia, suplanta
 dinamicamente a la cuenta Google vinculada del asistente tecnico.
+
+## Compatibilidad con Meets historicos
+
+Para reuniones existentes, Sala Virtual intenta primero la credencial Principal. Solo cuando
+Google responde con el `403 Permission denied on resource Member` compatible con un espacio
+creado por otra aplicacion/proyecto, se prueban las credenciales Legacy activas.
+
+Este fallback no se aplica durante la creacion de una reunion nueva y tampoco se activa para
+errores genericos de scopes, Calendar, red o servidor. De ese modo la cuenta antigua puede
+mantener acceso a espacios historicos sin volver a convertirse en credencial operativa.
+
+Cuando ya no existan reuniones que dependan de una credencial Legacy, Administracion puede
+desactivarla. No es necesario conservar `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+ni `GOOGLE_SERVICE_ACCOUNT_SUBJECT` en el entorno del runtime.
 
 ## Sincronizacion de calendarios de asistentes
 
@@ -99,14 +115,9 @@ cambio local fue guardado, la operacion local no se revierte ni se reporta como
 fallida. La API devuelve el cambio guardado y marca la sincronizacion como
 pendiente para un reintento posterior.
 
-Como red de seguridad, Vercel ejecuta diariamente:
-
-`GET /api/v1/asistencia/sincronizar-calendarios`
-
-El cron esta protegido con `CRON_SECRET` y vuelve a reconciliar reuniones futuras
-con asignaciones. El proyecto usa el plan Hobby de Vercel, por lo que este cron de
-recuperacion se mantiene en una ejecucion diaria; la sincronizacion inmediata no
-depende de este cron.
+Como red de seguridad existe una sincronizacion periodica protegida con `CRON_SECRET`
+que vuelve a reconciliar reuniones futuras con asignaciones. La sincronizacion inmediata
+no depende de esa tarea periodica.
 
 ## Resultado
 
@@ -114,7 +125,7 @@ Al crear una reunion, el gestor:
 
 1. Registra la solicitud y sus instancias en PostgreSQL.
 2. Crea un evento independiente en el calendario de la sala host.
-3. Solicita a Google un Meet nuevo para ese evento.
+3. Solicita a Google un Meet nuevo usando exclusivamente la credencial Principal.
 4. Guarda el ID externo, codigo Meet y enlace de acceso.
 5. Configura el espacio Meet con los scopes especificos de Meet.
 6. Si existe un asistente tecnico asignado con Google vinculado, publica el encuentro en su calendario principal.
@@ -154,6 +165,3 @@ termine esa operación. Los errores quedan disponibles para reintentar.
 Si Google rechaza `spaces.members`, revisar la habilitación del proyecto en
 Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
 organizadora. No se considera exitosa una asignación rechazada por Google.
-
-Referencia oficial:
-https://developers.google.com/workspace/meet/api/guides/meeting-spaces-configuration
