@@ -466,7 +466,12 @@ async function registrarErrorReclamado(
         instancia: { select: { solicitudSalaId: true, estado: true } },
       },
     });
-    const noBloqueante = scopeConfiguracionMeet && Boolean(current?.joinUrl || current?.codigoReunion);
+    const hasMeet = Boolean(current?.joinUrl || current?.codigoReunion);
+    const noBloqueante = scopeConfiguracionMeet && hasMeet;
+    const proximaOperacion = claim.operacion === "PROVISIONAR" && hasMeet
+      ? "CONFIGURAR_MEET"
+      : claim.operacion;
+
     const updated = await tx.eventoProveedor.updateMany({
       where: {
         id: claim.event.id,
@@ -475,6 +480,7 @@ async function registrarErrorReclamado(
         reclamoIntegracionToken: claim.token,
       },
       data: {
+        operacionPendiente: proximaOperacion,
         estadoIntegracion: noBloqueante ? "SINCRONIZADA" : "ERROR",
         errorIntegracion: error,
         reclamoIntegracionAt: null,

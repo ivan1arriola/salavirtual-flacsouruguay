@@ -17,6 +17,55 @@ const credentialIdSchema = z.string().trim().min(1).max(160).refine(
   "Identificador de credencial inválido."
 );
 
+export const googleServiceAccountKeySchema = z
+  .object({
+    type: z.literal("service_account", {
+      message: "El JSON debe tener type: \"service_account\".",
+    }),
+    project_id: z.string().trim().min(1, "El JSON debe incluir project_id.").optional(),
+    private_key_id: z.string().trim().optional(),
+    private_key: privateKeySchema,
+    client_email: z.string().trim().email("El JSON debe incluir un client_email válido."),
+    client_id: z.string().trim().optional(),
+    auth_uri: z.string().optional(),
+    token_uri: z.string().optional(),
+    auth_provider_x509_cert_url: z.string().optional(),
+    client_x509_cert_url: z.string().optional(),
+    universe_domain: z.string().optional(),
+  })
+  .passthrough();
+
+export type GoogleServiceAccountKey = Readonly<
+  z.infer<typeof googleServiceAccountKeySchema>
+>;
+
+export function parseServiceAccountKeyJson(input: unknown): GoogleServiceAccountKey {
+  if (input === null || input === undefined) {
+    throw new Error("El archivo JSON de cuenta de servicio es obligatorio.");
+  }
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      throw new Error("El archivo JSON de cuenta de servicio no puede estar vacío.");
+    }
+    const parsed = (() => {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        throw new Error("El contenido proporcionado no es un JSON válido.");
+      }
+    })();
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("El archivo JSON de cuenta de servicio debe ser un objeto JSON válido.");
+    }
+    return googleServiceAccountKeySchema.parse(parsed);
+  }
+  if (typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("El archivo JSON de cuenta de servicio debe ser un objeto JSON válido.");
+  }
+  return googleServiceAccountKeySchema.parse(input);
+}
+
 export const configuracionGoogleWorkspaceSchema = z.object({
   serviceAccountEmail: z.email(),
   privateKey: privateKeySchema,
@@ -29,12 +78,17 @@ export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("s
   z.object({
     seccion: z.literal("CREDENCIAL"),
     credentialId: credentialIdSchema.default("principal"),
-    serviceAccountEmail: z.email(),
-    privateKey: z.preprocess(
-      (value) =>
-        typeof value === "string" && value.trim() === "" ? undefined : value,
-      privateKeySchema.optional()
-    )
+    serviceAccountJson: z.unknown().transform((val, ctx) => {
+      try {
+        return parseServiceAccountKeyJson(val);
+      } catch (error) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: error instanceof Error ? error.message : "El archivo JSON de cuenta de servicio no es válido."
+        });
+        return z.NEVER;
+      }
+    })
   }),
   z.object({
     seccion: z.literal("DELEGACION"),
