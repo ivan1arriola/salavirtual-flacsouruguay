@@ -69,6 +69,14 @@ export async function actualizarSeccionGoogleWorkspace(
     ) {
       throw new Error("La clave privada PEM es obligatoria en la primera configuración.");
     }
+    if (
+      parsed.seccion === "CREDENCIAL" &&
+      actual?.serviceAccountEmail &&
+      actual.serviceAccountEmail.toLowerCase() !== parsed.serviceAccountEmail.toLowerCase() &&
+      !parsed.privateKey
+    ) {
+      throw new Error("Al cambiar la cuenta de servicio también tenés que cargar la nueva clave privada PEM.");
+    }
 
     if (
       parsed.seccion === "CREDENCIAL" &&
