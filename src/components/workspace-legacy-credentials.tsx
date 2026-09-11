@@ -67,8 +67,9 @@ export function WorkspaceLegacyCredentials() {
               credentialId={credential.id}
               email={credential.serviceAccountEmail ?? ""}
               privateKeyConfigured={credential.privateKeyConfigurada}
-              title={credential.activa ? "Credencial Legacy" : "Credencial Legacy desactivada"}
+              title={credential.activa ? "Credencial histórica" : "Credencial histórica desactivada"}
               description="Solo para espacios Meet históricos creados con esta cuenta de servicio."
+              onSaved={reload}
             />
             {credential.activa ? (
               <button className="secondary-action" type="button" onClick={() => void deactivate(credential.id)}>
@@ -85,8 +86,12 @@ export function WorkspaceLegacyCredentials() {
             credentialId={newId}
             email=""
             privateKeyConfigured={false}
-            title="Nueva credencial Legacy"
+            title="Nueva credencial histórica"
             description="Guardala una sola vez y quedará cifrada en la base."
+            onSaved={async () => {
+              await reload();
+              setNewId(null);
+            }}
           />
           <button className="secondary-action" type="button" onClick={() => setNewId(null)}>
             <RotateCcw size={16} />Cancelar
