@@ -1,3 +1,4 @@
+import { registrarVerificacionCohosts } from "./cohost-verification.domain";
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeCohostEmails } from "./cohosts.domain";
@@ -269,7 +270,10 @@ async function provisionar(
   if (!result) throw new Error("Google Calendar todavía no terminó de generar el enlace Meet.");
   await persistirMeetDetectado(db, event.id, result);
   await configurarAjustesMeet(provider, request, result);
-  return result;
+  return {
+    ...result,
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+  };
 }
 
 async function reprogramarYReconciliar(
@@ -287,7 +291,10 @@ async function reprogramarYReconciliar(
   }
   await persistirMeetDetectado(db, event.id, result);
   await configurarAjustesMeet(provider, request, result);
-  return result;
+  return {
+    ...result,
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+  };
 }
 
 async function configurarMeet(
@@ -301,7 +308,10 @@ async function configurarMeet(
   if (!result) throw new Error("Google Calendar todavía no confirmó el enlace Meet.");
   await persistirMeetDetectado(db, event.id, result);
   await configurarAjustesMeet(provider, request, result);
-  return result;
+  return {
+    ...result,
+    payload: registrarVerificacionCohosts(result.payload, result.codigoReunion, request.calendarId, request.cohostEmails ?? []),
+  };
 }
 
 async function configurarAjustesMeet(

@@ -3,18 +3,11 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
+import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
 import { normalizeCohostEmails } from "@/src/modules/meet/cohosts.domain";
-import { cargarCredencialesEncuentro } from "@/src/modules/reuniones/encuentros-persistence.adapter";
+import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
 
 export const runtime = "nodejs";
-
-type PendingExternal = Readonly<{
-  instanciaSalaId: string;
-  titulo: string;
-  inicio: string;
-  emails: readonly string[];
-}>;
 
 export async function POST() {
   const session = await auth();
@@ -28,217 +21,103 @@ export async function POST() {
   }
 
   const meetings = await db.instanciaSala.findMany({
-    where: {
-      estado: { in: ["PROGRAMADA", "EN_CURSO"] },
-      finProgramadoAt: { gt: new Date() },
-    },
+    where: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: new Date() } },
     orderBy: { inicioProgramadoAt: "asc" },
     select: {
-      id: true,
-      inicioProgramadoAt: true,
-      solicitud: {
-        select: {
-          titulo: true,
-          creadaPor: {
-            select: {
-              emailPrincipal: true,
-              cuentasGoogle: { select: { id: true, email: true } },
-            },
-          },
-        },
-      },
+      id: true, inicioProgramadoAt: true,
+      solicitud: { select: {
+        titulo: true,
+        docentePrograma: { select: { docente: { select: { usuario: { select: {
+          emailPrincipal: true, cuentasGoogle: { select: { id: true, email: true } },
+        } } } } } },
+      } },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        select: {
-          asistenteTecnico: {
-            select: {
-              usuario: {
-                select: {
-                  emailPrincipal: true,
-                  cuentasGoogle: { select: { id: true, email: true } },
-                },
-              },
-            },
-          },
-        },
+        select: { asistenteTecnico: { select: { usuario: { select: {
+          emailPrincipal: true, cuentasGoogle: { select: { id: true, email: true } },
+        } } } } },
       },
-      cohosts: {
-        select: {
-          cuentaGoogleId: true,
-          cuentaGoogle: { select: { email: true } },
-        },
-      },
+      cohosts: { select: { cuentaGoogleId: true, cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        select: {
-          codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } },
-        },
+        select: { id: true, externalEventId: true, codigoReunion: true,
+          cuentaProveedor: { select: { emailOrganizador: true } } },
         take: 1,
       },
     },
   });
 
-  const candidates: typeof meetings = [];
   let cohostsAgregados = 0;
+  let synced = 0;
+  let candidates = 0;
+  let skipped = 0;
+  const failures: Array<{ instanciaSalaId: string; titulo: string; inicio: string; error: string }> = [];
 
   for (const meeting of meetings) {
-    if (!meeting.eventosProveedor[0]?.codigoReunion) continue;
-
-    const requester = meeting.solicitud.creadaPor;
-    const assistants = meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario);
-    const expectedAccountIds = new Set([
-      ...requester.cuentasGoogle.map(({ id }) => id),
-      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ id }) => id)),
-    ]);
-    const expectedEmails = normalizeCohostEmails([
-      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
-      ...assistants.flatMap((assistant) =>
-        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-      ),
-    ]);
-    const currentAccountIds = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
-    const currentEmails = new Set(meeting.cohostEmails.map(({ email }) => email.toLowerCase()));
-    const missingAccountIds = [...expectedAccountIds].filter((id) => !currentAccountIds.has(id));
-    const missingEmails = expectedEmails.filter((email) => !currentEmails.has(email));
-
-    if (missingAccountIds.length > 0) {
-      const result = await db.cohostReunion.createMany({
-        data: missingAccountIds.map((cuentaGoogleId) => ({
-          instanciaSalaId: meeting.id,
-          cuentaGoogleId,
-        })),
-        skipDuplicates: true,
-      });
-      cohostsAgregados += result.count;
-    }
-    if (missingEmails.length > 0) {
-      const result = await db.cohostEmailReunion.createMany({
-        data: missingEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
-        skipDuplicates: true,
-      });
-      cohostsAgregados += result.count;
-    }
-
-    if (
-      meeting.cohosts.length + meeting.cohostEmails.length > 0 ||
-      missingAccountIds.length > 0 ||
-      missingEmails.length > 0
-    ) {
-      candidates.push(meeting);
-    }
-  }
-
-  const failures: Array<Readonly<{
-    instanciaSalaId: string;
-    titulo: string;
-    inicio: string;
-    error: string;
-  }>> = [];
-  const pendingExternal: PendingExternal[] = [];
-  let synced = 0;
-
-  for (const meeting of candidates) {
     const event = meeting.eventosProveedor[0];
-    if (!event?.codigoReunion || !event.cuentaProveedor?.emailOrganizador) continue;
-
-    const requester = meeting.solicitud.creadaPor;
-    const assistants = meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario);
-    const allDesiredEmails = normalizeCohostEmails([
-      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...meeting.cohostEmails.map(({ email }) => email),
-      ...requester.cuentasGoogle.map(({ email }) => email),
-      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
-      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
-      ...assistants.flatMap((assistant) =>
-        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-      ),
-    ]);
-
-    const organizerDomain = event.cuentaProveedor.emailOrganizador.split("@")[1]?.toLowerCase() ?? "";
-    const internalEmails = organizerDomain
-      ? allDesiredEmails.filter((email) => email.endsWith(`@${organizerDomain}`))
-      : allDesiredEmails;
-    const externalEmails = organizerDomain
-      ? allDesiredEmails.filter((email) => !email.endsWith(`@${organizerDomain}`))
-      : [];
-
-    if (externalEmails.length > 0) {
-      pendingExternal.push({
-        instanciaSalaId: meeting.id,
-        titulo: meeting.solicitud.titulo,
-        inicio: meeting.inicioProgramadoAt.toISOString(),
-        emails: externalEmails,
-      });
-    }
-
-    if (internalEmails.length === 0) continue;
+    const organizer = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+    if (!event?.externalEventId || !organizer) { skipped += 1; continue; }
+    const users = [
+      meeting.solicitud.docentePrograma.docente.usuario,
+      ...meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario),
+    ];
+    const accountIds = [...new Set(users.flatMap((user) => user.cuentasGoogle
+      .filter(({ email }) => email.trim().toLowerCase() !== organizer).map(({ id }) => id)))];
+    const fallback = normalizeCohostEmails(users.flatMap((user) =>
+      user.cuentasGoogle.length === 0 && user.emailPrincipal ? [user.emailPrincipal] : []
+    )).filter((email) => email !== organizer);
 
     try {
-      const credentials = await cargarCredencialesEncuentro(
-        db,
-        descifrarConfiguracion,
-        event.cuentaProveedor.emailOrganizador,
-      );
-      await configurarGoogleMeetExistente(credentials, event.codigoReunion, {
-        cohostEmails: internalEmails,
+      const result = await db.$transaction(async (tx) => {
+        // Use the same persisted operation and claim as normal provisioning. Do not
+        // overwrite cancellation/reprogramming or a synchronization in progress.
+        const queued = await tx.eventoProveedor.updateMany({
+          where: { id: event.id, reclamoIntegracionAt: null,
+            OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }] },
+          data: { operacionPendiente: "CONFIGURAR_MEET", estadoIntegracion: "PENDIENTE", errorIntegracion: null },
+        });
+        if (queued.count !== 1) return null;
+        const linked = accountIds.length ? await tx.cohostReunion.createMany({
+          data: accountIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId })),
+          skipDuplicates: true,
+        }) : { count: 0 };
+        const manual = fallback.length ? await tx.cohostEmailReunion.createMany({
+          data: fallback.map((email) => ({ instanciaSalaId: meeting.id, email })), skipDuplicates: true,
+        }) : { count: 0 };
+        return linked.count + manual.count;
       });
+      if (result === null) { skipped += 1; continue; }
+      candidates += 1;
+      cohostsAgregados += result;
+      // No domain filter: Gmail and other Google accounts must also be assigned.
+      const [outcome] = await provisionarEventosMeet({
+        db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider,
+      }, [event.id]);
+      if (outcome?.estado !== "SINCRONIZADA") {
+        throw new Error(outcome?.error ?? "La configuración de los cohosts sigue pendiente de confirmación en Google.");
+      }
       synced += 1;
     } catch (error) {
-      failures.push({
-        instanciaSalaId: meeting.id,
-        titulo: meeting.solicitud.titulo,
+      failures.push({ instanciaSalaId: meeting.id, titulo: meeting.solicitud.titulo,
         inicio: meeting.inicioProgramadoAt.toISOString(),
-        error: error instanceof Error ? error.message : "Error desconocido al sincronizar con Google Meet.",
+        error: error instanceof Error ? error.message : "No se pudo verificar el rol en Google Meet.",
       });
     }
   }
 
-  const skipped = meetings.length - candidates.length;
-  const externalEmailCount = pendingExternal.reduce((total, item) => total + item.emails.length, 0);
-
-  await db.auditoria.create({
-    data: {
-      actorUsuarioId: actor.id,
-      accion: "COHOSTS_REUNIONES_RESINCRONIZADOS",
-      entidadTipo: "ConfiguracionGoogleWorkspace",
-      entidadId: "principal",
-      valorNuevo: {
-        reunionesActivas: meetings.length,
-        candidatas: candidates.length,
-        cohostsAgregados,
-        sincronizadas: synced,
-        omitidas: skipped,
-        fallidas: failures.length,
-        cohostsExternosPendientes: externalEmailCount,
-        reunionesConExternos: pendingExternal.length,
-      },
-    },
-  });
-
-  let message: string;
-  if (candidates.length === 0) {
-    message = "No hay reuniones activas o futuras con un Meet provisionado para sincronizar.";
-  } else if (failures.length > 0) {
-    message = `Se sincronizaron ${synced} reuniones; ${failures.length} todavía tienen un error de Google Meet.`;
-  } else if (externalEmailCount > 0) {
-    message = `Se sincronizaron ${synced} reuniones. ${externalEmailCount} cohosts externos requieren asignación manual mientras la API siga en Developer Preview.`;
-  } else {
-    message = `Se completaron los cohosts y se sincronizaron ${synced} ${synced === 1 ? "reunión" : "reuniones"}.`;
-  }
-
+  await db.auditoria.create({ data: {
+    actorUsuarioId: actor.id, accion: "COHOSTS_REUNIONES_RESINCRONIZADOS",
+    entidadTipo: "ConfiguracionGoogleWorkspace", entidadId: "principal",
+    valorNuevo: { reunionesActivas: meetings.length, candidatas: candidates, cohostsAgregados,
+      sincronizadas: synced, omitidas: skipped, fallidas: failures.length },
+  } });
   return NextResponse.json({
-    reunionesActivas: meetings.length,
-    candidatas: candidates.length,
-    cohostsAgregados,
-    sincronizadas: synced,
-    omitidas: skipped,
-    fallidas: failures.length,
-    cohostsExternosPendientes: externalEmailCount,
-    reunionesConExternos: pendingExternal.length,
-    errores: failures.slice(0, 20),
-    externos: pendingExternal.slice(0, 20),
-    message,
+    reunionesActivas: meetings.length, candidatas: candidates, cohostsAgregados,
+    sincronizadas: synced, omitidas: skipped, fallidas: failures.length,
+    // Retained for clients using the previous response shape. External accounts
+    // now go through the same verified assignment as institutional accounts.
+    cohostsExternosPendientes: 0, reunionesConExternos: 0, externos: [], errores: failures.slice(0, 20),
+    message: `Cohosts verificados en ${synced} reuniones; ${failures.length} con error y ${skipped} omitidas o con otra operación pendiente.`,
   });
 }

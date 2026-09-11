@@ -1,3 +1,4 @@
+import { cohostsConfirmados } from "@/src/modules/meet/cohost-verification.domain";
 import {
   ArrowLeft,
   CalendarClock,
@@ -150,6 +151,10 @@ export default async function ReunionDetailPage({
       postulantes: meeting.postulaciones.length,
       organizerAccount,
       cohosts: cohostLabels,
+      cohostsConfirmados: !event?.errorIntegracion && !event?.operacionPendiente && cohostsConfirmados(
+        event?.payloadUltimo, event?.codigoReunion, event?.cuentaProveedor?.emailOrganizador,
+        [...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email), ...meeting.cohostEmails.map(({ email }) => email)],
+      ),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
@@ -256,7 +261,7 @@ export default async function ReunionDetailPage({
         <article>
           <UsersRound size={18} aria-hidden="true" />
           <div>
-            <span>Cohosts</span>
+            <span>Cohosts solicitados</span>
             <strong>{uniqueCohosts.length}</strong>
             <small>Ingresan con sus propias cuentas Google</small>
           </div>

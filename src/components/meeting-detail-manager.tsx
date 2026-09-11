@@ -38,6 +38,7 @@ type Encounter = Readonly<{
   postulantes: number;
   organizerAccount: string;
   cohosts: readonly string[];
+  cohostsConfirmados?: boolean;
   codigoMeet: string | null;
   joinUrl: string | null;
   editable: boolean;
@@ -253,7 +254,7 @@ export function MeetingDetailManager({
 
                     <aside className="encounter-v2-people">
                       <div className="encounter-v2-people-block">
-                        <div className="encounter-v2-people-title"><UsersRound size={17} /><span>Cohosts</span></div>
+                        <div className="encounter-v2-people-title"><UsersRound size={17} /><span>{meeting.cohostsConfirmados ? "Cohosts verificados en Google" : "Cohosts pendientes de verificación"}</span></div>
                         {meeting.cohosts.length ? (
                           <div className="encounter-v2-cohost-list">
                             {meeting.cohosts.slice(0, 3).map((cohost) => <span key={cohost}>{cohost}</span>)}
@@ -379,7 +380,7 @@ export function MeetingDetailManager({
 
 function assistanceLabel(meeting: Encounter): Readonly<{ title: string; detail?: string }> {
   if (meeting.asistenteTecnico) {
-    return { title: meeting.asistenteTecnico, detail: "Asignado como cohost técnico." };
+    return { title: meeting.asistenteTecnico, detail: meeting.cohostsConfirmados ? "Cohost técnico verificado en Google." : "Asistencia asignada; permisos Meet pendientes de verificar." };
   }
   if (meeting.requiereAsistenciaTecnica) {
     return {

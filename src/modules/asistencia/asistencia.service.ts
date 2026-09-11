@@ -1,3 +1,4 @@
+import { registrarVerificacionCohosts, invalidarVerificacionCohosts } from "../meet/cohost-verification.domain";
 import type { PrismaClient } from "@prisma/client";
 import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
@@ -606,6 +607,7 @@ export async function sincronizarCohostsDeInstancia(
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         select: {
+          id: true, payloadUltimo: true,
           codigoReunion: true,
           cuentaProveedor: { select: { emailOrganizador: true } }
         },
@@ -624,10 +626,28 @@ export async function sincronizarCohostsDeInstancia(
     ...meeting.cohostEmails.map(({ email }) => email)
   ]);
   if (cohostEmails.length === 0) return;
-  const credentials = await cargarCredencialesEncuentro(
-    dependencies.db,
-    dependencies.descifrar,
-    event.cuentaProveedor?.emailOrganizador
-  );
-  await dependencies.configurarEspacio(credentials, event.codigoReunion, { cohostEmails });
+  await dependencies.db.eventoProveedor.update({
+    where: { id: event.id },
+    data: { payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))) },
+  });
+  try {
+    const credentials = await cargarCredencialesEncuentro(
+      dependencies.db, dependencies.descifrar, event.cuentaProveedor?.emailOrganizador,
+    );
+    await dependencies.configurarEspacio(credentials, event.codigoReunion, { cohostEmails });
+    await dependencies.db.eventoProveedor.update({
+      where: { id: event.id },
+      data: { payloadUltimo: JSON.parse(JSON.stringify(registrarVerificacionCohosts(
+        event.payloadUltimo, event.codigoReunion, credentials.subject, cohostEmails,
+      ))) },
+    });
+  } catch (error) {
+    await dependencies.db.eventoProveedor.updateMany({
+      where: { id: event.id, reclamoIntegracionAt: null,
+        OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }] },
+      data: { estadoIntegracion: "ERROR", operacionPendiente: "CONFIGURAR_MEET",
+        errorIntegracion: error instanceof Error ? error.message : "No se pudieron verificar los cohosts en Google Meet." },
+    });
+    throw error;
+  }
 }
