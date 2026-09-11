@@ -204,7 +204,10 @@ export async function cargarCredencialesLegacyGoogleWorkspace(
     id: row.id,
     serviceAccountEmail: row.serviceAccountEmail,
     privateKey: descifrar(row.privateKeyCifrada),
-    serviceAccountSubject: row.serviceAccountSubject,
+    // Los Meets históricos fueron creados por cuentas salaXX. El subject persistido
+    // pertenece a la configuración general de Workspace y no debe reemplazar al
+    // organizador real cuando se usa una credencial Legacy para operar un Meet.
+    serviceAccountSubject: null,
   }] : []);
 }
 
