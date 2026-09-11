@@ -3,9 +3,14 @@ import { AlertTriangle, Clock3 } from "lucide-react";
 type MeetIntegrationStatusProps = Readonly<{
   status?: "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
   hasMeet?: boolean;
+  hideSettingsWarning?: boolean;
 }>;
 
-export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrationStatusProps) {
+export function MeetIntegrationStatus({
+  status,
+  hasMeet = false,
+  hideSettingsWarning = false,
+}: MeetIntegrationStatusProps) {
   if (status === "PENDIENTE") {
     return (
       <span className="status status-warning">
@@ -15,6 +20,7 @@ export function MeetIntegrationStatus({ status, hasMeet = false }: MeetIntegrati
   }
 
   if (status === "ERROR" && hasMeet) {
+    if (hideSettingsWarning) return null;
     return (
       <span className="status status-warning">
         <AlertTriangle size={14} aria-hidden="true" /> Configuración de Meet pendiente

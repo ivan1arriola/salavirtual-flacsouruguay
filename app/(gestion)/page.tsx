@@ -522,6 +522,7 @@ export default async function HomePage() {
                       <MeetIntegrationStatus
                         status={meet?.estadoIntegracion}
                         hasMeet={Boolean(meet?.joinUrl)}
+                        hideSettingsWarning={cohosts.length > 0}
                       />
                       {meet?.joinUrl ? (
                         <CopyMeetLinkButton url={meet.joinUrl} />

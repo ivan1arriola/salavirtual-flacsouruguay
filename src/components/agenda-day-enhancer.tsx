@@ -59,12 +59,6 @@ function enhanceAgenda(): void {
   const tomorrowLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() + 86_400_000)));
   const yesterdayLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() - 86_400_000)));
 
-  root.querySelectorAll<HTMLElement>(".agenda-cohost-block > small").forEach((note) => {
-    if (note.textContent?.includes("cuenta FLACSO")) {
-      note.textContent = note.textContent.replace("cuenta FLACSO", "cuenta Google");
-    }
-  });
-
   root.querySelectorAll<HTMLElement>(".agenda-meeting-list").forEach((list) => {
     const cards = [...list.querySelectorAll<HTMLElement>(":scope > .agenda-meeting-card")];
     let previousDay = "";

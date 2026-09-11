@@ -229,12 +229,76 @@
   padding: 9px 10px;
 }
 
-.agenda-cohost-block > span {
+.agenda-cohost-block.is-verified {
+  border-color: #bce6cb;
+  background: #f2faf5;
+}
+
+.agenda-cohost-block.is-unverified {
+  border-color: #f7dca8;
+  background: #fffcf4;
+}
+
+.agenda-cohost-block.is-missing {
+  border-color: #dbe4ec;
+  background: #f8fafc;
+}
+
+.agenda-cohost-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.agenda-cohost-block > span,
+.agenda-cohost-header > span {
   color: #2e6f60;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.agenda-cohost-block.is-unverified .agenda-cohost-header > span {
+  color: #8c5b16;
+}
+
+.agenda-cohost-block.is-missing .agenda-cohost-header > span {
+  color: #6b7280;
 }
 
 .agenda-cohost-block > strong {
   color: #1d5548;
+}
+
+.agenda-cohost-block.is-unverified > strong {
+  color: #3b280c;
+}
+
+.agenda-cohost-block .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.agenda-cohost-block .status-badge.status-ok {
+  background: #e6f6ec;
+  color: #1a7f37;
+  border: 1px solid #bce6cb;
+}
+
+.agenda-cohost-block .status-badge.status-warning {
+  background: #fff3db;
+  color: #965b19;
+  border: 1px solid #f7dca8;
 }
 
 .agenda-host-reference {

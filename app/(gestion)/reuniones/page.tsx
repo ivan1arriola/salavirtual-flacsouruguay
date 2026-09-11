@@ -1,10 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarClock,
   CalendarDays,
   CalendarPlus,
   CalendarRange,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   History,
@@ -18,6 +20,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-integration-status";
+import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
@@ -636,6 +639,37 @@ export default async function ReunionesPage({
               const cohostLabels = unique(
                 seriesMeetings.flatMap((meeting) => cohostsForMeeting(meeting))
               );
+              const seriesCohostEmails = unique(
+                seriesMeetings.flatMap((meeting) => [
+                  ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+                  ...meeting.cohostEmails.map(({ email }) => email)
+                ])
+              );
+              const seriesCohostsConfirmados = Boolean(
+                seriesCohostEmails.length > 0 &&
+                seriesMeetings.every((meeting) => {
+                  const meetingCohostEmails = [
+                    ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+                    ...meeting.cohostEmails.map(({ email }) => email)
+                  ];
+                  if (meetingCohostEmails.length === 0) return true;
+                  const meetingEvent = meeting.eventosProveedor.find(
+                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                  );
+                  return Boolean(
+                    meetingEvent &&
+                    !meetingEvent.errorIntegracion &&
+                    !meetingEvent.operacionPendiente &&
+                    cohostsConfirmados(
+                      meetingEvent.payloadUltimo,
+                      meetingEvent.codigoReunion,
+                      meetingEvent.cuentaProveedor?.emailOrganizador,
+                      meetingCohostEmails
+                    )
+                  );
+                })
+              );
+              const seriesGuidance = cohostAccountGuidance(seriesCohostEmails);
               const sameSchedule = seriesMeetings.every(
                 ({ inicioProgramadoAt, finProgramadoAt }) =>
                   formatTime(inicioProgramadoAt) === formatTime(first.inicioProgramadoAt) &&
@@ -688,14 +722,42 @@ export default async function ReunionesPage({
                     </div>
 
                     <div className="agenda-access-panel">
-                      <div className="agenda-access-block agenda-cohost-block">
-                        <span>Cohost{cohostLabels.length === 1 ? "" : "s"}</span>
+                      <div
+                        className={`agenda-access-block agenda-cohost-block ${
+                          cohostLabels.length === 0
+                            ? "is-missing"
+                            : seriesCohostsConfirmados
+                              ? "is-verified"
+                              : "is-unverified"
+                        }`}
+                      >
+                        <div className="agenda-cohost-header">
+                          <span>
+                            Cohost{cohostLabels.length === 1 ? "" : "s"}
+                            {cohostLabels.length ? ` · ${seriesGuidance}` : ""}
+                          </span>
+                          {cohostLabels.length ? (
+                            seriesCohostsConfirmados ? (
+                              <span
+                                className="status-badge status-ok"
+                                title="Verificado en Google Meet"
+                              >
+                                <CheckCircle2 size={12} aria-hidden="true" /> Verificado en Meet
+                              </span>
+                            ) : (
+                              <span
+                                className="status-badge status-warning"
+                                title="Google Meet todavía no confirmó los permisos de cohost"
+                              >
+                                <AlertTriangle size={12} aria-hidden="true" /> Permisos pendientes en Meet
+                              </span>
+                            )
+                          ) : null}
+                        </div>
                         <strong>{cohostPrimaryText(cohostLabels)}</strong>
                         {cohostLabels.length > 2 ? (
                           <small>+{cohostLabels.length - 2} más en la serie</small>
-                        ) : (
-                          <small>Ingresan con su propia cuenta FLACSO.</small>
-                        )}
+                        ) : null}
                       </div>
                       <div className="agenda-access-block agenda-host-reference">
                         <span>Cuenta organizadora</span>
@@ -745,7 +807,13 @@ export default async function ReunionesPage({
                                 ? assistantNames[0]
                                 : `${assistantNames.length} asistentes asignados`}
                         </strong>
-                        {assistantNames.length ? <em>Con permisos de cohost</em> : null}
+                        {assistantNames.length ? (
+                          <em>
+                            {seriesCohostsConfirmados
+                              ? "Cohost técnico verificado"
+                              : "Permisos Meet pendientes"}
+                          </em>
+                        ) : null}
                       </span>
                     </div>
                   </div>
@@ -853,18 +921,42 @@ export default async function ReunionesPage({
                     </div>
 
                     <div className="agenda-access-panel">
-                      <div className="agenda-access-block agenda-cohost-block">
-                        <span>Cohost{cohostLabels.length === 1 ? "" : "s"}</span>
+                      <div
+                        className={`agenda-access-block agenda-cohost-block ${
+                          cohostLabels.length === 0
+                            ? "is-missing"
+                            : cohostsConfirmadosEnMeet
+                              ? "is-verified"
+                              : "is-unverified"
+                        }`}
+                      >
+                        <div className="agenda-cohost-header">
+                          <span>
+                            Cohost{cohostLabels.length === 1 ? "" : "s"}
+                            {cohostLabels.length ? ` · ${guidance}` : ""}
+                          </span>
+                          {cohostLabels.length ? (
+                            cohostsConfirmadosEnMeet ? (
+                              <span
+                                className="status-badge status-ok"
+                                title="Verificado en Google Meet"
+                              >
+                                <CheckCircle2 size={12} aria-hidden="true" /> Verificado en Meet
+                              </span>
+                            ) : (
+                              <span
+                                className="status-badge status-warning"
+                                title="Google Meet todavía no confirmó los permisos de cohost"
+                              >
+                                <AlertTriangle size={12} aria-hidden="true" /> Permisos pendientes en Meet
+                              </span>
+                            )
+                          ) : null}
+                        </div>
                         <strong>{cohostPrimaryText(cohostLabels)}</strong>
-                        {cohostLabels.length > 0 ? (
-                          cohostsConfirmadosEnMeet ? (
-                            <small>Verificados en Meet · {guidance}</small>
-                          ) : (
-                            <small className="text-warning">Permisos pendientes en Meet</small>
-                          )
-                        ) : (
-                          <small>Sin cohost configurado</small>
-                        )}
+                        {cohostLabels.length > 2 ? (
+                          <small>+{cohostLabels.length - 2} más</small>
+                        ) : null}
                       </div>
                       <div className="agenda-access-block agenda-host-reference">
                         <span>Cuenta organizadora</span>
@@ -874,7 +966,11 @@ export default async function ReunionesPage({
                             "Pendiente"}
                         </strong>
                         <small>Solo referencia · no iniciar sesión.</small>
-                        <MeetIntegrationStatus status={event?.estadoIntegracion} />
+                        <MeetIntegrationStatus
+                          status={event?.estadoIntegracion}
+                          hasMeet={Boolean(event?.joinUrl)}
+                          hideSettingsWarning={cohostLabels.length > 0}
+                        />
                       </div>
                       <div className="agenda-access-block">
                         <span>Código Meet</span>
@@ -923,6 +1019,17 @@ export default async function ReunionesPage({
                     <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>
                       Ver detalle <ArrowRight size={15} />
                     </Link>
+                    {actor.rol === "ADMINISTRACION" &&
+                    !cohostsConfirmadosEnMeet &&
+                    cohostLabels.length > 0 &&
+                    event?.id &&
+                    event.joinUrl ? (
+                      <AdminRetryMeetAction
+                        eventoProveedorId={event.id}
+                        operacion="CONFIGURAR_MEET"
+                        label="Verificar cohosts"
+                      />
+                    ) : null}
                     {event?.joinUrl ? (
                       <MeetLinkActions
                         openClassName="secondary-action agenda-meet-action"
