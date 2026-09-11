@@ -63,28 +63,13 @@ export async function actualizarSeccionGoogleWorkspace(
         activa: true,
       }
     });
-    if (
-      parsed.seccion === "CREDENCIAL" &&
-      !parsed.privateKey &&
-      !actual?.privateKeyCifrada
-    ) {
-      throw new Error("La clave privada PEM es obligatoria en la primera configuración.");
-    }
-    if (
-      parsed.seccion === "CREDENCIAL" &&
-      actual?.serviceAccountEmail &&
-      actual.serviceAccountEmail.toLowerCase() !== parsed.serviceAccountEmail.toLowerCase() &&
-      !parsed.privateKey
-    ) {
-      throw new Error("Al cambiar la cuenta de servicio también tenés que cargar la nueva clave privada PEM.");
-    }
 
     if (
       parsed.seccion === "CREDENCIAL" &&
       targetId === "principal" &&
       actual?.serviceAccountEmail &&
       actual.privateKeyCifrada &&
-      actual.serviceAccountEmail.toLowerCase() !== parsed.serviceAccountEmail.toLowerCase()
+      actual.serviceAccountEmail.toLowerCase() !== parsed.serviceAccountJson.client_email.toLowerCase()
     ) {
       const legacyId = `legacy:${actual.serviceAccountEmail.toLowerCase()}`;
       await tx.configuracionGoogleWorkspace.upsert({
@@ -164,8 +149,14 @@ export async function actualizarSeccionGoogleWorkspace(
           version: configuracion.version,
           seccion: parsed.seccion,
           credentialId: targetId,
-          privateKeyActualizada:
-            parsed.seccion === "CREDENCIAL" && Boolean(parsed.privateKey)
+          ...(parsed.seccion === "CREDENCIAL"
+            ? {
+                serviceAccountEmail: parsed.serviceAccountJson.client_email,
+                projectId: parsed.serviceAccountJson.project_id ?? null,
+                clientId: parsed.serviceAccountJson.client_id ?? null,
+                privateKeyId: parsed.serviceAccountJson.private_key_id ?? null,
+              }
+            : {}),
         }
       }
     });
@@ -204,11 +195,7 @@ export async function cargarCredencialesLegacyGoogleWorkspace(
     id: row.id,
     serviceAccountEmail: row.serviceAccountEmail,
     privateKey: descifrar(row.privateKeyCifrada),
-    // Los Meets históricos fueron creados por cuentas salaXX. El subject persistido
-    // pertenece a la configuración general de Workspace y no debe reemplazar al
-    // organizador real cuando se usa una credencial Legacy para operar un Meet.
-    serviceAccountSubject: null,
-    serviceAccountSubject: row.serviceAccountSubject,
+    serviceAccountSubject: row.serviceAccountSubject ?? null,
   }] : []);
 }
 
@@ -218,8 +205,8 @@ function datosDeSeccion(
 ) {
   if (input.seccion === "CREDENCIAL") {
     return {
-      serviceAccountEmail: input.serviceAccountEmail,
-      ...(input.privateKey ? { privateKeyCifrada: cifrar(input.privateKey) } : {})
+      serviceAccountEmail: input.serviceAccountJson.client_email,
+      privateKeyCifrada: cifrar(input.serviceAccountJson.private_key),
     };
   }
   if (input.seccion === "DELEGACION") {

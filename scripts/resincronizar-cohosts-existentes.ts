@@ -228,9 +228,6 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
   for (const meeting of uniqueMeetings.values()) {
     console.error(`DIAGNOSTICO MEET | ${meeting.titulo} | meet=${meeting.codigoReunion} | host=${meeting.host}`);
     for (const credential of credentials) {
-      const subject = credential.label === "LEGACY"
-        ? credential.serviceAccountSubject?.trim().toLowerCase() || meeting.host
-        : meeting.host;
       const subject = meeting.host;
       const outcome = await probarAccesoMembers(credential, subject, meeting.codigoReunion);
       console.error(

@@ -306,8 +306,6 @@ export function crearGoogleCalendarProvider(
   };
 }
 
-async function credencialesLegacy(subjectFallback: string): Promise<readonly GoogleCalendarCredentials[]> {
-  const rows = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
 async function credencialesLegacy(
   subject: string
 ): Promise<readonly GoogleCalendarCredentials[]> {
@@ -319,7 +317,6 @@ async function credencialesLegacy(
   return rows.map((credential) => ({
     serviceAccountEmail: credential.serviceAccountEmail,
     privateKey: credential.privateKey,
-    subject: credential.serviceAccountSubject?.trim().toLowerCase() || subjectFallback,
     subject,
   }));
 }
