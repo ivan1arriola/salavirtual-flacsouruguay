@@ -12,6 +12,11 @@ const privateKeySchema = z
     "El private key no tiene formato PEM valido."
   );
 
+const credentialIdSchema = z.string().trim().min(1).max(160).refine(
+  (value) => value === "principal" || value.startsWith("legacy:"),
+  "Identificador de credencial inválido."
+);
+
 export const configuracionGoogleWorkspaceSchema = z.object({
   serviceAccountEmail: z.email(),
   privateKey: privateKeySchema,
@@ -23,6 +28,7 @@ export const configuracionGoogleWorkspaceSchema = z.object({
 export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("seccion", [
   z.object({
     seccion: z.literal("CREDENCIAL"),
+    credentialId: credentialIdSchema.default("principal"),
     serviceAccountEmail: z.email(),
     privateKey: z.preprocess(
       (value) =>
@@ -45,7 +51,8 @@ export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("s
 ]);
 
 export const pruebaConfiguracionGoogleWorkspaceSchema = z.object({
-  objetivo: z.enum(["CREDENCIAL", "DELEGACION", "SCOPES", "DRIVE"])
+  objetivo: z.enum(["CREDENCIAL", "DELEGACION", "SCOPES", "DRIVE"]),
+  credentialId: credentialIdSchema.optional()
 });
 
 export type ConfiguracionGoogleWorkspaceInput = Readonly<
