@@ -6,7 +6,7 @@ import {
 } from "../src/modules/meet/integration-health.domain";
 
 describe("salud de integración de Google Meet", () => {
-  it("no trata como problema del encuentro un error de scopes si el Meet ya existe", () => {
+  it("mantiene el enlace operativo pero avisa de permisos pendientes", () => {
     const event = {
       estadoIntegracion: "ERROR" as const,
       joinUrl: "https://meet.google.com/abc-defg-hij",
@@ -15,7 +15,7 @@ describe("salud de integración de Google Meet", () => {
     };
 
     expect(esErrorNoBloqueanteDeScopesMeet(event)).toBe(true);
-    expect(requiereAtencionIntegracionMeet(event)).toBe(false);
+    expect(requiereAtencionIntegracionMeet(event)).toBe(true);
     expect(estadoIntegracionEfectivo(event)).toBe("SINCRONIZADA");
   });
 

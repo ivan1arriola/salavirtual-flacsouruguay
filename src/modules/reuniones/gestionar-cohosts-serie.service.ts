@@ -1,3 +1,4 @@
+import { invalidarVerificacionCohosts } from "../meet/cohost-verification.domain";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -93,6 +94,7 @@ export async function actualizarCohostsSerie(
             select: {
               id: true,
               externalEventId: true,
+              payloadUltimo: true,
               codigoReunion: true,
               cuentaProveedor: { select: { emailOrganizador: true } },
             },
@@ -116,14 +118,18 @@ export async function actualizarCohostsSerie(
       asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
     ),
   ])];
-  const [selectedAccounts, automaticAccounts] = await Promise.all([
+  const [selectedAccounts, automaticAccounts, automaticUsers] = await Promise.all([
     dependencies.db.cuentaGoogleFlacso.findMany({
       where: { id: { in: selectedIds }, user: { activo: true } },
       select: { id: true, email: true },
     }),
     dependencies.db.cuentaGoogleFlacso.findMany({
       where: { userId: { in: automaticUserIds }, user: { activo: true } },
-      select: { id: true, email: true },
+      select: { id: true, email: true, userId: true },
+    }),
+    dependencies.db.usuario.findMany({
+      where: { id: { in: automaticUserIds }, activo: true },
+      select: { id: true, emailPrincipal: true },
     }),
   ]);
   if (selectedAccounts.length !== selectedIds.length) {
@@ -134,7 +140,11 @@ export async function actualizarCohostsSerie(
     [...selectedAccounts, ...automaticAccounts].map((account) => [account.id, account]),
   ).values()];
   const linkedEmails = new Set(linkedAccounts.map(({ email }) => email.trim().toLowerCase()));
-  const manualEmails = normalizeCohostEmails(input.cohostEmailsManual)
+  const linkedUserIds = new Set(automaticAccounts.map(({ userId }) => userId));
+  const manualEmails = normalizeCohostEmails([
+    ...input.cohostEmailsManual,
+    ...automaticUsers.flatMap((user) => !linkedUserIds.has(user.id) && user.emailPrincipal ? [user.emailPrincipal] : []),
+  ])
     .filter((email) => !linkedEmails.has(email));
   const desiredEmails = normalizeCohostEmails([
     ...linkedAccounts.map(({ email }) => email),
@@ -170,6 +180,11 @@ export async function actualizarCohostsSerie(
         ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
         ...meeting.cohostEmails.map(({ email }) => email),
       ]);
+      // A partial failure must not leave old permissions displayed as verified.
+      await dependencies.db.eventoProveedor.update({
+        where: { id: event.id },
+        data: { payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))) },
+      });
       const payload = await dependencies.sincronizarGoogle(
         {
           serviceAccountEmail: config.serviceAccountEmail,

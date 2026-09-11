@@ -20,7 +20,7 @@ export function esErrorNoBloqueanteDeScopesMeet(event: IntegracionMeetHealth): b
 }
 
 export function requiereAtencionIntegracionMeet(event: IntegracionMeetHealth): boolean {
-  return event.estadoIntegracion === "ERROR" && !esErrorNoBloqueanteDeScopesMeet(event);
+  return event.estadoIntegracion === "ERROR" || Boolean(event.errorIntegracion);
 }
 
 export function estadoIntegracionEfectivo(event: IntegracionMeetHealth): EstadoIntegracionMeet {

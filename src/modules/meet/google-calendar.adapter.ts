@@ -1,4 +1,5 @@
 import { JWT } from "google-auth-library";
+import { registrarVerificacionCohosts } from "./cohost-verification.domain";
 import {
   crearCalendarEvent,
   crearConferenceDataMeet,
@@ -129,12 +130,11 @@ export async function sincronizarCohostsGoogleExistente(
         data: { attendees }
       })).data;
 
-  if (input.codigoReunion) {
-    const spaceName = await configurarEspacioMeet(meetAuth, input.codigoReunion, { cohostEmails: desired });
-    await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
-  }
-
-  return JSON.parse(JSON.stringify(updated)) as Readonly<Record<string, unknown>>;
+  const provisioned = extraerMeetProvisionado(updated);
+  if (!provisioned) throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
+  const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, { cohostEmails: desired });
+  await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
+  return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired, new Date().toISOString());
 }
 
 export function crearGoogleCalendarProvider(
@@ -280,7 +280,6 @@ async function crearEspacioMeetAplicacion(
   }
 
   await configurarCohostsMeet(auth, name, cohosts);
-  await verificarCohostsMeet(auth, name, cohosts);
   return { name, meetingCode, meetingUri };
 }
 
@@ -342,6 +341,14 @@ async function configurarEspacioMeet(
       data: { name: current.data.name, config }
     });
   }
+  if (configurarModeracion) {
+    const verified = await auth.request<{ config?: { moderation?: string } }>({
+      url: `${MEET_API}/${current.data.name}`, method: "GET", timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    });
+    if (verified.data.config?.moderation !== "ON") {
+      throw new Error("Google Meet no confirmó la administración de anfitriones.");
+    }
+  }
   return current.data.name;
 }
 
@@ -350,19 +357,27 @@ async function configurarCohostsMeet(
   spaceName: string,
   emails: readonly string[]
 ): Promise<void> {
-  await Promise.all(normalizarEmails(emails).map(async (email) => {
+  const desired = emailsCohost(auth, emails);
+  for (const email of desired) {
     try {
-      await auth.request({
-        url: `${MEET_BETA_API}/${spaceName}/members`,
-        method: "POST",
-        timeout: GOOGLE_HTTP_TIMEOUT_MS,
-        data: { email, role: "COHOST" }
-      });
+      await crearMiembroCohost(auth, spaceName, email);
     } catch (error) {
-      if (isAlreadyCohostError(error)) return;
-      throw error;
+      if (!isAlreadyCohostError(error)) throw error;
+      // ALREADY_EXISTS only confirms membership, not its role. The API has no update method.
+      const members = await listarMiembrosMeet(auth, spaceName);
+      const member = members.find((item) => item.email?.trim().toLowerCase() === email);
+      if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
+      if (member.role !== "COHOST") {
+        await auth.request({
+          url: `${MEET_BETA_API}/${member.name}`,
+          method: "DELETE",
+          timeout: GOOGLE_HTTP_TIMEOUT_MS,
+        }).catch((caught) => { if (!isNotFoundError(caught)) throw caught; });
+        await crearMiembroCohost(auth, spaceName, email);
+      }
     }
-  }));
+  }
+  await verificarCohostsMeet(auth, spaceName, desired);
 }
 
 async function verificarCohostsMeet(
@@ -370,7 +385,7 @@ async function verificarCohostsMeet(
   spaceName: string,
   desiredEmails: readonly string[]
 ): Promise<void> {
-  const desired = normalizarEmails(desiredEmails);
+  const desired = emailsCohost(auth, desiredEmails);
   if (desired.length === 0) return;
   const members = await listarMiembrosMeet(auth, spaceName);
   const actual = new Set(
@@ -390,8 +405,8 @@ async function reconciliarCohostsMeet(
   previousEmails: readonly string[],
   desiredEmails: readonly string[]
 ): Promise<void> {
-  const previous = new Set(normalizarEmails(previousEmails));
-  const desired = new Set(normalizarEmails(desiredEmails));
+  const previous = new Set(emailsCohost(auth, previousEmails));
+  const desired = new Set(emailsCohost(auth, desiredEmails));
   const members = await listarMiembrosMeet(auth, spaceName);
   const cohosts = members.filter(({ role }) => role === "COHOST");
 
@@ -451,6 +466,17 @@ function mismosAttendees(left: readonly CalendarAttendee[], right: readonly Cale
     .sort()
     .join(",");
   return emails(left) === emails(right);
+}
+
+function emailsCohost(auth: JWT, emails: readonly string[]): readonly string[] {
+  return normalizarEmails(emails).filter((email) => email !== auth.subject?.trim().toLowerCase());
+}
+
+async function crearMiembroCohost(auth: JWT, spaceName: string, email: string): Promise<void> {
+  await auth.request({
+    url: `${MEET_BETA_API}/${spaceName}/members`, method: "POST",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS, data: { email, role: "COHOST" },
+  });
 }
 
 function normalizarEmails(values: readonly string[]): readonly string[] {

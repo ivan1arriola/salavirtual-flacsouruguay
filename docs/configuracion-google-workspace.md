@@ -122,3 +122,38 @@ Al crear una reunion, el gestor:
 
 Google puede responder con la conferencia en estado pendiente. El adaptador
 vuelve a consultar el evento durante unos segundos antes de marcar un error.
+
+## Verificación y reparación de cohosts
+
+Las cuentas `sala01@flacso.edu.uy` ... `sala10@flacso.edu.uy` son las
+organizadoras. El docente de la solicitud y los asistentes asignados deben
+recibir el rol `COHOST` en el espacio Meet, incluidas sus cuentas Gmail o de
+otras instituciones cuando sean cuentas Google válidas.
+
+Una invitación Calendar, una fila local o una respuesta `ALREADY_EXISTS` no
+confirman ese rol. El adaptador lee los miembros del espacio (todas las páginas)
+y comprueba `COHOST`, además de verificar que la administración de anfitriones
+esté activada. Si un miembro existe con otro rol, se recrea con `COHOST` porque
+la API de miembros no ofrece una operación de actualización.
+
+El detalle muestra «Cohosts verificados en Google» solamente cuando existe una
+verificación guardada para el mismo espacio, organizador y correos solicitados,
+sin errores ni operaciones pendientes. Es la última verificación realizada por
+la aplicación, no una consulta en tiempo real: cambios manuales posteriores en
+Google se detectarán en la próxima sincronización. Los errores de permisos se
+muestran aunque el enlace de la reunión ya funcione.
+
+Después de desplegar, Administración puede usar **Configuración → Google
+Workspace → Reuniones existentes → Actualizar**. La reparación completa los
+cohosts del docente y asistentes, incluye las cuentas externas y verifica el
+Meet que Calendar tiene vinculado. Usa las operaciones persistidas del sistema,
+no reemplaza enlaces y no pisa cancelaciones o reprogramaciones en curso. Las
+reuniones omitidas por otra operación pendiente deben revisarse después de que
+termine esa operación. Los errores quedan disponibles para reintentar.
+
+Si Google rechaza `spaces.members`, revisar la habilitación del proyecto en
+Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
+organizadora. No se considera exitosa una asignación rechazada por Google.
+
+Referencia oficial:
+https://developers.google.com/workspace/meet/api/guides/meeting-spaces-configuration
