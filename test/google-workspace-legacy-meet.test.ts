@@ -169,6 +169,8 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
   });
 
   it("reuniones nuevas NUNCA usan Legacy en fallback aunque falle con Permission denied on resource Member", async () => {
+    state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
+
     const provider = crearGoogleCalendarProvider(principalCreds);
     // Simular creación de evento (nuevo provision)
     await provider.crearEventoCalendar({
