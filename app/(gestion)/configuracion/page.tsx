@@ -1,16 +1,18 @@
-import { BookOpen, Clock3, History, KeyRound, MailCheck, Settings, Video } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantReportConfigForm } from "@/src/components/assistant-report-config-form";
 import { EmailTestForm } from "@/src/components/email-test-form";
+import { HistoricalMeetingsTable } from "@/src/components/historical-meetings-table";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { PendingMeetOperationsManager } from "@/src/components/pending-meet-operations-manager";
 import { ProgramMembersConfig } from "@/src/components/program-members-config";
+import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
+import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
+import { resolveSettingsSection } from "@/src/modules/configuracion/settings-navigation.domain";
 import {
   actualizarProgramaAdmin,
   actualizarReportesAsistenciaAdmin,
@@ -21,23 +23,14 @@ import {
   quitarIntegrantePrograma
 } from "./actions";
 
-type SettingsSection = "workspace" | "salas" | "programas" | "asistencia" | "correo" | "historico";
-
 export default async function ConfiguracionPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ seccion?: string; programa?: string; estado?: string; error?: string }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const query = await searchParams;
-  const requestedSection = query.seccion;
-  const section: SettingsSection = requestedSection === "salas"
-    || requestedSection === "programas"
-    || requestedSection === "asistencia"
-    || requestedSection === "correo"
-    || requestedSection === "historico"
-    ? requestedSection
-    : "workspace";
-  const [configuration, assistantConfiguration, hosts, programCount, pendingMeetOperations] = await Promise.all([
+  const section = resolveSettingsSection(query.seccion);
+  const [configuration, assistantConfiguration, hosts, programCount, activeProgramCount, pendingMeetOperations] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
     db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
@@ -56,6 +49,7 @@ export default async function ConfiguracionPage({
       }
     }),
     db.programa.count(),
+    db.programa.count({ where: { activo: true } }),
     db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
@@ -204,56 +198,86 @@ export default async function ConfiguracionPage({
   }));
 
   return (
-    <>
-      <header className="page-header settings-page-header">
-        <div><p className="page-eyebrow">Administración</p><h1>Configuración</h1><p>Cada área se administra por separado.</p></div>
-        <Settings size={28} color="var(--brand)" />
-      </header>
+    <SettingsCenterShell
+      activeSection={section}
+      navigationDetails={{
+        salas: `${availableHosts} de ${hosts.length} disponibles`,
+        programas: `${activeProgramCount} de ${programCount} activos`,
+        workspace: pendingMeetOperations.length > 0
+          ? `${pendingMeetOperations.length} pendientes`
+          : "Integración y permisos"
+      }}
+    >
+      {section === "resumen" ? (
+        <>
+          <SettingsSectionHeader
+            eyebrow="Estado general"
+            title="Resumen"
+            description="Consultá lo que necesita atención o entrá al área que querés administrar."
+          />
+          <SettingsOverview data={{
+            workspaceReady: Boolean(
+              configuration?.serviceAccountEmail
+              && configuration.privateKeyCifrada
+              && configuration.serviceAccountSubject
+              && configuration.driveDestinationId
+            ),
+            integrationActive: configuration?.activa ?? false,
+            availableHosts,
+            totalHosts: hosts.length,
+            activePrograms: activeProgramCount,
+            totalPrograms: programCount,
+            pendingOperations: pendingMeetOperations.length
+          }} />
+        </>
+      ) : null}
 
-      <nav className="settings-section-nav" aria-label="Secciones de configuración">
-        <SettingsSectionLink
-          active={section === "workspace"}
-          description="Credenciales, delegación, Drive y estado"
-          href="/configuracion?seccion=workspace"
-          icon={KeyRound}
-          label="Google Workspace"
+      {section === "workspace" ? (
+        <SettingsSectionHeader
+          title="Google Workspace"
+          description="Revisá la salud de la integración, sus credenciales, permisos y archivos."
+          status={<span className={`settings-section-status ${pendingMeetOperations.length > 0 ? "is-warning" : "is-ok"}`}>{pendingMeetOperations.length > 0 ? `${pendingMeetOperations.length} pendientes` : "Sin pendientes"}</span>}
         />
-        <SettingsSectionLink
-          active={section === "salas"}
-          description={`${hosts.length} cuentas · ${availableHosts} disponibles`}
-          href="/configuracion?seccion=salas"
-          icon={Video}
-          label="Salas Meet"
+      ) : null}
+
+      {section === "salas" ? (
+        <SettingsSectionHeader
+          title="Salas"
+          description="Administrá las cuentas institucionales que alojan las reuniones."
+          status={<span className="settings-section-status is-neutral">{availableHosts} de {hosts.length} disponibles</span>}
         />
-        <SettingsSectionLink
-          active={section === "programas"}
-          description={`${programCount} programas`}
-          href="/configuracion?seccion=programas"
-          icon={BookOpen}
-          label="Programas"
+      ) : null}
+
+      {section === "programas" ? (
+        <SettingsSectionHeader
+          title="Programas"
+          description="Organizá los programas y las personas docentes que pueden crear reuniones."
+          status={<span className="settings-section-status is-neutral">{activeProgramCount} activos</span>}
         />
-        <SettingsSectionLink
-          active={section === "asistencia"}
-          description="Reportes mensuales y destinatarios"
-          href="/configuracion?seccion=asistencia"
-          icon={Clock3}
-          label="Asistencia técnica"
+      ) : null}
+
+      {section === "asistencia" ? (
+        <SettingsSectionHeader
+          title="Asistencia técnica"
+          description="Definí quién recibe los reportes mensuales de horas registradas."
         />
-        <SettingsSectionLink
-          active={section === "correo"}
-          description="Prueba de invitaciones y notificaciones"
-          href="/configuracion?seccion=correo"
-          icon={MailCheck}
-          label="Correo"
+      ) : null}
+
+      {section === "correo" ? (
+        <SettingsSectionHeader
+          title="Correo"
+          description="Comprobá el canal utilizado para invitaciones y notificaciones."
         />
-        <SettingsSectionLink
-          active={section === "historico"}
-          description="Registros migrados de la plataforma anterior"
-          href="/configuracion?seccion=historico"
-          icon={History}
-          label="Histórico Zoom"
+      ) : null}
+
+      {section === "historico" ? (
+        <SettingsSectionHeader
+          eyebrow="Solo consulta"
+          title="Histórico Zoom"
+          description="Consultá reuniones migradas de la plataforma anterior."
+          status={<span className="settings-section-status is-neutral">Últimos 100 registros</span>}
         />
-      </nav>
+      ) : null}
 
       {query.estado === "programa-creado" ? <p className="form-notice" role="status">El programa fue creado.</p> : null}
       {query.estado === "programa-actualizado" ? <p className="form-notice" role="status">Los datos del programa fueron actualizados.</p> : null}
@@ -266,8 +290,8 @@ export default async function ConfiguracionPage({
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
       {section === "workspace" ? (
-        <div className="settings-grid settings-workspace-grid">
-          <section className="content-section settings-wide">
+        <div className="settings-workspace-flow">
+          <section className="content-section settings-workspace-health">
             <PendingMeetButton
               operations={pendingMeetOperations.flatMap(({ operacionPendiente }) =>
                 operacionPendiente ? [operacionPendiente] : []
@@ -345,53 +369,16 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "historico" ? (
-        <section className="content-section">
-          <div className="section-heading">
-            <div><h2>Histórico Zoom</h2><p>Registros migrados de la plataforma anterior. Solo consulta.</p></div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Reunión</th><th>Programa</th><th>Cuenta</th><th>Código Zoom</th></tr></thead>
-              <tbody>
-                {historicalMeetings.map((event) => {
-                  const request = event.instancia.solicitud;
-                  const association = request.docentePrograma;
-                  return (
-                    <tr key={event.id}>
-                      <td className="date-cell">{formatDateTime(event.instancia.inicioProgramadoAt)}</td>
-                      <td><strong>{request.titulo}</strong><small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small></td>
-                      <td>{association.programa.nombre}</td>
-                      <td>{event.cuentaProveedor?.emailOrganizador ?? event.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
-                      <td>{event.codigoReunion ?? "No disponible"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <HistoricalMeetingsTable meetings={historicalMeetings.map((event) => ({
+          id: event.id,
+          date: formatDateTime(event.instancia.inicioProgramadoAt),
+          title: event.instancia.solicitud.titulo,
+          teacher: `${event.instancia.solicitud.docentePrograma.docente.usuario.nombres} ${event.instancia.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim(),
+          program: event.instancia.solicitud.docentePrograma.programa.nombre,
+          account: event.cuentaProveedor?.emailOrganizador ?? event.cuentaProveedor?.nombre ?? "Sin cuenta",
+          code: event.codigoReunion ?? "No disponible"
+        }))} />
       ) : null}
-    </>
-  );
-}
-
-function SettingsSectionLink({
-  active,
-  description,
-  href,
-  icon: Icon,
-  label
-}: Readonly<{
-  active: boolean;
-  description: string;
-  href: string;
-  icon: typeof Settings;
-  label: string;
-}>) {
-  return (
-    <Link aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} href={href}>
-      <Icon size={20} aria-hidden="true" />
-      <span><strong>{label}</strong><small>{description}</small></span>
-    </Link>
+    </SettingsCenterShell>
   );
 }

@@ -1,4 +1,5 @@
-import { CheckCircle2, Circle, KeyRound } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, History, KeyRound, SlidersHorizontal } from "lucide-react";
+import { workspaceReadiness } from "@/src/modules/configuracion/settings-navigation.domain";
 import { WorkspaceCredentialForm } from "./workspace-credential-form";
 import { WorkspaceDelegationForm } from "./workspace-delegation-form";
 import { WorkspaceDriveForm } from "./workspace-drive-form";
@@ -22,13 +23,23 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
     ["Destino Drive", Boolean(initial?.driveDestinationId)],
     ["Integración", Boolean(initial?.activa)],
   ] as const;
+  const readiness = workspaceReadiness({
+    serviceAccountEmail: initial?.serviceAccountEmail ?? null,
+    privateKeyConfigurada: initial?.privateKeyConfigurada ?? false,
+    serviceAccountSubject: initial?.serviceAccountSubject ?? null,
+    driveDestinationId: initial?.driveDestinationId ?? null,
+    activa: initial?.activa ?? false
+  });
 
   return (
-    <>
+    <div className="settings-workspace-groups">
       <section className="workspace-overview settings-wide" aria-label="Resumen de Google Workspace">
         <div className="workspace-overview-heading">
           <KeyRound size={21} aria-hidden="true" />
-          <div><strong>Google Workspace</strong><span>Configuración e integración institucional</span></div>
+          <div>
+            <strong>{readiness.ready ? "Configuración completa" : `${readiness.readyCount} de ${readiness.totalCount} requisitos listos`}</strong>
+            <span>Cuenta principal, delegación, Drive e integración</span>
+          </div>
         </div>
         <div className="workspace-overview-statuses">
           {checks.map(([label, ready]) => (
@@ -46,12 +57,32 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
         title="Cuenta de servicio principal"
         description="Es la única credencial autorizada para crear reuniones nuevas."
       />
-      <WorkspaceLegacyCredentials />
-      <WorkspaceDelegationForm subject={initial?.serviceAccountSubject ?? ""} />
+
+      <div className="settings-workspace-pair">
+        <WorkspaceDelegationForm subject={initial?.serviceAccountSubject ?? ""} />
+        <WorkspaceDriveForm folderId={initial?.driveDestinationId ?? ""} />
+      </div>
+
       <WorkspaceScopesValidator />
-      <WorkspaceDriveForm folderId={initial?.driveDestinationId ?? ""} />
       <WorkspaceCohostResync />
-      <WorkspaceStatusForm active={initial?.activa ?? true} />
-    </>
+
+      <details className="settings-disclosure settings-disclosure--historical">
+        <summary>
+          <span className="settings-disclosure__icon"><History size={19} /></span>
+          <span><strong>Compatibilidad histórica</strong><small>Credenciales que solo administran reuniones anteriores.</small></span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <div className="settings-disclosure__body"><WorkspaceLegacyCredentials /></div>
+      </details>
+
+      <details className="settings-disclosure settings-disclosure--advanced" open={!initial?.activa}>
+        <summary>
+          <span className="settings-disclosure__icon"><SlidersHorizontal size={19} /></span>
+          <span><strong>Configuración avanzada</strong><small>Pausá o reanudá el aprovisionamiento con Google.</small></span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <div className="settings-disclosure__body"><WorkspaceStatusForm active={initial?.activa ?? true} /></div>
+      </details>
+    </div>
   );
 }

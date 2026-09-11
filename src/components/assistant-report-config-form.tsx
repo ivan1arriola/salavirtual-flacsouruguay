@@ -13,22 +13,22 @@ export function AssistantReportConfigForm({
     <section className="content-section">
       <div className="section-heading">
         <div>
-          <h2>Reportes mensuales de asistencia técnica</h2>
-          <p>El 1.º de cada mes se informa a cada asistente las horas registradas durante el mes anterior.</p>
+          <h2>Destinatarios adicionales</h2>
+          <p>El sistema envía el reporte el 1.º de cada mes con las horas registradas durante el mes anterior.</p>
         </div>
         <Clock3 size={22} color="var(--brand)" aria-hidden="true" />
       </div>
 
       <form action={action} className="assistant-report-form">
         <label className="field">
-          <span>Correos adicionales en copia</span>
+          <span>Agregar correos en copia</span>
           <textarea
             defaultValue={emails.join("\n")}
             name="correosCopiaReporteMensual"
             placeholder="administracion@flacso.edu.uy"
             rows={5}
           />
-          <small>Podés ingresar un correo por línea o separarlos con comas. Los administradores del sistema se agregan automáticamente.</small>
+          <small>Ingresá un correo por línea o separalos con comas. Los administradores aparecen debajo y no hace falta repetirlos.</small>
         </label>
         <button className="primary-action" type="submit">Guardar destinatarios</button>
       </form>

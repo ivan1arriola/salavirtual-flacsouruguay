@@ -9,6 +9,7 @@ import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-insti
 import "./gestion.css";
 import "./operations.css";
 import "./settings.css";
+import "./configuration-center.css";
 import "./program-admin.css";
 import "./personal.css";
 import "./assistant-month.css";

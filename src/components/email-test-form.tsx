@@ -36,7 +36,7 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
       <div className="section-heading">
         <div>
           <h2>Probar envío de correo</h2>
-          <p>Usa el mismo canal que las invitaciones y notificaciones de la aplicación.</p>
+          <p>Esta acción envía un correo real mediante el mismo canal que usan las invitaciones y notificaciones.</p>
         </div>
         <MailCheck size={22} color="var(--brand)" aria-hidden="true" />
       </div>

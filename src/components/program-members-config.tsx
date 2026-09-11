@@ -1,5 +1,9 @@
-import { ChevronDown, MailPlus, Pencil, Plus, Save, Trash2, UserMinus, UserPlus } from "lucide-react";
+"use client";
+
+import { ChevronDown, MailPlus, Pencil, Plus, Save, Search, Trash2, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { filterPrograms, type ProgramFilterState } from "./program-members-config.domain";
 
 type Teacher = Readonly<{
   id: string;
@@ -52,6 +56,12 @@ export function ProgramMembersConfig({
   inviteAction: ProgramAction;
   removeAction: ProgramAction;
 }>) {
+  const [query, setQuery] = useState("");
+  const [filterState, setFilterState] = useState<ProgramFilterState>("todos");
+  const [openProgramId, setOpenProgramId] = useState<string | null>(expandedProgramId ?? null);
+  const filteredPrograms = filterPrograms(programs, { query, state: filterState });
+  const activeCount = programs.filter(({ activo }) => activo).length;
+
   return (
     <section className="content-section program-management">
       <div className="section-heading program-management-heading">
@@ -86,8 +96,44 @@ export function ProgramMembersConfig({
         <div className="program-empty-state"><strong>No hay programas creados.</strong><span>Usá “Nuevo programa” para registrar el primero.</span></div>
       ) : null}
 
+      {programs.length > 0 ? (
+        <div className="settings-program-toolbar">
+          <label className="settings-search">
+            <Search size={18} aria-hidden="true" />
+            <span className="sr-only">Buscar programas</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar por nombre, código o unidad"
+            />
+          </label>
+          <div className="settings-filter-group" aria-label="Filtrar programas">
+            {([
+              ["todos", `Todos ${programs.length}`],
+              ["activos", `Activos ${activeCount}`],
+              ["inactivos", `Inactivos ${programs.length - activeCount}`]
+            ] as const).map(([value, label]) => (
+              <button
+                aria-pressed={filterState === value}
+                className={filterState === value ? "is-active" : undefined}
+                key={value}
+                type="button"
+                onClick={() => setFilterState(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {programs.length > 0 && filteredPrograms.length === 0 ? (
+        <div className="settings-empty-search"><Search size={22} /><strong>No encontramos programas</strong><span>Probá otra búsqueda o cambiá el filtro.</span></div>
+      ) : null}
+
       <div className="program-management-list">
-        {programs.map((program) => {
+        {filteredPrograms.map((program) => {
           const memberIds = new Set(program.members.map(({ id }) => id));
           const availableTeachers = teachers.filter((teacher) => !memberIds.has(teacher.id));
           const sortedMembers = [...program.members].sort((left, right) =>
@@ -98,7 +144,15 @@ export function ProgramMembersConfig({
           );
 
           return (
-            <details className="program-management-card" key={program.id} open={expandedProgramId === program.id}>
+            <details
+              className="program-management-card"
+              key={program.id}
+              open={openProgramId === program.id}
+              onToggle={(event) => {
+                if (event.currentTarget.open) setOpenProgramId(program.id);
+                else if (openProgramId === program.id) setOpenProgramId(null);
+              }}
+            >
               <summary>
                 <span className="program-management-name">
                   <strong>{program.nombre}</strong>
@@ -162,10 +216,10 @@ export function ProgramMembersConfig({
                       <tbody>
                         {sortedMembers.map((member) => (
                           <tr key={member.id}>
-                            <td><strong>{member.nombres} {member.apellidos}</strong></td>
-                            <td>{member.emailPrincipal ?? <span className="muted-text">Sin correo principal</span>}</td>
-                            <td><span className={`status status-${member.activo ? "ok" : "error"}`}>{member.activo ? "Activo" : "Inactivo"}</span></td>
-                            <td>
+                            <td data-label="Persona"><strong>{member.nombres} {member.apellidos}</strong></td>
+                            <td data-label="Correo">{member.emailPrincipal ?? <span className="muted-text">Sin correo principal</span>}</td>
+                            <td data-label="Acceso"><span className={`status status-${member.activo ? "ok" : "error"}`}>{member.activo ? "Activo" : "Inactivo"}</span></td>
+                            <td data-label="Acciones">
                               <div className="program-member-actions">
                                 <Link className="secondary-action" href={`/usuarios/${encodeURIComponent(member.id)}`}>Gestionar</Link>
                                 <form action={removeAction}>
