@@ -99,7 +99,12 @@ describe("configuracion funcional de Google Workspace", () => {
       credentialId: "legacy:old-project",
       serviceAccountEmail: "old@project.iam.gserviceaccount.com",
       privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
-    }).credentialId).toBe("legacy:old-project");
+    })).toEqual({
+      seccion: "CREDENCIAL",
+      credentialId: "legacy:old-project",
+      serviceAccountEmail: "old@project.iam.gserviceaccount.com",
+      privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
+    });
 
     expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
       seccion: "CREDENCIAL",
