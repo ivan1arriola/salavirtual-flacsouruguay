@@ -6,6 +6,7 @@ import { AssistantReportConfigForm } from "@/src/components/assistant-report-con
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { PendingMeetButton } from "@/src/components/pending-meet-button";
+import { PendingMeetOperationsManager } from "@/src/components/pending-meet-operations-manager";
 import { ProgramMembersConfig } from "@/src/components/program-members-config";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
@@ -58,9 +59,51 @@ export default async function ConfiguracionPage({
     db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
-        operacionPendiente: { not: null }
+        OR: [
+          { operacionPendiente: { not: null } },
+          { estadoIntegracion: "ERROR" }
+        ]
       },
-      select: { operacionPendiente: true }
+      orderBy: [{ instancia: { inicioProgramadoAt: "asc" } }],
+      select: {
+        id: true,
+        estadoIntegracion: true,
+        operacionPendiente: true,
+        errorIntegracion: true,
+        joinUrl: true,
+        codigoReunion: true,
+        externalEventId: true,
+        updatedAt: true,
+        cuentaProveedor: {
+          select: {
+            id: true,
+            nombre: true,
+            emailOrganizador: true
+          }
+        },
+        instancia: {
+          select: {
+            id: true,
+            ordinal: true,
+            inicioProgramadoAt: true,
+            finProgramadoAt: true,
+            estado: true,
+            solicitudSalaId: true,
+            solicitud: {
+              select: {
+                id: true,
+                titulo: true,
+                docentePrograma: {
+                  select: {
+                    programa: { select: { id: true, nombre: true } },
+                    docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     })
   ]);
   const [programs, teachers, academicUnits] = section === "programas"
@@ -137,6 +180,28 @@ export default async function ConfiguracionPage({
       })
     : [];
   const availableHosts = hosts.filter((host) => host.activa && host.tieneLicencia).length;
+  const pendingOperationItems = pendingMeetOperations.map((ep) => ({
+    id: ep.id,
+    solicitudId: ep.instancia.solicitudSalaId,
+    solicitudTitulo: ep.instancia.solicitud.titulo,
+    programaNombre: ep.instancia.solicitud.docentePrograma?.programa?.nombre ?? null,
+    docenteNombre: ep.instancia.solicitud.docentePrograma?.docente?.usuario
+      ? `${ep.instancia.solicitud.docentePrograma.docente.usuario.nombres} ${ep.instancia.solicitud.docentePrograma.docente.usuario.apellidos}`
+      : null,
+    ordinal: ep.instancia.ordinal,
+    inicioProgramadoAt: ep.instancia.inicioProgramadoAt.toISOString(),
+    finProgramadoAt: ep.instancia.finProgramadoAt.toISOString(),
+    estadoInstancia: ep.instancia.estado,
+    hostEmail: ep.cuentaProveedor?.emailOrganizador ?? null,
+    hostNombre: ep.cuentaProveedor?.nombre ?? null,
+    externalEventId: ep.externalEventId,
+    joinUrl: ep.joinUrl,
+    codigoReunion: ep.codigoReunion,
+    operacionPendiente: ep.operacionPendiente,
+    estadoIntegracion: ep.estadoIntegracion,
+    errorIntegracion: ep.errorIntegracion,
+    updatedAt: ep.updatedAt.toISOString()
+  }));
 
   return (
     <>
@@ -208,6 +273,7 @@ export default async function ConfiguracionPage({
                 operacionPendiente ? [operacionPendiente] : []
               )}
             />
+            <PendingMeetOperationsManager items={pendingOperationItems} />
           </section>
           <WorkspaceConfigForm
             initial={configuration ? {

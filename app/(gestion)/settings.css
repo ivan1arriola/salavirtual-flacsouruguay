@@ -778,3 +778,473 @@
   .workspace-actions .secondary-action { width: 100%; min-width: 0; }
   .workspace-actions > :only-child { grid-column: 1 / -1; }
 }
+
+/* ==========================================================================
+   Pending Meet Operations Manager
+   ========================================================================== */
+
+.pending-operations-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pending-operations-clean-state {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: #2e6930;
+  background: #f4faf4;
+}
+
+.pending-operations-clean-state strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #1e4620;
+}
+
+.pending-operations-clean-state small {
+  display: block;
+  font-size: 0.8rem;
+  color: #3b7c3d;
+  margin-top: 2px;
+}
+
+.pending-provision-summary {
+  flex: 1 1 auto;
+}
+
+.pending-provision-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.pending-provision-header strong {
+  font-size: 1.02rem;
+  color: var(--brand-strong, #1f2d3d);
+}
+
+.pending-provision-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.pending-breakdown-list {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fafbfc;
+}
+
+.pending-breakdown-list li {
+  padding: 8px 12px;
+}
+
+.pending-breakdown-list strong {
+  font-size: 0.85rem;
+}
+
+.pending-breakdown-list small {
+  font-size: 0.74rem;
+}
+
+/* Diagnostic banner */
+.integration-diagnostic-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fff8e6;
+  border-top: 1px solid #f6e0b5;
+  border-bottom: 1px solid #f6e0b5;
+  color: #7c5208;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.diagnostic-banner-icon {
+  flex: 0 0 auto;
+  color: #b7791f;
+  margin-top: 2px;
+}
+
+.diagnostic-banner-content strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #744210;
+  margin-bottom: 4px;
+}
+
+.diagnostic-banner-content p {
+  margin: 0 0 8px;
+}
+
+.diagnostic-banner-content code {
+  background: #fdf3d8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: monospace;
+}
+
+.diagnostic-banner-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagnostic-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.diagnostic-pill.pill-ok {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.diagnostic-pill.pill-warn {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+/* Toggle bar */
+.pending-details-toggle-bar {
+  display: flex;
+  justify-content: center;
+  background: #f7fafc;
+  border-bottom: 1px solid var(--line);
+}
+
+.pending-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand, #00708f);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.pending-toggle-button:hover {
+  background: #edf2f7;
+  color: var(--brand-strong, #004d63);
+}
+
+/* Details container */
+.pending-details-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  padding: 16px;
+  gap: 12px;
+}
+
+.pending-details-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pending-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 280px;
+}
+
+.pending-search-wrapper svg {
+  position: absolute;
+  left: 10px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.pending-search-input {
+  width: 100%;
+  padding: 7px 10px 7px 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.pending-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-pill {
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  color: #4a5568;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-pill:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.filter-pill.active {
+  background: var(--brand, #00708f);
+  color: #ffffff;
+  border-color: var(--brand, #00708f);
+}
+
+.pending-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.empty-filter-note {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+/* Pending Card */
+.pending-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pending-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.pending-card.has-meet {
+  border-left: 3px solid #10b981;
+}
+
+.pending-card.missing-meet {
+  border-left: 3px solid #ef4444;
+}
+
+.pending-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pending-card-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pending-card-title-link {
+  color: var(--brand-strong, #1f2d3d);
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.pending-card-title-link:hover {
+  color: var(--brand, #00708f);
+  text-decoration: underline;
+}
+
+.pending-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pending-card-meta {
+  font-size: 0.77rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pending-card-meet-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.77rem;
+  color: #4a5568;
+  margin-top: 2px;
+}
+
+.meet-url-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand, #00708f);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: #f0f9ff;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+}
+
+.meet-url-badge:hover {
+  text-decoration: underline;
+  background: #e0f2fe;
+}
+
+.pending-card-error-box {
+  margin-top: 4px;
+  background: #fef9f2;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+}
+
+.pending-card-error-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pending-card-error-text {
+  color: #9a3412;
+  line-height: 1.35;
+}
+
+.pending-card-error-toggle {
+  background: transparent;
+  border: 0;
+  color: #c2410c;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.72rem;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.pending-card-raw-error {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #fdba74;
+  border-radius: 4px;
+  color: #7c2d12;
+  font-size: 0.72rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pending-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+  align-items: flex-end;
+}
+
+.ghost-action {
+  background: transparent;
+  border: 0;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ghost-action:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.ghost-action.text-muted {
+  color: var(--muted);
+}
+
+.ghost-action.text-muted:hover:not(:disabled) {
+  color: #334155;
+}
+
+.ghost-action.text-danger {
+  color: #dc2626;
+}
+
+.ghost-action.text-danger:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ghost-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .pending-provision {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pending-provision-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .pending-provision-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pending-card {
+    flex-direction: column;
+  }
+
+  .pending-card-actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+  }
+}
