@@ -306,12 +306,12 @@ export function crearGoogleCalendarProvider(
   };
 }
 
-async function credencialesLegacy(subject: string): Promise<readonly GoogleCalendarCredentials[]> {
+async function credencialesLegacy(subjectFallback: string): Promise<readonly GoogleCalendarCredentials[]> {
   const rows = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
   return rows.map((credential) => ({
     serviceAccountEmail: credential.serviceAccountEmail,
     privateKey: credential.privateKey,
-    subject,
+    subject: credential.serviceAccountSubject?.trim().toLowerCase() || subjectFallback,
   }));
 }
 
@@ -439,7 +439,6 @@ async function configurarCohostsMeet(
       await crearMiembroCohost(auth, spaceName, email);
     } catch (error) {
       if (!isAlreadyCohostError(error)) throw error;
-      // ALREADY_EXISTS only confirms membership, not its role. The API has no update method.
       const members = await listarMiembrosMeet(auth, spaceName);
       const member = members.find((item) => item.email?.trim().toLowerCase() === email);
       if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
