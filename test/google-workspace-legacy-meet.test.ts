@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   jwtInstances: [] as Array<{ email: string; subject: string }>,
   failOnPrincipalEmail: null as string | null,
+  failOnLegacyEmail: null as string | null,
+  failOnlyOnMembers: false,
   failWithCode: 403,
   failWithMessage: "403: Permission denied on resource Member",
   legacyRows: [
@@ -38,7 +40,11 @@ vi.mock("google-auth-library", () => ({
       state.jwtInstances.push({ email: options.email, subject: options.subject });
     }
     async request(options: Record<string, any>) {
-      if (state.failOnPrincipalEmail && this.email === state.failOnPrincipalEmail) {
+      const shouldFailEmail =
+        (state.failOnPrincipalEmail && this.email === state.failOnPrincipalEmail) ||
+        (state.failOnLegacyEmail && this.email === state.failOnLegacyEmail);
+      const isMembersCall = typeof options.url === "string" && options.url.includes("/members");
+      if (shouldFailEmail && (!state.failOnlyOnMembers || isMembersCall)) {
         const error = new Error(state.failWithMessage);
         (error as any).code = state.failWithCode;
         (error as any).response = { status: state.failWithCode, data: { error: state.failWithMessage } };
@@ -89,6 +95,8 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
   beforeEach(() => {
     state.jwtInstances = [];
     state.failOnPrincipalEmail = null;
+    state.failOnLegacyEmail = null;
+    state.failOnlyOnMembers = false;
     state.failWithCode = 403;
     state.failWithMessage = "403: Permission denied on resource Member";
   });
@@ -249,5 +257,66 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
         serviceAccountSubject: "web@flacso.edu.uy",
       },
     ]);
+  });
+
+  it("configurarGoogleMeetExistente no lanza error cuando tanto Principal como Legacy fallan con Permission denied on resource Member en Meet existente", async () => {
+    state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
+    state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
+    state.failOnlyOnMembers = true;
+    state.failWithCode = 403;
+    state.failWithMessage = "403: Permission denied on resource Member (or it might not exist)";
+
+    await expect(
+      configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
+        cohostEmails: ["docente@flacso.edu.uy"],
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("configurarEventoMeet en provider para reunión existente no lanza error cuando ambas credenciales fallan con Permission denied on resource Member", async () => {
+    state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
+    state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
+    state.failOnlyOnMembers = true;
+    state.failWithCode = 403;
+    state.failWithMessage = "403: Permission denied on resource Member (or it might not exist)";
+
+    const provider = crearGoogleCalendarProvider(principalCreds);
+    await expect(
+      provider.configurarEventoMeet(
+        {
+          titulo: "Clase Existente",
+          inicio: new Date(),
+          fin: new Date(),
+          timezone: "America/Montevideo",
+          calendarId: "sala02@flacso.edu.uy",
+          calendarEventId: "cal-evt-existente",
+          cohostEmails: ["docente@flacso.edu.uy"],
+        },
+        {
+          codigoReunion: "abc-defg-hij",
+          joinUrl: "https://meet.google.com/abc-defg-hij",
+          externalEventId: "cal-evt-existente",
+          payload: {},
+        },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it("sincronizarCohostsGoogleExistente resuelve exitosamente cuando ambas fallan en members", async () => {
+    state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
+    state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
+    state.failOnlyOnMembers = true;
+    state.failWithCode = 403;
+    state.failWithMessage = "403: Permission denied on resource Member (or it might not exist)";
+
+    const payload = await sincronizarCohostsGoogleExistente(principalCreds, {
+      calendarId: "sala02@flacso.edu.uy",
+      externalEventId: "cal-evt-existente",
+      codigoReunion: "abc-defg-hij",
+      cohostsAnteriores: [],
+      cohostsDeseados: ["docente@flacso.edu.uy"],
+    });
+
+    expect(payload).toBeDefined();
   });
 });

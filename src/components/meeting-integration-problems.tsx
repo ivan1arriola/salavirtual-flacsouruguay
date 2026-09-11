@@ -94,7 +94,7 @@ export function MeetingIntegrationProblems({
               <span>
                 <strong>Encuentro {problem.ordinal} · {problem.fechaLegible}</strong>
                 <small>{problem.error ?? (problem.hasMeet ? "El Meet existe, pero su configuración quedó incompleta." : "No se pudo completar la creación del Meet.")}</small>
-                {feedback[problem.eventoProveedorId] ? (
+                {feedback[problem.eventoProveedorId] && feedback[problem.eventoProveedorId] !== problem.error ? (
                   <small role="status">{feedback[problem.eventoProveedorId]}</small>
                 ) : null}
               </span>

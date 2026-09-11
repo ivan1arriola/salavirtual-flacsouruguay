@@ -87,17 +87,18 @@ export async function configurarGoogleMeetExistente(
     await configurarGoogleMeetConCredencial(credentials, codigoReunion, settings);
   } catch (error) {
     if (!esErrorPermisoMember(error)) throw error;
-    let lastError: unknown = error;
     for (const legacy of await credencialesLegacy(credentials.subject)) {
       try {
         await configurarGoogleMeetConCredencial(legacy, codigoReunion, settings);
         return;
       } catch (legacyError) {
-        lastError = legacyError;
         if (!esErrorPermisoMember(legacyError)) throw legacyError;
       }
     }
-    throw lastError;
+    // En reuniones creadas históricamente desde Google Calendar, la API de Google Meet
+    // no permite gestionar miembros (devuelve 403 Permission denied on resource Member).
+    // La moderación del espacio ya fue configurada con éxito en configurarEspacioMeet.
+    return;
   }
 }
 
@@ -128,16 +129,16 @@ export async function sincronizarCohostsGoogleExistente(
     return await sincronizarCohostsGoogleConCredencial(credentials, input);
   } catch (error) {
     if (!esErrorPermisoMember(error)) throw error;
-    let lastError: unknown = error;
     for (const legacy of await credencialesLegacy(credentials.subject)) {
       try {
         return await sincronizarCohostsGoogleConCredencial(legacy, input);
       } catch (legacyError) {
-        lastError = legacyError;
         if (!esErrorPermisoMember(legacyError)) throw legacyError;
       }
     }
-    throw lastError;
+    return await sincronizarCohostsGoogleConCredencial(credentials, input, {
+      omitirMembersEnFalloPermiso: true,
+    });
   }
 }
 
@@ -149,7 +150,8 @@ async function sincronizarCohostsGoogleConCredencial(
     codigoReunion?: string | null;
     cohostsAnteriores: readonly string[];
     cohostsDeseados: readonly string[];
-  }>
+  }>,
+  options?: Readonly<{ omitirMembersEnFalloPermiso?: boolean }>
 ): Promise<Readonly<Record<string, unknown>>> {
   const calendarAuth = new JWT({
     email: credentials.serviceAccountEmail,
@@ -179,7 +181,13 @@ async function sincronizarCohostsGoogleConCredencial(
   const provisioned = extraerMeetProvisionado(updated);
   if (!provisioned) throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
   const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, { cohostEmails: desired });
-  await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
+  try {
+    await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
+  } catch (error) {
+    if (!options?.omitirMembersEnFalloPermiso || !esErrorPermisoMember(error)) {
+      throw error;
+    }
+  }
   return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired, new Date().toISOString());
 }
 
@@ -270,17 +278,18 @@ export function crearGoogleCalendarProvider(
         await finalizarProvision(meetAuth, evento, request);
       } catch (error) {
         if (provisioningAttempt || !esErrorPermisoMember(error)) throw error;
-        let lastError: unknown = error;
         for (const legacy of await credencialesLegacy(credentials.subject)) {
           try {
             await finalizarProvision(crearMeetAuth(legacy), evento, request);
             return;
           } catch (legacyError) {
-            lastError = legacyError;
             if (!esErrorPermisoMember(legacyError)) throw legacyError;
           }
         }
-        throw lastError;
+        // En reuniones existentes creadas desde Google Calendar, la API de Google Meet
+        // restringe spaces.members.create (403 Permission denied on resource Member).
+        // La moderación del espacio ya fue configurada con éxito en configurarEspacioMeet.
+        return;
       }
     },
     async cancelarEvento(calendarId, externalEventId) {
