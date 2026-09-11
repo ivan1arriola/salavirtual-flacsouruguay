@@ -11,6 +11,12 @@ export type DependenciasConfiguracionGoogle = Readonly<{
   cifrar: (value: string) => string;
 }>;
 
+export type CredencialLegacyGoogleWorkspace = Readonly<{
+  id: string;
+  serviceAccountEmail: string;
+  privateKey: string;
+}>;
+
 export async function actualizarSeccionGoogleWorkspace(
   dependencias: DependenciasConfiguracionGoogle,
   actor: ActorConfiguracion,
@@ -44,9 +50,17 @@ export async function actualizarSeccionGoogleWorkspace(
       throw new Error("Solo Administracion puede configurar Google Workspace.");
     }
 
+    const targetId = parsed.seccion === "CREDENCIAL" ? parsed.credentialId : "principal";
     const actual = await tx.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal" },
-      select: { version: true, privateKeyCifrada: true }
+      where: { id: targetId },
+      select: {
+        id: true,
+        version: true,
+        serviceAccountEmail: true,
+        privateKeyCifrada: true,
+        serviceAccountSubject: true,
+        activa: true,
+      }
     });
     if (
       parsed.seccion === "CREDENCIAL" &&
@@ -56,12 +70,62 @@ export async function actualizarSeccionGoogleWorkspace(
       throw new Error("La clave privada PEM es obligatoria en la primera configuración.");
     }
 
+    if (
+      parsed.seccion === "CREDENCIAL" &&
+      targetId === "principal" &&
+      actual?.serviceAccountEmail &&
+      actual.privateKeyCifrada &&
+      actual.serviceAccountEmail.toLowerCase() !== parsed.serviceAccountEmail.toLowerCase()
+    ) {
+      const legacyId = `legacy:${actual.serviceAccountEmail.toLowerCase()}`;
+      await tx.configuracionGoogleWorkspace.upsert({
+        where: { id: legacyId },
+        create: {
+          id: legacyId,
+          serviceAccountEmail: actual.serviceAccountEmail,
+          privateKeyCifrada: actual.privateKeyCifrada,
+          serviceAccountSubject: actual.serviceAccountSubject,
+          activa: true,
+          actualizadaPorId: actorActual.id,
+        },
+        update: {
+          serviceAccountEmail: actual.serviceAccountEmail,
+          privateKeyCifrada: actual.privateKeyCifrada,
+          serviceAccountSubject: actual.serviceAccountSubject,
+          activa: true,
+          actualizadaPorId: actorActual.id,
+          version: { increment: 1 },
+        },
+      });
+      await tx.auditoria.create({
+        data: {
+          actorUsuarioId: actorActual.id,
+          accion: "CREDENCIAL_GOOGLE_WORKSPACE_ARCHIVADA_COMO_LEGACY",
+          entidadTipo: "ConfiguracionGoogleWorkspace",
+          entidadId: legacyId,
+          valorNuevo: {
+            serviceAccountEmail: actual.serviceAccountEmail,
+            origen: "ROTACION_PRINCIPAL",
+          },
+        },
+      });
+    }
+
+    const principal = targetId === "principal"
+      ? actual
+      : await tx.configuracionGoogleWorkspace.findUnique({
+          where: { id: "principal" },
+          select: { serviceAccountSubject: true },
+        });
     const sectionData = datosDeSeccion(parsed, dependencias.cifrar);
     const configuracion = await tx.configuracionGoogleWorkspace.upsert({
-      where: { id: "principal" },
+      where: { id: targetId },
       create: {
-        id: "principal",
+        id: targetId,
         ...sectionData,
+        ...(targetId.startsWith("legacy:") && principal?.serviceAccountSubject
+          ? { serviceAccountSubject: principal.serviceAccountSubject }
+          : {}),
         actualizadaPorId: actorActual.id
       },
       update: {
@@ -84,11 +148,12 @@ export async function actualizarSeccionGoogleWorkspace(
         actorUsuarioId: actorActual.id,
         accion: `CONFIGURACION_GOOGLE_WORKSPACE_${parsed.seccion}_ACTUALIZADA`,
         entidadTipo: "ConfiguracionGoogleWorkspace",
-        entidadId: "principal",
+        entidadId: targetId,
         valorAnterior: actual ? { version: actual.version } : undefined,
         valorNuevo: {
           version: configuracion.version,
           seccion: parsed.seccion,
+          credentialId: targetId,
           privateKeyActualizada:
             parsed.seccion === "CREDENCIAL" && Boolean(parsed.privateKey)
         }
@@ -104,6 +169,27 @@ export async function actualizarSeccionGoogleWorkspace(
       version: configuracion.version
     };
   });
+}
+
+export async function cargarCredencialesLegacyGoogleWorkspace(
+  db: PrismaClient,
+  descifrar: (value: string) => string,
+): Promise<readonly CredencialLegacyGoogleWorkspace[]> {
+  const rows = await db.configuracionGoogleWorkspace.findMany({
+    where: {
+      id: { startsWith: "legacy:" },
+      activa: true,
+      serviceAccountEmail: { not: null },
+      privateKeyCifrada: { not: null },
+    },
+    orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+    select: { id: true, serviceAccountEmail: true, privateKeyCifrada: true },
+  });
+  return rows.flatMap((row) => row.serviceAccountEmail && row.privateKeyCifrada ? [{
+    id: row.id,
+    serviceAccountEmail: row.serviceAccountEmail,
+    privateKey: descifrar(row.privateKeyCifrada),
+  }] : []);
 }
 
 function datosDeSeccion(
