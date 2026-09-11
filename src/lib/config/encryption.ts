@@ -1,14 +1,17 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { parseEncryptionKey } from "../../modules/configuracion/encryption-key.domain";
 
-const encryptionKey = Buffer.from(
-  parseEncryptionKey(process.env.CONFIG_ENCRYPTION_KEY),
-  "hex",
-);
+function getEncryptionKey(): Buffer {
+  return Buffer.from(
+    parseEncryptionKey(process.env.CONFIG_ENCRYPTION_KEY),
+    "hex",
+  );
+}
 
 export function cifrarConfiguracion(value: string): string {
+  const key = getEncryptionKey();
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
   const encrypted = Buffer.concat([
     cipher.update(value, "utf8"),
     cipher.final(),
@@ -28,9 +31,10 @@ export function descifrarConfiguracion(value: string): string {
   if (version !== "v1" || !ivBase64 || !authTagBase64 || !encryptedBase64) {
     throw new Error("La configuracion cifrada tiene un formato invalido.");
   }
+  const key = getEncryptionKey();
   const decipher = createDecipheriv(
     "aes-256-gcm",
-    encryptionKey,
+    key,
     Buffer.from(ivBase64, "base64"),
   );
   decipher.setAuthTag(Buffer.from(authTagBase64, "base64"));

@@ -65,19 +65,24 @@ export async function POST(request: Request) {
             { status: 409 }
           );
         }
-        if (current.estadoIntegracion !== "PENDIENTE" && current.estadoIntegracion !== "ERROR") {
+        const puedeReconfigurar = revision.operacion === "CONFIGURAR_MEET";
+        if (current.estadoIntegracion !== "PENDIENTE" && current.estadoIntegracion !== "ERROR" && !puedeReconfigurar) {
           return NextResponse.json(
             { error: "El evento no requiere reparación." },
             { status: 409 }
           );
         }
 
+        const validStates = puedeReconfigurar
+          ? ["PENDIENTE", "ERROR", "SINCRONIZADA"] as const
+          : ["PENDIENTE", "ERROR"] as const;
+
         const assigned = await db.eventoProveedor.updateMany({
           where: {
             id: revision.eventoProveedorId,
             proveedor: { tipo: "GOOGLE_MEET" },
             operacionPendiente: null,
-            estadoIntegracion: { in: ["PENDIENTE", "ERROR"] }
+            estadoIntegracion: { in: [...validStates] }
           },
           data: {
             operacionPendiente: revision.operacion,

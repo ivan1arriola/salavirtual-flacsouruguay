@@ -42,7 +42,7 @@ vi.mock("google-auth-library", () => ({
 }));
 
 import { configurarGoogleMeetExistente, crearGoogleCalendarProvider, sincronizarCohostsGoogleExistente } from "../src/modules/meet/google-calendar.adapter";
-import { cohostsConfirmados, invalidarVerificacionCohosts, registrarVerificacionCohosts } from "../src/modules/meet/cohost-verification.domain";
+import { cohostsConfirmados, detalleCohostsVerificados, invalidarVerificacionCohosts, registrarVerificacionCohosts } from "../src/modules/meet/cohost-verification.domain";
 import { requiereAtencionIntegracionMeet } from "../src/modules/meet/integration-health.domain";
 
 const credentials = { serviceAccountEmail: "service@example.iam.gserviceaccount.com", privateKey: "test-only", subject: "sala01@flacso.edu.uy" };
@@ -131,6 +131,13 @@ describe("estado visible de los cohosts", () => {
     assert.equal(cohostsConfirmados(payload, google.code, "sala02@flacso.edu.uy", [teacher]), false);
     assert.equal(cohostsConfirmados(payload, google.code, credentials.subject, [teacher, assistant]), false);
     assert.equal(cohostsConfirmados(invalidarVerificacionCohosts(payload), google.code, credentials.subject, [teacher]), false);
+  });
+  it("discrimina cohosts confirmados de pendientes cuando se agrega un nuevo cohost no verificado", () => {
+    const payload = registrarVerificacionCohosts({}, google.code!, credentials.subject, [teacher], "2026-09-11T15:00:00Z");
+    const detalle = detalleCohostsVerificados(payload, google.code, credentials.subject, [teacher, assistant]);
+    assert.equal(detalle.confirmados, false);
+    assert.deepEqual(detalle.emailsConfirmados, [teacher]);
+    assert.deepEqual(detalle.emailsPendientes, [assistant]);
   });
   it("muestra fallos de scopes incluso en reuniones con enlace y estado sincronizado", () => {
     for (const estadoIntegracion of ["SINCRONIZADA", "ERROR"] as const) {

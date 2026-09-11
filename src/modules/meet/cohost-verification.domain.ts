@@ -29,16 +29,55 @@ export function invalidarVerificacionCohosts(payload: unknown) {
   return { ...previous, salaVirtual: { ...record(previous.salaVirtual), cohostVerification: null } };
 }
 
-export function cohostsConfirmados(
-  payload: unknown, codigoReunion: string | null | undefined,
-  organizer: string | null | undefined, emails: readonly string[],
-): boolean {
+export type DetalleCohostsVerificados = Readonly<{
+  confirmados: boolean;
+  emailsConfirmados: readonly string[];
+  emailsPendientes: readonly string[];
+}>;
+
+export function detalleCohostsVerificados(
+  payload: unknown,
+  codigoReunion: string | null | undefined,
+  organizer: string | null | undefined,
+  emails: readonly string[],
+): DetalleCohostsVerificados {
+  const desired = normalizeCohostEmails(emails).filter(
+    (email) => email !== organizer?.trim().toLowerCase()
+  );
+  if (desired.length === 0) {
+    return { confirmados: true, emailsConfirmados: [], emailsPendientes: [] };
+  }
   const verification = record(record(record(payload).salaVirtual).cohostVerification);
-  if (!codigoReunion || !organizer || verification.codigoReunion !== codigoReunion ||
-      verification.organizer !== organizer.trim().toLowerCase() ||
-      typeof verification.verifiedAt !== "string" || !Number.isFinite(Date.parse(verification.verifiedAt)) ||
-      !Array.isArray(verification.emails)) return false;
+  if (
+    !codigoReunion ||
+    !organizer ||
+    verification.codigoReunion !== codigoReunion ||
+    verification.organizer !== organizer.trim().toLowerCase() ||
+    typeof verification.verifiedAt !== "string" ||
+    !Number.isFinite(Date.parse(verification.verifiedAt)) ||
+    !Array.isArray(verification.emails)
+  ) {
+    return { confirmados: false, emailsConfirmados: [], emailsPendientes: desired };
+  }
   const confirmed = new Set(verification.emails);
-  const desired = normalizeCohostEmails(emails).filter((email) => email !== organizer.trim().toLowerCase());
-  return desired.length > 0 && desired.every((email) => confirmed.has(email));
+  const emailsConfirmados = desired.filter((email) => confirmed.has(email));
+  const emailsPendientes = desired.filter((email) => !confirmed.has(email));
+  return {
+    confirmados: emailsPendientes.length === 0 && desired.length > 0,
+    emailsConfirmados,
+    emailsPendientes,
+  };
+}
+
+export function cohostsConfirmados(
+  payload: unknown,
+  codigoReunion: string | null | undefined,
+  organizer: string | null | undefined,
+  emails: readonly string[],
+): boolean {
+  const desired = normalizeCohostEmails(emails).filter(
+    (email) => email !== organizer?.trim().toLowerCase()
+  );
+  if (desired.length === 0) return false;
+  return detalleCohostsVerificados(payload, codigoReunion, organizer, emails).confirmados;
 }

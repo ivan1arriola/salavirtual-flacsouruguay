@@ -178,6 +178,16 @@
   padding: 9px 10px;
 }
 
+.admin-upcoming-cohosts.is-verified {
+  border: 1px solid #c9e8d5;
+  background: #f4faf6;
+}
+
+.admin-upcoming-cohosts.is-unverified {
+  border: 1px solid #f2cf97;
+  background: #fffaf0;
+}
+
 .admin-upcoming-cohosts.is-missing {
   border: 1px solid #efd3a9;
   background: #fff8ee;
@@ -186,6 +196,38 @@
 .admin-upcoming-cohosts.is-missing > strong {
   color: #965b19;
   font-size: 0.78rem;
+}
+
+.admin-upcoming-cohost-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-upcoming-cohosts .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.admin-upcoming-cohosts .status-badge.status-ok {
+  background: #e6f6ec;
+  color: #1a7f37;
+  border: 1px solid #bce6cb;
+}
+
+.admin-upcoming-cohosts .status-badge.status-warning {
+  background: #fff3db;
+  color: #965b19;
+  border: 1px solid #f7dca8;
 }
 
 .admin-upcoming-cohost-list {
@@ -266,6 +308,10 @@
   font-size: 0.68rem;
   font-style: normal;
   font-weight: 750;
+}
+
+.admin-upcoming-operations em.text-warning {
+  color: #965b19;
 }
 
 .admin-upcoming-neutral-status {

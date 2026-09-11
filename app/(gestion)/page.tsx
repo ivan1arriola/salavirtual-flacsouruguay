@@ -27,6 +27,8 @@ import { TeacherDashboard } from "@/src/components/teacher-dashboard";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { listarCasosRevisionDuplicados } from "@/src/modules/reuniones/duplicados.service";
+import { cohostsConfirmados } from "@/src/modules/meet/cohost-verification.domain";
+import { cohostAccountGuidance } from "@/src/modules/meet/cohosts.domain";
 
 export default async function HomePage() {
   const session = await auth();
@@ -378,7 +380,7 @@ export default async function HomePage() {
         <div className="admin-upcoming-guidance" role="note">
           <strong>Acceso a Google Meet</strong>
           <span>
-            Los cohosts ingresan con su propia cuenta FLACSO. La cuenta organizadora se muestra
+            Los cohosts ingresan con su cuenta Google o FLACSO configurada. La cuenta organizadora se muestra
             únicamente como referencia y no debe usarse para iniciar sesión.
           </span>
         </div>
@@ -410,6 +412,21 @@ export default async function HomePage() {
                   (candidate) => candidate.email.toLowerCase() === entry.email.toLowerCase()
                 ) === index
               );
+              const cohostEmails = [
+                ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+                ...meeting.cohostEmails.map(({ email }) => email)
+              ];
+              const cohostsConfirmadosEnMeet = Boolean(
+                !meet?.errorIntegracion &&
+                !meet?.operacionPendiente &&
+                cohostsConfirmados(
+                  meet?.payloadUltimo,
+                  meet?.codigoReunion,
+                  meet?.cuentaProveedor?.emailOrganizador,
+                  cohostEmails
+                )
+              );
+              const guidance = cohostAccountGuidance(cohostEmails);
               const organizer =
                 meet?.cuentaProveedor?.emailOrganizador ??
                 meet?.cuentaProveedor?.nombre ??
@@ -452,8 +469,38 @@ export default async function HomePage() {
                   </div>
 
                   <div className="admin-upcoming-access">
-                    <div className={`admin-upcoming-cohosts ${cohosts.length ? "" : "is-missing"}`}>
-                      <small>Cohost{cohosts.length === 1 ? "" : "s"} · ingresar con cuenta FLACSO</small>
+                    <div
+                      className={`admin-upcoming-cohosts ${
+                        cohosts.length === 0
+                          ? "is-missing"
+                          : cohostsConfirmadosEnMeet
+                            ? "is-verified"
+                            : "is-unverified"
+                      }`}
+                    >
+                      <div className="admin-upcoming-cohost-header">
+                        <small>
+                          Cohost{cohosts.length === 1 ? "" : "s"}
+                          {cohosts.length ? ` · ${guidance}` : ""}
+                        </small>
+                        {cohosts.length ? (
+                          cohostsConfirmadosEnMeet ? (
+                            <span
+                              className="status-badge status-ok"
+                              title="Verificado en Google Meet"
+                            >
+                              <CheckCircle2 size={12} aria-hidden="true" /> Verificado en Meet
+                            </span>
+                          ) : (
+                            <span
+                              className="status-badge status-warning"
+                              title="Google Meet todavía no confirmó los permisos de cohost"
+                            >
+                              <AlertTriangle size={12} aria-hidden="true" /> Permisos pendientes en Meet
+                            </span>
+                          )
+                        ) : null}
+                      </div>
                       {cohosts.length ? (
                         <div className="admin-upcoming-cohost-list">
                           {cohosts.slice(0, 2).map((cohost) => (
@@ -481,6 +528,13 @@ export default async function HomePage() {
                       ) : (
                         <span className="muted-text">Link pendiente</span>
                       )}
+                      {!cohostsConfirmadosEnMeet && cohosts.length > 0 && meet?.id && meet.joinUrl ? (
+                        <AdminRetryMeetAction
+                          eventoProveedorId={meet.id}
+                          operacion="CONFIGURAR_MEET"
+                          label="Verificar cohosts"
+                        />
+                      ) : null}
                     </div>
 
                     <div className="admin-upcoming-organizer">
@@ -497,7 +551,11 @@ export default async function HomePage() {
                         <>
                           <span className="status status-ok">Asignada</span>
                           <strong>{assistant.nombres} {assistant.apellidos}</strong>
-                          <em>Cohost técnico</em>
+                          {cohostsConfirmadosEnMeet ? (
+                            <em>Cohost técnico verificado</em>
+                          ) : (
+                            <em className="text-warning">Permisos Meet pendientes</em>
+                          )}
                         </>
                       ) : meeting.requiereAsistenciaTecnica ? (
                         <span className="status status-warning">

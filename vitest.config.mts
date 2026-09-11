@@ -9,6 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    env: {
+      CONFIG_ENCRYPTION_KEY: "0123456789abcdef".repeat(4),
+    },
     include: ["test/**/*.test.ts"],
     coverage: {
       provider: "v8",

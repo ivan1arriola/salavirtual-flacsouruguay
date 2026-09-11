@@ -30,6 +30,8 @@ import {
   resolverVistaAgenda
 } from "@/src/modules/reuniones/agenda-view.domain";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
+import { cohostsConfirmados } from "@/src/modules/meet/cohost-verification.domain";
+import { cohostAccountGuidance } from "@/src/modules/meet/cohosts.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 type PeriodoAgenda = "proximas" | "anteriores";
@@ -792,6 +794,21 @@ export default async function ReunionesPage({
               const assistant = assignment?.asistenteTecnico.usuario;
               const assistantName = assistant ? personName(assistant) : null;
               const cohostLabels = cohostsForMeeting(meeting);
+              const cohostEmails = [
+                ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
+                ...meeting.cohostEmails.map(({ email }) => email)
+              ];
+              const cohostsConfirmadosEnMeet = Boolean(
+                !event?.errorIntegracion &&
+                !event?.operacionPendiente &&
+                cohostsConfirmados(
+                  event?.payloadUltimo,
+                  event?.codigoReunion,
+                  event?.cuentaProveedor?.emailOrganizador,
+                  cohostEmails
+                )
+              );
+              const guidance = cohostAccountGuidance(cohostEmails);
 
               return (
                 <article className="agenda-meeting-card" key={meeting.id}>
@@ -839,10 +856,14 @@ export default async function ReunionesPage({
                       <div className="agenda-access-block agenda-cohost-block">
                         <span>Cohost{cohostLabels.length === 1 ? "" : "s"}</span>
                         <strong>{cohostPrimaryText(cohostLabels)}</strong>
-                        {cohostLabels.length > 2 ? (
-                          <small>+{cohostLabels.length - 2} más</small>
+                        {cohostLabels.length > 0 ? (
+                          cohostsConfirmadosEnMeet ? (
+                            <small>Verificados en Meet · {guidance}</small>
+                          ) : (
+                            <small className="text-warning">Permisos pendientes en Meet</small>
+                          )
                         ) : (
-                          <small>Ingresan con su propia cuenta FLACSO.</small>
+                          <small>Sin cohost configurado</small>
                         )}
                       </div>
                       <div className="agenda-access-block agenda-host-reference">
@@ -876,14 +897,24 @@ export default async function ReunionesPage({
                         <UserRoundMinus size={20} />
                       )}
                       <span>
-                        <small>{assistantName ? "Cohost técnico" : "Asistencia técnica"}</small>
+                        <small>
+                          {assistantName
+                            ? (cohostsConfirmadosEnMeet ? "Cohost técnico verificado" : "Asistente (permisos Meet pendientes)")
+                            : "Asistencia técnica"}
+                        </small>
                         <strong>
                           {assistantName ??
                             (meeting.requiereAsistenciaTecnica
                               ? "Pendiente de asignación"
                               : "No requiere")}
                         </strong>
-                        {assistantName ? <em>Ingresar con su cuenta personal FLACSO</em> : null}
+                        {assistantName ? (
+                          <em>
+                            {assistant?.emailPrincipal?.endsWith("@flacso.edu.uy")
+                              ? "Ingresar con su cuenta personal FLACSO"
+                              : "Ingresar con su cuenta Google"}
+                          </em>
+                        ) : null}
                       </span>
                     </div>
                   </div>
