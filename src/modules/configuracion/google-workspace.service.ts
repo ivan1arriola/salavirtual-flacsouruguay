@@ -130,6 +130,7 @@ export async function actualizarSeccionGoogleWorkspace(
       },
       update: {
         ...sectionData,
+        ...(parsed.seccion === "CREDENCIAL" && targetId.startsWith("legacy:") ? { activa: true } : {}),
         actualizadaPorId: actorActual.id,
         version: { increment: 1 }
       },
