@@ -1,3 +1,4 @@
+import { invalidarVerificacionCohosts } from "../meet/cohost-verification.domain";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -93,6 +94,7 @@ export async function actualizarCohostsSerie(
             select: {
               id: true,
               externalEventId: true,
+              payloadUltimo: true,
               codigoReunion: true,
               cuentaProveedor: { select: { emailOrganizador: true } },
             },
@@ -178,6 +180,11 @@ export async function actualizarCohostsSerie(
         ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
         ...meeting.cohostEmails.map(({ email }) => email),
       ]);
+      // A partial failure must not leave old permissions displayed as verified.
+      await dependencies.db.eventoProveedor.update({
+        where: { id: event.id },
+        data: { payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))) },
+      });
       const payload = await dependencies.sincronizarGoogle(
         {
           serviceAccountEmail: config.serviceAccountEmail,

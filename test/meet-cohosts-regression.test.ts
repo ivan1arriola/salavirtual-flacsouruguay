@@ -125,7 +125,7 @@ describe("estado visible de los cohosts", () => {
   });
   it("conserva metadatos y exige evidencia del mismo espacio, host y correos", () => {
     const payload = registrarVerificacionCohosts({ salaVirtual: { invitadosEmails: ["alumno@gmail.com"] } }, google.code!, credentials.subject, [teacher]);
-    assert.deepEqual(payload.salaVirtual.invitadosEmails, ["alumno@gmail.com"]);
+    assert.deepEqual((payload.salaVirtual as Record<string, unknown>).invitadosEmails, ["alumno@gmail.com"]);
     assert.equal(cohostsConfirmados(payload, google.code, credentials.subject, [teacher]), true);
     assert.equal(cohostsConfirmados(payload, "otro", credentials.subject, [teacher]), false);
     assert.equal(cohostsConfirmados(payload, google.code, "sala02@flacso.edu.uy", [teacher]), false);
