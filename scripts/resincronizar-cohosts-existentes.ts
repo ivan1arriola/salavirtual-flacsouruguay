@@ -7,18 +7,13 @@ import { resincronizarCohostsReunionesExistentes } from "../src/modules/configur
 import { crearGoogleCalendarProvider } from "../src/modules/meet/google-calendar.adapter";
 
 const jsonOutput = process.argv.includes("--json");
-const productionSharedDir = "/srv/apps/salavirtual-flacso/shared";
-const defaultLogDir = existsSync(productionSharedDir)
-  ? join(productionSharedDir, "logs")
-  : resolve(process.cwd(), "logs");
 const explicitLogDir = process.argv.find((arg) => arg.startsWith("--log-dir="))?.split("=", 2)[1];
-const logDir = explicitLogDir ? resolve(explicitLogDir) : defaultLogDir;
 const startedAt = new Date();
 const stamp = startedAt.toISOString().replace(/[:.]/g, "-");
+const logDir = chooseLogDir(explicitLogDir);
 const logFile = join(logDir, `resync-cohosts-${stamp}.log`);
 const latestLog = join(logDir, "resync-cohosts-latest.log");
 
-mkdirSync(logDir, { recursive: true });
 rotateOldLogs(logDir, 30);
 try {
   if (existsSync(latestLog) || safeReadlink(latestLog)) unlinkSync(latestLog);
@@ -84,14 +79,19 @@ async function main(): Promise<void> {
     }),
   ]);
 
-  console.error("Credencial PRINCIPAL:", principal?.serviceAccountEmail ?? "NO CONFIGURADA",
-    principal?.activa && principal.privateKeyCifrada ? "[activa, clave configurada]" : "[incompleta/inactiva]");
+  console.error(
+    "Credencial PRINCIPAL:",
+    principal?.serviceAccountEmail ?? "NO CONFIGURADA",
+    principal?.activa && principal.privateKeyCifrada ? "[activa, clave configurada]" : "[incompleta/inactiva]",
+  );
   if (legacies.length === 0) {
     console.error("Credenciales LEGACY activas: ninguna");
   } else {
     console.error(`Credenciales LEGACY activas: ${legacies.length}`);
     for (const legacy of legacies) {
-      console.error(`  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"}`);
+      console.error(
+        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"}`,
+      );
     }
   }
 
@@ -99,12 +99,18 @@ async function main(): Promise<void> {
     db,
     descifrar: descifrarConfiguracion,
     crearProvider: crearGoogleCalendarProvider,
+    onLog(event) {
+      if (event.level === "ERROR") console.error(event.message);
+      else if (event.level === "WARN") console.warn(event.message);
+      else console.info(event.message);
+    },
   });
 
   if (jsonOutput) {
     original.log(JSON.stringify(result, null, 2));
     persist("INFO", ["Resultado JSON:", result]);
     console.error(`Fin: ${new Date().toISOString()}`);
+    console.error(`Log guardado en: ${logFile}`);
     return;
   }
 
@@ -131,6 +137,29 @@ async function main(): Promise<void> {
 
   console.error(`Fin: ${new Date().toISOString()}`);
   console.error(`Log guardado en: ${logFile}`);
+}
+
+function chooseLogDir(explicit?: string): string {
+  const candidates = explicit
+    ? [resolve(explicit)]
+    : [
+        "/srv/apps/salavirtual-flacso/shared/logs",
+        resolve(process.cwd(), "logs"),
+      ];
+
+  let lastError: unknown;
+  for (const candidate of candidates) {
+    try {
+      mkdirSync(candidate, { recursive: true });
+      const probe = join(candidate, `.resync-write-test-${process.pid}`);
+      appendFileSync(probe, "ok", { encoding: "utf8" });
+      unlinkSync(probe);
+      return candidate;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("No hay un directorio escribible para los logs.");
 }
 
 function safeReadlink(path: string): string | null {
