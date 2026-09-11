@@ -29,6 +29,7 @@ type ServiceCredential = Readonly<{
   label: "PRINCIPAL" | "LEGACY";
   serviceAccountEmail: string;
   privateKey: string;
+  serviceAccountSubject: string | null;
 }>;
 
 rotateOldLogs(logDir, 30);
@@ -92,7 +93,7 @@ async function main(): Promise<void> {
     db.configuracionGoogleWorkspace.findMany({
       where: { id: { startsWith: "legacy:" }, activa: true },
       orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      select: { id: true, serviceAccountEmail: true, privateKeyCifrada: true },
+      select: { id: true, serviceAccountEmail: true, privateKeyCifrada: true, serviceAccountSubject: true },
     }),
   ]);
 
@@ -107,7 +108,7 @@ async function main(): Promise<void> {
     console.error(`Credenciales LEGACY activas: ${legacies.length}`);
     for (const legacy of legacies) {
       console.error(
-        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"}`,
+        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`,
       );
     }
   }
@@ -173,6 +174,7 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
         label: "PRINCIPAL",
         serviceAccountEmail: principal.serviceAccountEmail,
         privateKey: descifrarConfiguracion(principal.privateKeyCifrada),
+        serviceAccountSubject: null,
       });
     } catch (error) {
       console.error(`DIAGNOSTICO CREDENCIAL PRINCIPAL | no se pudo descifrar la clave | ${summarizeError(error)}`);
@@ -183,6 +185,7 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
       label: "LEGACY",
       serviceAccountEmail: legacy.serviceAccountEmail,
       privateKey: legacy.privateKey,
+      serviceAccountSubject: legacy.serviceAccountSubject,
     });
   }
 
@@ -224,9 +227,12 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
   for (const meeting of uniqueMeetings.values()) {
     console.error(`DIAGNOSTICO MEET | ${meeting.titulo} | meet=${meeting.codigoReunion} | host=${meeting.host}`);
     for (const credential of credentials) {
-      const outcome = await probarAccesoMembers(credential, meeting.host, meeting.codigoReunion);
+      const subject = credential.label === "LEGACY"
+        ? credential.serviceAccountSubject?.trim().toLowerCase() || meeting.host
+        : meeting.host;
+      const outcome = await probarAccesoMembers(credential, subject, meeting.codigoReunion);
       console.error(
-        `DIAGNOSTICO ${credential.label} | cuenta=${credential.serviceAccountEmail} | meet=${meeting.codigoReunion} | ${outcome}`,
+        `DIAGNOSTICO ${credential.label} | cuenta=${credential.serviceAccountEmail} | subject=${subject} | meet=${meeting.codigoReunion} | ${outcome}`,
       );
     }
   }
