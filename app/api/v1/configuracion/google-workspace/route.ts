@@ -13,18 +13,32 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const configuracion = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal" },
-    select: {
-      serviceAccountEmail: true,
-      serviceAccountSubject: true,
-      driveDestinationId: true,
-      privateKeyCifrada: true,
-      activa: true,
-      version: true,
-      updatedAt: true
-    }
-  });
+  const [configuracion, legacy] = await Promise.all([
+    db.configuracionGoogleWorkspace.findUnique({
+      where: { id: "principal" },
+      select: {
+        serviceAccountEmail: true,
+        serviceAccountSubject: true,
+        driveDestinationId: true,
+        privateKeyCifrada: true,
+        activa: true,
+        version: true,
+        updatedAt: true
+      }
+    }),
+    db.configuracionGoogleWorkspace.findMany({
+      where: { id: { startsWith: "legacy:" } },
+      orderBy: [{ activa: "desc" }, { updatedAt: "desc" }],
+      select: {
+        id: true,
+        serviceAccountEmail: true,
+        privateKeyCifrada: true,
+        activa: true,
+        version: true,
+        updatedAt: true,
+      }
+    })
+  ]);
 
   return NextResponse.json({
     configuracion: configuracion
@@ -37,7 +51,15 @@ export async function GET() {
           updatedAt: configuracion.updatedAt,
           privateKeyConfigurada: Boolean(configuracion.privateKeyCifrada)
         }
-      : null
+      : null,
+    legacyCredentials: legacy.map((credential) => ({
+      id: credential.id,
+      serviceAccountEmail: credential.serviceAccountEmail,
+      activa: credential.activa,
+      version: credential.version,
+      updatedAt: credential.updatedAt,
+      privateKeyConfigurada: Boolean(credential.privateKeyCifrada),
+    }))
   });
 }
 
@@ -75,4 +97,44 @@ export async function PUT(request: Request) {
     const message = error instanceof Error ? error.message : "Configuracion invalida.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
+}
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMINISTRACION") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor || actor.rol !== "ADMINISTRACION" || !actor.activo) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id?.startsWith("legacy:")) {
+    return NextResponse.json({ error: "Solo se pueden desactivar credenciales Legacy." }, { status: 400 });
+  }
+  const current = await db.configuracionGoogleWorkspace.findUnique({
+    where: { id },
+    select: { id: true, serviceAccountEmail: true, activa: true }
+  });
+  if (!current) return NextResponse.json({ error: "La credencial no existe." }, { status: 404 });
+  await db.$transaction(async (tx) => {
+    await tx.configuracionGoogleWorkspace.update({
+      where: { id },
+      data: { activa: false, actualizadaPorId: actor.id, version: { increment: 1 } }
+    });
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actor.id,
+        accion: "CREDENCIAL_GOOGLE_WORKSPACE_LEGACY_DESACTIVADA",
+        entidadTipo: "ConfiguracionGoogleWorkspace",
+        entidadId: id,
+        valorAnterior: { activa: current.activa },
+        valorNuevo: { activa: false, serviceAccountEmail: current.serviceAccountEmail }
+      }
+    });
+  });
+  return NextResponse.json({ message: "Credencial Legacy desactivada." });
 }
