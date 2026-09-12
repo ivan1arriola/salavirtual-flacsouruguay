@@ -20,21 +20,14 @@ export function AdminTodayTimeline({
     <section className="dashboard-content-section admin-today-section">
       <div className="section-heading">
         <div>
-          <h2>Salas y actividad de hoy</h2>
-          <p>Supervisión en tiempo real de las reuniones del día de hoy en FLACSO.</p>
+          <h2>Agenda de hoy</h2>
+          <p>Reuniones programadas y su estado operativo.</p>
         </div>
         <Link className="text-link" href="/reuniones">
           Ver agenda completa <ArrowRight size={16} />
         </Link>
       </div>
 
-      <div className="admin-timeline-guidance" role="note">
-        <strong>Acceso a Google Meet:</strong>
-        <span>
-          Los cohosts y docentes ingresan directamente con su cuenta Google personal o FLACSO. La cuenta
-          organizadora institucional actúa en segundo plano.
-        </span>
-      </div>
 
       {meetings.length === 0 ? (
         <div className="empty-state">
