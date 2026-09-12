@@ -1,6 +1,7 @@
 import type { RegistroAsistenciaPersonal } from "@/src/modules/asistencia/resumen-personal.domain";
 import { formatDateTime } from "@/src/lib/ui/format";
 import { formatMinutes, formatMoney } from "@/src/lib/ui/assistant-format";
+import { AssistantUnassignButton } from "./assistant-unassign-button";
 
 export function AssistantMeetingsTable({
   meetings
@@ -17,6 +18,7 @@ export function AssistantMeetingsTable({
             <th>Duración</th>
             <th>Importe</th>
             <th>Estado</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -29,6 +31,9 @@ export function AssistantMeetingsTable({
               <td>{formatMinutes(meeting.minutos)}</td>
               <td>{meeting.monto === null ? "Sin tarifa" : formatMoney(meeting.monto, meeting.moneda)}</td>
               <td><span className={`status ${meeting.estado === "FINALIZADA" ? "status-ok" : "status-neutral"}`}>{meeting.estado.toLowerCase()}</span></td>
+              <td className="assistant-actions-cell">
+                <AssistantUnassignButton assignmentId={meeting.id} title={meeting.titulo} />
+              </td>
             </tr>
           ))}
         </tbody>

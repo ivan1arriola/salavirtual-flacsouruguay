@@ -23,6 +23,17 @@ export type RegistroAsistenciaPersonal = Readonly<{
   moneda: string;
 }>;
 
+export type AccionHistorialAsistencia = "ASIGNADO" | "REASIGNADO" | "DESVINCULADO";
+
+export type RegistroHistorialAsistenciaPersonal = Readonly<{
+  id: string;
+  accion: AccionHistorialAsistencia;
+  titulo: string;
+  instanciaInicioAt: Date;
+  ocurrioAt: Date;
+  actor: string;
+}>;
+
 export type ResumenAsistencia = Readonly<{
   reuniones: number;
   minutosVirtuales: number;
@@ -86,6 +97,29 @@ export function esAsistenciaCompletada(
   ahoraMs: number
 ): boolean {
   return estado === "FINALIZADA" || finProgramadoMs <= ahoraMs;
+}
+
+export function resolverAccionHistorialAsistente(
+  accion: string,
+  asistenteAnteriorId: string | null,
+  asistenteNuevoId: string | null,
+  asistenteTecnicoId: string
+): AccionHistorialAsistencia | null {
+  if (accion === "ASISTENTE_ASIGNADO" && asistenteNuevoId === asistenteTecnicoId) {
+    return "ASIGNADO";
+  }
+  if (accion === "ASISTENTE_REASIGNADO") {
+    if (asistenteAnteriorId === asistenteTecnicoId && asistenteNuevoId !== asistenteTecnicoId) {
+      return "DESVINCULADO";
+    }
+    if (asistenteNuevoId === asistenteTecnicoId && asistenteAnteriorId !== asistenteTecnicoId) {
+      return "REASIGNADO";
+    }
+  }
+  if (accion === "ASISTENTE_DESVINCULADO" && asistenteAnteriorId === asistenteTecnicoId) {
+    return "DESVINCULADO";
+  }
+  return null;
 }
 
 export function resumirAsistencias(

@@ -12,6 +12,10 @@ export const asignacionAsistenciaSchema = z.object({
   asistenteTecnicoId: z.string().trim().min(1)
 });
 
+export const desvinculacionAsistenciaSchema = z.object({
+  asignacionId: z.string().trim().min(1)
+});
+
 export const notificacionAsistenciaSchema = z.object({
   instanciaSalaId: z.string().trim().min(1)
 });
