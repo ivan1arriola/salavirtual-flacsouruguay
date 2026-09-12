@@ -227,6 +227,21 @@ export default async function AsistenciaTecnicaPage({
                           </div>
                         </div>
 
+                      </div>
+
+                      <footer className="coverage-card-footer">
+                        <div className="coverage-quick-links">
+                          {meet?.joinUrl ? (
+                            <MeetLinkActions url={meet.joinUrl} />
+                          ) : <span className="muted-text">Meet pendiente</span>}
+                          <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
+                        </div>
+                        <details className="coverage-management-disclosure">
+                          <summary>
+                            <span>{assistantName ? `Asignada a ${assistantName}` : "Asignar cobertura"}</span>
+                            <span>Gestionar</span>
+                          </summary>
+                          <div className="coverage-management-content">
                         <aside className="coverage-assignment-panel">
                           <div className="coverage-assignment-heading">
                             <span>{covered ? "Persona a cargo" : "Asignar cobertura"}</span>
@@ -240,20 +255,13 @@ export default async function AsistenciaTecnicaPage({
                           suggestedAssistant={suggestions.get(meeting.id) ?? null}
                         />
                         </aside>
-                      </div>
-
-                      <footer className="coverage-card-footer">
-                        <div className="coverage-quick-links">
-                          {meet?.joinUrl ? (
-                            <MeetLinkActions url={meet.joinUrl} />
-                          ) : <span className="muted-text">Meet pendiente</span>}
-                          <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
-                        </div>
-                        <CoverageAssistanceActions
+                            <CoverageAssistanceActions
                           covered={covered}
                           meetingId={meeting.id}
                           requestId={meeting.solicitud.id}
                         />
+                          </div>
+                        </details>
                       </footer>
                     </article>
                   );
