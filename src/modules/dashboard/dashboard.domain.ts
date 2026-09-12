@@ -72,3 +72,4 @@ export function calcularNivelUrgenciaTriage(
   }
   return "NORMAL";
 }
+

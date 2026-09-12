@@ -616,3 +616,4 @@ Run:
 git add app/(gestion)/page.tsx styles/globals.css test/dashboard-views.test.ts
 git commit -m "feat(dashboard): conectar nuevo dashboard modular por rol y optimizar estilos UI"
 ```
+

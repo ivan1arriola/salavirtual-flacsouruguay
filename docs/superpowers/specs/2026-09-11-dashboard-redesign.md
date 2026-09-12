@@ -162,3 +162,4 @@ Toda la lógica de cálculo temporal y de clasificación se centraliza en `src/m
    - `npm run check` (0 errores de TypeScript).
    - `npx vitest run` (100% de tests pasando).
    - `npm run build` (Turbopack exitoso en 47+ rutas).
+

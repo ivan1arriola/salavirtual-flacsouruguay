@@ -61,3 +61,4 @@ export interface AssistantOpportunityDTO {
   readonly finProgramadoAt: string;
   readonly yaPostulado: boolean;
 }
+

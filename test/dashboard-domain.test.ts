@@ -59,3 +59,4 @@ describe("dashboard.domain", () => {
     expect(calcularNivelUrgenciaTriage(1, true)).toBe("NORMAL");
   });
 });
+

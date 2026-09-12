@@ -70,3 +70,4 @@ export function AssistantOpenOpportunities({
     </section>
   );
 }
+
