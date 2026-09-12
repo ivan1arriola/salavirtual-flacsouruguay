@@ -6,7 +6,7 @@ vi.mock("../src/modules/dashboard/admin-dashboard.adapter", () => ({
 }));
 
 import { obtenerDashboardAdministracion } from "../src/modules/dashboard/admin-dashboard.adapter";
-import { getAdminMeeting, getAdminSummary, listAdminMeetings, validateAdminQuery } from "../src/modules/mobile-admin/queries";
+import { getAdminMeeting, getAdminSummary, listAdminMeetings, validateAdminQuery } from "../src/modules/mobile-admin/queries.adapter";
 
 function meeting(id: string, startsAt: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -206,10 +206,18 @@ describe("consultas de administración móvil", () => {
     }));
   });
 
-  it("propagates administration dashboard errors", async () => {
+  it("propaga errores del dashboard administrativo", async () => {
     const db = { instanciaSala: { findMany: vi.fn().mockResolvedValue([]) } } as unknown as PrismaClient;
-    mockedDashboard.mockRejectedValue(new Error("dashboard unavailable"));
+    const dashboardError = new Error("dashboard unavailable");
+    mockedDashboard.mockRejectedValueOnce(dashboardError);
 
-    await expect(getAdminSummary(db)).rejects.toThrow("dashboard unavailable");
+    let caught: unknown;
+    try {
+      await getAdminSummary(db);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBe(dashboardError);
   });
 });
