@@ -2648,3 +2648,35 @@
     border-bottom: 0;
   }
 }
+
+/* Gestión de asistencia: densidad operacional móvil */
+@media (max-width: 700px) {
+  .coverage-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 10px; }
+  .coverage-stats .stat, .coverage-stats .stat:nth-child(2) { border-right: 1px solid var(--line); border-bottom: 0; }
+  .coverage-stats .stat:last-child { border-right: 0; }
+  .coverage-stats .stat { padding: 9px 7px; }
+  .coverage-stats .stat span { font-size: .65rem; }
+  .coverage-stats .stat strong { font-size: 1.05rem; }
+  .coverage-filter { gap: 7px; margin-bottom: 10px; padding: 8px; }
+  .coverage-filter input, .coverage-filter select { min-height: 38px; }
+  .coverage-filter button { min-height: 36px; }
+  .coverage-card-list { gap: 9px; }
+  .coverage-card { border-left-width: 4px; }
+  .coverage-card-header { min-height: 0; flex-direction: row; align-items: center; gap: 8px; border-bottom: 0; padding: 10px 12px 4px; background: #fff; }
+  .coverage-date { gap: 7px; }
+  .coverage-date small { display: inline; margin-left: 4px; }
+  .coverage-card-body { display: block; padding: 2px 12px 8px; }
+  .coverage-title-link { margin: 3px 0 8px; font-size: 1rem; }
+  .coverage-meeting-meta { display: none; }
+  .coverage-interest-summary { margin-top: 7px; }
+  .coverage-assignment-panel { margin-top: 10px; padding: 9px 10px; }
+  .coverage-assignment-heading { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+  .coverage-assignment-heading span { margin: 0; }
+  .coverage-card-footer { gap: 8px; padding: 8px 12px 11px; }
+  .coverage-quick-links { flex-direction: row; align-items: center; gap: 8px; }
+  .coverage-quick-links .meet-link-actions { flex: 1 1 auto; }
+  .coverage-quick-links .meet-access { width: 100%; justify-content: center; }
+  .coverage-quick-links .text-link { width: auto; font-size: .74rem; white-space: nowrap; }
+  .coverage-management-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .coverage-management-actions .coverage-cancel-action { grid-column: 1 / -1; color: #9a5719; border-color: #e5c99c; background: #fffaf2; }
+}
