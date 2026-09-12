@@ -4,7 +4,7 @@ import { signMobileToken, verifyMobileToken } from "../src/lib/auth/mobile-token
 const SECRET = "test-secret-with-more-than-thirty-two-characters";
 
 describe("mobile token", () => {
-  it("firma y valida un token vigente", () => {
+  it("firma y valida un token vigente de asistente por defecto", () => {
     const issued = signMobileToken("usuario-1", SECRET, 1_000, 600);
     const payload = verifyMobileToken(issued.accessToken, SECRET, 1_200);
 
@@ -16,6 +16,15 @@ describe("mobile token", () => {
       v: 1
     });
     expect(issued.expiresAt).toBe(new Date(1_600_000).toISOString());
+  });
+
+  it("firma y valida un token vigente de administración", () => {
+    const issued = signMobileToken("usuario-1", SECRET, 1_000, 600, "ADMINISTRACION");
+
+    expect(verifyMobileToken(issued.accessToken, SECRET, 1_200)).toMatchObject({
+      sub: "usuario-1",
+      role: "ADMINISTRACION"
+    });
   });
 
   it("rechaza tokens vencidos", () => {
