@@ -8,6 +8,14 @@ export function AssistantOpenOpportunities({
 }: Readonly<{
   opportunities: readonly AssistantOpportunityDTO[];
 }>) {
+  if (opportunities.length === 0) {
+    return (
+      <p className="assistant-opportunities-empty">
+        <CheckCircle2 size={16} /> No hay coberturas abiertas en este momento.
+      </p>
+    );
+  }
+
   return (
     <section className="dashboard-content-section assistant-opportunities-section">
       <div className="section-heading">
@@ -20,12 +28,7 @@ export function AssistantOpenOpportunities({
         </Link>
       </div>
 
-      {opportunities.length === 0 ? (
-        <div className="empty-state">
-          <CheckCircle2 size={24} />
-          <p>No hay salas pendientes de cobertura técnica en este momento. ¡Todas las sesiones están cubiertas!</p>
-        </div>
-      ) : (
+      {
         <div className="assistant-opportunities-grid">
           {opportunities.map((opp) => {
             const inicio = new Date(opp.inicioProgramadoAt);
@@ -66,7 +69,7 @@ export function AssistantOpenOpportunities({
             );
           })}
         </div>
-      )}
+      }
     </section>
   );
 }
