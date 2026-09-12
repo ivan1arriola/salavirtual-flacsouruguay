@@ -12,7 +12,6 @@ const routeUrl = new URL(
 describe("participantes activos de Google Meet", () => {
   it("consulta Google con la cuenta organizadora de la instancia", async () => {
     expect(existsSync(serviceUrl)).toBe(true);
-    if (!existsSync(serviceUrl)) return;
 
     const { obtenerParticipantesActivosInstancia } = await import(
       "../src/modules/meet/live-participants.service"
@@ -76,7 +75,6 @@ describe("participantes activos de Google Meet", () => {
 
   it("expone un endpoint autenticado y limita la consulta al rol de administración", () => {
     expect(existsSync(routeUrl)).toBe(true);
-    if (!existsSync(routeUrl)) return;
 
     const source = readFileSync(routeUrl, "utf8");
     expect(source).toContain("await auth()");
@@ -86,7 +84,6 @@ describe("participantes activos de Google Meet", () => {
 
   it("actualiza automáticamente el indicador mientras la reunión está en vivo", () => {
     expect(existsSync(componentUrl)).toBe(true);
-    if (!existsSync(componentUrl)) return;
 
     const source = readFileSync(componentUrl, "utf8");
     expect(source).toContain('"use client"');
