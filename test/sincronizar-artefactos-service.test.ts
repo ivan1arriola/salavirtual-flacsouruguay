@@ -298,7 +298,7 @@ describe("sincronización robusta de artefactos Meet", () => {
     expect(client.buscarConferencia).not.toHaveBeenCalled();
   });
 
-  it("expone un error si la asistencia sigue incompleta después de 24 horas", async () => {
+  it("cierra sin error si la asistencia no está disponible después de 24 horas", async () => {
     const storage = fakeDb(baseEvent());
     const client = {
       buscarConferencia: vi.fn(async () => ({
@@ -331,9 +331,12 @@ describe("sincronización robusta de artefactos Meet", () => {
       crearClient: () => client as never
     }, ["event-1"]);
 
-    expect(result?.estado).toBe("ERROR");
-    expect(result?.error).toContain("no devolvió participantes");
+    expect(result).toMatchObject({ estado: "SINCRONIZADO", archivos: 0, grabacion: "NO_REQUERIDA" });
     expect(client.subirDocumentoGoogle).not.toHaveBeenCalled();
+    expect(storage.updates.at(-1)).toMatchObject({
+      data: { errorArchivos: null }
+    });
+    expect((storage.updates.at(-1) as { data: { archivosSincronizadosAt: unknown } }).data.archivosSincronizadosAt).toBeInstanceOf(Date);
   });
 
   it("sincroniza la grabación aunque requiereGrabacion sea false si Google generó el video", async () => {
