@@ -1,6 +1,6 @@
 # Rediseño Arquitectónico, UI y UX del Dashboard Principal Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Rediseñar la ruta raíz `http://localhost:3000/` (`app/(gestion)/page.tsx`) de forma modular, altamente diferenciada por rol (`ADMINISTRACION`, `DOCENTE`, `ASISTENTE_TECNICO`) y persona, eliminando la sobrecarga cognitiva y optimizando la regla de los 5 segundos.
 
@@ -36,7 +36,7 @@
   - `esMismoDiaMontevideo(a: Date, b: Date): boolean`
   - `calcularNivelUrgenciaTriage(horasHastaInicio: number, tieneAsistente: boolean): "CRITICO" | "MODERADO" | "NORMAL"`
 
-- [ ] **Step 1: Escribir el test fallido para el dominio de dashboard**
+- [x] **Step 1: Escribir el test fallido para el dominio de dashboard**
 
 Crear `test/dashboard-domain.test.ts`:
 ```typescript
@@ -103,12 +103,12 @@ describe("dashboard.domain", () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar el test para verificar que falla**
+- [x] **Step 2: Ejecutar el test para verificar que falla**
 
 Run: `npx vitest run test/dashboard-domain.test.ts`
 Expected: FAIL (módulos no encontrados).
 
-- [ ] **Step 3: Implementar `types.ts` y `dashboard.domain.ts`**
+- [x] **Step 3: Implementar `types.ts` y `dashboard.domain.ts`**
 
 Crear `src/modules/dashboard/types.ts`:
 ```typescript
@@ -255,12 +255,12 @@ export function calcularNivelUrgenciaTriage(
 }
 ```
 
-- [ ] **Step 4: Ejecutar tests de dominio y arquitectura funcional**
+- [x] **Step 4: Ejecutar tests de dominio y arquitectura funcional**
 
 Run: `npx vitest run test/dashboard-domain.test.ts test/functional-architecture.test.ts`
 Expected: PASS (todas las pruebas pasan y la arquitectura funcional valida que no hay efectos impuros).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/dashboard/types.ts src/modules/dashboard/dashboard.domain.ts test/dashboard-domain.test.ts
@@ -284,7 +284,7 @@ git commit -m "feat(dashboard): agregar tipos y dominio funcional puro para redi
   - `obtenerDashboardAsistenteOptimizado(db: PrismaClient, usuarioId: string, ahora: Date)`
   - `obtenerDashboardAdministracion(db: PrismaClient, ahora: Date)`
 
-- [ ] **Step 1: Escribir el test de adaptadores de dashboard**
+- [x] **Step 1: Escribir el test de adaptadores de dashboard**
 
 Crear `test/dashboard-adapters.test.ts`:
 ```typescript
@@ -300,12 +300,12 @@ describe("adaptadores de dashboard", () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar el test para verificar**
+- [x] **Step 2: Ejecutar el test para verificar**
 
 Run: `npx vitest run test/dashboard-adapters.test.ts`
 Expected: PASS.
 
-- [ ] **Step 3: Implementar `teacher-dashboard.adapter.ts`**
+- [x] **Step 3: Implementar `teacher-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/teacher-dashboard.adapter.ts`:
 - Consulta las instancias programadas del docente (`finProgramadoAt >= ahora`).
@@ -313,26 +313,26 @@ Crear `src/modules/dashboard/teacher-dashboard.adapter.ts`:
 - Recupera las siguientes 5 reuniones y las 3 grabaciones recientes de sus programas.
 - Transforma todos los datos a DTOs planos (sin `BigInt`).
 
-- [ ] **Step 4: Implementar `assistant-dashboard.adapter.ts`**
+- [x] **Step 4: Implementar `assistant-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/assistant-dashboard.adapter.ts`:
 - Reutiliza el cálculo de horas mensuales de `obtenerDashboardAsistente`.
 - Incluye consulta directa de 3 reuniones próximas que requieren asistencia y no tienen asignación para postularse en 1 clic.
 - Transforma a `HeroMeetingDTO` y `AssistantOpportunityDTO[]`.
 
-- [ ] **Step 5: Implementar `admin-dashboard.adapter.ts`**
+- [x] **Step 5: Implementar `admin-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/admin-dashboard.adapter.ts`:
 - Consulta acotada de alertas de triage (sin asistencia hoy, fallas Meet activas, grabaciones pendientes, incidencias).
 - Consulta cronológica de las salas del día (`inicioProgramadoAt` entre inicio y fin del día en Montevideo, `take: 8`).
 - Métricas consolidadas compactas (solicitudes en curso, reuniones de la semana).
 
-- [ ] **Step 6: Verificar tipos y tests**
+- [x] **Step 6: Verificar tipos y tests**
 
 Run: `npm run check && npx vitest run test/dashboard-adapters.test.ts`
 Expected: PASS con 0 errores.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/modules/dashboard/teacher-dashboard.adapter.ts src/modules/dashboard/assistant-dashboard.adapter.ts src/modules/dashboard/admin-dashboard.adapter.ts test/dashboard-adapters.test.ts
@@ -354,7 +354,7 @@ git commit -m "feat(dashboard): agregar adaptadores Prisma especializados por ro
   - `<DashboardHeader userName={string} roleName={string} actions={ReactNode} />`
   - `<LiveMeetingHero meeting={HeroMeetingDTO | null} role="DOCENTE" | "ASISTENTE_TECNICO" | "ADMINISTRACION" emptyStateCopy={string} />`
 
-- [ ] **Step 1: Escribir test para componentes base del dashboard**
+- [x] **Step 1: Escribir test para componentes base del dashboard**
 
 Crear `test/dashboard-components.test.ts`:
 ```typescript
@@ -371,14 +371,14 @@ describe("componentes compartidos de dashboard", () => {
 });
 ```
 
-- [ ] **Step 2: Implementar `src/components/dashboard/dashboard-header.tsx`**
+- [x] **Step 2: Implementar `src/components/dashboard/dashboard-header.tsx`**
 
 Implementar un encabezado limpio y humano:
 - Saludo personalizado (*"Hola, [Nombre]"*).
 - Subtítulo con fecha formateada en Montevideo y rol en badge estilizado.
 - Contenedor de acciones primarias y secundarias con soporte para responsive.
 
-- [ ] **Step 3: Implementar `src/components/dashboard/live-meeting-hero.tsx`**
+- [x] **Step 3: Implementar `src/components/dashboard/live-meeting-hero.tsx`**
 
 Implementar la tarjeta Hero de alta visibilidad:
 - Si `meeting !== null`:
@@ -391,12 +391,12 @@ Implementar la tarjeta Hero de alta visibilidad:
 - Si `meeting === null`:
   - Estado vacío amable y elegante con mensaje personalizado (ej. *"No tenés clases programadas para hoy"*).
 
-- [ ] **Step 4: Verificar TypeScript y tests**
+- [x] **Step 4: Verificar TypeScript y tests**
 
 Run: `npm run check && npx vitest run test/dashboard-components.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/dashboard/dashboard-header.tsx src/components/dashboard/live-meeting-hero.tsx test/dashboard-components.test.ts
@@ -417,7 +417,7 @@ git commit -m "feat(dashboard): crear componentes base DashboardHeader y LiveMee
 - Consumes: `obtenerDashboardDocente` de `teacher-dashboard.adapter.ts`, `DashboardHeader`, `LiveMeetingHero`.
 - Produces: `<TeacherDashboard user={session.user} />`.
 
-- [ ] **Step 1: Implementar `teacher-upcoming-list.tsx`**
+- [x] **Step 1: Implementar `teacher-upcoming-list.tsx`**
 
 Implementar una lista limpia de próximas sesiones:
 - Agrupación visual por fecha y hora.
@@ -425,27 +425,27 @@ Implementar una lista limpia de próximas sesiones:
 - Modalidad y nombre del asistente técnico (si tiene).
 - Botón discreto de Meet si ya está generado.
 
-- [ ] **Step 2: Implementar `teacher-recent-recordings.tsx`**
+- [x] **Step 2: Implementar `teacher-recent-recordings.tsx`**
 
 Implementar la tarjeta de grabaciones recientes para docentes:
 - Muestra las últimas clases que ya tienen video sincronizado en Google Drive.
 - Botón para abrir el video en Google Drive o copiar el enlace para compartir con alumnos.
 - Enlace al final a `/grabaciones`.
 
-- [ ] **Step 3: Implementar `teacher-dashboard.tsx` y conectar con adapter**
+- [x] **Step 3: Implementar `teacher-dashboard.tsx` y conectar con adapter**
 
 Orquestar el panel docente:
 - Llama a `obtenerDashboardDocente(db, user.id, new Date())`.
 - Renderiza `<DashboardHeader>`, `<LiveMeetingHero>`, `<TeacherUpcomingList>` y `<TeacherRecentRecordings>`.
 
-- [ ] **Step 4: Actualizar `src/components/teacher-dashboard.tsx` para delegar al nuevo módulo**
+- [x] **Step 4: Actualizar `src/components/teacher-dashboard.tsx` para delegar al nuevo módulo**
 
-- [ ] **Step 5: Verificar TypeScript y compilación**
+- [x] **Step 5: Verificar TypeScript y compilación**
 
 Run: `npm run check && npx vitest run`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/dashboard/teacher/ src/components/teacher-dashboard.tsx
@@ -466,33 +466,33 @@ git commit -m "feat(dashboard): implementar sub-dashboard optimizado para docent
 - Consumes: `obtenerDashboardAsistenteOptimizado` de `assistant-dashboard.adapter.ts`, `DashboardHeader`, `LiveMeetingHero`.
 - Produces: `<AssistantDashboard user={session.user} />`.
 
-- [ ] **Step 1: Implementar `assistant-open-opportunities.tsx`**
+- [x] **Step 1: Implementar `assistant-open-opportunities.tsx`**
 
 Implementar la sección de vacantes abiertas:
 - Muestra hasta 3 reuniones que buscan asistente técnico.
 - Permite postularse en 1 clic o navegar a `/agenda-abierta`.
 - Indica fecha, hora, sala y modalidad.
 
-- [ ] **Step 2: Implementar `assistant-hours-summary.tsx`**
+- [x] **Step 2: Implementar `assistant-hours-summary.tsx`**
 
 Implementar el resumen de horas trabajadas y postulaciones activas:
 - Horas acumuladas en el mes (virtuales e híbridas).
 - Horas del mes anterior.
 - Estado de postulaciones respondidas vs pendientes.
 
-- [ ] **Step 3: Implementar `assistant-dashboard.tsx` y conectar con adapter**
+- [x] **Step 3: Implementar `assistant-dashboard.tsx` y conectar con adapter**
 
 Orquestar el panel del asistente:
 - Renderiza `<DashboardHeader>`, `<LiveMeetingHero>` (con badge de cohost confirmado en Meet), `<AssistantOpenOpportunities>`, `<AssistantHoursSummary>` y las siguientes coberturas.
 
-- [ ] **Step 4: Actualizar `src/components/assistant-dashboard.tsx` para delegar al nuevo módulo**
+- [x] **Step 4: Actualizar `src/components/assistant-dashboard.tsx` para delegar al nuevo módulo**
 
-- [ ] **Step 5: Verificar TypeScript y compilación**
+- [x] **Step 5: Verificar TypeScript y compilación**
 
 Run: `npm run check && npx vitest run`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/dashboard/assistant/ src/components/assistant-dashboard.tsx
@@ -513,13 +513,13 @@ git commit -m "feat(dashboard): implementar sub-dashboard optimizado para asiste
 - Consumes: `obtenerDashboardAdministracion` de `admin-dashboard.adapter.ts`, `DashboardHeader`, componentes de acción de `src/components/admin-attention-actions.tsx`.
 - Produces: `<AdminDashboard user={session.user} />`.
 
-- [ ] **Step 1: Implementar `admin-triage-section.tsx`**
+- [x] **Step 1: Implementar `admin-triage-section.tsx`**
 
 Implementar la sección de Triage Urgente:
 - Si hay problemas: Tarjetas compactas con las acciones de 1 clic existentes (`AdminQuickAssignAction`, `AdminRetryMeetAction`, `AdminSyncRecordingsAction`).
 - Si todo está en orden: Banner verde *"Todo bajo control: No hay excepciones operativas pendientes para hoy"*.
 
-- [ ] **Step 2: Implementar `admin-today-timeline.tsx`**
+- [x] **Step 2: Implementar `admin-today-timeline.tsx`**
 
 Implementar el timeline de salas de hoy:
 - Cronología del día ordenada por hora de inicio.
@@ -527,24 +527,24 @@ Implementar el timeline de salas de hoy:
 - Indicador claro de Asistente Técnico y badge de cohosts verificado/pendiente.
 - Botón rápido de Meet y copia de link.
 
-- [ ] **Step 3: Implementar `admin-metrics-bar.tsx`**
+- [x] **Step 3: Implementar `admin-metrics-bar.tsx`**
 
 Implementar la barra de métricas secundarias en la parte inferior:
 - Solicitudes abiertas, reuniones de la semana, incidencias históricas.
 - Enlaces rápidos de administración (`/reuniones`, `/asistencia-tecnica`, `/grabaciones`).
 
-- [ ] **Step 4: Implementar `admin-dashboard.tsx`**
+- [x] **Step 4: Implementar `admin-dashboard.tsx`**
 
 Orquestar el panel de administración unificado:
 - Carga `obtenerDashboardAdministracion(db, new Date())`.
 - Renderiza `<DashboardHeader>`, `<AdminTriageSection>`, `<AdminTodayTimeline>` y `<AdminMetricsBar>`.
 
-- [ ] **Step 5: Verificar TypeScript y compilación**
+- [x] **Step 5: Verificar TypeScript y compilación**
 
 Run: `npm run check && npx vitest run`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/dashboard/admin/
@@ -564,11 +564,11 @@ git commit -m "feat(dashboard): implementar sub-dashboard de administracion con 
 - Consumes: `<AdminDashboard>`, `<TeacherDashboard>`, `<AssistantDashboard>`, `auth()`.
 - Produces: Página raíz `/` limpia de menos de 40 líneas de código.
 
-- [ ] **Step 1: Escribir test de integración para el despachador de roles en `test/dashboard-views.test.ts`**
+- [x] **Step 1: Escribir test de integración para el despachador de roles en `test/dashboard-views.test.ts`**
 
 Validar que `HomePage` rutea correctamente a cada rol y redirige si no hay sesión.
 
-- [ ] **Step 2: Refactorizar `app/(gestion)/page.tsx`**
+- [x] **Step 2: Refactorizar `app/(gestion)/page.tsx`**
 
 Reducir `app/(gestion)/page.tsx` a un despachador limpio:
 ```typescript
@@ -594,7 +594,7 @@ export default async function HomePage() {
 }
 ```
 
-- [ ] **Step 3: Ajustar estilos en `styles/globals.css`**
+- [x] **Step 3: Ajustar estilos en `styles/globals.css`**
 
 Añadir y afinar estilos CSS para:
 - `.dashboard-hero-card` (tarjeta Hero con acentos visuales y pulso de "En vivo").
@@ -602,7 +602,7 @@ Añadir y afinar estilos CSS para:
 - `.triage-section` (grilla ordenada de atención urgente).
 - Asegurar diseño responsive móvil y de escritorio con tokens CSS existentes.
 
-- [ ] **Step 4: Ejecutar todas las verificaciones del proyecto**
+- [x] **Step 4: Ejecutar todas las verificaciones del proyecto**
 
 Run:
 1. `npm run check` (TypeScript estricto)
@@ -610,7 +610,7 @@ Run:
 3. `npx vitest run` (100% de la suite de pruebas)
 4. `npm run build` (Turbopack exitoso en 47+ rutas)
 
-- [ ] **Step 5: Commit final**
+- [x] **Step 5: Commit final**
 
 ```bash
 git add app/(gestion)/page.tsx styles/globals.css test/dashboard-views.test.ts
