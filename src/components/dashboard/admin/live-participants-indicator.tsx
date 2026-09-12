@@ -2,6 +2,7 @@
 
 import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import styles from "./live-participants-indicator.module.css";
 
 type ParticipanteActivo = Readonly<{
   nombre: string;
@@ -51,7 +52,7 @@ export function LiveParticipantsIndicator({
         const nextData = (await response.json()) as LiveParticipantsResponse;
         setData(nextData);
         setFalloActualizacion(false);
-      } catch (error) {
+      } catch {
         if (!controller.signal.aborted) {
           setFalloActualizacion(true);
         }
@@ -72,7 +73,7 @@ export function LiveParticipantsIndicator({
   if (!data) {
     return (
       <span
-        className={`live-participants-summary ${falloActualizacion ? "has-error" : "is-loading"}`}
+        className={`${styles.summary} ${falloActualizacion ? styles.error : styles.loading}`}
         title={falloActualizacion ? "No se pudo consultar Google Meet." : "Consultando Google Meet…"}
       >
         <Users size={13} />
@@ -83,7 +84,10 @@ export function LiveParticipantsIndicator({
 
   if (data.estado === "NO_DISPONIBLE") {
     return (
-      <span className="live-participants-summary is-muted" title="La reunión no dispone de datos de presencia en Meet.">
+      <span
+        className={`${styles.summary} ${styles.muted}`}
+        title="La reunión no dispone de datos de presencia en Meet."
+      >
         <Users size={13} />
         Sin datos en vivo
       </span>
@@ -92,7 +96,10 @@ export function LiveParticipantsIndicator({
 
   if (!data.conferenciaExiste) {
     return (
-      <span className="live-participants-summary is-muted" title="Meet todavía no informó una conferencia activa.">
+      <span
+        className={`${styles.summary} ${styles.muted}`}
+        title="Meet todavía no informó una conferencia activa."
+      >
         <Users size={13} />
         Esperando Meet
       </span>
@@ -103,7 +110,7 @@ export function LiveParticipantsIndicator({
   if (total === 0) {
     return (
       <span
-        className="live-participants-summary"
+        className={styles.summary}
         title={falloActualizacion ? "Mostrando el último dato disponible." : "Se actualiza cada 15 segundos."}
         aria-live="polite"
       >
@@ -115,20 +122,20 @@ export function LiveParticipantsIndicator({
 
   return (
     <details
-      className={`live-participants ${falloActualizacion ? "is-stale" : ""}`}
+      className={`${styles.root} ${falloActualizacion ? styles.stale : ""}`}
       title={falloActualizacion ? "Mostrando el último dato disponible." : "Se actualiza cada 15 segundos."}
     >
       <summary aria-live="polite">
         <Users size={13} />
         <strong>{total}</strong> {total === 1 ? "conectado" : "conectados"}
       </summary>
-      <div className="live-participants-panel">
-        <strong className="live-participants-heading">En la reunión ahora</strong>
+      <div className={styles.panel}>
+        <strong className={styles.heading}>En la reunión ahora</strong>
         <ul>
           {data.participantes.map((participante, index) => (
             <li key={participante.user ?? `${participante.tipo}-${participante.nombre}-${index}`}>
-              <span className="live-participant-dot" aria-hidden="true" />
-              <span className="live-participant-name">{participante.nombre}</span>
+              <span className={styles.dot} aria-hidden="true" />
+              <span className={styles.name}>{participante.nombre}</span>
               <small>{etiquetaTipo(participante.tipo)}</small>
             </li>
           ))}
