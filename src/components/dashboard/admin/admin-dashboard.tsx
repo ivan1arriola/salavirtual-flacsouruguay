@@ -35,9 +35,9 @@ export async function AdminDashboard({
         userName={user.name ?? "Administración"}
       />
 
-      <AdminTriageSection attentionData={data.attentionData} />
-
       <AdminTodayTimeline meetings={data.todayTimeline} />
+
+      <AdminTriageSection attentionData={data.attentionData} />
 
       <AdminMetricsBar metrics={data.metrics} />
     </div>
