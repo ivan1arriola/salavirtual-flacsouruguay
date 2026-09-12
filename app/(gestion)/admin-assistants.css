@@ -75,6 +75,38 @@
   margin-top: 18px;
 }
 
+.assistant-history-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+}
+
+.assistant-history-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.assistant-history-summary-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assistant-history-summary-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.assistant-history-content {
+  border-top: 1px solid var(--line);
+}
+
 .assistant-history-table td {
   vertical-align: middle;
 }
@@ -129,5 +161,11 @@
   .assistant-unassign-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .assistant-history-details > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 }
