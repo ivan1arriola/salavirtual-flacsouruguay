@@ -1336,3 +1336,37 @@
   }
 }
 
+
+
+/* Asistente: estado compacto cuando no hay vacantes. */
+.assistant-opportunities-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: -4px 0 0;
+  color: #1a634c;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .assistant-hours-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assistant-stat-card {
+    padding: 12px;
+  }
+
+  .assistant-stat-icon {
+    display: none;
+  }
+
+  .assistant-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .assistant-stat-breakdown {
+    display: none;
+  }
+}
