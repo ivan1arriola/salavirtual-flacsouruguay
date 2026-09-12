@@ -3,9 +3,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const MOBILE_TOKEN_VERSION = 1;
 const MOBILE_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+export type MobileRole = "ASISTENTE_TECNICO" | "ADMINISTRACION";
+
 export type MobileTokenPayload = Readonly<{
   sub: string;
-  role: "ASISTENTE_TECNICO";
+  role: MobileRole;
   iat: number;
   exp: number;
   v: 1;
@@ -24,6 +26,10 @@ function encodePayload(payload: MobileTokenPayload): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
 }
 
+function isMobileRole(value: unknown): value is MobileRole {
+  return value === "ASISTENTE_TECNICO" || value === "ADMINISTRACION";
+}
+
 function validPayload(value: unknown, nowSeconds: number): value is MobileTokenPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
@@ -31,7 +37,7 @@ function validPayload(value: unknown, nowSeconds: number): value is MobileTokenP
     payload.v === MOBILE_TOKEN_VERSION &&
     typeof payload.sub === "string" &&
     payload.sub.length > 0 &&
-    payload.role === "ASISTENTE_TECNICO" &&
+    isMobileRole(payload.role) &&
     typeof payload.iat === "number" &&
     Number.isInteger(payload.iat) &&
     payload.iat <= nowSeconds + 300 &&
@@ -45,7 +51,8 @@ export function signMobileToken(
   userId: string,
   secret: string,
   nowSeconds = Math.floor(Date.now() / 1000),
-  ttlSeconds = MOBILE_TOKEN_TTL_SECONDS
+  ttlSeconds = MOBILE_TOKEN_TTL_SECONDS,
+  role: MobileRole = "ASISTENTE_TECNICO"
 ): TokenIssueResult {
   if (!userId) throw new Error("No se puede emitir un token sin usuario.");
   if (secret.length < 32) throw new Error("El secreto de autenticación es inválido.");
@@ -53,7 +60,7 @@ export function signMobileToken(
 
   const payload: MobileTokenPayload = {
     sub: userId,
-    role: "ASISTENTE_TECNICO",
+    role,
     iat: nowSeconds,
     exp: nowSeconds + ttlSeconds,
     v: MOBILE_TOKEN_VERSION
@@ -94,8 +101,12 @@ export function verifyMobileToken(
   }
 }
 
+export function issueMobileToken(userId: string, secret: string, role: MobileRole = "ASISTENTE_TECNICO"): TokenIssueResult {
+  return signMobileToken(userId, secret, undefined, undefined, role);
+}
+
 export function issueAssistantMobileToken(userId: string, secret: string): TokenIssueResult {
-  return signMobileToken(userId, secret);
+  return issueMobileToken(userId, secret);
 }
 
 export function mobileActorFromRequest(request: Request, secret: string): MobileTokenPayload | null {

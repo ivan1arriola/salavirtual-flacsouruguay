@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authConfig } from "@/src/lib/auth/config";
 import { dependenciasLoginLocal } from "@/src/lib/auth/local-login.adapter";
-import { issueAssistantMobileToken } from "@/src/lib/auth/mobile-token";
+import { issueMobileToken } from "@/src/lib/auth/mobile-token";
 import { autenticarConCredenciales } from "@/src/modules/usuarios/credentials.service";
 
 export async function POST(request: Request) {
@@ -11,9 +11,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Usuario o contraseña incorrectos." }, { status: 401 });
   }
-  if (user.rol !== "ASISTENTE_TECNICO") {
+  if (user.rol !== "ASISTENTE_TECNICO" && user.rol !== "ADMINISTRACION") {
     return NextResponse.json(
-      { error: "Esta aplicación está disponible únicamente para asistentes técnicos." },
+      { error: "Esta aplicación está disponible únicamente para asistentes técnicos y administración." },
       { status: 403 }
     );
   }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = issueAssistantMobileToken(user.id, authConfig.secret);
+  const token = issueMobileToken(user.id, authConfig.secret, user.rol);
   return NextResponse.json({
     ...token,
     tokenType: "Bearer",
