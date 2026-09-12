@@ -7,20 +7,43 @@ const INSTANCE_STATES = ["PROGRAMADA", "EN_CURSO", "FINALIZADA", "CANCELADA", "N
 
 const meetingInclude = Prisma.validator<Prisma.InstanciaSalaInclude>()({
   solicitud: {
-    include: {
+    select: {
+      id: true,
+      titulo: true,
+      descripcion: true,
+      modalidad: true,
       docentePrograma: {
-        include: {
-          programa: true,
-          docente: { include: { usuario: true } }
+        select: {
+          programa: { select: { id: true, nombre: true } },
+          docente: {
+            select: {
+              usuario: { select: { nombres: true, apellidos: true } }
+            }
+          }
         }
       }
     }
   },
-  eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+  eventosProveedor: {
+    select: {
+      joinUrl: true,
+      proveedor: { select: { tipo: true } },
+      cuentaProveedor: { select: { emailOrganizador: true, nombre: true } }
+    }
+  },
   asignaciones: {
     where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-    include: { asistenteTecnico: { include: { usuario: true } } },
-    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      asistenteTecnicoId: true,
+      estado: true,
+      asistenteTecnico: {
+        select: {
+          usuario: { select: { nombres: true, apellidos: true } }
+        }
+      }
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
     take: 1
   }
 });
@@ -47,12 +70,11 @@ export function validateAdminQuery(query: AdminQuery): AdminQuery {
 
 export async function listAdminMeetings(db: PrismaClient, query: AdminQuery): Promise<AdminPage> {
   validateAdminQuery(query);
-  const from = new Date(query.from);
-  const to = new Date(query.to);
+  const from = parseIso(query.from, "from");
+  const to = parseIso(query.to, "to");
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
-  const where = buildWhere(query, from, to, cursor);
   const rows = await db.instanciaSala.findMany({
-    where,
+    where: buildWhere(query, from, to, cursor),
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     take: query.limit + 1,
     include: meetingInclude
@@ -181,16 +203,44 @@ function toAdminMeeting(meeting: MeetingRow): AdminMeeting {
   };
 }
 
-function parseIso(value: string, field: string): Date {
+function parseIso(value: unknown, field: string): Date {
+  if (typeof value !== "string") throw new Error(`${field} debe ser ISO 8601.`);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+  if (!match) throw new Error(`${field} debe ser ISO 8601.`);
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offsetSign, offsetHourText, offsetMinuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const offsetHour = offsetHourText === undefined ? 0 : Number(offsetHourText);
+  const offsetMinute = offsetMinuteText === undefined ? 0 : Number(offsetMinuteText);
+
   if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth(year, month) ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    offsetHour > 23 ||
+    offsetMinute > 59 ||
+    (offsetSign === undefined && (offsetHourText !== undefined || offsetMinuteText !== undefined))
   ) {
     throw new Error(`${field} debe ser ISO 8601.`);
   }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) throw new Error(`${field} debe ser ISO 8601.`);
   return date;
+}
+
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }
 
 function encodeCursor(startsAt: Date, id: string): string {
@@ -201,7 +251,7 @@ function decodeCursor(value: string): Cursor {
   try {
     const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as { startsAt?: unknown; id?: unknown };
     if (typeof decoded.id !== "string" || !decoded.id) throw new Error("cursor inválido.");
-    return { startsAt: parseIso(String(decoded.startsAt), "cursor"), id: decoded.id };
+    return { startsAt: parseIso(decoded.startsAt, "cursor"), id: decoded.id };
   } catch {
     throw new Error("cursor inválido.");
   }
