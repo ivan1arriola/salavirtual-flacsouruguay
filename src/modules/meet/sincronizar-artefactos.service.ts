@@ -178,13 +178,9 @@ async function sincronizarEvento(
           uploaded
         );
         synchronized += 1;
-      } else if (conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
-        throw new Error(
-          attendance.participantes === 0
-            ? "Google Meet no devolvió participantes para generar la asistencia después de 24 horas."
-            : "Google Meet todavía devuelve sesiones de asistencia incompletas después de 24 horas."
-        );
-      } else {
+      } else if (!conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
+        // Google puede tardar hasta 24 h en completar la asistencia. Después de ese plazo,
+        // la ausencia de participantes es un resultado final, no un error reintentable.
         pending += 1;
       }
     }
