@@ -244,10 +244,10 @@ export default async function AsistenciaTecnicaPage({
 
                       <footer className="coverage-card-footer">
                         <div className="coverage-quick-links">
-                          <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver reunión <ArrowRight size={15} /></Link>
                           {meet?.joinUrl ? (
                             <MeetLinkActions url={meet.joinUrl} />
                           ) : <span className="muted-text">Meet pendiente</span>}
+                          <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
                         </div>
                         <CoverageAssistanceActions
                           covered={covered}
