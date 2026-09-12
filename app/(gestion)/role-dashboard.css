@@ -1396,6 +1396,6 @@
  .admin-dashboard-redesigned .admin-timeline-academic { display: none; }
  .admin-dashboard-redesigned .admin-timeline-status-row { margin-top: 5px; }
  .admin-dashboard-redesigned .admin-timeline-actions { border-top: 1px solid #edf0f2; padding-top: 7px; }
- .admin-dashboard-redesigned .admin-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+ .admin-dashboard-redesigned .admin-metrics-bar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
  .admin-dashboard-redesigned .admin-metric-card { min-height: 0; box-shadow: none; padding: 9px; }
 }
