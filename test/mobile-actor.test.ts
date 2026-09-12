@@ -16,7 +16,7 @@ vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
 }));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 
-import { MobileActorError, requireMobileActor } from "../src/lib/auth/mobile-actor.adapter";
+import { requireMobileActor } from "../src/lib/auth/mobile-actor.adapter";
 
 beforeEach(() => {
   state.token = { sub: "usuario-1", role: "ASISTENTE_TECNICO" };
@@ -35,7 +35,7 @@ describe("requireMobileActor", () => {
 
     await expect(
       requireMobileActor(new Request("https://example.test"), ["ASISTENTE_TECNICO"])
-    ).rejects.toMatchObject<Partial<MobileActorError>>({ status: 401 });
+    ).rejects.toMatchObject({ status: 401 });
   });
 
   it("revoca el acceso si la cuenta fue desactivada", async () => {
@@ -43,7 +43,7 @@ describe("requireMobileActor", () => {
 
     await expect(
       requireMobileActor(new Request("https://example.test"), ["ASISTENTE_TECNICO"])
-    ).rejects.toMatchObject<Partial<MobileActorError>>({ status: 403 });
+    ).rejects.toMatchObject({ status: 403 });
   });
 
   it("revoca el acceso si el rol cambió desde la emisión", async () => {
@@ -51,6 +51,6 @@ describe("requireMobileActor", () => {
 
     await expect(
       requireMobileActor(new Request("https://example.test"), ["ASISTENTE_TECNICO", "ADMINISTRACION"])
-    ).rejects.toMatchObject<Partial<MobileActorError>>({ status: 403 });
+    ).rejects.toMatchObject({ status: 403 });
   });
 });
