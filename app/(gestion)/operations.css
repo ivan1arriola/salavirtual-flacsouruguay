@@ -2690,3 +2690,8 @@
 .coverage-management-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 13px 18px; }
 .coverage-management-content .coverage-assignment-panel { margin: 0; }
 @media (max-width: 700px) { .coverage-card-footer { min-height: 0; flex-direction: row; padding: 7px 12px; } .coverage-quick-links { width: 100%; } .coverage-management-disclosure summary { padding: 10px 12px; } .coverage-management-content { grid-template-columns: 1fr; gap: 9px; padding: 10px 12px 12px; } .coverage-management-content .coverage-assignment-panel { padding: 9px 10px; } .coverage-management-content .coverage-management-actions { width: 100%; } }
+
+.coverage-card-footer { display: block; min-height: 0; padding: 0; }
+.coverage-card-footer > .coverage-quick-links { padding: 10px 18px; }
+.coverage-management-disclosure { width: 100%; }
+@media (max-width: 700px) { .coverage-card-footer > .coverage-quick-links { padding: 8px 12px; } }
