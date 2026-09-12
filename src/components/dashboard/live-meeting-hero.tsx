@@ -155,7 +155,11 @@ export function LiveMeetingHero({
       <footer className="dashboard-hero-footer">
         <div className="dashboard-hero-metadata-item">
           <UserCheck size={16} />
-          {meeting.asistente ? (
+          {role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia ? (
+            <span className="status-ok-text">
+              <CheckCircle2 size={16} /> Tu cobertura técnica confirmada
+            </span>
+          ) : meeting.asistente ? (
             <span>
               Asistente técnico: <strong>{meeting.asistente.nombre}</strong>
             </span>
