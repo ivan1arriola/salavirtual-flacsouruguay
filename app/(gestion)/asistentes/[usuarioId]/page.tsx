@@ -2,11 +2,13 @@ import { ArrowLeft, UserRoundCog } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AssistantHistory } from "@/src/components/assistant-history";
 import { AssistantMeetingsTable } from "@/src/components/assistant-meetings-table";
 import { AssistantPeriodNav } from "@/src/components/assistant-period-nav";
 import { db } from "@/src/lib/db";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
 import { userIdFromAssistantPath } from "@/src/lib/ui/assistant-route";
+import { obtenerHistorialAsistenteEnRango } from "@/src/modules/asistencia/historial-asistente.adapter";
 import { resolverPeriodoMes } from "@/src/modules/asistencia/resumen-administracion.domain";
 import { resumirAsistencias } from "@/src/modules/asistencia/resumen-personal.domain";
 import { obtenerAsistenciasEnRango } from "@/src/modules/asistencia/resumen-personal.adapter";
@@ -32,11 +34,11 @@ export default async function AsistenteDetailPage({
   });
   if (!assistant) notFound();
   const usuarioId = assistant.usuarioId;
-  const meetings = await obtenerAsistenciasEnRango(
-    db,
-    usuarioId,
-    { desde: new Date(period.desdeMs), hasta: new Date(period.hastaMs) }
-  );
+  const range = { desde: new Date(period.desdeMs), hasta: new Date(period.hastaMs) };
+  const [meetings, history] = await Promise.all([
+    obtenerAsistenciasEnRango(db, usuarioId, range),
+    obtenerHistorialAsistenteEnRango(db, usuarioId, range),
+  ]);
   const summary = resumirAsistencias(meetings);
   const missingRates = meetings.filter(({ monto }) => monto === null).length;
   const name = `${assistant.usuario.nombres} ${assistant.usuario.apellidos ?? ""}`.trim();
@@ -67,9 +69,11 @@ export default async function AsistenteDetailPage({
       </section>
 
       <section className="content-section">
-        <div className="section-heading assistant-detail-list-heading"><div><h2>Reuniones e instancias</h2><p>{meetings.length} registros en el período.</p></div></div>
+        <div className="section-heading assistant-detail-list-heading"><div><h2>Reuniones e instancias</h2><p>{meetings.length} registros activos en el período.</p></div></div>
         {meetings.length ? <AssistantMeetingsTable meetings={meetings} /> : <div className="empty-state"><p>No tiene reuniones asignadas en este mes.</p></div>}
       </section>
+
+      <AssistantHistory entries={history} />
     </>
   );
 }
