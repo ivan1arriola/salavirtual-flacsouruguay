@@ -11,9 +11,13 @@ function source(relativePath: string): string {
 }
 
 describe("flujo administrativo de desvinculación", () => {
-  it("expone DELETE y sincroniza integraciones después de cancelar", () => {
-    const route = source("app/api/v1/asistencia/asignaciones/route.ts");
-    expect(route).toContain("export async function DELETE");
+  it("expone un endpoint dedicado y sincroniza integraciones después de cancelar", () => {
+    const routePath = filePath("app/api/v1/asistencia/asignaciones/desvincular/route.ts");
+    expect(existsSync(routePath)).toBe(true);
+    if (!existsSync(routePath)) return;
+
+    const route = readFileSync(routePath, "utf8");
+    expect(route).toContain("export async function POST");
     expect(route).toContain("desvincularAsistenteAsignado");
     expect(route).toContain("sincronizarCohostsDeInstancia");
     expect(route).toContain("sincronizarCalendarioAsistenteInstancia");
@@ -26,7 +30,7 @@ describe("flujo administrativo de desvinculación", () => {
     const button = readFileSync(buttonPath, "utf8");
     const table = source("src/components/assistant-meetings-table.tsx");
     expect(button).toContain("Quitar asignación");
-    expect(button).toContain('method: "DELETE"');
+    expect(button).toContain('method: "POST"');
     expect(button).toContain("router.refresh()");
     expect(table).toContain("AssistantUnassignButton");
   });
