@@ -4,7 +4,7 @@
 
 **Goal:** Completar el flujo administrativo para quitar una asignación de asistencia técnica sin motivo obligatorio, sincronizar los efectos externos y mostrar el historial operativo del asistente.
 
-**Architecture:** Reutilizar el servicio transaccional ya creado para cancelar la asignación y auditarla. Exponerlo mediante `DELETE /api/v1/asistencia/asignaciones`, ejecutar después las sincronizaciones de Google Meet y Google Calendar sin revertir el cambio local si Google falla, y conectar una acción cliente desde la tabla del detalle del asistente. El historial se obtiene desde `Auditoria`, se renderiza en la misma pantalla y las asignaciones canceladas dejan de participar en el resumen mensual porque el adaptador actual solo incluye estados activos.
+**Architecture:** Reutilizar el servicio transaccional ya creado para cancelar la asignación y auditarla. Exponerlo mediante `POST /api/v1/asistencia/asignaciones/desvincular`, ejecutar después las sincronizaciones de Google Meet y Google Calendar sin revertir el cambio local si Google falla, y conectar una acción cliente desde la tabla del detalle del asistente. El historial se obtiene desde `Auditoria`, se renderiza en la misma pantalla y las asignaciones canceladas dejan de participar en el resumen mensual porque el adaptador actual solo incluye estados activos.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Prisma 6, Vitest, Google Meet/Calendar adapters existentes.
 
@@ -29,31 +29,31 @@
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
-- Consumes: `DELETE /api/v1/asistencia/asignaciones`, `AssistantMeetingsTable`, detalle `/asistentes/[usuarioId]`.
+- Consumes: `POST /api/v1/asistencia/asignaciones/desvincular`, `AssistantMeetingsTable`, detalle `/asistentes/[usuarioId]`.
 - Produces: contrato verificable de endpoint, acción “Quitar asignación” e historial visible.
 
 - [ ] **Step 1: Write the failing test**
 
-Crear una prueba de contrato que lea los archivos fuente y exija: export `DELETE` en la ruta, llamada al servicio `desvincularAsistenteAsignado`, sincronización posterior de cohosts/calendario, un componente cliente con texto `Quitar asignación`, y el detalle del asistente usando `obtenerHistorialAsistenteEnRango`.
+Crear una prueba de contrato que lea los archivos fuente y exija: export `POST` en la ruta dedicada, llamada al servicio `desvincularAsistenteAsignado`, sincronización posterior de cohosts/calendario, un componente cliente con texto `Quitar asignación`, y el detalle del asistente usando `obtenerHistorialAsistenteEnRango`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/asistencia-desvinculacion-ui.test.ts`
 Expected: FAIL porque la ruta y la UI todavía no implementan el contrato.
 
-### Task 2: Endpoint DELETE con sincronizaciones externas
+### Task 2: Endpoint de desvinculación con sincronizaciones externas
 
 **Files:**
-- Modify: `app/api/v1/asistencia/asignaciones/route.ts`
+- Create: `app/api/v1/asistencia/asignaciones/desvincular/route.ts`
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
 - Consumes: `desvincularAsistenteAsignado(db, actor, { asignacionId })`.
-- Produces: `DELETE` con respuesta `{ assignment, warning, calendarioAsistente }`.
+- Produces: `POST` con respuesta `{ assignment, warning, calendarioAsistente }`.
 
-- [ ] **Step 1: Implement minimal DELETE handler**
+- [ ] **Step 1: Implement minimal POST handler**
 
-Autenticar y resolver actor exactamente igual que `POST`. Ejecutar `desvincularAsistenteAsignado`, luego `sincronizarCohostsDeInstancia` y `sincronizarCalendarioAsistenteInstancia`. Acumular advertencias sin revertir la cancelación.
+Autenticar y resolver actor igual que el endpoint de asignación. Ejecutar `desvincularAsistenteAsignado`, luego `sincronizarCohostsDeInstancia` y `sincronizarCalendarioAsistenteInstancia`. Acumular advertencias sin revertir la cancelación.
 
 - [ ] **Step 2: Run focused tests**
 
@@ -71,12 +71,12 @@ Expected: el contrato de endpoint pasa; la parte de UI continúa fallando hasta 
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
-- Consumes: assignment `id`, `titulo`, API DELETE, `RegistroHistorialAsistenciaPersonal[]`.
+- Consumes: assignment `id`, `titulo`, endpoint dedicado, `RegistroHistorialAsistenciaPersonal[]`.
 - Produces: botón de desvinculación por fila, refresco del servidor al completar y panel de historial cronológico.
 
 - [ ] **Step 1: Add client unassign action**
 
-Crear un botón cliente que pida confirmación simple, envíe `DELETE` con `{ asignacionId }`, muestre error/advertencia y ejecute `router.refresh()` al completar.
+Crear un botón cliente que pida confirmación simple, envíe `POST` con `{ asignacionId }`, muestre error/advertencia y ejecute `router.refresh()` al completar.
 
 - [ ] **Step 2: Integrate action in table**
 
