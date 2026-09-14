@@ -42,26 +42,8 @@ export function readMeetEvidence(audit: MeetAudit): MeetEvidence | null {
   if (!(MEET_HISTORY_ACTIONS as readonly string[]).includes(audit.accion)) return null;
   const before = record(audit.valorAnterior);
   const after = record(audit.valorNuevo);
-  let meetingIds: readonly string[] = [];
-  let seriesId: string | null = null;
-  switch (audit.accion) {
-    case "ENLACE_MEET_REGISTRADO":
-      if (audit.entidadTipo !== "EventoProveedor") return null;
-      meetingIds = typeof after.instanciaSalaId === "string" ? [after.instanciaSalaId] : [];
-      break;
-    case "MEET_MIGRADO_A_ESPACIO_PREVIEW":
-      if (audit.entidadTipo !== "InstanciaSala") return null;
-      meetingIds = [audit.entidadId];
-      break;
-    case "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW":
-      if (audit.entidadTipo !== "InstanciaSala") return null;
-      // This migration records exactly which instances were migrated together.
-      meetingIds = strings(before.encuentros).filter((id) => strings(after.encuentros).includes(id));
-      break;
-    default:
-      if (audit.entidadTipo !== "SolicitudSala") return null;
-      seriesId = audit.entidadId;
-  }
+  const target = evidenceTarget(audit, before, after);
+  if (!target) return null;
   const change: MeetChange = {
     auditId: audit.id, at: audit.createdAt, before: codes(before), after: codes(after),
     origin: typeof after.origen === "string" ? after.origen : audit.accion,
@@ -72,9 +54,30 @@ export function readMeetEvidence(audit: MeetAudit): MeetEvidence | null {
     ),
   };
   if (!change.before.length && !change.after.length) return null;
-  return { meetingIds: [...new Set(meetingIds)], seriesId, change };
+  return { meetingIds: [...new Set(target.meetingIds)], seriesId: target.seriesId, change };
 }
 
 export function evidenceMatches(change: MeetChange, code: string): boolean {
   return change.before.includes(code) || change.after.includes(code);
+}
+
+function evidenceTarget(
+  audit: MeetAudit, before: Record<string, unknown>, after: Record<string, unknown>,
+): Readonly<{ meetingIds: readonly string[]; seriesId: string | null }> | null {
+  switch (audit.accion) {
+    case "ENLACE_MEET_REGISTRADO":
+      return audit.entidadTipo === "EventoProveedor" ? {
+        meetingIds: typeof after.instanciaSalaId === "string" ? [after.instanciaSalaId] : [], seriesId: null,
+      } : null;
+    case "MEET_MIGRADO_A_ESPACIO_PREVIEW":
+      return audit.entidadTipo === "InstanciaSala" ? { meetingIds: [audit.entidadId], seriesId: null } : null;
+    case "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW":
+      return audit.entidadTipo === "InstanciaSala" ? {
+        // This migration records exactly which instances were migrated together.
+        meetingIds: strings(before.encuentros).filter((id) => strings(after.encuentros).includes(id)),
+        seriesId: null,
+      } : null;
+    default:
+      return audit.entidadTipo === "SolicitudSala" ? { meetingIds: [], seriesId: audit.entidadId } : null;
+  }
 }
