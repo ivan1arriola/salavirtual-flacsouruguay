@@ -1,3 +1,4 @@
+import { normalizeMeetLink } from "../src/modules/meet/meet-link.domain";
 import { Prisma } from "@prisma/client";
 import { loadEnvConfig } from "@next/env";
 import { JWT } from "google-auth-library";
@@ -93,6 +94,7 @@ async function main(): Promise<void> {
   }
 
   await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'asignar-link-meet-serie', true), set_config('flacso.meet_change_reason', 'Asignación de enlace a la serie', true)`;
     for (const { event } of events) {
       await tx.eventoProveedor.update({
         where: { id: event.id },
@@ -172,9 +174,9 @@ function argumentValue(name: string): string {
 }
 
 function normalizeMeetUrl(value: string): string {
-  const match = value.toLowerCase().match(/(?:https?:\/\/meet\.google\.com\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})/);
-  if (!match?.[1]) throw new Error("El enlace de Google Meet no es válido.");
-  return `https://meet.google.com/${match[1]}`;
+  const link = normalizeMeetLink(value);
+  if (!link) throw new Error("El enlace de Google Meet no es válido.");
+  return link.url;
 }
 
 main()

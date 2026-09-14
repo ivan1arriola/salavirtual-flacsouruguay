@@ -1,4 +1,4 @@
-import { CalendarPlus, UserCheck } from "lucide-react";
+import { CalendarPlus, Search, UserCheck } from "lucide-react";
 import type { Session } from "next-auth";
 import Link from "next/link";
 import { AdminMetricsBar } from "@/src/components/dashboard/admin/admin-metrics-bar";
@@ -21,6 +21,9 @@ export async function AdminDashboard({
       <DashboardHeader
         actions={
           <>
+            <Link className="secondary-action" href="/reuniones/buscar-meet">
+              <Search size={16} /> Buscar Meet
+            </Link>
             <Link className="secondary-action" href="/asistencia-tecnica">
               <UserCheck size={16} />
               <span>Gestionar asistencia</span>

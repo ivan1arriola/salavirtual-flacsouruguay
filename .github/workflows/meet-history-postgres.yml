@@ -1,0 +1,55 @@
+name: "Meet · Historial PostgreSQL"
+on:
+  pull_request:
+    paths:
+      - "prisma/**"
+      - "src/modules/meet/**"
+      - "test/meet-history*"
+      - "test/reverse-meet-search*"
+      - ".github/workflows/meet-history-postgres.yml"
+  push:
+    branches: [main]
+    paths:
+      - "prisma/**"
+      - "src/modules/meet/**"
+      - "test/meet-history*"
+      - "test/reverse-meet-search*"
+      - ".github/workflows/meet-history-postgres.yml"
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: flacso_meet_history_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d flacso_meet_history_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_meet_history_ci?schema=public"
+      MEET_HISTORY_DATABASE_TEST: "1"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --package-lock=false
+      - name: Preparar esquema anterior en base CI descartable
+        run: |
+          git show ${{ github.event.pull_request.base.sha || github.event.before }}:prisma/schema.prisma > prisma/schema-before-ci.prisma
+          npx prisma db push --schema prisma/schema-before-ci.prisma --skip-generate
+      - name: Aplicar migración aditiva de historial
+        run: npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260914160000_historial_enlaces_meet/migration.sql
+      - run: npx prisma generate
+      - name: Comprobar búsqueda, historial y rollback sobre PostgreSQL
+        run: npx vitest run test/meet-history-postgres.test.ts test/meet-link.test.ts test/meet-history.test.ts test/reverse-meet-search.test.ts

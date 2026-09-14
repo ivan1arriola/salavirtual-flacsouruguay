@@ -426,6 +426,12 @@ export default async function ReunionesPage({
         </Link>
       </header>
 
+      {actor.rol === "ADMINISTRACION" && (
+        <Link className="secondary-action" href="/reuniones/buscar-meet">
+          <Search size={17} aria-hidden="true" /> Buscar por enlace o código Meet
+        </Link>
+      )}
+
       {actor.rol === "ADMINISTRACION" ? (
         <nav className="agenda-view-switch agenda-period-switch" aria-label="Período de reuniones">
           <Link

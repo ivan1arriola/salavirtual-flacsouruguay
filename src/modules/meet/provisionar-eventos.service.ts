@@ -1,3 +1,4 @@
+import { normalizeMeetLink } from "./meet-link.domain";
 import { registrarVerificacionCohosts } from "./cohost-verification.domain";
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -389,8 +390,8 @@ async function persistirMeetDetectado(
     where: { id },
     data: {
       externalEventId: result.externalEventId,
-      codigoReunion: result.codigoReunion,
-      joinUrl: result.joinUrl,
+      codigoReunion: normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
+      joinUrl: normalizeMeetLink(result.joinUrl)?.url ?? result.joinUrl,
       payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
     },
   });
@@ -419,8 +420,8 @@ async function finalizarOperacion(
         sincronizadoAt: new Date(),
         ...(result ? {
           externalEventId: result.externalEventId,
-          codigoReunion: result.codigoReunion,
-          joinUrl: result.joinUrl,
+          codigoReunion: normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
+          joinUrl: normalizeMeetLink(result.joinUrl)?.url ?? result.joinUrl,
           payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
         } : {}),
       },

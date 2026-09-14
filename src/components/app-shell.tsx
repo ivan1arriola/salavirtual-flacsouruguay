@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Menu,
   Settings,
+  Search,
   UserRoundCheck,
   Users,
   Video
@@ -39,7 +40,8 @@ const adminNav = [
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
   { href: "/asistentes", label: "Asistentes técnicos", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
-  { href: "/configuracion", label: "Configuración", icon: Settings }
+  { href: "/configuracion", label: "Configuración", icon: Settings },
+  { href: "/reuniones/buscar-meet", label: "Buscar Meet", icon: Search }
 ] as const;
 
 const assistantNav = [
