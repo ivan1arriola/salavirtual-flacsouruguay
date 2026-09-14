@@ -1,0 +1,29 @@
+.page { max-width: 960px; margin-inline: auto; display: grid; gap: 1.5rem; }
+.page h1 { font-size: clamp(1.5rem, 4vw, 2rem); margin: .65rem 0; }
+.page h2 { font-size: 1.25rem; margin: .75rem 0 .4rem; }
+.page p { line-height: 1.55; }
+.form { display: grid; gap: .5rem; }
+.form label { font-weight: 600; }
+.inputRow { display: flex; flex-wrap: wrap; gap: .65rem; }
+.inputRow input { flex: 1 1 240px; min-width: 0; border: 1px solid #94a3b8; border-radius: .5rem; padding: .8rem; font: inherit; background: #fff; color: #172b40; }
+.inputRow button { min-height: 44px; }
+.page :is(input, button, a, summary):focus-visible { outline: 3px solid #276ba4; outline-offset: 3px; }
+.result { margin-top: 1rem; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid #d4dce5; border-radius: .75rem; background: #fff; color: #172b40; overflow-wrap: anywhere; }
+.badge, .historical { display: inline-block; border-radius: .3rem; padding: .3rem .6rem; font-size: .85rem; font-weight: 600; }
+.badge { background: #e9f2ee; color: #20553e; }
+.historical, .notice { background: #fff4dc; color: #694500; }
+.notice { padding: .8rem 1rem; border-left: 3px solid #ae7a15; border-radius: .3rem; }
+.current { margin-block: 1rem; padding: 1rem; background: #edf3f8; border-left: 3px solid #294e72; display: grid; gap: .5rem; }
+.current code { font-size: 1.2rem; }
+.facts { display: grid; grid-template-columns: minmax(120px, 1fr) 3fr; gap: .6rem 1rem; margin-block: 1.25rem; }
+.facts dt { color: #536476; }
+.facts dd { margin: 0; }
+.facts small { display: block; margin-top: .25rem; color: #536476; }
+.details { margin-block: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; }
+.details summary { cursor: pointer; padding-block: .25rem; }
+.history { padding-left: 1.2rem; }
+.history li { padding-block: .75rem; }
+.history p { margin: .3rem 0; }
+.history small { color: #536476; }
+.empty { padding-block: 2rem; color: #536476; }
+@media (max-width: 520px) { .facts { grid-template-columns: 1fr; gap: .25rem; } .facts dd { margin-bottom: .6rem; } }
