@@ -119,16 +119,19 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
       event.externalEventId!,
       conferenceData
     ));
-    await db.eventoProveedor.update({
-      where: { id: event.id },
-      data: {
-        codigoReunion: anchorEvent.codigoReunion,
-        joinUrl: anchorEvent.joinUrl,
-        payloadUltimo: JSON.parse(JSON.stringify(result.payload)) as Prisma.InputJsonValue,
-        sincronizadoAt: new Date(),
-        estadoIntegracion: "SINCRONIZADA",
-        errorIntegracion: null
-      }
+    await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'unificar-links-series-futuras', true), set_config('flacso.meet_change_reason', 'Unificación de enlaces de la serie', true)`;
+      await tx.eventoProveedor.update({
+        where: { id: event.id },
+        data: {
+          codigoReunion: anchorEvent.codigoReunion,
+          joinUrl: anchorEvent.joinUrl,
+          payloadUltimo: JSON.parse(JSON.stringify(result.payload)) as Prisma.InputJsonValue,
+          sincronizadoAt: new Date(),
+          estadoIntegracion: "SINCRONIZADA",
+          errorIntegracion: null
+        }
+      });
     });
   }
 

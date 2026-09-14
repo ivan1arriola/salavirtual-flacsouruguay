@@ -87,7 +87,7 @@ describe.skipIf(!enabled)("historial Meet en PostgreSQL real", () => {
       const item = await event(tx);
       await tx.eventoProveedor.delete({ where: { id: item.id } });
       const created = await tx.eventoProveedor.create({ data: {
-        instanciaSalaId: item.instanciaSalaId, proveedorId, codigoReunion: "abc-defg-hij",
+        instanciaSalaId: item.instanciaSalaId, proveedorId: providerId, codigoReunion: "abc-defg-hij",
       } });
       expect(await tx.auditoria.count({ where: { entidadId: created.id } })).toBe(1);
       await tx.eventoProveedor.update({ where: { id: created.id }, data: { codigoReunion: null } });
