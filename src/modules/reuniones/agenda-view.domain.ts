@@ -1,3 +1,5 @@
+import { normalizeMeetLink } from "../meet/meet-link.domain";
+
 export type VistaAgenda = "series" | "encuentros";
 
 type EncuentroAgrupable = Readonly<{
@@ -16,9 +18,7 @@ export function resolverVistaAgenda(value?: string): VistaAgenda {
 }
 
 export function normalizarCodigoReunionBuscado(value: string): string {
-  const query = value.trim();
-  const meetCode = query.match(/meet\.google\.com\/(?:lookup\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})/i)?.[1];
-  return (meetCode ?? query).toLowerCase();
+  return normalizeMeetLink(value)?.code ?? value.trim().toLowerCase();
 }
 
 export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(

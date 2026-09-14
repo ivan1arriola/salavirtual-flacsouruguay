@@ -517,6 +517,7 @@ model Auditoria {
   actor          Usuario? @relation("AuditoriaActor", fields: [actorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([entidadTipo, entidadId, createdAt])
+  @@index([accion, createdAt])
 }
 
 model Notificacion {

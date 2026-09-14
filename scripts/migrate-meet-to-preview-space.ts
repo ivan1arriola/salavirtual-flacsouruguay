@@ -296,6 +296,7 @@ async function main(): Promise<void> {
     }
 
     await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'migrate-meet-to-preview-space', true), set_config('flacso.meet_change_reason', 'Migración a un espacio Meet Preview', true)`;
       await tx.eventoProveedor.update({
         where: { id: event.id },
         data: {

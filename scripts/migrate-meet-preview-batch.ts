@@ -417,6 +417,7 @@ async function migrateGroup(
     }
 
     await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'migrate-meet-preview-batch', true), set_config('flacso.meet_change_reason', 'Migración de grupo a un espacio Meet Preview', true)`;
       for (const snapshot of snapshots) {
         const payload = patchedPayloads.get(snapshot.event.id);
         if (!payload) throw new Error(`Falta payload Calendar para ${snapshot.meetingId}.`);
