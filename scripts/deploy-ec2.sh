@@ -314,22 +314,19 @@ log_success "Conexión SSH exitosa a $DEPLOY_HOST."
 # ------------------------------------------------------------------------------
 log_info "Iniciando despliegue remoto en $DEPLOY_HOST para SHA $TARGET_SHA..."
 
-REMOTE_SCRIPT=$(cat <<EOF
+ssh "$DEPLOY_HOST" bash -s -- "$REMOTE_SRC" "$TARGET_SHA" <<'EOF'
 set -euo pipefail
-SRC="$REMOTE_SRC"
-SHA="$TARGET_SHA"
+SRC="$1"
+SHA="$2"
 
-echo "=== [1/4] Actualizando repositorio en \$SRC ==="
-sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "\$SRC" fetch --prune origin main
-sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "\$SRC" checkout -f main
-sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "\$SRC" reset --hard "\$SHA"
+echo "=== [1/4] Actualizando repositorio en $SRC ==="
+sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "$SRC" fetch --prune origin main
+sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "$SRC" checkout -f main
+sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin git -C "$SRC" reset --hard "$SHA"
 
 echo "=== [2/4] Ejecutando infra/ec2/deploy.sh ==="
-sudo /bin/bash "\$SRC/infra/ec2/deploy.sh" "\$SHA"
+sudo /bin/bash "$SRC/infra/ec2/deploy.sh" "$SHA"
 EOF
-)
-
-ssh -t "$DEPLOY_HOST" bash -c "'$REMOTE_SCRIPT'"
 
 # ------------------------------------------------------------------------------
 # 7. Verificación Final
