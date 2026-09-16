@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { getMeetConferenceSnapshot } from "../src/modules/meet/conference-status.adapter";
+import {
+  getMeetConferenceSnapshot,
+  type MeetConferenceSnapshotClient
+} from "../src/modules/meet/conference-status.adapter";
 
 const inicio = new Date("2026-09-16T21:30:00.000Z");
 const fin = new Date("2026-09-16T23:00:00.000Z");
@@ -19,7 +22,7 @@ describe("getMeetConferenceSnapshot", () => {
       obtenerArtefactos: vi.fn(async () => ({
         recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0
       }))
-    };
+    } satisfies MeetConferenceSnapshotClient;
 
     const snapshot = await getMeetConferenceSnapshot("abc-defg-hij", inicio, fin, client);
 
@@ -46,7 +49,7 @@ describe("getMeetConferenceSnapshot", () => {
       obtenerArtefactos: vi.fn(async () => ({
         recordings: [], transcripts: [], notes: [], estadoGrabacion: "PROCESANDO", pendientes: 1
       }))
-    };
+    } satisfies MeetConferenceSnapshotClient;
 
     const snapshot = await getMeetConferenceSnapshot("abc-defg-hij", inicio, fin, client);
 
@@ -59,7 +62,7 @@ describe("getMeetConferenceSnapshot", () => {
       buscarConferencia: vi.fn(async () => null),
       obtenerSesionesParticipantes: vi.fn(),
       obtenerArtefactos: vi.fn()
-    };
+    } satisfies MeetConferenceSnapshotClient;
 
     expect(await getMeetConferenceSnapshot("abc-defg-hij", inicio, fin, client)).toBeNull();
     expect(client.obtenerSesionesParticipantes).not.toHaveBeenCalled();
