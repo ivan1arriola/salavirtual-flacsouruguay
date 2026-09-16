@@ -20,7 +20,7 @@ describe("getMeetConferenceSnapshot", () => {
         startTime: "2026-09-16T21:43:00.000Z"
       }])),
       obtenerArtefactos: vi.fn(async () => ({
-        recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0
+        recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE" as const, pendientes: 0
       }))
     } satisfies MeetConferenceSnapshotClient;
 
@@ -47,7 +47,7 @@ describe("getMeetConferenceSnapshot", () => {
       })),
       obtenerSesionesParticipantes: vi.fn(async () => []),
       obtenerArtefactos: vi.fn(async () => ({
-        recordings: [], transcripts: [], notes: [], estadoGrabacion: "PROCESANDO", pendientes: 1
+        recordings: [], transcripts: [], notes: [], estadoGrabacion: "PROCESANDO" as const, pendientes: 1
       }))
     } satisfies MeetConferenceSnapshotClient;
 
