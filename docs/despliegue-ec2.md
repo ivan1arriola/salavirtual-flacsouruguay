@@ -211,6 +211,35 @@ curl -fsS http://127.0.0.1:3101/api/health
 
 Si el problema aparece después del cambio DNS y EC2 no puede recuperarse rápidamente, el rollback de infraestructura consiste en volver temporalmente el DNS al destino de Vercel mientras el proyecto siga disponible allí.
 
+## 11. Despliegue local alternativo vía SSH (`servidor-flacso`)
+
+Para desplegar directamente desde la máquina de desarrollo sin depender de GitHub Actions o AWS SSM:
+
+```bash
+# Flujo recomendado (ejecuta CI local, comprueba git y despliega vía SSH):
+npm run deploy
+
+# Despliegue rápido (omite suite de CI local si ya fue ejecutada):
+npm run deploy:quick
+
+# Consultar release activo, salud y estado de salavirtual.service:
+npm run deploy:status
+
+# Rollback al release inmediatamente anterior en el servidor:
+npm run deploy:rollback
+
+# Ejecutar únicamente la suite de validaciones locales (CI):
+npm run ci:local
+```
+
+El script `scripts/deploy-ec2.sh`:
+1. Comprueba la conexión SSH a `servidor-flacso`.
+2. Verifica que el árbol de Git esté limpio y en rama `main`.
+3. Valida que el commit a desplegar esté en `origin/main` (ofrece hacer `git push origin main` si falta).
+4. Ejecuta las validaciones de CI (`schema`, `Prisma`, `TypeScript`, `Vitest`, `npm audit`, `build`).
+5. Conecta por SSH y ejecuta `deploy.sh` en `/srv/apps/salavirtual-flacso/source`.
+6. Verifica el healthcheck en tiempo real.
+
 ## Segunda fase opcional: mover PostgreSQL a EC2
 
 No hacer esta migración en el mismo corte que el runtime.

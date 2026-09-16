@@ -45,7 +45,12 @@
     "agrupar:salud-mental:dry": "tsx scripts/agrupar-salud-mental-por-horario.ts",
     "agrupar:salud-mental": "tsx scripts/agrupar-salud-mental-por-horario.ts --apply",
     "test": "vitest run",
-    "validate:schema": "node scripts/validate-schema.mjs"
+    "validate:schema": "node scripts/validate-schema.mjs",
+    "ci:local": "bash scripts/deploy-ec2.sh --ci-only",
+    "deploy": "bash scripts/deploy-ec2.sh",
+    "deploy:quick": "bash scripts/deploy-ec2.sh --skip-ci",
+    "deploy:status": "bash scripts/deploy-ec2.sh --status",
+    "deploy:rollback": "bash scripts/deploy-ec2.sh --rollback"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",

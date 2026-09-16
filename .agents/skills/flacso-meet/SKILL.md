@@ -634,6 +634,15 @@ No modificar manualmente archivos dentro de un release activo como solución per
 
 Los cambios deben venir del repositorio y del flujo de despliegue salvo emergencia explícita.
 
+Para desplegar localmente mediante SSH a `servidor-flacso` replicando GitHub Actions:
+
+```bash
+npm run deploy         # CI local + Git check + Deploy SSH
+npm run deploy:quick   # Deploy SSH sin repetir CI local
+npm run deploy:status  # Comprobar estado y healthcheck
+npm run deploy:rollback # Rollback al release previo
+```
+
 ## Diagnóstico en producción
 
 Para comprobar el servicio:
