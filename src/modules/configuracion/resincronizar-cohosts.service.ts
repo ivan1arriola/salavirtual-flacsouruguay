@@ -119,12 +119,13 @@ export async function resincronizarCohostsReunionesExistentes(
     const organizer = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
     const meetingLabel = `${meeting.solicitud.titulo} | instancia=${meeting.id} | meet=${event?.codigoReunion ?? "sin-codigo"}`;
 
-    if (!event?.externalEventId || !organizer) {
+    if (!event || !organizer) {
       omitidas += 1;
-      emit("WARN", `OMITIDA ${meetingLabel} | motivo=sin evento Calendar u organizador.`);
+      emit("WARN", `OMITIDA ${meetingLabel} | motivo=sin evento Meet u organizador.`);
       continue;
     }
 
+    const operation = event.externalEventId ? "CONFIGURAR_MEET" : "PROVISIONAR";
     const users = [
       meeting.solicitud.docentePrograma.docente.usuario,
       ...meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario),
@@ -149,10 +150,10 @@ export async function resincronizarCohostsReunionesExistentes(
           where: {
             id: event.id,
             reclamoIntegracionAt: null,
-            OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }],
+            OR: [{ operacionPendiente: null }, { operacionPendiente: operation }],
           },
           data: {
-            operacionPendiente: "CONFIGURAR_MEET",
+            operacionPendiente: operation,
             estadoIntegracion: "PENDIENTE",
             errorIntegracion: null,
           },
