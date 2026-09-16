@@ -55,6 +55,18 @@ describe("reparación de reuniones existentes", () => {
     assert.deepEqual(state.calls.find(({ kind }) => kind === "linked")?.input.data, [{ instanciaSalaId: "meeting", cuentaGoogleId: "assistant-google" }]);
     assert.deepEqual(state.calls.find(({ kind }) => kind === "sync")?.input, ["event"]);
   });
+  it("reaprovisiona encuentros heredados sin evento Calendar en vez de omitirlos", async () => {
+    state.meetings[0].eventosProveedor[0].externalEventId = null;
+
+    const response = await POST() as any;
+
+    assert.equal(response.body.sincronizadas, 1);
+    assert.equal(response.body.omitidas, 0);
+    const queue = state.calls.find(({ kind }) => kind === "queue");
+    assert.equal(queue?.input.data.operacionPendiente, "PROVISIONAR");
+    assert.equal(queue?.input.data.estadoIntegracion, "PENDIENTE");
+    assert.deepEqual(state.calls.find(({ kind }) => kind === "sync")?.input, ["event"]);
+  });
   it("no declara sincronizada una reunión cuyos roles Google rechazó", async () => {
     state.outcome = "ERROR";
     const response = await POST() as any;
