@@ -1,8 +1,15 @@
-import type {
-  ConferenceRecord,
-  EstadoGrabacionMeet,
-  MeetArtifactsScan
+import { JWT } from "google-auth-library";
+import { conReintentosPorLimiteGoogle } from "./google-api-retry.adapter";
+import {
+  crearGoogleMeetArtifactsClient,
+  type ConferenceRecord,
+  type EstadoGrabacionMeet,
+  type MeetArtifactCredentials,
+  type MeetArtifactsScan
 } from "./google-meet-artifacts.adapter";
+
+const MEET_API = "https://meet.googleapis.com/v2";
+const MEET_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 
 export type MeetParticipantSessionRaw = Readonly<{
   sessionId: string;
@@ -39,6 +46,60 @@ export type MeetConferenceSnapshotClient = Readonly<{
   obtenerSesionesParticipantes: (conferenceName: string) => Promise<readonly MeetParticipantSessionRaw[]>;
   obtenerArtefactos: (conferenceName: string) => Promise<MeetArtifactsScan>;
 }>;
+
+type Participant = Readonly<{
+  name: string;
+  signedinUser?: { displayName?: string };
+  anonymousUser?: { displayName?: string };
+  phoneUser?: { displayName?: string };
+}>;
+
+type ParticipantSessionApi = Readonly<{
+  name?: string;
+  startTime: string;
+  endTime?: string;
+}>;
+
+export function crearGoogleMeetConferenceSnapshotClient(
+  credentials: MeetArtifactCredentials
+): MeetConferenceSnapshotClient {
+  const artifactsClient = crearGoogleMeetArtifactsClient(credentials);
+  const auth = new JWT({
+    email: credentials.serviceAccountEmail,
+    key: credentials.privateKey,
+    scopes: [MEET_SCOPE],
+    subject: credentials.subject
+  });
+
+  return {
+    buscarConferencia: (codigo, inicio, fin) => artifactsClient.buscarConferencia(codigo, inicio, fin),
+    obtenerArtefactos: (conferenceName) => artifactsClient.obtenerArtefactos(conferenceName),
+    async obtenerSesionesParticipantes(conferenceName) {
+      const participants = await listarPaginas<Participant>(
+        auth,
+        `${MEET_API}/${conferenceName}/participants?pageSize=250`,
+        "participants"
+      );
+      const sessionsByParticipant = await Promise.all(participants.map(async (participant) => ({
+        participant,
+        sessions: await listarPaginas<ParticipantSessionApi>(
+          auth,
+          `${MEET_API}/${participant.name}/participantSessions?pageSize=250`,
+          "participantSessions"
+        )
+      })));
+
+      return sessionsByParticipant.flatMap(({ participant, sessions }) =>
+        sessions.map((session, index) => ({
+          sessionId: session.name ?? `${participant.name}/participantSessions/${index}`,
+          displayName: nombreParticipante(participant),
+          startTime: session.startTime,
+          ...(session.endTime ? { endTime: session.endTime } : {})
+        }))
+      );
+    }
+  };
+}
 
 export async function getMeetConferenceSnapshot(
   meetingCode: string,
@@ -81,4 +142,26 @@ function normalizarGrabacion(
   }
   if (estado === "PROCESANDO") return { status: "PROCESANDO", url: null };
   return { status: "NO_INICIADA", url: null };
+}
+
+function nombreParticipante(participant: Participant): string | null {
+  return participant.signedinUser?.displayName
+    ?? participant.anonymousUser?.displayName
+    ?? participant.phoneUser?.displayName
+    ?? null;
+}
+
+async function listarPaginas<T>(auth: JWT, baseUrl: string, field: string): Promise<T[]> {
+  const values: T[] = [];
+  let pageToken: string | undefined;
+  do {
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    const response = await conReintentosPorLimiteGoogle(() => auth.request<Record<string, unknown>>({
+      url: `${baseUrl}${pageToken ? `${separator}pageToken=${encodeURIComponent(pageToken)}` : ""}`,
+      method: "GET"
+    }));
+    values.push(...((response.data[field] as T[] | undefined) ?? []));
+    pageToken = response.data.nextPageToken as string | undefined;
+  } while (pageToken);
+  return values;
 }
