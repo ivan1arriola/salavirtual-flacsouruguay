@@ -12,6 +12,7 @@ import {
   type ServicioCalendarioAsistente
 } from "@/src/modules/asistencia/api";
 import { notificarUsuarios } from "@/src/modules/notificaciones/notificaciones.service";
+import type { SessionActor } from "@/src/modules/asistencia/api";
 
 const defaultCalendarRepository = crearPrismaAssistantCalendarRepository({
   db,
@@ -51,4 +52,12 @@ export function obtenerServicioAsistencia(): ServicioAsistencia {
       );
     }
   });
+}
+
+export function asignarAsistente(actor: SessionActor, input: unknown) {
+  return obtenerServicioAsistencia().asignarAsistente(actor, input);
+}
+
+export function desvincularAsistente(actor: SessionActor, input: unknown) {
+  return obtenerServicioAsistencia().desvincularAsistente(actor, input);
 }

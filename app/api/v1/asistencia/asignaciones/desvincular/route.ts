@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { desvincularAsistente } from "@/src/bootstrap/asistencia.server";
 import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistencia.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
@@ -13,7 +14,6 @@ import {
   eliminarEventoCalendarioAsistente,
   publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
-import { desvincularAsistenteAsignado } from "@/src/modules/asistencia/desvinculacion-asistencia.service";
 import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
 
 export async function POST(request: Request) {
@@ -31,11 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
     }
 
-    const assignment = await desvincularAsistenteAsignado(
-      db,
-      actor,
-      await request.json().catch(() => null),
-    );
+    const assignment = await desvincularAsistente(actor, await request.json().catch(() => null));
     const warnings: string[] = [];
 
     try {

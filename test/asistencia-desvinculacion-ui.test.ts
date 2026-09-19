@@ -18,7 +18,7 @@ describe("flujo administrativo de desvinculación", () => {
 
     const route = readFileSync(routePath, "utf8");
     expect(route).toContain("export async function POST");
-    expect(route).toContain("desvincularAsistenteAsignado");
+    expect(route).toContain("desvincularAsistente");
     expect(route).toContain("sincronizarCohostsDeInstancia");
     expect(route).toContain("sincronizarCalendarioAsistenteInstancia");
   });

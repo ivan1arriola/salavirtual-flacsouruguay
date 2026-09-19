@@ -3,10 +3,8 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import {
-  asignarAsistentePostulado,
-  sincronizarCohostsDeInstancia
-} from "@/src/modules/asistencia/asistencia.service";
+import { asignarAsistente } from "@/src/bootstrap/asistencia.server";
+import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistencia.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendarioAsistenteInstancia,
@@ -31,11 +29,7 @@ export async function POST(request: Request) {
     if (!actor) {
       return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
     }
-    const assignment = await asignarAsistentePostulado(
-      db,
-      actor,
-      await request.json().catch(() => null)
-    );
+    const assignment = await asignarAsistente(actor, await request.json().catch(() => null));
     const warnings: string[] = [];
     try {
       await sincronizarCohostsDeInstancia({
