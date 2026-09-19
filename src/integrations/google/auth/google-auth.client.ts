@@ -42,3 +42,13 @@ export function crearGoogleMeetAuthClient(
   return crearGoogleAuthJwt(credentials, GOOGLE_MEET_SCOPES);
 }
 
+export const GOOGLE_GMAIL_SCOPES = [
+  "https://www.googleapis.com/auth/gmail.send",
+] as const;
+
+export function crearGoogleGmailAuthClient(
+  credentials: GoogleAuthCredentials
+): JWT {
+  return crearGoogleAuthJwt(credentials, GOOGLE_GMAIL_SCOPES);
+}
+
