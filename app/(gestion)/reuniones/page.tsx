@@ -409,7 +409,7 @@ export default async function ReunionesPage({
     );
 
   return (
-    <div className="meetings-agenda-page agenda-v2">
+    <div className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}>
       <header className="meetings-agenda-hero">
         <div>
           <p className="page-eyebrow">{formatShortDate(now)}</p>
