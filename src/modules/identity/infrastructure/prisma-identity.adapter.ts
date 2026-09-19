@@ -294,3 +294,4 @@ function apellidosGoogle(perfil: PerfilGoogle): string | null {
 function dominioEmail(email: string): string {
   return email.split("@")[1] ?? "";
 }
+

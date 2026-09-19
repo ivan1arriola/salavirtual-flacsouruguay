@@ -48,3 +48,4 @@ export function resolverVinculacionSubjectGoogle(
   if (subjectPerteneceAOtraCuenta) return "RECHAZAR";
   return subjectActual === subjectEntrante ? "MANTENER" : "REVINCULAR";
 }
+

@@ -30,3 +30,4 @@ export function puedeAdministrar(rol: RolUsuario): boolean {
 export function esRolUsuario(valor: unknown): valor is RolUsuario {
   return typeof valor === "string" && ROLES_USUARIO.some((rol) => rol === valor);
 }
+

@@ -37,3 +37,4 @@ export function crearAutenticarCredencialesUseCase(
     return autenticado;
   };
 }
+

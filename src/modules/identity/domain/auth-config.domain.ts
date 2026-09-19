@@ -50,3 +50,4 @@ export function resolverRedireccionAutorizada(url: string, baseUrl: string): str
 
   return destino.origin === base.origin ? destino.toString() : base.toString();
 }
+

@@ -52,3 +52,4 @@ describe("bootstrap identity.server", () => {
     expect(usuario?.id).toBe("usr-boot-1");
   });
 });
+
