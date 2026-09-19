@@ -2,19 +2,35 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const MODULES_ROOT = new URL("../src/modules/", import.meta.url);
-const PURE_MODULES = readdirSync(MODULES_ROOT, {
+const ALL_TS_FILES = readdirSync(MODULES_ROOT, {
   recursive: true,
   encoding: "utf8"
 })
-  .filter(
-    (relativePath) =>
-      relativePath.endsWith(".ts") &&
-      !relativePath.endsWith(".service.ts") &&
-      !relativePath.endsWith(".adapter.ts") &&
-      !relativePath.endsWith(".xlsx.ts")
-  )
+  .filter((relativePath) => relativePath.endsWith(".ts") && !relativePath.endsWith(".d.ts"))
   .slice()
   .sort();
+
+// Identificar archivos puramente de dominio:
+// 1. En modulos migrados: cualquier archivo dentro de un subdirectorio `domain/`.
+// 2. En modulos legacy: cualquier archivo que no sea service, adapter o xlsx, y no sea barrel de modulo (api/presentation).
+const PURE_MODULES = ALL_TS_FILES.filter((relativePath) => {
+  const parts = relativePath.split("/");
+  if (parts.length > 2) {
+    const layer = parts[1];
+    if (layer === "domain") return true;
+    if (["ports", "application", "infrastructure", "presentation"].includes(layer)) {
+      return false;
+    }
+  }
+  if (parts.length === 2 && (parts[1] === "api.ts" || parts[1] === "presentation.ts")) {
+    return false;
+  }
+  return (
+    !relativePath.endsWith(".service.ts") &&
+    !relativePath.endsWith(".adapter.ts") &&
+    !relativePath.endsWith(".xlsx.ts")
+  );
+});
 
 const FORBIDDEN_EFFECTS = [
   { name: "Prisma", pattern: /@prisma\/client/ },
