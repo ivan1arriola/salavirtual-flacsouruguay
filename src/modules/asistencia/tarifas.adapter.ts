@@ -1,19 +1,17 @@
-import type { ModalidadReunion, Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type ModalidadReunion, type PrismaClient } from "@prisma/client";
+import { crearPrismaTarifasRepositoryAdapter } from "@/src/modules/liquidaciones/api";
 
 type TarifaDb = PrismaClient | Prisma.TransactionClient;
 
+/** Fachada de retrocompatibilidad para la tarifa vigente de asistencia. */
 export async function obtenerTarifaVigente(
   db: TarifaDb,
   modalidad: ModalidadReunion
 ): Promise<Readonly<{ id: string; valorHora: Prisma.Decimal; moneda: string }>> {
-  const tarifa = await db.tarifaAsistenciaTecnica.findFirst({
-    where: { modalidad },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    select: { id: true, valorHora: true, moneda: true }
-  });
-  if (!tarifa) {
-    const nombreModalidad = modalidad === "HIBRIDA" ? "híbrida" : "virtual";
-    throw new Error(`No hay una tarifa configurada para asistencia técnica ${nombreModalidad}.`);
-  }
-  return tarifa;
+  const tarifa = await crearPrismaTarifasRepositoryAdapter(db).obtenerTarifaVigente(modalidad);
+  return {
+    id: tarifa.id,
+    valorHora: new Prisma.Decimal(tarifa.valorHora),
+    moneda: tarifa.moneda
+  };
 }

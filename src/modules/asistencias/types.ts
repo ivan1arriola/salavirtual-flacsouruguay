@@ -1,6 +1,2 @@
-export type AssignmentCandidate = Readonly<{
-  asistenteTecnicoId: string;
-  nombre: string;
-  cargaMensualMinutos: number;
-  disponible: boolean;
-}>;
+/** Fachada temporal de compatibilidad; usar src/modules/asistencia/presentation. */
+export type { AssignmentCandidate } from "@/src/modules/asistencia/presentation";

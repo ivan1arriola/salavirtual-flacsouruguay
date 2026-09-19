@@ -12,7 +12,11 @@ vi.mock("@/src/lib/config/encryption", () => ({
   descifrarConfiguracion: vi.fn((val: string) => val),
 }));
 
-import { obtenerServicioCalendarioAsistente } from "@/src/bootstrap/asistencia.server";
+import {
+  crearAsistenciaRepository,
+  obtenerServicioAsistencia,
+  obtenerServicioCalendarioAsistente
+} from "@/src/bootstrap/asistencia.server";
 
 describe("bootstrap asistencia.server", () => {
   it("expone el servicio compuesto de calendario del asistente", () => {
@@ -24,5 +28,22 @@ describe("bootstrap asistencia.server", () => {
     expect(typeof servicio.reconciliarFuturas).toBe("function");
     expect(typeof servicio.intentarSincronizacion).toBe("function");
   });
-});
 
+  it("expone el repositorio y servicio compuesto de asistencia técnica", () => {
+    const repo = crearAsistenciaRepository();
+    expect(repo).toBeDefined();
+    expect(typeof repo.actualizarPostulacion).toBe("function");
+
+    const servicio = obtenerServicioAsistencia();
+    expect(servicio).toBeDefined();
+    expect(typeof servicio.actualizarPostulacion).toBe("function");
+    expect(typeof servicio.asignarAsistente).toBe("function");
+    expect(typeof servicio.desvincularAsistente).toBe("function");
+    expect(typeof servicio.reportarDuracion).toBe("function");
+    expect(typeof servicio.actualizarDisponibilidad).toBe("function");
+    expect(typeof servicio.renotificarAsistentes).toBe("function");
+    expect(typeof servicio.consultarAsistenciasPersonales).toBe("function");
+    expect(typeof servicio.consultarHistorialAsistente).toBe("function");
+    expect(typeof servicio.consultarSlugAsistente).toBe("function");
+  });
+});

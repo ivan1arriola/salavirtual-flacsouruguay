@@ -3,4 +3,11 @@ export * from "./sincronizar-calendario-instancia.use-case";
 export * from "./sincronizar-calendario-solicitud.use-case";
 export * from "./sincronizar-calendario-usuario.use-case";
 export * from "./reconciliar-calendarios.use-case";
-
+export * from "./actualizar-postulacion.use-case";
+export * from "./asignar-asistente.use-case";
+export * from "./desvincular-asistente.use-case";
+export * from "./reportar-duracion.use-case";
+export * from "./actualizar-disponibilidad.use-case";
+export * from "./renotificar-asistentes.use-case";
+export * from "./consultar-asistencias.use-case";
+export * from "./sincronizar-cohosts-asistencia.use-case";
