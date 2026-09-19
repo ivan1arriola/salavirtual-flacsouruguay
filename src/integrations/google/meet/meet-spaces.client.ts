@@ -1,0 +1,167 @@
+import type { JWT } from "google-auth-library";
+import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
+
+export const MEET_API_BASE_URL = "https://meet.googleapis.com/v2";
+export const MEET_BETA_API_BASE_URL = "https://meet.googleapis.com/v2beta";
+
+export type GoogleMeetSpaceConfig = Readonly<{
+  accessType?: "ACCESS_TYPE_UNSPECIFIED" | "OPEN" | "TRUSTED" | "RESTRICTED" | string;
+  entryPointAccess?: "ENTRY_POINT_ACCESS_UNSPECIFIED" | "ALL" | "CREATOR_APP_ONLY" | string;
+  moderation?: "MODERATION_UNSPECIFIED" | "OFF" | "ON" | string;
+  attendanceReportGenerationType?:
+    | "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED"
+    | "DO_NOT_GENERATE"
+    | "GENERATE_REPORT"
+    | string;
+  [key: string]: unknown;
+}>;
+
+export type GoogleMeetSpace = Readonly<{
+  name?: string;
+  meetingUri?: string;
+  meetingCode?: string;
+  config?: GoogleMeetSpaceConfig;
+  [key: string]: unknown;
+}>;
+
+export type GoogleMeetSpaceMember = Readonly<{
+  name?: string;
+  email?: string;
+  role?: "ROLE_UNSPECIFIED" | "COHOST" | "CONTRIBUTOR" | string;
+  [key: string]: unknown;
+}>;
+
+export async function obtenerEspacioMeet(
+  auth: JWT,
+  spaceNameOrCode: string
+): Promise<GoogleMeetSpace> {
+  const path = spaceNameOrCode.startsWith("spaces/")
+    ? spaceNameOrCode
+    : `spaces/${encodeURIComponent(spaceNameOrCode)}`;
+  const url = `${MEET_API_BASE_URL}/${path}`;
+  const response = await auth.request<GoogleMeetSpace>({
+    url,
+    method: "GET",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+  });
+  return response.data;
+}
+
+export async function crearEspacioMeetHttp(
+  auth: JWT,
+  config?: GoogleMeetSpaceConfig
+): Promise<GoogleMeetSpace> {
+  const response = await auth.request<GoogleMeetSpace>({
+    url: `${MEET_API_BASE_URL}/spaces`,
+    method: "POST",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    data: config ? { config } : {},
+  });
+  return response.data;
+}
+
+export async function actualizarEspacioMeetHttp(
+  auth: JWT,
+  spaceName: string,
+  config: GoogleMeetSpaceConfig,
+  updateMask: readonly string[]
+): Promise<GoogleMeetSpace> {
+  const url = `${MEET_API_BASE_URL}/${spaceName}?updateMask=${encodeURIComponent(updateMask.join(","))}`;
+  const response = await auth.request<GoogleMeetSpace>({
+    url,
+    method: "PATCH",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    data: { name: spaceName, config },
+  });
+  return response.data;
+}
+
+export async function listarMiembrosMeetHttp(
+  auth: JWT,
+  spaceName: string
+): Promise<readonly GoogleMeetSpaceMember[]> {
+  const members: GoogleMeetSpaceMember[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const query = new URLSearchParams({ pageSize: "100" });
+    if (pageToken) query.set("pageToken", pageToken);
+
+    const response = await auth.request<{
+      members?: readonly GoogleMeetSpaceMember[];
+      nextPageToken?: string;
+    }>({
+      url: `${MEET_BETA_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
+      method: "GET",
+      timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    });
+
+    if (response.data.members) {
+      members.push(...response.data.members);
+    }
+    pageToken = response.data.nextPageToken || undefined;
+  } while (pageToken);
+
+  return members;
+}
+
+export async function crearMiembroMeetHttp(
+  auth: JWT,
+  spaceName: string,
+  email: string,
+  role: "COHOST" | "CONTRIBUTOR" | string
+): Promise<GoogleMeetSpaceMember> {
+  const response = await auth.request<GoogleMeetSpaceMember>({
+    url: `${MEET_BETA_API_BASE_URL}/${spaceName}/members`,
+    method: "POST",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    data: { email, role },
+  });
+  return response.data;
+}
+
+export async function eliminarMiembroMeetHttp(
+  auth: JWT,
+  memberName: string
+): Promise<void> {
+  await auth.request({
+    url: `${MEET_BETA_API_BASE_URL}/${memberName}`,
+    method: "DELETE",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+  });
+}
+
+export function isAlreadyCohostError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    response?: { status?: unknown; data?: unknown };
+  };
+  if (candidate.code === 409 || candidate.response?.status === 409) return true;
+  return JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
+}
+
+export function isMeetNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    response?: { status?: unknown };
+  };
+  return candidate.code === 404 || candidate.response?.status === 404;
+}
+
+export function isMemberPermissionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    message?: unknown;
+    response?: { status?: unknown; data?: unknown };
+  };
+  const status = candidate.response?.status ?? candidate.code;
+  const text = [
+    typeof candidate.message === "string" ? candidate.message : "",
+    JSON.stringify(candidate.response?.data ?? ""),
+  ].join(" ").toLowerCase();
+  return (status === 403 || text.includes("permission denied")) && text.includes("resource member");
+}
+

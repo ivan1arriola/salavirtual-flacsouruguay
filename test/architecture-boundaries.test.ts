@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -163,4 +163,53 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
       });
     }
   });
+
+  describe("integraciones tecnicas externas (src/integrations/google)", () => {
+    const googleFiles = scanDir(join(process.cwd(), "src/integrations/google"), join(process.cwd(), "src/integrations"));
+
+    it("encuentra archivos en src/integrations/google", () => {
+      expect(googleFiles.length).toBeGreaterThan(0);
+    });
+
+    for (const file of googleFiles) {
+      it(`[google integration] ${file.relPath} no importa modulos de negocio, prisma ni presentacion`, () => {
+        const forbidden = file.imports.filter((imp) =>
+          imp.includes("@/src/modules") ||
+          imp.includes("@/src/app") ||
+          imp.includes("@prisma/client") ||
+          imp.includes("@/src/lib/db") ||
+          imp.startsWith("next") ||
+          imp.startsWith("react")
+        );
+        expect(
+          forbidden,
+          `Imports prohibidos en cliente tecnico de Google: ${forbidden.join(", ")}`
+        ).toEqual([]);
+      });
+    }
+  });
 });
+
+function scanDir(dir: string, baseRoot: string): Readonly<{ absPath: string; relPath: string; content: string; imports: readonly string[] }>[] {
+  if (!existsSync(dir)) return [];
+  const entries = readdirSync(dir);
+  const results: Array<{ absPath: string; relPath: string; content: string; imports: readonly string[] }> = [];
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      results.push(...scanDir(fullPath, baseRoot));
+    } else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) {
+      const rel = relative(baseRoot, fullPath);
+      const content = readFileSync(fullPath, "utf8");
+      results.push({
+        absPath: fullPath,
+        relPath: rel,
+        content,
+        imports: extractImports(content),
+      });
+    }
+  }
+  return results;
+}
+
