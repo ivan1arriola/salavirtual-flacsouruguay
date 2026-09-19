@@ -16,11 +16,36 @@ import type {
   EventoParaSincronizarArchivos,
   SessionActor
 } from "../../ports";
+import type {
+  EventosOperativosRepositoryPort,
+  ListarEventosOperativosInput
+} from "../../application";
 
 export function crearPrismaArchivosRepositoryAdapter(
   db: PrismaClient
-): ArchivosRepositoryPort {
+): ArchivosRepositoryPort & EventosOperativosRepositoryPort {
   return {
+    async listarEventosOperativos(input: ListarEventosOperativosInput): Promise<readonly string[]> {
+      if (input.limite <= 0) return [];
+      const conPendientesOError = input.ventana === "INTERMEDIA";
+      const events = await db.eventoProveedor.findMany({
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          codigoReunion: { not: null },
+          ...(conPendientesOError
+            ? { OR: [{ archivosSincronizadosAt: null }, { errorArchivos: { not: null } }] }
+            : { archivosSincronizadosAt: null }),
+          instancia: {
+            estado: { not: "CANCELADA" },
+            finProgramadoAt: { gte: input.desde, [input.ventana === "CALIENTE" ? "lte" : "lt"]: input.hasta }
+          }
+        },
+        orderBy: { instancia: { finProgramadoAt: input.ventana === "CALIENTE" ? "desc" : "asc" } },
+        take: input.limite,
+        select: { id: true }
+      });
+      return events.map(({ id }) => id);
+    },
     async obtenerConfiguracionWorkspacePrincipal(): Promise<ConfiguracionWorkspaceArchivos | null> {
       const config = await db.configuracionGoogleWorkspace.findUnique({
         where: { id: "principal", activa: true }

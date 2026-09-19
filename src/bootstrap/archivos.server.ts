@@ -9,6 +9,7 @@ import {
   listarGrabacionesPendientesVisiblesUseCase,
   obtenerParticipantesActivosUseCase,
   sincronizarArtefactosUseCase,
+  seleccionarLoteEventosOperativosUseCase,
   type ArchivoMeetVisibleModel,
   type ArchivosRepositoryPort,
   type ArtifactProviderCredentials,
@@ -19,7 +20,7 @@ import {
   type SyncArtifactsResult
 } from "@/src/modules/archivos/api";
 
-export function crearArchivosRepository(): ArchivosRepositoryPort {
+export function crearArchivosRepository() {
   return crearPrismaArchivosRepositoryAdapter(db);
 }
 
@@ -39,6 +40,18 @@ export async function sincronizarArtefactos(
     descifrarConfiguracion,
     { eventoProveedorIds }
   );
+}
+
+export async function sincronizarArtefactosOperativos(ahora = new Date()) {
+  const repository = crearArchivosRepository();
+  const lote = await seleccionarLoteEventosOperativosUseCase(repository, ahora);
+  const resultados = await sincronizarArtefactosUseCase(
+    repository,
+    crearArtifactProvider,
+    descifrarConfiguracion,
+    { eventoProveedorIds: lote.eventoProveedorIds }
+  );
+  return { ...lote, resultados, timestamp: ahora.toISOString() };
 }
 
 export async function obtenerParticipantesActivosInstancia(
@@ -77,4 +90,3 @@ export async function listarGrabacionesNoRealizadasVisibles(
   const repository = crearArchivosRepository();
   return listarGrabacionesNoRealizadasVisiblesUseCase(repository, actor, desde, hasta);
 }
-
