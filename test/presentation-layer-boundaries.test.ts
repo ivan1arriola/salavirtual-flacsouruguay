@@ -65,21 +65,14 @@ describe("capa de presentacion modular", () => {
     }
   });
 
-  it("evita barrels amplios de presentacion en fachadas y componentes cliente", () => {
+  it("elimina fachadas legacy de presentacion sin consumidores", () => {
     const files = [
-      "src/components/app-shell.tsx",
-      "src/components/profile-menu.tsx",
       ...assistanceComponents.map((file) => `src/components/${file}`),
-      ...meetingComponents.map((file) => `src/components/${file}`),
-      ...assistanceComponents.map((file) => `src/modules/asistencia/presentation/components/${file}`),
-      ...meetingComponents.map((file) => `src/modules/reuniones/presentation/components/${file}`)
+      ...meetingComponents.map((file) => `src/components/${file}`)
     ];
 
     for (const file of files) {
-      const source = readFileSync(join(root, file), "utf8");
-      expect(source, file).not.toMatch(
-        /@\/src\/modules\/(?:asistencia|reuniones)\/presentation["']/
-      );
+      expect(existsSync(join(root, file)), file).toBe(false);
     }
   });
 
