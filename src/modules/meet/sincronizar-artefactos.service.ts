@@ -1,14 +1,15 @@
-import type { PrismaClient, TipoArchivoReunion } from "@prisma/client";
-import type {
-  crearGoogleMeetArtifactsClient,
-  GoogleArtifact,
-  MovedDriveFile
-} from "./google-meet-artifacts.adapter";
+import type { PrismaClient } from "@prisma/client";
 import {
-  nombreArchivoReunion,
-  nombreCarpetaReunion,
-  TIPOS_ARTEFACTO_SINCRONIZABLES
-} from "./meet-artifacts.domain";
+  crearPrismaArchivosRepositoryAdapter,
+  sincronizarArtefactosUseCase,
+  type EstadoResultadoGrabacion,
+  type SyncArtifactsResult
+} from "@/src/modules/archivos/api";
+import type {
+  crearGoogleMeetArtifactsClient
+} from "./google-meet-artifacts.adapter";
+
+export type { EstadoResultadoGrabacion, SyncArtifactsResult };
 
 type ArtifactsClient = ReturnType<typeof crearGoogleMeetArtifactsClient>;
 
@@ -22,276 +23,15 @@ export type SyncArtifactsDependencies = Readonly<{
   }>) => ArtifactsClient;
 }>;
 
-export type EstadoResultadoGrabacion =
-  | "NO_REQUERIDA"
-  | "PENDIENTE"
-  | "DISPONIBLE"
-  | "NO_REALIZADA";
-
-export type SyncArtifactsResult = Readonly<{
-  eventoProveedorId: string;
-  estado: "SINCRONIZADO" | "SIN_REGISTRO_FINALIZADO" | "ARTEFACTOS_PENDIENTES" | "ERROR";
-  archivos: number;
-  grabacion?: EstadoResultadoGrabacion;
-  error?: string;
-}>;
-
 export async function sincronizarArtefactosMeet(
   dependencies: SyncArtifactsDependencies,
   eventoProveedorIds: readonly string[]
 ): Promise<readonly SyncArtifactsResult[]> {
-  const configuration = await dependencies.db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true }
-  });
-  if (!configuration?.serviceAccountEmail || !configuration.privateKeyCifrada || !configuration.driveDestinationId) {
-    return eventoProveedorIds.map((eventoProveedorId) => ({
-      eventoProveedorId,
-      estado: "ERROR",
-      archivos: 0,
-      error: "Faltan credenciales o carpeta destino de Google Workspace."
-    }));
-  }
-
-  const privateKey = dependencies.descifrar(configuration.privateKeyCifrada);
-  const events = await dependencies.db.eventoProveedor.findMany({
-    where: { id: { in: [...eventoProveedorIds] }, proveedor: { tipo: "GOOGLE_MEET" } },
-    include: {
-      cuentaProveedor: true,
-      archivos: { select: { id: true, externalResourceName: true, tipo: true, mimeType: true } },
-      instancia: { include: { solicitud: true } }
-    }
-  });
-
-  return mapConLimite(events, 3, (event) => sincronizarEvento(
-    dependencies,
-    configuration.driveDestinationId!,
-    configuration.serviceAccountEmail!,
-    privateKey,
-    event
-  ));
-}
-
-type SyncEvent = Readonly<{
-  id: string;
-  codigoReunion: string | null;
-  conferenceRecordName: string | null;
-  cuentaProveedor: Readonly<{ emailOrganizador: string | null }> | null;
-  archivos: readonly Readonly<{
-    id: string;
-    externalResourceName: string;
-    tipo: TipoArchivoReunion;
-    mimeType: string | null;
-  }>[];
-  instancia: Readonly<{
-    inicioProgramadoAt: Date;
-    finProgramadoAt: Date;
-    timezone: string;
-    requiereGrabacion: boolean;
-    solicitud: Readonly<{ titulo: string }>;
-  }>;
-}>;
-
-async function sincronizarEvento(
-  dependencies: SyncArtifactsDependencies,
-  destinationId: string,
-  serviceAccountEmail: string,
-  privateKey: string,
-  event: SyncEvent
-): Promise<SyncArtifactsResult> {
-  const hostEmail = event.cuentaProveedor?.emailOrganizador;
-  if (!hostEmail || !event.codigoReunion) {
-    return registrarError(dependencies.db, event.id, "La reunión no tiene host o código Meet.");
-  }
-  try {
-    const credentials = { serviceAccountEmail, privateKey, subject: hostEmail };
-    const client = dependencies.crearClient(credentials);
-    const conference = event.conferenceRecordName
-      ? await client.obtenerConferencia(event.conferenceRecordName)
-      : await client.buscarConferencia(
-          event.codigoReunion,
-          event.instancia.inicioProgramadoAt,
-          event.instancia.finProgramadoAt
-        );
-    if (!conference?.endTime) {
-      return {
-        eventoProveedorId: event.id,
-        estado: "SIN_REGISTRO_FINALIZADO",
-        archivos: 0,
-        grabacion: event.instancia.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
-      };
-    }
-
-    const folderName = nombreCarpetaReunion({
-      titulo: event.instancia.solicitud.titulo,
-      inicio: event.instancia.inicioProgramadoAt,
-      timezone: event.instancia.timezone
-    });
-    const folderId = await client.obtenerOCrearCarpeta(destinationId, folderName);
-    const known = new Set(event.archivos
-      .filter((file) => file.tipo !== "LISTA_ASISTENCIA" || file.mimeType === "application/vnd.google-apps.document")
-      .map((file) => file.externalResourceName));
-    const artifacts = await client.obtenerArtefactos(conference.name);
-    const common = {
-      titulo: event.instancia.solicitud.titulo,
-      inicio: event.instancia.inicioProgramadoAt,
-      timezone: event.instancia.timezone,
-      codigoReunion: event.codigoReunion
-    };
-    let synchronized = 0;
-    let pending = artifacts.pendientes;
-
-    for (const [type, items] of [
-      [TIPOS_ARTEFACTO_SINCRONIZABLES[0], artifacts.recordings],
-      [TIPOS_ARTEFACTO_SINCRONIZABLES[1], artifacts.transcripts],
-      [TIPOS_ARTEFACTO_SINCRONIZABLES[3], artifacts.notes]
-    ] as const) {
-      for (const [index, artifact] of items.entries()) {
-        if (known.has(artifact.resourceName)) continue;
-        const name = nombreArchivoReunion({ ...common, tipo: type, indice: index + 1, extension: artifact.extension });
-        const moved = await client.moverArchivo(artifact.driveFileId, folderId, name);
-        await registrarArchivo(dependencies.db, event.id, type, artifact, moved);
-        known.add(artifact.resourceName);
-        synchronized += 1;
-      }
-    }
-
-    const existingRecording = event.archivos.some(({ tipo }) => tipo === "GRABACION");
-    const recordingState: EstadoResultadoGrabacion = existingRecording || artifacts.estadoGrabacion === "GENERADA"
-      ? "DISPONIBLE"
-      : artifacts.estadoGrabacion === "PROCESANDO"
-        ? "PENDIENTE"
-        : event.instancia.requiereGrabacion
-          ? "NO_REALIZADA"
-          : "NO_REQUERIDA";
-
-    const attendanceResource = `${conference.name}/attendance`;
-    if (!known.has(attendanceResource)) {
-      const attendance = await client.obtenerDocumentoAsistencia(conference.name);
-      if (attendance.completa) {
-        const name = nombreArchivoReunion({ ...common, tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2], indice: 1 });
-        const uploaded = await client.subirDocumentoGoogle(folderId, name, attendance.html);
-        await registrarArchivo(
-          dependencies.db,
-          event.id,
-          TIPOS_ARTEFACTO_SINCRONIZABLES[2],
-          { resourceName: attendanceResource, driveFileId: uploaded.id },
-          uploaded
-        );
-        synchronized += 1;
-      } else if (!conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
-        // Google puede tardar hasta 24 h en completar la asistencia. Después de ese plazo,
-        // la ausencia de participantes es un resultado final, no un error reintentable.
-        pending += 1;
-      }
-    }
-
-    if (pending > 0 && !conferenciaTerminadaHaceMasDe(conference.endTime, 48)) {
-      await dependencies.db.eventoProveedor.update({
-        where: { id: event.id },
-        data: {
-          conferenceRecordName: conference.name,
-          driveFolderId: folderId,
-          archivosSincronizadosAt: null,
-          errorArchivos: null
-        }
-      });
-      return {
-        eventoProveedorId: event.id,
-        estado: "ARTEFACTOS_PENDIENTES",
-        archivos: synchronized,
-        grabacion: recordingState
-      };
-    }
-
-    await dependencies.db.eventoProveedor.update({
-      where: { id: event.id },
-      data: {
-        conferenceRecordName: conference.name,
-        driveFolderId: folderId,
-        archivosSincronizadosAt: new Date(),
-        errorArchivos: null
-      }
-    });
-    return {
-      eventoProveedorId: event.id,
-      estado: "SINCRONIZADO",
-      archivos: synchronized,
-      grabacion: recordingState
-    };
-  } catch (error) {
-    return registrarError(
-      dependencies.db,
-      event.id,
-      error instanceof Error ? error.message : "Error desconocido al sincronizar archivos."
-    );
-  }
-}
-
-async function registrarArchivo(
-  db: PrismaClient,
-  eventoProveedorId: string,
-  tipo: TipoArchivoReunion,
-  artifact: GoogleArtifact,
-  drive: MovedDriveFile
-): Promise<void> {
-  await db.archivoReunion.upsert({
-    where: {
-      eventoProveedorId_externalResourceName: {
-        eventoProveedorId,
-        externalResourceName: artifact.resourceName
-      }
-    },
-    create: {
-      eventoProveedorId,
-      tipo,
-      externalResourceName: artifact.resourceName,
-      driveFileId: drive.id,
-      nombre: drive.name,
-      mimeType: drive.mimeType,
-      tamanoBytes: drive.size ? BigInt(drive.size) : null,
-      webViewUrl: drive.webViewLink,
-      capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date()
-    },
-    update: {
-      tipo,
-      driveFileId: drive.id,
-      nombre: drive.name,
-      mimeType: drive.mimeType,
-      tamanoBytes: drive.size ? BigInt(drive.size) : null,
-      webViewUrl: drive.webViewLink,
-      capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date()
-    }
-  });
-}
-
-async function registrarError(
-  db: PrismaClient,
-  eventoProveedorId: string,
-  error: string
-): Promise<SyncArtifactsResult> {
-  await db.eventoProveedor.update({ where: { id: eventoProveedorId }, data: { errorArchivos: error } });
-  return { eventoProveedorId, estado: "ERROR", archivos: 0, error };
-}
-
-function conferenciaTerminadaHaceMasDe(endTime: string, hours: number): boolean {
-  return Date.now() - Date.parse(endTime) > hours * 60 * 60 * 1000;
-}
-
-async function mapConLimite<T, R>(
-  items: readonly T[],
-  limite: number,
-  operation: (item: T) => Promise<R>
-): Promise<R[]> {
-  if (items.length === 0) return [];
-  const results = new Array<R>(items.length);
-  let nextIndex = 0;
-  const workers = Array.from({ length: Math.min(limite, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      results[index] = await operation(items[index]!);
-    }
-  });
-  await Promise.all(workers);
-  return results;
+  const repository = crearPrismaArchivosRepositoryAdapter(dependencies.db);
+  return sincronizarArtefactosUseCase(
+    repository,
+    (credentials) => dependencies.crearClient(credentials),
+    dependencies.descifrar,
+    { eventoProveedorIds }
+  );
 }

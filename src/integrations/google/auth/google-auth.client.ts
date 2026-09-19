@@ -52,3 +52,24 @@ export function crearGoogleGmailAuthClient(
   return crearGoogleAuthJwt(credentials, GOOGLE_GMAIL_SCOPES);
 }
 
+export const GOOGLE_DRIVE_SCOPES = [
+  "https://www.googleapis.com/auth/drive",
+] as const;
+
+export function crearGoogleDriveAuthClient(
+  credentials: GoogleAuthCredentials
+): JWT {
+  return crearGoogleAuthJwt(credentials, GOOGLE_DRIVE_SCOPES);
+}
+
+export const GOOGLE_MEET_ARTIFACTS_SCOPES = [
+  "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/meetings.space.readonly",
+] as const;
+
+export function crearGoogleMeetArtifactsAuthClient(
+  credentials: GoogleAuthCredentials
+): JWT {
+  return crearGoogleAuthJwt(credentials, GOOGLE_MEET_ARTIFACTS_SCOPES);
+}
+

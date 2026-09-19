@@ -1,0 +1,23 @@
+export {
+  asistenciaMeetCompleta,
+  crearHtmlAsistencia,
+  elegirConferenciaMeet,
+  etiquetaTipoArtefactoMeet,
+  nombreArchivoReunion,
+  nombreCarpetaReunion,
+  obtenerAlcanceGrabaciones,
+  puedeSincronizarGrabaciones,
+  resolverEstadoVisualGrabacion,
+  filtrarEncuentrosConArchivos,
+  TIPOS_ARTEFACTO_SINCRONIZABLES,
+  type AlcanceGrabaciones,
+  type DatosCarpetaReunion,
+  type DatosNombreArtefacto,
+  type EstadoVisualGrabacion,
+  type FilaAsistenciaMeet,
+  type GrupoEncuentroConArchivos,
+  type RegistroConferenciaMeet,
+  type SesionParticipanteMeet,
+  type TipoArtefactoMeet,
+  type TipoFiltroArtefacto
+} from "./domain";
