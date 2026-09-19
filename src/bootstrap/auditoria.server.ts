@@ -30,3 +30,4 @@ export function crearServicioAuditoriaTransaccional(
     registrar: useCase
   };
 }
+

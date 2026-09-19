@@ -47,3 +47,4 @@ describe("bootstrap auditoria.server", () => {
     expect(mockTxCreate).toHaveBeenCalledOnce();
   });
 });
+

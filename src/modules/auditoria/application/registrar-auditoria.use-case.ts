@@ -21,3 +21,4 @@ export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) 
     return { ok: true, evento: validacion.value };
   };
 }
+
