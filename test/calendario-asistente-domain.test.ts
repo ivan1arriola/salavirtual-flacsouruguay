@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   cuentasCalendarioDeseadas,
+  hayErroresSincronizacionCalendarioAsistente,
   idEventoCalendarioAsistente,
   planificarSincronizacionCalendarioAsistente,
-} from "../src/modules/asistencia/calendario-asistente.domain";
+} from "../src/modules/asistencia/domain";
+import * as facade from "../src/modules/asistencia/calendario-asistente.domain";
 
 const linkedAccount = {
   id: "google-1",
@@ -132,5 +134,23 @@ describe("calendario de asistentes técnicos", () => {
 
     expect(plan.publicar).toEqual([]);
     expect(plan.eliminar).toHaveLength(1);
+  });
+
+  it("detecta presencia o ausencia de errores en resultados de sincronizacion", () => {
+    expect(hayErroresSincronizacionCalendarioAsistente([
+      { cuentaGoogleId: "g1", email: "a@flacso.edu.uy", accion: "PUBLICAR", estado: "SINCRONIZADA" },
+    ])).toBe(false);
+
+    expect(hayErroresSincronizacionCalendarioAsistente([
+      { cuentaGoogleId: "g1", email: "a@flacso.edu.uy", accion: "PUBLICAR", estado: "SINCRONIZADA" },
+      { cuentaGoogleId: "g2", email: "b@flacso.edu.uy", accion: "ELIMINAR", estado: "ERROR", error: "fail" },
+    ])).toBe(true);
+  });
+
+  it("la fachada calendario-asistente.domain preserva las mismas funciones", () => {
+    expect(facade.idEventoCalendarioAsistente).toBe(idEventoCalendarioAsistente);
+    expect(facade.cuentasCalendarioDeseadas).toBe(cuentasCalendarioDeseadas);
+    expect(facade.planificarSincronizacionCalendarioAsistente).toBe(planificarSincronizacionCalendarioAsistente);
+    expect(facade.hayErroresSincronizacionCalendarioAsistente).toBe(hayErroresSincronizacionCalendarioAsistente);
   });
 });
