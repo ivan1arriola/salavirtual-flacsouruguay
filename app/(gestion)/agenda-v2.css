@@ -489,3 +489,125 @@
     padding: 10px 14px;
   }
 }
+
+
+/* Admin agenda: technical information is grouped as an operations panel.
+   Other roles keep their own presentation instead of inheriting admin density. */
+.agenda-admin-view .agenda-meeting-card-body {
+  grid-template-columns: minmax(280px, 1.2fr) minmax(330px, 1fr);
+  align-items: start;
+}
+
+.agenda-admin-view .agenda-access-panel {
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  background: #f8fafb;
+  padding: 14px;
+  gap: 12px;
+}
+
+.agenda-admin-view .agenda-access-panel::before {
+  content: "Google Meet";
+  color: #52687a;
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.agenda-admin-view .agenda-cohost-block {
+  order: 3;
+  margin-top: 2px;
+}
+
+.agenda-admin-view .agenda-host-reference {
+  order: 1;
+  opacity: 1;
+}
+
+.agenda-admin-view .agenda-access-block:not(.agenda-cohost-block):not(.agenda-host-reference) {
+  order: 2;
+}
+
+.agenda-admin-view .agenda-host-reference > small {
+  color: #778492;
+  font-size: .68rem;
+}
+
+.agenda-admin-view .agenda-assistant {
+  grid-column: 1 / -1;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+}
+
+.agenda-admin-view .agenda-assistant.no-assistance {
+  background: #f8fafb;
+  border-color: #dfe6eb;
+}
+
+.agenda-admin-view .agenda-assistant.no-assistance > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.agenda-admin-view .agenda-assistant.no-assistance small {
+  display: inline;
+  margin-right: 8px;
+}
+
+.agenda-admin-view .agenda-assistant.no-assistance strong {
+  display: inline;
+  font-size: .86rem;
+}
+
+.agenda-admin-view .agenda-meeting-card-footer {
+  justify-content: flex-end;
+}
+
+.agenda-admin-view .agenda-meeting-card-footer .text-link {
+  margin-right: auto;
+}
+
+@media (max-width: 760px) {
+  .agenda-admin-view .agenda-meeting-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-admin-view .agenda-access-panel {
+    border: 1px solid #dbe4ea;
+    padding: 12px;
+  }
+
+  .agenda-admin-view .agenda-assistant {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .agenda-admin-view .agenda-meeting-card-body {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .agenda-admin-view .agenda-access-panel {
+    gap: 10px;
+  }
+
+  .agenda-admin-view .agenda-cohost-header {
+    align-items: flex-start;
+  }
+
+  .agenda-admin-view .agenda-cohost-block .status-badge {
+    white-space: normal;
+  }
+
+  .agenda-admin-view .agenda-meeting-card-footer {
+    align-items: stretch;
+  }
+
+  .agenda-admin-view .agenda-meeting-card-footer .text-link {
+    margin-right: 0;
+  }
+}
