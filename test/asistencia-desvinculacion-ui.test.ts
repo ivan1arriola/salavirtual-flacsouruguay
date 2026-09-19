@@ -19,8 +19,7 @@ describe("flujo administrativo de desvinculación", () => {
     const route = readFileSync(routePath, "utf8");
     expect(route).toContain("export async function POST");
     expect(route).toContain("desvincularAsistente");
-    expect(route).toContain("sincronizarCohostsDeInstancia");
-    expect(route).toContain("sincronizarCalendarioAsistenteInstancia");
+    expect(route).toContain("sincronizarAsignacionAsistente");
   });
 
   it("ofrece quitar la asignación desde la tabla del asistente", () => {

@@ -13,6 +13,11 @@ import {
 } from "@/src/modules/asistencia/api";
 import { notificarUsuarios } from "@/src/modules/notificaciones/notificaciones.service";
 import type { SessionActor } from "@/src/modules/asistencia/api";
+import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistencia.service";
+import { sincronizarCalendarioAsistenteInstancia } from "@/src/modules/asistencia/calendario-asistente.service";
+import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
+import { eliminarEventoCalendarioAsistente, publicarEventoCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
+import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
 
 const defaultCalendarRepository = crearPrismaAssistantCalendarRepository({
   db,
@@ -60,4 +65,18 @@ export function asignarAsistente(actor: SessionActor, input: unknown) {
 
 export function desvincularAsistente(actor: SessionActor, input: unknown) {
   return obtenerServicioAsistencia().desvincularAsistente(actor, input);
+}
+
+export async function sincronizarAsignacionAsistente(instanciaSalaId: string, calendarWarning: string) {
+  const warnings: string[] = [];
+  try {
+    await sincronizarCohostsDeInstancia({ db, descifrar: descifrarConfiguracion, configurarEspacio: configurarGoogleMeetExistente }, instanciaSalaId);
+  } catch (error) {
+    warnings.push(error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.");
+  }
+  const intento = await intentarSincronizacionCalendarioAsistente(() =>
+    sincronizarCalendarioAsistenteInstancia({ db, descifrar: descifrarConfiguracion, publicarEvento: publicarEventoCalendarioAsistente, eliminarEvento: eliminarEventoCalendarioAsistente }, instanciaSalaId)
+  );
+  if (intento.error || intento.resultados.some((resultado) => resultado.estado === "ERROR")) warnings.push(calendarWarning);
+  return { calendarioAsistente: intento.resultados, warning: warnings.length ? warnings.join(" ") : null };
 }

@@ -1,20 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
-import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { desvincularAsistente } from "@/src/bootstrap/asistencia.server";
-import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistencia.service";
-import {
-  hayErroresSincronizacionCalendarioAsistente,
-  sincronizarCalendarioAsistenteInstancia,
-} from "@/src/modules/asistencia/calendario-asistente.service";
-import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
-import {
-  eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente,
-} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
-import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
+import { desvincularAsistente, sincronizarAsignacionAsistente } from "@/src/bootstrap/asistencia.server";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -32,44 +20,11 @@ export async function POST(request: Request) {
     }
 
     const assignment = await desvincularAsistente(actor, await request.json().catch(() => null));
-    const warnings: string[] = [];
-
-    try {
-      await sincronizarCohostsDeInstancia({
-        db,
-        descifrar: descifrarConfiguracion,
-        configurarEspacio: configurarGoogleMeetExistente,
-      }, assignment.instanciaSalaId);
-    } catch (error) {
-      warnings.push(
-        error instanceof Error
-          ? error.message
-          : "No se pudo sincronizar la lista de cohosts en Google Meet.",
-      );
-    }
-
-    const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
-      sincronizarCalendarioAsistenteInstancia({
-        db,
-        descifrar: descifrarConfiguracion,
-        publicarEvento: publicarEventoCalendarioAsistente,
-        eliminarEvento: eliminarEventoCalendarioAsistente,
-      }, assignment.instanciaSalaId),
-    );
-    const calendarioAsistente = intentoCalendario.resultados;
-    if (
-      intentoCalendario.error ||
-      hayErroresSincronizacionCalendarioAsistente(calendarioAsistente)
-    ) {
-      warnings.push(
-        "La desvinculación quedó guardada, pero Google Calendar todavía tiene sincronizaciones pendientes.",
-      );
-    }
+    const sincronizacion = await sincronizarAsignacionAsistente(assignment.instanciaSalaId, "La desvinculación quedó guardada, pero Google Calendar todavía tiene sincronizaciones pendientes.");
 
     return NextResponse.json({
       assignment,
-      warning: warnings.length > 0 ? warnings.join(" ") : null,
-      calendarioAsistente,
+      ...sincronizacion,
     });
   } catch (error) {
     return NextResponse.json(
