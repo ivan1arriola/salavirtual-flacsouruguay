@@ -62,3 +62,20 @@ export interface AssistantOpportunityDTO {
   readonly yaPostulado: boolean;
 }
 
+export interface AssistantDashboardData {
+  readonly heroMeeting: HeroMeetingDTO | null;
+  readonly upcomingCoverages: readonly UpcomingMeetingSummaryDTO[];
+  readonly openOpportunities: readonly AssistantOpportunityDTO[];
+  readonly stats: {
+    readonly currentMonthMinutes: number;
+    readonly currentMonthVirtualMinutes: number;
+    readonly currentMonthHybridMinutes: number;
+    readonly previousMonthMinutes: number;
+    readonly previousMonthVirtualMinutes: number;
+    readonly previousMonthHybridMinutes: number;
+    readonly postulacionesCount: number;
+    readonly pendientesRespuesta: number;
+    readonly respondidas: number;
+    readonly reunionesDisponibles: number;
+  };
+}

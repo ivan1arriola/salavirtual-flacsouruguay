@@ -3,7 +3,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AccountSwitcher } from "@/src/components/account-switcher";
-import { AssistantTutorialButton } from "@/src/components/assistant-tutorial-button";
+import { AssistantTutorialButton } from "@/src/modules/asistencia/presentation/components/assistant-tutorial-button";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { TeacherTutorialButton } from "@/src/components/teacher-tutorial-button";
 import type { CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";

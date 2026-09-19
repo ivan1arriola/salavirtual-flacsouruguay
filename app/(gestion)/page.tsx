@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminDashboard } from "@/src/components/dashboard/admin/admin-dashboard";
-import { AssistantDashboard } from "@/src/components/dashboard/assistant/assistant-dashboard";
+import { AssistantDashboard } from "@/src/bootstrap/ui/asistencia/assistant-dashboard.server";
 import { TeacherDashboard } from "@/src/components/dashboard/teacher/teacher-dashboard";
 
 export default async function HomePage() {

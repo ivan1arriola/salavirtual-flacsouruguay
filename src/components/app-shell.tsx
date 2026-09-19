@@ -16,7 +16,7 @@ import {
 import type { Session } from "next-auth";
 import Link from "next/link";
 import { AppLogoMark } from "@/src/components/app-logo";
-import { AssistantOnboardingTour } from "@/src/components/assistant-onboarding-tour";
+import { AssistantOnboardingTour } from "@/src/modules/asistencia/presentation/components/assistant-onboarding-tour";
 import { ProfileMenu } from "@/src/components/profile-menu";
 import { DismissibleDetails } from "@/src/components/profile-menu-disclosure";
 import { SidebarLink } from "@/src/components/sidebar-link";

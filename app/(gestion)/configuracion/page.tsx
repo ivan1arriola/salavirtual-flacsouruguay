@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AssistantReportConfigForm } from "@/src/components/assistant-report-config-form";
+import { AssistantReportConfigForm } from "@/src/modules/asistencia/presentation/components/assistant-report-config-form";
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { HistoricalMeetingsTable } from "@/src/components/historical-meetings-table";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
