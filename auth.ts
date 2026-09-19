@@ -1,19 +1,14 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { obtenerServicioIdentity } from "@/src/bootstrap/identity.server";
 import { authConfig } from "@/src/lib/auth/config";
-import { resolverUsuarioGoogle } from "@/src/lib/auth/google-login.adapter";
-import { dependenciasLoginLocal } from "@/src/lib/auth/local-login.adapter";
-import { descifrarConfiguracion } from "@/src/lib/config/encryption";
-import { db } from "@/src/lib/db";
 import {
-  eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente,
-} from "@/src/modules/asistencia/calendario-asistente-google.adapter";
-import { sincronizarCalendariosAsistenteUsuario } from "@/src/modules/asistencia/calendario-asistente.service";
-import { resolverRedireccionAutorizada } from "@/src/modules/usuarios/auth-config.domain";
-import { autenticarConCredenciales } from "@/src/modules/usuarios/credentials.service";
-import { esRolUsuario } from "@/src/modules/usuarios/roles";
+  esRolUsuario,
+  resolverRedireccionAutorizada
+} from "@/src/modules/identity/api";
+
+const identity = obtenerServicioIdentity();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: authConfig.secret,
@@ -33,7 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Contrasena", type: "password" }
       },
       authorize: async (credentials) => {
-        const usuario = await autenticarConCredenciales(dependenciasLoginLocal, credentials);
+        const usuario = await identity.autenticarCredenciales(credentials);
         if (!usuario) {
           return null;
         }
@@ -53,7 +48,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             clientId: authConfig.google.clientId,
             clientSecret: authConfig.google.clientSecret,
             profile: async (profile) => {
-              const usuario = await resolverUsuarioGoogle({
+              const usuario = await identity.resolverUsuarioGoogle({
                 subject: profile.sub,
                 email: profile.email,
                 emailVerificado: profile.email_verified,
@@ -63,18 +58,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               });
               if (!usuario) {
                 throw new Error("La cuenta Google todavía no tiene acceso autorizado.");
-              }
-              if (usuario.rol === "ASISTENTE_TECNICO") {
-                try {
-                  await sincronizarCalendariosAsistenteUsuario({
-                    db,
-                    descifrar: descifrarConfiguracion,
-                    publicarEvento: publicarEventoCalendarioAsistente,
-                    eliminarEvento: eliminarEventoCalendarioAsistente,
-                  }, usuario.id);
-                } catch (error) {
-                  console.warn("No se pudo completar el backfill de Google Calendar del asistente", error);
-                }
               }
 
               return {

@@ -1,52 +1,8 @@
-import { z } from "zod";
-import type { RolUsuario } from "./roles";
-
-export const credencialesLoginSchema = z.object({
-  usuario: z.string().trim().min(1).transform(normalizarIdentificadorAcceso),
-  password: z.string().min(1)
-});
-
-export function normalizarIdentificadorAcceso(valor: string): string {
-  const identificador = valor.trim();
-  return identificador.includes("@") ? identificador.toLowerCase() : identificador;
-}
-
-export function esCorreoAcceso(valor: string): boolean {
-  return valor.includes("@");
-}
-
-export type UsuarioCredenciales = Readonly<{
-  id: string;
-  passwordHash: string | null;
-  debeCambiarPassword: boolean;
-  rol: RolUsuario;
-  activo: boolean;
-  fusionadoEnId: string | null;
-  nombre: string | null;
-  email: string | null;
-}>;
-
-export type UsuarioAutenticado = Readonly<{
-  id: string;
-  rol: RolUsuario;
-  nombre: string | null;
-  email: string | null;
-  debeCambiarPassword: boolean;
-}>;
-
-export function evaluarAccesoLocal(
-  usuario: UsuarioCredenciales | null,
-  passwordValida: boolean
-): UsuarioAutenticado | null {
-  if (!usuario || !passwordValida || !usuario.activo || usuario.fusionadoEnId) {
-    return null;
-  }
-
-  return {
-    id: usuario.id,
-    rol: usuario.rol,
-    nombre: usuario.nombre,
-    email: usuario.email,
-    debeCambiarPassword: usuario.debeCambiarPassword
-  };
-}
+export {
+  credencialesLoginSchema,
+  normalizarIdentificadorAcceso,
+  esCorreoAcceso,
+  evaluarAccesoLocal,
+  type UsuarioCredenciales,
+  type UsuarioAutenticado
+} from "@/src/modules/identity/api";
