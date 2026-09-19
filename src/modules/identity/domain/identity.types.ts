@@ -35,6 +35,7 @@ export type PerfilGoogle = Readonly<{
 }>;
 
 export type CuentaGoogleVinculada = Readonly<{
+  id?: string;
   providerAccountId: string | null;
   email: string;
   usuario: UsuarioAutenticado &
