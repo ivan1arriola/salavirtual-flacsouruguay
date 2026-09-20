@@ -67,7 +67,7 @@
   position: absolute;
   left: 12px;
   bottom: 12px;
-  color: #66788a;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -181,7 +181,7 @@
   border-radius: 999px;
   background: #f5f9fb;
   padding: 4px 8px;
-  color: #516274;
+  color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -210,7 +210,7 @@
 
 .agenda-access-block > strong {
   min-width: 0;
-  color: #22354b;
+  color: var(--text);
   font-size: 0.84rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -508,7 +508,7 @@
 
 .agenda-admin-view .agenda-access-panel::before {
   content: "Google Meet";
-  color: #52687a;
+  color: var(--text-secondary);
   font-size: .72rem;
   font-weight: 850;
   letter-spacing: .06em;
