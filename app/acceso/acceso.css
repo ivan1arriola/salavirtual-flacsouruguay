@@ -190,6 +190,44 @@
   color: #9ba7b5;
 }
 
+.login-password-input {
+  position: relative;
+}
+
+.login-password-input input {
+  padding-right: 50px;
+}
+
+.login-password-input .login-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 36px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6d7d90;
+  padding: 0;
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+
+.login-password-input .login-password-toggle:hover {
+  border-color: transparent;
+  background: #edf3f7;
+  color: #163970;
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+
+.login-password-input .login-password-toggle:focus-visible {
+  outline: 2px solid #176c78;
+  outline-offset: 2px;
+}
+
 .login-password-heading {
   display: flex;
   align-items: center;
