@@ -126,7 +126,7 @@
   width: 42px;
   height: 42px;
   background: var(--brand);
-  color: var(--text);
+  color: #ffffff;
   box-shadow: 0 0 0 3px #e1edf2;
 }
 
@@ -298,15 +298,15 @@
   .mobile-nav > a:focus-visible,
   .mobile-nav > a.is-active,
   .mobile-nav-more[open] > summary {
-    background: rgba(255, 255, 255, 0.11);
-    color: var(--text);
+    background: var(--brand-soft);
+    color: var(--brand);
   }
 
   .mobile-nav > a:hover svg,
   .mobile-nav > a:focus-visible svg,
   .mobile-nav > a.is-active svg,
   .mobile-nav-more[open] > summary svg {
-    color: var(--text);
+    color: var(--brand);
   }
 
   .mobile-nav > a.is-active {
