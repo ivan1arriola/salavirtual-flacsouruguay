@@ -111,16 +111,16 @@
 }
 
 .tone-blue {
-  border-color: #c8ddeb;
+  border-color: #cfd9e8;
 }
 
 .tone-blue > svg {
-  background: #e7f3fa;
-  color: #0f6f8f;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .tone-blue strong {
-  color: #0f6f8f;
+  color: var(--brand);
 }
 
 .response-grid {
