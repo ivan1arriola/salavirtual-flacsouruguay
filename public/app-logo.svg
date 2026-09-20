@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Sala Virtual FLACSO</title>
-  <desc id="desc">Monograma SV en azul institucional con acento turquesa.</desc>
+  <desc id="desc">Monograma SV en azul institucional con acento amarillo.</desc>
   <defs>
     <linearGradient id="bg" x1="76" y1="54" x2="445" y2="456" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#163970"/>
-      <stop offset="0.68" stop-color="#0d4f78"/>
-      <stop offset="1" stop-color="#176c78"/>
+      <stop stop-color="#2c4777"/>
+      <stop offset="0.68" stop-color="#243f6e"/>
+      <stop offset="1" stop-color="#1f365f"/>
     </linearGradient>
   </defs>
   <rect x="18" y="18" width="476" height="476" rx="126" fill="url(#bg)"/>
   <rect x="25" y="25" width="462" height="462" rx="119" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"/>
   <text x="256" y="316" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="230" font-weight="800" letter-spacing="-20">SV</text>
-  <path d="M123 373c82 45 187 48 274 8" fill="none" stroke="#62c5cf" stroke-width="34" stroke-linecap="round"/>
+  <path d="M123 373c82 45 187 48 274 8" fill="none" stroke="#ffcf1f" stroke-width="34" stroke-linecap="round"/>
 </svg>
