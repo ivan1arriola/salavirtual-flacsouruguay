@@ -1,13 +1,16 @@
 :root {
   color-scheme: light;
-  --bg: #f7f8fa;
+  --bg: #f4f7fb;
   --surface: #ffffff;
-  --surface-soft: #eef3f7;
-  --text: #18212f;
-  --muted: #647083;
-  --line: #d8dee8;
-  --brand: #0f6f8f;
-  --brand-strong: #0a5872;
+  --surface-soft: #eef2f7;
+  --text: #18345d;
+  --muted: #667892;
+  --line: #d6deea;
+  --brand: #2c4777;
+  --brand-strong: #1f365f;
+  --accent: #ffcf1f;
+  --accent-strong: #f2bd00;
+  --accent-text: #18345d;
   --ok: #24745b;
 }
 
@@ -96,14 +99,14 @@ button {
 }
 
 button {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #ffffff;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
 }
 
 button:hover,
 .actions a:hover {
-  border-color: var(--brand-strong);
+  border-color: var(--brand);
 }
 
 .secondary-button,
@@ -281,8 +284,8 @@ button:hover,
   place-items: center;
   border-radius: 50%;
   overflow: hidden;
-  background: #dceef3;
-  color: #0a5872;
+  background: #e8edf6;
+  color: #2c4777;
   font-size: 0.78rem;
   font-weight: 800;
 }
