@@ -101,7 +101,7 @@
 
 .login-product h1 {
   margin: 0;
-  color: #172a46;
+  color: var(--text);
   font-size: 1.78rem;
   line-height: 1.15;
   letter-spacing: -0.035em;
@@ -117,7 +117,7 @@
   border: 1px solid #cbd7e2;
   border-radius: 10px;
   background: #ffffff;
-  color: #263750;
+  color: #344054;
   font-size: 0.92rem;
   font-weight: 750;
   cursor: pointer;
@@ -159,7 +159,7 @@
 }
 
 .login-field label {
-  color: #34465d;
+  color: #344054;
   font-size: 0.76rem;
   font-weight: 750;
 }
@@ -172,7 +172,7 @@
   outline: none;
   background: #f9fbfc;
   padding: 0 13px;
-  color: #20344f;
+  color: var(--text);
   font: inherit;
 }
 
@@ -217,7 +217,7 @@
 
 .login-password-input .login-password-toggle:hover {
   border-color: transparent;
-  background: #edf3f7;
+  background: #f3f4f6;
   color: #2c4777;
   box-shadow: none;
   transform: translateY(-50%);
