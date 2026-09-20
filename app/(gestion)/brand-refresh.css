@@ -139,7 +139,7 @@
 .page-header h1,
 .section-heading h2,
 .role-dashboard h1 {
-  color: var(--brand-deep);
+  color: var(--text);
 }
 
 .page-eyebrow {
@@ -149,17 +149,17 @@
 
 /* Jerarquía de acciones */
 .primary-action {
-  border-color: var(--accent);
+  border-color: var(--brand);
   border-radius: 10px;
-  background: var(--accent);
-  color: var(--accent-text);
-  box-shadow: 0 5px 14px rgba(183, 134, 0, 0.14);
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(44, 71, 119, 0.16);
 }
 
 .primary-action:hover {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-  color: var(--accent-text);
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -218,7 +218,7 @@
 }
 
 .data-table th {
-  background: #f0f3f8;
+  background: var(--surface-soft);
   color: #54667f;
   letter-spacing: 0.04em;
 }
@@ -228,7 +228,7 @@
 }
 
 .data-table tbody tr:hover {
-  background: #f7f9fc;
+  background: #fafbfc;
 }
 
 .status {
@@ -408,7 +408,7 @@
 }
 
 .operations-attention-grid {
-  background: #f0f3f8;
+  background: var(--surface-soft);
 }
 
 .operations-attention-card {
