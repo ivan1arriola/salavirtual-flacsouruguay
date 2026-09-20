@@ -4,12 +4,12 @@
 
 .meetings-agenda-hero {
   min-height: 138px;
-  border-color: #bed6df;
+  border-color: #cbd4e1;
   border-left-width: 5px;
   border-radius: 14px;
   background:
-    radial-gradient(circle at 86% 18%, rgba(73, 156, 179, 0.11), transparent 30%),
-    linear-gradient(120deg, #ffffff 0%, #eef7fa 100%);
+    radial-gradient(circle at 86% 18%, rgba(44, 71, 119, 0.07), transparent 30%),
+    linear-gradient(120deg, #ffffff 0%, #f5f7f9 100%);
   box-shadow: 0 10px 28px rgba(31, 50, 76, 0.055);
   padding: 26px 30px;
 }
@@ -97,7 +97,7 @@
 }
 
 .agenda-view-switch a.active {
-  border-color: #b7d2dc;
+  border-color: #c7d1df;
   box-shadow: 0 3px 10px rgba(31, 50, 76, 0.08);
 }
 
