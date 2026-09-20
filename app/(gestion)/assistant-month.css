@@ -57,13 +57,13 @@
 }
 
 .hybrid-summary {
-  border-color: #c8ddeb;
-  background: #f0f7fb;
-  color: #0a5872;
+  border-color: #cfd9e8;
+  background: #f4f7fb;
+  color: var(--brand-strong);
 }
 
 .hybrid-summary > svg {
-  background: #0f6f8f;
+  background: var(--brand);
 }
 
 .estimated-total {
