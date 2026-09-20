@@ -36,16 +36,16 @@
 }
 
 .sidebar-group > p {
-  color: #8190a6;
+  color: var(--text-secondary);
 }
 
 .side-nav a,
 .archive-nav .side-nav a {
-  color: #43536b;
+  color: var(--text-secondary);
 }
 
 .side-nav a svg {
-  color: #8291a8;
+  color: var(--text-secondary);
 }
 
 .side-nav a:hover {
