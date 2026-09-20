@@ -137,8 +137,7 @@
 }
 
 .page-header h1,
-.section-heading h2,
-.role-dashboard h1 {
+.section-heading h2 {
   color: var(--text);
 }
 
@@ -306,24 +305,24 @@
 }
 
 .role-dashboard-hero h1,
-.dashboard-header-title {
+.role-dashboard .dashboard-header-title {
   color: #ffffff;
 }
 
 .role-dashboard-hero p:last-child,
-.dashboard-header-subtitle {
+.role-dashboard .dashboard-header-subtitle {
   color: #e2e8f2;
 }
 
 .role-dashboard-hero .page-eyebrow,
-.dashboard-header-date {
+.role-dashboard .dashboard-header-date {
   color: #e8edf6 !important;
 }
 
-.dashboard-header-role-badge,
-.dashboard-header-role-badge.role-administracion,
-.dashboard-header-role-badge.role-docente,
-.dashboard-header-role-badge.role-asistente_tecnico {
+.role-dashboard .dashboard-header-role-badge,
+.role-dashboard .dashboard-header-role-badge.role-administracion,
+.role-dashboard .dashboard-header-role-badge.role-docente,
+.role-dashboard .dashboard-header-role-badge.role-asistente_tecnico {
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
