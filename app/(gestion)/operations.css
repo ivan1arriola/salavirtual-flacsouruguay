@@ -1285,7 +1285,7 @@
   height: 36px;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: #e8f3f6;
+  background: #edf1f7;
   color: var(--brand);
   padding: 8px;
 }
@@ -2200,7 +2200,7 @@
 
 .encounter-time-legend .future,
 .encounter-time-status.futuro {
-  background: #e7f3fa;
+  background: #edf1f7;
   color: var(--brand);
 }
 
