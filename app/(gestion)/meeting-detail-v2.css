@@ -69,7 +69,7 @@
   align-content: center;
   gap: 4px;
   border-left: 1px solid #dce4ea;
-  background: linear-gradient(180deg, #f7fbfc 0%, #eef6f8 100%);
+  background: linear-gradient(180deg, #f7fbfc 0%, #f5f6f8 100%);
   padding: 22px;
 }
 
@@ -125,7 +125,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #e8f3f6;
+  background: #edf1f7;
   color: var(--brand-strong);
   padding: 7px;
 }
@@ -223,7 +223,7 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #e8f3f6;
+  background: #edf1f7;
   color: var(--brand-strong);
 }
 
@@ -321,7 +321,7 @@
   align-items: baseline;
   gap: 7px;
   border-radius: 8px;
-  background: #eef6f8;
+  background: #f5f6f8;
   padding: 14px;
 }
 
@@ -407,7 +407,7 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 9px;
-  background: #e8f2f5;
+  background: #eef1f5;
   color: var(--brand-strong);
   font-size: 0.82rem;
   font-weight: 900;
@@ -477,7 +477,7 @@
   gap: 10px;
   border: 1px solid #d8e4e9;
   border-radius: 9px;
-  background: #f4f9fa;
+  background: #f7f8fa;
   padding: 11px 12px;
 }
 
