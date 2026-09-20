@@ -12,7 +12,7 @@
   overflow: hidden;
   border: 1px solid #c8dce4;
   border-radius: 10px;
-  background: linear-gradient(120deg, #f7fbfc 0%, #e8f3f6 100%);
+  background: linear-gradient(120deg, #f7fbfc 0%, #edf1f7 100%);
   padding: 26px 28px;
 }
 
@@ -66,7 +66,7 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #e8f3f6;
+  background: #edf1f7;
   color: var(--brand);
 }
 
@@ -337,7 +337,7 @@
   width: 38px;
   height: 38px;
   border-radius: 9px;
-  background: #e7f3fa;
+  background: #edf1f7;
   color: var(--brand);
   padding: 9px;
 }
@@ -408,7 +408,7 @@
   align-items: center;
   gap: 5px;
   margin-top: 7px;
-  border-color: #b9d7e1;
+  border-color: #cbd4e1;
   background: #f2f8fa;
   color: var(--brand-strong);
   padding: 4px 8px;
