@@ -19,7 +19,7 @@
   border-radius: 9px;
   background: #f5f7f9;
   padding: 10px 12px;
-  color: #4f5f72;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   line-height: 1.45;
 }
@@ -69,7 +69,7 @@
   justify-content: center;
   align-items: flex-start;
   gap: 5px;
-  color: #435268;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
@@ -120,7 +120,7 @@
   border-radius: 999px;
   background: #f7f8fa;
   padding: 3px 8px;
-  color: #466177;
+  color: var(--text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -142,7 +142,7 @@
 .admin-upcoming-academic small,
 .admin-upcoming-access small,
 .admin-upcoming-operations small {
-  color: #637286;
+  color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.025em;
@@ -151,7 +151,7 @@
 
 .admin-upcoming-academic strong,
 .admin-upcoming-operations strong {
-  color: #203550;
+  color: var(--text);
   font-size: 0.8rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -242,14 +242,14 @@
 }
 
 .admin-upcoming-cohost strong {
-  color: #33475e;
+  color: var(--text);
   font-size: 0.8rem;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .admin-upcoming-cohost span {
-  color: #5d7084;
+  color: var(--text-secondary);
   font-size: 0.7rem;
   overflow-wrap: anywhere;
 }
