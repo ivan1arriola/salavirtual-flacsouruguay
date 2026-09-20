@@ -34,7 +34,7 @@
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  background: #146b87;
+  background: #2c4777;
   color: #ffffff;
   font-size: 1.05rem;
   font-weight: 800;
@@ -92,7 +92,7 @@
 }
 
 .side-nav a.is-active {
-  background: #e7f2f6;
+  background: #e8edf6;
   color: var(--brand-strong);
 }
 
@@ -185,8 +185,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #dceef3;
-  color: #0a5872;
+  background: #e8edf6;
+  color: #2c4777;
   font-size: 0.82rem;
   font-weight: 800;
   overflow: hidden;
