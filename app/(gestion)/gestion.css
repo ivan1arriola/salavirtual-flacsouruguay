@@ -80,7 +80,7 @@
   align-items: center;
   gap: 11px;
   border-radius: 6px;
-  color: #465366;
+  color: var(--text-secondary);
   padding: 9px 10px;
   font-size: 0.9rem;
   font-weight: 700;
@@ -149,7 +149,7 @@
 }
 
 .archive-nav .side-nav a {
-  color: #687589;
+  color: var(--text-secondary);
   font-size: 0.84rem;
 }
 
@@ -457,7 +457,7 @@
 
 .status-neutral {
   background: #edf1f5;
-  color: #4f5f72;
+  color: var(--text-secondary);
 }
 
 .muted-text {
@@ -638,7 +638,7 @@
     border: 1px solid var(--line);
     border-radius: 6px;
     background: #ffffff;
-    color: #465366;
+    color: var(--text-secondary);
     padding: 7px 10px;
     font-size: 0.78rem;
     font-weight: 800;
@@ -674,7 +674,7 @@
     place-content: center;
     justify-items: center;
     gap: 3px;
-    color: #526173;
+    color: var(--text-secondary);
     font-size: 0.64rem;
     font-weight: 700;
   }
