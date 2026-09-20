@@ -24,7 +24,7 @@
 
 .next-opening p:last-child {
   margin: 0;
-  color: #526173;
+  color: var(--text-secondary);
 }
 
 .next-opening-actions {
