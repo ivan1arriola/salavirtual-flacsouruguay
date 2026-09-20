@@ -106,7 +106,7 @@
 }
 
 .page :global(.meeting-form-steps strong) {
-  color: #1d2f48;
+  color: var(--text);
   font-size: 0.8rem;
 }
 
@@ -155,7 +155,7 @@
 
 .page :global(.form-section-title h2) {
   margin: 0;
-  color: #172b47;
+  color: var(--text);
   font-size: 1.08rem;
   line-height: 1.25;
 }
@@ -176,7 +176,7 @@
 .page :global(.field > legend),
 .page :global(.modality-choice > legend) {
   margin-bottom: 6px;
-  color: #33445b;
+  color: var(--text);
   font-size: 0.78rem;
   font-weight: 800;
 }
