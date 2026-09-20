@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { authConfig } from "@/src/lib/auth/config";
 import { RememberedAccounts } from "@/src/components/remembered-accounts";
+import { PasswordInput } from "./password-input";
 
 import {
   iniciarSesionGoogle,
@@ -153,14 +154,7 @@ export default async function AccesoPage({
               </a>
             </div>
 
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              required
-            />
+            <PasswordInput />
           </div>
 
           <button
