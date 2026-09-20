@@ -1,23 +1,36 @@
 :root {
-  --bg: #eef3f7;
+  --bg: #f4f7fb;
   --surface: #ffffff;
-  --surface-soft: #eaf1f6;
-  --surface-brand: #edf4fb;
-  --text: #172a46;
-  --muted: #617086;
-  --line: #d5dee8;
-  --brand: #163970;
-  --brand-strong: #102e5b;
-  --brand-soft: #dfe9f6;
-  --brand-secondary: #176c78;
-  --brand-secondary-strong: #0f5963;
-  --brand-secondary-soft: #dff0f1;
-  --accent: #c98927;
-  --accent-soft: #fff2da;
+  --surface-soft: #eef2f7;
+  --surface-brand: #e9eef6;
+  --surface-hover: #e4eaf3;
+  --text: #18345d;
+  --muted: #667892;
+  --line: #d6deea;
+
+  /* Identidad FLACSO Uruguay */
+  --brand: #2c4777;
+  --brand-strong: #1f365f;
+  --brand-deep: #152a50;
+  --brand-soft: #e8edf6;
+  --brand-secondary: #4f6895;
+  --brand-secondary-strong: #3b5688;
+  --brand-secondary-soft: #edf1f7;
+
+  /* Acento institucional */
+  --accent: #ffcf1f;
+  --accent-strong: #f2bd00;
+  --accent-soft: #fff4b8;
+  --accent-text: #18345d;
+
   --ok: #24745b;
+  --warning: #b77700;
   --danger: #a94242;
-  --shadow-sm: 0 8px 24px rgba(23, 42, 70, 0.07);
-  --shadow-md: 0 18px 48px rgba(23, 42, 70, 0.11);
+
+  --shadow-sm: 0 5px 18px rgba(21, 42, 80, 0.06);
+  --shadow-md: 0 16px 42px rgba(21, 42, 80, 0.11);
+  --shadow-lg: 0 24px 64px rgba(21, 42, 80, 0.15);
+  --hero-gradient: linear-gradient(135deg, #1f365f 0%, #2c4777 62%, #385887 100%);
 }
 
 html {
@@ -27,14 +40,14 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 88% 2%, rgba(23, 108, 120, 0.08), transparent 24rem),
-    linear-gradient(180deg, #f5f8fb 0%, var(--bg) 100%);
+    radial-gradient(circle at 92% 2%, rgba(44, 71, 119, 0.07), transparent 26rem),
+    linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 ::selection {
-  background: rgba(23, 108, 120, 0.2);
-  color: var(--brand-strong);
+  background: rgba(44, 71, 119, 0.18);
+  color: var(--brand-deep);
 }
 
 button,
@@ -55,6 +68,6 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 3px solid rgba(23, 108, 120, 0.2);
+  outline: 3px solid rgba(44, 71, 119, 0.22);
   outline-offset: 2px;
 }
