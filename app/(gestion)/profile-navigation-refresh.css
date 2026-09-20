@@ -90,7 +90,7 @@
 
 .profile-menu-chevron {
   flex: 0 0 auto;
-  color: #7b8ca4;
+  color: var(--text-secondary);
   transition: transform 150ms ease;
 }
 
@@ -286,12 +286,12 @@
     min-height: 54px;
     margin: 6px 3px;
     border-radius: 11px;
-    color: #61728a;
+    color: var(--text-secondary);
   }
 
   .mobile-nav > a svg,
   .mobile-nav-more > summary svg {
-    color: #7789a1;
+    color: var(--text-secondary);
   }
 
   .mobile-nav > a:hover,
