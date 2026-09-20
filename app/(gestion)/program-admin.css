@@ -157,7 +157,7 @@
 }
 
 .program-active-toggle strong {
-  color: #304156;
+  color: var(--text);
   font-size: 0.83rem;
 }
 
