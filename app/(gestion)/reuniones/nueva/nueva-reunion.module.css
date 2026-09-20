@@ -62,7 +62,7 @@
 .programsAction:hover,
 .programsAction:focus-visible {
   border-color: color-mix(in srgb, var(--brand) 62%, var(--line));
-  background: #f5fafc;
+  background: #f8f9fb;
   color: var(--brand-strong);
 }
 
