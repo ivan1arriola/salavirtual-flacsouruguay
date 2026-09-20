@@ -117,9 +117,9 @@
   gap: 7px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: #f0f7f8;
-  border: 1px solid #c9e4e7;
-  color: #155d67;
+  background: #f2f5f9;
+  border: 1px solid #d2dbe8;
+  color: var(--brand-strong);
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
@@ -172,7 +172,7 @@
   outline: none;
   border-color: var(--brand);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(23, 108, 120, 0.14);
+  box-shadow: 0 0 0 3px rgba(44, 71, 119, 0.14);
 }
 
 .recordings-search-bar .clear-search-button {
@@ -230,7 +230,7 @@
   background: var(--brand-secondary);
   border-color: var(--brand-secondary);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(23, 108, 120, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 71, 119, 0.18);
 }
 
 .tab-badge {
@@ -471,7 +471,7 @@
   transform: translateY(-1px);
 }
 
-.recording-file-card.is-recording { border-left-color: #176c78; }
+.recording-file-card.is-recording { border-left-color: var(--brand); }
 .recording-file-card.is-transcript { border-left-color: #4b6fa8; }
 .recording-file-card.is-attendance { border-left-color: #52745c; }
 .recording-file-card.is-notes { border-left-color: #9b7134; }
@@ -486,7 +486,7 @@
   color: #65758a;
 }
 
-.is-recording .recording-file-icon { background: #e5f3f4; color: #176c78; }
+.is-recording .recording-file-icon { background: var(--brand-soft); color: var(--brand); }
 .is-transcript .recording-file-icon { background: #eaf0f9; color: #4b6fa8; }
 .is-attendance .recording-file-icon { background: #eaf2ec; color: #52745c; }
 .is-notes .recording-file-icon { background: #f7f0e5; color: #8c642c; }
@@ -565,7 +565,7 @@
   border-color: var(--brand-secondary);
   background: var(--brand-secondary);
   color: #ffffff;
-  box-shadow: 0 3px 10px rgba(23, 108, 120, 0.12);
+  box-shadow: 0 3px 10px rgba(44, 71, 119, 0.12);
 }
 
 .recording-file-open.is-primary:hover {
@@ -579,7 +579,7 @@
 .filter-tab:focus-visible,
 .clear-search-button:focus-visible,
 .reset-filters-button:focus-visible {
-  outline: 3px solid rgba(23, 108, 120, 0.18);
+  outline: 3px solid rgba(44, 71, 119, 0.18);
   outline-offset: 2px;
 }
 
