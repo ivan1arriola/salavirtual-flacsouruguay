@@ -62,7 +62,7 @@ body {
 
 .meeting-detail-feedback {
   margin: 0 0 14px;
-  border: 1px solid #b9d7e1;
+  border: 1px solid #cbd4e1;
   border-left: 4px solid var(--brand);
   border-radius: 7px;
   background: #f2f8fa;
@@ -106,7 +106,7 @@ body {
 
 .encounter-card .encounter-date-summary {
   margin-top: 2px;
-  color: #536173;
+  color: var(--text-secondary);
   font-size: 0.78rem;
 }
 
@@ -163,7 +163,7 @@ body {
 }
 
 .encounter-facts dd {
-  color: #304156;
+  color: var(--text);
   font-size: 0.8rem;
   font-weight: 750;
   overflow-wrap: anywhere;
@@ -312,7 +312,7 @@ body {
     place-content: center;
     justify-items: center;
     gap: 3px;
-    color: #526173;
+    color: var(--text-secondary);
     cursor: pointer;
     font-size: 0.64rem;
     font-weight: 700;
@@ -396,7 +396,7 @@ body {
     align-items: center;
     gap: 8px;
     background: #ffffff;
-    color: #3e4b5e;
+    color: var(--text-secondary);
     padding: 10px 12px;
     font-size: 0.78rem;
     font-weight: 750;
