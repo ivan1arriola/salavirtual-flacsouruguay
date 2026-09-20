@@ -50,7 +50,7 @@
 
 .agenda-summary-grid small {
   margin-bottom: 4px;
-  color: #5f6f83;
+  color: var(--text-secondary);
   font-size: 0.73rem;
 }
 
@@ -198,7 +198,7 @@
 }
 
 .agenda-meeting-date span {
-  color: #435268;
+  color: var(--text-secondary);
 }
 
 .agenda-meeting-date strong {
@@ -443,7 +443,7 @@
 
 .pagination-info {
   font-size: 0.82rem;
-  color: #5f6f83;
+  color: var(--text-secondary);
 }
 
 .pagination-info strong {
