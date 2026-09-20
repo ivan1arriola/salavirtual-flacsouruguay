@@ -49,7 +49,7 @@
   border: 1px solid #d7e1e8;
   border-radius: 999px;
   background: #f8fafc;
-  color: #637388;
+  color: var(--text-secondary);
   padding: 5px 9px;
   font-size: 0.7rem;
   font-weight: 750;
@@ -89,7 +89,7 @@
 }
 
 .recordings-toolbar .pending-provision strong {
-  color: #263a56;
+  color: var(--text);
   font-size: 0.76rem;
 }
 
@@ -151,7 +151,7 @@
 .recordings-search-bar .search-icon {
   position: absolute;
   left: 14px;
-  color: #7b8b9e;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -162,7 +162,7 @@
   border: 1.5px solid #c9d6df;
   border-radius: 9px;
   background: #f8fafc;
-  color: #172a46;
+  color: var(--text);
   font-size: 0.88rem;
   font-family: inherit;
   transition: all 140ms ease;
@@ -185,14 +185,14 @@
   border: none;
   border-radius: 50%;
   background: #e2e8f0;
-  color: #4a5568;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 120ms ease;
 }
 
 .recordings-search-bar .clear-search-button:hover {
   background: #cbd5e1;
-  color: #1e293b;
+  color: var(--text);
 }
 
 .recordings-filter-tabs {
@@ -223,7 +223,7 @@
 .filter-tab:hover {
   background: #f0f4f8;
   border-color: #b8c9d6;
-  color: #1e314d;
+  color: var(--text);
 }
 
 .filter-tab.is-active {
@@ -290,13 +290,13 @@
 
 .recordings-empty-state h3 {
   margin: 0 0 6px;
-  color: #1a2f4c;
+  color: var(--text);
   font-size: 1.05rem;
 }
 
 .recordings-empty-state p {
   margin: 0 0 16px;
-  color: #65758a;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   max-width: 420px;
 }
@@ -376,7 +376,7 @@
 }
 
 .recording-meeting-date span {
-  color: #43556c;
+  color: var(--text-secondary);
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
@@ -388,7 +388,7 @@
   border: 1px solid #cbd9e2;
   border-radius: 999px;
   background: #ffffff;
-  color: #607186;
+  color: var(--text-secondary);
   padding: 2px 7px;
   font-size: 0.62rem;
   font-weight: 850;
@@ -415,7 +415,7 @@
 }
 
 .recording-meeting-title h2 {
-  color: #172a46;
+  color: var(--text);
   font-size: 0.92rem;
   line-height: 1.25;
 }
@@ -483,7 +483,7 @@
   place-items: center;
   border-radius: 9px;
   background: #edf2f6;
-  color: #65758a;
+  color: var(--text-secondary);
 }
 
 .is-recording .recording-file-icon { background: var(--brand-soft); color: var(--brand); }
@@ -504,7 +504,7 @@
 
 .recording-file-label strong {
   min-width: 0;
-  color: #1e314d;
+  color: var(--text);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -513,7 +513,7 @@
   flex: 0 0 auto;
   border-radius: 999px;
   background: #f0f4f7;
-  color: #6b7a8d;
+  color: var(--text-secondary);
   padding: 2px 5px;
   font-size: 0.58rem;
   font-weight: 750;
@@ -523,7 +523,7 @@
   display: -webkit-box;
   margin: 3px 0 0;
   overflow: hidden;
-  color: #718095;
+  color: var(--text-secondary);
   font-size: 0.65rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
