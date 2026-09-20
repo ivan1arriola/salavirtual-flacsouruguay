@@ -125,7 +125,7 @@
 
 .assignment-suggestion small {
   margin-top: 1px;
-  color: #526779;
+  color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -220,7 +220,7 @@
 .coverage-title-link {
   display: inline-block;
   margin-bottom: 17px;
-  color: #172a46;
+  color: var(--text);
   font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.25;
@@ -238,7 +238,7 @@
 
 .coverage-meeting-meta span {
   min-width: 0;
-  color: #455267;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
@@ -259,7 +259,7 @@
   margin-top: 17px;
   border-radius: 999px;
   background: #f0f3f8;
-  color: #526779;
+  color: var(--text-secondary);
   padding: 5px 10px;
   font-size: 0.75rem;
 }
@@ -299,7 +299,7 @@
 }
 
 .coverage-assignment-heading small {
-  color: #687589;
+  color: var(--text-secondary);
 }
 
 .coverage-assignment-panel .assignment-contract {
@@ -1681,7 +1681,7 @@
 }
 
 .agenda-meeting-date span {
-  color: #3d4a5d;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 800;
 }
@@ -1717,7 +1717,7 @@
 .agenda-meeting-title {
   display: inline-block;
   margin-bottom: 13px;
-  color: #172a46;
+  color: var(--text);
   font-size: 1.14rem;
   font-weight: 800;
   line-height: 1.25;
@@ -1765,7 +1765,7 @@
 
 .agenda-meeting-logistics > div > strong {
   margin-bottom: 5px;
-  color: #34445b;
+  color: var(--text);
   font-size: 0.83rem;
 }
 
@@ -1834,7 +1834,7 @@
 .agenda-assistant.no-assistance {
   border-color: #dfe4ea;
   background: #f7f8fa;
-  color: #758297;
+  color: var(--text-secondary);
 }
 
 .agenda-assistant.no-assistance > svg {
@@ -2213,7 +2213,7 @@
 .encounter-time-legend .past,
 .encounter-time-status.pasado {
   background: #e9edf2;
-  color: #5f6c7e;
+  color: var(--text-secondary);
 }
 
 .encounter-item {
@@ -2252,7 +2252,7 @@
 
 .encounter-item.is-pasado .encounter-edit-form,
 .encounter-item.is-pasado .encounter-assistance {
-  color: #596678;
+  color: var(--text-secondary);
 }
 
 .encounter-item > header,
