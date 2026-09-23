@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   derivarEstadoGrabacionOperativa,
   derivarEstadoReunionOperativa,
+  incidenciaOperativaSchema,
   puedeConsultarReunionOperativa
 } from "../src/modules/reuniones/reunion-operativa.domain";
 
@@ -68,6 +69,31 @@ describe("reunión operativa", () => {
       estadoReunion: "FINALIZADA",
       estadoProveedor: "AUSENTE"
     })).toBe("NO_REALIZADA");
+  });
+
+
+  it("valida incidencias operativas estructuradas", () => {
+    expect(incidenciaOperativaSchema.parse({
+      tipo: "AUDIO_VIDEO",
+      severidad: "ALTA",
+      descripcion: "El docente no escucha a los participantes."
+    })).toEqual({
+      tipo: "AUDIO_VIDEO",
+      severidad: "ALTA",
+      descripcion: "El docente no escucha a los participantes."
+    });
+
+    expect(() => incidenciaOperativaSchema.parse({
+      tipo: "DESCONOCIDA",
+      severidad: "MEDIA",
+      descripcion: "Problema."
+    })).toThrow();
+
+    expect(() => incidenciaOperativaSchema.parse({
+      tipo: "OTRA",
+      severidad: "MEDIA",
+      descripcion: "x"
+    })).toThrow();
   });
 
   it("reserva la consola a administración o al AT asignado", () => {
