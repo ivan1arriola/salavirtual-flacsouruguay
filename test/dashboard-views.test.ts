@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   determinarEstadoTemporal,
@@ -6,6 +8,18 @@ import {
 } from "../src/modules/dashboard/dashboard.domain";
 
 describe("integración de vistas de dashboard", () => {
+
+  it("mantiene / como dashboard principal y despacha por rol", () => {
+    const source = readFileSync(join(process.cwd(), "app/(gestion)/page.tsx"), "utf8");
+
+    expect(source).toContain('if (session.user.role === "ASISTENTE_TECNICO")');
+    expect(source).toContain("<AssistantDashboard");
+    expect(source).toContain('if (session.user.role === "DOCENTE")');
+    expect(source).toContain("<TeacherDashboard");
+    expect(source).toContain("<AdminDashboard");
+    expect(source).not.toContain('redirect("/reuniones")');
+    expect(source).not.toContain('redirect("/operacion');
+  });
   const baseDate = new Date("2026-09-11T18:00:00-03:00");
 
   it("garantiza que reuniones con inicio a futuro el mismo día se identifiquen para timeline", () => {
