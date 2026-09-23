@@ -7,7 +7,6 @@ const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.sett
 const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
-const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -86,7 +85,7 @@ async function main(): Promise<void> {
   }
 
   await meetAuth.request({
-    url: `${MEET_BETA_API}/${spaceName}/members`,
+    url: `${MEET_API}/${spaceName}/members`,
     method: "POST",
     timeout: 30_000,
     data: { email: cohost, role: "COHOST" },
