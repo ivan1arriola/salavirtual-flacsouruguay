@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type EstadoReunionOperativa =
   | "PROGRAMADA"
   | "ESPERANDO_INICIO"
@@ -47,3 +49,19 @@ export function puedeConsultarReunionOperativa(input: Readonly<{
   return input.rol === "ADMINISTRACION"
     || (input.rol === "ASISTENTE_TECNICO" && input.asistenteAsignado);
 }
+
+
+export const incidenciaOperativaSchema = z.object({
+  tipo: z.enum([
+    "DOCENTE_NO_INGRESA",
+    "AUDIO_VIDEO",
+    "GRABACION",
+    "SALA_INCORRECTA",
+    "CONECTIVIDAD",
+    "OTRA"
+  ]),
+  severidad: z.enum(["BAJA", "MEDIA", "ALTA", "CRITICA"]),
+  descripcion: z.string().trim().min(3, "Describí brevemente la incidencia.").max(1000)
+});
+
+export type IncidenciaOperativaInput = z.infer<typeof incidenciaOperativaSchema>;
