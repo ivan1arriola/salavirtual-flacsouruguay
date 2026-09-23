@@ -1,7 +1,7 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { searchMeet } from "../src/modules/meet/reverse-meet-search.service";
+import { buscarMeet } from "../src/bootstrap/reverse-meet-search.server";
 
 const enabled = process.env.MEET_HISTORY_DATABASE_TEST === "1";
 describe.skipIf(!enabled)("historial Meet en PostgreSQL real", () => {
@@ -57,7 +57,7 @@ describe.skipIf(!enabled)("historial Meet en PostgreSQL real", () => {
       expect(audits).toHaveLength(2);
       expect(audits[1].valorAnterior).toMatchObject({ codigoReunion: "rsf-wtgp-uxt", joinUrl: "https://meet.google.com/rsf-wtgp-uxt?authuser=1" });
       expect(audits[1].valorNuevo).toMatchObject({ origen: "prueba-ci", motivo: "Migración de prueba" });
-      const result = await searchMeet(tx as PrismaClient, actor, "rsf-wtgp-uxt");
+      const result = await buscarMeet(actor, "rsf-wtgp-uxt");
       expect(result.results.find((r) => r.event.id === item.id)?.current).toBe(false);
       expect(result.results.find((r) => r.event.id === item.id)?.currentLinks[0].code).toBe("jgw-boaw-dgr");
       // Repeated sync of the same values creates no extra history.
@@ -67,7 +67,7 @@ describe.skipIf(!enabled)("historial Meet en PostgreSQL real", () => {
       expect(await tx.auditoria.count({ where: { entidadId: item.id } })).toBe(2);
       // Reusing an old code must still be classified as current.
       await tx.eventoProveedor.update({ where: { id: item.id }, data: { codigoReunion: "rsf-wtgp-uxt", joinUrl: null } });
-      expect((await searchMeet(tx as PrismaClient, actor, "rsf-wtgp-uxt")).results.find((r) => r.event.id === item.id)?.current).toBe(true);
+      expect((await buscarMeet(actor, "rsf-wtgp-uxt")).results.find((r) => r.event.id === item.id)?.current).toBe(true);
     });
   });
 
