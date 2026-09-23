@@ -244,7 +244,9 @@ export async function obtenerReunionOperativa(
 
   const association = meeting.solicitud.docentePrograma;
   const teacher = association.docente.usuario;
-  const assignment = meeting.asignaciones[0];
+  const assignment = actor.rol === "ASISTENTE_TECNICO"
+    ? asignacionActor
+    : meeting.asignaciones[0];
   const assistant = assignment?.asistenteTecnico.usuario;
 
   return {
