@@ -1,8 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
-import { normalizeCohostEmails } from "../meet/cohosts.domain";
-import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
-import { provisionarEventosMeet } from "../meet/provisionar-eventos.service";
-import type { MeetProvider } from "../meet/provider";
+import {
+  crearPrismaConferenciasRepository,
+  normalizeCohostEmails,
+  sincronizarEventosPendientesUseCase,
+  type ConferenceProvider,
+  type GoogleCalendarCredentials
+} from "@/src/modules/conferencias/api";
 
 export type ResyncCohostFailure = Readonly<{
   instanciaSalaId: string;
@@ -33,7 +36,7 @@ export type ResyncCohostResult = Readonly<{
 export type ResyncCohostDependencies = Readonly<{
   db: PrismaClient;
   descifrar: (value: string) => string;
-  crearProvider: (credentials: GoogleCalendarCredentials) => MeetProvider;
+  crearProvider: (credentials: GoogleCalendarCredentials) => ConferenceProvider;
   onLog?: (event: ResyncCohostLogEvent) => void;
 }>;
 
@@ -189,11 +192,15 @@ export async function resincronizarCohostsReunionesExistentes(
       cohostsAgregados += added;
       emit("INFO", `GOOGLE ${meetingLabel} | iniciando verificación Principal -> Legacy si corresponde.`);
 
-      const [outcome] = await provisionarEventosMeet({
+      const repository = crearPrismaConferenciasRepository({
         db,
-        descifrar: dependencies.descifrar,
-        crearProvider: dependencies.crearProvider,
-      }, [event.id]);
+        descifrarConfiguracion: dependencies.descifrar
+      });
+      const [outcome] = await sincronizarEventosPendientesUseCase(
+        repository,
+        dependencies.crearProvider,
+        [event.id]
+      );
 
       if (outcome?.estado !== "SINCRONIZADA") {
         throw new Error(
