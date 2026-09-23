@@ -67,6 +67,10 @@ export function desvincularAsistente(actor: SessionActor, input: unknown) {
   return obtenerServicioAsistencia().desvincularAsistente(actor, input);
 }
 
+export function reportarDuracionAsistencia(actor: SessionActor, input: unknown, ahora?: Date) {
+  return obtenerServicioAsistencia().reportarDuracion(actor, input, ahora);
+}
+
 export async function sincronizarAsignacionAsistente(instanciaSalaId: string, calendarWarning: string) {
   const warnings: string[] = [];
   try {
