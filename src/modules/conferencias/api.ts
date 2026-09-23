@@ -1,6 +1,7 @@
 import {
   descartarOperacionesNoBloqueantesLoteUseCase,
   descartarOperacionPendienteUseCase,
+  reclasificarOperacionesPendientesLoteUseCase,
   sincronizarCohostsExistenteUseCase,
   configurarMeetExistenteUseCase,
   sincronizarEventosPendientesUseCase,
@@ -11,6 +12,7 @@ import type {
   DescartarLoteResult,
   DescartarOperacionResult,
   ProvisionConferenciaResult,
+  ReclasificarLoteResult,
 } from "./domain";
 import { crearGoogleConferenceProvider } from "./infrastructure/google/google-conference-provider.adapter";
 import type {
@@ -63,6 +65,8 @@ export type ServicioConferencias = Readonly<{
 
   descartarOperacionesNoBloqueantesLote: () => Promise<DescartarLoteResult>;
 
+  reclasificarOperacionesPendientesLote: () => Promise<ReclasificarLoteResult>;
+
   crearProvider: ConferenceProviderFactory;
 }>;
 
@@ -95,6 +99,10 @@ export function crearServicioConferencias(
 
     async descartarOperacionesNoBloqueantesLote() {
       return descartarOperacionesNoBloqueantesLoteUseCase(repository);
+    },
+
+    async reclasificarOperacionesPendientesLote() {
+      return reclasificarOperacionesPendientesLoteUseCase(repository);
     },
 
     crearProvider: providerFactory,
