@@ -17,7 +17,7 @@ import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistenc
 import { sincronizarCalendarioAsistenteInstancia } from "@/src/modules/asistencia/calendario-asistente.service";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import { eliminarEventoCalendarioAsistente, publicarEventoCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
-import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
+import { configurarGoogleMeetExistente } from "@/src/modules/conferencias/api";
 
 const defaultCalendarRepository = crearPrismaAssistantCalendarRepository({
   db,
