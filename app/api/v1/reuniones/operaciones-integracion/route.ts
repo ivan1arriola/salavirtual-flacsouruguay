@@ -4,11 +4,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
-import {
-  descartarOperacionPendiente,
-  descartarOperacionesNoBloqueantesLote,
-  reclasificarOperacionesPendientes
-} from "@/src/modules/meet/operaciones-integracion.service";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 
 export const runtime = "nodejs";
 
@@ -48,18 +44,18 @@ export async function POST(request: Request) {
 
     switch (parsed.data.accion) {
       case "descartar": {
-        const result = await descartarOperacionPendiente(db, parsed.data.eventoProveedorId);
+        const result = await obtenerServicioConferencias().descartarOperacionPendiente(parsed.data.eventoProveedorId);
         if (!result.descartada) {
           return NextResponse.json({ error: result.motivo ?? "No se pudo descartar la operación." }, { status: 400 });
         }
         return NextResponse.json({ ok: true, resultado: result });
       }
       case "descartar-no-bloqueantes": {
-        const result = await descartarOperacionesNoBloqueantesLote(db);
+        const result = await obtenerServicioConferencias().descartarOperacionesNoBloqueantesLote();
         return NextResponse.json({ ok: true, resultado: result });
       }
       case "reclasificar": {
-        const result = await reclasificarOperacionesPendientes(db);
+        const result = await obtenerServicioConferencias().reclasificarOperacionesPendientesLote();
         return NextResponse.json({ ok: true, resultado: result });
       }
     }
