@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { sincronizarArtefactosOperativos } from "@/src/bootstrap/archivos.server";
-import { puedeSincronizarGrabaciones } from "@/src/modules/meet/grabaciones.domain";
+import { puedeSincronizarGrabaciones } from "@/src/modules/archivos/api";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
