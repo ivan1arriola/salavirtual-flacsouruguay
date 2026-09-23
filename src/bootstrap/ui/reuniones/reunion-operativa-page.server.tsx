@@ -14,6 +14,7 @@ import { RefreshButton } from "@/src/components/refresh-button";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
+import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -230,6 +231,17 @@ export default async function ReunionOperativaPage({
       </section>
 
       <OperationalIncidentForm instanciaId={reunion.id} />
+
+      {actor.rol === "ASISTENTE_TECNICO"
+        && reunion.asistencia.asignacionId
+        && (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") ? (
+        <OperationalAssistanceClosureForm
+          asignacionId={reunion.asistencia.asignacionId}
+          inicioProgramado={reunion.inicioProgramadoAt.toISOString()}
+          finProgramado={reunion.finProgramadoAt.toISOString()}
+          cierreConfirmado={reunion.asistencia.cierreConfirmado}
+        />
+      ) : null}
 
       <section className="content-section">
         <div className="section-heading">
