@@ -64,9 +64,19 @@
 
 ### Módulos en contracción
 
-`src/modules/meet/` se conserva temporalmente como superficie de compatibilidad mientras sus responsabilidades terminan de migrar a `conferencias` y `archivos`. No se debe agregar nueva lógica de negocio allí: cualquier funcionalidad nueva de proveedor pertenece a `conferencias` y cualquier artefacto a `archivos`.
+`src/modules/meet/` se conserva temporalmente únicamente como superficie de compatibilidad para scripts o imports heredados. El código runtime (`app/`, `src/bootstrap/` y `src/components/`) no debe importarlo; esa frontera está protegida por `test/no-meet-runtime-imports.test.ts`. La lógica de proveedor pertenece a `conferencias`, los artefactos a `archivos` y las composiciones con Prisma/Google a `bootstrap`.
 
 Las fachadas duplicadas `src/modules/asistencias/` y `src/modules/historico-zoom/` fueron retiradas. Los nombres canónicos son `asistencia` e `historico`.
+
+## Consola operativa
+
+- La consola vive en `/operacion/[instanciaId]` y nunca sustituye al dashboard de `/`.
+- Administración puede operar cualquier encuentro; un AT solo los encuentros con asignación activa.
+- El estado `EN_CURSO` requiere una conferencia real confirmada por Google Meet.
+- Las consultas externas se realizan al abrir la consola. Solo `ESPERANDO_INICIO` y `EN_CURSO` activan refresco automático cada 30 segundos, y únicamente con la pestaña visible.
+- Administración puede reintentar desde la consola la `operacionPendiente` persistida sin inferirla desde mensajes de error.
+- Las incidencias operativas reutilizan `Incidencia` y se registran junto con una entrada de `Auditoria` dentro de una transacción.
+- Las incidencias abiertas alimentan el triage administrativo existente.
 
 ## Decisiones de UI
 
