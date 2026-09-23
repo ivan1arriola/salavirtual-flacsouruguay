@@ -13,12 +13,8 @@ import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendariosAsistenteSolicitud,
 } from "@/src/modules/asistencia/calendario-asistente.service";
-import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
-import {
-  provisionarEventosMeet,
-  sincronizarEventosPendientes,
-  type ProvisionResult,
-} from "@/src/modules/meet/provisionar-eventos.service";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
+import type { ProvisionConferenciaResult } from "@/src/modules/conferencias/api";
 import { agregarEncuentro, eliminarReunionCompleta } from "@/src/modules/reuniones/gestionar-encuentros.service";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
@@ -36,10 +32,8 @@ export async function POST(request: Request, context: RouteContext) {
       solicitudId,
       await request.json().catch(() => null),
     );
-    const provisionamiento = await provisionarEventosMeet(
-      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      [result.eventoProveedorId],
-    );
+    const provisionamiento = await obtenerServicioConferencias()
+      .sincronizarEventosPendientes([result.eventoProveedorId]);
     return NextResponse.json(
       { ...result, provisionamiento },
       { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 },
@@ -58,10 +52,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { solicitudId } = await context.params;
     const local = await eliminarReunionCompleta({ db }, actor, solicitudId);
-    const sincronizacion = await sincronizarEventosPendientes(
-      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      local.eventoProveedorIds,
-    );
+    const sincronizacion = await obtenerServicioConferencias()
+      .sincronizarEventosPendientes(local.eventoProveedorIds);
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
       sincronizarCalendariosAsistenteSolicitud({
         db,
@@ -92,7 +84,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 }
 
 function advertenciaSincronizacion(
-  results: readonly ProvisionResult[],
+  results: readonly ProvisionConferenciaResult[],
   calendarioAsistente: readonly Readonly<{ estado: string }>[],
   errorCalendario: string | null,
 ): string | null {
