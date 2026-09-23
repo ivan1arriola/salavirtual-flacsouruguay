@@ -5,3 +5,4 @@ export * from "./conferencia-health.domain";
 export * from "./meet-link.domain";
 export * from "./calendar-event.domain";
 
+export * from "./meet-history.domain";
