@@ -1,5 +1,5 @@
 import "server-only";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { db } from "@/src/lib/db";
@@ -50,7 +50,8 @@ const resultSelect = {
 
 export async function buscarMeet(
   actor: SessionActor | null,
-  input: unknown
+  input: unknown,
+  database: PrismaClient = db
 ) {
   if (!actor?.activo || !puedeAdministrar(actor.rol)) {
     throw new ForbiddenApiError("La búsqueda de Meet requiere acceso de Administración.");
@@ -62,11 +63,11 @@ export async function buscarMeet(
   }
 
   const [events, audits] = await Promise.all([
-    db.eventoProveedor.findMany({
+    database.eventoProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
       select: { id: true, instanciaSalaId: true, codigoReunion: true, joinUrl: true },
     }),
-    db.auditoria.findMany({
+    database.auditoria.findMany({
       where: { accion: { in: [...MEET_HISTORY_ACTIONS] } },
       select: {
         id: true,
@@ -107,7 +108,7 @@ export async function buscarMeet(
 
   const [details, series] = await Promise.all([
     matches.length
-      ? db.eventoProveedor.findMany({
+      ? database.eventoProveedor.findMany({
           where: {
             id: { in: matches.map((event) => event.id) },
             proveedor: { tipo: "GOOGLE_MEET" }
@@ -117,7 +118,7 @@ export async function buscarMeet(
         })
       : [],
     seriesEvidence.size
-      ? db.solicitudSala.findMany({
+      ? database.solicitudSala.findMany({
           where: { id: { in: [...seriesEvidence.keys()] } },
           select: { id: true, titulo: true },
         })
