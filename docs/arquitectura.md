@@ -48,15 +48,24 @@
 
 ## Capas
 
-- `app/`: rutas Next.js, server components y endpoints.
-- `src/modules/solicitudes`: validacion y casos de uso de solicitudes.
-- `src/modules/reuniones`: reglas puras y alta transaccional de reuniones.
-- `src/modules/meet`: puerto de provisionamiento Google Meet.
-- `src/modules/historico-zoom`: importacion y consulta de datos heredados.
-- `src/modules/asistencias`: disponibilidad, interes, asignacion y liquidacion.
-- `src/modules/usuarios/*.domain.ts`: reglas puras de usuarios.
-- `src/modules/usuarios/*.service.ts`: bordes transaccionales que ejecutan esas reglas.
+- `app/`: rutas Next.js, server components y endpoints; autentican, traducen HTTP y delegan.
+- `src/bootstrap/`: composición de dependencias para UI, jobs y rutas.
+- `src/modules/reuniones/`: solicitudes, series, encuentros e instancias.
+- `src/modules/conferencias/`: aprovisionamiento, cohosts y estado del proveedor de videoconferencia.
+- `src/modules/asistencia/`: disponibilidad, postulaciones, asignaciones y reportes de asistencia.
+- `src/modules/archivos/`: grabaciones, transcripciones, notas y artefactos.
+- `src/modules/notificaciones/`: intención de notificación y canales de entrega.
+- `src/modules/liquidaciones/`: tarifas, horas, cierres y pagos.
+- `src/modules/historico/`: consulta y tipos de datos heredados de Zoom.
+- `src/modules/usuarios/` e `src/modules/identity/`: identidad, roles y administración de usuarios.
+- `src/integrations/google/`: clientes técnicos de Auth, Calendar, Meet, Drive y Gmail; no contienen reglas de negocio.
 - `prisma/schema.prisma`: contrato relacional 3NF.
+
+### Módulos en contracción
+
+`src/modules/meet/` se conserva temporalmente como superficie de compatibilidad mientras sus responsabilidades terminan de migrar a `conferencias` y `archivos`. No se debe agregar nueva lógica de negocio allí: cualquier funcionalidad nueva de proveedor pertenece a `conferencias` y cualquier artefacto a `archivos`.
+
+Las fachadas duplicadas `src/modules/asistencias/` y `src/modules/historico-zoom/` fueron retiradas. Los nombres canónicos son `asistencia` e `historico`.
 
 ## Decisiones de UI
 
