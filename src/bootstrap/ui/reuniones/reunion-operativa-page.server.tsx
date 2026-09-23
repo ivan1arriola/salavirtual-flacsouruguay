@@ -11,6 +11,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -131,6 +132,14 @@ export default async function ReunionOperativaPage({
             </tbody>
           </table>
         </div>
+
+        {actor.rol === "ADMINISTRACION" && reunion.meet.eventoProveedorId ? (
+          <AdminRetryMeetAction
+            eventoProveedorId={reunion.meet.eventoProveedorId}
+            label={reunion.meet.joinUrl ? "Reintentar configuración de Meet" : "Reintentar provisión de Meet"}
+            operacion={reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR"}
+          />
+        ) : null}
 
         {reunion.meet.errorIntegracion ? (
           <p className="status-warning-text">
