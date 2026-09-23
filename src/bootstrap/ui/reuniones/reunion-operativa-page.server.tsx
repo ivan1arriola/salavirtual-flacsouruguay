@@ -12,6 +12,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
+import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -189,6 +190,46 @@ export default async function ReunionOperativaPage({
       <section className="content-section">
         <div className="section-heading">
           <div>
+            <h2>Incidencias</h2>
+            <p>Problemas operativos registrados para este encuentro.</p>
+          </div>
+          <span className="badge-tag">
+            {reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS").length} abiertas
+          </span>
+        </div>
+
+        {reunion.incidencias.length === 0 ? (
+          <div className="empty-state">
+            <CheckCircle2 size={22} aria-hidden="true" />
+            <p>No hay incidencias registradas para este encuentro.</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr><th>Estado</th><th>Tipo</th><th>Severidad</th><th>Descripción</th><th>Registro</th></tr>
+              </thead>
+              <tbody>
+                {reunion.incidencias.map((incidencia) => (
+                  <tr key={incidencia.id}>
+                    <td>{incidencia.estado.replaceAll("_", " ").toLowerCase()}</td>
+                    <td>{incidenciaTipoLabel(incidencia.tipo)}</td>
+                    <td>{incidencia.severidad.toLowerCase()}</td>
+                    <td>{incidencia.descripcion}</td>
+                    <td>{formatDate(incidencia.createdAt)} · {formatTime(incidencia.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <OperationalIncidentForm instanciaId={reunion.id} />
+
+      <section className="content-section">
+        <div className="section-heading">
+          <div>
             <h2>Artefactos</h2>
             <p>Resultado actual de la sincronización con Google Meet y Drive.</p>
           </div>
@@ -257,4 +298,14 @@ function repairLabel(
   if (operacion === "CANCELAR") return "Reintentar cancelación en Calendar";
   if (operacion === "PROVISIONAR") return "Reintentar provisión de Meet";
   return hasMeet ? "Revisar configuración de Meet" : "Reintentar provisión de Meet";
+}
+
+
+function incidenciaTipoLabel(tipo: string): string {
+  if (tipo === "DOCENTE_NO_INGRESA") return "Docente no ingresa";
+  if (tipo === "AUDIO_VIDEO") return "Audio o video";
+  if (tipo === "GRABACION") return "Grabación";
+  if (tipo === "SALA_INCORRECTA") return "Sala incorrecta";
+  if (tipo === "CONECTIVIDAD") return "Conectividad";
+  return tipo === "OTRA" ? "Otra" : tipo.replaceAll("_", " ").toLowerCase();
 }
