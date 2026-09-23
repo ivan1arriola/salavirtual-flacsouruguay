@@ -10,7 +10,6 @@ const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.sett
 const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
-const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 const TIMEOUT_MS = 30_000;
 const MIGRATION_ACTIONS = [
   "MEET_MIGRADO_A_ESPACIO_PREVIEW",
@@ -350,7 +349,7 @@ async function migrateGroup(
   for (const cohost of group.desiredCohosts) {
     try {
       await withRateLimitRetries(() => creatorAuth.request({
-        url: `${MEET_BETA_API}/${newSpaceName}/members`,
+        url: `${MEET_API}/${newSpaceName}/members`,
         method: "POST",
         timeout: TIMEOUT_MS,
         data: { email: cohost, role: "COHOST" },
@@ -550,7 +549,7 @@ async function listMembers(auth: JWT, spaceName: string): Promise<readonly MeetM
       members?: readonly MeetMember[];
       nextPageToken?: string;
     }>({
-      url: `${MEET_BETA_API}/${spaceName}/members?${query.toString()}`,
+      url: `${MEET_API}/${spaceName}/members?${query.toString()}`,
       method: "GET",
       timeout: TIMEOUT_MS,
     }));
