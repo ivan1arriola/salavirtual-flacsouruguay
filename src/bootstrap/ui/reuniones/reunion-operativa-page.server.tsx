@@ -13,6 +13,7 @@ import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
+import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -47,7 +48,10 @@ export default async function ReunionOperativaPage({
           <ArrowLeft size={15} aria-hidden="true" />
           Volver al dashboard
         </Link>
-        <RefreshButton />
+        <div className="encounter-card-actions">
+          <OperationalAutoRefresh enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"} />
+          <RefreshButton />
+        </div>
       </div>
 
       <header className="page-header">
