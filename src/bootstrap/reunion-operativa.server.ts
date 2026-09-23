@@ -38,6 +38,7 @@ export type ReunionOperativaView = Readonly<{
     url: string | null;
   }>;
   meet: Readonly<{
+    eventoProveedorId: string | null;
     codigo: string | null;
     joinUrl: string | null;
     organizador: string | null;
@@ -247,6 +248,7 @@ export async function obtenerReunionOperativa(
         url: grabacionUrl
       },
       meet: {
+        eventoProveedorId: evento?.id ?? null,
         codigo: evento?.codigoReunion ?? null,
         joinUrl: evento?.joinUrl ?? null,
         organizador: evento?.cuentaProveedor?.emailOrganizador ?? null,
