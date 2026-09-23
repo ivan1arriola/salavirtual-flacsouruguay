@@ -55,6 +55,13 @@ beforeEach(() => {
 });
 
 describe("asignación real de cohosts", () => {
+  it("usa la API estable v2 de members para asignar cohosts inmediatamente", async () => {
+    await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
+    const memberCalls = google.calls.filter((call) => new URL(call.url).pathname.includes("/members"));
+    assert.ok(memberCalls.length > 0);
+    assert.ok(memberCalls.every((call) => new URL(call.url).pathname.startsWith("/v2/")));
+  });
+
   it("asigna docentes Gmail y asistentes externos, manteniendo la sala como organizadora", async () => {
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", {
       cohostEmails: [teacher, assistant, credentials.subject, ` ${teacher.toUpperCase()} `],
