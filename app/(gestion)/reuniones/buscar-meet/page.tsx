@@ -5,8 +5,8 @@ import { db } from "@/src/lib/db";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { toHttpError } from "@/src/lib/http/api-error";
 import { puedeAdministrar } from "@/src/modules/usuarios/roles";
-import { searchMeet } from "@/src/modules/meet/reverse-meet-search.service";
-import type { MeetChange } from "@/src/modules/meet/meet-history.domain";
+import { buscarMeet } from "@/src/bootstrap/reverse-meet-search.server";
+import type { MeetChange } from "@/src/modules/conferencias/api";
 import styles from "./search.module.css";
 
 export default async function ReverseMeetPage({ searchParams }: Readonly<{
@@ -18,10 +18,10 @@ export default async function ReverseMeetPage({ searchParams }: Readonly<{
   if (!actor?.activo || !puedeAdministrar(actor.rol)) redirect("/");
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : "";
-  let data: Awaited<ReturnType<typeof searchMeet>> | null = null;
+  let data: Awaited<ReturnType<typeof buscarMeet>> | null = null;
   let error: string | null = null;
   if (q.trim()) {
-    try { data = await searchMeet(db, actor, q); }
+    try { data = await buscarMeet(actor, q); }
     catch (cause) { error = toHttpError(cause).message; }
   }
   return (
