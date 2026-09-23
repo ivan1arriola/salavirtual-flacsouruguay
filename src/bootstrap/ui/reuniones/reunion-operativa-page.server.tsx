@@ -95,7 +95,7 @@ export default async function ReunionOperativaPage({
           <CheckCircle2 size={18} aria-hidden="true" />
           <div>
             <span>Cohosts</span>
-            <strong>{reunion.cohosts.confirmados ? "Confirmados" : "Pendientes"}</strong>
+            <strong>{reunion.cohosts.total === 0 ? "Sin cohosts" : reunion.cohosts.confirmados ? "Confirmados" : "Pendientes"}</strong>
             <small>{reunion.cohosts.total} configurados</small>
           </div>
         </article>
