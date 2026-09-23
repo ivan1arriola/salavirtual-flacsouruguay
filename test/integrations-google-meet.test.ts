@@ -107,7 +107,7 @@ describe("integrations/google/meet", () => {
     expect(result).toEqual(member);
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: "https://meet.googleapis.com/v2beta/spaces/space-123/members",
+        url: "https://meet.googleapis.com/v2/spaces/space-123/members",
         method: "POST",
         data: { email: "docente@flacso.edu.uy", role: "COHOST" },
       })
@@ -122,7 +122,7 @@ describe("integrations/google/meet", () => {
     await eliminarMiembroMeetHttp(auth, "spaces/space-123/members/1");
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: "https://meet.googleapis.com/v2beta/spaces/space-123/members/1",
+        url: "https://meet.googleapis.com/v2/spaces/space-123/members/1",
         method: "DELETE",
       })
     );
