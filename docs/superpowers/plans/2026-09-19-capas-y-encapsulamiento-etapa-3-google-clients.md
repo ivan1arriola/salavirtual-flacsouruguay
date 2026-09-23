@@ -60,7 +60,7 @@
     - `obtenerEspacioMeet(auth, spaceNameOrCode)`
     - `crearEspacioMeetHttp(auth, config)`
     - `actualizarEspacioMeetHttp(auth, spaceName, config, updateMask)`
-  - Operaciones de Miembros (Meet API v2beta):
+  - Operaciones de Miembros (Meet API v2):
     - `listarMiembrosMeetHttp(auth, spaceName)` (con paginación `nextPageToken`)
     - `crearMiembroMeetHttp(auth, spaceName, email, role)`
     - `eliminarMiembroMeetHttp(auth, memberName)`

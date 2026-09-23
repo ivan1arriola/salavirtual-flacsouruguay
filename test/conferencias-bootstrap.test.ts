@@ -24,6 +24,7 @@ describe("bootstrap/conferencias.server", () => {
     expect(typeof service1.configurarMeetExistente).toBe("function");
     expect(typeof service1.descartarOperacionPendiente).toBe("function");
     expect(typeof service1.descartarOperacionesNoBloqueantesLote).toBe("function");
+    expect(typeof service1.reclasificarOperacionesPendientesLote).toBe("function");
   });
 });
 

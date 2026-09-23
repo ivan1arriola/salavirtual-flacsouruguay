@@ -1,3 +1,4 @@
+/** Tipos canónicos para datos históricos importados de Zoom. */
 export type ZoomHistoricalMeeting = Readonly<{
   legacyId: string;
   topic: string;

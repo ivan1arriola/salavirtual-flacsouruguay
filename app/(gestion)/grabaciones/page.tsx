@@ -5,12 +5,12 @@ import { auth } from "@/auth";
 import { RecordingsLibrary } from "@/src/components/recordings-library";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { listarArchivosMeetVisibles } from "@/src/modules/meet/grabaciones.adapter";
+import { listarArchivosMeetVisibles } from "@/src/bootstrap/archivos.server";
 import {
   resolverEstadoVisualGrabacion,
   type GrupoEncuentroConArchivos
-} from "@/src/modules/meet/grabaciones-filtro.domain";
-import type { TipoArtefactoMeet } from "@/src/modules/meet/meet-artifacts.domain";
+} from "@/src/modules/archivos/presentation";
+import type { TipoArtefactoMeet } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
 export default async function GrabacionesPage() {
@@ -21,7 +21,7 @@ export default async function GrabacionesPage() {
 
   const now = new Date();
   const [artifacts, workspaceConfiguration] = await Promise.all([
-    listarArchivosMeetVisibles(db, actor),
+    listarArchivosMeetVisibles(actor),
     db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" },
       select: { activa: true, driveDestinationId: true }

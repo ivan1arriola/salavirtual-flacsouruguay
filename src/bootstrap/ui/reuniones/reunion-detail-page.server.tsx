@@ -1,4 +1,3 @@
-import { cohostsConfirmados } from "@/src/modules/meet/cohost-verification.domain";
 import {
   ArrowLeft,
   CalendarClock,
@@ -16,9 +15,10 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
 import {
+  cohostsConfirmados,
   estadoIntegracionEfectivo,
   requiereAtencionIntegracionMeet
-} from "@/src/modules/meet/integration-health.domain";
+} from "@/src/modules/conferencias/api";
 import {
   puedeCambiarAsistenciaEncuentro,
   resolverEstadoSolicitudPorIntegraciones

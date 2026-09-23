@@ -13,11 +13,8 @@ import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendarioAsistenteInstancia,
 } from "@/src/modules/asistencia/calendario-asistente.service";
-import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
-import {
-  sincronizarEventosPendientes,
-  type ProvisionResult,
-} from "@/src/modules/meet/provisionar-eventos.service";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
+import type { ProvisionConferenciaResult } from "@/src/modules/conferencias/api";
 import { actualizarEncuentro, eliminarEncuentro } from "@/src/modules/reuniones/gestionar-encuentros.service";
 
 type RouteContext = Readonly<{
@@ -51,10 +48,8 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
         await request.json().catch(() => null),
       );
 
-    const sincronizacion = await sincronizarEventosPendientes(
-      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      local.eventoProveedorIds,
-    );
+    const sincronizacion = await obtenerServicioConferencias()
+      .sincronizarEventosPendientes(local.eventoProveedorIds);
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
       sincronizarCalendarioAsistenteInstancia({
         db,
@@ -86,7 +81,7 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
 }
 
 function advertenciaSincronizacion(
-  results: readonly ProvisionResult[],
+  results: readonly ProvisionConferenciaResult[],
   calendarioAsistente: readonly Readonly<{ estado: string }>[],
   errorCalendario: string | null,
 ): string | null {

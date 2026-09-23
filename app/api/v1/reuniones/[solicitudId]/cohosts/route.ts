@@ -4,7 +4,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
-import { sincronizarCohostsGoogleExistente } from "@/src/modules/meet/google-calendar.adapter";
+import { sincronizarCohostsGoogleExistente } from "@/src/modules/conferencias/api";
 import { actualizarCohostsSerie } from "@/src/modules/reuniones/gestionar-cohosts-serie.service";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;

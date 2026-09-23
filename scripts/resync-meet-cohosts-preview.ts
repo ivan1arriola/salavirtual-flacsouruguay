@@ -5,7 +5,7 @@ import { normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
 import { configurarGoogleMeetExistente } from "../src/modules/meet/google-calendar.adapter";
 
 const applyChanges = process.argv.includes("--apply");
-const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
+const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.created",
   "https://www.googleapis.com/auth/meetings.space.settings",
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
       });
       if (!space.data.name) throw new Error("Google Meet no devolvió el recurso canónico del espacio.");
       const members = await auth.request<{ members?: Array<{ email?: string; role?: string }> }>({
-        url: `${MEET_BETA_API}/${space.data.name}/members?pageSize=100`,
+        url: `${MEET_API}/${space.data.name}/members?pageSize=100`,
         method: "GET",
         timeout: 30_000,
       });

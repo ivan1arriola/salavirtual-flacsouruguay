@@ -1,4 +1,4 @@
-import { CalendarCheck2, CalendarRange, Clock3, History } from "lucide-react";
+import { Activity, CalendarCheck2, CalendarRange, Clock3, History } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -218,6 +218,10 @@ export default async function MiAgendaPage({
                         </div>
 
                         <div className="assistant-agenda-action">
+                          <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+                            <Activity size={15} aria-hidden="true" />
+                            Operar
+                          </Link>
                           {meet?.joinUrl ? (
                             <MeetLinkActions
                               className="assistant-agenda-link-actions"

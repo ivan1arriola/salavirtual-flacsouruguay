@@ -2,7 +2,6 @@ import type { JWT } from "google-auth-library";
 import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
 
 export const MEET_API_BASE_URL = "https://meet.googleapis.com/v2";
-export const MEET_BETA_API_BASE_URL = "https://meet.googleapis.com/v2beta";
 
 export type GoogleMeetSpaceConfig = Readonly<{
   accessType?: "ACCESS_TYPE_UNSPECIFIED" | "OPEN" | "TRUSTED" | "RESTRICTED" | string;
@@ -91,7 +90,7 @@ export async function listarMiembrosMeetHttp(
       members?: readonly GoogleMeetSpaceMember[];
       nextPageToken?: string;
     }>({
-      url: `${MEET_BETA_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
+      url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
       method: "GET",
       timeout: GOOGLE_HTTP_TIMEOUT_MS,
     });
@@ -112,7 +111,7 @@ export async function crearMiembroMeetHttp(
   role: "COHOST" | "CONTRIBUTOR" | string
 ): Promise<GoogleMeetSpaceMember> {
   const response = await auth.request<GoogleMeetSpaceMember>({
-    url: `${MEET_BETA_API_BASE_URL}/${spaceName}/members`,
+    url: `${MEET_API_BASE_URL}/${spaceName}/members`,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     data: { email, role },
@@ -125,7 +124,7 @@ export async function eliminarMiembroMeetHttp(
   memberName: string
 ): Promise<void> {
   await auth.request({
-    url: `${MEET_BETA_API_BASE_URL}/${memberName}`,
+    url: `${MEET_API_BASE_URL}/${memberName}`,
     method: "DELETE",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
   });

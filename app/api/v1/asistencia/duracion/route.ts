@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { reportarDuracionAsistencia } from "@/src/bootstrap/asistencia.server";
 import { db } from "@/src/lib/db";
-import { reportarDuracionAsistencia } from "@/src/modules/asistencia/reporte-duracion.service";
+import { toHttpError } from "@/src/lib/http/api-error";
 
 export async function PUT(request: Request) {
   const session = await auth();
@@ -13,17 +14,17 @@ export async function PUT(request: Request) {
       id: session.user.id,
       email: session.user.email
     });
-    if (!actor) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    if (!actor?.activo) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    if (actor.rol !== "ASISTENTE_TECNICO") {
+      return NextResponse.json({ error: "Solo un asistente técnico puede cerrar una asistencia." }, { status: 403 });
+    }
     const reporte = await reportarDuracionAsistencia(
-      db,
       actor,
       await request.json().catch(() => null)
     );
     return NextResponse.json({ reporte });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Datos inválidos." },
-      { status: 400 }
-    );
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }

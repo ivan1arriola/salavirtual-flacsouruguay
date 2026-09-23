@@ -12,11 +12,15 @@ vi.mock("next/server", () => ({ NextResponse: { json: (body: unknown, init?: { s
 vi.mock("@/auth", () => ({ auth: async () => ({ user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" } }) }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: () => "test-only" }));
-vi.mock("@/src/modules/meet/google-calendar.adapter", () => ({ crearGoogleCalendarProvider: () => ({}) }));
-vi.mock("@/src/modules/meet/provisionar-eventos.service", () => ({ provisionarEventosMeet: async (_deps: unknown, ids: string[]) => {
-  state.calls.push({ kind: "sync", input: ids });
-  return [{ estado: state.outcome, error: state.outcome === "ERROR" ? "Google rejected cohost" : undefined }];
-} }));
+vi.mock("@/src/modules/conferencias/api", () => ({
+  normalizeCohostEmails: (emails: readonly string[]) => [...new Set(emails.map((email) => email.toLowerCase().trim()).filter(Boolean))],
+  crearGoogleConferenceProvider: () => ({}),
+  crearPrismaConferenciasRepository: () => ({ mocked: true }),
+  sincronizarEventosPendientesUseCase: async (_repo: unknown, _provider: unknown, ids: string[]) => {
+    state.calls.push({ kind: "sync", input: ids });
+    return [{ estado: state.outcome, error: state.outcome === "ERROR" ? "Google rejected cohost" : undefined }];
+  }
+}));
 vi.mock("@/src/lib/db", () => {
   const tx = {
     eventoProveedor: { updateMany: async (input: unknown) => { state.calls.push({ kind: "queue", input }); return { count: state.queued ? 1 : 0 }; } },

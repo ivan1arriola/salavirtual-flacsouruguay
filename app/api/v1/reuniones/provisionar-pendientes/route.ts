@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
-import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
-import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
-import { sincronizarEventosPendientes } from "@/src/modules/meet/provisionar-eventos.service";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 
 export const runtime = "nodejs";
 
@@ -111,10 +109,7 @@ export async function POST(request: Request) {
       select: { id: true }
     })).map(({ id }) => id);
 
-    const results = await sincronizarEventosPendientes(
-      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      ids
-    );
+    const results = await obtenerServicioConferencias().sincronizarEventosPendientes(ids);
     const payload = {
       procesadas: results.length,
       sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADA").length,

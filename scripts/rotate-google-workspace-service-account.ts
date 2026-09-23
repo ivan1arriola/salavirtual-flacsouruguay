@@ -51,7 +51,7 @@ async function probarPreview(
   if (!space.data.name) throw new Error("Meet no devolvió el nombre interno del espacio.");
 
   const members = await auth.request<{ members?: readonly unknown[] }>({
-    url: `https://meet.googleapis.com/v2beta/${space.data.name}/members?pageSize=20`,
+    url: `https://meet.googleapis.com/v2/${space.data.name}/members?pageSize=20`,
     method: "GET",
     timeout: 30_000,
   });

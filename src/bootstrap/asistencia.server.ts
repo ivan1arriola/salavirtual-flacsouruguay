@@ -17,7 +17,7 @@ import { sincronizarCohostsDeInstancia } from "@/src/modules/asistencia/asistenc
 import { sincronizarCalendarioAsistenteInstancia } from "@/src/modules/asistencia/calendario-asistente.service";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import { eliminarEventoCalendarioAsistente, publicarEventoCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
-import { configurarGoogleMeetExistente } from "@/src/modules/meet/google-calendar.adapter";
+import { configurarGoogleMeetExistente } from "@/src/modules/conferencias/api";
 
 const defaultCalendarRepository = crearPrismaAssistantCalendarRepository({
   db,
@@ -65,6 +65,10 @@ export function asignarAsistente(actor: SessionActor, input: unknown) {
 
 export function desvincularAsistente(actor: SessionActor, input: unknown) {
   return obtenerServicioAsistencia().desvincularAsistente(actor, input);
+}
+
+export function reportarDuracionAsistencia(actor: SessionActor, input: unknown, ahora?: Date) {
+  return obtenerServicioAsistencia().reportarDuracion(actor, input, ahora);
 }
 
 export async function sincronizarAsignacionAsistente(instanciaSalaId: string, calendarWarning: string) {

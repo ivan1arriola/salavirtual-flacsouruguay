@@ -22,7 +22,6 @@ const MEET_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.created",
 ] as const;
 const MEET_API = "https://meet.googleapis.com/v2";
-const MEET_BETA_API = "https://meet.googleapis.com/v2beta";
 const GOOGLE_HTTP_TIMEOUT_MS = 60_000;
 
 type ServiceCredential = Readonly<{
@@ -258,7 +257,7 @@ async function probarAccesoMembers(
     if (!space.data.name) return "SPACE=ERROR Google no devolvió el nombre del espacio";
 
     await auth.request({
-      url: `${MEET_BETA_API}/${space.data.name}/members?pageSize=1`,
+      url: `${MEET_API}/${space.data.name}/members?pageSize=1`,
       method: "GET",
       timeout: GOOGLE_HTTP_TIMEOUT_MS,
     });

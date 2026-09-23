@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   CalendarDays,
@@ -118,6 +119,10 @@ export function AdminTodayTimeline({
                 </div>
 
                 <div className="admin-timeline-actions">
+                  <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+                    <Activity size={16} />
+                    <span>Operar</span>
+                  </Link>
                   {meeting.joinUrl ? (
                     <>
                       <a

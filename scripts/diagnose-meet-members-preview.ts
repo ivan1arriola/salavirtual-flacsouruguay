@@ -80,7 +80,7 @@ async function main() {
     email?: string;
     role?: string;
   }>({
-    url: `https://meet.googleapis.com/v2beta/${spaceName}/members`,
+    url: `https://meet.googleapis.com/v2/${spaceName}/members`,
     method: "POST",
     data: { email: internalCohost, role: "COHOST" },
     timeout: 30_000,
@@ -89,7 +89,7 @@ async function main() {
   const listed = await auth.request<{
     members?: Array<{ email?: string; role?: string }>;
   }>({
-    url: `https://meet.googleapis.com/v2beta/${spaceName}/members?pageSize=20`,
+    url: `https://meet.googleapis.com/v2/${spaceName}/members?pageSize=20`,
     method: "GET",
     timeout: 30_000,
   });

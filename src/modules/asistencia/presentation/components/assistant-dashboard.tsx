@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, CalendarPlus, CalendarRange } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, CalendarPlus, CalendarRange } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { AssistantHoursSummary } from "@/src/components/dashboard/assistant/assistant-hours-summary";
@@ -83,6 +83,10 @@ export function AssistantDashboardView({
                   </div>
 
                   <div className="assistant-coverage-actions">
+                    <Link className="secondary-action" href={`/operacion/${cov.id}`}>
+                      <Activity size={15} />
+                      Operar
+                    </Link>
                     {cov.joinUrl ? (
                       <CopyMeetLinkButton url={cov.joinUrl} />
                     ) : (

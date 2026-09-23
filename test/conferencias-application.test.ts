@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   descartarOperacionesNoBloqueantesLoteUseCase,
   descartarOperacionPendienteUseCase,
+  reclasificarOperacionesPendientesLoteUseCase,
   sincronizarCohostsExistenteUseCase,
   sincronizarEventosPendientesUseCase,
 } from "../src/modules/conferencias/application";
@@ -79,6 +80,9 @@ describe("conferencias/application", () => {
     })),
     descartarOperacionesNoBloqueantesLote: vi.fn(async () => ({
       totalDescartadas: 3,
+    })),
+    reclasificarOperacionesPendientesLote: vi.fn(async () => ({
+      totalReclasificadas: 5,
     })),
     ...overrides,
   });
@@ -205,6 +209,10 @@ describe("conferencias/application", () => {
     const lote = await descartarOperacionesNoBloqueantesLoteUseCase(repo);
     expect(lote.totalDescartadas).toBe(3);
     expect(repo.descartarOperacionesNoBloqueantesLote).toHaveBeenCalled();
+
+    const reclasificado = await reclasificarOperacionesPendientesLoteUseCase(repo);
+    expect(reclasificado.totalReclasificadas).toBe(5);
+    expect(repo.reclasificarOperacionesPendientesLote).toHaveBeenCalled();
   });
 
   it("sincronizarCohostsExistenteUseCase delega en el provider obtenido", async () => {

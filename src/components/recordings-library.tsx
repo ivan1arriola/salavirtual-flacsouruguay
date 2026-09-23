@@ -7,11 +7,11 @@ import {
   filtrarEncuentrosConArchivos,
   type GrupoEncuentroConArchivos,
   type TipoFiltroArtefacto
-} from "@/src/modules/meet/grabaciones-filtro.domain";
+} from "@/src/modules/archivos/presentation";
 import {
   etiquetaTipoArtefactoMeet,
   type TipoArtefactoMeet
-} from "@/src/modules/meet/meet-artifacts.domain";
+} from "@/src/modules/archivos/presentation";
 
 export type RecordingsLibraryProps = Readonly<{
   grupos: readonly GrupoEncuentroConArchivos[];

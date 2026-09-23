@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { puedeVerHistoricoZoom } from "../src/modules/historico/historico.domain";
+import { puedeVerHistoricoZoom } from "../src/modules/historico/api";
 
 describe("alcance funcional del histórico", () => {
   it("reserva el histórico Zoom a Administración", () => {

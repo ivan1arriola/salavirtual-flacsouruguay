@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   CalendarCheck2,
   CheckCircle2,
@@ -142,6 +143,13 @@ export function LiveMeetingHero({
               Enlace de Meet pendiente de generación
             </span>
           )}
+
+          {role === "ASISTENTE_TECNICO" ? (
+            <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+              <Activity size={16} />
+              Operar reunión
+            </Link>
+          ) : null}
 
           <Link
             className="secondary-action"
