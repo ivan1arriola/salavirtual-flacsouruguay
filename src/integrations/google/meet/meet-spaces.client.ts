@@ -2,7 +2,7 @@ import type { JWT } from "google-auth-library";
 import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
 
 export const MEET_API_BASE_URL = "https://meet.googleapis.com/v2";
-export const MEET_BETA_API_BASE_URL = "https://meet.googleapis.com/v2beta";
+export const MEET_BETA_API_BASE_URL = "https://meet.googleapis.com/v2";
 
 export type GoogleMeetSpaceConfig = Readonly<{
   accessType?: "ACCESS_TYPE_UNSPECIFIED" | "OPEN" | "TRUSTED" | "RESTRICTED" | string;
