@@ -14,7 +14,10 @@ export async function PUT(request: Request) {
       id: session.user.id,
       email: session.user.email
     });
-    if (!actor) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    if (!actor?.activo) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    if (actor.rol !== "ASISTENTE_TECNICO") {
+      return NextResponse.json({ error: "Solo un asistente técnico puede cerrar una asistencia." }, { status: 403 });
+    }
     const reporte = await reportarDuracionAsistencia(
       actor,
       await request.json().catch(() => null)
