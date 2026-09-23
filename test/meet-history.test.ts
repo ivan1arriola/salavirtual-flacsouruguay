@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readMeetEvidence, evidenceMatches, type MeetAudit } from "../src/modules/meet/meet-history.domain";
+import { readMeetEvidence, evidenceMatches, type MeetAudit } from "../src/modules/conferencias/api";
 const base: MeetAudit = {
   id: "audit", accion: "MEET_MIGRADO_A_ESPACIO_PREVIEW", entidadTipo: "InstanciaSala",
   entidadId: "m1", valorAnterior: { codigoReunion: "rsf-wtgp-uxt" },
