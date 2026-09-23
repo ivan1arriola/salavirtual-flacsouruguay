@@ -32,6 +32,7 @@
 - Zoom queda como proveedor historico, sin crear nuevas solicitudes operativas.
 - La UI debe ser ligera: CSS propio, componentes pequeños y dependencias justificadas.
 - La logica de dominio sigue un enfoque funcional.
+- La ruta raíz `/` siempre renderiza el dashboard correspondiente al rol autenticado; las consolas operativas y fichas detalladas se abren desde el dashboard y nunca sustituyen esa entrada.
 
 ## Enfoque funcional
 
