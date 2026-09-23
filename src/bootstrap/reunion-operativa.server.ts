@@ -1,6 +1,7 @@
 import "server-only";
 import {
-  cohostsConfirmados
+  cohostsConfirmados,
+  type OperacionPendienteConferencia
 } from "@/src/modules/conferencias/api";
 import {
   crearGoogleArtifactsProviderAdapter,
@@ -43,7 +44,7 @@ export type ReunionOperativaView = Readonly<{
     joinUrl: string | null;
     organizador: string | null;
     estadoIntegracion: string | null;
-    operacionPendiente: string | null;
+    operacionPendiente: OperacionPendienteConferencia | null;
     errorIntegracion: string | null;
   }>;
   conferencia: Readonly<{
