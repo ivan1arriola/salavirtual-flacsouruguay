@@ -4,7 +4,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { resincronizarCohostsReunionesExistentes } from "@/src/modules/configuracion/resincronizar-cohosts.service";
-import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
+import { crearGoogleConferenceProvider } from "@/src/modules/conferencias/api";
 
 export const runtime = "nodejs";
 
@@ -22,7 +22,7 @@ export async function POST() {
   const result = await resincronizarCohostsReunionesExistentes({
     db,
     descifrar: descifrarConfiguracion,
-    crearProvider: crearGoogleCalendarProvider,
+    crearProvider: crearGoogleConferenceProvider,
   });
 
   await db.auditoria.create({
