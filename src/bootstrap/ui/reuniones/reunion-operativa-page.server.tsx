@@ -136,8 +136,8 @@ export default async function ReunionOperativaPage({
         {actor.rol === "ADMINISTRACION" && reunion.meet.eventoProveedorId ? (
           <AdminRetryMeetAction
             eventoProveedorId={reunion.meet.eventoProveedorId}
-            label={reunion.meet.joinUrl ? "Reintentar configuración de Meet" : "Reintentar provisión de Meet"}
-            operacion={reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR"}
+            label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
+            operacion={reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")}
           />
         ) : null}
 
@@ -245,4 +245,16 @@ function tipoParticipanteLabel(tipo: string): string {
   if (tipo === "CUENTA_GOOGLE") return "Cuenta Google";
   if (tipo === "TELEFONO") return "Teléfono";
   return "Anónimo";
+}
+
+
+function repairLabel(
+  operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
+  hasMeet: boolean
+): string {
+  if (operacion === "REPROGRAMAR") return "Reintentar reprogramación";
+  if (operacion === "CONFIGURAR_MEET") return "Reintentar configuración de Meet";
+  if (operacion === "CANCELAR") return "Reintentar cancelación en Calendar";
+  if (operacion === "PROVISIONAR") return "Reintentar provisión de Meet";
+  return hasMeet ? "Revisar configuración de Meet" : "Reintentar provisión de Meet";
 }
