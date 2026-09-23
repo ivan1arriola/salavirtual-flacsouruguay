@@ -10,9 +10,11 @@ import {
 } from "@/src/modules/archivos/api";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
 import {
   derivarEstadoGrabacionOperativa,
   derivarEstadoReunionOperativa,
+  incidenciaOperativaSchema,
   puedeConsultarReunionOperativa,
   type EstadoGrabacionOperativa,
   type EstadoReunionOperativa
@@ -67,6 +69,14 @@ export type ReunionOperativaView = Readonly<{
     transcripciones: number;
     notas: number;
   }>;
+  incidencias: readonly Readonly<{
+    id: string;
+    tipo: string;
+    severidad: "BAJA" | "MEDIA" | "ALTA" | "CRITICA";
+    descripcion: string;
+    estado: "ABIERTA" | "EN_ANALISIS" | "RESUELTA" | "CERRADA";
+    createdAt: Date;
+  }>[];
   actualizadoAt: Date;
 }>;
 
@@ -109,6 +119,10 @@ export async function obtenerReunionOperativa(
             include: { usuario: true }
           }
         }
+      },
+      incidencias: {
+        orderBy: { createdAt: "desc" },
+        take: 10
       }
     }
   });
@@ -279,7 +293,78 @@ export async function obtenerReunionOperativa(
         transcripciones,
         notas
       },
+      incidencias: meeting.incidencias,
       actualizadoAt: ahora
     }
   };
+}
+
+
+export async function registrarIncidenciaOperativa(
+  actor: ReunionOperativaActor,
+  instanciaId: string,
+  input: unknown
+) {
+  const parsed = incidenciaOperativaSchema.parse(input);
+
+  return db.$transaction(async (tx) => {
+    const meeting = await tx.instanciaSala.findUnique({
+      where: { id: instanciaId },
+      select: {
+        id: true,
+        asignaciones: {
+          where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+          select: {
+            asistenteTecnico: { select: { usuarioId: true } }
+          }
+        }
+      }
+    });
+
+    if (!meeting) throw new NotFoundApiError("La reunión no existe.");
+
+    const asistenteAsignado = meeting.asignaciones.some(
+      ({ asistenteTecnico }) => asistenteTecnico.usuarioId === actor.id
+    );
+    if (!puedeConsultarReunionOperativa({
+      rol: actor.rol,
+      asistenteAsignado
+    })) {
+      throw new ForbiddenApiError("No tenés permisos para registrar incidencias en esta reunión.");
+    }
+
+    const incidencia = await tx.incidencia.create({
+      data: {
+        instanciaSalaId: instanciaId,
+        tipo: parsed.tipo,
+        severidad: parsed.severidad,
+        descripcion: parsed.descripcion
+      },
+      select: {
+        id: true,
+        tipo: true,
+        severidad: true,
+        descripcion: true,
+        estado: true,
+        createdAt: true
+      }
+    });
+
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actor.id,
+        accion: "INCIDENCIA_OPERATIVA_REGISTRADA",
+        entidadTipo: "Incidencia",
+        entidadId: incidencia.id,
+        valorNuevo: {
+          instanciaSalaId: instanciaId,
+          tipo: incidencia.tipo,
+          severidad: incidencia.severidad,
+          descripcion: incidencia.descripcion
+        }
+      }
+    });
+
+    return incidencia;
+  });
 }
