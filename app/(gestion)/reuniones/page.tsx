@@ -33,8 +33,7 @@ import {
   resolverVistaAgenda
 } from "@/src/modules/reuniones/agenda-view.domain";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
-import { cohostsConfirmados } from "@/src/modules/meet/cohost-verification.domain";
-import { cohostAccountGuidance } from "@/src/modules/meet/cohosts.domain";
+import { cohostAccountGuidance, cohostsConfirmados } from "@/src/modules/conferencias/api";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 type PeriodoAgenda = "proximas" | "anteriores";
