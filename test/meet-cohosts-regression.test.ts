@@ -33,7 +33,7 @@ vi.mock("google-auth-library", () => ({
         return { data: options.data };
       }
       if (options.method === "DELETE") {
-        google.members = google.members.filter((member) => `/v2beta/${member.name}` !== url.pathname);
+        google.members = google.members.filter((member) => `/v2/${member.name}` !== url.pathname);
         return { data: {} };
       }
       return { data: { name: "spaces/space", config: { moderation: google.moderation } } };
