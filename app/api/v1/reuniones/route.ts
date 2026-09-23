@@ -13,8 +13,7 @@ import {
   hayErroresSincronizacionCalendarioAsistente,
   sincronizarCalendariosAsistenteSolicitud,
 } from "@/src/modules/asistencia/calendario-asistente.service";
-import { crearGoogleCalendarProvider } from "@/src/modules/meet/google-calendar.adapter";
-import { provisionarEventosMeet } from "@/src/modules/meet/provisionar-eventos.service";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
 import { destinatariosDocentesPrograma } from "@/src/modules/reuniones/permisos-programa.service";
@@ -49,10 +48,8 @@ export async function POST(request: Request) {
       input,
       claveIdempotenciaCreacion,
     );
-    const provisionamiento = await provisionarEventosMeet(
-      { db, descifrar: descifrarConfiguracion, crearProvider: crearGoogleCalendarProvider },
-      result.eventoProveedorIds,
-    );
+    const provisionamiento = await obtenerServicioConferencias()
+      .sincronizarEventosPendientes(result.eventoProveedorIds);
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
       sincronizarCalendariosAsistenteSolicitud({
         db,
