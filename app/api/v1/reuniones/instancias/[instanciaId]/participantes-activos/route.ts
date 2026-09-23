@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
-import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
-import { crearGoogleMeetArtifactsClient } from "@/src/modules/meet/google-meet-artifacts.adapter";
-import { obtenerParticipantesActivosInstancia } from "@/src/modules/meet/live-participants.service";
+import { obtenerParticipantesActivosInstancia } from "@/src/bootstrap/archivos.server";
 
 export const runtime = "nodejs";
 
@@ -27,14 +25,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const { instanciaId } = await context.params;
-    const result = await obtenerParticipantesActivosInstancia(
-      {
-        db,
-        descifrar: descifrarConfiguracion,
-        crearClient: crearGoogleMeetArtifactsClient
-      },
-      instanciaId
-    );
+    const result = await obtenerParticipantesActivosInstancia(instanciaId);
 
     return NextResponse.json(
       {
