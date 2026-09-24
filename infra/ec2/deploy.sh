@@ -37,6 +37,14 @@ NPM=(sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin NPM_CONFIG_CACHE="
 mkdir -p "$RELEASES" "$NPM_CACHE"
 chown ubuntu:ubuntu "$NPM_CACHE"
 
+# Los chequeos manuales/operativos pueden dejar artefactos generados con otro
+# propietario. El deploy siempre ejecuta npm y el build como ubuntu.
+for generated_path in "$SRC/node_modules" "$SRC/.next" "$SRC/coverage" "$SRC/tsconfig.tsbuildinfo"; do
+  if [[ -e "$generated_path" || -L "$generated_path" ]]; then
+    chown -R ubuntu:ubuntu "$generated_path"
+  fi
+done
+
 "${GIT[@]}" -C "$SRC" fetch --prune origin main
 REMOTE_SHA="$("${GIT[@]}" -C "$SRC" rev-parse origin/main)"
 if [[ "$REMOTE_SHA" != "$SHA" ]]; then
