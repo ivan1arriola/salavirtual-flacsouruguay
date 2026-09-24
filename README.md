@@ -1,70 +1,138 @@
 # Sala Virtual FLACSO
 
-Plataforma web para gestionar solicitudes, agenda, asistencia, grabaciones y liquidaciones de reuniones académicas de FLACSO Uruguay.
+**Sala Virtual FLACSO** es la plataforma operativa de FLACSO Uruguay para gestionar reuniones académicas realizadas mediante Google Meet.
 
-## Fuente vigente
+Centraliza el ciclo completo de las reuniones: solicitudes, agenda, asistencia técnica, grabaciones, historial y liquidaciones.
 
-Este repositorio es la aplicacion operativa vigente para Google Meet. Los cambios de producto, UI y dominio sobre reuniones actuales deben hacerse aca.
+## Estado del proyecto
 
-Este proyecto reemplaza a:
+Este repositorio contiene la **aplicación vigente** para la gestión de reuniones de FLACSO Uruguay.
 
-- `../flacso-zoom-plataforma-web`
-- `../flacso-zoom-sincronizador-desktop`
+Todo cambio relacionado con el producto, la interfaz, el modelo de datos o los flujos actuales de reuniones debe implementarse en este proyecto.
 
-Zoom queda como proveedor historico: se conserva para consulta, trazabilidad e importacion de registros previos, pero el flujo operativo nuevo se modela sobre Google Meet y Google Workspace.
+La plataforma reemplaza a los proyectos anteriores:
 
-## Objetivos
+* `../flacso-zoom-plataforma-web`
+* `../flacso-zoom-sincronizador-desktop`
 
-- Modelo de datos en 3NF, con entidades institucionales, solicitudes, eventos, proveedores y liquidaciones separadas.
-- Nucleo agnostico de proveedor para no acoplar la plataforma a Meet ni a Zoom.
-- Google Meet como proveedor operativo principal.
-- Zoom como historico de reuniones, grabaciones y costos previos.
-- Base preparada para migracion incremental desde la plataforma Zoom actual.
+Google Meet es el proveedor operativo principal.
 
-## Stack inicial
+Zoom permanece integrado únicamente como **proveedor histórico**, para conservar y consultar reuniones, grabaciones, costos y otros registros generados por los sistemas anteriores.
 
-- Next.js App Router + TypeScript
-- Prisma + PostgreSQL
-- Auth.js
-- Google Workspace APIs como integracion principal
+El dominio de la aplicación está diseñado para no depender directamente de un proveedor concreto de videoconferencia.
 
-## Google Workspace y correo transaccional
+## Objetivos de arquitectura
 
-Las cuentas de servicio de Google Workspace se administran desde **Configuración > Google Workspace**. Sus claves privadas se guardan cifradas en PostgreSQL con `CONFIG_ENCRYPTION_KEY`; no se configuran como variables `GOOGLE_*` del runtime.
+La plataforma busca mantener una arquitectura simple, mantenible y preparada para evolucionar.
 
-La credencial **Principal** es la única autorizada para crear reuniones nuevas. Se pueden registrar credenciales **Legacy** para administrar espacios Meet históricos creados por proyectos anteriores. El fallback Legacy solo se intenta ante el error específico de permisos sobre `Member` de un Meet existente.
+Sus principales objetivos son:
 
-Las notificaciones por correo usan Gmail API con la credencial Principal y la delegación configurada en la UI. SMTP queda como fallback. Si no hay proveedor configurado, la app conserva las notificaciones internas y omite el envio de email sin romper el flujo.
+* Mantener un modelo de datos normalizado en **3NF**.
+* Separar claramente entidades institucionales, solicitudes, eventos, proveedores, grabaciones y liquidaciones.
+* Mantener el núcleo de negocio independiente de Google Meet y Zoom.
+* Utilizar Google Meet como proveedor operativo principal.
+* Conservar Zoom para consulta, trazabilidad e importación de información histórica.
+* Permitir migraciones incrementales desde los sistemas anteriores sin interrumpir la operación.
+* Centralizar la configuración de integraciones institucionales desde la propia aplicación.
 
-SMTP fallback:
+## Stack
 
-- `SMTP_HOST`
-- `SMTP_PORT` (por defecto `587`)
-- `SMTP_SECURE` (`true` para puerto 465)
-- `SMTP_USER`
-- `SMTP_PASS`
-- `SMTP_FROM`
+La aplicación utiliza:
 
-## Primer setup local
+* **Next.js App Router**
+* **TypeScript**
+* **Prisma**
+* **PostgreSQL**
+* **Auth.js**
+* **Google Workspace APIs**
+
+## Google Workspace
+
+La integración con Google Workspace se configura desde:
+
+**Configuración > Google Workspace**
+
+Las cuentas de servicio y sus credenciales se administran desde la interfaz de la aplicación.
+
+Las claves privadas se almacenan cifradas en PostgreSQL mediante:
+
+```env
+CONFIG_ENCRYPTION_KEY
+```
+
+Por lo tanto, las credenciales de Google Workspace no se configuran mediante variables de entorno `GOOGLE_*`.
+
+### Credencial Principal
+
+La credencial marcada como **Principal** es la única autorizada para crear nuevas reuniones de Google Meet.
+
+Es la integración utilizada por los flujos operativos actuales de Sala Virtual.
+
+### Credenciales Legacy
+
+También pueden registrarse credenciales **Legacy**.
+
+Estas credenciales existen exclusivamente para administrar reuniones históricas creadas por proyectos o cuentas de servicio anteriores.
+
+La aplicación intenta utilizar una credencial Legacy únicamente cuando la credencial Principal recibe el error específico de permisos relacionado con `Member` al operar sobre un espacio de Meet existente.
+
+No se utilizan credenciales Legacy para crear reuniones nuevas.
+
+## Correo transaccional
+
+Las notificaciones por correo utilizan prioritariamente la **Gmail API**, mediante la credencial Principal de Google Workspace y la cuenta configurada para delegación en la aplicación.
+
+SMTP se mantiene únicamente como mecanismo de respaldo.
+
+Si no existe ningún proveedor de correo configurado:
+
+* las notificaciones internas continúan funcionando;
+* el envío de correo electrónico se omite;
+* el flujo principal de la aplicación no falla.
+
+### Configuración SMTP de respaldo
+
+```env
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+```
+
+`SMTP_SECURE=true` debe utilizarse normalmente cuando SMTP funciona mediante el puerto `465`.
+
+## Configuración inicial
+
+Se recomienda utilizar Node.js 24.
 
 ```bash
 nvm install 24
 nvm use 24
+
 npm install
+
 cp .env.example .env
+
 npm run db:generate
 npm run db:push
+
 npm run dev
 ```
 
-Después del primer acceso, completar la integración en **Configuración > Google Workspace**.
+Después del primer acceso a la aplicación, completar la configuración institucional desde:
 
-## Documentacion
+**Configuración > Google Workspace**
 
-- [Arquitectura](docs/arquitectura.md)
-- [Modelo 3NF](docs/modelo-3nf.md)
-- [Plan de migracion](docs/migracion-desde-flacso-zoom.md)
-- [Despliegue en EC2](docs/despliegue-ec2.md)
-- [Configuracion de Google Workspace](docs/configuracion-google-workspace.md)
-- [Reportes mensuales de asistencia tecnica](docs/reportes-mensuales-asistencia.md)
-- [UI ligera](docs/ui-ligera.md)
+## Documentación
+
+La documentación técnica y funcional se encuentra en `docs/`.
+
+* [Arquitectura](docs/arquitectura.md)
+* [Modelo de datos 3NF](docs/modelo-3nf.md)
+* [Migración desde FLACSO Zoom](docs/migracion-desde-flacso-zoom.md)
+* [Despliegue en EC2](docs/despliegue-ec2.md)
+* [Configuración de Google Workspace](docs/configuracion-google-workspace.md)
+* [Reportes mensuales de asistencia técnica](docs/reportes-mensuales-asistencia.md)
+* [UI ligera](docs/ui-ligera.md)
