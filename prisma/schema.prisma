@@ -267,11 +267,14 @@ model InstanciaSala {
   solicitudSalaId           String
   ordinal                   Int
   descripcion               String?
-  inicioProgramadoAt        DateTime
-  finProgramadoAt           DateTime
-  timezone                  String
-  estado                    EstadoInstancia                       @default(PROGRAMADA)
-  requiereAsistenciaTecnica Boolean                               @default(false)
+  inicioProgramadoAt          DateTime
+  finProgramadoAt             DateTime
+  modalidadOverride           ModalidadReunion?
+  inicioAsistenciaTecnicaAt   DateTime?
+  finAsistenciaTecnicaAt      DateTime?
+  timezone                    String
+  estado                      EstadoInstancia                       @default(PROGRAMADA)
+  requiereAsistenciaTecnica   Boolean                               @default(false)
   requiereGrabacion         Boolean                               @default(false)
   inicioRealAt              DateTime?
   finRealAt                 DateTime?
