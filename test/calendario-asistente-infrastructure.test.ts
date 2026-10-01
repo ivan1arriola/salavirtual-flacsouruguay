@@ -37,6 +37,7 @@ describe("adaptador Google Assistant Calendar Provider", () => {
     reunionInicio: new Date("2026-10-01T18:00:00Z"),
     reunionFin: new Date("2026-10-01T20:00:00Z"),
     modalidad: "HIBRIDA" as const,
+    tipo: "REUNION" as const,
     timezone: "America/Montevideo",
     instanciaSalaId: "inst-1",
     programa: "Maestría",
@@ -59,6 +60,7 @@ describe("adaptador Google Assistant Calendar Provider", () => {
         extendedProperties: {
           private: {
             flacsoTipo: "ASISTENCIA_TECNICA",
+            flacsoSegmento: "REUNION",
             flacsoInstanciaSalaId: "inst-1",
           },
         },
