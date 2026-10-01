@@ -34,7 +34,12 @@ type Encounter = Readonly<{
   fin: string;
   fechaLegible: string;
   estado: string;
+  modalidad: "HIBRIDA" | "VIRTUAL";
+  modalidadPersonalizada: boolean;
   requiereAsistenciaTecnica: boolean;
+  inicioAsistencia: string | null;
+  finAsistencia: string | null;
+  horarioAsistenciaPersonalizado: boolean;
   asistenteTecnico: string | null;
   postulantes: number;
   organizerAccount: string;
@@ -54,12 +59,22 @@ type Encounter = Readonly<{
 export function MeetingDetailManager({
   solicitudId,
   requestIds,
-  meetings
-}: Readonly<{ solicitudId: string; requestIds: readonly string[]; meetings: readonly Encounter[] }>) {
+  meetings,
+  canManageOperationalOverrides
+}: Readonly<{
+  solicitudId: string;
+  requestIds: readonly string[];
+  meetings: readonly Encounter[];
+  canManageOperationalOverrides: boolean;
+}>) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [operationalEditor, setOperationalEditor] = useState<Readonly<{
+    id: string;
+    type: "MODALIDAD" | "ASISTENCIA";
+  }> | null>(null);
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
   const [addingOpen, setAddingOpen] = useState(false);
   const removingAllRef = useRef(false);
@@ -95,6 +110,12 @@ export function MeetingDetailManager({
         inicio: localMontevideoToIso(formData, "horaInicio"),
         fin: localMontevideoToIso(formData, "horaFin"),
         descripcion: formData.get("descripcion") || undefined,
+        inicioAsistenciaTecnica: formData.get("horaAsistenciaInicio")
+          ? localMontevideoToIso(formData, "horaAsistenciaInicio")
+          : undefined,
+        finAsistenciaTecnica: formData.get("horaAsistenciaFin")
+          ? localMontevideoToIso(formData, "horaAsistenciaFin")
+          : undefined,
         requiereAsistenciaTecnica: formData.get("requiereAsistenciaTecnica") === "on",
         requiereGrabacion: formData.get("requiereGrabacion") === "on"
       })
@@ -116,10 +137,52 @@ export function MeetingDetailManager({
   }
 
   function changeAssistance(id: string, value: boolean) {
-    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+    const meeting = meetings.find((item) => item.id === id);
+    if (
+      value &&
+      meeting?.modalidad === "HIBRIDA" &&
+      !meeting.horarioAsistenciaPersonalizado &&
+      canManageOperationalOverrides
+    ) {
+      setOperationalEditor({ id, type: "ASISTENCIA" });
+      setMessage("Definí primero la hora exacta de llegada y salida del asistente para este encuentro híbrido.");
+      return Promise.resolve(false);
+    }
+    return request(meeting?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
       body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: value })
     });
+  }
+
+  async function changeModality(id: string, formData: FormData) {
+    const updated = await request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+      method: "PATCH",
+      body: JSON.stringify({
+        accion: "CAMBIAR_MODALIDAD",
+        modalidad: formData.get("modalidad")
+      })
+    });
+    if (updated) setOperationalEditor(null);
+  }
+
+  async function resetModality(id: string) {
+    const updated = await request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+      method: "PATCH",
+      body: JSON.stringify({ accion: "CAMBIAR_MODALIDAD", modalidad: null })
+    });
+    if (updated) setOperationalEditor(null);
+  }
+
+  async function changeAssistanceSchedule(id: string, formData: FormData) {
+    const updated = await request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+      method: "PATCH",
+      body: JSON.stringify({
+        accion: "EDITAR_HORARIO_ASISTENCIA",
+        inicioAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaInicio"),
+        finAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaFin")
+      })
+    });
+    if (updated) setOperationalEditor(null);
   }
 
   function remove(id: string) {
@@ -221,6 +284,10 @@ export function MeetingDetailManager({
                     <strong>Encuentro {meeting.ordinal}</strong>
                     <span>{meeting.fechaLegible}</span>
                     <small>{meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
+                    <small>
+                      {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                      {meeting.modalidadPersonalizada ? " · configuración puntual" : ""}
+                    </small>
                   </div>
                 </div>
                 <div className="encounter-statuses">
@@ -312,6 +379,16 @@ export function MeetingDetailManager({
                         <div className="encounter-v2-people-title"><Wrench size={17} /><span>Asistencia técnica</span></div>
                         <strong>{assistance.title}</strong>
                         {assistance.detail ? <small>{assistance.detail}</small> : null}
+                        {meeting.requiereAsistenciaTecnica ? (
+                          meeting.inicioAsistencia && meeting.finAsistencia ? (
+                            <small>
+                              Horario técnico: {meeting.inicioAsistencia.slice(11, 16)}–{meeting.finAsistencia.slice(11, 16)}
+                              {meeting.modalidad === "HIBRIDA" ? " · presencial" : ""}
+                            </small>
+                          ) : meeting.modalidad === "HIBRIDA" ? (
+                            <small className="status status-warning">Falta definir llegada y salida</small>
+                          ) : null
+                        ) : null}
                       </div>
 
                       <div className="encounter-v2-organizer-reference">
@@ -328,6 +405,26 @@ export function MeetingDetailManager({
                         <button className="secondary-action" disabled={busy !== null} onClick={() => setEditingId(meeting.id)} type="button">
                           <Pencil size={16} />Editar fecha
                         </button>
+                      ) : null}
+                      {canManageOperationalOverrides && meeting.temporalidad !== "PASADO" ? (
+                        <>
+                          <button
+                            className="secondary-action"
+                            disabled={busy !== null}
+                            onClick={() => setOperationalEditor({ id: meeting.id, type: "MODALIDAD" })}
+                            type="button"
+                          >
+                            <Pencil size={16} />Cambiar modalidad
+                          </button>
+                          <button
+                            className="secondary-action"
+                            disabled={busy !== null}
+                            onClick={() => setOperationalEditor({ id: meeting.id, type: "ASISTENCIA" })}
+                            type="button"
+                          >
+                            <CalendarClock size={16} />Horario asistente
+                          </button>
+                        </>
                       ) : null}
                       {meeting.requiereAsistenciaTecnica ? (
                         <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button">
@@ -349,6 +446,76 @@ export function MeetingDetailManager({
                       </button>
                     </div>
                   </footer>
+
+                  {operationalEditor?.id === meeting.id ? (
+                    <div className="encounter-editor">
+                      <div className="encounter-editor-heading">
+                        <div>
+                          <strong>{operationalEditor.type === "MODALIDAD" ? "Modalidad de este encuentro" : "Horario de asistencia técnica"}</strong>
+                          <small>
+                            {operationalEditor.type === "MODALIDAD"
+                              ? "Este cambio afecta únicamente esta fecha."
+                              : "Indicá la hora exacta de llegada y salida para esta fecha."}
+                          </small>
+                        </div>
+                        <button className="icon-button" onClick={() => setOperationalEditor(null)} title="Cerrar" type="button">
+                          <X size={17} /><span className="sr-only">Cerrar</span>
+                        </button>
+                      </div>
+
+                      {operationalEditor.type === "MODALIDAD" ? (
+                        <form className="encounter-edit-form" action={(formData) => changeModality(meeting.id, formData)}>
+                          <label className="field">
+                            <span>Modalidad</span>
+                            <select name="modalidad" defaultValue={meeting.modalidad} disabled={busy !== null}>
+                              <option value="VIRTUAL">Virtual</option>
+                              <option value="HIBRIDA">Híbrida / presencial</option>
+                            </select>
+                          </label>
+                          <button className="primary-action" disabled={busy !== null} type="submit">
+                            {busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}
+                            Guardar solo esta reunión
+                          </button>
+                          {meeting.modalidadPersonalizada ? (
+                            <button className="secondary-action" disabled={busy !== null} onClick={() => resetModality(meeting.id)} type="button">
+                              Restablecer modalidad de la serie
+                            </button>
+                          ) : null}
+                        </form>
+                      ) : (
+                        <form className="encounter-edit-form" action={(formData) => changeAssistanceSchedule(meeting.id, formData)}>
+                          <input name="fecha" type="hidden" value={meeting.inicio.slice(0, 10)} />
+                          <label className="field">
+                            <span>Hora de llegada</span>
+                            <input
+                              name="horaAsistenciaInicio"
+                              type="time"
+                              defaultValue={meeting.inicioAsistencia?.slice(11, 16) ?? meeting.inicio.slice(11, 16)}
+                              disabled={busy !== null}
+                              required
+                            />
+                          </label>
+                          <label className="field">
+                            <span>Hora de salida</span>
+                            <input
+                              name="horaAsistenciaFin"
+                              type="time"
+                              defaultValue={meeting.finAsistencia?.slice(11, 16) ?? meeting.fin.slice(11, 16)}
+                              disabled={busy !== null}
+                              required
+                            />
+                          </label>
+                          <button className="primary-action" disabled={busy !== null} type="submit">
+                            {busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}
+                            Guardar solo esta reunión
+                          </button>
+                          <small>
+                            La reunión/Meet sigue siendo {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}.
+                          </small>
+                        </form>
+                      )}
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <div className="encounter-editor">
@@ -390,6 +557,8 @@ export function MeetingDetailManager({
           <label className="field"><span>Fecha</span><input name="fecha" type="date" required /></label>
           <label className="field"><span>Hora de inicio</span><input name="horaInicio" type="time" required /></label>
           <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" required /></label>
+          <label className="field"><span>Llegada asistente (si corresponde)</span><input name="horaAsistenciaInicio" type="time" /></label>
+          <label className="field"><span>Salida asistente (si corresponde)</span><input name="horaAsistenciaFin" type="time" /></label>
           <label className="check-field encounter-add-check"><input name="requiereAsistenciaTecnica" type="checkbox" /><span>Asistencia técnica</span></label>
           <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
