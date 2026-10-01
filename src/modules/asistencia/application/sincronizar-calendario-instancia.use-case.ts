@@ -57,15 +57,9 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
           docente: meeting.docenteNombreCompleto,
         } as const;
 
-        await provider.publicarEvento(credentials, {
-          ...common,
-          id: eventId,
-          tipo: "REUNION",
-          titulo: `Asistencia técnica · ${meeting.solicitudTitulo}`,
-          inicio: meeting.inicioProgramadoAt,
-          fin: meeting.finProgramadoAt,
-          joinUrl: meeting.joinUrl,
-        });
+        // El evento original de la reunión/Meet ya incluye al asistente como cohost/attendee.
+        // El calendario técnico solo registra el trabajo presencial adicional, evitando duplicar la reunión.
+        await provider.eliminarEvento(credentials, eventId);
 
         if (meeting.modalidad === "HIBRIDA" && coverageStart < meeting.inicioProgramadoAt) {
           await provider.publicarEvento(credentials, {
