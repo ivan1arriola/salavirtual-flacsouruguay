@@ -10,6 +10,8 @@ const meeting = (id: string, start: string, end: string, applicants: string[] = 
     id,
     inicioProgramadoAt: new Date(start),
     finProgramadoAt: new Date(end),
+    inicioAsistenciaTecnicaAt: null as Date | null,
+    finAsistenciaTecnicaAt: null as Date | null,
     timezone: "America/Montevideo",
     postulaciones: applicants.map((assistantId) => ({ asistenteTecnico: { id: assistantId } }))
   }
