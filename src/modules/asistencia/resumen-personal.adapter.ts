@@ -76,14 +76,16 @@ export async function obtenerAsistenciasEnRango(
   return asignaciones.map((asignacion) => {
     const instancia = asignacion.instancia;
     const asociacion = instancia.solicitud.docentePrograma;
+    const inicioAsistencia = instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
+    const finAsistencia = instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt;
     const minutosProgramados = calcularMinutos(
-      { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt },
+      { inicio: inicioAsistencia, fin: finAsistencia },
       null,
       null,
       { inicio: null, fin: null }
     );
     const minutos = calcularMinutos(
-      { inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt },
+      { inicio: inicioAsistencia, fin: finAsistencia },
       asignacion.minutosConfirmados,
       instancia.minutosReportados,
       { inicio: instancia.inicioRealAt, fin: instancia.finRealAt }
@@ -95,15 +97,15 @@ export async function obtenerAsistenciasEnRango(
       titulo: instancia.solicitud.titulo,
       programa: asociacion.programa.nombre,
       docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
-      inicioAt: instancia.inicioProgramadoAt,
-      finAt: instancia.finProgramadoAt,
+      inicioAt: inicioAsistencia,
+      finAt: finAsistencia,
       inicioRealAt: instancia.inicioRealAt,
       finRealAt: instancia.finRealAt,
-      modalidad: instancia.solicitud.modalidad,
+      modalidad: instancia.modalidadOverride ?? instancia.solicitud.modalidad,
       estado: instancia.estado,
       completada: esAsistenciaCompletada(
         instancia.estado,
-        instancia.finProgramadoAt.getTime(),
+        finAsistencia.getTime(),
         ahora.getTime()
       ),
       cierreConfirmado: asignacion.minutosConfirmados !== null,
