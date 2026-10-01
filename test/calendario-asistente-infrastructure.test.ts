@@ -60,7 +60,6 @@ describe("adaptador Google Assistant Calendar Provider", () => {
         extendedProperties: {
           private: {
             flacsoTipo: "ASISTENCIA_TECNICA",
-            flacsoSegmento: "REUNION",
             flacsoInstanciaSalaId: "inst-1",
           },
         },
@@ -204,4 +203,3 @@ describe("adaptador Prisma Assistant Calendar Repository", () => {
     expect(creds).toBeNull();
   });
 });
-
