@@ -339,7 +339,7 @@ export async function obtenerDashboardAdministracion(
       titulo: meeting.solicitud.titulo,
       programa: association.programa.nombre,
       docenteNombre: `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim(),
-      modalidad: meeting.solicitud.modalidad,
+      modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad),
       inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
       finProgramadoAt: meeting.finProgramadoAt.toISOString(),
       joinUrl: meet?.joinUrl ?? null,
