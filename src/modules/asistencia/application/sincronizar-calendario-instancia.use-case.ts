@@ -1,4 +1,5 @@
 import {
+  idEventoCalendarioAsistenteSegmento,
   planificarSincronizacionCalendarioAsistente,
   type CuentaCalendarioAsistente,
   type ResultadoSincronizacionCalendarioAsistente,
