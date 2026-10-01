@@ -163,6 +163,9 @@ export async function asignarAsistentePostulado(
           finProgramadoAt: true,
           estado: true,
           inicioProgramadoAt: true,
+          modalidadOverride: true,
+          inicioAsistenciaTecnicaAt: true,
+          finAsistenciaTecnicaAt: true,
           eventosProveedor: {
             where: { proveedor: { tipo: "GOOGLE_MEET" } },
             select: {
@@ -256,9 +259,15 @@ export async function asignarAsistentePostulado(
     ) {
       throw new Error("El perfil seleccionado no corresponde a un asistente técnico disponible.");
     }
+    const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+    const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+    const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
     const { tarifa } = await reservarAsistenteDisponible(
-      tx, assistant.id, meeting.solicitud.modalidad,
-      [{ inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt }], meeting.id
+      tx,
+      assistant.id,
+      modalidadEfectiva,
+      [{ inicio: inicioAsistencia, fin: finAsistencia }],
+      meeting.id
     );
     const previousAssignment = meeting.asignaciones[0] ?? null;
     if (previousAssignment?.asistenteTecnicoId === assistant.id) {
@@ -358,7 +367,7 @@ export async function asignarAsistentePostulado(
       titulo: meeting.solicitud.titulo,
       programa: meeting.solicitud.docentePrograma.programa.nombre,
       docente: docenteNombre,
-      modalidad: meeting.solicitud.modalidad,
+      modalidad: modalidadEfectiva,
       requiereAsistenciaTecnica: true,
       requiereGrabacion: meeting.solicitud.requiereGrabacion,
       asistenteTecnico: assistantFullName,
@@ -411,7 +420,7 @@ export async function asignarAsistentePostulado(
           cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
           href: "/mi-agenda",
           emailSubject: `Te asignaron una asistencia técnica: ${meeting.solicitud.titulo}`,
-          emailText: `${meetingDetailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada en Sala Virtual para contar con permisos de moderación, admisión y grabación.`,
+          emailText: `${meetingDetailsText}\n\nHORARIO DE ASISTENCIA TÉCNICA: ${formatTime(inicioAsistencia)}–${formatTime(finAsistencia)}${modalidadEfectiva === "HIBRIDA" ? " (presencial/híbrida)" : ""}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada en Sala Virtual para contar con permisos de moderación, admisión y grabación.`,
           emailActionLabel: "Abrir mi agenda"
         }
       },
