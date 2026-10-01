@@ -27,6 +27,9 @@ function createMockInstance(overrides: Partial<InstanciaParaCalendario> = {}): I
     requiereAsistenciaTecnica: true,
     inicioProgramadoAt: new Date("2026-10-01T18:00:00Z"),
     finProgramadoAt: new Date("2026-10-01T20:00:00Z"),
+    inicioAsistenciaTecnicaAt: new Date("2026-10-01T17:00:00Z"),
+    finAsistenciaTecnicaAt: new Date("2026-10-01T20:30:00Z"),
+    modalidad: "HIBRIDA",
     timezone: "America/Montevideo",
     descripcion: "Clase 1",
     solicitudTitulo: "Seminario Virtual",
@@ -130,7 +133,12 @@ describe("casos de uso de calendario de asistentes", () => {
       expect.objectContaining({ subject: "asistente@flacso.edu.uy" }),
       expect.objectContaining({
         instanciaSalaId: "instancia-1",
-        titulo: "Asistencia técnica · Seminario Virtual",
+        titulo: "Asistencia técnica presencial · Seminario Virtual",
+        inicio: new Date("2026-10-01T17:00:00Z"),
+        fin: new Date("2026-10-01T20:30:00Z"),
+        reunionInicio: new Date("2026-10-01T18:00:00Z"),
+        reunionFin: new Date("2026-10-01T20:00:00Z"),
+        modalidad: "HIBRIDA",
         joinUrl: "https://meet.google.com/abc-defg-hij",
       })
     );
