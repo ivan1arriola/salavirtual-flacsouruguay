@@ -125,6 +125,47 @@ describe("dias derivados de reuniones", () => {
     ).toBeUndefined();
   });
 
+  it("exige llegada y salida exactas en reuniones híbridas con asistencia técnica", () => {
+    const base = {
+      titulo: "Clase híbrida",
+      docenteProgramaId: "dp",
+      requiereAsistenciaTecnica: true,
+      modalidad: "HIBRIDA" as const,
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-10T11:00:00-03:00",
+        fin: "2026-10-10T13:30:00-03:00"
+      }]
+    };
+
+    expect(crearReunionesSchema.safeParse(base).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({
+      ...base,
+      instancias: [{
+        ...base.instancias[0],
+        asistenciaInicio: "2026-10-10T09:00:00-03:00",
+        asistenciaFin: "2026-10-10T14:00:00-03:00"
+      }]
+    }).success).toBe(true);
+  });
+
+  it("rechaza una cobertura híbrida que no empiece antes y termine después del encuentro", () => {
+    const result = crearReunionesSchema.safeParse({
+      titulo: "Clase híbrida",
+      docenteProgramaId: "dp",
+      requiereAsistenciaTecnica: true,
+      modalidad: "HIBRIDA",
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-10T11:00:00-03:00",
+        fin: "2026-10-10T13:30:00-03:00",
+        asistenciaInicio: "2026-10-10T11:00:00-03:00",
+        asistenciaFin: "2026-10-10T13:30:00-03:00"
+      }]
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("conserva una descripción diferente para cada encuentro", () => {
     const result = crearReunionesSchema.parse({
       titulo: "Clase",
