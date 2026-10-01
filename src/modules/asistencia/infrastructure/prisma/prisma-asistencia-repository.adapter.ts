@@ -142,6 +142,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
             requiereAsistenciaTecnica: true,
             inicioProgramadoAt: true,
             finProgramadoAt: true,
+            modalidadOverride: true,
+            inicioAsistenciaTecnicaAt: true,
+            finAsistenciaTecnicaAt: true,
             estado: true,
             solicitud: {
               select: {
@@ -194,30 +197,43 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           throw new ConflictApiError("El asistente técnico seleccionado no está disponible.");
         }
 
-        const margin = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
-        const startWindow = new Date(meeting.inicioProgramadoAt.getTime() - margin);
-        const endWindow = new Date(meeting.finProgramadoAt.getTime() + margin);
+        const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+        if (
+          modalidadEfectiva === "HIBRIDA" &&
+          (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)
+        ) {
+          throw new ConflictApiError(
+            "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida."
+          );
+        }
+        const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+        const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
 
         const existing = await tx.asignacionAsistenciaTecnica.findMany({
           where: {
             asistenteTecnicoId,
             estado: { in: [...ACTIVE_ASSIGNMENTS] },
             instanciaSalaId: { not: meeting.id },
-            instancia: {
-              estado: "PROGRAMADA",
-              finProgramadoAt: { gte: startWindow },
-              inicioProgramadoAt: { lte: endWindow }
-            }
+            instancia: { estado: "PROGRAMADA" }
           },
-          select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } }
+          select: {
+            instancia: {
+              select: {
+                inicioProgramadoAt: true,
+                finProgramadoAt: true,
+                inicioAsistenciaTecnicaAt: true,
+                finAsistenciaTecnicaAt: true
+              }
+            }
+          }
         });
 
         const periodos = [
           ...existing.map(({ instancia }) => ({
-            inicio: instancia.inicioProgramadoAt,
-            fin: instancia.finProgramadoAt
+            inicio: instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt,
+            fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt
           })),
-          { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt }
+          { inicio: inicioAsistencia, fin: finAsistencia }
         ];
 
         const conflict = periodos.some((periodo, index) =>
@@ -231,7 +247,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         }
 
         const tarifa = await tx.tarifaAsistenciaTecnica.findFirst({
-          where: { modalidad: meeting.solicitud.modalidad },
+          where: { modalidad: modalidadEfectiva },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: { id: true, valorHora: true, moneda: true }
         });
@@ -576,11 +592,11 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       return asignaciones.map((asignacion) => {
         const instancia = asignacion.instancia;
         const asociacion = instancia.solicitud.docentePrograma;
+        const inicioAsistencia = instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
+        const finAsistencia = instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt;
         const minProg = Math.max(
           0,
-          Math.round(
-            (instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) / 60_000
-          )
+          Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000)
         );
         const minutos =
           asignacion.minutosConfirmados ??
@@ -588,8 +604,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           Math.max(
             0,
             Math.round(
-              ((instancia.finRealAt ?? instancia.finProgramadoAt).getTime() -
-                (instancia.inicioRealAt ?? instancia.inicioProgramadoAt).getTime()) /
+              ((instancia.finRealAt ?? finAsistencia).getTime() -
+                (instancia.inicioRealAt ?? inicioAsistencia).getTime()) /
                 60_000
             )
           );
@@ -604,13 +620,13 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           titulo: instancia.solicitud.titulo,
           programa: asociacion.programa.nombre,
           docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
-          inicioAt: instancia.inicioProgramadoAt,
-          finAt: instancia.finProgramadoAt,
+          inicioAt: inicioAsistencia,
+          finAt: finAsistencia,
           inicioRealAt: instancia.inicioRealAt,
           finRealAt: instancia.finRealAt,
-          modalidad: instancia.solicitud.modalidad as ModalidadAsistencia,
+          modalidad: (instancia.modalidadOverride ?? instancia.solicitud.modalidad) as ModalidadAsistencia,
           estado: instancia.estado,
-          completada: instancia.estado === "FINALIZADA" || instancia.finProgramadoAt.getTime() <= ahora.getTime(),
+          completada: instancia.estado === "FINALIZADA" || finAsistencia.getTime() <= ahora.getTime(),
           cierreConfirmado: asignacion.minutosConfirmados !== null,
           minutos,
           minutosProgramados: minProg,
@@ -736,6 +752,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           requiereAsistenciaTecnica: true,
           finProgramadoAt: true,
           inicioProgramadoAt: true,
+          modalidadOverride: true,
+          inicioAsistenciaTecnicaAt: true,
+          finAsistenciaTecnicaAt: true,
           estado: true,
           solicitud: {
             select: {
@@ -773,9 +792,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         reunion: {
           id: meeting.id,
           titulo: meeting.solicitud.titulo,
-          inicio: meeting.inicioProgramadoAt,
-          fin: meeting.finProgramadoAt,
-          modalidad: meeting.solicitud.modalidad as ModalidadAsistencia,
+          inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+          fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
+          modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad) as ModalidadAsistencia,
           docenteNombre
         },
         destinatarios: assistants.map(({ usuarioId }) => usuarioId)
