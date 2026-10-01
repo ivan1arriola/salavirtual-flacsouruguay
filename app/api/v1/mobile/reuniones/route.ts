@@ -34,7 +34,10 @@ export async function GET(request: Request) {
   const meetings = await db.instanciaSala.findMany({
     where: {
       estado: "PROGRAMADA",
-      finProgramadoAt: { gte: now },
+      OR: [
+        { finAsistenciaTecnicaAt: { gte: now } },
+        { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } }
+      ],
       asignaciones: {
         some: {
           asistenteTecnicoId: assistant.id,
@@ -87,9 +90,11 @@ export async function GET(request: Request) {
         teacher: [association.docente.usuario.nombres, association.docente.usuario.apellidos]
           .filter(Boolean)
           .join(" "),
-        modality: meeting.solicitud.modalidad,
+        modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
         startsAt: meeting.inicioProgramadoAt.toISOString(),
         endsAt: meeting.finProgramadoAt.toISOString(),
+        assistanceStartsAt: (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString(),
+        assistanceEndsAt: (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString(),
         timezone: meeting.timezone,
         googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
         meetUrl: meet?.joinUrl ?? null,
