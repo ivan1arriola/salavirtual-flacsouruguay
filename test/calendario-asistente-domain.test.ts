@@ -3,6 +3,7 @@ import {
   cuentasCalendarioDeseadas,
   hayErroresSincronizacionCalendarioAsistente,
   idEventoCalendarioAsistente,
+  idEventoCalendarioAsistenteSegmento,
   planificarSincronizacionCalendarioAsistente,
 } from "../src/modules/asistencia/domain";
 import * as facade from "../src/modules/asistencia/calendario-asistente.domain";
@@ -38,6 +39,24 @@ describe("calendario de asistentes técnicos", () => {
 
     expect(first).toBe(second);
     expect(first).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("genera IDs independientes para preparación y cierre técnico", () => {
+    const preparation = idEventoCalendarioAsistenteSegmento(
+      "instancia-1",
+      "google-1",
+      "PREPARACION"
+    );
+    const closing = idEventoCalendarioAsistenteSegmento(
+      "instancia-1",
+      "google-1",
+      "CIERRE"
+    );
+
+    expect(preparation).toMatch(/^[0-9a-f]{64}$/);
+    expect(closing).toMatch(/^[0-9a-f]{64}$/);
+    expect(preparation).not.toBe(closing);
+    expect(preparation).not.toBe(idEventoCalendarioAsistente("instancia-1", "google-1"));
   });
 
   it("sincroniza únicamente cuentas Google vinculadas de asistentes técnicos activos", () => {
@@ -149,6 +168,7 @@ describe("calendario de asistentes técnicos", () => {
 
   it("la fachada calendario-asistente.domain preserva las mismas funciones", () => {
     expect(facade.idEventoCalendarioAsistente).toBe(idEventoCalendarioAsistente);
+    expect(facade.idEventoCalendarioAsistenteSegmento).toBe(idEventoCalendarioAsistenteSegmento);
     expect(facade.cuentasCalendarioDeseadas).toBe(cuentasCalendarioDeseadas);
     expect(facade.planificarSincronizacionCalendarioAsistente).toBe(planificarSincronizacionCalendarioAsistente);
     expect(facade.hayErroresSincronizacionCalendarioAsistente).toBe(hayErroresSincronizacionCalendarioAsistente);
