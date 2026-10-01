@@ -105,7 +105,7 @@ export async function obtenerDashboardAsistenteOptimizado(
         solicitudId: nextMeetingInstance.solicitud.id,
         titulo: nextMeetingInstance.solicitud.titulo,
         programa: nextMeetingInstance.solicitud.docentePrograma.programa.nombre,
-        modalidad: nextMeetingInstance.solicitud.modalidad,
+        modalidad: (nextMeetingInstance.modalidadOverride ?? nextMeetingInstance.solicitud.modalidad),
         inicioProgramadoAt: nextMeetingInstance.inicioProgramadoAt.toISOString(),
         finProgramadoAt: nextMeetingInstance.finProgramadoAt.toISOString(),
         joinUrl: meet?.joinUrl ?? null,
@@ -144,7 +144,7 @@ export async function obtenerDashboardAsistenteOptimizado(
     solicitudId: opp.solicitud.id,
     titulo: opp.solicitud.titulo,
     programa: opp.solicitud.docentePrograma.programa.nombre,
-    modalidad: opp.solicitud.modalidad,
+    modalidad: (opp.modalidadOverride ?? opp.solicitud.modalidad),
     inicioProgramadoAt: opp.inicioProgramadoAt.toISOString(),
     finProgramadoAt: opp.finProgramadoAt.toISOString(),
     yaPostulado: opp.postulaciones.some((p) => p.estado === "ME_INTERESA")
