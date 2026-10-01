@@ -32,8 +32,11 @@ describe("adaptador Google Assistant Calendar Provider", () => {
     id: "evt-1",
     titulo: "Asistencia Clase 1",
     descripcion: "Detalles",
-    inicio: new Date("2026-10-01T18:00:00Z"),
-    fin: new Date("2026-10-01T20:00:00Z"),
+    inicio: new Date("2026-10-01T17:00:00Z"),
+    fin: new Date("2026-10-01T20:30:00Z"),
+    reunionInicio: new Date("2026-10-01T18:00:00Z"),
+    reunionFin: new Date("2026-10-01T20:00:00Z"),
+    modalidad: "HIBRIDA" as const,
     timezone: "America/Montevideo",
     instanciaSalaId: "inst-1",
     programa: "Maestría",
@@ -122,11 +125,15 @@ describe("adaptador Prisma Assistant Calendar Repository", () => {
           requiereAsistenciaTecnica: true,
           inicioProgramadoAt: new Date("2026-10-01T18:00:00Z"),
           finProgramadoAt: new Date("2026-10-01T20:00:00Z"),
+          modalidadOverride: "HIBRIDA",
+          inicioAsistenciaTecnicaAt: new Date("2026-10-01T17:00:00Z"),
+          finAsistenciaTecnicaAt: new Date("2026-10-01T20:30:00Z"),
           timezone: "America/Montevideo",
           descripcion: "Clase magistral",
           solicitud: {
             titulo: "Diplomatura",
             descripcion: "Curso online",
+            modalidad: "VIRTUAL",
             docentePrograma: {
               programa: { nombre: "Políticas Públicas" },
               docente: {
@@ -151,6 +158,9 @@ describe("adaptador Prisma Assistant Calendar Repository", () => {
     expect(instancia?.docenteNombreCompleto).toBe("Ana García");
     expect(instancia?.programaNombre).toBe("Políticas Públicas");
     expect(instancia?.joinUrl).toBe("https://meet.google.com/abc-defg-hij");
+    expect(instancia?.modalidad).toBe("HIBRIDA");
+    expect(instancia?.inicioAsistenciaTecnicaAt).toEqual(new Date("2026-10-01T17:00:00Z"));
+    expect(instancia?.finAsistenciaTecnicaAt).toEqual(new Date("2026-10-01T20:30:00Z"));
   });
 
   it("obtiene y descifra credenciales de Google Workspace", async () => {
