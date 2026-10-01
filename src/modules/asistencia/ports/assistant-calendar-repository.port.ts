@@ -6,6 +6,9 @@ export type InstanciaParaCalendario = Readonly<{
   requiereAsistenciaTecnica: boolean;
   inicioProgramadoAt: Date;
   finProgramadoAt: Date;
+  inicioAsistenciaTecnicaAt: Date | null;
+  finAsistenciaTecnicaAt: Date | null;
+  modalidad: "HIBRIDA" | "VIRTUAL";
   timezone: string;
   descripcion: string | null;
   solicitudTitulo: string;
