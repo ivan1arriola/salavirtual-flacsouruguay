@@ -27,12 +27,16 @@ export function crearPrismaAssistantCalendarRepository(
           requiereAsistenciaTecnica: true,
           inicioProgramadoAt: true,
           finProgramadoAt: true,
+          modalidadOverride: true,
+          inicioAsistenciaTecnicaAt: true,
+          finAsistenciaTecnicaAt: true,
           timezone: true,
           descripcion: true,
           solicitud: {
             select: {
               titulo: true,
               descripcion: true,
+              modalidad: true,
               docentePrograma: {
                 select: {
                   programa: { select: { nombre: true } },
@@ -95,6 +99,9 @@ export function crearPrismaAssistantCalendarRepository(
         requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
         inicioProgramadoAt: meeting.inicioProgramadoAt,
         finProgramadoAt: meeting.finProgramadoAt,
+        inicioAsistenciaTecnicaAt: meeting.inicioAsistenciaTecnicaAt,
+        finAsistenciaTecnicaAt: meeting.finAsistenciaTecnicaAt,
+        modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
         timezone: meeting.timezone,
         descripcion: meeting.descripcion,
         solicitudTitulo: meeting.solicitud.titulo,
@@ -138,7 +145,10 @@ export function crearPrismaAssistantCalendarRepository(
     ): Promise<readonly string[]> {
       const instances = await db.instanciaSala.findMany({
         where: {
-          finProgramadoAt: { gte: now },
+          OR: [
+            { finAsistenciaTecnicaAt: { gte: now } },
+            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } },
+          ],
           asignaciones: { some: {} },
         },
         select: { id: true },
