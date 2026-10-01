@@ -105,6 +105,33 @@ describe("buildAssignmentSuggestions", () => {
     expect(result.get("meeting-2")?.id).toBe("assistant-2");
   });
 
+  it("usa el horario completo de asistencia técnica para detectar conflictos", () => {
+    const pending = meeting(
+      "meeting-1",
+      "2026-08-10T15:00:00Z",
+      "2026-08-10T16:00:00Z"
+    );
+    pending.meeting.inicioAsistenciaTecnicaAt = new Date("2026-08-10T14:00:00Z");
+    pending.meeting.finAsistenciaTecnicaAt = new Date("2026-08-10T16:30:00Z");
+
+    const result = buildAssignmentSuggestions({
+      meetings: [pending],
+      assistants: [
+        { id: "assistant-1", name: "Ana" },
+        { id: "assistant-2", name: "Bruno" }
+      ],
+      assignments: [{
+        assistantId: "assistant-1",
+        meetingId: "existing",
+        startsAt: new Date("2026-08-10T13:00:00Z"),
+        endsAt: new Date("2026-08-10T13:45:00Z"),
+        timezone: "America/Montevideo"
+      }]
+    });
+
+    expect(result.get("meeting-1")?.id).toBe("assistant-2");
+  });
+
   it("prioriza disponibilidad preferente y excluye una excepción no disponible", () => {
     const recurrent = [{
       diaSemana: 1,
