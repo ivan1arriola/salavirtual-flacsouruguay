@@ -4,6 +4,9 @@ export type EventoCalendarioAsistente = Readonly<{
   descripcion: string | null;
   inicio: Date;
   fin: Date;
+  reunionInicio: Date;
+  reunionFin: Date;
+  modalidad: "HIBRIDA" | "VIRTUAL";
   timezone: string;
   instanciaSalaId: string;
   programa: string | null;
