@@ -97,12 +97,18 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
       })
     ),
     ...plan.eliminar.map(async ({ cuenta, eventId }) =>
-      ejecutar(cuenta, "ELIMINAR", async () =>
-        provider.eliminarEvento(
-          { serviceAccountEmail, privateKey, subject: cuenta.email },
-          eventId
-        )
-      )
+      ejecutar(cuenta, "ELIMINAR", async () => {
+        const credentials = { serviceAccountEmail, privateKey, subject: cuenta.email };
+        await provider.eliminarEvento(credentials, eventId);
+        await provider.eliminarEvento(
+          credentials,
+          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "PREPARACION")
+        );
+        await provider.eliminarEvento(
+          credentials,
+          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE")
+        );
+      })
     ),
   ]);
 }
