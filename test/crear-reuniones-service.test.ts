@@ -9,8 +9,8 @@ describe("crearReuniones - cohosts e invitados", () => {
     timezone: "America/Montevideo",
     instancias: [
       {
-        inicio: new Date("2026-10-01T14:00:00-03:00"),
-        fin: new Date("2026-10-01T16:00:00-03:00")
+        inicio: new Date("2027-10-01T14:00:00-03:00"),
+        fin: new Date("2027-10-01T16:00:00-03:00")
       }
     ]
   };
