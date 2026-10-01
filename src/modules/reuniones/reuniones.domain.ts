@@ -9,6 +9,8 @@ const instanciaSchema = z
   .object({
     inicio: z.coerce.date(),
     fin: z.coerce.date(),
+    asistenciaInicio: z.coerce.date().optional(),
+    asistenciaFin: z.coerce.date().optional(),
     descripcion: z.string().trim().max(4000).optional()
   })
   .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
@@ -42,7 +44,7 @@ export const crearReunionesSchema = z
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
     instancias: z.array(instanciaSchema).min(1).max(100)
   })
-  .superRefine(({ instancias, timezone, requiereAsistenciaTecnica, hostTipo, hostCuentaId, hostEmail }, context) => {
+  .superRefine(({ instancias, timezone, modalidad, requiereAsistenciaTecnica, hostTipo, hostCuentaId, hostEmail }, context) => {
     if (!requiereAsistenciaTecnica) {
       if (hostTipo === "OTRA_CUENTA" && !hostCuentaId) {
         context.addIssue({
@@ -71,6 +73,67 @@ export const crearReunionesSchema = z
       });
     }
     instancias.forEach((instancia, index) => {
+      const { asistenciaInicio, asistenciaFin, inicio, fin } = instancia;
+      const tieneSoloUnExtremo = Boolean(asistenciaInicio) !== Boolean(asistenciaFin);
+      if (tieneSoloUnExtremo) {
+        context.addIssue({
+          code: "custom",
+          message: "La hora de llegada y de salida del asistente deben definirse juntas.",
+          path: ["instancias", index, asistenciaInicio ? "asistenciaFin" : "asistenciaInicio"]
+        });
+      }
+      if (asistenciaInicio && asistenciaFin) {
+        if (asistenciaFin <= asistenciaInicio) {
+          context.addIssue({
+            code: "custom",
+            message: "La hora de salida del asistente debe ser posterior a la de llegada.",
+            path: ["instancias", index, "asistenciaFin"]
+          });
+        }
+        if (asistenciaInicio > inicio || asistenciaFin < fin) {
+          context.addIssue({
+            code: "custom",
+            message: "El horario de asistencia técnica debe cubrir todo el encuentro.",
+            path: ["instancias", index, "asistenciaInicio"]
+          });
+        }
+        if (
+          esTimezoneIanaValida(timezone) &&
+          (!pertenecenAlMismoDia(asistenciaInicio, inicio, timezone) ||
+            !pertenecenAlMismoDia(asistenciaFin, fin, timezone))
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "La asistencia técnica debe comenzar y terminar el mismo día del encuentro.",
+            path: ["instancias", index, "asistenciaInicio"]
+          });
+        }
+      }
+      if (requiereAsistenciaTecnica && modalidad === "HIBRIDA") {
+        if (!asistenciaInicio || !asistenciaFin) {
+          context.addIssue({
+            code: "custom",
+            message: "Las reuniones híbridas con asistencia técnica requieren hora exacta de llegada y salida.",
+            path: ["instancias", index, "asistenciaInicio"]
+          });
+        } else {
+          if (asistenciaInicio >= inicio) {
+            context.addIssue({
+              code: "custom",
+              message: "En una reunión híbrida el asistente debe llegar antes del inicio.",
+              path: ["instancias", index, "asistenciaInicio"]
+            });
+          }
+          if (asistenciaFin <= fin) {
+            context.addIssue({
+              code: "custom",
+              message: "En una reunión híbrida el asistente debe retirarse después del fin.",
+              path: ["instancias", index, "asistenciaFin"]
+            });
+          }
+        }
+      }
+
       const previousOverlap = instancias.slice(0, index).some((previous) =>
         instancia.inicio < previous.fin && instancia.fin > previous.inicio
       );
