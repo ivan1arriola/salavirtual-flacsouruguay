@@ -52,7 +52,10 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
       return assignments.map((assignment) => {
         const meeting = assignment.instancia;
         const minutes = calcularMinutos(
-          { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
+          {
+            inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+            fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+          },
           assignment.minutosConfirmados,
           meeting.minutosReportados,
           { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
@@ -67,7 +70,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           reunion: meeting.solicitud.titulo,
           fecha: meeting.inicioProgramadoAt,
           minutos: minutes,
-          modalidad: meeting.solicitud.modalidad,
+          modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
           tarifaHora,
           montoConfirmado,
           montoCalculado: calcularMonto(montoConfirmado, tarifaHora, minutes),
@@ -121,7 +124,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           const rate = assignment.tarifaHoraAplicada?.toNumber() ?? null;
           return {
             asistenteTecnicoId: assignment.asistenteTecnicoId,
-            modalidad: meeting.solicitud.modalidad,
+            modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
             minutos: minutes,
             monto: calcularMonto(assignment.montoConfirmado?.toNumber() ?? null, rate, minutes),
             moneda: assignment.moneda ?? "UYU"
@@ -164,14 +167,17 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
         const registros: RegistroAsistenciaLiquidacion[] = asignaciones.map((asignacion) => {
           const meeting = asignacion.instancia;
           const minutes = calcularMinutos(
-            { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
+            {
+              inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+            },
             asignacion.minutosConfirmados,
             meeting.minutosReportados,
             { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
           );
           const rate = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
           return {
-            modalidad: meeting.solicitud.modalidad,
+            modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
             minutos: minutes,
             monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, rate, minutes)
           };
