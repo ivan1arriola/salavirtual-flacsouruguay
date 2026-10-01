@@ -56,6 +56,7 @@ export default async function ReunionDetailPage({
       orderBy: { id: "asc" },
       select: {
         id: true,
+        modalidad: true,
         instancias: {
           orderBy: { inicioProgramadoAt: "asc" },
           include: {
@@ -95,6 +96,7 @@ export default async function ReunionDetailPage({
     .flatMap((seriesRequest) => seriesRequest.instancias.map((meeting) => ({
       ...meeting,
       solicitudId: seriesRequest.id,
+      modalidadSerie: seriesRequest.modalidad,
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
@@ -153,7 +155,18 @@ export default async function ReunionDetailPage({
       fin: toLocalInput(meeting.finProgramadoAt),
       fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
       estado: meeting.estado,
+      modalidad: meeting.modalidadOverride ?? meeting.modalidadSerie,
+      modalidadPersonalizada: meeting.modalidadOverride !== null,
       requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
+      inicioAsistencia: meeting.inicioAsistenciaTecnicaAt
+        ? toLocalInput(meeting.inicioAsistenciaTecnicaAt)
+        : null,
+      finAsistencia: meeting.finAsistenciaTecnicaAt
+        ? toLocalInput(meeting.finAsistenciaTecnicaAt)
+        : null,
+      horarioAsistenciaPersonalizado: Boolean(
+        meeting.inicioAsistenciaTecnicaAt && meeting.finAsistenciaTecnicaAt
+      ),
       asistenteTecnico: assignment
         ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim()
         : null,
@@ -318,6 +331,7 @@ export default async function ReunionDetailPage({
         solicitudId={request.id}
         requestIds={seriesRequests.map(({ id }) => id)}
         meetings={meetingViews}
+        canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
       />
     </div>
   );
