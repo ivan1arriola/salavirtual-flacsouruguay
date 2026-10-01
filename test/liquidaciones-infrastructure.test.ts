@@ -46,6 +46,60 @@ describe("liquidaciones infrastructure", () => {
   });
 
   describe("prisma liquidaciones repository adapter", () => {
+    it("calcula horas y pago híbridos con toda la cobertura técnica", async () => {
+      const mockDb = {
+        asistenteTecnico: {
+          findMany: vi.fn().mockResolvedValue([{
+            id: "asistente-1",
+            slug: "ivan",
+            usuario: {
+              id: "usuario-1",
+              nombres: "Iván",
+              apellidos: "Arriola",
+              emailPrincipal: "ivan@example.com",
+              activo: true
+            }
+          }])
+        },
+        asignacionAsistenciaTecnica: {
+          findMany: vi.fn().mockResolvedValue([{
+            asistenteTecnicoId: "asistente-1",
+            minutosConfirmados: null,
+            montoConfirmado: null,
+            tarifaHoraAplicada: { toNumber: () => 500 },
+            moneda: "UYU",
+            instancia: {
+              inicioProgramadoAt: new Date("2026-10-10T14:00:00Z"),
+              finProgramadoAt: new Date("2026-10-10T16:30:00Z"),
+              inicioAsistenciaTecnicaAt: new Date("2026-10-10T12:00:00Z"),
+              finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z"),
+              minutosReportados: null,
+              inicioRealAt: null,
+              finRealAt: null,
+              requiereAsistenciaTecnica: true,
+              estado: "PROGRAMADA",
+              solicitud: { estado: "PROVISIONADA", modalidad: "HIBRIDA" }
+            }
+          }])
+        }
+      };
+
+      const adapter = crearPrismaLiquidacionesRepositoryAdapter(mockDb as any);
+      const result = await adapter.obtenerResumenAsistentes({
+        clave: "2026-10",
+        desdeMs: Date.parse("2026-10-01T03:00:00Z"),
+        hastaMs: Date.parse("2026-11-01T03:00:00Z"),
+        anterior: "2026-09",
+        siguiente: "2026-11"
+      });
+
+      expect(result[0]).toMatchObject({
+        minutos: 300,
+        hibridas: 1,
+        montos: [{ moneda: "UYU", monto: 2500 }]
+      });
+    });
+
     it("marca envio exitoso actualizando estado y fecha", async () => {
       const mockDb = {
         envioReporteMensualAsistencia: {

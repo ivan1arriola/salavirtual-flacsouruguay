@@ -116,7 +116,10 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
         assignments.map((assignment) => {
           const meeting = assignment.instancia;
           const minutes = calcularMinutos(
-            { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
+            {
+              inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+            },
             assignment.minutosConfirmados,
             meeting.minutosReportados,
             { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
