@@ -129,19 +129,66 @@ describe("casos de uso de calendario de asistentes", () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.estado).toBe("SINCRONIZADA");
     expect(results[0]?.accion).toBe("PUBLICAR");
+    expect(provider.publicarEvento).toHaveBeenCalledTimes(2);
     expect(provider.publicarEvento).toHaveBeenCalledWith(
       expect.objectContaining({ subject: "asistente@flacso.edu.uy" }),
       expect.objectContaining({
         instanciaSalaId: "instancia-1",
-        titulo: "Asistencia técnica presencial · Seminario Virtual",
+        tipo: "PREPARACION",
+        titulo: "Preparación técnica presencial · Seminario Virtual",
         inicio: new Date("2026-10-01T17:00:00Z"),
-        fin: new Date("2026-10-01T20:30:00Z"),
+        fin: new Date("2026-10-01T18:00:00Z"),
         reunionInicio: new Date("2026-10-01T18:00:00Z"),
         reunionFin: new Date("2026-10-01T20:00:00Z"),
         modalidad: "HIBRIDA",
-        joinUrl: "https://meet.google.com/abc-defg-hij",
+        joinUrl: null,
       })
     );
+    expect(provider.publicarEvento).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: "asistente@flacso.edu.uy" }),
+      expect.objectContaining({
+        instanciaSalaId: "instancia-1",
+        tipo: "CIERRE",
+        titulo: "Cierre técnico presencial · Seminario Virtual",
+        inicio: new Date("2026-10-01T20:00:00Z"),
+        fin: new Date("2026-10-01T20:30:00Z"),
+        modalidad: "HIBRIDA",
+        joinUrl: null,
+      })
+    );
+    expect(provider.eliminarEvento).toHaveBeenCalledTimes(1);
+  });
+
+  it("en virtual no crea un bloque técnico duplicado del Meet", async () => {
+    const repository: AssistantCalendarRepositoryPort = {
+      obtenerInstanciaParaCalendario: vi.fn().mockResolvedValue(createMockInstance({
+        modalidad: "VIRTUAL",
+        inicioAsistenciaTecnicaAt: null,
+        finAsistenciaTecnicaAt: null,
+      })),
+      obtenerInstanciasDeSolicitud: vi.fn(),
+      obtenerInstanciasDeAsistente: vi.fn(),
+      obtenerInstanciasFuturasParaReconciliar: vi.fn(),
+      obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
+        serviceAccountEmail: "sa@flacso.edu.uy",
+        privateKey: "pk-123",
+      }),
+    };
+    const provider: AssistantCalendarProvider = {
+      publicarEvento: vi.fn().mockResolvedValue(undefined),
+      eliminarEvento: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
+      repository,
+      provider,
+      "instancia-1",
+      new Date("2026-09-01T00:00:00Z")
+    );
+
+    expect(results[0]?.estado).toBe("SINCRONIZADA");
+    expect(provider.publicarEvento).not.toHaveBeenCalled();
+    expect(provider.eliminarEvento).toHaveBeenCalledTimes(3);
   });
 
   it("captura errores del proveedor sin lanzar excepcion", async () => {
