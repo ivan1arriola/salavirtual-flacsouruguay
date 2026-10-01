@@ -62,6 +62,9 @@ function construirPayloadEvento(
     event.descripcion?.trim() || null,
     event.programa ? `Programa: ${event.programa}` : null,
     event.docente ? `Docente: ${event.docente}` : null,
+    `Modalidad: ${event.modalidad === "HIBRIDA" ? "Híbrida / presencial" : "Virtual"}`,
+    `Horario de la reunión/Meet: ${formatHora(event.reunionInicio, event.timezone)}–${formatHora(event.reunionFin, event.timezone)}`,
+    `Horario de asistencia técnica: ${formatHora(event.inicio, event.timezone)}–${formatHora(event.fin, event.timezone)}`,
     event.joinUrl ? `Google Meet: ${event.joinUrl}` : null,
     "Asignación de asistencia técnica gestionada por Sala Virtual FLACSO.",
   ]
@@ -108,3 +111,13 @@ function esErrorEliminado(error: unknown): boolean {
   );
 }
 
+
+
+function formatHora(value: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("es-UY", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(value);
+}
