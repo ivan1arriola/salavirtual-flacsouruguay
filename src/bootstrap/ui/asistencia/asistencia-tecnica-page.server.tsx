@@ -112,6 +112,8 @@ export default async function AsistenciaTecnicaPage({
             id: true,
             inicioProgramadoAt: true,
             finProgramadoAt: true,
+            inicioAsistenciaTecnicaAt: true,
+            finAsistenciaTecnicaAt: true,
             timezone: true
           }
         }
@@ -142,8 +144,8 @@ export default async function AsistenciaTecnicaPage({
     assignments: futureAssignments.map((assignment) => ({
       assistantId: assignment.asistenteTecnicoId,
       meetingId: assignment.instancia.id,
-      startsAt: assignment.instancia.inicioProgramadoAt,
-      endsAt: assignment.instancia.finProgramadoAt,
+      startsAt: assignment.instancia.inicioAsistenciaTecnicaAt ?? assignment.instancia.inicioProgramadoAt,
+      endsAt: assignment.instancia.finAsistenciaTecnicaAt ?? assignment.instancia.finProgramadoAt,
       timezone: assignment.instancia.timezone
     }))
   });
@@ -196,6 +198,9 @@ export default async function AsistenciaTecnicaPage({
                   const assistantName = assignment
                     ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;
+                  const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+                  const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+                  const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
                   const applicants = meeting.postulaciones.map((interest) => ({
                     id: interest.asistenteTecnico.id,
                     name: [interest.asistenteTecnico.usuario.nombres, interest.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
@@ -205,7 +210,10 @@ export default async function AsistenciaTecnicaPage({
                       <header className="coverage-card-header">
                         <div className="coverage-date">
                           <CalendarClock size={18} />
-                          <span><strong>{formatDate(meeting.inicioProgramadoAt)}</strong><small>{formatTime(meeting.inicioProgramadoAt)} h</small></span>
+                          <span>
+                            <strong>{formatDate(inicioAsistencia)}</strong>
+                            <small>{formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} h</small>
+                          </span>
                         </div>
                         <span className={`status ${covered ? "status-ok" : "status-warning"}`}>
                           {covered ? "Cobertura asignada" : "Cobertura pendiente"}
@@ -218,7 +226,10 @@ export default async function AsistenciaTecnicaPage({
                           <Link className="coverage-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link>
                           <div className="coverage-meeting-meta">
                             <span><strong>Docente</strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</span>
-                            <span><strong>Modalidad</strong>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                            <span><strong>Modalidad</strong>{modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                            {modalidad === "HIBRIDA" ? (
+                              <span><strong>Meet</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
+                            ) : null}
                             <span><strong>Cuenta Google</strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
                           </div>
                           <div className="coverage-interest-summary">
