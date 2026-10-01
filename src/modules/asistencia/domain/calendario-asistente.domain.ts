@@ -17,6 +17,18 @@ export function idEventoCalendarioAsistente(
     .digest("hex");
 }
 
+export type SegmentoCalendarioAsistente = "PREPARACION" | "CIERRE";
+
+export function idEventoCalendarioAsistenteSegmento(
+  instanciaId: string,
+  cuentaGoogleId: string,
+  segmento: SegmentoCalendarioAsistente
+): string {
+  return createHash("sha256")
+    .update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}:${segmento.toLowerCase()}`)
+    .digest("hex");
+}
+
 export function cuentasCalendarioDeseadas(
   snapshot: SnapshotCalendarioAsistente
 ): readonly CuentaCalendarioAsistente[] {
