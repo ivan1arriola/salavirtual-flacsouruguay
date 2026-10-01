@@ -120,8 +120,12 @@ export async function crearReuniones(
     if (!proveedorMeet) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
 
     await bloquearReservaSalas(tx, proveedorMeet.id);
+    const periodosAsistencia = input.instancias.map((instancia) => ({
+      inicio: instancia.asistenciaInicio ?? instancia.inicio,
+      fin: instancia.asistenciaFin ?? instancia.fin,
+    }));
     const reservaAsistente = asistenteTecnicoId
-      ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, input.instancias)
+      ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, periodosAsistencia)
       : null;
     const assistant = reservaAsistente?.assistant ?? null;
 
@@ -244,6 +248,8 @@ export async function crearReuniones(
             descripcion: fecha.descripcion || input.descripcion,
             inicioProgramadoAt: fecha.inicio,
             finProgramadoAt: fecha.fin,
+            inicioAsistenciaTecnicaAt: fecha.asistenciaInicio ?? null,
+            finAsistenciaTecnicaAt: fecha.asistenciaFin ?? null,
             timezone: input.timezone,
             requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
             requiereGrabacion: input.requiereGrabacion,
