@@ -9,10 +9,28 @@ const periodoFields = {
 export const agregarEncuentroSchema = z.object({
   ...periodoFields,
   descripcion: z.string().trim().max(4000).optional(),
+  inicioAsistenciaTecnica: z.coerce.date().optional(),
+  finAsistenciaTecnica: z.coerce.date().optional(),
   requiereAsistenciaTecnica: z.boolean().default(false),
   requiereGrabacion: z.boolean().default(false)
-}).refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
-  message: "La hora de fin debe ser posterior al inicio."
+}).superRefine(({ inicio, fin, inicioAsistenciaTecnica, finAsistenciaTecnica }, context) => {
+  if (fin.getTime() <= inicio.getTime()) {
+    context.addIssue({ code: "custom", message: "La hora de fin debe ser posterior al inicio.", path: ["fin"] });
+  }
+  if (Boolean(inicioAsistenciaTecnica) !== Boolean(finAsistenciaTecnica)) {
+    context.addIssue({
+      code: "custom",
+      message: "La hora de llegada y salida del asistente deben definirse juntas.",
+      path: [inicioAsistenciaTecnica ? "finAsistenciaTecnica" : "inicioAsistenciaTecnica"]
+    });
+  }
+  if (inicioAsistenciaTecnica && finAsistenciaTecnica && finAsistenciaTecnica <= inicioAsistenciaTecnica) {
+    context.addIssue({
+      code: "custom",
+      message: "La hora de salida del asistente debe ser posterior a la de llegada.",
+      path: ["finAsistenciaTecnica"]
+    });
+  }
 });
 
 export const actualizarEncuentroSchema = z.union([
