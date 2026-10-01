@@ -65,11 +65,13 @@ export function buildAssignmentSuggestions(
         )
       ];
       const applicantSet = new Set(applicantIds);
+      const coverageStart = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+      const coverageEnd = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
       const meetingPeriod = {
-        inicio: meeting.inicioProgramadoAt,
-        fin: meeting.finProgramadoAt
+        inicio: coverageStart,
+        fin: coverageEnd
       };
-      const keySuffix = monthKey(meeting.inicioProgramadoAt, meeting.timezone);
+      const keySuffix = monthKey(coverageStart, meeting.timezone);
 
       const availabilityById: Readonly<
         Record<string, ReturnType<typeof evaluarDisponibilidad>>
@@ -77,8 +79,8 @@ export function buildAssignmentSuggestions(
         (acc, assistant) => ({
           ...acc,
           [assistant.id]: evaluarDisponibilidad(
-            meeting.inicioProgramadoAt,
-            meeting.finProgramadoAt,
+            coverageStart,
+            coverageEnd,
             assistant.disponibilidades ?? []
           )
         }),
@@ -127,7 +129,7 @@ export function buildAssignmentSuggestions(
         .filter(Boolean)
         .join(" · ");
 
-      const duration = minutesBetween(meeting.inicioProgramadoAt, meeting.finProgramadoAt);
+      const duration = minutesBetween(coverageStart, coverageEnd);
 
       return {
         suggestions: [
