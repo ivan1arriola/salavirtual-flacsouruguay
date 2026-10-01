@@ -3,6 +3,8 @@ import {
   actualizarEncuentroSchema,
   elegirCuentaHost,
   elegirCuentaHostParaPeriodos,
+  modalidadEfectivaEncuentro,
+  periodoAsistenciaTecnica,
   puedeCambiarAsistenciaEncuentro,
   puedeGestionarEncuentros,
   resolverEstadoSolicitudPorIntegraciones
@@ -67,6 +69,38 @@ describe("gestión funcional de encuentros", () => {
     });
 
     expect("descripcion" in result ? result.descripcion : null).toBe("Tema específico de esta fecha");
+  });
+
+  it("acepta cambiar la modalidad de una única reunión y restablecer la serie", () => {
+    expect(actualizarEncuentroSchema.safeParse({
+      accion: "CAMBIAR_MODALIDAD",
+      modalidad: "HIBRIDA"
+    }).success).toBe(true);
+    expect(actualizarEncuentroSchema.safeParse({
+      accion: "CAMBIAR_MODALIDAD",
+      modalidad: null
+    }).success).toBe(true);
+    expect(modalidadEfectivaEncuentro("VIRTUAL", "HIBRIDA")).toBe("HIBRIDA");
+    expect(modalidadEfectivaEncuentro("VIRTUAL", null)).toBe("VIRTUAL");
+  });
+
+  it("acepta horario exacto de llegada y salida para una reunión puntual", () => {
+    const result = actualizarEncuentroSchema.safeParse({
+      accion: "EDITAR_HORARIO_ASISTENCIA",
+      inicioAsistenciaTecnica: "2026-10-10T09:00:00-03:00",
+      finAsistenciaTecnica: "2026-10-10T14:00:00-03:00"
+    });
+    expect(result.success).toBe(true);
+    expect(periodoAsistenciaTecnica({
+      inicioProgramadoAt: new Date("2026-10-10T14:00:00Z"),
+      finProgramadoAt: new Date("2026-10-10T16:30:00Z"),
+      inicioAsistenciaTecnicaAt: new Date("2026-10-10T12:00:00Z"),
+      finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z")
+    })).toMatchObject({
+      inicio: new Date("2026-10-10T12:00:00Z"),
+      fin: new Date("2026-10-10T17:00:00Z"),
+      personalizado: true
+    });
   });
 
   it("respeta el limite concurrente configurado de una sala", () => {
