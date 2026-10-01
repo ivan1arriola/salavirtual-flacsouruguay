@@ -260,10 +260,10 @@ export function MeetingFormV2({
                 <Field label="Fecha final"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
                 <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaInicio: event.target.value })} /></Field>
                 <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => setRecurrence({ ...recurrence, horaFin: event.target.value })} /></Field>
-                {meetingMode === "HIBRIDA" && requiresAssistance ? (
+                {meetingMode === "HIBRIDA" ? (
                   <>
-                    <Field label="Llegada del asistente"><input type="time" required value={recurrence.horaAsistenciaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value })} /></Field>
-                    <Field label="Salida del asistente"><input type="time" required value={recurrence.horaAsistenciaFin} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value })} /></Field>
+                    <Field label="Llegada del asistente"><input type="time" required={requiresAssistance} value={recurrence.horaAsistenciaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value })} /></Field>
+                    <Field label="Salida del asistente"><input type="time" required={requiresAssistance} value={recurrence.horaAsistenciaFin} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value })} /></Field>
                   </>
                 ) : null}
               </div>
@@ -297,10 +297,10 @@ export function MeetingFormV2({
                     <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
                     <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
                     <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
-                    {meetingMode === "HIBRIDA" && requiresAssistance ? (
+                    {meetingMode === "HIBRIDA" ? (
                       <>
-                        <Field label="Llegada asistente"><input type="time" required value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
-                        <Field label="Salida asistente"><input type="time" required value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
+                        <Field label="Llegada asistente"><input type="time" required={requiresAssistance} value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
+                        <Field label="Salida asistente"><input type="time" required={requiresAssistance} value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
                       </>
                     ) : null}
                     {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
