@@ -73,6 +73,8 @@ export async function GET(request: Request) {
             id: true,
             inicioProgramadoAt: true,
             finProgramadoAt: true,
+            inicioAsistenciaTecnicaAt: true,
+            finAsistenciaTecnicaAt: true,
             solicitud: { select: { titulo: true } }
           }
         }
@@ -92,8 +94,8 @@ export async function GET(request: Request) {
   const assignedList: AsignacionExistente[] = assignments.map(({ instancia }) => ({
     id: instancia.id,
     titulo: instancia.solicitud.titulo,
-    inicio: instancia.inicioProgramadoAt,
-    fin: instancia.finProgramadoAt
+    inicio: instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt,
+    fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt
   }));
 
   const openMeetings = meetings.map((meeting) => {
@@ -101,8 +103,10 @@ export async function GET(request: Request) {
     const teacher = association.docente.usuario;
     const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
+    const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+    const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
     const conflict = evaluarConflictoAsistencia(
-      { inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt },
+      { inicio: inicioAsistencia, fin: finAsistencia },
       assignedList
     );
 
@@ -112,9 +116,11 @@ export async function GET(request: Request) {
       title: meeting.solicitud.titulo,
       program: association.programa.nombre,
       teacher: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
-      modality: meeting.solicitud.modalidad,
+      modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       startsAt: meeting.inicioProgramadoAt.toISOString(),
       endsAt: meeting.finProgramadoAt.toISOString(),
+      assistanceStartsAt: inicioAsistencia.toISOString(),
+      assistanceEndsAt: finAsistencia.toISOString(),
       timezone: meeting.timezone,
       googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
       interested: interest?.estado === "ME_INTERESA",
@@ -123,7 +129,7 @@ export async function GET(request: Request) {
       availabilityDetail: "detalle" in conflict ? conflict.detalle : null,
       durationMinutes: Math.max(
         1,
-        Math.round((meeting.finProgramadoAt.getTime() - meeting.inicioProgramadoAt.getTime()) / 60_000)
+        Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000)
       )
     };
   });
