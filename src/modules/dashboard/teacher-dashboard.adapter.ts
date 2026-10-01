@@ -187,7 +187,7 @@ export async function obtenerDashboardDocente(
         solicitudId: firstMeeting.instance.solicitud.id,
         titulo: firstMeeting.instance.solicitud.titulo,
         programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
-        modalidad: (firstMeeting.instance.modalidadOverride ?? firstMeeting.(instance.modalidadOverride ?? instance.solicitud.modalidad)),
+        modalidad: (firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad),
         inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
         finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
         joinUrl: firstMeeting.meet?.joinUrl ?? null,
