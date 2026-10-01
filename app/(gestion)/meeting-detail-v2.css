@@ -391,6 +391,42 @@
   gap: 14px;
   background: #fbfcfd;
   padding: 11px 16px !important;
+  position: relative;
+}
+
+.encounter-card-v2.is-pasado .encounter-v2-header {
+  background: #f7f8fa;
+}
+
+.encounter-expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  border: 1px solid #d7e0e8;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--brand-strong);
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.encounter-expand-toggle svg {
+  transition: transform 160ms ease;
+}
+
+.encounter-expand-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.encounter-v2-content:not(.is-expanded) {
+  display: none;
+}
+
+.encounter-v2-content.is-expanded {
+  display: block;
 }
 
 .encounter-v2-heading {
@@ -788,6 +824,10 @@
   .encounter-v2-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .encounter-expand-toggle {
+    margin-left: 0;
   }
 
   .encounter-statuses {

@@ -3,6 +3,7 @@
 import {
   CalendarClock,
   CalendarPlus,
+  ChevronDown,
   FolderOpen,
   History,
   LoaderCircle,
@@ -77,6 +78,9 @@ export function MeetingDetailManager({
     type: "MODALIDAD" | "ASISTENCIA";
   }> | null>(null);
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
+    () => new Set(meetings.slice(0, 1).map((meeting) => meeting.id)),
+  );
   const [addingOpen, setAddingOpen] = useState(false);
   const removingAllRef = useRef(false);
   const addSectionRef = useRef<HTMLDetailsElement>(null);
@@ -238,6 +242,15 @@ export function MeetingDetailManager({
   const pasados = filtrarEncuentrosPorVista(meetings, "PASADOS");
   const visibleMeetings = vistaTemporal === "PROXIMOS" ? proximos : pasados;
 
+  function toggleExpanded(id: string): void {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <section className="meeting-encounters-v2" id="encuentros">
       {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
@@ -284,6 +297,7 @@ export function MeetingDetailManager({
         {visibleMeetings.map((meeting) => {
           const editing = editingId === meeting.id;
           const assistance = assistanceLabel(meeting);
+          const expanded = expandedIds.has(meeting.id) || editing || operationalEditor?.id === meeting.id;
           return (
             <article className={`encounter-item encounter-card encounter-card-v2 is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
               <header className="encounter-v2-header">
@@ -306,8 +320,18 @@ export function MeetingDetailManager({
                     {meeting.estado.toLowerCase().replaceAll("_", " ")}
                   </span>
                 </div>
+                <button
+                  aria-expanded={expanded}
+                  className="encounter-expand-toggle"
+                  onClick={() => toggleExpanded(meeting.id)}
+                  type="button"
+                >
+                  <span>{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
+                  <ChevronDown size={16} aria-hidden="true" />
+                </button>
               </header>
 
+              <div className={`encounter-v2-content${expanded ? " is-expanded" : ""}`}>
               {!editing ? (
                 <>
                   <div className="encounter-v2-body">
@@ -415,7 +439,7 @@ export function MeetingDetailManager({
                           <Pencil size={16} />Editar fecha
                         </button>
                       ) : null}
-                      {canManageOperationalOverrides && meeting.temporalidad !== "PASADO" ? (
+                      {canManageOperationalOverrides ? (
                         <>
                           <button
                             className="secondary-action"
@@ -425,14 +449,16 @@ export function MeetingDetailManager({
                           >
                             <Pencil size={16} />Cambiar modalidad
                           </button>
-                          <button
-                            className="secondary-action"
-                            disabled={busy !== null}
-                            onClick={() => setOperationalEditor({ id: meeting.id, type: "ASISTENCIA" })}
-                            type="button"
-                          >
-                            <CalendarClock size={16} />Horario asistente
-                          </button>
+                          {meeting.temporalidad !== "PASADO" ? (
+                            <button
+                              className="secondary-action"
+                              disabled={busy !== null}
+                              onClick={() => setOperationalEditor({ id: meeting.id, type: "ASISTENCIA" })}
+                              type="button"
+                            >
+                              <CalendarClock size={16} />Horario asistente
+                            </button>
+                          ) : null}
                         </>
                       ) : null}
                       {meeting.requiereAsistenciaTecnica ? (
@@ -529,7 +555,9 @@ export function MeetingDetailManager({
                             </button>
                           ) : null}
                           <small>
-                            La reunión/Meet sigue siendo {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}.
+                            {meeting.temporalidad === "PASADO"
+                              ? "Corrección histórica: no modifica el evento de Google Calendar."
+                              : `La reunión/Meet sigue siendo ${meeting.inicio.slice(11, 16)}–${meeting.fin.slice(11, 16)}.`}
                           </small>
                         </form>
                       )}
@@ -555,6 +583,7 @@ export function MeetingDetailManager({
                   </form>
                 </div>
               )}
+              </div>
             </article>
           );
         })}

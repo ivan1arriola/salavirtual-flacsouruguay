@@ -6,6 +6,7 @@ import {
   modalidadEfectivaEncuentro,
   periodoAsistenciaTecnica,
   puedeCambiarAsistenciaEncuentro,
+  puedeCorregirModalidadHistorica,
   puedeGestionarEncuentros,
   resolverEstadoSolicitudPorIntegraciones
 } from "../src/modules/reuniones/encuentros.domain";
@@ -22,6 +23,13 @@ describe("gestión funcional de encuentros", () => {
     expect(puedeGestionarEncuentros("ADMINISTRACION", "a", "d")).toBe(true);
     expect(puedeGestionarEncuentros("DOCENTE", "d", "d")).toBe(true);
     expect(puedeGestionarEncuentros("DOCENTE", "otro", "d")).toBe(false);
+  });
+
+  it("permite a Administración corregir la modalidad de registros históricos no cancelados", () => {
+    expect(puedeCorregirModalidadHistorica("ADMINISTRACION", "FINALIZADA")).toBe(true);
+    expect(puedeCorregirModalidadHistorica("ADMINISTRACION", "PROGRAMADA")).toBe(true);
+    expect(puedeCorregirModalidadHistorica("ADMINISTRACION", "CANCELADA")).toBe(false);
+    expect(puedeCorregirModalidadHistorica("DOCENTE", "FINALIZADA")).toBe(false);
   });
 
   it("permite cambiar asistencia antes y durante el encuentro, pero no después", () => {

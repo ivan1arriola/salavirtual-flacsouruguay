@@ -67,6 +67,13 @@ export function puedeGestionarEncuentros(
     (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
 
+export function puedeCorregirModalidadHistorica(
+  rol: RolUsuario,
+  estado: string,
+): boolean {
+  return rol === "ADMINISTRACION" && estado !== "CANCELADA";
+}
+
 export function puedeCambiarAsistenciaEncuentro(
   estado: string,
   finProgramadoAt: Date,

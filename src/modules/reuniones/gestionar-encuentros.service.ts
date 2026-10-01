@@ -16,6 +16,7 @@ import {
   elegirCuentaHostParaPeriodos,
   modalidadEfectivaEncuentro,
   periodoAsistenciaTecnica,
+  puedeCorregirModalidadHistorica,
 } from "./encuentros.domain";
 import { bloquearReservaSalas, bloquearSolicitudSala } from "./reserva-salas.adapter";
 import { pertenecenAlMismoDia } from "./periodos.domain";
@@ -197,7 +198,11 @@ export async function actualizarEncuentro(
     const actual = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
     if (!actual) throw new NotFoundApiError("El encuentro no existe.");
     await validarGestion(tx, actor, actual.solicitud.docentePrograma.programaId);
-    if (actual.estado !== "PROGRAMADA") throw new ConflictApiError("El encuentro no se puede modificar.");
+    const puedeCorregirModalidad = input.accion === "CAMBIAR_MODALIDAD" &&
+      puedeCorregirModalidadHistorica(actor.rol, actual.estado);
+    if (actual.estado !== "PROGRAMADA" && !puedeCorregirModalidad) {
+      throw new ConflictApiError("El encuentro no se puede modificar.");
+    }
 
     const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
 
