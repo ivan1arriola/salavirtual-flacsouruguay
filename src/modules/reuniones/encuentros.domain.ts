@@ -24,7 +24,19 @@ export const actualizarEncuentroSchema = z.union([
     .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
       message: "La hora de fin debe ser posterior al inicio."
     }),
-  z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistenciaTecnica: z.boolean() })
+  z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistenciaTecnica: z.boolean() }),
+  z.object({
+    accion: z.literal("CAMBIAR_MODALIDAD"),
+    modalidad: z.enum(["HIBRIDA", "VIRTUAL"]).nullable()
+  }),
+  z.object({
+    accion: z.literal("EDITAR_HORARIO_ASISTENCIA"),
+    inicioAsistenciaTecnica: z.coerce.date(),
+    finAsistenciaTecnica: z.coerce.date()
+  }).refine(({ inicioAsistenciaTecnica, finAsistenciaTecnica }) =>
+    finAsistenciaTecnica > inicioAsistenciaTecnica, {
+      message: "La hora de salida del asistente debe ser posterior a la de llegada."
+    })
 ]);
 
 export function puedeGestionarEncuentros(
@@ -109,4 +121,32 @@ export function elegirCuentaHostParaPeriodos(
 
 function seSolapan(left: Periodo, right: Periodo): boolean {
   return left.inicio < right.fin && left.fin > right.inicio;
+}
+
+
+export type ModalidadEncuentro = "HIBRIDA" | "VIRTUAL";
+
+export function modalidadEfectivaEncuentro(
+  modalidadSerie: ModalidadEncuentro,
+  modalidadOverride: ModalidadEncuentro | null | undefined
+): ModalidadEncuentro {
+  return modalidadOverride ?? modalidadSerie;
+}
+
+export function periodoAsistenciaTecnica(
+  encuentro: Readonly<{
+    inicioProgramadoAt: Date;
+    finProgramadoAt: Date;
+    inicioAsistenciaTecnicaAt?: Date | null;
+    finAsistenciaTecnicaAt?: Date | null;
+  }>
+): Readonly<{ inicio: Date; fin: Date; personalizado: boolean }> {
+  const personalizado = Boolean(
+    encuentro.inicioAsistenciaTecnicaAt && encuentro.finAsistenciaTecnicaAt
+  );
+  return {
+    inicio: encuentro.inicioAsistenciaTecnicaAt ?? encuentro.inicioProgramadoAt,
+    fin: encuentro.finAsistenciaTecnicaAt ?? encuentro.finProgramadoAt,
+    personalizado
+  };
 }
