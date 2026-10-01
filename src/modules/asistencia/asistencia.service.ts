@@ -260,6 +260,14 @@ export async function asignarAsistentePostulado(
       throw new Error("El perfil seleccionado no corresponde a un asistente técnico disponible.");
     }
     const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+    if (
+      modalidadEfectiva === "HIBRIDA" &&
+      (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)
+    ) {
+      throw new Error(
+        "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida."
+      );
+    }
     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
     const { tarifa } = await reservarAsistenteDisponible(
