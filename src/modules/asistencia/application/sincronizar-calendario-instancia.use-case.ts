@@ -21,7 +21,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
     instanciaId: meeting.id,
     estado: meeting.estado,
     requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
-    vigente: meeting.finProgramadoAt > now,
+    vigente: (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt) > now,
     asignaciones: meeting.asignaciones,
   });
 
@@ -44,10 +44,13 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
           { serviceAccountEmail, privateKey, subject: cuenta.email },
           {
             id: eventId,
-            titulo: `Asistencia técnica · ${meeting.solicitudTitulo}`,
+            titulo: `${meeting.modalidad === "HIBRIDA" ? "Asistencia técnica presencial" : "Asistencia técnica"} · ${meeting.solicitudTitulo}`,
             descripcion: meeting.descripcion ?? meeting.solicitudDescripcion,
-            inicio: meeting.inicioProgramadoAt,
-            fin: meeting.finProgramadoAt,
+            inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+            fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
+            reunionInicio: meeting.inicioProgramadoAt,
+            reunionFin: meeting.finProgramadoAt,
+            modalidad: meeting.modalidad,
             timezone: meeting.timezone,
             instanciaSalaId: meeting.id,
             programa: meeting.programaNombre,
