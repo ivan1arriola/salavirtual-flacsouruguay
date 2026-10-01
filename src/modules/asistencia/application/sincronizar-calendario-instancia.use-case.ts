@@ -40,26 +40,61 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
 
   return Promise.all([
     ...plan.publicar.map(async ({ cuenta, eventId }) =>
-      ejecutar(cuenta, "PUBLICAR", async () =>
-        provider.publicarEvento(
-          { serviceAccountEmail, privateKey, subject: cuenta.email },
-          {
-            id: eventId,
-            titulo: `${meeting.modalidad === "HIBRIDA" ? "Asistencia técnica presencial" : "Asistencia técnica"} · ${meeting.solicitudTitulo}`,
-            descripcion: meeting.descripcion ?? meeting.solicitudDescripcion,
-            inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
-            fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
-            reunionInicio: meeting.inicioProgramadoAt,
-            reunionFin: meeting.finProgramadoAt,
-            modalidad: meeting.modalidad,
-            timezone: meeting.timezone,
-            instanciaSalaId: meeting.id,
-            programa: meeting.programaNombre,
-            docente: meeting.docenteNombreCompleto,
-            joinUrl: meeting.joinUrl,
-          }
-        )
-      )
+      ejecutar(cuenta, "PUBLICAR", async () => {
+        const credentials = { serviceAccountEmail, privateKey, subject: cuenta.email };
+        const coverageStart = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+        const coverageEnd = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
+        const preparationId = idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "PREPARACION");
+        const closingId = idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE");
+        const common = {
+          descripcion: meeting.descripcion ?? meeting.solicitudDescripcion,
+          reunionInicio: meeting.inicioProgramadoAt,
+          reunionFin: meeting.finProgramadoAt,
+          modalidad: meeting.modalidad,
+          timezone: meeting.timezone,
+          instanciaSalaId: meeting.id,
+          programa: meeting.programaNombre,
+          docente: meeting.docenteNombreCompleto,
+        } as const;
+
+        await provider.publicarEvento(credentials, {
+          ...common,
+          id: eventId,
+          tipo: "REUNION",
+          titulo: `Asistencia técnica · ${meeting.solicitudTitulo}`,
+          inicio: meeting.inicioProgramadoAt,
+          fin: meeting.finProgramadoAt,
+          joinUrl: meeting.joinUrl,
+        });
+
+        if (meeting.modalidad === "HIBRIDA" && coverageStart < meeting.inicioProgramadoAt) {
+          await provider.publicarEvento(credentials, {
+            ...common,
+            id: preparationId,
+            tipo: "PREPARACION",
+            titulo: `Preparación técnica presencial · ${meeting.solicitudTitulo}`,
+            inicio: coverageStart,
+            fin: meeting.inicioProgramadoAt,
+            joinUrl: null,
+          });
+        } else {
+          await provider.eliminarEvento(credentials, preparationId);
+        }
+
+        if (meeting.modalidad === "HIBRIDA" && coverageEnd > meeting.finProgramadoAt) {
+          await provider.publicarEvento(credentials, {
+            ...common,
+            id: closingId,
+            tipo: "CIERRE",
+            titulo: `Cierre técnico presencial · ${meeting.solicitudTitulo}`,
+            inicio: meeting.finProgramadoAt,
+            fin: coverageEnd,
+            joinUrl: null,
+          });
+        } else {
+          await provider.eliminarEvento(credentials, closingId);
+        }
+      })
     ),
     ...plan.eliminar.map(async ({ cuenta, eventId }) =>
       ejecutar(cuenta, "ELIMINAR", async () =>
