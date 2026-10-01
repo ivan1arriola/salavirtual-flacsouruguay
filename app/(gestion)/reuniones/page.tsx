@@ -921,7 +921,7 @@ export default async function ReunionesPage({
                         )}
                       </div>
                       <span className="agenda-modality-chip">
-                        {meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                        {(meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       </span>
                     </div>
 
