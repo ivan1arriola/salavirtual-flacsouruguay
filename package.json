@@ -18,6 +18,7 @@
     "db:add-cese-asistente-tecnico": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-cese-asistente-tecnico.sql",
     "db:add-idempotencia-creacion-reunion": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-idempotencia-creacion-reunion.sql",
     "db:add-descripcion-instancia": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-descripcion-instancia.sql",
+    "db:add-asistencia-hibrida-horarios": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-asistencia-hibrida-horarios.sql",
     "db:add-solicitudes-acceso-google": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-solicitudes-acceso-google.sql",
     "db:studio": "prisma studio",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
