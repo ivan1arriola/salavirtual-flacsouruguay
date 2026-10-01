@@ -27,7 +27,13 @@ export async function obtenerDashboardAsistente(
       where: {
         asistenteTecnicoId: assistant.id,
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: { finProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
+        instancia: {
+          estado: "PROGRAMADA",
+          OR: [
+            { finAsistenciaTecnicaAt: { gte: ahora } },
+            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
+          ]
+        }
       },
       orderBy: { instancia: { inicioProgramadoAt: "asc" } },
       take: 8,
@@ -44,7 +50,13 @@ export async function obtenerDashboardAsistente(
       where: {
         asistenteTecnicoId: assistant.id,
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: { finProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
+        instancia: {
+          estado: "PROGRAMADA",
+          OR: [
+            { finAsistenciaTecnicaAt: { gte: ahora } },
+            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
+          ]
+        }
       }
     }),
     db.instanciaSala.findMany({
@@ -77,9 +89,9 @@ export async function obtenerDashboardAsistente(
       id: meeting.id,
       titulo: meeting.solicitud.titulo,
       programa: meeting.solicitud.docentePrograma.programa.nombre,
-      inicioAt: meeting.inicioProgramadoAt,
-      finAt: meeting.finProgramadoAt,
-      modalidad: meeting.solicitud.modalidad,
+      inicioAt: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+      finAt: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
+      modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada",
       joinUrl: meet?.joinUrl ?? null
     };
