@@ -40,6 +40,7 @@ type Encounter = Readonly<{
   inicioAsistencia: string | null;
   finAsistencia: string | null;
   horarioAsistenciaPersonalizado: boolean;
+  horarioAsistenciaBaseDisponible: boolean;
   asistenteTecnico: string | null;
   postulantes: number;
   organizerAccount: string;
@@ -141,7 +142,7 @@ export function MeetingDetailManager({
     if (
       value &&
       meeting?.modalidad === "HIBRIDA" &&
-      !meeting.horarioAsistenciaPersonalizado &&
+      (!meeting.inicioAsistencia || !meeting.finAsistencia) &&
       canManageOperationalOverrides
     ) {
       setOperationalEditor({ id, type: "ASISTENCIA" });
@@ -181,6 +182,14 @@ export function MeetingDetailManager({
         inicioAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaInicio"),
         finAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaFin")
       })
+    });
+    if (updated) setOperationalEditor(null);
+  }
+
+  async function resetAssistanceSchedule(id: string) {
+    const updated = await request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, {
+      method: "PATCH",
+      body: JSON.stringify({ accion: "RESTABLECER_HORARIO_ASISTENCIA" })
     });
     if (updated) setOperationalEditor(null);
   }
@@ -509,6 +518,16 @@ export function MeetingDetailManager({
                             {busy === meeting.id ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}
                             Guardar solo esta reunión
                           </button>
+                          {meeting.horarioAsistenciaPersonalizado && meeting.horarioAsistenciaBaseDisponible ? (
+                            <button
+                              className="secondary-action"
+                              disabled={busy !== null}
+                              onClick={() => resetAssistanceSchedule(meeting.id)}
+                              type="button"
+                            >
+                              Restablecer horario de la serie
+                            </button>
+                          ) : null}
                           <small>
                             La reunión/Meet sigue siendo {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}.
                           </small>

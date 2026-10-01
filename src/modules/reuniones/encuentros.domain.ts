@@ -54,7 +54,8 @@ export const actualizarEncuentroSchema = z.union([
   }).refine(({ inicioAsistenciaTecnica, finAsistenciaTecnica }) =>
     finAsistenciaTecnica > inicioAsistenciaTecnica, {
       message: "La hora de salida del asistente debe ser posterior a la de llegada."
-    })
+    }),
+  z.object({ accion: z.literal("RESTABLECER_HORARIO_ASISTENCIA") })
 ]);
 
 export function puedeGestionarEncuentros(

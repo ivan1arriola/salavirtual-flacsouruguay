@@ -103,6 +103,12 @@ describe("gestión funcional de encuentros", () => {
     });
   });
 
+  it("acepta restablecer el horario técnico a la configuración de la serie", () => {
+    expect(actualizarEncuentroSchema.safeParse({
+      accion: "RESTABLECER_HORARIO_ASISTENCIA"
+    }).success).toBe(true);
+  });
+
   it("respeta el limite concurrente configurado de una sala", () => {
     const periodo = {
       inicio: new Date("2026-08-03T13:00:00Z"),

@@ -220,6 +220,14 @@ export async function crearReuniones(
 
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
+    const firstAssistance = input.instancias[0];
+    const hasSharedAssistanceSchedule = Boolean(
+      firstAssistance?.asistenciaInicio && firstAssistance.asistenciaFin &&
+      input.instancias.every((instancia) =>
+        instancia.asistenciaInicio?.getTime() === firstAssistance.asistenciaInicio?.getTime() &&
+        instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime()
+      )
+    );
     const solicitud = await tx.solicitudSala.create({
       data: {
         claveIdempotenciaCreacion,
@@ -234,6 +242,8 @@ export async function crearReuniones(
         fechaFinSolicitada: new Date(Math.max(...endTimes)),
         cantidadInstancias: input.instancias.length,
         requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
+        inicioAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaInicio : null,
+        finAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaFin : null,
         requiereGrabacion: input.requiereGrabacion,
         estado: "REGISTRADA",
       },

@@ -242,6 +242,8 @@ model SolicitudSala {
   cantidadInstancias        Int              @default(1)
   capacidadEstimada         Int?
   requiereAsistenciaTecnica Boolean          @default(false)
+  inicioAsistenciaTecnicaAt  DateTime?
+  finAsistenciaTecnicaAt     DateTime?
   motivoAsistenciaTecnica   String?
   requiereGrabacion         Boolean          @default(false)
   regimenEncuentros         String?

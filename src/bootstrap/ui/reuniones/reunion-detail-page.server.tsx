@@ -57,6 +57,8 @@ export default async function ReunionDetailPage({
       select: {
         id: true,
         modalidad: true,
+        inicioAsistenciaTecnicaAt: true,
+        finAsistenciaTecnicaAt: true,
         instancias: {
           orderBy: { inicioProgramadoAt: "asc" },
           include: {
@@ -97,6 +99,8 @@ export default async function ReunionDetailPage({
       ...meeting,
       solicitudId: seriesRequest.id,
       modalidadSerie: seriesRequest.modalidad,
+      inicioAsistenciaBase: seriesRequest.inicioAsistenciaTecnicaAt,
+      finAsistenciaBase: seriesRequest.finAsistenciaTecnicaAt,
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
@@ -165,7 +169,13 @@ export default async function ReunionDetailPage({
         ? toLocalInput(meeting.finAsistenciaTecnicaAt)
         : null,
       horarioAsistenciaPersonalizado: Boolean(
-        meeting.inicioAsistenciaTecnicaAt && meeting.finAsistenciaTecnicaAt
+        meeting.inicioAsistenciaTecnicaAt && meeting.finAsistenciaTecnicaAt &&
+        meeting.inicioAsistenciaBase && meeting.finAsistenciaBase &&
+        (meeting.inicioAsistenciaTecnicaAt.getTime() !== meeting.inicioAsistenciaBase.getTime() ||
+          meeting.finAsistenciaTecnicaAt.getTime() !== meeting.finAsistenciaBase.getTime())
+      ),
+      horarioAsistenciaBaseDisponible: Boolean(
+        meeting.inicioAsistenciaBase && meeting.finAsistenciaBase
       ),
       asistenteTecnico: assignment
         ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim()

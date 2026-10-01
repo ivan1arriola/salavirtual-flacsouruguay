@@ -432,6 +432,60 @@ export async function actualizarEncuentro(
       return { eventoProveedorIds: [] };
     }
 
+    if (input.accion === "RESTABLECER_HORARIO_ASISTENCIA") {
+      if (actor.rol !== "ADMINISTRACION") {
+        throw new ForbiddenApiError("Solo Administración puede restablecer el horario de asistencia técnica.");
+      }
+      const inicioAsistenciaTecnica = actual.solicitud.inicioAsistenciaTecnicaAt;
+      const finAsistenciaTecnica = actual.solicitud.finAsistenciaTecnicaAt;
+      if (!inicioAsistenciaTecnica || !finAsistenciaTecnica) {
+        throw new ConflictApiError("Esta serie no tiene un horario base de asistencia técnica para restablecer.");
+      }
+      const modalidad = modalidadEfectivaEncuentro(
+        actual.solicitud.modalidad,
+        actual.modalidadOverride,
+      );
+      validarHorarioAsistenciaTecnica({
+        inicioEncuentro: actual.inicioProgramadoAt,
+        finEncuentro: actual.finProgramadoAt,
+        inicioAsistencia: inicioAsistenciaTecnica,
+        finAsistencia: finAsistenciaTecnica,
+        modalidad,
+        requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica,
+        timezone: actual.timezone,
+      });
+
+      const asignacion = await tx.asignacionAsistenciaTecnica.findFirst({
+        where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+        select: { asistenteTecnicoId: true },
+      });
+      if (asignacion) {
+        await reservarAsistenteDisponible(
+          tx,
+          asignacion.asistenteTecnicoId,
+          modalidad,
+          [{ inicio: inicioAsistenciaTecnica, fin: finAsistenciaTecnica }],
+          actual.id,
+        );
+      }
+
+      await tx.instanciaSala.update({
+        where: { id: actual.id },
+        data: {
+          inicioAsistenciaTecnicaAt: inicioAsistenciaTecnica,
+          finAsistenciaTecnicaAt: finAsistenciaTecnica,
+        },
+      });
+      await auditar(tx, actor.id, "HORARIO_ASISTENCIA_TECNICA_RESTABLECIDO", actual.id, {
+        inicio: actual.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
+        fin: actual.finAsistenciaTecnicaAt?.toISOString() ?? null,
+      }, {
+        inicio: inicioAsistenciaTecnica.toISOString(),
+        fin: finAsistenciaTecnica.toISOString(),
+      });
+      return { eventoProveedorIds: [] };
+    }
+
     if (input.accion !== "CAMBIAR_ASISTENCIA") {
       throw new ValidationApiError("La acción del encuentro no pudo ser procesada.");
     }
