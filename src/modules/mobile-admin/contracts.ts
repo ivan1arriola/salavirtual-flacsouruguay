@@ -6,8 +6,11 @@ export type AdminMeeting = Readonly<{
   program: string;
   teacher: string;
   modality: string;
+  modalityCustomized: boolean;
   startsAt: string;
   endsAt: string;
+  assistanceStartsAt: string | null;
+  assistanceEndsAt: string | null;
   timezone: string;
   state: string;
   requiresAssistance: boolean;
