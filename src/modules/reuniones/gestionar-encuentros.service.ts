@@ -432,6 +432,9 @@ export async function actualizarEncuentro(
       return { eventoProveedorIds: [] };
     }
 
+    if (input.accion !== "CAMBIAR_ASISTENCIA") {
+      throw new ValidationApiError("La acción del encuentro no pudo ser procesada.");
+    }
     if (input.requiereAsistenciaTecnica) {
       validarHorarioAsistenciaTecnica({
         inicioEncuentro: actual.inicioProgramadoAt,
