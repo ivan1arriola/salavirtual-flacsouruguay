@@ -257,7 +257,7 @@ export async function obtenerReunionOperativa(
       titulo: meeting.solicitud.titulo,
       programa: association.programa.nombre,
       docente: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
-      modalidad: meeting.solicitud.modalidad,
+      modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad),
       inicioProgramadoAt: meeting.inicioProgramadoAt,
       finProgramadoAt: meeting.finProgramadoAt,
       estado,
