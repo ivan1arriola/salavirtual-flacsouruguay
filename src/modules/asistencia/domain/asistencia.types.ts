@@ -91,6 +91,8 @@ export type AssignmentSuggestionInput = Readonly<{
       id: string;
       inicioProgramadoAt: Date;
       finProgramadoAt: Date;
+      inicioAsistenciaTecnicaAt?: Date | null;
+      finAsistenciaTecnicaAt?: Date | null;
       timezone: string;
       postulaciones: readonly Readonly<{ asistenteTecnico: { id: string } }>[];
     };
