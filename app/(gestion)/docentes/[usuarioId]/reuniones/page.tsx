@@ -78,7 +78,7 @@ export default async function ReunionesDocentePage({
                     <tr key={meeting.id}>
                       <td className="date-cell">{formatDate(meeting.inicioProgramadoAt)}</td>
                       <td className="time-cell">{formatTime(meeting.inicioProgramadoAt)}</td>
-                      <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link><small>{meeting.solicitud.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</small></td>
+                      <td><Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link><small>{(meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual"}</small></td>
                       <td>{meeting.solicitud.docentePrograma.programa.nombre}</td>
                       <td><span className={`status status-${statusTone(meeting.estado)}`}>{statusLabel(meeting.estado)}</span></td>
                       <td>{assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : meeting.requiereAsistenciaTecnica ? <span className="status status-warning">Pendiente</span> : <span className="muted-text">No requiere</span>}</td>
