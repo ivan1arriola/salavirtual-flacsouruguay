@@ -64,7 +64,7 @@ function construirPayloadEvento(
     event.docente ? `Docente: ${event.docente}` : null,
     `Modalidad: ${event.modalidad === "HIBRIDA" ? "Híbrida / presencial" : "Virtual"}`,
     `Horario de la reunión/Meet: ${formatHora(event.reunionInicio, event.timezone)}–${formatHora(event.reunionFin, event.timezone)}`,
-    `Horario de asistencia técnica: ${formatHora(event.inicio, event.timezone)}–${formatHora(event.fin, event.timezone)}`,
+    descripcionSegmento(event),
     event.joinUrl ? `Google Meet: ${event.joinUrl}` : null,
     "Asignación de asistencia técnica gestionada por Sala Virtual FLACSO.",
   ]
@@ -91,6 +91,13 @@ function construirPayloadEvento(
       },
     },
   };
+}
+
+function descripcionSegmento(event: EventoCalendarioAsistente): string {
+  const horario = `${formatHora(event.inicio, event.timezone)}–${formatHora(event.fin, event.timezone)}`;
+  if (event.tipo === "PREPARACION") return `Trabajo presencial previo: ${horario}`;
+  if (event.tipo === "CIERRE") return `Trabajo presencial posterior: ${horario}`;
+  return `Cobertura durante la reunión: ${horario}`;
 }
 
 function esErrorConflicto(error: unknown): boolean {
