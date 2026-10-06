@@ -65,6 +65,8 @@ export type ReunionOperativaView = Readonly<{
     asistente: string | null;
     asignacionId: string | null;
     cierreConfirmado: boolean;
+    inicioAt: Date;
+    finAt: Date;
   }>;
   artefactos: Readonly<{
     grabaciones: number;
@@ -292,7 +294,9 @@ export async function obtenerReunionOperativa(
           ? [assistant.nombres, assistant.apellidos].filter(Boolean).join(" ")
           : null,
         asignacionId: assignment?.id ?? null,
-        cierreConfirmado: assignment?.minutosConfirmados != null
+        cierreConfirmado: assignment?.minutosConfirmados != null,
+        inicioAt: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
+        finAt: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
       },
       artefactos: {
         grabaciones,
