@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantMeetingsTable } from "@/src/modules/asistencia/presentation/components/assistant-meetings-table";
 import { AssistantMonthList } from "@/src/modules/asistencia/presentation/components/assistant-month-list";
+import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -234,19 +235,27 @@ export default async function MiAgendaPage({
                         </div>
 
                         <div className="assistant-agenda-action">
-                          <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
-                            <Activity size={15} aria-hidden="true" />
-                            Operar
-                          </Link>
-                          {meet?.joinUrl ? (
-                            <MeetLinkActions
-                              className="assistant-agenda-link-actions"
-                              openClassName="assistant-agenda-open-meet"
-                              url={meet.joinUrl}
+                          <div className="assistant-agenda-primary-actions">
+                            <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+                              <Activity size={15} aria-hidden="true" />
+                              Operar
+                            </Link>
+                            {meet?.joinUrl ? (
+                              <MeetLinkActions
+                                className="assistant-agenda-link-actions"
+                                openClassName="assistant-agenda-open-meet"
+                                url={meet.joinUrl}
+                              />
+                            ) : (
+                              <span className="status status-warning">Meet pendiente</span>
+                            )}
+                          </div>
+                          {inicioAsistencia.getTime() > ahora.getTime() ? (
+                            <AssistantSelfUnassignButton
+                              assignmentId={assignment.id}
+                              title={meeting.solicitud.titulo}
                             />
-                          ) : (
-                            <span className="status status-warning">Meet pendiente</span>
-                          )}
+                          ) : null}
                         </div>
                       </article>
                     );
