@@ -302,7 +302,62 @@
 .assistant-agenda-action {
   min-width: 0;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.assistant-agenda-primary-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 7px;
+}
+
+.assistant-self-unassign-action {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.assistant-self-unassign-button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #e2b7b7;
+  border-radius: 8px;
+  background: #fffafa;
+  color: #8d3030;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.assistant-self-unassign-button:hover:not(:disabled) {
+  border-color: #c98282;
+  background: #fff2f2;
+}
+
+.assistant-self-unassign-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.assistant-self-unassign-button:focus-visible {
+  outline: 3px solid rgba(141, 48, 48, 0.16);
+  outline-offset: 2px;
+}
+
+.assistant-self-unassign-action .assistant-action-error {
+  max-width: 240px;
+  color: #8d3030;
+  font-size: 0.68rem;
+  text-align: right;
 }
 
 .assistant-agenda-link-actions {
@@ -368,11 +423,20 @@
 
   .assistant-agenda-action {
     grid-column: 2 / -1;
+    align-items: flex-start;
+  }
+
+  .assistant-agenda-primary-actions,
+  .assistant-agenda-link-actions {
     justify-content: flex-start;
   }
 
-  .assistant-agenda-link-actions {
-    justify-content: flex-start;
+  .assistant-self-unassign-action {
+    justify-items: start;
+  }
+
+  .assistant-self-unassign-action .assistant-action-error {
+    text-align: left;
   }
 }
 
@@ -456,8 +520,23 @@
   }
 
   .assistant-agenda-action,
-  .assistant-agenda-link-actions {
+  .assistant-agenda-primary-actions,
+  .assistant-agenda-link-actions,
+  .assistant-self-unassign-action {
     width: 100%;
+  }
+
+  .assistant-agenda-primary-actions {
+    align-items: stretch;
+  }
+
+  .assistant-self-unassign-button {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .assistant-self-unassign-action .assistant-action-error {
+    max-width: none;
   }
 
   .assistant-agenda-link-actions .assistant-agenda-open-meet,
@@ -481,10 +560,12 @@
     margin-left: 0;
   }
 
+  .assistant-agenda-primary-actions,
   .assistant-agenda-link-actions {
     flex-direction: column;
   }
 
+  .assistant-agenda-primary-actions > .secondary-action,
   .assistant-agenda-link-actions .assistant-agenda-open-meet,
   .assistant-agenda-link-actions .copy-meet-button {
     width: 100%;
