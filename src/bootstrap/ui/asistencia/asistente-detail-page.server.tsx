@@ -2,10 +2,12 @@ import { ArrowLeft, UserRoundCog } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AssistantAdminControls } from "@/src/modules/asistencia/presentation/components/assistant-admin-controls";
 import { AssistantHistory } from "@/src/modules/asistencia/presentation/components/assistant-history";
 import { AssistantMeetingsTable } from "@/src/modules/asistencia/presentation/components/assistant-meetings-table";
 import { AssistantPeriodNav } from "@/src/modules/asistencia/presentation/components/assistant-period-nav";
 import { db } from "@/src/lib/db";
+import { formatDateTime } from "@/src/lib/ui/format";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
 import { userIdFromAssistantPath } from "@/src/lib/ui/assistant-route";
 import { obtenerHistorialAsistenteEnRango } from "@/src/modules/asistencia/historial-asistente.adapter";
@@ -35,9 +37,19 @@ export default async function AsistenteDetailPage({
   if (!assistant) notFound();
   const usuarioId = assistant.usuarioId;
   const range = { desde: new Date(period.desdeMs), hasta: new Date(period.hastaMs) };
-  const [meetings, history] = await Promise.all([
+  const [meetings, history, futureAssignments] = await Promise.all([
     obtenerAsistenciasEnRango(db, usuarioId, range),
     obtenerHistorialAsistenteEnRango(db, usuarioId, range),
+    db.asignacionAsistenciaTecnica.count({
+      where: {
+        asistenteTecnicoId: assistant.id,
+        estado: { in: ["ASIGNADO", "ACEPTADO"] },
+        instancia: {
+          estado: "PROGRAMADA",
+          finProgramadoAt: { gte: new Date() }
+        }
+      }
+    })
   ]);
   const summary = resumirAsistencias(meetings);
   const missingRates = meetings.filter(({ monto }) => monto === null).length;
@@ -60,6 +72,16 @@ export default async function AsistenteDetailPage({
           <Link className="secondary-action" href={`/usuarios/${encodeURIComponent(usuarioId)}`}><UserRoundCog size={17} />Gestionar usuario</Link>
         </div>
       </header>
+
+      <AssistantAdminControls
+        usuarioId={usuarioId}
+        usuarioActivo={assistant.usuario.activo}
+        disponibleGeneral={assistant.disponibleGeneral}
+        cesadoHastaProximoInicioSesion={assistant.cesadoHastaProximoInicioSesion}
+        ultimoAcceso={assistant.usuario.ultimoAccesoAt ? formatDateTime(assistant.usuario.ultimoAccesoAt) : null}
+        cuentasGoogle={assistant.usuario.cuentasGoogle.length}
+        asignacionesFuturas={futureAssignments}
+      />
 
       <section className="metric-grid" aria-label="Resumen del asistente técnico">
         <div className="stat"><span>Reuniones asignadas</span><strong>{summary.reuniones}</strong></div>
