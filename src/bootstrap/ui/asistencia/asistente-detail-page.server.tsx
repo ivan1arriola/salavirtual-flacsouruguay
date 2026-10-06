@@ -28,11 +28,11 @@ export default async function AsistenteDetailPage({
   const period = resolverPeriodoMes(query.mes, new Date());
   const assistantBySlug = await db.asistenteTecnico.findUnique({
     where: { slug: pathSegment },
-    include: { usuario: true }
+    include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
   });
   const assistant = assistantBySlug ?? await db.asistenteTecnico.findUnique({
     where: { usuarioId: userIdFromAssistantPath(pathSegment) },
-    include: { usuario: true }
+    include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
   });
   if (!assistant) notFound();
   const usuarioId = assistant.usuarioId;
