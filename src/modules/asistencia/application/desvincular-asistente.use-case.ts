@@ -14,8 +14,10 @@ export async function desvincularAsistenteUseCase(
   actor: SessionActor,
   rawInput: unknown
 ) {
-  if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede desvincular asistentes técnicos.");
+  const puedeDesvincular =
+    puedeAsignarAsistencia(actor.rol) || actor.rol === "ASISTENTE_TECNICO";
+  if (!puedeDesvincular || !actor.activo) {
+    throw new Error("No tenés permisos para desvincular esta asistencia técnica.");
   }
   const input = desvinculacionAsistenciaSchema.parse(rawInput);
 
