@@ -106,6 +106,45 @@ describe("asistencia application", () => {
       expect(res.estado).toBe("CANCELADO");
       expect(mockRepo.desvincularAsistente).toHaveBeenCalledWith("asig-1", "admin-1");
     });
+
+    it("permite al asistente técnico solicitar su propia baja", async () => {
+      const mockRepo: Partial<AsistenciaRepositoryPort> = {
+        desvincularAsistente: vi.fn().mockResolvedValue({
+          id: "asig-1",
+          instanciaSalaId: "inst-1",
+          asistenteTecnicoId: "asist-1",
+          estado: "CANCELADO",
+          asistenteUsuarioId: "u-1",
+          asistenteEmail: "ana@flacso.edu.uy",
+          googleAccountIds: []
+        })
+      };
+      const actor = { id: "u-1", rol: "ASISTENTE_TECNICO", activo: true };
+
+      const res = await desvincularAsistenteUseCase(
+        { repo: mockRepo as AsistenciaRepositoryPort },
+        actor,
+        { asignacionId: "asig-1" }
+      );
+
+      expect(res.estado).toBe("CANCELADO");
+      expect(mockRepo.desvincularAsistente).toHaveBeenCalledWith("asig-1", "u-1");
+    });
+
+    it("rechaza la desvinculación para otros roles", async () => {
+      const mockRepo: Partial<AsistenciaRepositoryPort> = {
+        desvincularAsistente: vi.fn()
+      };
+
+      await expect(
+        desvincularAsistenteUseCase(
+          { repo: mockRepo as AsistenciaRepositoryPort },
+          { id: "doc-1", rol: "DOCENTE", activo: true },
+          { asignacionId: "asig-1" }
+        )
+      ).rejects.toThrow("No tenés permisos para desvincular esta asistencia técnica.");
+      expect(mockRepo.desvincularAsistente).not.toHaveBeenCalled();
+    });
   });
 
   describe("reportar duracion y disponibilidad", () => {
