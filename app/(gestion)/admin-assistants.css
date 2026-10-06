@@ -372,3 +372,22 @@
     border-bottom: 0;
   }
 }
+
+
+.assistant-user-statuses {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .assistant-user-statuses {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assistant-user-statuses .status {
+    justify-content: center;
+  }
+}
