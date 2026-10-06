@@ -1,16 +1,31 @@
 import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 
-export async function cesarAsistenteTecnicoHastaProximoInicioSesion(
+export type EstadoOperativoAsistenteInput = Readonly<{
+  disponibleGeneral?: boolean;
+  cesadoHastaProximoInicioSesion?: boolean;
+}>;
+
+export async function actualizarEstadoOperativoAsistente(
   db: PrismaClient,
   actor: SessionActor,
-  usuarioId: string
-): Promise<void> {
+  usuarioId: string,
+  input: EstadoOperativoAsistenteInput
+): Promise<Readonly<{
+  disponibleGeneral: boolean;
+  cesadoHastaProximoInicioSesion: boolean;
+}>> {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
-    throw new Error("Solo Administración puede cesar asistentes técnicos.");
+    throw new Error("Solo Administración puede gestionar asistentes técnicos.");
+  }
+  if (
+    typeof input.disponibleGeneral !== "boolean"
+    && typeof input.cesadoHastaProximoInicioSesion !== "boolean"
+  ) {
+    throw new Error("No se indicó ningún cambio operativo.");
   }
 
-  await db.$transaction(async (tx) => {
+  return db.$transaction(async (tx) => {
     const [actorActual, usuario] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
@@ -22,7 +37,11 @@ export async function cesarAsistenteTecnicoHastaProximoInicioSesion(
           id: true,
           rol: true,
           asistenteTecnico: {
-            select: { id: true, cesadoHastaProximoInicioSesion: true }
+            select: {
+              id: true,
+              disponibleGeneral: true,
+              cesadoHastaProximoInicioSesion: true
+            }
           }
         }
       })
@@ -34,22 +53,60 @@ export async function cesarAsistenteTecnicoHastaProximoInicioSesion(
     if (!usuario || usuario.rol !== "ASISTENTE_TECNICO" || !usuario.asistenteTecnico) {
       throw new Error("El usuario no corresponde a un asistente técnico.");
     }
-    if (usuario.asistenteTecnico.cesadoHastaProximoInicioSesion) return;
+
+    const anterior = {
+      disponibleGeneral: usuario.asistenteTecnico.disponibleGeneral,
+      cesadoHastaProximoInicioSesion: usuario.asistenteTecnico.cesadoHastaProximoInicioSesion
+    };
+    const siguiente = {
+      disponibleGeneral: input.disponibleGeneral ?? anterior.disponibleGeneral,
+      cesadoHastaProximoInicioSesion:
+        input.cesadoHastaProximoInicioSesion ?? anterior.cesadoHastaProximoInicioSesion
+    };
+
+    if (
+      anterior.disponibleGeneral === siguiente.disponibleGeneral
+      && anterior.cesadoHastaProximoInicioSesion === siguiente.cesadoHastaProximoInicioSesion
+    ) {
+      return siguiente;
+    }
 
     await tx.asistenteTecnico.update({
       where: { id: usuario.asistenteTecnico.id },
-      data: { cesadoHastaProximoInicioSesion: true }
+      data: siguiente
     });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actorActual.id,
-        accion: "ASISTENTE_TECNICO_CESADO_HASTA_LOGIN",
+        accion: "ASISTENTE_TECNICO_ESTADO_OPERATIVO_ACTUALIZADO",
         entidadTipo: "AsistenteTecnico",
         entidadId: usuario.asistenteTecnico.id,
-        valorAnterior: { cesadoHastaProximoInicioSesion: false },
-        valorNuevo: { cesadoHastaProximoInicioSesion: true }
+        valorAnterior: anterior,
+        valorNuevo: siguiente
       }
     });
+
+    return siguiente;
+  });
+}
+
+export async function cesarAsistenteTecnicoHastaProximoInicioSesion(
+  db: PrismaClient,
+  actor: SessionActor,
+  usuarioId: string
+): Promise<void> {
+  await actualizarEstadoOperativoAsistente(db, actor, usuarioId, {
+    cesadoHastaProximoInicioSesion: true
+  });
+}
+
+export async function reactivarAsistenteTecnicoAhora(
+  db: PrismaClient,
+  actor: SessionActor,
+  usuarioId: string
+): Promise<void> {
+  await actualizarEstadoOperativoAsistente(db, actor, usuarioId, {
+    cesadoHastaProximoInicioSesion: false
   });
 }
 
