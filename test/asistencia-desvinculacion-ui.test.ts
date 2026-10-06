@@ -47,6 +47,14 @@ describe("flujo administrativo de desvinculación", () => {
     expect(agenda).toContain("inicioAsistencia.getTime() > ahora.getTime()");
   });
 
+  it("muestra la baja voluntaria también desde la consola operativa", () => {
+    const operationPage = source("src/bootstrap/ui/reuniones/reunion-operativa-page.server.tsx");
+    expect(operationPage).toContain("AssistantSelfUnassignButton");
+    expect(operationPage).toContain("canSelfUnassign");
+    expect(operationPage).toContain("reunion.asistencia.inicioAt.getTime()");
+    expect(operationPage).toContain('className="meeting-detail-v2 operational-console"');
+  });
+
   it("muestra el historial operativo en el detalle administrativo", () => {
     const historyPath = filePath("src/modules/asistencia/presentation/components/assistant-history.tsx");
     expect(existsSync(historyPath)).toBe(true);
