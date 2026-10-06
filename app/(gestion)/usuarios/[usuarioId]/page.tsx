@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, UserRoundX } from "lucide-react";
+import { ArrowLeft, SlidersHorizontal, Trash2, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -32,7 +32,7 @@ export default async function UsuarioPage({
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
         docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } },
-        asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } }
+        asistenteTecnico: { select: { slug: true, disponibleGeneral: true, cesadoHastaProximoInicioSesion: true } }
       }
     }),
     db.programa.findMany({
@@ -79,15 +79,23 @@ export default async function UsuarioPage({
                 <p>El cese temporal excluye a la persona de notificaciones, postulaciones y algoritmos de asignación hasta que vuelva a iniciar sesión.</p>
               </div>
             </div>
-            <div>
+            <div className="assistant-user-statuses">
               <span className={`status ${user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "status-warning" : "status-ok"}`}>
-                {user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "Cesado hasta próximo inicio" : "Disponible para operar"}
+                {user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "Cesado hasta próximo inicio" : "Sin cese temporal"}
+              </span>
+              <span className={`status ${user.asistenteTecnico.disponibleGeneral ? "status-ok" : "status-warning"}`}>
+                {user.asistenteTecnico.disponibleGeneral ? "Recibe asignaciones" : "Asignaciones pausadas"}
               </span>
             </div>
             <form action={cesarAsistenteUsuario}>
               <input name="usuarioId" type="hidden" value={user.id} />
               <footer className="form-actions">
-                <span className="muted-text">Las asignaciones existentes no se cancelan.</span>
+                <Link
+                  className="secondary-action"
+                  href={`/asistentes/${encodeURIComponent(user.asistenteTecnico.slug)}`}
+                >
+                  <SlidersHorizontal size={17} />Control operativo
+                </Link>
                 <button
                   className="secondary-action"
                   disabled={user.asistenteTecnico.cesadoHastaProximoInicioSesion}

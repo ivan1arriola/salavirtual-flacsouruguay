@@ -169,3 +169,225 @@
     gap: 5px;
   }
 }
+
+
+/* Controles administrativos de asistentes técnicos */
+.assistant-admin-filter {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, auto) auto;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.assistant-admin-filter > label {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  padding-left: 4px;
+}
+
+.assistant-admin-filter input,
+.assistant-admin-filter select {
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+}
+
+.assistant-admin-filter > label input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+}
+
+.assistant-admin-controls {
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.assistant-admin-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.assistant-admin-status-grid article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border-right: 1px solid var(--line);
+  padding: 12px 14px;
+}
+
+.assistant-admin-status-grid article:last-child {
+  border-right: 0;
+}
+
+.assistant-admin-status-grid article > svg {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--brand-soft, #edf1f7);
+  color: var(--brand-strong);
+  padding: 6px;
+}
+
+.assistant-admin-status-grid article div {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.assistant-admin-status-grid span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.assistant-admin-status-grid strong {
+  min-width: 0;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.assistant-admin-control-rows {
+  display: grid;
+}
+
+.assistant-admin-control-rows > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid #e9edf1;
+  padding: 14px 16px;
+}
+
+.assistant-admin-control-rows > div:last-child {
+  border-bottom: 0;
+}
+
+.assistant-admin-control-rows > div > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.assistant-admin-control-rows strong {
+  font-size: 0.86rem;
+}
+
+.assistant-admin-control-rows span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.assistant-admin-control-rows button {
+  min-width: 190px;
+}
+
+.assistant-admin-control-message {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--text-secondary);
+  padding: 9px 16px;
+  font-size: 0.75rem;
+}
+
+.assistants-summary-table td:nth-child(2) .status {
+  white-space: normal;
+}
+
+@media (max-width: 900px) {
+  .assistant-admin-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assistant-admin-status-grid article:nth-child(2) {
+    border-right: 0;
+  }
+
+  .assistant-admin-status-grid article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 760px) {
+  .assistant-admin-filter {
+    grid-template-columns: 1fr;
+    padding: 9px;
+  }
+
+  .assistant-admin-filter > label {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0 8px;
+  }
+
+  .assistant-admin-filter select,
+  .assistant-admin-filter button {
+    width: 100%;
+  }
+
+  .assistant-admin-control-rows > div {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .assistant-admin-control-rows button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .assistant-admin-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assistant-admin-status-grid article,
+  .assistant-admin-status-grid article:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .assistant-admin-status-grid article:last-child {
+    border-bottom: 0;
+  }
+}
+
+
+.assistant-user-statuses {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .assistant-user-statuses {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assistant-user-statuses .status {
+    justify-content: center;
+  }
+}
