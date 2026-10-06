@@ -304,15 +304,18 @@ export function crearPrismaAsistenciaRepositoryAdapter(
 
     async desvincularAsistente(
       asignacionId: string,
-      adminUsuarioId: string
+      actorUsuarioId: string
     ): Promise<AsignacionRow> {
       return db.$transaction(async (tx) => {
-        const admin = await tx.usuario.findUnique({
-          where: { id: adminUsuarioId },
+        const actor = await tx.usuario.findUnique({
+          where: { id: actorUsuarioId },
           select: { id: true, activo: true, rol: true }
         });
-        if (!admin?.activo || admin.rol !== "ADMINISTRACION") {
-          throw new Error("La sesión de Administración ya no es válida.");
+        if (
+          !actor?.activo ||
+          !["ADMINISTRACION", "ASISTENTE_TECNICO"].includes(actor.rol)
+        ) {
+          throw new Error("La sesión ya no tiene permisos para modificar esta asignación.");
         }
 
         const assignment = await tx.asignacionAsistenciaTecnica.findUnique({
@@ -323,6 +326,12 @@ export function crearPrismaAsistenciaRepositoryAdapter(
             asistenteTecnicoId: true,
             estado: true,
             detallesLiquidacion: { select: { id: true }, take: 1 },
+            instancia: {
+              select: {
+                inicioProgramadoAt: true,
+                inicioAsistenciaTecnicaAt: true
+              }
+            },
             asistenteTecnico: {
               select: {
                 usuarioId: true,
@@ -340,6 +349,17 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         if (!assignment || !ACTIVE_ASSIGNMENTS.includes(assignment.estado as any)) {
           throw new Error("La asignación ya no está activa.");
         }
+
+        const esBajaPropia = actor.rol === "ASISTENTE_TECNICO";
+        if (esBajaPropia && assignment.asistenteTecnico.usuarioId !== actor.id) {
+          throw new Error("Solo podés darte de baja de tus propias asignaciones.");
+        }
+        const inicioAsistencia =
+          assignment.instancia.inicioAsistenciaTecnicaAt ??
+          assignment.instancia.inicioProgramadoAt;
+        if (esBajaPropia && inicioAsistencia <= new Date()) {
+          throw new Error("No podés darte de baja una vez iniciado el monitoreo.");
+        }
         if (assignment.detallesLiquidacion.length > 0) {
           throw new Error("No se puede desvincular una asignación incluida en una liquidación.");
         }
@@ -349,6 +369,17 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           data: { estado: "CANCELADO" },
           select: { id: true, instanciaSalaId: true, estado: true, asistenteTecnicoId: true }
         });
+
+        if (esBajaPropia) {
+          await tx.postulacionAsistenciaTecnica.updateMany({
+            where: {
+              instanciaSalaId: assignment.instanciaSalaId,
+              asistenteTecnicoId: assignment.asistenteTecnicoId,
+              estado: "ME_INTERESA"
+            },
+            data: { estado: "RETIRADO" }
+          });
+        }
 
         const googleIds = assignment.asistenteTecnico.usuario.cuentasGoogle.map(({ id }) => id);
         if (googleIds.length > 0) {
@@ -370,7 +401,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
 
         await tx.auditoria.create({
           data: {
-            actorUsuarioId: adminUsuarioId,
+            actorUsuarioId: actor.id,
             accion: "ASISTENTE_DESVINCULADO",
             entidadTipo: "InstanciaSala",
             entidadId: assignment.instanciaSalaId,
@@ -380,7 +411,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(
             },
             valorNuevo: {
               asistenteTecnicoId: assignment.asistenteTecnicoId,
-              estado: "CANCELADO"
+              estado: "CANCELADO",
+              origen: esBajaPropia ? "BAJA_VOLUNTARIA" : "ADMINISTRACION"
             }
           }
         });

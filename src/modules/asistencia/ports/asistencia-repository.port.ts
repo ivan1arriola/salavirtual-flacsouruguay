@@ -70,7 +70,7 @@ export type AsistenciaRepositoryPort = Readonly<{
     asistenteTecnicoId: string,
     adminUsuarioId: string
   ): Promise<AsignacionRow>;
-  desvincularAsistente(asignacionId: string, adminUsuarioId: string): Promise<AsignacionRow>;
+  desvincularAsistente(asignacionId: string, actorUsuarioId: string): Promise<AsignacionRow>;
   reportarDuracion(input: ReportarDuracionInput, ahora?: Date): Promise<void>;
   actualizarDisponibilidad(usuarioId: string, input: DisponibilidadSemanalInput): Promise<void>;
   obtenerAsistenciasPersonales(
