@@ -73,7 +73,14 @@ export async function actualizarEstadoOperativoAsistente(
 
     await tx.asistenteTecnico.update({
       where: { id: usuario.asistenteTecnico.id },
-      data: siguiente
+      data: {
+        ...(typeof input.disponibleGeneral === "boolean"
+          ? { disponibleGeneral: input.disponibleGeneral }
+          : {}),
+        ...(typeof input.cesadoHastaProximoInicioSesion === "boolean"
+          ? { cesadoHastaProximoInicioSesion: input.cesadoHastaProximoInicioSesion }
+          : {})
+      }
     });
     await tx.auditoria.create({
       data: {
