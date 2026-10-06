@@ -15,6 +15,7 @@ import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
+import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -41,35 +42,75 @@ export default async function ReunionOperativaPage({
 
   const reunion = result.reunion;
   const active = reunion.conferencia.participantesActivos;
+  const backHref = actor.rol === "ASISTENTE_TECNICO" ? "/mi-agenda" : "/";
+  const backLabel = actor.rol === "ASISTENTE_TECNICO" ? "Volver a mi agenda" : "Volver al dashboard";
+  const canSelfUnassign =
+    actor.rol === "ASISTENTE_TECNICO"
+    && Boolean(reunion.asistencia.asignacionId)
+    && reunion.asistencia.inicioAt.getTime() > reunion.actualizadoAt.getTime();
 
   return (
-    <div className="meeting-detail-v2">
-      <div className="section-heading">
-        <Link className="meeting-detail-back" href="/">
+    <div className="meeting-detail-v2 operational-console">
+      <div className="operational-toolbar">
+        <Link className="meeting-detail-back" href={backHref}>
           <ArrowLeft size={15} aria-hidden="true" />
-          Volver al dashboard
+          {backLabel}
         </Link>
-        <div className="encounter-card-actions">
+        <div className="operational-refresh">
           <OperationalAutoRefresh enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"} />
           <RefreshButton />
         </div>
       </div>
 
-      <header className="page-header">
-        <div>
-          <p className="page-eyebrow">{reunion.programa}</p>
+      <section className="operational-hero">
+        <div className="operational-hero-copy">
+          <div className="operational-hero-topline">
+            <p className="page-eyebrow">{reunion.programa}</p>
+            <span className={`status ${statusClass(reunion.estado)}`}>
+              {estadoLabel(reunion.estado)}
+            </span>
+          </div>
           <h1>{reunion.titulo}</h1>
-          <p>
-            {reunion.docente} · {formatDate(reunion.inicioProgramadoAt)} ·{" "}
-            {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}
-          </p>
+          <div className="operational-hero-meta">
+            <span>{reunion.docente}</span>
+            <span>{formatDate(reunion.inicioProgramadoAt)}</span>
+            <span>{formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
+            <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+          </div>
+          {reunion.asistencia.requerida ? (
+            <p className="operational-assistance-time">
+              Asistencia técnica: {formatTime(reunion.asistencia.inicioAt)}–{formatTime(reunion.asistencia.finAt)}
+              {reunion.asistencia.asistente ? ` · ${reunion.asistencia.asistente}` : ""}
+            </p>
+          ) : null}
         </div>
-        <span className={`status ${statusClass(reunion.estado)}`}>
-          {estadoLabel(reunion.estado)}
-        </span>
-      </header>
 
-      <section className="meeting-detail-summary" aria-label="Estado operativo">
+        <div className="operational-hero-actions">
+          {reunion.meet.joinUrl ? (
+            <a className="primary-action operational-meet-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
+              <Video size={16} aria-hidden="true" />
+              Entrar a Meet
+            </a>
+          ) : (
+            <span className="status status-warning">Meet pendiente</span>
+          )}
+          {actor.rol !== "ASISTENTE_TECNICO" ? (
+            <Link className="secondary-action" href={`/reuniones/${reunion.solicitudId}`}>
+              Ficha completa
+            </Link>
+          ) : null}
+          {canSelfUnassign && reunion.asistencia.asignacionId ? (
+            <div className="operational-self-unassign">
+              <AssistantSelfUnassignButton
+                assignmentId={reunion.asistencia.asignacionId}
+                title={reunion.titulo}
+              />
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="meeting-detail-summary operational-summary" aria-label="Estado operativo">
         <article>
           <Activity size={18} aria-hidden="true" />
           <div>
@@ -81,12 +122,12 @@ export default async function ReunionOperativaPage({
         <article>
           <Radio size={18} aria-hidden="true" />
           <div>
-            <span>Participantes activos</span>
+            <span>Participantes</span>
             <strong>{active.length}</strong>
             <small>
               {reunion.conferencia.inicioRealAt
-                ? `Meet inició a las ${formatTime(reunion.conferencia.inicioRealAt)}`
-                : "Meet todavía no confirmó inicio"}
+                ? `Meet inició ${formatTime(reunion.conferencia.inicioRealAt)}`
+                : "Sin conferencia activa"}
             </small>
           </div>
         </article>
@@ -95,7 +136,7 @@ export default async function ReunionOperativaPage({
           <div>
             <span>Grabación</span>
             <strong>{grabacionLabel(reunion.grabacion.estado)}</strong>
-            <small>{reunion.requiereGrabacion ? "Requerida para este encuentro" : "No requerida"}</small>
+            <small>{reunion.requiereGrabacion ? "Requerida" : "No requerida"}</small>
           </div>
         </article>
         <article>
@@ -108,127 +149,127 @@ export default async function ReunionOperativaPage({
         </article>
       </section>
 
-      <section className="content-section">
+      <section className="content-section operational-meet-card">
         <div className="section-heading">
           <div>
             <h2>Google Meet</h2>
-            <p>Estado de integración y accesos para operar el encuentro.</p>
-          </div>
-          <div className="encounter-card-actions">
-            {reunion.meet.joinUrl ? (
-              <a className="primary-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
-                <Video size={16} aria-hidden="true" />
-                Entrar a Meet
-              </a>
-            ) : null}
-            <Link className="secondary-action" href={`/reuniones/${reunion.solicitudId}`}>
-              Ficha completa
-            </Link>
+            <p>Acceso e información necesaria para operar el encuentro.</p>
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table">
-            <tbody>
-              <tr><th>Código</th><td>{reunion.meet.codigo ?? "Pendiente"}</td></tr>
-              <tr><th>Organizador</th><td>{reunion.meet.organizador ?? "Pendiente"}</td></tr>
-              <tr><th>Integración</th><td>{reunion.meet.estadoIntegracion ?? "Sin evento proveedor"}</td></tr>
-              <tr><th>Operación pendiente</th><td>{reunion.meet.operacionPendiente ?? "Ninguna"}</td></tr>
-              <tr><th>Asistencia técnica</th><td>{reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <dl className="operational-facts">
+          <div>
+            <dt>Código</dt>
+            <dd>{reunion.meet.codigo ?? "Pendiente"}</dd>
+          </div>
+          <div className="is-wide">
+            <dt>Organizador</dt>
+            <dd>{reunion.meet.organizador ?? "Pendiente"}</dd>
+          </div>
+          <div>
+            <dt>Integración</dt>
+            <dd>{reunion.meet.estadoIntegracion ?? "Sin evento"}</dd>
+          </div>
+          <div>
+            <dt>Operación pendiente</dt>
+            <dd>{reunion.meet.operacionPendiente ?? "Ninguna"}</dd>
+          </div>
+          <div className="is-wide">
+            <dt>Asistencia técnica</dt>
+            <dd>{reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}</dd>
+            {reunion.asistencia.requerida ? (
+              <small>{formatTime(reunion.asistencia.inicioAt)}–{formatTime(reunion.asistencia.finAt)}</small>
+            ) : null}
+          </div>
+        </dl>
 
         {actor.rol === "ADMINISTRACION" && reunion.meet.eventoProveedorId ? (
-          <AdminRetryMeetAction
-            eventoProveedorId={reunion.meet.eventoProveedorId}
-            label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
-            operacion={reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")}
-          />
+          <div className="operational-admin-action">
+            <AdminRetryMeetAction
+              eventoProveedorId={reunion.meet.eventoProveedorId}
+              label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
+              operacion={reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")}
+            />
+          </div>
         ) : null}
 
         {reunion.meet.errorIntegracion ? (
-          <p className="status-warning-text">
+          <p className="status-warning-text operational-warning">
             <AlertTriangle size={15} aria-hidden="true" /> {reunion.meet.errorIntegracion}
           </p>
         ) : null}
         {reunion.conferencia.error ? (
-          <p className="status-warning-text">
+          <p className="status-warning-text operational-warning">
             <AlertTriangle size={15} aria-hidden="true" /> No se pudo actualizar Meet: {reunion.conferencia.error}
           </p>
         ) : null}
       </section>
 
-      <section className="content-section">
-        <div className="section-heading">
+      <details
+        className="content-section operational-disclosure"
+        open={active.length > 0 || reunion.estado === "EN_CURSO"}
+      >
+        <summary>
           <div>
             <h2>Participantes activos</h2>
-            <p>Se consulta al abrir o actualizar esta consola; el dashboard no hace polling a Google.</p>
+            <p>Datos confirmados por Google Meet al actualizar.</p>
           </div>
-          <span className="badge-tag">{active.length} activos</span>
+          <span className="badge-tag">{active.length}</span>
+        </summary>
+        <div className="operational-disclosure-content">
+          {active.length === 0 ? (
+            <p className="operational-empty-inline">
+              <Clock3 size={18} aria-hidden="true" />
+              No hay participantes activos confirmados.
+            </p>
+          ) : (
+            <ul className="operational-participant-list">
+              {active.map((participant, index) => (
+                <li key={participant.user ?? `${participant.nombre}-${index}`}>
+                  <strong>{participant.nombre}</strong>
+                  <span>{tipoParticipanteLabel(participant.tipo)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+      </details>
 
-        {active.length === 0 ? (
-          <div className="empty-state">
-            <Clock3 size={22} aria-hidden="true" />
-            <p>No hay participantes activos confirmados en este momento.</p>
-          </div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr><th>Participante</th><th>Tipo</th></tr>
-              </thead>
-              <tbody>
-                {active.map((participant, index) => (
-                  <tr key={participant.user ?? `${participant.nombre}-${index}`}>
-                    <td><strong>{participant.nombre}</strong></td>
-                    <td>{tipoParticipanteLabel(participant.tipo)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="content-section">
-        <div className="section-heading">
+      <details
+        className="content-section operational-disclosure"
+        open={reunion.incidencias.length > 0}
+      >
+        <summary>
           <div>
             <h2>Incidencias</h2>
             <p>Problemas operativos registrados para este encuentro.</p>
           </div>
           <span className="badge-tag">
-            {reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS").length} abiertas
+            {reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS").length}
           </span>
+        </summary>
+        <div className="operational-disclosure-content">
+          {reunion.incidencias.length === 0 ? (
+            <p className="operational-empty-inline">
+              <CheckCircle2 size={18} aria-hidden="true" />
+              No hay incidencias registradas.
+            </p>
+          ) : (
+            <ul className="operational-incident-list">
+              {reunion.incidencias.map((incidencia) => (
+                <li key={incidencia.id}>
+                  <div>
+                    <strong>{incidenciaTipoLabel(incidencia.tipo)}</strong>
+                    <span>{incidencia.estado.replaceAll("_", " ").toLowerCase()} · {incidencia.severidad.toLowerCase()}</span>
+                  </div>
+                  <p>{incidencia.descripcion}</p>
+                  <small>{formatDate(incidencia.createdAt)} · {formatTime(incidencia.createdAt)}</small>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-
-        {reunion.incidencias.length === 0 ? (
-          <div className="empty-state">
-            <CheckCircle2 size={22} aria-hidden="true" />
-            <p>No hay incidencias registradas para este encuentro.</p>
-          </div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr><th>Estado</th><th>Tipo</th><th>Severidad</th><th>Descripción</th><th>Registro</th></tr>
-              </thead>
-              <tbody>
-                {reunion.incidencias.map((incidencia) => (
-                  <tr key={incidencia.id}>
-                    <td>{incidencia.estado.replaceAll("_", " ").toLowerCase()}</td>
-                    <td>{incidenciaTipoLabel(incidencia.tipo)}</td>
-                    <td>{incidencia.severidad.toLowerCase()}</td>
-                    <td>{incidencia.descripcion}</td>
-                    <td>{formatDate(incidencia.createdAt)} · {formatTime(incidencia.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      </details>
 
       <OperationalIncidentForm instanciaId={reunion.id} />
 
@@ -237,31 +278,31 @@ export default async function ReunionOperativaPage({
         && (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") ? (
         <OperationalAssistanceClosureForm
           asignacionId={reunion.asistencia.asignacionId}
-          inicioProgramado={reunion.inicioProgramadoAt.toISOString()}
-          finProgramado={reunion.finProgramadoAt.toISOString()}
+          inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
+          finProgramado={reunion.asistencia.finAt.toISOString()}
           cierreConfirmado={reunion.asistencia.cierreConfirmado}
         />
       ) : null}
 
-      <section className="content-section">
+      <section className="content-section operational-artifacts">
         <div className="section-heading">
           <div>
             <h2>Artefactos</h2>
-            <p>Resultado actual de la sincronización con Google Meet y Drive.</p>
+            <p>Grabaciones y archivos sincronizados con Google.</p>
           </div>
         </div>
-        <div className="meeting-detail-summary">
-          <article><div><span>Grabaciones</span><strong>{reunion.artefactos.grabaciones}</strong></div></article>
-          <article><div><span>Transcripciones</span><strong>{reunion.artefactos.transcripciones}</strong></div></article>
-          <article><div><span>Notas</span><strong>{reunion.artefactos.notas}</strong></div></article>
+        <div className="operational-artifacts-grid">
+          <div><strong>{reunion.artefactos.grabaciones}</strong><span>Grabaciones</span></div>
+          <div><strong>{reunion.artefactos.transcripciones}</strong><span>Transcripciones</span></div>
+          <div><strong>{reunion.artefactos.notas}</strong><span>Notas</span></div>
         </div>
         {reunion.grabacion.url ? (
-          <a className="secondary-action" href={reunion.grabacion.url} target="_blank" rel="noreferrer">
+          <a className="secondary-action operational-recording-link" href={reunion.grabacion.url} target="_blank" rel="noreferrer">
             <Video size={16} aria-hidden="true" />
             Ver grabación
           </a>
         ) : null}
-        <p className="muted-text">Actualizado: {formatTime(reunion.actualizadoAt)}</p>
+        <p className="operational-updated">Actualizado: {formatTime(reunion.actualizadoAt)}</p>
       </section>
     </div>
   );
