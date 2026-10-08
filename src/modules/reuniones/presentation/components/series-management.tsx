@@ -77,7 +77,7 @@ export function SeriesManagement({
     }
   }
 
-  const known = [...new Map([
+  const known = [...new Map<string, { email: string; id: string | null; name: string; required: boolean; source: string }>([
     ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name ?? option.email, required: option.required, source: "Cuenta institucional" }]),
     ...suggestedEmails.map((email) => [email.toLowerCase(), { email: email.toLowerCase(), id: null, name: email, required: false, source: "Registro anterior" }])
   ]).values()];
