@@ -51,6 +51,65 @@ describe("conferencias/infrastructure", () => {
       expect(descifrar).toHaveBeenCalledWith("cifrada:123");
     });
 
+    it("reutiliza la conferencia Google Meet de la misma serie, incluso si pertenece a otra solicitud", async () => {
+      const createdAt = new Date("2026-10-08T12:00:00Z");
+      const conferenceData = {
+        conferenceId: "abc-defg-hij",
+        entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }],
+      };
+      const findUnique = vi.fn().mockResolvedValue({
+        docenteProgramaId: "docente-programa-1",
+        titulo: "Taller",
+        createdAt,
+      });
+      const findMany = vi.fn().mockResolvedValue([
+        { payloadUltimo: { id: "evento-incompleto" } },
+        { payloadUltimo: { conferenceData } },
+      ]);
+      const mockDb = {
+        solicitudSala: { findUnique },
+        eventoProveedor: { findMany },
+      } as unknown as PrismaClient;
+
+      const repo = crearPrismaConferenciasRepository({
+        db: mockDb,
+        descifrarConfiguracion: (v) => v,
+      });
+      await expect(repo.buscarConferenceDataCompartida("solicitud-2", "evento-actual"))
+        .resolves.toEqual(conferenceData);
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { id: "solicitud-2" },
+        select: { docenteProgramaId: true, titulo: true, createdAt: true },
+      });
+      expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          id: { not: "evento-actual" },
+          proveedor: { tipo: "GOOGLE_MEET" },
+          instancia: {
+            estado: "PROGRAMADA",
+            solicitud: { docenteProgramaId: "docente-programa-1", titulo: "Taller", createdAt },
+          },
+          estadoIntegracion: "SINCRONIZADA",
+          operacionPendiente: null,
+        }),
+      }));
+    });
+
+    it("no busca conferencias de otras series si la solicitud no existe", async () => {
+      const findMany = vi.fn();
+      const mockDb = {
+        solicitudSala: { findUnique: vi.fn().mockResolvedValue(null) },
+        eventoProveedor: { findMany },
+      } as unknown as PrismaClient;
+      const repo = crearPrismaConferenciasRepository({
+        db: mockDb,
+        descifrarConfiguracion: (v) => v,
+      });
+      await expect(repo.buscarConferenceDataCompartida("inexistente", "evento-actual"))
+        .resolves.toBeUndefined();
+      expect(findMany).not.toHaveBeenCalled();
+    });
+
     it("obtenerSnapshotsEventos mapea correctamente registros de base de datos", async () => {
       const mockDb = {
         eventoProveedor: {

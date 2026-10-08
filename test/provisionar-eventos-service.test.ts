@@ -103,6 +103,17 @@ function fixture(operation: Operation, options?: { externalEventId?: string | nu
       }]),
     },
     solicitudSala: {
+      // Provisioning resolves the identity of the series before looking for
+      // reusable Meet conferenceData; the fake must expose this Prisma read.
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+        where.id === state.event.instancia.solicitudSalaId
+          ? {
+              docenteProgramaId: "docente-programa-1",
+              titulo: state.event.instancia.solicitud.titulo,
+              createdAt: new Date("2026-08-15T12:00:00Z"),
+            }
+          : null
+      ),
       update: vi.fn(async ({ data }: { data: { estado?: string } }) => {
         if (data.estado) state.solicitudEstado = data.estado;
         return {};
