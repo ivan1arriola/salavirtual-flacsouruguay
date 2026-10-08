@@ -16,6 +16,7 @@ import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
 import {
   cohostsConfirmados,
+  detalleCohostsVerificados,
   estadoIntegracionEfectivo,
   requiereAtencionIntegracionMeet
 } from "@/src/modules/conferencias/api";
@@ -128,6 +129,26 @@ export default async function ReunionDetailPage({
     manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
   );
 
+  const verificationByEmail = unique([
+    ...cohostAccounts.filter(({ id }) => initialCohostCuentaIds.includes(id)).map(({ email }) => email.toLowerCase()),
+    ...initialManualCohostEmails
+  ]).map((email) => {
+    const applicable = manageableMeetings.filter((meeting) => {
+      const expected = [
+        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email.toLowerCase()),
+        ...meeting.cohostEmails.map(({ email: value }) => value.toLowerCase()),
+      ];
+      return expected.includes(email);
+    });
+    const confirmed = applicable.filter((meeting) => {
+      const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      if (!event || event.errorIntegracion || event.operacionPendiente) return false;
+      const details = detalleCohostsVerificados(event.payloadUltimo, event.codigoReunion, event.cuentaProveedor?.emailOrganizador, [email]);
+      return details.emailsConfirmados.includes(email);
+    }).length;
+    return { email, confirmed, total: manageableMeetings.length, pending: manageableMeetings.length - confirmed };
+  });
+
   const estadoVisible = request.estado === "CANCELADA"
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
@@ -145,6 +166,12 @@ export default async function ReunionDetailPage({
       ...meeting.cohosts.map(({ cuentaGoogle }) => cohostLabel(cuentaGoogle)),
       ...meeting.cohostEmails.map(({ email }) => email.toLowerCase())
     ]);
+    const eventVerification = detalleCohostsVerificados(
+      event?.payloadUltimo,
+      event?.codigoReunion,
+      event?.cuentaProveedor?.emailOrganizador,
+      [...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email), ...meeting.cohostEmails.map(({ email }) => email)]
+    );
     const recordingFile = event?.archivos?.find((a) => a.tipo === "GRABACION");
     const attendanceFile = event?.archivos?.find((a) => a.tipo === "LISTA_ASISTENCIA");
     const driveFolderId = event?.driveFolderId ?? null;
@@ -183,6 +210,7 @@ export default async function ReunionDetailPage({
       postulantes: meeting.postulaciones.length,
       organizerAccount,
       cohosts: cohostLabels,
+      verifiedCohostEmails: !event?.errorIntegracion && !event?.operacionPendiente ? eventVerification.emailsConfirmados : [],
       cohostsConfirmados: !event?.errorIntegracion && !event?.operacionPendiente && cohostsConfirmados(
         event?.payloadUltimo, event?.codigoReunion, event?.cuentaProveedor?.emailOrganizador,
         [...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email), ...meeting.cohostEmails.map(({ email }) => email)],
@@ -328,6 +356,8 @@ export default async function ReunionDetailPage({
         }))}
         initialCohostCuentaIds={initialCohostCuentaIds}
         initialManualCohostEmails={initialManualCohostEmails}
+        suggestedEmails={unique(meetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase())))}
+        verificationByEmail={verificationByEmail}
         programPeopleCount={programRecipients.length}
         hasManageableMeetings={manageableMeetings.length > 0}
       />
