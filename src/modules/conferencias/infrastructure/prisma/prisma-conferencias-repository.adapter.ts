@@ -139,19 +139,38 @@ export function crearPrismaConferenciasRepository(
     },
 
     async buscarConferenceDataCompartida(solicitudSalaId, excludeEventoId) {
-      const shared = await db.eventoProveedor.findFirst({
+      // The detail screen groups requests with the same program, title and
+      // creation timestamp into one series. Provisioning must use that same
+      // identity, rather than restricting reuse to one SolicitudSala record.
+      const request = await db.solicitudSala.findUnique({
+        where: { id: solicitudSalaId },
+        select: { docenteProgramaId: true, titulo: true, createdAt: true },
+      });
+      if (!request) return null;
+      const candidates = await db.eventoProveedor.findMany({
         where: {
           id: { not: excludeEventoId },
+          proveedor: { tipo: "GOOGLE_MEET" },
           instancia: {
-            solicitudSalaId,
             estado: "PROGRAMADA",
+            solicitud: {
+              docenteProgramaId: request.docenteProgramaId,
+              titulo: request.titulo,
+              createdAt: request.createdAt,
+            },
           },
           estadoIntegracion: "SINCRONIZADA",
+          operacionPendiente: null,
+          codigoReunion: { not: null },
         },
         orderBy: { updatedAt: "asc" },
         select: { payloadUltimo: true },
       });
-      return extraerConferenceData(shared?.payloadUltimo);
+      for (const candidate of candidates) {
+        const conferenceData = extraerConferenceData(candidate.payloadUltimo);
+        if (conferenceData) return conferenceData;
+      }
+      return null;
     },
 
     async guardarExternalEventIdTemprano(id, externalEventId, payload) {
