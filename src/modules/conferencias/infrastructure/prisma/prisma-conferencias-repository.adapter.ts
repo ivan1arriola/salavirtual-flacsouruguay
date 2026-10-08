@@ -146,7 +146,7 @@ export function crearPrismaConferenciasRepository(
         where: { id: solicitudSalaId },
         select: { docenteProgramaId: true, titulo: true, createdAt: true },
       });
-      if (!request) return null;
+      if (!request) return undefined;
       const candidates = await db.eventoProveedor.findMany({
         where: {
           id: { not: excludeEventoId },
@@ -170,7 +170,7 @@ export function crearPrismaConferenciasRepository(
         const conferenceData = extraerConferenceData(candidate.payloadUltimo);
         if (conferenceData) return conferenceData;
       }
-      return null;
+      return undefined;
     },
 
     async guardarExternalEventIdTemprano(id, externalEventId, payload) {
