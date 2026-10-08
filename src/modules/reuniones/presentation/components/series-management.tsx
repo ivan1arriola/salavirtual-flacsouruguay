@@ -77,10 +77,12 @@ export function SeriesManagement({
     }
   }
 
-  const known = [...new Map<string, { email: string; id: string | null; name: string; required: boolean; source: string }>([
-    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name ?? option.email, required: option.required, source: "Cuenta institucional" }]),
-    ...suggestedEmails.map((email) => [email.toLowerCase(), { email: email.toLowerCase(), id: null, name: email, required: false, source: "Registro anterior" }])
-  ]).values()];
+  type KnownCohost = { email: string; id: string | null; name: string; required: boolean; source: string };
+  const knownEntries: Array<readonly [string, KnownCohost]> = [
+    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name ?? option.email, required: option.required, source: "Cuenta institucional" }] as const),
+    ...suggestedEmails.map((email) => [email.toLowerCase(), { email: email.toLowerCase(), id: null, name: email, required: false, source: "Registro anterior" }] as const)
+  ];
+  const known = [...new Map<string, KnownCohost>(knownEntries).values()];
   const selectedEmails = new Set([...cohostOptions.filter((option) => selectedIds.includes(option.id) || option.required).map((option) => option.email.toLowerCase()), ...manualEmails]);
   const options = query.trim()
     ? known.filter((option) => !selectedEmails.has(option.email) && (option.email.includes(query.trim().toLowerCase()) || option.name.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 7)
