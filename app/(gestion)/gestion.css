@@ -373,20 +373,6 @@
   font-size: 0.82rem;
 }
 
-.inline-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.section-heading:has(.inline-actions) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 .text-link {
   display: inline-flex;
   align-items: center;

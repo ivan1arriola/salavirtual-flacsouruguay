@@ -165,6 +165,3 @@ termine esa operación. Los errores quedan disponibles para reintentar.
 Si Google rechaza `spaces.members`, revisar la habilitación del proyecto en
 Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
 organizadora. No se considera exitosa una asignación rechazada por Google.
-
-Referencia oficial:
-https://developers.google.com/workspace/meet/api/guides/meeting-spaces-configuration

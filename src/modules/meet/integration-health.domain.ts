@@ -1,41 +1,14 @@
-export type EstadoIntegracionMeet = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
+import type {
+  EstadoIntegracionConferencia,
+  IntegracionConferenciaHealth,
+} from "@/src/modules/conferencias/api";
 
-export type IntegracionMeetHealth = Readonly<{
-  estadoIntegracion: EstadoIntegracionMeet;
-  joinUrl?: string | null;
-  codigoReunion?: string | null;
-  errorIntegracion?: string | null;
-}>;
+export {
+  esErrorNoBloqueanteDeScopesMeet,
+  requiereAtencionIntegracionMeet,
+  estadoIntegracionEfectivo,
+  esErrorDeScopesInsuficientes,
+} from "@/src/modules/conferencias/api";
 
-/**
- * Un fallo de scopes de la API de Meet afecta la configuración adicional del
- * espacio (moderación, cohosts, reportes), pero no invalida un Meet que
- * Calendar ya creó y del que conservamos enlace/código.
- *
- * Los scopes se validan a nivel de configuración de Google Workspace, por lo
- * que este caso no debe degradar el estado operativo de cada encuentro.
- */
-export function esErrorNoBloqueanteDeScopesMeet(event: IntegracionMeetHealth): boolean {
-  return event.estadoIntegracion === "ERROR" && tieneMeet(event) && esErrorDeScopesInsuficientes(event.errorIntegracion);
-}
-
-export function requiereAtencionIntegracionMeet(event: IntegracionMeetHealth): boolean {
-  return event.estadoIntegracion === "ERROR" || Boolean(event.errorIntegracion);
-}
-
-export function estadoIntegracionEfectivo(event: IntegracionMeetHealth): EstadoIntegracionMeet {
-  return esErrorNoBloqueanteDeScopesMeet(event) ? "SINCRONIZADA" : event.estadoIntegracion;
-}
-
-export function esErrorDeScopesInsuficientes(error: string | null | undefined): boolean {
-  const normalized = error?.trim().toLowerCase() ?? "";
-  if (!normalized) return false;
-
-  return normalized.includes("insufficient authentication scopes") ||
-    normalized.includes("access_token_scope_insufficient") ||
-    normalized.includes("insufficient_scope");
-}
-
-function tieneMeet(event: IntegracionMeetHealth): boolean {
-  return Boolean(event.joinUrl || event.codigoReunion);
-}
+export type EstadoIntegracionMeet = EstadoIntegracionConferencia;
+export type IntegracionMeetHealth = IntegracionConferenciaHealth;

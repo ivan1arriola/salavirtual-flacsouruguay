@@ -3,12 +3,13 @@ import {
   CalendarCheck2,
   CalendarDays,
   CalendarPlus,
-  CalendarRange,
   GitCompareArrows,
   Hand,
   LayoutDashboard,
   Menu,
   Settings,
+  Search,
+  UserRoundCheck,
   Users,
   Video
 } from "lucide-react";
@@ -36,8 +37,8 @@ const createMeetingNav = {
 
 const adminNav = [
   { href: "/asistencia-tecnica", label: "Asistencia técnica", icon: Hand },
-  { href: "/calendario-salas", label: "Calendario de salas", icon: CalendarRange },
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
+  { href: "/asistentes", label: "Asistentes técnicos", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings },
   { href: "/reuniones/buscar-meet", label: "Buscar Meet", icon: Search }
