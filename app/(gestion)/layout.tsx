@@ -26,6 +26,7 @@ import "./agenda-day-zebra.css";
 import "./assistant-agenda.css";
 import "./meeting-form-v2.css";
 import "./meeting-detail-v2.css";
+import "./agenda-mobile-compact.css";
 import "./admin-upcoming-refresh.css";
 
 export default async function GestionLayout({

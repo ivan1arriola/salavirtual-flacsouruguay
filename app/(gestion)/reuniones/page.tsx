@@ -530,6 +530,13 @@ export default async function ReunionesPage({
             <input name="periodo" type="hidden" value={periodo} />
           ) : null}
 
+          <input
+            className="agenda-advanced-checkbox"
+            id="agenda-advanced-toggle"
+            type="checkbox"
+            defaultChecked={Boolean(programaId || desdeParam || hastaParam)}
+            aria-label="Mostrar filtros avanzados"
+          />
           <label className="agenda-query-field">
             <span className="sr-only">Buscar reuniones</span>
             <Search size={18} aria-hidden="true" />
@@ -542,6 +549,14 @@ export default async function ReunionesPage({
             />
           </label>
 
+          <button className="secondary-action agenda-mobile-search-submit" type="submit">
+            <Search size={17} aria-hidden="true" /> Buscar
+          </button>
+          <label className="agenda-mobile-filters-toggle" htmlFor="agenda-advanced-toggle">
+            <span>Filtros avanzados{programaId || desdeParam || hastaParam ? " · activos" : ""}</span>
+            <ChevronRight size={16} aria-hidden="true" />
+          </label>
+          <div className="agenda-advanced-fields">
           {actor.rol === "ADMINISTRACION" ? (
             <label className="agenda-program-filter">
               <span>Programa</span>
@@ -586,6 +601,7 @@ export default async function ReunionesPage({
                 Limpiar
               </Link>
             ) : null}
+          </div>
           </div>
         </form>
       </section>
@@ -724,6 +740,22 @@ export default async function ReunionesPage({
                       <span className="agenda-modality-chip">
                         {request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       </span>
+                      <div className="agenda-mobile-glance" aria-label="Estado operativo de la serie">
+                        <span className={cohostLabels.length === 0 ? "is-neutral" : seriesCohostsConfirmados ? "is-ok" : "is-warning"}>
+                          {cohostLabels.length && seriesCohostsConfirmados ? <CheckCircle2 size={14} aria-hidden="true" /> :
+                            cohostLabels.length ? <AlertTriangle size={14} aria-hidden="true" /> : <UserRoundMinus size={14} aria-hidden="true" />}
+                          {cohostLabels.length === 0 ? "Sin cohosts" : seriesCohostsConfirmados ? "Cohosts confirmados" : "Cohosts por verificar"}
+                        </span>
+                        <span className={pendingSeriesAssistance ? "is-warning" : "is-neutral"}>
+                          <UserRoundCheck size={14} aria-hidden="true" />
+                          {pendingSeriesAssistance ? `${pendingSeriesAssistance} asistencias sin asignar`
+                            : requiredAssistance.length ? "Asistencia asignada" : "No requiere asistencia"}
+                        </span>
+                      </div>
+                      <input className="agenda-mobile-details-input" id={`agenda-details-${request.id}`} type="checkbox" />
+                      <label className="agenda-mobile-details-control" htmlFor={`agenda-details-${request.id}`}>
+                        Detalles técnicos <ChevronRight size={16} aria-hidden="true" />
+                      </label>
                     </div>
 
                     <div className="agenda-access-panel">
@@ -923,6 +955,21 @@ export default async function ReunionesPage({
                       <span className="agenda-modality-chip">
                         {(meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       </span>
+                      <div className="agenda-mobile-glance" aria-label="Estado operativo del encuentro">
+                        <span className={cohostLabels.length === 0 ? "is-neutral" : cohostsConfirmadosEnMeet ? "is-ok" : "is-warning"}>
+                          {cohostLabels.length && cohostsConfirmadosEnMeet ? <CheckCircle2 size={14} aria-hidden="true" /> :
+                            cohostLabels.length ? <AlertTriangle size={14} aria-hidden="true" /> : <UserRoundMinus size={14} aria-hidden="true" />}
+                          {cohostLabels.length === 0 ? "Sin cohosts" : cohostsConfirmadosEnMeet ? "Cohosts confirmados" : "Cohosts por verificar"}
+                        </span>
+                        <span className={meeting.requiereAsistenciaTecnica && !assistantName ? "is-warning" : "is-neutral"}>
+                          <UserRoundCheck size={14} aria-hidden="true" />
+                          {assistantName ? assistantName : meeting.requiereAsistenciaTecnica ? "Asistencia sin asignar" : "No requiere asistencia"}
+                        </span>
+                      </div>
+                      <input className="agenda-mobile-details-input" id={`agenda-details-${meeting.id}`} type="checkbox" />
+                      <label className="agenda-mobile-details-control" htmlFor={`agenda-details-${meeting.id}`}>
+                        Detalles técnicos <ChevronRight size={16} aria-hidden="true" />
+                      </label>
                     </div>
 
                     <div className="agenda-access-panel">
