@@ -172,7 +172,7 @@ export function SeriesManagement({
         <button type="button" role="tab" aria-selected={tab === "settings"} className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}><Settings2 size={16}/> Configuración</button>
         <button type="button" role="tab" aria-selected={tab === "notify"} className={tab === "notify" ? "active" : ""} onClick={() => setTab("notify")}><BellRing size={16}/> Notificaciones</button>
       </div>
-      <div className={"series-management-v2-content" + (tab !== "cohosts" ? " is-single" : "")}>
+      <div className="series-management-v2-content is-single">
         {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
         {tab === "cohosts" ? <article className="series-tool-card series-cohost-manager">
