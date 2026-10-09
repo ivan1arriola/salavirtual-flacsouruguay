@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, CheckCircle2, ChevronDown, LoaderCircle, Plus, Save, Search, Trash2, UsersRound } from "lucide-react";
+import { BellRing, CheckCircle2, ChevronDown, CircleHelp, CircleX, Eye, LoaderCircle, Plus, RefreshCw, Save, Search, Settings2, Trash2, UsersRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -16,7 +16,8 @@ export function SeriesManagement({
   cohostOptions,
   initialCohostCuentaIds,
   initialManualCohostEmails,
-  suggestedEmails,
+  suggestedPeople,
+  seriesInfo,
   verificationByEmail,
   programPeopleCount,
   hasManageableMeetings,
@@ -25,7 +26,8 @@ export function SeriesManagement({
   cohostOptions: readonly CohostOption[];
   initialCohostCuentaIds: readonly string[];
   initialManualCohostEmails: readonly string[];
-  suggestedEmails: readonly string[];
+  suggestedPeople: readonly { email: string; name: string; source: string }[];
+  seriesInfo: readonly { titulo: string; modalidad: string; encuentros: number; siguientes: number };
   verificationByEmail: readonly { email: string; confirmed: number; total: number; pending: number }[];
   programPeopleCount: number;
   hasManageableMeetings: boolean;
@@ -37,6 +39,16 @@ export function SeriesManagement({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [busy, setBusy] = useState<"notify" | "cohosts" | null>(null);
   const [message, setMessage] = useState("");
+  const [tab, setTab] = useState<"cohosts" | "settings" | "notify">("cohosts");
+  const [checking, setChecking] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+  const [liveVerification, setLiveVerification] = useState<readonly {
+    email: string; confirmed: number; rejected: number; unknown: number; total: number;
+    meetings: readonly { id: string; fecha: string; result: "confirmed" | "rejected" | "unknown" }[];
+  }[] | null>(null);
+  const [preview, setPreview] = useState<{ asunto: string; texto: string; destinatarios: number; encuentros: number } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   async function notifyProgram() {
     if (!window.confirm(`Se reenviará el aviso de esta serie a ${programPeopleCount} ${programPeopleCount === 1 ? "persona" : "personas"} del programa. ¿Continuar?`)) return;
@@ -79,20 +91,20 @@ export function SeriesManagement({
 
   type KnownCohost = { email: string; id: string | null; name: string; required: boolean; source: string };
   const knownEntries: Array<readonly [string, KnownCohost]> = [
-    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name ?? option.email, required: option.required, source: "Cuenta institucional" }] as const),
-    ...suggestedEmails.map((email) => [email.toLowerCase(), { email: email.toLowerCase(), id: null, name: email, required: false, source: "Registro anterior" }] as const)
+    ...suggestedPeople.map((person) => [person.email.toLowerCase(), { email: person.email.toLowerCase(), id: null, name: person.name, required: false, source: person.source }] as const),
+    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name || option.email, required: option.required, source: "Cuenta institucional" }] as const)
   ];
   const known = [...new Map<string, KnownCohost>(knownEntries).values()];
   const selectedEmails = new Set([...cohostOptions.filter((option) => selectedIds.includes(option.id) || option.required).map((option) => option.email.toLowerCase()), ...manualEmails]);
   const options = query.trim()
     ? known.filter((option) => !selectedEmails.has(option.email) && (option.email.includes(query.trim().toLowerCase()) || option.name.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 7)
     : [];
-  const validEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(query.trim());
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim());
   const configuredCount = selectedEmails.size;
 
   function addCohost(email: string) {
     const normalized = email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized) || selectedEmails.has(normalized) || configuredCount >= 50) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) || selectedEmails.has(normalized) || configuredCount >= 50) return;
     const institutional = cohostOptions.find((option) => option.email.toLowerCase() === normalized);
     if (institutional) setSelectedIds((current) => [...new Set([...current, institutional.id])]);
     else setManualEmails((current) => [...current, normalized]);
@@ -107,8 +119,9 @@ export function SeriesManagement({
     } else setManualEmails((current) => current.filter((value) => value !== email));
   }
   const verification = new Map(verificationByEmail.map((entry) => [entry.email.toLowerCase(), entry]));
+  const live = new Map((liveVerification ?? []).map((entry) => [entry.email.toLowerCase(), entry]));
   return (
-    <details className="series-management-v2" id="administrar-serie">
+    <details className="series-management-v2" id="administrar-serie" open>
       <summary>
         <span className="series-management-v2-icon"><UsersRound size={18} aria-hidden="true" /></span>
         <div>
