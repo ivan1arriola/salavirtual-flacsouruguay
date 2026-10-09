@@ -9,6 +9,12 @@ const encuentros = [
 ];
 
 describe("filtrarEncuentrosPorVista", () => {
+  it("muestra todos los encuentros al seleccionar Todos", () => {
+    expect(filtrarEncuentrosPorVista(encuentros, "TODOS").map(({ id }) => id)).toEqual([
+      "pasado-anterior", "pasado-hoy", "en-curso", "futuro"
+    ]);
+  });
+
   it("muestra por defecto los encuentros de hoy y futuros", () => {
     expect(filtrarEncuentrosPorVista(encuentros, "PROXIMOS").map(({ id }) => id)).toEqual([
       "pasado-hoy",
