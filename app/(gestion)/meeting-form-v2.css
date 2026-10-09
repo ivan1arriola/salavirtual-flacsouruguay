@@ -429,3 +429,142 @@
     justify-content: center;
   }
 }
+
+
+/* Mobile-first form UX: disclosure and summary */
+.meeting-form-v2 .organization-email-editor {
+  padding: 0;
+  overflow: hidden;
+  background: #e8f0fb;
+  border-color: #b8cbe5;
+}
+
+.meeting-form-v2 .organization-email-editor > summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+}
+
+.meeting-form-v2 .organization-email-editor > summary::-webkit-details-marker {
+  display: none;
+}
+
+.meeting-form-v2 .organization-email-editor > summary > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.meeting-form-v2 .organization-email-editor > summary h3 {
+  color: #203b68;
+}
+
+.meeting-form-v2 .organization-email-editor > summary p {
+  color: #526b8f;
+}
+
+.meeting-form-v2 .organization-email-editor > summary:focus-visible {
+  outline: 3px solid #2c4777;
+  outline-offset: -3px;
+}
+
+.meeting-form-v2 .organization-disclosure-chevron {
+  flex: 0 0 auto;
+  color: #2c4777;
+  transition: transform .18s ease;
+}
+
+.meeting-form-v2 .organization-email-editor[open] .organization-disclosure-chevron {
+  transform: rotate(180deg);
+}
+
+.meeting-form-v2 .organization-email-content {
+  border-top: 1px solid #c5d5eb;
+  background: #f2f6fc;
+  padding: 13px 16px 15px;
+}
+
+.meeting-form-v2 .organization-email-add-row input {
+  min-height: 45px;
+  font-size: 1rem;
+}
+
+.meeting-form-v2 .organization-email-add-row .secondary-action {
+  min-height: 45px;
+  justify-content: center;
+}
+
+.meeting-form-v2 .organization-email-error:empty {
+  display: none;
+}
+
+.meeting-form-v2 .meeting-date-notes {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.meeting-form-v2 .meeting-date-notes > summary {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: #2c4777;
+  font-size: .82rem;
+  font-weight: 750;
+  list-style: none;
+  padding: 7px 4px;
+}
+
+.meeting-form-v2 .meeting-date-notes > summary::-webkit-details-marker {
+  display: none;
+}
+
+.meeting-form-v2 .meeting-date-notes[open] > summary > svg {
+  transform: rotate(45deg);
+}
+
+.meeting-form-v2 .meeting-date-notes > summary > span {
+  color: #5f7088;
+  font-weight: 500;
+}
+
+.meeting-form-v2 .meeting-date-notes > .field {
+  display: grid;
+  margin-top: 4px;
+}
+
+.meeting-form-v2 .meeting-date-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  border-radius: 8px;
+  background: #fff0d7;
+  color: #825000;
+  padding: 9px 12px;
+  font-size: .79rem;
+}
+
+.meeting-form-v2 .meeting-form-summary-v2 {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meeting-form-v2 .meeting-form-summary-v2 > strong {
+  font-size: .9rem;
+  color: #203b68;
+}
+
+.meeting-form-v2 .meeting-form-summary-v2 > span {
+  color: #526986;
+  font-size: .77rem;
+  line-height: 1.3;
+}
+
+.meeting-form-v2 .meeting-form-summary-v2 > small {
+  color: #637994;
+  font-size: .7rem;
+}
