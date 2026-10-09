@@ -18,7 +18,8 @@ export async function renotificarSerieAlPrograma(
   dependencies: RenotificarSerieDependencies,
   actor: SessionActor,
   solicitudId: string,
-): Promise<Readonly<{ destinatarios: number; encuentros: number }>> {
+  options: Readonly<{ soloVistaPrevia?: boolean }> = {},
+): Promise<Readonly<{ destinatarios: number; encuentros: number; asunto?: string; texto?: string }>> {
   const request = await dependencies.db.solicitudSala.findUnique({
     where: { id: solicitudId },
     select: {
@@ -137,6 +138,12 @@ export async function renotificarSerieAlPrograma(
     }),
   });
 
+  const asunto = `Serie de reuniones: ${request.titulo}`;
+  const texto = `${detailsText}\n\nEste aviso fue reenviado desde Sala Virtual para recordar la serie de reuniones.`;
+  if (options.soloVistaPrevia) {
+    return { destinatarios: recipients.length, encuentros: meetings.length, asunto, texto };
+  }
+
   await notificarUsuarios(
     dependencies.db,
     recipients,
@@ -146,8 +153,8 @@ export async function renotificarSerieAlPrograma(
       cuerpo: `${request.titulo} tiene ${meetings.length} ${meetings.length === 1 ? "encuentro activo" : "encuentros activos o futuros"}.`,
       href: `/reuniones/${request.id}`,
       metadata: { solicitudId: request.id, renotificacion: true },
-      emailSubject: `Serie de reuniones: ${request.titulo}`,
-      emailText: `${detailsText}\n\nEste aviso fue reenviado desde Sala Virtual para recordar la serie de reuniones.`,
+      emailSubject: asunto,
+      emailText: texto,
       emailActionLabel: "Ver reunión",
     },
   );
