@@ -12,7 +12,7 @@ describe("agenda de reuniones en móvil", () => {
 
   it("conserva búsqueda directa y acceso a filtros avanzados con valores persistentes", () => {
     expect(page).toContain('className="agenda-query-field"');
-    expect(page).toContain('className="agenda-mobile-search-submit"');
+    expect(page).toContain('className="secondary-action agenda-mobile-search-submit"');
     expect(page).toContain('id="agenda-advanced-toggle"');
     expect(page).toContain("defaultChecked={Boolean(programaId || desdeParam || hastaParam)}");
     expect(page).toContain('className="agenda-advanced-fields"');
