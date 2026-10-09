@@ -27,7 +27,7 @@ export function SeriesManagement({
   initialCohostCuentaIds: readonly string[];
   initialManualCohostEmails: readonly string[];
   suggestedPeople: readonly { email: string; name: string; source: string }[];
-  seriesInfo: readonly { titulo: string; modalidad: string; encuentros: number; siguientes: number };
+  seriesInfo: Readonly<{ titulo: string; modalidad: string; encuentros: number; siguientes: number }>;
   verificationByEmail: readonly { email: string; confirmed: number; total: number; pending: number }[];
   programPeopleCount: number;
   hasManageableMeetings: boolean;
