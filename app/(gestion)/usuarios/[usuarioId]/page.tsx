@@ -1,4 +1,4 @@
-import { ArrowLeft, SlidersHorizontal, Trash2, UserRoundX } from "lucide-react";
+import { ArrowLeft, History, Trash2, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -26,7 +26,7 @@ export default async function UsuarioPage({
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const { usuarioId } = await params;
-  const [user, programs] = await Promise.all([
+  const [user, programs, activity] = await Promise.all([
     db.usuario.findUnique({
       where: { id: usuarioId },
       include: {
@@ -39,6 +39,12 @@ export default async function UsuarioPage({
       where: { activo: true },
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true }
+    }),
+    db.auditoria.findMany({
+      where: { actorUsuarioId: usuarioId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { id: true, accion: true, entidadTipo: true, createdAt: true }
     })
   ]);
   if (!user) notFound();
@@ -117,6 +123,30 @@ export default async function UsuarioPage({
           />
         ) : null}
 
+        <section className="content-section">
+          <div className="section-heading compact-heading">
+            <div>
+              <h2>Actividad</h2>
+              <p>Últimas acciones registradas en Sala Virtual.</p>
+            </div>
+            <History size={23} color="var(--brand)" />
+          </div>
+          {activity.length ? (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>Fecha y hora</th><th>Acción</th><th>Área</th></tr></thead>
+                <tbody>{activity.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{formatActivityDate(entry.createdAt)}</td>
+                    <td><strong>{activityLabel(entry.accion)}</strong></td>
+                    <td>{entityLabel(entry.entidadTipo)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          ) : <p className="muted-text">Todavía no hay acciones registradas para esta persona.</p>}
+        </section>
+
         <section
           className="form-section account-form"
           style={{ borderColor: "#d8a0a0", background: "#fffafa" }}
@@ -164,4 +194,40 @@ export default async function UsuarioPage({
       </div>
     </>
   );
+}
+
+function formatActivityDate(value: Date): string {
+  return new Intl.DateTimeFormat("es-UY", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Montevideo"
+  }).format(value);
+}
+
+function activityLabel(action: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    ASISTENTE_TECNICO_REACTIVADO_POR_LOGIN: "Inició sesión y reactivó su disponibilidad",
+    CUENTA_GOOGLE_REVALIDADA: "Revalidó una cuenta de Google",
+    DISPONIBILIDAD_ACTUALIZADA: "Actualizó su disponibilidad",
+    PASSWORD_RECUPERADA: "Restableció su contraseña",
+    PERFIL_PERSONAL_ACTUALIZADO: "Actualizó su perfil",
+    ASISTENTE_POSTULADO: "Se postuló para brindar asistencia",
+    POSTULACION_RETIRADA: "Retiró una postulación de asistencia",
+    REGISTRO_INSTITUCIONAL_COMPLETADO: "Completó su registro institucional",
+    EDITAR_ENCUENTRO: "Actualizó un encuentro",
+    REUNION_ELIMINADA: "Eliminó una reunión",
+    REUNION_RENOTIFICADA: "Reenvió una notificación de reunión"
+  };
+  return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
+}
+
+function entityLabel(entityType: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    AsistenteTecnico: "Asistencia técnica",
+    CuentaGoogleFlacso: "Cuenta Google",
+    InstanciaSala: "Encuentro",
+    SolicitudSala: "Reuniones",
+    Usuario: "Usuarios"
+  };
+  return labels[entityType] ?? entityType.replaceAll("_", " ").toLowerCase();
 }

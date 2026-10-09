@@ -1,7 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { crearReuniones } from "../src/modules/reuniones/crear-reuniones.service";
 
 describe("crearReuniones - cohosts e invitados", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-01T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const baseInput = {
     titulo: "Seminario de Investigación",
     docenteProgramaId: "dp-123",

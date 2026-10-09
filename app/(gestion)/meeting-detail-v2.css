@@ -542,6 +542,13 @@
   background: #fffaf0;
 }
 
+.encounter-v2-meet-actions {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .encounter-v2-meet-actions .meet-link-actions {
   display: flex;
   align-items: center;
