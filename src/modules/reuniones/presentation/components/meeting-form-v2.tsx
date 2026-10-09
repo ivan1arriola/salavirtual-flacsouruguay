@@ -4,6 +4,8 @@ import {
   BookOpen,
   CalendarDays,
   CalendarPlus,
+  CheckCircle2,
+  ChevronDown,
   LoaderCircle,
   Mail,
   Plus,
@@ -78,6 +80,7 @@ export function MeetingFormV2({
   canAssignAssistant: boolean;
 }>) {
   const [selectedProgramId, setSelectedProgramId] = useState<string>(programs.length === 1 ? programs[0].id : "");
+  const [title, setTitle] = useState("");
   const [dates, setDates] = useState<readonly MeetingDate[]>([EMPTY_DATE]);
   const [dateMode, setDateMode] = useState<MeetingDateMode>("SINGLE");
   const [recurrence, setRecurrence] = useState<RecurrenceState>({
@@ -105,6 +108,14 @@ export function MeetingFormV2({
   const recurrenceReviewRef = useRef<HTMLDivElement>(null);
 
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
+  const academicReady = title.trim().length >= 3 && Boolean(selectedProgram?.teacherEmail);
+  const datesReady = dates.length > 0 && dates.every((date) =>
+    Boolean(date.fecha && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
+    (meetingMode !== "HIBRIDA" || !requiresAssistance || Boolean(
+      date.horaAsistenciaInicio && date.horaAsistenciaFin && date.horaAsistenciaFin > date.horaAsistenciaInicio
+    ))
+  );
+  const isReady = academicReady && datesReady;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -221,14 +232,14 @@ export function MeetingFormV2({
   return (
     <form className="meeting-form meeting-form-v2" onSubmit={submit} aria-busy={status === "saving"}>
       <nav className="meeting-form-steps" aria-label="Secciones del formulario">
-        <a href="#datos-academicos"><span>1</span><div><strong>Datos académicos</strong><small>Qué reunión vas a crear</small></div></a>
-        <a href="#fechas"><span>2</span><div><strong>Fechas</strong><small>Cuándo se realizará</small></div></a>
-        <a href="#organizacion"><span>3</span><div><strong>Organización</strong><small>Accesos, asistencia y grabación</small></div></a>
+        <a className={academicReady ? "is-complete" : ""} href="#datos-academicos" aria-label={academicReady ? "Datos académicos completos" : "Ir a datos académicos"}><span>{academicReady ? <CheckCircle2 size={17} aria-hidden="true" /> : "1"}</span><div><strong>Datos</strong><small>Programa y título</small></div></a>
+        <a className={datesReady ? "is-complete" : ""} href="#fechas" aria-label={datesReady ? "Fechas completas" : "Ir a fechas"}><span>{datesReady ? <CheckCircle2 size={17} aria-hidden="true" /> : "2"}</span><div><strong>Fechas</strong><small>Encuentros</small></div></a>
+        <a href="#organizacion" aria-label="Ir a organización y accesos"><span>3</span><div><strong>Accesos</strong><small>Organización</small></div></a>
       </nav>
 
       <FormSection id="datos-academicos" icon={<BookOpen size={19} />} number="1" title="Datos académicos" detail="Identificá la reunión y vinculala al programa correspondiente.">
         <div className="form-grid">
-          <Field label="Título"><input name="titulo" placeholder="Ej. Seminario de metodología" required minLength={3} /></Field>
+          <Field label="Título"><input name="titulo" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ej. Seminario de metodología" required minLength={3} autoComplete="off" /></Field>
           <Field label="Programa y docente">
             <select name="docenteProgramaId" required value={selectedProgramId} onChange={(event) => setSelectedProgramId(event.target.value)}>
               <option value="" disabled>Seleccionar</option>
@@ -304,7 +315,11 @@ export function MeetingFormV2({
                       </>
                     ) : null}
                     {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
-                    <label className="field date-description"><span>Descripción de este encuentro (opcional)</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
+                    <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"} defaultOpen={Boolean(date.descripcion)}>
+                      <summary><Plus size={15} aria-hidden="true" /> Notas del encuentro <span>(opcional)</span></summary>
+                      <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
+                    </details>
+                    {date.horaInicio && date.horaFin && date.horaFin <= date.horaInicio ? <p className="meeting-date-warning" role="status">La hora de fin debe ser posterior a la de inicio.</p> : null}
                   </div>
                 ))}
               </div>
@@ -397,12 +412,10 @@ export function MeetingFormV2({
         {status === "saving" ? <p className="form-message saving" role="status">Creando la reunión y configurando Google Meet…</p> : null}
         {status === "error" ? <p className="form-message" role="alert">{message}</p> : null}
         {status !== "saving" && status !== "error" ? (
-          <div className="meeting-form-summary-v2">
-            <div><span>Encuentros</span><strong>{dates.length}</strong></div>
-            <div><span>Cohosts</span><strong>Docente + {extraCohostEmails.length} {extraCohostEmails.length === 1 ? "adicional" : "adicionales"}</strong></div>
-            <div><span>Invitados</span><strong>{guestEmails.length}</strong></div>
-            <div><span>Asistencia</span><strong>{requiresAssistance ? "Solicitada" : "No requiere"}</strong></div>
-            <div><span>Grabación</span><strong>{requiresRecording ? "Sí" : "No"}</strong></div>
+          <div className="meeting-form-summary-v2" role="status" aria-live="polite">
+            <strong>{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</strong>
+            <span>{isReady ? "Listo para crear" : !academicReady ? "Completá título y programa" : "Revisá fechas y horarios"}</span>
+            <small>{requiresAssistance ? "Con asistencia" : "Sin asistencia"} · {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra · {guestEmails.length} invitados</small>
           </div>
         ) : null}
         <button className="primary-action" type="submit" disabled={dates.length === 0 || status === "saving" || status === "done"}>
@@ -475,8 +488,13 @@ function EmailListEditor({
   }
 
   return (
-    <section className="organization-subsection organization-email-editor">
-      <div className="organization-subsection-heading"><div><h3>{title} <span>(opcional)</span></h3><p>{detail}</p></div><span className="organization-count-pill">{emails.length} {emails.length === 1 ? (googleOnly ? "adicional" : "invitado") : (googleOnly ? "adicionales" : "invitados")}</span></div>
+    <details className="organization-subsection organization-email-editor">
+      <summary className="organization-subsection-heading">
+        <div><h3>{title} <span>(opcional)</span></h3><p>{detail}</p></div>
+        <span className="organization-count-pill">{emails.length} {emails.length === 1 ? (googleOnly ? "adicional" : "invitado") : (googleOnly ? "adicionales" : "invitados")}</span>
+        <ChevronDown size={18} aria-hidden="true" className="organization-disclosure-chevron" />
+      </summary>
+      <div className="organization-email-content">
       {googleOnly ? (
         <div className="organization-google-warning"><ShieldCheck size={17} /><div><strong>Debe ser una cuenta Google</strong><span>El correo tiene que estar asociado a Gmail o Google Workspace. Si no es una cuenta Google, no podrá configurarse como cohost.</span></div></div>
       ) : (
@@ -488,7 +506,8 @@ function EmailListEditor({
       </div>
       <span className="organization-email-error" role="status">{error}</span>
       {emails.length ? <div className="organization-email-chips">{emails.map((email) => <span key={email}><strong>{email}</strong><button type="button" onClick={() => onChange(emails.filter((value) => value !== email))} aria-label={`Quitar ${email}`}>×</button></span>)}</div> : null}
-    </section>
+      </div>
+    </details>
   );
 }
 
