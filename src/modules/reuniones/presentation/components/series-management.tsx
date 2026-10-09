@@ -50,6 +50,38 @@ export function SeriesManagement({
   const [preview, setPreview] = useState<{ asunto: string; texto: string; destinatarios: number; encuentros: number } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
+  async function verifyCohosts(): Promise<void> {
+    setChecking(true);
+    setVerificationError("");
+    try {
+      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/cohosts/verificar", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No fue posible consultar los permisos en Google Meet.");
+      setLiveVerification(result.entries);
+      setVerifiedAt(result.verifiedAt);
+    } catch (error) {
+      setLiveVerification(null);
+      setVerificationError(error instanceof Error ? error.message : "No se pudo verificar.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function previewNotice(): Promise<void> {
+    setLoadingPreview(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/notificar", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No fue posible preparar el correo.");
+      setPreview({ asunto: result.asunto, texto: result.texto, destinatarios: result.destinatarios, encuentros: result.encuentros });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo mostrar la vista previa.");
+    } finally {
+      setLoadingPreview(false);
+    }
+  }
+
   async function notifyProgram() {
     if (!window.confirm(`Se reenviará el aviso de esta serie a ${programPeopleCount} ${programPeopleCount === 1 ? "persona" : "personas"} del programa. ¿Continuar?`)) return;
     setBusy("notify");
@@ -82,6 +114,7 @@ export function SeriesManagement({
       if (!response.ok) throw new Error(result.error ?? "No se pudieron actualizar los cohosts.");
       setMessage(result.message ?? "Cohosts actualizados.");
       router.refresh();
+      await verifyCohosts();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron actualizar los cohosts.");
     } finally {
@@ -110,8 +143,10 @@ export function SeriesManagement({
     else setManualEmails((current) => [...current, normalized]);
     setQuery("");
     setShowSuggestions(false);
+    setLiveVerification(null);
   }
   function removeCohost(email: string) {
+    setLiveVerification(null);
     const institutional = cohostOptions.find((option) => option.email.toLowerCase() === email);
     if (institutional) {
       if (institutional.required) return;
