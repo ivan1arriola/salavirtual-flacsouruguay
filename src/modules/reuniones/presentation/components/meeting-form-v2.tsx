@@ -130,6 +130,12 @@ export function MeetingFormV2({
       setMessage("El docente seleccionado no tiene una cuenta Google configurada para usar como cohost.");
       return;
     }
+    if (!datesReady) {
+      setStatus("error");
+      setMessage("Revisá las fechas y horarios: cada encuentro necesita un horario válido y, si corresponde, el horario de asistencia técnica.");
+      document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
 
     submittingRef.current = true;
     idempotencyKeyRef.current ||= window.crypto.randomUUID();
@@ -320,6 +326,7 @@ export function MeetingFormV2({
                       <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
                     </details>
                     {date.horaInicio && date.horaFin && date.horaFin <= date.horaInicio ? <p className="meeting-date-warning" role="status">La hora de fin debe ser posterior a la de inicio.</p> : null}
+                    {meetingMode === "HIBRIDA" && requiresAssistance && date.horaAsistenciaInicio && date.horaAsistenciaFin && date.horaAsistenciaFin <= date.horaAsistenciaInicio ? <p className="meeting-date-warning" role="status">La salida del asistente debe ser posterior a la llegada.</p> : null}
                   </div>
                 ))}
               </div>
@@ -414,7 +421,7 @@ export function MeetingFormV2({
         {status !== "saving" && status !== "error" ? (
           <div className="meeting-form-summary-v2" role="status" aria-live="polite">
             <strong>{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</strong>
-            <span>{isReady ? "Listo para crear" : !academicReady ? "Completá título y programa" : "Revisá fechas y horarios"}</span>
+            <span>{isReady ? "Listo para crear" : !selectedProgram ? "Elegí un programa" : !selectedProgram.teacherEmail ? "Revisá la cuenta del docente" : !academicReady ? "Completá el título" : "Revisá fechas y horarios"}</span>
             <small>{requiresAssistance ? "Con asistencia" : "Sin asistencia"} · {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra · {guestEmails.length} invitados</small>
           </div>
         ) : null}
@@ -501,7 +508,7 @@ function EmailListEditor({
         <div className="organization-guest-note"><Mail size={17} /><div><strong>Puede ser cualquier correo electrónico válido</strong><span>No es necesario que sea una cuenta Google ni que pertenezca a flacso.edu.uy.</span></div></div>
       )}
       <div className="organization-email-add-row">
-        <input type="email" value={draft} placeholder={placeholder} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addEmail(); } }} />
+        <input type="email" value={draft} placeholder={placeholder} aria-label={`Correo para ${title.toLowerCase()}`} autoComplete="email" onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addEmail(); } }} />
         <button className="secondary-action" type="button" onClick={addEmail}><Plus size={16} />{addLabel}</button>
       </div>
       <span className="organization-email-error" role="status">{error}</span>
