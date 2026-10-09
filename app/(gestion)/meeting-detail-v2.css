@@ -2047,6 +2047,11 @@
   background: #e5eefb;
 }
 
+.meeting-detail-v2 .encounter-v2-meet.is-pending {
+  border-color: #dec184;
+  background: #fff4dc;
+}
+
 .meeting-detail-v2 .encounter-v2-people {
   background: #e1ebf8;
 }
