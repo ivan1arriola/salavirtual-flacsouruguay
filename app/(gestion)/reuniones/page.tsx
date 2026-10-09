@@ -530,6 +530,13 @@ export default async function ReunionesPage({
             <input name="periodo" type="hidden" value={periodo} />
           ) : null}
 
+          <input
+            className="agenda-advanced-checkbox"
+            id="agenda-advanced-toggle"
+            type="checkbox"
+            defaultChecked={Boolean(programaId || desdeParam || hastaParam)}
+            aria-label="Mostrar filtros avanzados"
+          />
           <label className="agenda-query-field">
             <span className="sr-only">Buscar reuniones</span>
             <Search size={18} aria-hidden="true" />
@@ -542,6 +549,14 @@ export default async function ReunionesPage({
             />
           </label>
 
+          <button className="secondary-action agenda-mobile-search-submit" type="submit">
+            <Search size={17} aria-hidden="true" /> Buscar
+          </button>
+          <label className="agenda-mobile-filters-toggle" htmlFor="agenda-advanced-toggle">
+            <span>Filtros avanzados{programaId || desdeParam || hastaParam ? " · activos" : ""}</span>
+            <ChevronRight size={16} aria-hidden="true" />
+          </label>
+          <div className="agenda-advanced-fields">
           {actor.rol === "ADMINISTRACION" ? (
             <label className="agenda-program-filter">
               <span>Programa</span>
@@ -586,6 +601,7 @@ export default async function ReunionesPage({
                 Limpiar
               </Link>
             ) : null}
+          </div>
           </div>
         </form>
       </section>
