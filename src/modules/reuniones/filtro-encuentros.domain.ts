@@ -1,4 +1,4 @@
-export type VistaTemporalEncuentros = "PROXIMOS" | "PASADOS";
+export type VistaTemporalEncuentros = "TODOS" | "PROXIMOS" | "PASADOS";
 
 export type EncuentroFiltrable = Readonly<{
   temporalidad: "PASADO" | "EN_CURSO" | "FUTURO";
@@ -10,6 +10,7 @@ export function perteneceAVistaTemporal(
   vista: VistaTemporalEncuentros
 ): boolean {
   const esPasadoAnterior = encuentro.temporalidad === "PASADO" && !encuentro.esDeHoy;
+  if (vista === "TODOS") return true;
   return vista === "PASADOS" ? esPasadoAnterior : !esPasadoAnterior;
 }
 
