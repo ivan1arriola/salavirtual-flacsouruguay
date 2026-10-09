@@ -1595,3 +1595,235 @@
  .encounter-time-filter { width: 100%; display: flex; }
  .encounter-time-filter button { flex: 1; justify-content: center; }
 }
+
+
+/* Cohost management: preserve usable controls on narrow screens. */
+.series-management-v2,
+.series-management-v2-content,
+.series-tool-card,
+.series-tool-card > header > div {
+  min-width: 0;
+}
+
+.series-cohost-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.series-cohost-search-control {
+  display: flex;
+  position: relative;
+  align-items: center;
+  min-width: 0;
+}
+
+.series-cohost-search-control > svg {
+  position: absolute;
+  left: 12px;
+  color: #526987;
+  pointer-events: none;
+}
+
+.series-cohost-manager .field .series-cohost-search-control input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-left: 40px;
+  font-size: 1rem;
+}
+
+.series-cohost-add {
+  white-space: nowrap;
+  justify-content: center;
+}
+
+.series-cohost-suggestion {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.series-cohost-suggestion > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.series-cohost-suggestion > small {
+  color: #63778d;
+  text-align: right;
+}
+
+.series-cohost-items {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.series-cohost-item {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e0e5ed;
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+}
+
+.series-cohost-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.series-cohost-remove {
+  display: grid;
+  flex: 0 0 36px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid #d9e2ed;
+  border-radius: 8px;
+  color: #344d6f;
+  cursor: pointer;
+}
+
+.series-cohost-remove:focus-visible {
+  outline: 2px solid #2c4777;
+  outline-offset: 2px;
+}
+
+@media (max-width: 550px) {
+  .series-management-v2 > summary {
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .series-management-v2 > summary small {
+    line-height: 1.35;
+  }
+
+  .series-management-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    padding: 0 6px;
+    overflow: visible;
+  }
+
+  .series-management-tabs > button {
+    min-width: 0;
+    min-height: 47px;
+    padding: 10px 3px;
+    font-size: .76rem;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .series-management-tabs > button > svg {
+    display: none;
+  }
+
+  .series-management-v2-content {
+    min-width: 0;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .series-tool-card {
+    padding: 13px 12px;
+    gap: 15px;
+  }
+
+  .series-tool-card > header {
+    gap: 9px;
+  }
+
+  .series-cohost-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .series-cohost-search-control,
+  .series-cohost-add {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .series-cohost-add,
+  .series-cohost-toolbar > .secondary-action,
+  .series-cohost-manager > .series-tool-action {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .series-cohost-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .series-cohost-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 9px;
+  }
+
+  .series-cohost-manager .series-person strong {
+    font-size: .88rem;
+  }
+
+  .series-cohost-status-actions {
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .series-verification-status {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .series-verification-status > svg {
+    flex: 0 0 auto;
+  }
+
+  .series-cohost-suggestion {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .series-cohost-suggestion > small {
+    text-align: left;
+  }
+
+  .series-notify-card .series-tool-action,
+  .series-preview-trigger,
+  .series-settings-card .secondary-action,
+  .series-preview > .secondary-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
