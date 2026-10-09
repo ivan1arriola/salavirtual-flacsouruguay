@@ -366,6 +366,12 @@ export default async function ReunionDetailPage({
           ...historicCohostEmails.map(({ email }) => ({ email: email.toLowerCase(), name: email.toLowerCase(), source: "Cohost anterior" }))
         ]}
         verificationByEmail={verificationByEmail}
+        seriesInfo={{
+          titulo: request.titulo,
+          modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+          encuentros: meetings.length,
+          siguientes: manageableMeetings.length,
+        }}
         programPeopleCount={programRecipients.length}
         hasManageableMeetings={manageableMeetings.length > 0}
       />
