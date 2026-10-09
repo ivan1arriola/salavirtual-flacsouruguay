@@ -241,7 +241,7 @@ export function MeetingDetailManager({
     : "";
   const proximos = filtrarEncuentrosPorVista(meetings, "PROXIMOS");
   const pasados = filtrarEncuentrosPorVista(meetings, "PASADOS");
-  const visibleMeetings = vistaTemporal === "PROXIMOS" ? proximos : pasados;
+  const visibleMeetings = filtrarEncuentrosPorVista(meetings, vistaTemporal);
 
   function toggleExpanded(id: string): void {
     setExpandedIds((current) => {
@@ -264,6 +264,7 @@ export function MeetingDetailManager({
         </div>
         <div className="encounter-list-tools">
           <div className="encounter-time-filter" aria-label="Filtrar encuentros">
+            <button aria-pressed={vistaTemporal === "TODOS"} className={vistaTemporal === "TODOS" ? "active" : ""} onClick={() => setVistaTemporal("TODOS")} type="button">Todos <span>{meetings.length}</span></button>
             <button
               aria-pressed={vistaTemporal === "PROXIMOS"}
               className={vistaTemporal === "PROXIMOS" ? "active" : ""}
@@ -291,7 +292,7 @@ export function MeetingDetailManager({
         {visibleMeetings.length === 0 ? (
           <div className="content-section empty-state encounter-empty-state">
             <CalendarClock size={22} aria-hidden="true" />
-            <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : "No hay encuentros pasados."}</p>
+            <p>{vistaTemporal === "PROXIMOS" ? "No hay encuentros para hoy ni próximos." : vistaTemporal === "PASADOS" ? "No hay encuentros pasados." : "Todavía no hay encuentros en esta serie."}</p>
           </div>
         ) : null}
 
@@ -303,7 +304,7 @@ export function MeetingDetailManager({
             <article className={`encounter-item encounter-card encounter-card-v2 is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`} key={meeting.id}>
               <header className="encounter-v2-header">
                 <div className="encounter-v2-heading">
-                  <span className="encounter-v2-number">{meeting.ordinal}</span>
+                  <span className="encounter-v2-number"><strong>{meeting.ordinal}</strong><small>{meeting.inicio.slice(5, 7) === "10" ? "OCT" : meeting.inicio.slice(5, 7) === "11" ? "NOV" : meeting.inicio.slice(5, 7) === "12" ? "DIC" : meeting.inicio.slice(5, 7) === "09" ? "SEP" : meeting.inicio.slice(5, 7) === "08" ? "AGO" : "MES"}</small></span>
                   <div>
                     <strong>Encuentro {meeting.ordinal}</strong>
                     <span>{meeting.fechaLegible}</span>
@@ -350,6 +351,9 @@ export function MeetingDetailManager({
                           <small>{meeting.joinUrl ? "La sala está lista para ingresar." : "Google todavía está terminando de configurar la sala."}</small>
                         </div>
                         <div className="encounter-v2-meet-actions">
+                          {meeting.joinUrl && meeting.temporalidad === "EN_CURSO" ? (
+                            <a className="secondary-action" href={`/reuniones/${meeting.solicitudId}/encuentros/${meeting.id}`} aria-label="Operar encuentro actual">Operar</a>
+                          ) : null}
                           {meeting.joinUrl
                             ? <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} />
                             : <span className="muted-text">No disponible todavía</span>}
