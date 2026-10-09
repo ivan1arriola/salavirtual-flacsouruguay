@@ -47,7 +47,7 @@ export default async function ReunionDetailPage({
   if (!request || !await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) notFound();
 
   const now = new Date();
-  const [seriesRequests, cohostAccounts, programRecipients] = await Promise.all([
+  const [seriesRequests, cohostAccounts, programRecipients, otherUsers, historicCohostEmails] = await Promise.all([
     db.solicitudSala.findMany({
       where: {
         docenteProgramaId: request.docenteProgramaId,
@@ -90,9 +90,11 @@ export default async function ReunionDetailPage({
     db.cuentaGoogleFlacso.findMany({
       where: { user: { activo: true } },
       orderBy: { email: "asc" },
-      select: { id: true, email: true, userId: true }
+      select: { id: true, email: true, userId: true, user: { select: { nombres: true, apellidos: true } } }
     }),
-    destinatariosDocentesPrograma(db, request.docentePrograma.programaId)
+    destinatariosDocentesPrograma(db, request.docentePrograma.programaId),
+    db.usuario.findMany({ where: { activo: true }, take: 400, select: { nombres: true, apellidos: true, emailPrincipal: true } }),
+    db.cohostEmailReunion.findMany({ distinct: ["email"], take: 400, select: { email: true } })
   ]);
 
   const meetings = seriesRequests
@@ -352,12 +354,24 @@ export default async function ReunionDetailPage({
         cohostOptions={cohostAccounts.map(({ id, email }) => ({
           id,
           email,
+          name: [cohostAccounts.find((account) => account.id === id)?.user.nombres, cohostAccounts.find((account) => account.id === id)?.user.apellidos].filter(Boolean).join(" "),
           required: protectedCohostIds.has(id)
         }))}
         initialCohostCuentaIds={initialCohostCuentaIds}
         initialManualCohostEmails={initialManualCohostEmails}
-        suggestedEmails={unique(meetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase())))}
+        suggestedPeople={[
+          ...otherUsers.filter(({ emailPrincipal }) => Boolean(emailPrincipal)).map(({ emailPrincipal, nombres, apellidos }) => ({
+            email: emailPrincipal!.toLowerCase(), name: [nombres, apellidos].filter(Boolean).join(" "), source: "Usuario registrado"
+          })),
+          ...historicCohostEmails.map(({ email }) => ({ email: email.toLowerCase(), name: email.toLowerCase(), source: "Cohost anterior" }))
+        ]}
         verificationByEmail={verificationByEmail}
+        seriesInfo={{
+          titulo: request.titulo,
+          modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+          encuentros: meetings.length,
+          siguientes: manageableMeetings.length,
+        }}
         programPeopleCount={programRecipients.length}
         hasManageableMeetings={manageableMeetings.length > 0}
       />

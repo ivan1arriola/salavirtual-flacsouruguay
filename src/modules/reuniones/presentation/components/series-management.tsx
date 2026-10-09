@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, CheckCircle2, ChevronDown, LoaderCircle, Plus, Save, Search, Trash2, UsersRound } from "lucide-react";
+import { BellRing, CheckCircle2, ChevronDown, CircleHelp, CircleX, Eye, LoaderCircle, Plus, RefreshCw, Save, Search, Settings2, Trash2, UsersRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -16,7 +16,8 @@ export function SeriesManagement({
   cohostOptions,
   initialCohostCuentaIds,
   initialManualCohostEmails,
-  suggestedEmails,
+  suggestedPeople,
+  seriesInfo,
   verificationByEmail,
   programPeopleCount,
   hasManageableMeetings,
@@ -25,7 +26,8 @@ export function SeriesManagement({
   cohostOptions: readonly CohostOption[];
   initialCohostCuentaIds: readonly string[];
   initialManualCohostEmails: readonly string[];
-  suggestedEmails: readonly string[];
+  suggestedPeople: readonly { email: string; name: string; source: string }[];
+  seriesInfo: Readonly<{ titulo: string; modalidad: string; encuentros: number; siguientes: number }>;
   verificationByEmail: readonly { email: string; confirmed: number; total: number; pending: number }[];
   programPeopleCount: number;
   hasManageableMeetings: boolean;
@@ -37,6 +39,48 @@ export function SeriesManagement({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [busy, setBusy] = useState<"notify" | "cohosts" | null>(null);
   const [message, setMessage] = useState("");
+  const [tab, setTab] = useState<"cohosts" | "settings" | "notify">("cohosts");
+  const [checking, setChecking] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+  const [liveVerification, setLiveVerification] = useState<readonly {
+    email: string; confirmed: number; rejected: number; unknown: number; total: number;
+    meetings: readonly { id: string; fecha: string; result: "confirmed" | "rejected" | "unknown" }[];
+  }[] | null>(null);
+  const [preview, setPreview] = useState<{ asunto: string; texto: string; destinatarios: number; encuentros: number } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  async function verifyCohosts(): Promise<void> {
+    setChecking(true);
+    setVerificationError("");
+    try {
+      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/cohosts/verificar", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No fue posible consultar los permisos en Google Meet.");
+      setLiveVerification(result.entries);
+      setVerifiedAt(result.verifiedAt);
+    } catch (error) {
+      setLiveVerification(null);
+      setVerificationError(error instanceof Error ? error.message : "No se pudo verificar.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function previewNotice(): Promise<void> {
+    setLoadingPreview(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/notificar", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No fue posible preparar el correo.");
+      setPreview({ asunto: result.asunto, texto: result.texto, destinatarios: result.destinatarios, encuentros: result.encuentros });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo mostrar la vista previa.");
+    } finally {
+      setLoadingPreview(false);
+    }
+  }
 
   async function notifyProgram() {
     if (!window.confirm(`Se reenviará el aviso de esta serie a ${programPeopleCount} ${programPeopleCount === 1 ? "persona" : "personas"} del programa. ¿Continuar?`)) return;
@@ -70,6 +114,7 @@ export function SeriesManagement({
       if (!response.ok) throw new Error(result.error ?? "No se pudieron actualizar los cohosts.");
       setMessage(result.message ?? "Cohosts actualizados.");
       router.refresh();
+      await verifyCohosts();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron actualizar los cohosts.");
     } finally {
@@ -79,27 +124,29 @@ export function SeriesManagement({
 
   type KnownCohost = { email: string; id: string | null; name: string; required: boolean; source: string };
   const knownEntries: Array<readonly [string, KnownCohost]> = [
-    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name ?? option.email, required: option.required, source: "Cuenta institucional" }] as const),
-    ...suggestedEmails.map((email) => [email.toLowerCase(), { email: email.toLowerCase(), id: null, name: email, required: false, source: "Registro anterior" }] as const)
+    ...suggestedPeople.map((person) => [person.email.toLowerCase(), { email: person.email.toLowerCase(), id: null, name: person.name, required: false, source: person.source }] as const),
+    ...cohostOptions.map((option) => [option.email.toLowerCase(), { email: option.email.toLowerCase(), id: option.id, name: option.name || option.email, required: option.required, source: "Cuenta institucional" }] as const)
   ];
   const known = [...new Map<string, KnownCohost>(knownEntries).values()];
   const selectedEmails = new Set([...cohostOptions.filter((option) => selectedIds.includes(option.id) || option.required).map((option) => option.email.toLowerCase()), ...manualEmails]);
   const options = query.trim()
     ? known.filter((option) => !selectedEmails.has(option.email) && (option.email.includes(query.trim().toLowerCase()) || option.name.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 7)
     : [];
-  const validEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(query.trim());
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim());
   const configuredCount = selectedEmails.size;
 
   function addCohost(email: string) {
     const normalized = email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized) || selectedEmails.has(normalized) || configuredCount >= 50) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) || selectedEmails.has(normalized) || configuredCount >= 50) return;
     const institutional = cohostOptions.find((option) => option.email.toLowerCase() === normalized);
     if (institutional) setSelectedIds((current) => [...new Set([...current, institutional.id])]);
     else setManualEmails((current) => [...current, normalized]);
     setQuery("");
     setShowSuggestions(false);
+    setLiveVerification(null);
   }
   function removeCohost(email: string) {
+    setLiveVerification(null);
     const institutional = cohostOptions.find((option) => option.email.toLowerCase() === email);
     if (institutional) {
       if (institutional.required) return;
@@ -107,8 +154,9 @@ export function SeriesManagement({
     } else setManualEmails((current) => current.filter((value) => value !== email));
   }
   const verification = new Map(verificationByEmail.map((entry) => [entry.email.toLowerCase(), entry]));
+  const live = new Map((liveVerification ?? []).map((entry) => [entry.email.toLowerCase(), entry]));
   return (
-    <details className="series-management-v2" id="administrar-serie">
+    <details className="series-management-v2" id="administrar-serie" open>
       <summary>
         <span className="series-management-v2-icon"><UsersRound size={18} aria-hidden="true" /></span>
         <div>
@@ -119,10 +167,15 @@ export function SeriesManagement({
         <ChevronDown size={18} aria-hidden="true" />
       </summary>
 
-      <div className="series-management-v2-content">
+      <div className="series-management-tabs" role="tablist" aria-label="Secciones de administración">
+        <button type="button" role="tab" aria-selected={tab === "cohosts"} className={tab === "cohosts" ? "active" : ""} onClick={() => setTab("cohosts")}><UsersRound size={16}/> Cohosts</button>
+        <button type="button" role="tab" aria-selected={tab === "settings"} className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}><Settings2 size={16}/> Configuración</button>
+        <button type="button" role="tab" aria-selected={tab === "notify"} className={tab === "notify" ? "active" : ""} onClick={() => setTab("notify")}><BellRing size={16}/> Notificaciones</button>
+      </div>
+      <div className={"series-management-v2-content" + (tab !== "cohosts" ? " is-single" : "")}>
         {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
-        <article className="series-tool-card">
+        {tab === "cohosts" ? <article className="series-tool-card series-cohost-manager">
           <header>
             <UsersRound size={19} aria-hidden="true" />
             <div>
@@ -157,18 +210,34 @@ export function SeriesManagement({
             <small>Seleccioná una sugerencia o ingresá un correo nuevo. Máximo 50 cohosts.</small>
           </div>
           <div className="field">
-            <strong>Cohosts agregados ({configuredCount})</strong>
+            <div className="series-cohost-toolbar">
+              <strong>Cohosts agregados ({configuredCount})</strong>
+              <button type="button" className="secondary-action" onClick={verifyCohosts} disabled={checking || busy !== null || !hasManageableMeetings}>
+                {checking ? <LoaderCircle className="button-spinner" size={16} /> : <RefreshCw size={16} />}
+                {checking ? "Consultando Google…" : "Verificar en Google"}
+              </button>
+            </div>
+            {verificationError ? <p role="alert" className="series-verification-error">{verificationError}</p> : null}
+            {verifiedAt ? <small className="series-verification-note">Consultado: {new Date(verifiedAt).toLocaleString("es-UY")}</small> : null}
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
               {[...selectedEmails].sort().map((email) => {
                 const institutional = cohostOptions.find((option) => option.email.toLowerCase() === email);
                 const status = verification.get(email);
+                const liveStatus = live.get(email);
+                const person = known.find((item) => item.email === email);
                 return <li key={email} style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", padding: "9px 10px", border: "1px solid #e0e5ed", borderRadius: 8, overflowWrap: "anywhere" }}>
-                  <div><strong>{institutional?.name || email}</strong>{institutional?.name && institutional.name !== email ? <div><small>{email}</small></div> : null}
-                    <div><small>{institutional?.required ? "Automático · no eliminable" : institutional ? "Institucional" : "Externo"}</small></div></div>
+                  <div className="series-person"><strong>{person?.name || email}</strong>{person?.name && person.name !== email ? <div><small>{email}</small></div> : null}
+                    <div><small>{institutional?.required ? "Automático · no eliminable" : person?.source || "Correo externo"}</small></div></div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {status?.total && status.confirmed === status.total
-                      ? <span style={{ color: "#177245", display: "inline-flex", gap: 4, alignItems: "center" }} title="Confirmado por Google en todos los encuentros"><CheckCircle2 size={17} /> <small>Verificado</small></span>
-                      : <small title="La verificación pendiente no equivale a un rechazo de Google">{status ? `${status.confirmed}/${status.total} verificados` : "Sin verificar"}</small>}
+                    {liveStatus?.total && liveStatus.confirmed === liveStatus.total
+                      ? <span className="series-verification-status is-verified"><CheckCircle2 size={17} /> <small>Verificado en Google</small></span>
+                      : liveStatus?.rejected
+                      ? <span className="series-verification-status is-rejected"><CircleX size={17} /> <small>No confirmado ({liveStatus.rejected})</small></span>
+                      : liveStatus
+                      ? <span className="series-verification-status"><CircleHelp size={17} /> <small>{liveStatus.confirmed}/{liveStatus.total} confirmados · {liveStatus.unknown} sin respuesta</small></span>
+                      : status?.total && status.confirmed === status.total
+                      ? <span className="series-verification-status is-cached"><CheckCircle2 size={17} /> <small>Último registro: verificado</small></span>
+                      : <span className="series-verification-status"><CircleHelp size={17} /> <small>Sin verificar</small></span>}
                     {!institutional?.required && <button type="button" aria-label={`Quitar ${email}`} title="Quitar" disabled={busy !== null || !hasManageableMeetings} onClick={() => removeCohost(email)} style={{ background: "transparent", border: 0, cursor: "pointer" }}><Trash2 size={16} /></button>}
                   </div>
                 </li>;
@@ -190,9 +259,9 @@ export function SeriesManagement({
             {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
             {busy === "cohosts" ? "Guardando…" : "Guardar cohosts"}
           </button>
-        </article>
+        </article> : null}
 
-        <article className="series-tool-card series-notify-card">
+        {tab !== "settings" ? <article className="series-tool-card series-notify-card">
           <header>
             <BellRing size={19} aria-hidden="true" />
             <div>
@@ -204,6 +273,7 @@ export function SeriesManagement({
             <strong>{programPeopleCount}</strong>
             <span>{programPeopleCount === 1 ? "persona recibirá el aviso" : "personas recibirán el aviso"}</span>
           </div>
+          <button type="button" className="secondary-action series-preview-trigger" disabled={loadingPreview || busy !== null} onClick={previewNotice}>{loadingPreview ? <LoaderCircle className="button-spinner" size={16}/> : <Eye size={16}/>} Vista previa real</button>
           <button
             className="secondary-action series-tool-action"
             disabled={busy !== null || programPeopleCount === 0 || !hasManageableMeetings}
@@ -213,8 +283,28 @@ export function SeriesManagement({
             {busy === "notify" ? <LoaderCircle className="button-spinner" size={17} /> : <BellRing size={17} />}
             {busy === "notify" ? "Enviando…" : "Reenviar aviso"}
           </button>
-        </article>
+        </article> : null}
+        {tab === "settings" ? <article className="series-tool-card series-settings-card">
+          <header><Settings2 size={19}/><div><h3>Configuración general</h3><p>Información actual de la serie de reuniones.</p></div></header>
+          <dl>
+            <div><dt>Título</dt><dd>{seriesInfo.titulo}</dd></div>
+            <div><dt>Modalidad</dt><dd>{seriesInfo.modalidad}</dd></div>
+            <div><dt>Encuentros totales</dt><dd>{seriesInfo.encuentros}</dd></div>
+            <div><dt>Activos y futuros</dt><dd>{seriesInfo.siguientes}</dd></div>
+          </dl>
+          <p>Los cambios de horario, modalidad y asistencia se realizan desde el cronograma, sin modificar los encuentros ya ocurridos.</p>
+          <a className="secondary-action" href="#encuentros">Ir al cronograma</a>
+        </article> : null}
       </div>
+      {preview ? <div className="series-preview" role="dialog" aria-label="Vista previa del aviso">
+        <div className="series-preview-heading">
+          <div><strong>Vista previa del correo</strong><small>{preview.destinatarios} destinatarios · {preview.encuentros} encuentros</small></div>
+          <button type="button" aria-label="Cerrar" className="secondary-action" onClick={() => setPreview(null)}><X size={17}/></button>
+        </div>
+        <p><strong>Asunto:</strong> {preview.asunto}</p>
+        <pre>{preview.texto}</pre>
+        <button type="button" className="secondary-action" onClick={() => setPreview(null)}>Cerrar vista previa</button>
+      </div> : null}
     </details>
   );
 }

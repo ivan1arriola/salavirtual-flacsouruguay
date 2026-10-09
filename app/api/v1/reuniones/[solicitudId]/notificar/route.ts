@@ -8,6 +8,24 @@ import { renotificarSerieAlPrograma } from "@/src/modules/reuniones/renotificar-
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 
+export async function GET(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
+    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { solicitudId } = await context.params;
+    const preview = await renotificarSerieAlPrograma(
+      { db, descifrar: descifrarConfiguracion }, actor, solicitudId,
+      { soloVistaPrevia: true },
+    );
+    return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
+  }
+}
+
 export async function POST(_request: Request, context: RouteContext) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
