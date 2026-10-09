@@ -1063,3 +1063,52 @@
     font-size: .78rem;
   }
 }
+
+
+/* Keep native radio controls compact even inside the generic .field layout. */
+.page :global(.modality-choice input[type="radio"]),
+.page :global(.date-mode-selector input[type="radio"]),
+.page :global(.organization-segmented input[type="radio"]),
+.page :global(.assistance-choice input[type="radio"]) {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  flex: 0 0 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #2c4777;
+  box-shadow: none;
+}
+
+.page :global(.organization-email-editor > summary) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.page :global(.organization-email-editor .organization-count-pill) {
+  flex-shrink: 0;
+}
+
+.page :global(.organization-email-editor .organization-disclosure-chevron) {
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .page :global(.organization-email-editor > summary) {
+    flex-wrap: wrap;
+  }
+
+  .page :global(.organization-email-editor > summary > div) {
+    flex-basis: 100%;
+  }
+
+  .page :global(.organization-email-editor .organization-disclosure-chevron) {
+    margin-left: auto;
+  }
+
+  .page :global(.organization-email-editor .organization-count-pill) {
+    order: 1;
+  }
+}
