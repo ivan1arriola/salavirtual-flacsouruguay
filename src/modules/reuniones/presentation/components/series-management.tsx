@@ -186,22 +186,23 @@ export function SeriesManagement({
 
           <div className="field">
             <label htmlFor="series-cohost-search">Agregar cohost</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Search size={18} aria-hidden="true" />
-              <input id="series-cohost-search" type="email" value={query}
+            <div className="series-cohost-entry">
+              <div className="series-cohost-search-control">
+                <Search size={18} aria-hidden="true" />
+                <input id="series-cohost-search" type="email" value={query}
                 autoComplete="off" placeholder="Nombre o correo electrónico"
                 disabled={busy !== null || !hasManageableMeetings || configuredCount >= 50}
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(event) => { setQuery(event.target.value); setShowSuggestions(true); }}
                 onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (options.length === 1) addCohost(options[0].email); else if (validEmail) addCohost(query); } }}
-                style={{ flex: 1, minWidth: 0 }} />
-              <button type="button" className="secondary-action" disabled={!validEmail || selectedEmails.has(query.trim().toLowerCase()) || busy !== null || !hasManageableMeetings} onClick={() => addCohost(query)}><Plus size={16} /> Agregar</button>
+                />
+              </div>
+              <button type="button" className="secondary-action series-cohost-add" disabled={!validEmail || selectedEmails.has(query.trim().toLowerCase()) || busy !== null || !hasManageableMeetings} onClick={() => addCohost(query)}><Plus size={16} /> Agregar</button>
             </div>
             {showSuggestions && options.length > 0 && (
-              <div role="listbox" aria-label="Sugerencias de cohosts" style={{ border: "1px solid var(--border-color, #d6dce5)", borderRadius: 8, marginTop: 6, maxHeight: 210, overflowY: "auto" }}>
+              <div role="listbox" aria-label="Sugerencias de cohosts" className="series-cohost-suggestions">
                 {options.map((option) => (
-                  <button key={option.email} role="option" aria-selected={false} type="button" onClick={() => addCohost(option.email)}
-                    style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "transparent", border: 0, cursor: "pointer", textAlign: "left", gap: 10 }}>
+                  <button key={option.email} role="option" aria-selected={false} type="button" onClick={() => addCohost(option.email)} className="series-cohost-suggestion">
                     <span><strong>{option.name}</strong><br /><small>{option.email}</small></span><small>{option.source}</small>
                   </button>
                 ))}
@@ -219,16 +220,16 @@ export function SeriesManagement({
             </div>
             {verificationError ? <p role="alert" className="series-verification-error">{verificationError}</p> : null}
             {verifiedAt ? <small className="series-verification-note">Consultado: {new Date(verifiedAt).toLocaleString("es-UY")}</small> : null}
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+            <ul className="series-cohost-items">
               {[...selectedEmails].sort().map((email) => {
                 const institutional = cohostOptions.find((option) => option.email.toLowerCase() === email);
                 const status = verification.get(email);
                 const liveStatus = live.get(email);
                 const person = known.find((item) => item.email === email);
-                return <li key={email} style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", padding: "9px 10px", border: "1px solid #e0e5ed", borderRadius: 8, overflowWrap: "anywhere" }}>
+                return <li key={email} className="series-cohost-item">
                   <div className="series-person"><strong>{person?.name || email}</strong>{person?.name && person.name !== email ? <div><small>{email}</small></div> : null}
                     <div><small>{institutional?.required ? "Automático · no eliminable" : person?.source || "Correo externo"}</small></div></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className="series-cohost-status-actions">
                     {liveStatus?.total && liveStatus.confirmed === liveStatus.total
                       ? <span className="series-verification-status is-verified"><CheckCircle2 size={17} /> <small>Verificado en Google</small></span>
                       : liveStatus?.rejected
@@ -238,7 +239,7 @@ export function SeriesManagement({
                       : status?.total && status.confirmed === status.total
                       ? <span className="series-verification-status is-cached"><CheckCircle2 size={17} /> <small>Último registro: verificado</small></span>
                       : <span className="series-verification-status"><CircleHelp size={17} /> <small>Sin verificar</small></span>}
-                    {!institutional?.required && <button type="button" aria-label={`Quitar ${email}`} title="Quitar" disabled={busy !== null || !hasManageableMeetings} onClick={() => removeCohost(email)} style={{ background: "transparent", border: 0, cursor: "pointer" }}><Trash2 size={16} /></button>}
+                    {!institutional?.required && <button type="button" aria-label={`Quitar ${email}`} title="Quitar" disabled={busy !== null || !hasManageableMeetings} onClick={() => removeCohost(email)} className="series-cohost-remove"><Trash2 size={16} /></button>}
                   </div>
                 </li>;
               })}
@@ -261,7 +262,7 @@ export function SeriesManagement({
           </button>
         </article> : null}
 
-        {tab !== "settings" ? <article className="series-tool-card series-notify-card">
+        {tab === "notify" ? <article className="series-tool-card series-notify-card">
           <header>
             <BellRing size={19} aria-hidden="true" />
             <div>
