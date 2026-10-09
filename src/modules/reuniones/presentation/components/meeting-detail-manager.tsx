@@ -352,7 +352,7 @@ export function MeetingDetailManager({
                         </div>
                         <div className="encounter-v2-meet-actions">
                           {meeting.joinUrl && meeting.temporalidad === "EN_CURSO" ? (
-                            <a className="secondary-action" href={`/reuniones/${meeting.solicitudId}/encuentros/${meeting.id}`} aria-label="Operar encuentro actual">Operar</a>
+                            <a className="secondary-action" href={`/operacion/${meeting.id}`} aria-label="Operar encuentro actual">Operar</a>
                           ) : null}
                           {meeting.joinUrl
                             ? <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} />
