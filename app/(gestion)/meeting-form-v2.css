@@ -568,3 +568,108 @@
   color: #637994;
   font-size: .7rem;
 }
+
+
+/* Asistencia presencial: campos automáticos y margen mínimo obligatorio. */
+.meeting-form-v2 .meeting-assistance-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid #d8b96c;
+  border-left: 4px solid #c89017;
+  border-radius: 11px;
+  background: #fff2d3;
+  padding: 12px 14px;
+  color: #65450d;
+}
+
+.meeting-form-v2 .meeting-assistance-hint > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.meeting-form-v2 .meeting-assistance-hint > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.meeting-form-v2 .meeting-assistance-hint strong {
+  font-size: .85rem;
+}
+
+.meeting-form-v2 .meeting-assistance-hint span {
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.meeting-form-v2 .meeting-assistance-fields {
+  display: grid;
+  grid-column: 1 / -1;
+  min-width: 0;
+  gap: 10px;
+  border: 1px solid #b8cbe5;
+  border-radius: 11px;
+  padding: 12px;
+  background: #e3edf9;
+}
+
+.meeting-form-v2 .meeting-assistance-fields > strong {
+  color: #223e69;
+  font-size: .82rem;
+}
+
+.meeting-form-v2 .meeting-assistance-fields > strong small {
+  color: #506986;
+  font-size: .75rem;
+  font-weight: 500;
+}
+
+.meeting-form-v2 .meeting-assistance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  gap: 10px;
+}
+
+.meeting-form-v2 .meeting-assistance-grid .field {
+  min-width: 0;
+}
+
+.meeting-form-v2 .meeting-assistance-grid input {
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+  border-color: #9eb7d7;
+  color: #213d66;
+}
+
+.meeting-form-v2 .meeting-assistance-fields > .meeting-date-warning {
+  display: block;
+  margin: 0;
+}
+
+@media (max-width: 460px) {
+  .meeting-form-v2 .meeting-assistance-hint {
+    padding: 11px;
+  }
+
+  .meeting-form-v2 .meeting-assistance-fields {
+    padding: 11px;
+  }
+
+  .meeting-form-v2 .meeting-assistance-grid {
+    gap: 8px;
+  }
+
+  .meeting-form-v2 .meeting-assistance-grid input {
+    font-size: 16px;
+    padding-inline: 6px;
+  }
+}
+
+@media (max-width: 340px) {
+  .meeting-form-v2 .meeting-assistance-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
