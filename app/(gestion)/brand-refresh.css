@@ -518,3 +518,97 @@
     border-radius: 12px;
   }
 }
+
+
+/* Shared schedule vocabulary across assistant, teacher and administration views. */
+.meeting-schedule-times {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 10px 0;
+}
+
+.meeting-schedule-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid #b9cde6;
+  border-radius: 10px;
+  background: #e8f0fb;
+  color: #263e63;
+}
+
+.meeting-schedule-line > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #2c4777;
+}
+
+.meeting-schedule-line > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.meeting-schedule-line span {
+  font-size: .7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+  color: #3d5a81;
+}
+
+.meeting-schedule-line strong {
+  font-size: 1.02rem;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  color: #1c3458;
+}
+
+.meeting-schedule-line small {
+  color: #4b6280;
+  font-size: .75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.meeting-schedule-line.is-coverage {
+  border-color: #e2c678;
+  border-left: 4px solid #bf850b;
+  background: #fff3d3;
+}
+
+.meeting-schedule-line.is-coverage > svg,
+.meeting-schedule-line.is-coverage span {
+  color: #79500b;
+}
+
+.meeting-schedule-times.is-assistant .is-coverage strong {
+  color: #533909;
+}
+
+.meeting-schedule-times.is-compact {
+  gap: 5px;
+  margin: 6px 0;
+}
+
+.meeting-schedule-times.is-compact .meeting-schedule-line {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.meeting-schedule-times.is-compact .meeting-schedule-line strong {
+  font-size: .88rem;
+}
+
+.meeting-schedule-times.is-compact .meeting-schedule-line small {
+  font-size: .7rem;
+}
+
+@media (max-width: 560px) {
+  .meeting-schedule-line {
+    padding: 11px;
+  }
+}
