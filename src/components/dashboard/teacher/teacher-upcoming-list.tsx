@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, ExternalLink, Video } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import type { UpcomingMeetingSummaryDTO } from "@/src/modules/dashboard/types";
 
@@ -36,9 +37,7 @@ export function TeacherUpcomingList({
               <article className="teacher-upcoming-card" key={meeting.id}>
                 <div className="teacher-upcoming-card-when">
                   <span className="teacher-upcoming-card-date">{formatDate(inicio)}</span>
-                  <strong className="teacher-upcoming-card-time">
-                    {formatTime(inicio)}–{formatTime(fin)}
-                  </strong>
+                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
                   <span className="badge-tag">
                     {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                   </span>
