@@ -296,7 +296,7 @@ export default async function ReunionDetailPage({
             <>
               <small>Próximo encuentro</small>
               <strong>{nextMeeting.fechaLegible}</strong>
-              <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
+              <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} modality={nextMeeting.modalidad} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
               {nextMeeting.joinUrl ? (
                 <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
                   <Video size={17} aria-hidden="true" />Entrar a Meet
