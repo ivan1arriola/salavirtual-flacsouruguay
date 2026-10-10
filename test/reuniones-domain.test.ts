@@ -166,6 +166,50 @@ describe("dias derivados de reuniones", () => {
     expect(result.success).toBe(false);
   });
 
+  it("requiere un mínimo de treinta minutos antes y después incluso por API", () => {
+    const base = {
+      titulo: "Taller presencial con Meet",
+      docenteProgramaId: "docente-programa",
+      modalidad: "HIBRIDA" as const,
+      requiereAsistenciaTecnica: true,
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-10T10:00:00-03:00",
+        fin: "2026-10-10T17:00:00-03:00",
+        asistenciaInicio: "2026-10-10T09:30:00-03:00",
+        asistenciaFin: "2026-10-10T17:30:00-03:00"
+      }]
+    };
+
+    expect(crearReunionesSchema.safeParse(base).success).toBe(true);
+    expect(crearReunionesSchema.safeParse({
+      ...base, instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T09:31:00-03:00" }]
+    }).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({
+      ...base, instancias: [{ ...base.instancias[0], asistenciaFin: "2026-10-10T17:29:00-03:00" }]
+    }).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({
+      ...base, instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T08:30:00-03:00", asistenciaFin: "2026-10-10T18:00:00-03:00" }]
+    }).success).toBe(true);
+  });
+
+  it("permite la cobertura mínima cruzando medianoche sin cambiar la fecha del encuentro", () => {
+    const base = {
+      titulo: "Taller madrugada",
+      docenteProgramaId: "dp",
+      modalidad: "HIBRIDA" as const,
+      requiereAsistenciaTecnica: true,
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-10T00:15:00-03:00",
+        fin: "2026-10-10T01:30:00-03:00",
+        asistenciaInicio: "2026-10-09T23:45:00-03:00",
+        asistenciaFin: "2026-10-10T02:00:00-03:00"
+      }]
+    };
+    expect(crearReunionesSchema.safeParse(base).success).toBe(true);
+  });
+
   it("conserva una descripción diferente para cada encuentro", () => {
     const result = crearReunionesSchema.parse({
       titulo: "Clase",
