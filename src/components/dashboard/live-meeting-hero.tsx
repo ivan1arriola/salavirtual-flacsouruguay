@@ -82,7 +82,11 @@ export function LiveMeetingHero({
   const fin = new Date(meeting.finProgramadoAt);
   const estadoTemporal = determinarEstadoTemporal(inicio, fin, ahora);
   const isLive = estadoTemporal === "EN_VIVO";
-  const inicioAsistencia = new Date(meeting.inicioAsistenciaAt ?? meeting.inicioProgramadoAt);
+  const inicioAsistencia = meeting.inicioAsistenciaAt
+    ? new Date(meeting.inicioAsistenciaAt)
+    : meeting.requiereAsistencia && meeting.modalidad === "VIRTUAL"
+      ? new Date(inicio.getTime() - 15 * 60 * 1000)
+      : inicio;
   const finAsistencia = new Date(meeting.finAsistenciaAt ?? meeting.finProgramadoAt);
   const coberturaDiferente = meeting.requiereAsistencia && (inicioAsistencia.getTime() !== inicio.getTime() || finAsistencia.getTime() !== fin.getTime());
   const paraAsistente = role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia;
