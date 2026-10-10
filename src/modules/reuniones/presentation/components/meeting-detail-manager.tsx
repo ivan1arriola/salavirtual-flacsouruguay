@@ -20,6 +20,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import {
   filtrarEncuentrosPorVista,
   type VistaTemporalEncuentros
@@ -308,7 +309,8 @@ export function MeetingDetailManager({
                   <div>
                     <strong>Encuentro {meeting.ordinal}</strong>
                     <span>{meeting.fechaLegible}</span>
-                    <small>{meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
+                    <small>Encuentro: {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
+                    {meeting.requiereAsistenciaTecnica ? <small>Asistencia: {(meeting.inicioAsistencia ?? meeting.inicio).slice(11, 16)}–{(meeting.finAsistencia ?? meeting.fin).slice(11, 16)}</small> : null}
                     <small>
                       {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       {meeting.modalidadPersonalizada ? " · configuración puntual" : ""}
@@ -338,6 +340,7 @@ export function MeetingDetailManager({
                 <>
                   <div className="encounter-v2-body">
                     <div className="encounter-v2-main">
+                      <MeetingScheduleTimes startsAt={meeting.inicio + ":00-03:00"} endsAt={meeting.fin + ":00-03:00"} requiresAssistance={meeting.requiereAsistenciaTecnica} assistanceStartsAt={meeting.inicioAsistencia ? meeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={meeting.finAsistencia ? meeting.finAsistencia + ":00-03:00" : null} compact />
                       <div className="encounter-v2-description">
                         <span>Detalle del encuentro</span>
                         <p>{meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}</p>
