@@ -721,7 +721,7 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={first.inicioProgramadoAt} endsAt={first.finProgramadoAt} requiresAssistance={first.requiereAsistenciaTecnica} assistanceStartsAt={first.inicioAsistenciaTecnicaAt} assistanceEndsAt={first.finAsistenciaTecnicaAt} compact />
+                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={first.inicioProgramadoAt} endsAt={first.finProgramadoAt} requiresAssistance={first.requiereAsistenciaTecnica} modality={first.modalidadOverride ?? first.solicitud.modalidad} assistanceStartsAt={first.inicioAsistenciaTecnicaAt} assistanceEndsAt={first.finAsistenciaTecnicaAt} compact />
                       <Link className="agenda-meeting-title" href={`/reuniones/${request.id}`}>
                         {request.titulo}
                       </Link>
@@ -930,7 +930,7 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance={meeting.requiereAsistenciaTecnica} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} compact />
+                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance={meeting.requiereAsistenciaTecnica} modality={meeting.modalidadOverride ?? meeting.solicitud.modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} compact />
                       <Link
                         className="agenda-meeting-title"
                         href={`/reuniones/${meeting.solicitud.id}`}
