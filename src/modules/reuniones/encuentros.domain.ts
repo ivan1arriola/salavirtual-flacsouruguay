@@ -123,16 +123,14 @@ export function elegirCuentaHostParaPeriodos(
   periodos: readonly Periodo[]
 ): string | null {
   const disponibles = cuentas
-    .filter((cuenta) => periodos.every((periodo, index) => {
-      const existentes = reservas.filter((reserva) =>
-        reserva.cuentaProveedorId === cuenta.id && seSolapan(reserva, periodo)
-      ).length;
-      const nuevasSimultaneas = periodos
-        .slice(0, index)
-        .filter((otro) => seSolapan(otro, periodo))
-        .length;
-      return existentes + nuevasSimultaneas < (cuenta.limiteConcurrente ?? 1);
-    }))
+    .filter((cuenta) => {
+      const reservasCuenta = reservas.filter(({ cuentaProveedorId }) => cuentaProveedorId === cuenta.id);
+      return respetaCapacidadConcurrente(
+        reservasCuenta,
+        periodos,
+        cuenta.limiteConcurrente ?? 1
+      );
+    })
     .reduce<typeof cuentas>((ordered, cuenta) => {
       const position = ordered.findIndex((item) =>
         cuenta.prioridad < item.prioridad ||
@@ -175,4 +173,35 @@ export function periodoAsistenciaTecnica(
     fin: encuentro.finAsistenciaTecnicaAt ?? encuentro.finProgramadoAt,
     personalizado
   };
+}
+
+/**
+ * Checks the actual peak number of simultaneous meetings, not the total number
+ * of reservations that overlap a long requested interval. Endpoints are
+ * half-open [inicio, fin): a meeting ending at 10:00 frees its slot at 10:00.
+ */
+function respetaCapacidadConcurrente(
+  existentes: readonly Periodo[],
+  nuevos: readonly Periodo[],
+  limite: number
+): boolean {
+  if (!Number.isInteger(limite) || limite < 1) return false;
+  const intervalos = [...existentes, ...nuevos];
+  if (intervalos.some(({ inicio, fin }) =>
+    !Number.isFinite(inicio.getTime()) ||
+    !Number.isFinite(fin.getTime()) ||
+    inicio.getTime() >= fin.getTime()
+  )) return false;
+
+  const cambios = intervalos.flatMap(({ inicio, fin }) => [
+    { instante: inicio.getTime(), delta: 1 },
+    { instante: fin.getTime(), delta: -1 }
+  ]).sort((a, b) => a.instante - b.instante || a.delta - b.delta);
+
+  let activas = 0;
+  for (const cambio of cambios) {
+    activas += cambio.delta;
+    if (activas > limite) return false;
+  }
+  return true;
 }
