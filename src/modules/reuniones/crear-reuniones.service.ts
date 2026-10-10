@@ -18,6 +18,7 @@ import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "../meet/cohosts.domain";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
+import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
 export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
@@ -44,7 +45,19 @@ export async function crearReuniones(
   eventoProveedorIds: readonly string[];
   reutilizada: boolean;
 }>> {
-  const input = crearReunionesSchema.parse(rawInput);
+  const parsed = crearReunionesSchema.parse(rawInput);
+  // Siempre guardar la cobertura virtual fija, incluso para clientes API antiguos
+  // que todavía no envían horarios de asistencia.
+  const input = parsed.requiereAsistenciaTecnica && parsed.modalidad === "VIRTUAL"
+    ? {
+        ...parsed,
+        instancias: parsed.instancias.map((instancia) => ({
+          ...instancia,
+          asistenciaInicio: new Date(instancia.inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000),
+          asistenciaFin: instancia.fin
+        }))
+      }
+    : parsed;
   const invitadosSolicitados = invitadosEmailsSchema.parse(
     rawInput && typeof rawInput === "object" && "invitadosEmails" in rawInput
       ? (rawInput as { invitadosEmails?: unknown }).invitadosEmails
