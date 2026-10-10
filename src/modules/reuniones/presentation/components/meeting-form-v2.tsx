@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CalendarPlus,
   CheckCircle2,
+  Clock3,
   ChevronDown,
   LoaderCircle,
   Mail,
@@ -17,6 +18,7 @@ import {
 import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
+import { asistenciaLocalAIso, horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 
 type Option = Readonly<{ id: string; label: string }>;
 type ProgramOption = Option & Readonly<{ teacher: string; teacherEmail?: string }>;
@@ -109,11 +111,10 @@ export function MeetingFormV2({
 
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const academicReady = title.trim().length >= 3 && Boolean(selectedProgram?.teacherEmail);
+  const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   const datesReady = dates.length > 0 && dates.every((date) =>
     Boolean(date.fecha && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
-    (meetingMode !== "HIBRIDA" || !requiresAssistance || Boolean(
-      date.horaAsistenciaInicio && date.horaAsistenciaFin && date.horaAsistenciaFin > date.horaAsistenciaInicio
-    ))
+    (!requiereHorarioPresencial || horarioAsistenciaCumpleMargen(date))
   );
   const isReady = academicReady && datesReady;
 
@@ -132,7 +133,7 @@ export function MeetingFormV2({
     }
     if (!datesReady) {
       setStatus("error");
-      setMessage("Revisá las fechas y horarios: cada encuentro necesita un horario válido y, si corresponde, el horario de asistencia técnica.");
+      setMessage("Revisá las fechas y horarios. En encuentros híbridos con asistencia, el asistente debe llegar al menos 30 minutos antes y salir al menos 30 minutos después.");
       document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
@@ -174,11 +175,11 @@ export function MeetingFormV2({
           }) => ({
             inicio: localMontevideoToIso(fecha, horaInicio),
             fin: localMontevideoToIso(fecha, horaFin),
-            asistenciaInicio: meetingMode === "HIBRIDA" && requiresAssistance
-              ? localMontevideoToIso(fecha, horaAsistenciaInicio)
+            asistenciaInicio: requiereHorarioPresencial
+              ? asistenciaLocalAIso(fecha, horaInicio, horaAsistenciaInicio, "LLEGADA")
               : undefined,
-            asistenciaFin: meetingMode === "HIBRIDA" && requiresAssistance
-              ? localMontevideoToIso(fecha, horaAsistenciaFin)
+            asistenciaFin: requiereHorarioPresencial
+              ? asistenciaLocalAIso(fecha, horaFin, horaAsistenciaFin, "SALIDA")
               : undefined,
             descripcion: descripcion || undefined
           }))
@@ -206,14 +207,52 @@ export function MeetingFormV2({
     }
   }
 
+  function cambiarModalidad(mode: "VIRTUAL" | "HIBRIDA") {
+    setMeetingMode(mode);
+    if (mode === "HIBRIDA" && requiresAssistance) {
+      setDates((current) => current.map((date) => sincronizarHorarioAsistencia(date, date)));
+      setRecurrence((current) => sincronizarHorarioAsistencia(current, current));
+    }
+  }
+
+  function cambiarRequiereAsistencia(value: boolean) {
+    setRequiresAssistance(value);
+    if (value && meetingMode === "HIBRIDA") {
+      setDates((current) => current.map((date) => sincronizarHorarioAsistencia(date, date)));
+      setRecurrence((current) => sincronizarHorarioAsistencia(current, current));
+    }
+  }
+
+  function cambiarHoraEncuentro(index: number, campo: "horaInicio" | "horaFin", value: string) {
+    setDates((current) => current.map((date, i) => {
+      if (i !== index) return date;
+      const updated = { ...date, [campo]: value };
+      return requiereHorarioPresencial ? sincronizarHorarioAsistencia(date, updated) : updated;
+    }));
+  }
+
+  function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
+    setRecurrence((current) => {
+      const updated = { ...current, [campo]: value };
+      return requiereHorarioPresencial ? sincronizarHorarioAsistencia(current, updated) : updated;
+    });
+    // Una regla modificada invalida las fechas ya generadas.
+    setRecurrenceGenerated(false);
+    setDates([]);
+    setRecurrenceMessage("");
+  }
+
   function generateRecurrence() {
     try {
       const generated = generarFechasRecurrentes(recurrence);
+      if (requiereHorarioPresencial && !horarioAsistenciaCumpleMargen(recurrence)) {
+        throw new Error("La cobertura debe empezar al menos 30 minutos antes y terminar al menos 30 minutos después de cada encuentro.");
+      }
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
       setDates(generated.map((date) => ({
         ...date,
-        horaAsistenciaInicio: recurrence.horaAsistenciaInicio,
-        horaAsistenciaFin: recurrence.horaAsistenciaFin,
+        horaAsistenciaInicio: requiereHorarioPresencial ? recurrence.horaAsistenciaInicio : "",
+        horaAsistenciaFin: requiereHorarioPresencial ? recurrence.horaAsistenciaFin : "",
         descripcion: ""
       })));
       setRecurrenceGenerated(true);
@@ -254,8 +293,8 @@ export function MeetingFormV2({
           </Field>
           <fieldset className="field field-wide modality-choice">
             <legend>Modalidad</legend>
-            <label><input type="radio" name="modalidad" value="VIRTUAL" checked={meetingMode === "VIRTUAL"} onChange={() => setMeetingMode("VIRTUAL")} /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por Google Meet</small></span></label>
-            <label><input type="radio" name="modalidad" value="HIBRIDA" checked={meetingMode === "HIBRIDA"} onChange={() => setMeetingMode("HIBRIDA")} /><span className="option-copy"><strong>Híbrida</strong><small>Combina participación presencial y remota</small></span></label>
+            <label><input type="radio" name="modalidad" value="VIRTUAL" checked={meetingMode === "VIRTUAL"} onChange={() => cambiarModalidad("VIRTUAL")} /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por Google Meet</small></span></label>
+            <label><input type="radio" name="modalidad" value="HIBRIDA" checked={meetingMode === "HIBRIDA"} onChange={() => cambiarModalidad("HIBRIDA")} /><span className="option-copy"><strong>Híbrida</strong><small>Combina participación presencial y remota</small></span></label>
           </fieldset>
           <Field label="Descripción general (opcional)" wide><textarea name="descripcion" placeholder="Contexto común a toda la serie" rows={3} /></Field>
         </div>
@@ -268,6 +307,12 @@ export function MeetingFormV2({
           <label><input type="radio" name="dateMode" value="RECURRENT" checked={dateMode === "RECURRENT"} onChange={() => setMeetingDateMode("RECURRENT")} /><span className="option-copy"><strong>Repetición semanal</strong><small>Elegí un período, días y horario</small></span></label>
           <label><input type="radio" name="dateMode" value="MANUAL" checked={dateMode === "MANUAL"} onChange={() => setMeetingDateMode("MANUAL")} /><span className="option-copy"><strong>Fechas específicas</strong><small>Cargá cada encuentro por separado</small></span></label>
         </fieldset>
+        {requiereHorarioPresencial ? (
+          <div className="meeting-assistance-hint" role="note">
+            <Clock3 size={19} aria-hidden="true" />
+            <div><strong>Asistencia presencial: mínimo 30 minutos antes y después</strong><span>Se sugieren automáticamente la llegada y la salida al indicar el horario del encuentro. Podés ampliar el margen, pero no reducirlo.</span></div>
+          </div>
+        ) : null}
         <div className="date-list">
           {dateMode === "RECURRENT" ? (
             <div className="recurrence-builder">
@@ -275,13 +320,17 @@ export function MeetingFormV2({
               <div className="recurrence-grid">
                 <Field label="Fecha inicial"><input type="date" value={recurrence.desde} onChange={(event) => setRecurrence({ ...recurrence, desde: event.target.value })} /></Field>
                 <Field label="Fecha final"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
-                <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaInicio: event.target.value })} /></Field>
-                <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => setRecurrence({ ...recurrence, horaFin: event.target.value })} /></Field>
-                {meetingMode === "HIBRIDA" ? (
-                  <>
-                    <Field label="Llegada del asistente"><input type="time" required={requiresAssistance} value={recurrence.horaAsistenciaInicio} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value })} /></Field>
-                    <Field label="Salida del asistente"><input type="time" required={requiresAssistance} value={recurrence.horaAsistenciaFin} onChange={(event) => setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value })} /></Field>
-                  </>
+                <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => cambiarRecurrencia("horaInicio", event.target.value)} /></Field>
+                <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => cambiarRecurrencia("horaFin", event.target.value)} /></Field>
+                {requiereHorarioPresencial ? (
+                  <div className="meeting-assistance-fields">
+                    <strong>Cobertura presencial · mínima de 30 minutos antes y después</strong>
+                    <div className="meeting-assistance-grid">
+                      <Field label="Llegada del asistente"><input type="time" required value={recurrence.horaAsistenciaInicio} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value }); setRecurrenceGenerated(false); setDates([]); }} /></Field>
+                      <Field label="Salida del asistente"><input type="time" required value={recurrence.horaAsistenciaFin} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value }); setRecurrenceGenerated(false); setDates([]); }} /></Field>
+                    </div>
+                    {recurrence.horaInicio && recurrence.horaFin && recurrence.horaAsistenciaInicio && recurrence.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(recurrence) ? <span className="meeting-date-warning" role="alert">La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del final.</span> : null}
+                  </div>
                 ) : null}
               </div>
               <fieldset className="weekday-selector">
@@ -312,13 +361,16 @@ export function MeetingFormV2({
                   <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={index}>
                     {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{index + 1}</span> : null}
                     <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
-                    <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaInicio", event.target.value))} /></Field>
-                    <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => setDates(updateDate(dates, index, "horaFin", event.target.value))} /></Field>
-                    {meetingMode === "HIBRIDA" ? (
-                      <>
-                        <Field label="Llegada asistente"><input type="time" required={requiresAssistance} value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
-                        <Field label="Salida asistente"><input type="time" required={requiresAssistance} value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
-                      </>
+                    <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => cambiarHoraEncuentro(index, "horaInicio", event.target.value)} /></Field>
+                    <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => cambiarHoraEncuentro(index, "horaFin", event.target.value)} /></Field>
+                    {requiereHorarioPresencial ? (
+                      <div className="meeting-assistance-fields">
+                        <strong>Cobertura técnica presencial <small>· mínimo 30 min antes y después</small></strong>
+                        <div className="meeting-assistance-grid">
+                          <Field label="Llegada del asistente"><input type="time" required value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
+                          <Field label="Salida del asistente"><input type="time" required value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
+                        </div>
+                      </div>
                     ) : null}
                     {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
                     <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"} defaultOpen={Boolean(date.descripcion)}>
@@ -326,7 +378,7 @@ export function MeetingFormV2({
                       <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
                     </details>
                     {date.horaInicio && date.horaFin && date.horaFin <= date.horaInicio ? <p className="meeting-date-warning" role="status">La hora de fin debe ser posterior a la de inicio.</p> : null}
-                    {meetingMode === "HIBRIDA" && requiresAssistance && date.horaAsistenciaInicio && date.horaAsistenciaFin && date.horaAsistenciaFin <= date.horaAsistenciaInicio ? <p className="meeting-date-warning" role="status">La salida del asistente debe ser posterior a la llegada.</p> : null}
+                    {requiereHorarioPresencial && date.horaInicio && date.horaFin && date.horaAsistenciaInicio && date.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(date) ? <p className="meeting-date-warning" role="alert">El asistente debe llegar al menos 30 minutos antes y salir 30 minutos después del encuentro.</p> : null}
                   </div>
                 ))}
               </div>
@@ -348,7 +400,7 @@ export function MeetingFormV2({
               noDetail="La reunión puede realizarse sin asistencia."
               yesLabel="Sí, solicitar"
               yesDetail="Se asignará un asistente técnico como cohost."
-              onChange={setRequiresAssistance}
+              onChange={cambiarRequiereAsistencia}
             />
             <ChoicePanel
               title="Grabación"
