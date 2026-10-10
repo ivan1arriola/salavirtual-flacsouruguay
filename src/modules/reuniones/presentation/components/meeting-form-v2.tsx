@@ -18,7 +18,7 @@ import {
 import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
-import { horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
+import { horarioAsistenciaCumpleMargen, sugerirHorarioAsistencia, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import { asistenciaLocalAIso } from "@/src/modules/reuniones/horarios-asistencia.adapter";
 
 type Option = Readonly<{ id: string; label: string }>;
@@ -115,7 +115,7 @@ export function MeetingFormV2({
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   const datesReady = dates.length > 0 && dates.every((date) =>
     Boolean(date.fecha && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
-    (!requiereHorarioPresencial || horarioAsistenciaCumpleMargen(date))
+    (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode))
   );
   const isReady = academicReady && datesReady;
 
@@ -134,7 +134,9 @@ export function MeetingFormV2({
     }
     if (!datesReady) {
       setStatus("error");
-      setMessage("Revisá las fechas y horarios. En encuentros híbridos con asistencia, el asistente debe llegar al menos 30 minutos antes y salir al menos 30 minutos después.");
+      setMessage(meetingMode === "HIBRIDA" && requiresAssistance
+        ? "Revisá las fechas y horarios: la cobertura híbrida necesita al menos 30 minutos antes y 30 minutos después."
+        : "Revisá las fechas y horarios: la cobertura virtual empieza exactamente 15 minutos antes y termina con el encuentro.");
       document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
@@ -176,11 +178,11 @@ export function MeetingFormV2({
           }) => ({
             inicio: localMontevideoToIso(fecha, horaInicio),
             fin: localMontevideoToIso(fecha, horaFin),
-            asistenciaInicio: requiereHorarioPresencial
-              ? asistenciaLocalAIso(fecha, horaInicio, horaAsistenciaInicio, "LLEGADA")
+            asistenciaInicio: requiresAssistance
+              ? asistenciaLocalAIso(fecha, horaInicio, meetingMode === "VIRTUAL" ? sugerirHorarioAsistencia(horaInicio, horaFin, "VIRTUAL").llegada : horaAsistenciaInicio, "LLEGADA")
               : undefined,
-            asistenciaFin: requiereHorarioPresencial
-              ? asistenciaLocalAIso(fecha, horaFin, horaAsistenciaFin, "SALIDA")
+            asistenciaFin: requiresAssistance
+              ? asistenciaLocalAIso(fecha, horaFin, meetingMode === "VIRTUAL" ? horaFin : horaAsistenciaFin, "SALIDA")
               : undefined,
             descripcion: descripcion || undefined
           }))
@@ -208,19 +210,24 @@ export function MeetingFormV2({
     }
   }
 
+  function horarioInicialSegunModalidad<T extends { horaInicio: string; horaFin: string; horaAsistenciaInicio: string; horaAsistenciaFin: string }>(date: T, modalidad: "VIRTUAL" | "HIBRIDA"): T {
+    const limpio = { ...date, horaAsistenciaInicio: "", horaAsistenciaFin: "" };
+    return sincronizarHorarioAsistencia(limpio, limpio, modalidad);
+  }
+
   function cambiarModalidad(mode: "VIRTUAL" | "HIBRIDA") {
     setMeetingMode(mode);
-    if (mode === "HIBRIDA" && requiresAssistance) {
-      setDates((current) => current.map((date) => sincronizarHorarioAsistencia(date, date)));
-      setRecurrence((current) => sincronizarHorarioAsistencia(current, current));
+    if (requiresAssistance) {
+      setDates((current) => current.map((date) => horarioInicialSegunModalidad(date, mode)));
+      setRecurrence((current) => horarioInicialSegunModalidad(current, mode));
     }
   }
 
   function cambiarRequiereAsistencia(value: boolean) {
     setRequiresAssistance(value);
-    if (value && meetingMode === "HIBRIDA") {
-      setDates((current) => current.map((date) => sincronizarHorarioAsistencia(date, date)));
-      setRecurrence((current) => sincronizarHorarioAsistencia(current, current));
+    if (value) {
+      setDates((current) => current.map((date) => horarioInicialSegunModalidad(date, meetingMode)));
+      setRecurrence((current) => horarioInicialSegunModalidad(current, meetingMode));
     }
   }
 
@@ -228,7 +235,7 @@ export function MeetingFormV2({
     setDates((current) => current.map((date, i) => {
       if (i !== index) return date;
       const updated = { ...date, [campo]: value };
-      return requiereHorarioPresencial ? sincronizarHorarioAsistencia(date, updated) : updated;
+      return requiresAssistance ? sincronizarHorarioAsistencia(date, updated, meetingMode) : updated;
     }));
   }
 
@@ -241,7 +248,7 @@ export function MeetingFormV2({
   function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
     setRecurrence((current) => {
       const updated = { ...current, [campo]: value };
-      return requiereHorarioPresencial ? sincronizarHorarioAsistencia(current, updated) : updated;
+      return requiresAssistance ? sincronizarHorarioAsistencia(current, updated, meetingMode) : updated;
     });
     // Una regla modificada invalida las fechas ya generadas.
     invalidarVistaPreviaRecurrencia();
@@ -250,14 +257,16 @@ export function MeetingFormV2({
   function generateRecurrence() {
     try {
       const generated = generarFechasRecurrentes(recurrence);
-      if (requiereHorarioPresencial && !horarioAsistenciaCumpleMargen(recurrence)) {
-        throw new Error("La cobertura debe empezar al menos 30 minutos antes y terminar al menos 30 minutos después de cada encuentro.");
+      if (requiresAssistance && !horarioAsistenciaCumpleMargen(recurrence, meetingMode)) {
+        throw new Error(meetingMode === "HIBRIDA"
+          ? "La cobertura híbrida debe empezar al menos 30 minutos antes y terminar al menos 30 minutos después."
+          : "La cobertura virtual comienza exactamente 15 minutos antes y termina al mismo tiempo que el encuentro.");
       }
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
       setDates(generated.map((date) => ({
         ...date,
-        horaAsistenciaInicio: requiereHorarioPresencial ? recurrence.horaAsistenciaInicio : "",
-        horaAsistenciaFin: requiereHorarioPresencial ? recurrence.horaAsistenciaFin : "",
+        horaAsistenciaInicio: requiresAssistance ? recurrence.horaAsistenciaInicio : "",
+        horaAsistenciaFin: requiresAssistance ? recurrence.horaAsistenciaFin : "",
         descripcion: ""
       })));
       setRecurrenceGenerated(true);
@@ -312,10 +321,14 @@ export function MeetingFormV2({
           <label><input type="radio" name="dateMode" value="RECURRENT" checked={dateMode === "RECURRENT"} onChange={() => setMeetingDateMode("RECURRENT")} /><span className="option-copy"><strong>Repetición semanal</strong><small>Elegí un período, días y horario</small></span></label>
           <label><input type="radio" name="dateMode" value="MANUAL" checked={dateMode === "MANUAL"} onChange={() => setMeetingDateMode("MANUAL")} /><span className="option-copy"><strong>Fechas específicas</strong><small>Cargá cada encuentro por separado</small></span></label>
         </fieldset>
-        {requiereHorarioPresencial ? (
-          <div className="meeting-assistance-hint" role="note">
+        {requiresAssistance ? (
+          <div className={`meeting-assistance-hint${meetingMode === "VIRTUAL" ? " is-virtual" : ""}`} role="note">
             <Clock3 size={19} aria-hidden="true" />
-            <div><strong>Asistencia presencial: mínimo 30 minutos antes y después</strong><span>Se sugieren automáticamente la llegada y la salida al indicar el horario del encuentro. Podés ampliar el margen, pero no reducirlo.</span></div>
+            {meetingMode === "HIBRIDA" ? (
+              <div><strong>Híbrida: al menos 30 minutos antes y después</strong><span>Los horarios se proponen automáticamente y podés ampliarlos según sea necesario.</span></div>
+            ) : (
+              <div><strong>Virtual: 15 minutos antes, sin tiempo adicional al final</strong><span>La llegada y salida se calculan automáticamente y son fijas; no tenés que completarlas.</span></div>
+            )}
           </div>
         ) : null}
         <div className="date-list">
@@ -334,7 +347,15 @@ export function MeetingFormV2({
                       <Field label="Llegada del asistente"><input type="time" required value={recurrence.horaAsistenciaInicio} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
                       <Field label="Salida del asistente"><input type="time" required value={recurrence.horaAsistenciaFin} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
                     </div>
-                    {recurrence.horaInicio && recurrence.horaFin && recurrence.horaAsistenciaInicio && recurrence.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(recurrence) ? <span className="meeting-date-warning" role="alert">La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del final.</span> : null}
+                    {recurrence.horaInicio && recurrence.horaFin && recurrence.horaAsistenciaInicio && recurrence.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(recurrence, "HIBRIDA") ? <span className="meeting-date-warning" role="alert">La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del final.</span> : null}
+                  </div>
+                ) : requiresAssistance ? (
+                  <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de asistencia técnica">
+                    <strong>Cobertura virtual · horarios automáticos, no editables</strong>
+                    <div className="meeting-assistance-grid">
+                      <div className="meeting-assistance-readonly"><span>Llegada del asistente</span><strong>{recurrence.horaAsistenciaInicio || "Pendiente del inicio"}</strong></div>
+                      <div className="meeting-assistance-readonly"><span>Salida del asistente</span><strong>{recurrence.horaAsistenciaFin || "Pendiente del fin"}</strong></div>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -374,6 +395,14 @@ export function MeetingFormV2({
                         <div className="meeting-assistance-grid">
                           <Field label="Llegada del asistente"><input type="time" required value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
                           <Field label="Salida del asistente"><input type="time" required value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
+                        </div>
+                      </div>
+                    ) : requiresAssistance ? (
+                      <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de asistencia técnica">
+                        <strong>Cobertura virtual · 15 minutos antes, salida al finalizar</strong>
+                        <div className="meeting-assistance-grid">
+                          <div className="meeting-assistance-readonly"><span>Llegada del asistente</span><strong>{sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL").llegada || "—"}</strong></div>
+                          <div className="meeting-assistance-readonly"><span>Salida del asistente</span><strong>{date.horaFin || "—"}</strong></div>
                         </div>
                       </div>
                     ) : null}
@@ -425,15 +454,24 @@ export function MeetingFormV2({
               <Clock3 size={18} aria-hidden="true" />
               <div>
                 <strong>Horarios de asistencia presencial</strong>
-                <span>La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como mínimo.</span>
+                <span>La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como mínimo. Ambos horarios se pueden ampliar.</span>
                 <a href="#fechas">Revisar llegada y salida en Fechas</a>
+              </div>
+            </div>
+          ) : requiresAssistance ? (
+            <div className="meeting-assistance-return">
+              <Clock3 size={18} aria-hidden="true" />
+              <div>
+                <strong>Asistencia virtual con horario fijo</strong>
+                <span>La cobertura comienza 15 minutos antes y termina exactamente con el encuentro.</span>
+                <a href="#fechas">Ver los horarios en Fechas</a>
               </div>
             </div>
           ) : null}
 
           {requiresAssistance ? (
             <section className="organization-subsection organization-assistance-config">
-              <div className="organization-subsection-heading"><div><h3>Cobertura de asistencia técnica</h3><p>{meetingMode === "HIBRIDA" ? "El horario de asistencia se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "Definí si queda abierta a postulaciones o si querés asignar a alguien ahora."}</p></div></div>
+              <div className="organization-subsection-heading"><div><h3>Cobertura de asistencia técnica</h3><p>{meetingMode === "HIBRIDA" ? "El horario de asistencia se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
               {canAssignAssistant ? (
                 <fieldset className="assistance-choice organization-assistance-choice">
                   <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
