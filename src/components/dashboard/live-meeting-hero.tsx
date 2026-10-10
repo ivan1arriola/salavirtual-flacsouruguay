@@ -137,6 +137,7 @@ export function LiveMeetingHero({
           startsAt={inicio}
           endsAt={fin}
           requiresAssistance={meeting.requiereAsistencia}
+          modality={meeting.modalidad}
           assistanceStartsAt={meeting.inicioAsistenciaAt}
           assistanceEndsAt={meeting.finAsistenciaAt}
           viewerIsAssistant={paraAsistente}
