@@ -92,6 +92,8 @@ export async function obtenerDashboardAsistente(
       programa: meeting.solicitud.docentePrograma.programa.nombre,
       inicioAt: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
       finAt: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
+      inicioAsistenciaConfiguradaAt: meeting.inicioAsistenciaTecnicaAt,
+      finAsistenciaConfiguradaAt: meeting.finAsistenciaTecnicaAt,
       inicioEncuentroAt: meeting.inicioProgramadoAt,
       finEncuentroAt: meeting.finProgramadoAt,
       modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
