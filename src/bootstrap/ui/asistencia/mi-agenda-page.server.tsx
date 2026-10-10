@@ -6,6 +6,7 @@ import { AssistantMeetingsTable } from "@/src/modules/asistencia/presentation/co
 import { AssistantMonthList } from "@/src/modules/asistencia/presentation/components/assistant-month-list";
 import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -128,12 +129,13 @@ export default async function MiAgendaPage({
           <div className="assistant-agenda-next-summary">
             <CalendarCheck2 size={19} aria-hidden="true" />
             <span>
-              <small>Próxima reunión</small>
+              <small>Próxima llegada para asistencia técnica</small>
               <strong>
                 {formatDate(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
                 {" · "}
                 {formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
               </strong>
+              <small>La reunión empieza a las {formatTime(nextAssignment.instancia.inicioProgramadoAt)}</small>
             </span>
           </div>
         ) : activeTab === "mes" ? (
@@ -210,10 +212,7 @@ export default async function MiAgendaPage({
                       <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`} key={assignment.id}>
                         <div className="assistant-agenda-date-block">
                           <span>{formatDate(inicioAsistencia)}</span>
-                          <strong>{formatTime(inicioAsistencia)}–{formatTime(finAsistencia)}</strong>
-                          {modalidad === "HIBRIDA" ? (
-                            <small>Meet {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</small>
-                          ) : null}
+                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant compact />
                           {isNext ? <em>Próxima</em> : null}
                         </div>
 
