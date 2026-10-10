@@ -81,6 +81,13 @@ export async function GET(request: Request) {
       const association = meeting.solicitud.docentePrograma;
       const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
       const assignment = meeting.asignaciones[0];
+      const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+      const assistanceStartsAt = modality === "VIRTUAL"
+        ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
+        : meeting.inicioAsistenciaTecnicaAt;
+      const assistanceEndsAt = modality === "VIRTUAL"
+        ? meeting.finProgramadoAt
+        : meeting.finAsistenciaTecnicaAt;
 
       return {
         id: meeting.id,
@@ -90,11 +97,11 @@ export async function GET(request: Request) {
         teacher: [association.docente.usuario.nombres, association.docente.usuario.apellidos]
           .filter(Boolean)
           .join(" "),
-        modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
+        modality,
         startsAt: meeting.inicioProgramadoAt.toISOString(),
         endsAt: meeting.finProgramadoAt.toISOString(),
-        assistanceStartsAt: (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString(),
-        assistanceEndsAt: (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString(),
+        assistanceStartsAt: assistanceStartsAt?.toISOString() ?? null,
+        assistanceEndsAt: assistanceEndsAt?.toISOString() ?? null,
         timezone: meeting.timezone,
         googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
         meetUrl: meet?.joinUrl ?? null,
