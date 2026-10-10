@@ -97,17 +97,6 @@ export const crearReunionesSchema = z
             path: ["instancias", index, "asistenciaInicio"]
           });
         }
-        if (
-          esTimezoneIanaValida(timezone) &&
-          (!pertenecenAlMismoDia(asistenciaInicio, inicio, timezone) ||
-            !pertenecenAlMismoDia(asistenciaFin, fin, timezone))
-        ) {
-          context.addIssue({
-            code: "custom",
-            message: "La asistencia técnica debe comenzar y terminar el mismo día del encuentro.",
-            path: ["instancias", index, "asistenciaInicio"]
-          });
-        }
       }
       if (requiereAsistenciaTecnica && modalidad === "HIBRIDA") {
         if (!asistenciaInicio || !asistenciaFin) {
@@ -117,17 +106,18 @@ export const crearReunionesSchema = z
             path: ["instancias", index, "asistenciaInicio"]
           });
         } else {
-          if (asistenciaInicio >= inicio) {
+          const margenMinimoMs = 30 * 60 * 1000;
+          if (inicio.getTime() - asistenciaInicio.getTime() < margenMinimoMs) {
             context.addIssue({
               code: "custom",
-              message: "En una reunión híbrida el asistente debe llegar antes del inicio.",
+              message: "El asistente debe llegar al menos 30 minutos antes del inicio de la reunión híbrida.",
               path: ["instancias", index, "asistenciaInicio"]
             });
           }
-          if (asistenciaFin <= fin) {
+          if (asistenciaFin.getTime() - fin.getTime() < margenMinimoMs) {
             context.addIssue({
               code: "custom",
-              message: "En una reunión híbrida el asistente debe retirarse después del fin.",
+              message: "El asistente debe salir al menos 30 minutos después de finalizar la reunión híbrida.",
               path: ["instancias", index, "asistenciaFin"]
             });
           }
