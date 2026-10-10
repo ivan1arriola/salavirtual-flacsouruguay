@@ -10,6 +10,7 @@ export function MeetingScheduleTimes({
   assistanceStartsAt,
   assistanceEndsAt,
   requiresAssistance = false,
+  modality = "VIRTUAL",
   viewerIsAssistant = false,
   compact = false
 }: Readonly<{
@@ -18,11 +19,14 @@ export function MeetingScheduleTimes({
   assistanceStartsAt?: Instant | null;
   assistanceEndsAt?: Instant | null;
   requiresAssistance?: boolean;
+  modality?: "VIRTUAL" | "HIBRIDA";
   viewerIsAssistant?: boolean;
   compact?: boolean;
 }>) {
   const start = new Date(startsAt);
   const end = new Date(endsAt);
+  const coverageConfigured = Boolean(assistanceStartsAt && assistanceEndsAt);
+  const coverageMissing = requiresAssistance && modality === "HIBRIDA" && !coverageConfigured;
   const assistanceStart = assistanceStartsAt ? new Date(assistanceStartsAt) : start;
   const assistanceEnd = assistanceEndsAt ? new Date(assistanceEndsAt) : end;
   const sameDay = (a: Date, b: Date) => formatDate(a) === formatDate(b);
@@ -32,12 +36,15 @@ export function MeetingScheduleTimes({
   return (
     <div className={`meeting-schedule-times${compact ? " is-compact" : ""}${viewerIsAssistant ? " is-assistant" : ""}`} aria-label="Horarios de la reunión y de asistencia técnica">
       {requiresAssistance ? (
-        <div className="meeting-schedule-line is-coverage">
+        <div className={`meeting-schedule-line is-coverage${coverageMissing ? " is-pending" : ""}`}>
           <Headset size={18} aria-hidden="true" />
           <div>
             <span>{viewerIsAssistant ? "Tu asistencia técnica" : "Horario de asistencia técnica"}</span>
-            <strong>{timeRange(assistanceStart, assistanceEnd)}</strong>
-            <small>{viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"} {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}: {formatTime(assistanceEnd)}</small>
+            {coverageMissing ? (
+              <><strong>Horario técnico por confirmar</strong><small>Administración debe definir la llegada y salida del asistente antes de esta cobertura híbrida.</small></>
+            ) : (
+              <><strong>{timeRange(assistanceStart, assistanceEnd)}</strong><small>{viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"} {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}: {formatTime(assistanceEnd)}</small></>
+            )}
           </div>
         </div>
       ) : null}
