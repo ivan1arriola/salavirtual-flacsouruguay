@@ -163,7 +163,10 @@ function buildWhere(query: AdminQuery, from: Date, to: Date, cursor: Cursor | nu
     ...(query.coverage === "assigned"
       ? { asignaciones: { some: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } } }
       : query.coverage === "unassigned"
-        ? { asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } } }
+        ? {
+            requiereAsistenciaTecnica: true,
+            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
+          }
         : {}),
     ...(and.length ? { AND: and } : {})
   };
