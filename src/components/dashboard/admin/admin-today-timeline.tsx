@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { LiveParticipantsIndicator } from "@/src/components/dashboard/admin/live-participants-indicator";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import type { AdminTodayMeetingDTO } from "@/src/modules/dashboard/admin-dashboard.adapter";
@@ -60,7 +61,7 @@ export function AdminTodayTimeline({
                     </span>
                   )}
                   <span className="timeline-sub-hour">
-                    {formatDate(inicio)} · {formatTime(inicio)}–{formatTime(fin)}
+                    {formatDate(inicio)} · Encuentro: {formatTime(inicio)}–{formatTime(fin)}
                   </span>
                   {isLive ? <LiveParticipantsIndicator instanciaId={meeting.id} /> : null}
                 </div>
@@ -84,6 +85,8 @@ export function AdminTodayTimeline({
                       Docente: <strong>{meeting.docenteNombre}</strong>
                     </span>
                   </div>
+
+                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
 
                   <div className="admin-timeline-status-row">
                     <div className="admin-timeline-assistant">
