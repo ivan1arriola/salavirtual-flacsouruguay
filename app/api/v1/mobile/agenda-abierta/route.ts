@@ -103,8 +103,15 @@ export async function GET(request: Request) {
     const teacher = association.docente.usuario;
     const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
-    const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
-    const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
+    const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+    const inicioAsistenciaConfigurada = modality === "VIRTUAL"
+      ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
+      : meeting.inicioAsistenciaTecnicaAt;
+    const finAsistenciaConfigurada = modality === "VIRTUAL"
+      ? meeting.finProgramadoAt
+      : meeting.finAsistenciaTecnicaAt;
+    const inicioAsistencia = inicioAsistenciaConfigurada ?? meeting.inicioProgramadoAt;
+    const finAsistencia = finAsistenciaConfigurada ?? meeting.finProgramadoAt;
     const conflict = evaluarConflictoAsistencia(
       { inicio: inicioAsistencia, fin: finAsistencia },
       assignedList
@@ -116,11 +123,11 @@ export async function GET(request: Request) {
       title: meeting.solicitud.titulo,
       program: association.programa.nombre,
       teacher: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
-      modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
+      modality,
       startsAt: meeting.inicioProgramadoAt.toISOString(),
       endsAt: meeting.finProgramadoAt.toISOString(),
-      assistanceStartsAt: inicioAsistencia.toISOString(),
-      assistanceEndsAt: finAsistencia.toISOString(),
+      assistanceStartsAt: inicioAsistenciaConfigurada?.toISOString() ?? null,
+      assistanceEndsAt: finAsistenciaConfigurada?.toISOString() ?? null,
       timezone: meeting.timezone,
       googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
       interested: interest?.estado === "ME_INTERESA",
