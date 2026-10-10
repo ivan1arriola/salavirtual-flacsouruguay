@@ -11,6 +11,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
@@ -74,15 +75,11 @@ export default async function ReunionOperativaPage({
           <div className="operational-hero-meta">
             <span>{reunion.docente}</span>
             <span>{formatDate(reunion.inicioProgramadoAt)}</span>
-            <span>{formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
+            <span>Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
             <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
           </div>
-          {reunion.asistencia.requerida ? (
-            <p className="operational-assistance-time">
-              Asistencia técnica: {formatTime(reunion.asistencia.inicioAt)}–{formatTime(reunion.asistencia.finAt)}
-              {reunion.asistencia.asistente ? ` · ${reunion.asistencia.asistente}` : ""}
-            </p>
-          ) : null}
+          <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt} requiresAssistance={reunion.asistencia.requerida} assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
+          {reunion.asistencia.asistente ? <p className="operational-assistance-time">Asistente asignado: {reunion.asistencia.asistente}</p> : null}
         </div>
 
         <div className="operational-hero-actions">
@@ -178,7 +175,7 @@ export default async function ReunionOperativaPage({
             <dt>Asistencia técnica</dt>
             <dd>{reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}</dd>
             {reunion.asistencia.requerida ? (
-              <small>{formatTime(reunion.asistencia.inicioAt)}–{formatTime(reunion.asistencia.finAt)}</small>
+              <small>Llegada: {formatTime(reunion.asistencia.inicioAt)} · Salida: {formatTime(reunion.asistencia.finAt)}</small>
             ) : null}
           </div>
         </dl>
