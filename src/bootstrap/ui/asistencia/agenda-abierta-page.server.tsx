@@ -259,7 +259,7 @@ export default async function AgendaAbiertaPage() {
                           <span className="open-agenda-card-program">{association.programa.nombre}</span>
                           <h3 className="open-agenda-card-title">{meeting.solicitud.titulo}</h3>
                           <p className="open-agenda-card-teacher">Docente: {teacher.nombres} {teacher.apellidos}</p>
-                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
+                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
                           {missingHybridSchedule ? <small className="status status-warning">Falta definir llegada y salida para esta cobertura híbrida</small> : null}
                           {meet?.cuentaProveedor?.emailOrganizador || meet?.cuentaProveedor?.nombre ? (
                             <small className="muted-text">
