@@ -78,7 +78,7 @@ export default async function ReunionOperativaPage({
             <span>Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
             <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
           </div>
-          <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt} requiresAssistance={reunion.asistencia.requerida} assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
+          <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt} requiresAssistance={reunion.asistencia.requerida} modality={reunion.modalidad} assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
           {reunion.asistencia.asistente ? <p className="operational-assistance-time">Asistente asignado: {reunion.asistencia.asistente}</p> : null}
         </div>
 
