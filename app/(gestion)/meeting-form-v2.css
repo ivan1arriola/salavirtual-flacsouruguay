@@ -717,3 +717,40 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+
+/* La asistencia virtual se calcula automáticamente; no son campos editables. */
+.meeting-form-v2 .meeting-assistance-hint.is-virtual {
+  background: #dfeafa;
+  border-color: #aac5e6;
+  border-left-color: #2c4777;
+  color: #233e68;
+}
+
+.meeting-form-v2 .meeting-assistance-fields.is-virtual {
+  background: #e6f0fc;
+  border-color: #b4cbe5;
+}
+
+.meeting-form-v2 .meeting-assistance-readonly {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid #b5cce8;
+  border-radius: 10px;
+  background: #f6f9ff;
+  padding: 12px;
+}
+
+.meeting-form-v2 .meeting-assistance-readonly > span {
+  color: #425d82;
+  font-size: .76rem;
+  font-weight: 650;
+}
+
+.meeting-form-v2 .meeting-assistance-readonly > strong {
+  color: #193762;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
