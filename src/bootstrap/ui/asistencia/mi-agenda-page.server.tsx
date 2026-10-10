@@ -131,9 +131,8 @@ export default async function MiAgendaPage({
             <span>
               <small>Próxima llegada para asistencia técnica</small>
               <strong>
-                {formatDate(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
-                {" · "}
-                {formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
+                {(nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) === "HIBRIDA" && !nextAssignment.instancia.inicioAsistenciaTecnicaAt ? "Horario por confirmar" : formatDate(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
+                {((nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) !== "HIBRIDA" || nextAssignment.instancia.inicioAsistenciaTecnicaAt) ? ` · ${formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}` : ""}
               </strong>
               <small>La reunión empieza a las {formatTime(nextAssignment.instancia.inicioProgramadoAt)}</small>
             </span>
@@ -212,7 +211,7 @@ export default async function MiAgendaPage({
                       <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`} key={assignment.id}>
                         <div className="assistant-agenda-date-block">
                           <span>{formatDate(inicioAsistencia)}</span>
-                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant compact />
+                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} viewerIsAssistant compact />
                           {isNext ? <em>Próxima</em> : null}
                         </div>
 
