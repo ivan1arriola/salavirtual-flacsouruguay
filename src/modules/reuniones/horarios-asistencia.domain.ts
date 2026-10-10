@@ -1,5 +1,7 @@
-/** Margen mínimo de preparación y cierre de los encuentros híbridos presenciales. */
+/** Reglas de cobertura técnica según modalidad. */
 export const MARGEN_ASISTENCIA_MINUTOS = 30;
+export const ANTICIPACION_VIRTUAL_MINUTOS = 15;
+export type ModalidadHorarioAsistencia = "HIBRIDA" | "VIRTUAL";
 const MINUTOS_DIA = 24 * 60;
 
 export type HorarioConAsistencia = Readonly<{
@@ -23,19 +25,20 @@ function horaDesdeMinutos(value: number): string {
 }
 
 /** Sugerencia automática; el usuario puede ampliar la cobertura. */
-export function sugerirHorarioAsistencia(horaInicio: string, horaFin: string) {
+export function sugerirHorarioAsistencia(horaInicio: string, horaFin: string, modalidad: ModalidadHorarioAsistencia = "HIBRIDA") {
   const inicio = minutos(horaInicio);
   const fin = minutos(horaFin);
   return {
-    llegada: inicio === null ? "" : horaDesdeMinutos(inicio - MARGEN_ASISTENCIA_MINUTOS),
-    salida: fin === null ? "" : horaDesdeMinutos(fin + MARGEN_ASISTENCIA_MINUTOS)
+    llegada: inicio === null ? "" : horaDesdeMinutos(inicio - (modalidad === "VIRTUAL" ? ANTICIPACION_VIRTUAL_MINUTOS : MARGEN_ASISTENCIA_MINUTOS)),
+    salida: fin === null ? "" : horaDesdeMinutos(fin + (modalidad === "VIRTUAL" ? 0 : MARGEN_ASISTENCIA_MINUTOS))
   };
 }
 
 /** Si el usuario personalizó una hora, no la pisamos al modificar el encuentro. */
-export function sincronizarHorarioAsistencia<T extends HorarioConAsistencia>(anterior: T, nuevo: T): T {
-  const sugeridoAnterior = sugerirHorarioAsistencia(anterior.horaInicio, anterior.horaFin);
-  const sugeridoNuevo = sugerirHorarioAsistencia(nuevo.horaInicio, nuevo.horaFin);
+export function sincronizarHorarioAsistencia<T extends HorarioConAsistencia>(anterior: T, nuevo: T, modalidad: ModalidadHorarioAsistencia = "HIBRIDA"): T {
+  const sugeridoAnterior = sugerirHorarioAsistencia(anterior.horaInicio, anterior.horaFin, modalidad);
+  const sugeridoNuevo = sugerirHorarioAsistencia(nuevo.horaInicio, nuevo.horaFin, modalidad);
+  if (modalidad === "VIRTUAL") return { ...nuevo, horaAsistenciaInicio: sugeridoNuevo.llegada, horaAsistenciaFin: sugeridoNuevo.salida };
   return {
     ...nuevo,
     horaAsistenciaInicio: !anterior.horaAsistenciaInicio || anterior.horaAsistenciaInicio === sugeridoAnterior.llegada
@@ -57,7 +60,7 @@ export function desfaseDiaAsistencia(horaEvento: string, horaAsistencia: string,
   return 0;
 }
 
-export function horarioAsistenciaCumpleMargen(horario: HorarioConAsistencia): boolean {
+export function horarioAsistenciaCumpleMargen(horario: HorarioConAsistencia, modalidad: ModalidadHorarioAsistencia = "HIBRIDA"): boolean {
   const inicio = minutos(horario.horaInicio);
   const fin = minutos(horario.horaFin);
   const llegada = minutos(horario.horaAsistenciaInicio);
@@ -65,7 +68,8 @@ export function horarioAsistenciaCumpleMargen(horario: HorarioConAsistencia): bo
   if (inicio === null || fin === null || llegada === null || salida === null || fin <= inicio) return false;
   const llegadaAbsoluta = llegada + desfaseDiaAsistencia(horario.horaInicio, horario.horaAsistenciaInicio, "LLEGADA") * MINUTOS_DIA;
   const salidaAbsoluta = salida + desfaseDiaAsistencia(horario.horaFin, horario.horaAsistenciaFin, "SALIDA") * MINUTOS_DIA;
-  return inicio - llegadaAbsoluta >= MARGEN_ASISTENCIA_MINUTOS
-    && salidaAbsoluta - fin >= MARGEN_ASISTENCIA_MINUTOS;
+  return modalidad === "VIRTUAL"
+    ? inicio - llegadaAbsoluta === ANTICIPACION_VIRTUAL_MINUTOS && salidaAbsoluta === fin
+    : inicio - llegadaAbsoluta >= MARGEN_ASISTENCIA_MINUTOS && salidaAbsoluta - fin >= MARGEN_ASISTENCIA_MINUTOS;
 }
 
