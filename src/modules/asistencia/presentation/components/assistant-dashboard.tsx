@@ -6,7 +6,7 @@ import { AssistantHoursSummary } from "@/src/components/dashboard/assistant/assi
 import { AssistantOpenOpportunities } from "@/src/components/dashboard/assistant/assistant-open-opportunities";
 import { DashboardHeader } from "@/src/components/dashboard/dashboard-header";
 import { LiveMeetingHero } from "@/src/components/dashboard/live-meeting-hero";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { formatDate } from "@/src/lib/ui/format";
 import type { AssistantDashboardData } from "@/src/modules/dashboard/types";
 
 export function AssistantDashboardView({
