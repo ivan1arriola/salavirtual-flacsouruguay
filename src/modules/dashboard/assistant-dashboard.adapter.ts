@@ -108,6 +108,8 @@ export async function obtenerDashboardAsistenteOptimizado(
         modalidad: (nextMeetingInstance.modalidadOverride ?? nextMeetingInstance.solicitud.modalidad),
         inicioProgramadoAt: nextMeetingInstance.inicioProgramadoAt.toISOString(),
         finProgramadoAt: nextMeetingInstance.finProgramadoAt.toISOString(),
+        inicioAsistenciaAt: (nextMeetingInstance.inicioAsistenciaTecnicaAt ?? nextMeetingInstance.inicioProgramadoAt).toISOString(),
+        finAsistenciaAt: (nextMeetingInstance.finAsistenciaTecnicaAt ?? nextMeetingInstance.finProgramadoAt).toISOString(),
         joinUrl: meet?.joinUrl ?? null,
         cohostConfirmado: isVerified && assistantIsCohost,
         cohosts: nextMeetingInstance.cohosts.map(({ cuentaGoogle }) => ({
@@ -126,14 +128,16 @@ export async function obtenerDashboardAsistenteOptimizado(
   const upcomingCoverages: UpcomingMeetingSummaryDTO[] =
     baseDashboard.proximasCoberturas.slice(1).map((m) => ({
       id: m.id,
-      solicitudId: m.id,
+      solicitudId: m.solicitudId,
       titulo: m.titulo,
       programa: m.programa,
       modalidad: m.modalidad,
-      inicioProgramadoAt: m.inicioAt.toISOString(),
-      finProgramadoAt: m.finAt.toISOString(),
+      inicioProgramadoAt: m.inicioEncuentroAt.toISOString(),
+      finProgramadoAt: m.finEncuentroAt.toISOString(),
+      inicioAsistenciaAt: m.inicioAt.toISOString(),
+      finAsistenciaAt: m.finAt.toISOString(),
       joinUrl: m.joinUrl,
-      estadoTemporal: determinarEstadoTemporal(m.inicioAt, m.finAt, ahora),
+      estadoTemporal: determinarEstadoTemporal(m.inicioEncuentroAt, m.finEncuentroAt, ahora),
       asistenteNombre: null,
       requiereAsistencia: true,
       cohostsVerificados: true
