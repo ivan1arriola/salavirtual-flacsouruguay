@@ -212,7 +212,7 @@ export default async function MiAgendaPage({
                       <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`} key={assignment.id}>
                         <div className="assistant-agenda-date-block">
                           <span>{formatDate(inicioAsistencia)}</span>
-                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant compact />
+                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant compact />
                           {isNext ? <em>Próxima</em> : null}
                         </div>
 
