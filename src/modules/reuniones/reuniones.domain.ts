@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
 import { pertenecenAlMismoDia } from "./periodos.domain";
-import { MARGEN_ASISTENCIA_MINUTOS } from "./horarios-asistencia.domain";
+import { ANTICIPACION_VIRTUAL_MINUTOS, MARGEN_ASISTENCIA_MINUTOS } from "./horarios-asistencia.domain";
 
 export type FechaReunion = Readonly<{ inicioProgramadoAt: Date }>;
 export type PeriodoReunion = Readonly<{ inicio: Date }>;
@@ -96,6 +96,24 @@ export const crearReunionesSchema = z
             code: "custom",
             message: "El horario de asistencia técnica debe cubrir todo el encuentro.",
             path: ["instancias", index, "asistenciaInicio"]
+          });
+        }
+      }
+      // Las reuniones virtuales con asistencia tienen cobertura fija. Los clientes anteriores
+      // pueden omitir las horas: el servicio las completa al guardar, sin permitir otras horas.
+      if (requiereAsistenciaTecnica && modalidad === "VIRTUAL" && asistenciaInicio && asistenciaFin) {
+        if (asistenciaInicio.getTime() !== inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000) {
+          context.addIssue({
+            code: "custom",
+            message: "La asistencia virtual debe comenzar exactamente 15 minutos antes del encuentro.",
+            path: ["instancias", index, "asistenciaInicio"]
+          });
+        }
+        if (asistenciaFin.getTime() !== fin.getTime()) {
+          context.addIssue({
+            code: "custom",
+            message: "La asistencia virtual debe terminar exactamente al finalizar el encuentro.",
+            path: ["instancias", index, "asistenciaFin"]
           });
         }
       }
