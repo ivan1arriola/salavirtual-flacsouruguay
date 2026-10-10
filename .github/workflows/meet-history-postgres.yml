@@ -43,10 +43,19 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm install --package-lock=false
+      - name: Instalar dependencias reproducibles
+        run: npm ci --include=dev
       - name: Preparar esquema anterior en base CI descartable
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          git show ${{ github.event.pull_request.base.sha || github.event.before }}:prisma/schema.prisma > prisma/schema-before-ci.prisma
+          set -euo pipefail
+          # En pushes iniciales, event.before puede contener solo ceros.
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          git show "${BASE_SHA}:prisma/schema.prisma" > prisma/schema-before-ci.prisma
           npx prisma db push --schema prisma/schema-before-ci.prisma --skip-generate
       - name: Aplicar migración aditiva de historial
         run: npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260914160000_historial_enlaces_meet/migration.sql
