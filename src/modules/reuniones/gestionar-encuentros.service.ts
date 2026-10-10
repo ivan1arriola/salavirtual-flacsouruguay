@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { idsCancelacionesGooglePendientes } from "./encuentros.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   ConflictApiError,
@@ -613,13 +614,7 @@ export async function eliminarReunionCompleta(
     // or create duplicate audit records.
     if (request.estado === "CANCELADA") {
       return {
-        eventoProveedorIds: request.instancias.flatMap(({ eventosProveedor }) =>
-          eventosProveedor
-            .filter(({ proveedor, operacionPendiente }) =>
-              proveedor.tipo === "GOOGLE_MEET" && operacionPendiente === "CANCELAR"
-            )
-            .map(({ id }) => id)
-        )
+        eventoProveedorIds: idsCancelacionesGooglePendientes(request.instancias)
       };
     }
     if (request.instancias.some(({ detallesLiquidacion }) => detallesLiquidacion.length > 0)) {
