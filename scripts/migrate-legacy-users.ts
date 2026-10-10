@@ -1,5 +1,4 @@
 import { createRequire } from "node:module";
-import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import type { PrismaClient as LegacyPrismaClientType } from "../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
 import { planificarMigracionUsuarios } from "../src/modules/migracion/usuarios-legacy.domain";
@@ -17,14 +16,6 @@ if (!process.env.DATABASE_URL || !process.env.LEGACY_DATABASE_URL) {
   throw new Error("DATABASE_URL y LEGACY_DATABASE_URL son obligatorias.");
 }
 
-function requireDefaultPassword(value: string | undefined): string {
-  if (value && value.length >= 10) {
-    return value;
-  }
-  throw new Error("MIGRATION_DEFAULT_PASSWORD debe tener al menos 10 caracteres.");
-}
-
-const defaultPassword = requireDefaultPassword(process.env.MIGRATION_DEFAULT_PASSWORD);
 const source = new LegacyPrismaClient({
   datasourceUrl: process.env.LEGACY_DATABASE_URL
 });
@@ -88,13 +79,13 @@ async function cargarPlanes() {
 async function aplicarPlan(
   plan: Awaited<ReturnType<typeof cargarPlanes>>[number]
 ): Promise<void> {
-  const requierePassword = plan.cuentasGoogle.length === 0;
-  const passwordHash =
-    plan.passwordHash ?? (requierePassword ? await hash(defaultPassword, 12) : null);
-  const passwordTemporal = !plan.passwordHash && requierePassword;
-  const passwordInicialCifrada = passwordTemporal
-    ? await cifrarPasswordInicial(defaultPassword)
-    : null;
+  // No asignar una credencial compartida a cuentas nuevas sin contraseña legacy.
+  // Podrán crear una propia mediante /recuperar-contrasena, si tienen correo válido.
+  const requiereActivacion = !plan.passwordHash && plan.cuentasGoogle.length === 0;
+  if (requiereActivacion && !plan.emailPrincipal?.trim()) {
+    throw new Error(`El usuario legacy ${plan.legacyZoomUserId} no tiene correo para activar su cuenta de forma segura.`);
+  }
+  const passwordHash = plan.passwordHash ?? null;
 
   await target.$transaction(async (tx) => {
     const existing = await tx.usuario.findUnique({
@@ -113,8 +104,8 @@ async function aplicarPlan(
         emailVerificadoAt: plan.emailVerificadoAt,
         imagenUrl: plan.imagenUrl,
         passwordHash,
-        passwordInicialCifrada,
-        debeCambiarPassword: passwordTemporal,
+        passwordInicialCifrada: null,
+        debeCambiarPassword: false,
         rol: plan.rol,
         ultimoAccesoAt: plan.ultimoAccesoAt,
         ultimoAccesoIp: plan.ultimoAccesoIp,
@@ -221,20 +212,12 @@ async function aplicarPlan(
         valorNuevo: {
           legacyZoomUserId: plan.legacyZoomUserId,
           rol: plan.rol,
-          passwordTemporal,
-          passwordInicialGuardada: passwordTemporal
+          requiereActivacion,
+          passwordInicialGuardada: false
         }
       }
     });
   });
-}
-
-async function cifrarPasswordInicial(password: string): Promise<string> {
-  const { cifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const { guardarPasswordInicialCifrada } = await import(
-    "../src/modules/usuarios/password-inicial.service"
-  );
-  return guardarPasswordInicialCifrada(password, { cifrar: cifrarConfiguracion });
 }
 
 async function main(): Promise<void> {
@@ -255,8 +238,11 @@ async function main(): Promise<void> {
             (total, { cuentasGoogleOmitidas }) => total + cuentasGoogleOmitidas,
             0
           ),
-          usersWithTemporaryPassword: planes.filter(
-            ({ cuentasGoogle }) => cuentasGoogle.length === 0
+          usersRequiringActivation: planes.filter(
+            ({ cuentasGoogle, passwordHash }) => cuentasGoogle.length === 0 && !passwordHash
+          ).length,
+          activationWithoutEmail: planes.filter(
+            ({ cuentasGoogle, passwordHash, emailPrincipal }) => cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
           ).length
         },
         null,
@@ -265,6 +251,10 @@ async function main(): Promise<void> {
     );
 
     if (applyChanges) {
+      const invalid = planes.filter(({ cuentasGoogle, passwordHash, emailPrincipal }) =>
+        cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
+      );
+      if (invalid.length) throw new Error(`Migración bloqueada: ${invalid.length} cuentas sin contraseña ni correo de activación.`);
       for (const plan of planes) {
         await aplicarPlan(plan);
       }
