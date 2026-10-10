@@ -340,7 +340,7 @@ export function MeetingDetailManager({
                 <>
                   <div className="encounter-v2-body">
                     <div className="encounter-v2-main">
-                      <MeetingScheduleTimes startsAt={meeting.inicio + ":00-03:00"} endsAt={meeting.fin + ":00-03:00"} requiresAssistance={meeting.requiereAsistenciaTecnica} assistanceStartsAt={meeting.inicioAsistencia ? meeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={meeting.finAsistencia ? meeting.finAsistencia + ":00-03:00" : null} compact />
+                      <MeetingScheduleTimes startsAt={meeting.inicio + ":00-03:00"} endsAt={meeting.fin + ":00-03:00"} requiresAssistance={meeting.requiereAsistenciaTecnica} modality={meeting.modalidad} assistanceStartsAt={meeting.inicioAsistencia ? meeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={meeting.finAsistencia ? meeting.finAsistencia + ":00-03:00" : null} compact />
                       <div className="encounter-v2-description">
                         <span>Detalle del encuentro</span>
                         <p>{meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}</p>
