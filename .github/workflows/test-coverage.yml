@@ -7,148 +7,64 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-salavirtual-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: "Validaciones"
+  schema-types:
+    name: "Esquema + TypeScript"
+    uses: ./.github/workflows/check-schema-types.yml
+
+  tests:
+    name: "Tests + cobertura"
+    uses: ./.github/workflows/check-tests.yml
+
+  security:
+    name: "Auditoría crítica"
+    uses: ./.github/workflows/check-security.yml
+
+  build:
+    name: "Build producción"
+    uses: ./.github/workflows/check-build.yml
+
+  required-checks:
+    name: "Validación completa · Deploy gate"
+    if: always()
+    needs: [schema-types, tests, security, build]
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    env:
-      CI: "true"
-      NEXT_TELEMETRY_DISABLED: "1"
-      APP_BASE_URL: "https://salavirtual-ci.invalid"
-      TIMEZONE: "America/Montevideo"
-      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_ci?schema=public"
-      AUTH_SECRET: "ci-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
-      AUTH_TRUST_HOST: "true"
-      CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-
+    timeout-minutes: 5
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v7
-
-      - name: "Node.js 24 + caché npm"
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: "1/6 · Dependencias"
-        id: install
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Node: $(node --version)"
-          echo "npm:  $(npm --version)"
-          npm ci --include=dev
-          npm ls --depth=0
-
-      - name: "2/6 · Esquema y Prisma"
-        id: schema
-        if: steps.install.outcome == 'success'
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm run validate:schema
-          npx prisma validate
-
-      - name: "3/6 · TypeScript"
-        id: typescript
-        if: steps.install.outcome == 'success'
-        continue-on-error: true
-        run: npm run check
-
-      - name: "4/6 · Tests + cobertura ≥ 80%"
-        id: tests
-        if: steps.install.outcome == 'success'
-        continue-on-error: true
-        run: npx vitest run --coverage
-
-      - name: "5/6 · Auditoría crítica de dependencias"
-        id: audit
-        if: steps.install.outcome == 'success'
-        continue-on-error: true
-        run: npm audit --omit=dev --audit-level=critical
-
-      - name: "6/6 · Build de producción Next.js"
-        id: build
-        if: steps.install.outcome == 'success'
-        continue-on-error: true
-        run: npm run build
-
-      - name: "Guardar cobertura"
-        if: always() && steps.install.outcome == 'success'
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-${{ github.sha }}
-          path: coverage/
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: "Resumen"
-        if: always()
+      - name: Evaluar todas las validaciones obligatorias
         shell: bash
         env:
-          INSTALL_OUTCOME: ${{ steps.install.outcome }}
-          SCHEMA_OUTCOME: ${{ steps.schema.outcome }}
-          TYPESCRIPT_OUTCOME: ${{ steps.typescript.outcome }}
-          TESTS_OUTCOME: ${{ steps.tests.outcome }}
-          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          SCHEMA_RESULT: ${{ needs.schema-types.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
         run: |
           set -euo pipefail
-
-          label() {
-            case "$1" in
-              success) printf 'OK' ;;
-              failure) printf 'FALLÓ' ;;
-              skipped) printf 'OMITIDO' ;;
-              *) printf '%s' "${1:-SIN DATOS}" ;;
-            esac
-          }
-
           {
-            echo "## CI · Sala Virtual"
+            echo "## Resultado de CI"
             echo
-            echo "Commit: \`${GITHUB_SHA}\`"
-            echo
-            echo "| Control | Estado |"
+            echo "| Validación | Resultado |"
             echo "| --- | --- |"
-            echo "| Dependencias | $(label "$INSTALL_OUTCOME") |"
-            echo "| Esquema + Prisma | $(label "$SCHEMA_OUTCOME") |"
-            echo "| TypeScript | $(label "$TYPESCRIPT_OUTCOME") |"
-            echo "| Tests + cobertura | $(label "$TESTS_OUTCOME") |"
-            echo "| Auditoría crítica | $(label "$AUDIT_OUTCOME") |"
-            echo "| Build de producción | $(label "$BUILD_OUTCOME") |"
+            echo "| Esquema + TypeScript | ${SCHEMA_RESULT} |"
+            echo "| Tests + cobertura | ${TESTS_RESULT} |"
+            echo "| Seguridad | ${SECURITY_RESULT} |"
+            echo "| Build de producción | ${BUILD_RESULT} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          failed=()
-          [[ "$INSTALL_OUTCOME" == "success" ]] || failed+=("dependencias")
-          [[ "$SCHEMA_OUTCOME" == "success" ]] || failed+=("esquema/Prisma")
-          [[ "$TYPESCRIPT_OUTCOME" == "success" ]] || failed+=("TypeScript")
-          [[ "$TESTS_OUTCOME" == "success" ]] || failed+=("tests/cobertura")
-          [[ "$AUDIT_OUTCOME" == "success" ]] || failed+=("auditoría crítica")
-          [[ "$BUILD_OUTCOME" == "success" ]] || failed+=("build")
-
-          if (( ${#failed[@]} > 0 )); then
-            failures=$(IFS=', '; echo "${failed[*]}")
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Deploy EC2: BLOQUEADO por ${failures}." >> "$GITHUB_STEP_SUMMARY"
-            echo "::error title=CI falló::No se desplegará a EC2: ${failures}."
+          if [[ "$SCHEMA_RESULT" != "success" || "$TESTS_RESULT" != "success" || "$SECURITY_RESULT" != "success" || "$BUILD_RESULT" != "success" ]]; then
+            echo "::error title=Deploy bloqueado::Una o más validaciones fallaron, se cancelaron o fueron omitidas."
             exit 1
           fi
 
           if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Deploy EC2: APROBADO. El workflow de despliegue se ejecutará automáticamente." >> "$GITHUB_STEP_SUMMARY"
+            echo "Deploy EC2 habilitado tras CI completo." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "PR validado. El despliegue solo ocurre después de un push a main." >> "$GITHUB_STEP_SUMMARY"
+            echo "PR aprobado por CI. El despliegue requiere un push a main." >> "$GITHUB_STEP_SUMMARY"
           fi

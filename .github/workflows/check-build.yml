@@ -1,0 +1,28 @@
+name: "Check · Compilación"
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      APP_BASE_URL: "https://salavirtual-ci.invalid"
+      TIMEZONE: "America/Montevideo"
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_ci?schema=public"
+      AUTH_SECRET: "ci-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
+      AUTH_TRUST_HOST: "true"
+      CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --include=dev
+      - name: Compilar Next.js para producción
+        run: npm run build
