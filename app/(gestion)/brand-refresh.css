@@ -612,3 +612,52 @@
     padding: 11px;
   }
 }
+
+
+.meeting-schedule-line.is-coverage.is-pending {
+  border-color: #d8a84b;
+  background: #fff0d7;
+}
+
+.dashboard-hero-body > .meeting-schedule-times {
+  flex: 1 1 100%;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.dashboard-hero-body > .meeting-schedule-times .meeting-schedule-line {
+  min-width: 0;
+}
+
+.teacher-upcoming-card-when > .meeting-schedule-times,
+.assistant-coverage-when > .meeting-schedule-times {
+  width: min(100%, 320px);
+}
+
+.admin-timeline-info > .meeting-schedule-times {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1000px) {
+  .assistant-coverage-card,
+  .teacher-upcoming-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-timeline-info > .meeting-schedule-times {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .dashboard-hero-body > .meeting-schedule-times {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .teacher-upcoming-card-when > .meeting-schedule-times,
+  .assistant-coverage-when > .meeting-schedule-times {
+    width: 100%;
+  }
+}
