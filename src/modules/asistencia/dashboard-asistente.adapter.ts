@@ -87,10 +87,13 @@ export async function obtenerDashboardAsistente(
     const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     return {
       id: meeting.id,
+      solicitudId: meeting.solicitudId,
       titulo: meeting.solicitud.titulo,
       programa: meeting.solicitud.docentePrograma.programa.nombre,
       inicioAt: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
       finAt: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
+      inicioEncuentroAt: meeting.inicioProgramadoAt,
+      finEncuentroAt: meeting.finProgramadoAt,
       modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada",
       joinUrl: meet?.joinUrl ?? null
