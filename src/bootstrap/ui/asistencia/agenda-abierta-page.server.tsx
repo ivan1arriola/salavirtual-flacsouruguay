@@ -248,7 +248,7 @@ export default async function AgendaAbiertaPage() {
                       <article className={`open-agenda-card${cardStateClass}`} key={meeting.id}>
                         <div className="open-agenda-card-meta">
                           <span className="time-tag">
-                            Cobertura: {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} ({formatMinutes(durationMin)})
+                            {missingHybridSchedule ? "Cobertura técnica: horario por confirmar" : <>Cobertura: {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} ({formatMinutes(durationMin)})</>}
                           </span>
                           <span className={`mode-pill mode-${modalidad.toLowerCase()}`}>
                             {modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
