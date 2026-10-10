@@ -13,6 +13,8 @@ export interface AdminTodayMeetingDTO {
   readonly modalidad: "HIBRIDA" | "VIRTUAL";
   readonly inicioProgramadoAt: string;
   readonly finProgramadoAt: string;
+  readonly inicioAsistenciaAt: string | null;
+  readonly finAsistenciaAt: string | null;
   readonly joinUrl: string | null;
   readonly estadoIntegracion: string | null;
   readonly estadoTemporal: EstadoTemporalReunion;
@@ -342,6 +344,8 @@ export async function obtenerDashboardAdministracion(
       modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad),
       inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
       finProgramadoAt: meeting.finProgramadoAt.toISOString(),
+      inicioAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString() : null,
+      finAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString() : null,
       joinUrl: meet?.joinUrl ?? null,
       estadoIntegracion: meet?.estadoIntegracion ?? null,
       estadoTemporal,
