@@ -1,6 +1,7 @@
 import { Activity, ArrowRight, CalendarDays, CalendarPlus, CalendarRange } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AssistantHoursSummary } from "@/src/components/dashboard/assistant/assistant-hours-summary";
 import { AssistantOpenOpportunities } from "@/src/components/dashboard/assistant/assistant-open-opportunities";
 import { DashboardHeader } from "@/src/components/dashboard/dashboard-header";
@@ -67,9 +68,7 @@ export function AssistantDashboardView({
                 <article className="assistant-coverage-card" key={cov.id}>
                   <div className="assistant-coverage-when">
                     <span>{formatDate(inicio)}</span>
-                    <strong>
-                      {formatTime(inicio)}–{formatTime(fin)}
-                    </strong>
+                    <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance assistanceStartsAt={cov.inicioAsistenciaAt} assistanceEndsAt={cov.finAsistenciaAt} viewerIsAssistant compact />
                     <span className="badge-tag">
                       {cov.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                     </span>
