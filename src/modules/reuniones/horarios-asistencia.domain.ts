@@ -10,7 +10,7 @@ export type HorarioConAsistencia = Readonly<{
 }>;
 
 function minutos(value: string): number | null {
-  if (!/^\\d{2}:\\d{2}$/.test(value)) return null;
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
   const [horas, minutos] = value.split(":").map(Number);
   return horas >= 0 && horas < 24 && minutos >= 0 && minutos < 60
     ? horas * 60 + minutos
