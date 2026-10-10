@@ -661,3 +661,33 @@
     width: 100%;
   }
 }
+
+
+/* Countdown labels must wrap instead of competing with the meeting time on mobile. */
+.dashboard-hero-timing {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dashboard-hero-timing .timing-pill,
+.dashboard-hero-timing .dashboard-hero-date {
+  max-width: 100%;
+  white-space: normal;
+}
+
+@media (max-width: 620px) {
+  .dashboard-hero-card-header {
+    align-items: flex-start;
+  }
+
+  .dashboard-hero-timing {
+    width: 100%;
+    align-items: flex-start;
+    gap: 7px;
+  }
+
+  .dashboard-hero-timing .dashboard-hero-date {
+    flex-basis: 100%;
+    line-height: 1.4;
+  }
+}
