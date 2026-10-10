@@ -176,3 +176,25 @@ export function periodoAsistenciaTecnica(
     personalizado
   };
 }
+
+/**
+ * A repeated cancellation only retries Google events which still have a
+ * persisted CANCELAR operation. Completed deletions must not be requeued.
+ */
+export function idsCancelacionesGooglePendientes(
+  instancias: readonly Readonly<{
+    eventosProveedor: readonly Readonly<{
+      id: string;
+      proveedor: Readonly<{ tipo: string }>;
+      operacionPendiente: string | null;
+    }>[];
+  }>[]
+): readonly string[] {
+  return instancias.flatMap(({ eventosProveedor }) =>
+    eventosProveedor
+      .filter(({ proveedor, operacionPendiente }) =>
+        proveedor.tipo === "GOOGLE_MEET" && operacionPendiente === "CANCELAR"
+      )
+      .map(({ id }) => id)
+  );
+}
