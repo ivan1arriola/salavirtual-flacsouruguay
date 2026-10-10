@@ -9,6 +9,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/modules/reuniones/presentation/components/meeting-detail-manager";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { MeetingIntegrationProblems } from "@/src/modules/reuniones/presentation/components/meeting-integration-problems";
 import { SeriesManagement } from "@/src/modules/reuniones/presentation/components/series-management";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -295,7 +296,7 @@ export default async function ReunionDetailPage({
             <>
               <small>Próximo encuentro</small>
               <strong>{nextMeeting.fechaLegible}</strong>
-              <span>{nextMeeting.inicio.slice(11, 16)}–{nextMeeting.fin.slice(11, 16)}</span>
+              <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
               {nextMeeting.joinUrl ? (
                 <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
                   <Video size={17} aria-hidden="true" />Entrar a Meet
@@ -318,7 +319,7 @@ export default async function ReunionDetailPage({
         <article>
           <CalendarClock size={18} aria-hidden="true" />
           <div>
-            <span>Próximo</span>
+            <span>Inicio del próximo encuentro</span>
             <strong>{nextMeeting ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}` : "Sin próximos"}</strong>
             <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
           </div>
@@ -336,7 +337,7 @@ export default async function ReunionDetailPage({
           <div>
             <span>Asistencia técnica</span>
             <strong>{assistanceSummary}</strong>
-            <small>{nextMeeting?.requiereAsistenciaTecnica ? "Para el próximo encuentro" : "Según cada encuentro"}</small>
+            <small>{nextMeeting?.requiereAsistenciaTecnica ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}` : "Según cada encuentro"}</small>
           </div>
         </article>
         <article>
