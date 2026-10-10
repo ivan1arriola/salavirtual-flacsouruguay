@@ -231,15 +231,19 @@ export function MeetingFormV2({
     }));
   }
 
+  function invalidarVistaPreviaRecurrencia() {
+    setRecurrenceGenerated(false);
+    setDates([]);
+    setRecurrenceMessage("");
+  }
+
   function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
     setRecurrence((current) => {
       const updated = { ...current, [campo]: value };
       return requiereHorarioPresencial ? sincronizarHorarioAsistencia(current, updated) : updated;
     });
     // Una regla modificada invalida las fechas ya generadas.
-    setRecurrenceGenerated(false);
-    setDates([]);
-    setRecurrenceMessage("");
+    invalidarVistaPreviaRecurrencia();
   }
 
   function generateRecurrence() {
@@ -318,16 +322,16 @@ export function MeetingFormV2({
             <div className="recurrence-builder">
               <div className="recurrence-guidance"><strong>1. Definí la repetición</strong><span>Indicá el período, el horario común y los días de la semana.</span></div>
               <div className="recurrence-grid">
-                <Field label="Fecha inicial"><input type="date" value={recurrence.desde} onChange={(event) => setRecurrence({ ...recurrence, desde: event.target.value })} /></Field>
-                <Field label="Fecha final"><input type="date" value={recurrence.hasta} onChange={(event) => setRecurrence({ ...recurrence, hasta: event.target.value })} /></Field>
+                <Field label="Fecha inicial"><input type="date" value={recurrence.desde} onChange={(event) => { setRecurrence({ ...recurrence, desde: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
+                <Field label="Fecha final"><input type="date" value={recurrence.hasta} onChange={(event) => { setRecurrence({ ...recurrence, hasta: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
                 <Field label="Hora de inicio"><input type="time" value={recurrence.horaInicio} onChange={(event) => cambiarRecurrencia("horaInicio", event.target.value)} /></Field>
                 <Field label="Hora de fin"><input type="time" value={recurrence.horaFin} onChange={(event) => cambiarRecurrencia("horaFin", event.target.value)} /></Field>
                 {requiereHorarioPresencial ? (
                   <div className="meeting-assistance-fields">
                     <strong>Cobertura presencial · mínima de 30 minutos antes y después</strong>
                     <div className="meeting-assistance-grid">
-                      <Field label="Llegada del asistente"><input type="time" required value={recurrence.horaAsistenciaInicio} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value }); setRecurrenceGenerated(false); setDates([]); }} /></Field>
-                      <Field label="Salida del asistente"><input type="time" required value={recurrence.horaAsistenciaFin} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value }); setRecurrenceGenerated(false); setDates([]); }} /></Field>
+                      <Field label="Llegada del asistente"><input type="time" required value={recurrence.horaAsistenciaInicio} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
+                      <Field label="Salida del asistente"><input type="time" required value={recurrence.horaAsistenciaFin} onChange={(event) => { setRecurrence({ ...recurrence, horaAsistenciaFin: event.target.value }); invalidarVistaPreviaRecurrencia(); }} /></Field>
                     </div>
                     {recurrence.horaInicio && recurrence.horaFin && recurrence.horaAsistenciaInicio && recurrence.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(recurrence) ? <span className="meeting-date-warning" role="alert">La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del final.</span> : null}
                   </div>
@@ -337,7 +341,7 @@ export function MeetingFormV2({
                 <legend>Días de la semana</legend>
                 {WEEKDAYS.map((day) => (
                   <label key={day.value}>
-                    <input type="checkbox" checked={recurrence.diasSemana.includes(day.value)} onChange={(event) => setRecurrence({ ...recurrence, diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked) })} />
+                    <input type="checkbox" checked={recurrence.diasSemana.includes(day.value)} onChange={(event) => { setRecurrence({ ...recurrence, diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked) }); invalidarVistaPreviaRecurrencia(); }} />
                     <span>{day.label}</span>
                   </label>
                 ))}
