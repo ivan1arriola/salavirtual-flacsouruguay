@@ -8,6 +8,8 @@ export interface HeroMeetingDTO {
   readonly modalidad: "HIBRIDA" | "VIRTUAL";
   readonly inicioProgramadoAt: string;
   readonly finProgramadoAt: string;
+  readonly inicioAsistenciaAt?: string | null;
+  readonly finAsistenciaAt?: string | null;
   readonly joinUrl: string | null;
   readonly cohostConfirmado: boolean;
   readonly cohosts: readonly { readonly name: string; readonly email: string }[];
@@ -24,6 +26,8 @@ export interface UpcomingMeetingSummaryDTO {
   readonly modalidad: "HIBRIDA" | "VIRTUAL";
   readonly inicioProgramadoAt: string;
   readonly finProgramadoAt: string;
+  readonly inicioAsistenciaAt?: string | null;
+  readonly finAsistenciaAt?: string | null;
   readonly joinUrl: string | null;
   readonly estadoTemporal: EstadoTemporalReunion;
   readonly asistenteNombre: string | null;
