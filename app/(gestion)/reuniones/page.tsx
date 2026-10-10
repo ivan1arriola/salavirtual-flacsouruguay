@@ -19,6 +19,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-integration-status";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -708,8 +709,8 @@ export default async function ReunionesPage({
                       </span>
                       <strong>
                         {sameSchedule
-                          ? `${formatTime(first.inicioProgramadoAt)}–${formatTime(first.finProgramadoAt)}`
-                          : "Horarios variables"}
+                          ? `Encuentros: ${formatTime(first.inicioProgramadoAt)}–${formatTime(first.finProgramadoAt)}`
+                          : "Horarios de encuentros variables"}
                       </strong>
                     </div>
                     <span className="status status-ok">
@@ -720,7 +721,7 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p>
+                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={first.inicioProgramadoAt} endsAt={first.finProgramadoAt} requiresAssistance={first.requiereAsistenciaTecnica} assistanceStartsAt={first.inicioAsistenciaTecnicaAt} assistanceEndsAt={first.finAsistenciaTecnicaAt} compact />
                       <Link className="agenda-meeting-title" href={`/reuniones/${request.id}`}>
                         {request.titulo}
                       </Link>
@@ -920,10 +921,7 @@ export default async function ReunionesPage({
                   <header className="agenda-meeting-card-header">
                     <div className="agenda-meeting-date">
                       <span>{formatDate(meeting.inicioProgramadoAt)}</span>
-                      <strong>
-                        {formatTime(meeting.inicioProgramadoAt)}–
-                        {formatTime(meeting.finProgramadoAt)}
-                      </strong>
+                      <strong>Encuentro: {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</strong>
                     </div>
                     <span className={`status status-${statusTone(meeting.estado)}`}>
                       {statusLabel(meeting.estado)}
@@ -932,7 +930,7 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p>
+                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance={meeting.requiereAsistenciaTecnica} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} compact />
                       <Link
                         className="agenda-meeting-title"
                         href={`/reuniones/${meeting.solicitud.id}`}
