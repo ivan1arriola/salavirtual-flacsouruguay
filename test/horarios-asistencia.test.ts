@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  asistenciaLocalAIso,
   horarioAsistenciaCumpleMargen,
   sugerirHorarioAsistencia,
   sincronizarHorarioAsistencia
 } from "../src/modules/reuniones/horarios-asistencia.domain";
+import { asistenciaLocalAIso } from "../src/modules/reuniones/horarios-asistencia.adapter";
 
 const base = {
   horaInicio: "10:00",
