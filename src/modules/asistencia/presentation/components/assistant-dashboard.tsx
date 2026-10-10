@@ -68,7 +68,7 @@ export function AssistantDashboardView({
                 <article className="assistant-coverage-card" key={cov.id}>
                   <div className="assistant-coverage-when">
                     <span>{formatDate(inicio)}</span>
-                    <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance assistanceStartsAt={cov.inicioAsistenciaAt} assistanceEndsAt={cov.finAsistenciaAt} viewerIsAssistant compact />
+                    <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance modality={cov.modalidad} assistanceStartsAt={cov.inicioAsistenciaAt} assistanceEndsAt={cov.finAsistenciaAt} viewerIsAssistant compact />
                     <span className="badge-tag">
                       {cov.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                     </span>
