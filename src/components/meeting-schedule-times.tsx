@@ -27,7 +27,13 @@ export function MeetingScheduleTimes({
   const end = new Date(endsAt);
   const coverageConfigured = Boolean(assistanceStartsAt && assistanceEndsAt);
   const coverageMissing = requiresAssistance && modality === "HIBRIDA" && !coverageConfigured;
-  const assistanceStart = assistanceStartsAt ? new Date(assistanceStartsAt) : start;
+  // Reuniones virtuales antiguas pueden no tener horario técnico persistido.
+  // Presentar la regla fija, sin confundirla con el horario del encuentro.
+  const assistanceStart = assistanceStartsAt
+    ? new Date(assistanceStartsAt)
+    : requiresAssistance && modality === "VIRTUAL"
+      ? new Date(start.getTime() - 15 * 60 * 1000)
+      : start;
   const assistanceEnd = assistanceEndsAt ? new Date(assistanceEndsAt) : end;
   const sameDay = (a: Date, b: Date) => formatDate(a) === formatDate(b);
   const timeRange = (from: Date, to: Date) =>
