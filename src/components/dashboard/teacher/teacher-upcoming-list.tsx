@@ -2,7 +2,7 @@ import { ArrowRight, CalendarDays, ExternalLink, Video } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { formatDate } from "@/src/lib/ui/format";
 import type { UpcomingMeetingSummaryDTO } from "@/src/modules/dashboard/types";
 
 export function TeacherUpcomingList({
