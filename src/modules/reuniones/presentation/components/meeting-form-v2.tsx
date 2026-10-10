@@ -18,7 +18,8 @@ import {
 import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
-import { asistenciaLocalAIso, horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
+import { horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
+import { asistenciaLocalAIso } from "@/src/modules/reuniones/horarios-asistencia.adapter";
 
 type Option = Readonly<{ id: string; label: string }>;
 type ProgramOption = Option & Readonly<{ teacher: string; teacherEmail?: string }>;
@@ -377,7 +378,7 @@ export function MeetingFormV2({
                       </div>
                     ) : null}
                     {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
-                    <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"} defaultOpen={Boolean(date.descripcion)}>
+                    <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"}>
                       <summary><Plus size={15} aria-hidden="true" /> Notas del encuentro <span>(opcional)</span></summary>
                       <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
                     </details>
