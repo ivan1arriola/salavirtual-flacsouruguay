@@ -206,7 +206,7 @@ export function MeetingDetailManager({
   }
 
   async function removeAll() {
-    if (removingAllRef.current) return;
+    if (removingAllRef.current || requestIds.length === 0) return;
     if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la serie completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
     removingAllRef.current = true;
     setBusy("all");
@@ -226,7 +226,7 @@ export function MeetingDetailManager({
       router.refresh();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "No se pudo conectar con el servidor.";
-      setMessage(`Operación incompleta: ${completed} de ${requestIds.length} solicitudes procesadas. ${detail} Actualizá la página y comprobá los encuentros pendientes antes de volver a intentar.`);
+      setMessage(`Operación incompleta: ${completed} de ${requestIds.length} solicitudes aceptadas por el servidor. ${detail} Actualizá la página y comprobá los encuentros pendientes antes de volver a intentar.`);
       router.refresh();
     } finally {
       removingAllRef.current = false;
