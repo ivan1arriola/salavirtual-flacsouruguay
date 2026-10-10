@@ -210,19 +210,24 @@ export function MeetingDetailManager({
     if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la serie completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
     removingAllRef.current = true;
     setBusy("all");
-    setMessage(`Eliminando ${meetings.length} encuentros de Google Calendar. Puede demorar unos minutos…`);
+    let completed = 0;
+    setMessage(`Cancelando solicitudes de la serie (0/${requestIds.length}). No cierres esta página.`);
     try {
       for (const requestId of requestIds) {
         const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" });
         if (!response.ok) {
           const result = await response.json().catch(() => ({}));
-          throw new Error(result.error ?? "No se pudo eliminar la serie completa.");
+          throw new Error(result.error ?? "No se pudo cancelar esta solicitud.");
         }
+        completed += 1;
+        setMessage(`Cancelando solicitudes de la serie (${completed}/${requestIds.length}). No cierres esta página.`);
       }
       router.push("/reuniones");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo conectar con el servidor. Intentá nuevamente.");
+      const detail = error instanceof Error ? error.message : "No se pudo conectar con el servidor.";
+      setMessage(`Operación incompleta: ${completed} de ${requestIds.length} solicitudes procesadas. ${detail} Actualizá la página y comprobá los encuentros pendientes antes de volver a intentar.`);
+      router.refresh();
     } finally {
       removingAllRef.current = false;
       setBusy(null);
