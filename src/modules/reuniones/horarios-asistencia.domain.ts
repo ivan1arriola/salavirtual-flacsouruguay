@@ -69,9 +69,3 @@ export function horarioAsistenciaCumpleMargen(horario: HorarioConAsistencia): bo
     && salidaAbsoluta - fin >= MARGEN_ASISTENCIA_MINUTOS;
 }
 
-/** ISO local Montevideo -> ISO UTC, conservando posibles coberturas en el día contiguo. */
-export function asistenciaLocalAIso(fecha: string, horaEvento: string, horaAsistencia: string, extremo: "LLEGADA" | "SALIDA"): string {
-  const ajuste = desfaseDiaAsistencia(horaEvento, horaAsistencia, extremo);
-  const instante = new Date(`${fecha}T${horaAsistencia}:00-03:00`);
-  return new Date(instante.getTime() + ajuste * 24 * 60 * 60 * 1000).toISOString();
-}
