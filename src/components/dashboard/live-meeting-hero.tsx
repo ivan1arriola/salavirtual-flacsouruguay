@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import {
   determinarEstadoTemporal,
@@ -81,7 +82,15 @@ export function LiveMeetingHero({
   const fin = new Date(meeting.finProgramadoAt);
   const estadoTemporal = determinarEstadoTemporal(inicio, fin, ahora);
   const isLive = estadoTemporal === "EN_VIVO";
-  const tiempoEtiqueta = formatearTiempoHastaReunion(inicio, ahora);
+  const inicioAsistencia = new Date(meeting.inicioAsistenciaAt ?? meeting.inicioProgramadoAt);
+  const finAsistencia = new Date(meeting.finAsistenciaAt ?? meeting.finProgramadoAt);
+  const coberturaDiferente = meeting.requiereAsistencia && (inicioAsistencia.getTime() !== inicio.getTime() || finAsistencia.getTime() !== fin.getTime());
+  const paraAsistente = role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia;
+  const tiempoEtiqueta = paraAsistente
+    ? inicioAsistencia > ahora
+      ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(/^Empieza en/, "Tu asistencia comienza en")
+      : "Tu asistencia técnica ya comenzó"
+    : formatearTiempoHastaReunion(inicio, ahora);
 
   return (
     <section
@@ -90,7 +99,7 @@ export function LiveMeetingHero({
     >
       <div className="dashboard-hero-card-header">
         <div className="dashboard-hero-timing">
-          {isLive ? (
+          {isLive && !paraAsistente ? (
             <span className="live-pill">
               <span className="live-indicator-dot" />
               <strong>En vivo ahora</strong>
@@ -102,7 +111,7 @@ export function LiveMeetingHero({
             </span>
           )}
           <span className="dashboard-hero-date">
-            {formatDate(inicio)} · {formatTime(inicio)}–{formatTime(fin)}
+            {formatDate(inicio)} · Encuentro: {formatTime(inicio)}–{formatTime(fin)}
           </span>
         </div>
 
@@ -123,6 +132,17 @@ export function LiveMeetingHero({
             </p>
           ) : null}
         </div>
+
+        <MeetingScheduleTimes
+          startsAt={inicio}
+          endsAt={fin}
+          requiresAssistance={meeting.requiereAsistencia}
+          assistanceStartsAt={meeting.inicioAsistenciaAt}
+          assistanceEndsAt={meeting.finAsistenciaAt}
+          viewerIsAssistant={paraAsistente}
+          compact
+        />
+        {coberturaDiferente && role !== "ASISTENTE_TECNICO" ? <p className="dashboard-hero-schedule-notice">El horario de llegada del asistente es distinto al inicio del encuentro.</p> : null}
 
         <div className="dashboard-hero-actions">
           {meeting.joinUrl ? (
