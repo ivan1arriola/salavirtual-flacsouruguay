@@ -9,6 +9,7 @@ import { AssistantInterestButton } from "@/src/modules/asistencia/presentation/c
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDateTime, formatTime } from "@/src/lib/ui/format";
 import {
   agruparPorFecha,
@@ -247,7 +248,7 @@ export default async function AgendaAbiertaPage() {
                       <article className={`open-agenda-card${cardStateClass}`} key={meeting.id}>
                         <div className="open-agenda-card-meta">
                           <span className="time-tag">
-                            {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} ({formatMinutes(durationMin)})
+                            Cobertura: {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} ({formatMinutes(durationMin)})
                           </span>
                           <span className={`mode-pill mode-${modalidad.toLowerCase()}`}>
                             {modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
@@ -258,12 +259,8 @@ export default async function AgendaAbiertaPage() {
                           <span className="open-agenda-card-program">{association.programa.nombre}</span>
                           <h3 className="open-agenda-card-title">{meeting.solicitud.titulo}</h3>
                           <p className="open-agenda-card-teacher">Docente: {teacher.nombres} {teacher.apellidos}</p>
-                          {modalidad === "HIBRIDA" ? (
-                            <small className="muted-text">
-                              Meet: {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}
-                              {missingHybridSchedule ? " · falta definir horario presencial" : ""}
-                            </small>
-                          ) : null}
+                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance assistanceStartsAt={inicioAsistencia} assistanceEndsAt={finAsistencia} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
+                          {missingHybridSchedule ? <small className="status status-warning">Falta definir llegada y salida para esta cobertura híbrida</small> : null}
                           {meet?.cuentaProveedor?.emailOrganizador || meet?.cuentaProveedor?.nombre ? (
                             <small className="muted-text">
                               Cuenta: {meet.cuentaProveedor.emailOrganizador ?? meet.cuentaProveedor.nombre}
