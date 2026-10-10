@@ -86,7 +86,8 @@ export function LiveMeetingHero({
   const finAsistencia = new Date(meeting.finAsistenciaAt ?? meeting.finProgramadoAt);
   const coberturaDiferente = meeting.requiereAsistencia && (inicioAsistencia.getTime() !== inicio.getTime() || finAsistencia.getTime() !== fin.getTime());
   const paraAsistente = role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia;
-  const tiempoEtiqueta = paraAsistente
+  const coberturaSinHorario = paraAsistente && meeting.modalidad === "HIBRIDA" && (!meeting.inicioAsistenciaAt || !meeting.finAsistenciaAt);
+  const tiempoEtiqueta = coberturaSinHorario ? "Falta confirmar tu hora de llegada" : paraAsistente
     ? inicioAsistencia > ahora
       ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(/^Empieza en/, "Tu asistencia comienza en")
       : "Tu asistencia técnica ya comenzó"
@@ -124,7 +125,7 @@ export function LiveMeetingHero({
         <div className="dashboard-hero-main-info">
           <p className="dashboard-hero-program">{meeting.programa}</p>
           <h2 className="dashboard-hero-title">
-            <Link href={`/reuniones/${meeting.solicitudId}`}>{meeting.titulo}</Link>
+            <Link href={role === "ASISTENTE_TECNICO" ? `/operacion/${meeting.id}` : `/reuniones/${meeting.solicitudId}`}>{meeting.titulo}</Link>
           </h2>
           {meeting.salaNombre ? (
             <p className="dashboard-hero-room">
@@ -172,12 +173,11 @@ export function LiveMeetingHero({
             </Link>
           ) : null}
 
-          <Link
-            className="secondary-action"
-            href={`/reuniones/${meeting.solicitudId}`}
-          >
-            Ficha del encuentro
-          </Link>
+          {role !== "ASISTENTE_TECNICO" ? (
+            <Link className="secondary-action" href={`/reuniones/${meeting.solicitudId}`}>
+              Ficha del encuentro
+            </Link>
+          ) : null}
         </div>
       </div>
 
