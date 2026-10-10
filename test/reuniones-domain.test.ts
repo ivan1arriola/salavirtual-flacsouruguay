@@ -210,6 +210,57 @@ describe("dias derivados de reuniones", () => {
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
   });
 
+  it("virtuales: acepta omitir horarios, pero rechaza personalizarlos en la API", () => {
+    const base = {
+      titulo: "Encuentro virtual",
+      docenteProgramaId: "dp",
+      requiereAsistenciaTecnica: true,
+      modalidad: "VIRTUAL" as const,
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-15T10:00:00-03:00",
+        fin: "2026-10-15T17:00:00-03:00"
+      }]
+    };
+
+    // Compatibilidad con clientes API antiguos: el servicio guarda la cobertura fija.
+    expect(crearReunionesSchema.safeParse(base).success).toBe(true);
+    const fixed = {
+      ...base,
+      instancias: [{
+        ...base.instancias[0],
+        asistenciaInicio: "2026-10-15T09:45:00-03:00",
+        asistenciaFin: "2026-10-15T17:00:00-03:00"
+      }]
+    };
+    expect(crearReunionesSchema.safeParse(fixed).success).toBe(true);
+    expect(crearReunionesSchema.safeParse({
+      ...fixed,
+      instancias: [{ ...fixed.instancias[0], asistenciaInicio: "2026-10-15T09:30:00-03:00" }]
+    }).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({
+      ...fixed,
+      instancias: [{ ...fixed.instancias[0], asistenciaFin: "2026-10-15T17:30:00-03:00" }]
+    }).success).toBe(false);
+  });
+
+  it("híbridas: permite extender la llegada y la salida por encima de 30 minutos", () => {
+    const result = crearReunionesSchema.safeParse({
+      titulo: "Encuentro híbrido",
+      docenteProgramaId: "dp",
+      requiereAsistenciaTecnica: true,
+      modalidad: "HIBRIDA",
+      timezone: "America/Montevideo",
+      instancias: [{
+        inicio: "2026-10-15T10:00:00-03:00",
+        fin: "2026-10-15T17:00:00-03:00",
+        asistenciaInicio: "2026-10-15T08:00:00-03:00",
+        asistenciaFin: "2026-10-15T20:00:00-03:00"
+      }]
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("conserva una descripción diferente para cada encuentro", () => {
     const result = crearReunionesSchema.parse({
       titulo: "Clase",
