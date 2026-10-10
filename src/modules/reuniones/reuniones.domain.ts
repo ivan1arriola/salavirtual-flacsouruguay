@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
 import { pertenecenAlMismoDia } from "./periodos.domain";
+import { MARGEN_ASISTENCIA_MINUTOS } from "./horarios-asistencia.domain";
 
 export type FechaReunion = Readonly<{ inicioProgramadoAt: Date }>;
 export type PeriodoReunion = Readonly<{ inicio: Date }>;
@@ -106,7 +107,7 @@ export const crearReunionesSchema = z
             path: ["instancias", index, "asistenciaInicio"]
           });
         } else {
-          const margenMinimoMs = 30 * 60 * 1000;
+          const margenMinimoMs = MARGEN_ASISTENCIA_MINUTOS * 60 * 1000;
           if (inicio.getTime() - asistenciaInicio.getTime() < margenMinimoMs) {
             context.addIssue({
               code: "custom",
