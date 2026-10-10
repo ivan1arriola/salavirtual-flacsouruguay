@@ -37,7 +37,7 @@ export function TeacherUpcomingList({
               <article className="teacher-upcoming-card" key={meeting.id}>
                 <div className="teacher-upcoming-card-when">
                   <span className="teacher-upcoming-card-date">{formatDate(inicio)}</span>
-                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
+                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} modality={meeting.modalidad} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
                   <span className="badge-tag">
                     {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                   </span>
