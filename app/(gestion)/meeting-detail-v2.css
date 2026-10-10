@@ -1829,26 +1829,29 @@
 }
 
 
-/* FLACSO series detail: richer blue surface hierarchy.
-   Scoped to the series detail to avoid recoloring unrelated screens. */
+/* FLACSO series detail: restrained institutional palette.
+   Scoped to this page so other screens and interaction states are untouched. */
 .meeting-detail-v2 {
-  --detail-navy: #203b68;
+  --detail-navy: #243c61;
   --detail-blue: #2c4777;
-  --detail-border: #bfd0e6;
-  --detail-muted-blue: #e4edf9;
-  --detail-light-blue: #eff4fb;
-  --detail-gold: #fdd223;
+  --detail-border: #dbe2ea;
+  --detail-muted-blue: #f5f6f8;
+  --detail-light-blue: #ffffff;
+  --detail-gold: #d2a33b;
+  --detail-warning-bg: #faf3e4;
+  --detail-warning-border: #e6d2a3;
+  --detail-soft-blue: #edf2f8;
 }
 
 .meeting-detail-v2 .meeting-detail-hero {
   border-color: var(--detail-border);
-  background: linear-gradient(135deg, #eef4fc 0%, #dce8f7 100%);
-  box-shadow: 0 8px 24px rgba(28, 52, 91, .10);
+  background: #ffffff;
+  box-shadow: 0 3px 14px rgba(28, 52, 91, .045);
 }
 
 .meeting-detail-v2 .meeting-detail-hero-action {
-  background: linear-gradient(145deg, #d9e5f6, #cbdcf0);
-  border-color: #b6c9e3;
+  border-color: var(--detail-border);
+  background: #f5f7fa;
 }
 
 .meeting-detail-v2 .meeting-detail-hero h1,
@@ -1856,230 +1859,146 @@
   color: var(--detail-navy);
 }
 
-.meeting-detail-v2 .meeting-detail-summary article {
-  border: 1px solid var(--detail-border);
-  border-top: 3px solid #6f8cba;
-  background: linear-gradient(160deg, #e0eaf8 0%, #eef4fc 100%);
-  box-shadow: 0 5px 14px rgba(28, 52, 91, .07);
-}
-
+.meeting-detail-v2 .meeting-detail-summary article,
 .meeting-detail-v2 .meeting-detail-summary article:nth-child(2n) {
-  background: linear-gradient(160deg, #d7e4f6 0%, #e9f1fb 100%);
+  border: 1px solid var(--detail-border);
+  border-top: 2px solid #bbc9d9;
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .meeting-detail-v2 .meeting-detail-summary article > svg {
-  color: #ffffff;
-  background: var(--detail-blue);
+  color: var(--detail-blue);
+  background: var(--detail-soft-blue);
 }
 
-.meeting-detail-v2 .meeting-detail-summary span {
-  color: #3a567d;
-}
-
-.meeting-detail-v2 .meeting-detail-summary strong {
-  color: #172f57;
-}
-
-.meeting-detail-v2 .meeting-detail-summary small {
-  color: #506783;
-}
+.meeting-detail-v2 .meeting-detail-summary span { color: #52647b; }
+.meeting-detail-v2 .meeting-detail-summary strong { color: #24364e; }
+.meeting-detail-v2 .meeting-detail-summary small { color: #607084; }
 
 .meeting-detail-v2 .series-management-v2 {
-  border-color: #aec2df;
-  background: var(--detail-muted-blue);
-  box-shadow: 0 10px 30px rgba(28, 52, 91, .09);
+  border-color: var(--detail-border);
+  background: #ffffff;
+  box-shadow: 0 3px 14px rgba(28, 52, 91, .045);
 }
 
 .meeting-detail-v2 .series-management-v2 > summary,
 .meeting-detail-v2 .series-management-v2[open] > summary {
-  border-bottom: 3px solid var(--detail-gold);
-  background: linear-gradient(115deg, #243e6b, #365786);
+  border-bottom: 1px solid #dce3eb;
+  background: #2c4777;
 }
 
-.meeting-detail-v2 .series-management-v2 > summary:hover {
-  background: linear-gradient(115deg, #203762, #2f507e);
-}
-
-.meeting-detail-v2 .series-management-v2 > summary strong {
-  color: #ffffff;
-}
-
+.meeting-detail-v2 .series-management-v2 > summary:hover { background: #243e69; }
+.meeting-detail-v2 .series-management-v2 > summary strong { color: #ffffff; }
 .meeting-detail-v2 .series-management-v2 > summary small,
-.meeting-detail-v2 .series-management-v2 > summary > svg {
-  color: #e3ecfa;
-}
-
+.meeting-detail-v2 .series-management-v2 > summary > svg { color: #e4eaf2; }
 .meeting-detail-v2 .series-management-v2-icon {
+  color: #ffffff;
+  background: rgba(255, 255, 255, .13);
+}
+.meeting-detail-v2 .series-management-v2-count {
   color: #ffffff;
   background: rgba(255, 255, 255, .15);
 }
 
-.meeting-detail-v2 .series-management-v2-count {
-  color: #fff;
-  background: rgba(255, 255, 255, .18);
-}
-
 .meeting-detail-v2 .series-management-tabs {
-  border-bottom-color: #b2c7e1;
-  background: #dce8f7;
+  border-bottom-color: var(--detail-border);
+  background: #f4f6f9;
 }
-
-.meeting-detail-v2 .series-management-tabs > button {
-  color: #314e78;
-}
-
+.meeting-detail-v2 .series-management-tabs > button { color: #415977; }
 .meeting-detail-v2 .series-management-tabs > button:hover,
 .meeting-detail-v2 .series-management-tabs > button:focus-visible {
-  color: #213c68;
-  background: #c8d9ef;
+  color: #243e69;
+  background: #e8eef5;
 }
-
 .meeting-detail-v2 .series-management-tabs > button.active {
-  color: #1c355e;
-  border-bottom-color: var(--detail-gold);
-  background: #b9cfea;
-}
-
-.meeting-detail-v2 .series-management-v2-content {
-  background: #e0eafa;
-}
-
-.meeting-detail-v2 .series-tool-card {
-  border-color: #b7cbe4;
-  background: var(--detail-light-blue);
-  box-shadow: 0 3px 12px rgba(27, 48, 75, .04);
-}
-
-.meeting-detail-v2 .series-tool-card > header > svg {
-  color: var(--detail-blue);
-}
-
-.meeting-detail-v2 .series-tool-card h3,
-.meeting-detail-v2 .series-cohost-toolbar > strong {
   color: var(--detail-navy);
-}
-
-.meeting-detail-v2 .series-cohost-manager .field .series-cohost-search-control input {
-  border-color: #a9c0dd;
+  border-bottom-color: var(--detail-blue);
   background: #ffffff;
 }
-
+.meeting-detail-v2 .series-management-v2-content { background: #f7f8fa; }
+.meeting-detail-v2 .series-tool-card {
+  border-color: var(--detail-border);
+  background: #ffffff;
+  box-shadow: none;
+}
+.meeting-detail-v2 .series-tool-card > header > svg { color: var(--detail-blue); }
+.meeting-detail-v2 .series-tool-card h3,
+.meeting-detail-v2 .series-cohost-toolbar > strong { color: var(--detail-navy); }
+.meeting-detail-v2 .series-cohost-manager .field .series-cohost-search-control input {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
 .meeting-detail-v2 .series-cohost-add:not(:disabled) {
-  border-color: #d3aa09;
-  background: var(--detail-gold);
-  color: #1a3153;
+  border-color: #2c4777;
+  background: #2c4777;
+  color: #ffffff;
 }
-
-.meeting-detail-v2 .series-cohost-add:not(:disabled):hover {
-  background: #ebbe12;
-}
-
+.meeting-detail-v2 .series-cohost-add:not(:disabled):hover { background: #243e69; }
 .meeting-detail-v2 .series-cohost-toolbar > .secondary-action {
-  border-color: #a2bbda;
-  background: #d4e2f4;
+  border-color: #d5dee8;
+  background: #f4f6f9;
   color: var(--detail-navy);
 }
-
 .meeting-detail-v2 .series-cohost-toolbar > .secondary-action:hover:not(:disabled) {
-  background: #c1d4ed;
+  background: #e9eef5;
 }
-
 .meeting-detail-v2 .series-cohost-manager .field ul > li {
-  border-color: #b8cce6 !important;
-  border-left: 3px solid #587aab;
-  background: #e0eaf8;
+  border-color: #d9e2ed !important;
+  border-left: 2px solid #8ca4c2;
+  background: #f8fafc;
 }
-
 .meeting-detail-v2 .series-cohost-remove {
-  border-color: #a8bdd9;
-  background: #f0f5fc;
+  border-color: #d3dce7;
+  background: #ffffff;
 }
-
-.meeting-detail-v2 .series-cohost-remove:hover:not(:disabled) {
-  background: #d0dff3;
-}
-
+.meeting-detail-v2 .series-cohost-remove:hover:not(:disabled) { background: #eff3f7; }
 .meeting-detail-v2 .series-settings-card dl > div,
 .meeting-detail-v2 .series-notify-summary {
-  border: 1px solid #bed0e8;
-  background: #d9e6f7;
+  border: 1px solid var(--detail-border);
+  background: #f5f7fa;
 }
-
-.meeting-detail-v2 .series-notify-card {
-  background: #eaf2fc;
-}
-
-.meeting-detail-v2 .series-preview {
-  background: #e9f1fb;
-}
+.meeting-detail-v2 .series-notify-card,
+.meeting-detail-v2 .series-preview { background: #ffffff; }
 
 .meeting-detail-v2 .encounter-card-v2 {
-  border-color: #bdcee4;
-  background: #f1f5fc;
-  box-shadow: 0 5px 18px rgba(28, 52, 91, .07);
+  border-color: var(--detail-border);
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(28, 52, 91, .04);
 }
-
 .meeting-detail-v2 .encounter-v2-header,
 .meeting-detail-v2 .encounter-card-v2.is-futuro .encounter-v2-header {
-  background: #e0ebf9;
+  background: #f5f7fa;
 }
-
-.meeting-detail-v2 .encounter-card-v2.is-pasado .encounter-v2-header {
-  background: #e8edf5;
-}
-
+.meeting-detail-v2 .encounter-card-v2.is-pasado .encounter-v2-header { background: #f3f4f6; }
 .meeting-detail-v2 .encounter-card-v2.is-en-curso .encounter-v2-header {
-  background: #fff0c9;
+  background: var(--detail-warning-bg);
 }
-
 .meeting-detail-v2 .encounter-v2-number {
   background: var(--detail-blue);
   color: #ffffff;
 }
-
-.meeting-detail-v2 .encounter-v2-number small {
-  color: #e5edfa;
-}
-
+.meeting-detail-v2 .encounter-v2-number small { color: #e5edfa; }
 .meeting-detail-v2 .encounter-v2-meet,
 .meeting-detail-v2 .encounter-v2-artifacts {
-  border-color: #c0d1e8;
-  background: #e5eefb;
+  border-color: var(--detail-border);
+  background: #f6f8fb;
 }
-
 .meeting-detail-v2 .encounter-v2-meet.is-pending {
-  border-color: #dec184;
-  background: #fff4dc;
+  border-color: var(--detail-warning-border);
+  background: var(--detail-warning-bg);
 }
-
-.meeting-detail-v2 .encounter-v2-people {
-  background: #e1ebf8;
-}
-
+.meeting-detail-v2 .encounter-v2-people { background: #f5f7fa; }
 .meeting-detail-v2 .encounter-v2-cohost-list > span {
-  border: 1px solid #d1dff0;
-  background: #f1f6fd;
+  border: 1px solid var(--detail-border);
+  background: #ffffff;
 }
-
-.meeting-detail-v2 .encounter-v2-organizer-reference {
-  background: #d3e1f3;
-}
-
+.meeting-detail-v2 .encounter-v2-organizer-reference { background: #eef2f6; }
 .meeting-detail-v2 .add-encounter-v2 > summary,
-.meeting-detail-v2 .add-encounter-v2[open] > summary {
-  background: #dce8f8;
-}
+.meeting-detail-v2 .add-encounter-v2[open] > summary { background: #f4f6f9; }
 
 @media (max-width: 550px) {
-  .meeting-detail-v2 .series-management-v2-content {
-    background: #deebfa;
-  }
-
-  .meeting-detail-v2 .series-tool-card {
-    background: #eef4fc;
-  }
-
-  .meeting-detail-v2 .series-management-tabs > button.active {
-    background: #c5d7ef;
-  }
+  .meeting-detail-v2 .series-management-v2-content { background: #f7f8fa; }
+  .meeting-detail-v2 .series-tool-card { background: #ffffff; }
+  .meeting-detail-v2 .series-management-tabs > button.active { background: #ffffff; }
 }
