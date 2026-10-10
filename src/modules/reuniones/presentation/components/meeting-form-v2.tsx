@@ -415,9 +415,20 @@ export function MeetingFormV2({
             />
           </section>
 
+          {requiereHorarioPresencial ? (
+            <div className="meeting-assistance-return">
+              <Clock3 size={18} aria-hidden="true" />
+              <div>
+                <strong>Horarios de asistencia presencial</strong>
+                <span>La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como mínimo.</span>
+                <a href="#fechas">Revisar llegada y salida en Fechas</a>
+              </div>
+            </div>
+          ) : null}
+
           {requiresAssistance ? (
             <section className="organization-subsection organization-assistance-config">
-              <div className="organization-subsection-heading"><div><h3>Cobertura de asistencia técnica</h3><p>{meetingMode === "HIBRIDA" ? "El horario presencial se define por fecha: llegada antes del inicio y salida después del cierre." : "Definí si queda abierta a postulaciones o si querés asignar a alguien ahora."}</p></div></div>
+              <div className="organization-subsection-heading"><div><h3>Cobertura de asistencia técnica</h3><p>{meetingMode === "HIBRIDA" ? "El horario de asistencia se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "Definí si queda abierta a postulaciones o si querés asignar a alguien ahora."}</p></div></div>
               {canAssignAssistant ? (
                 <fieldset className="assistance-choice organization-assistance-choice">
                   <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
