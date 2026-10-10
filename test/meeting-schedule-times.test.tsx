@@ -54,6 +54,8 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
     });
     expect(html).toContain("Horario de asistencia técnica");
     expect(html).toContain("Horario del encuentro");
+    expect(html).toContain("09:45");
+    expect(html).toContain("17:00");
     expect(html).not.toContain("Horario técnico por confirmar");
   });
 
