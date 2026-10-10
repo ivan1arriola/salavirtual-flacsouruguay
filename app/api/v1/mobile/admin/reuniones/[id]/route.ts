@@ -39,7 +39,7 @@ const ALLOWED_ACTIONS = new Set([
 ]);
 
 /** Mutations reuse the web application's authorization, audit and business rules. */
-export async function PATCH(request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   try {
     const actor = await requireMobileActor(request, ["ADMINISTRACION"]);
     const { id } = await context.params;
@@ -52,6 +52,18 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const meeting = await getAdminMeeting(db, id);
     if (!meeting) return NextResponse.json({ error: "Encuentro no encontrado." }, { status: 404 });
+    if (input.accion === "EDITAR_HORARIO_ASISTENCIA") {
+      if (meeting.modality !== "HIBRIDA") {
+        return NextResponse.json({ error: "La cobertura virtual es fija y no se puede editar." }, { status: 400 });
+      }
+      const arrival = Date.parse(input.inicioAsistenciaTecnica);
+      const departure = Date.parse(input.finAsistenciaTecnica);
+      if (!Number.isFinite(arrival) || !Number.isFinite(departure) ||
+        arrival > Date.parse(meeting.startsAt) - 30 * 60_000 ||
+        departure < Date.parse(meeting.endsAt) + 30 * 60_000) {
+        return NextResponse.json({ error: "La asistencia híbrida requiere al menos 30 minutos antes y después del encuentro." }, { status: 400 });
+      }
+    }
     const result = await actualizarEncuentro({ db }, actor, meeting.requestId, id, input);
     const sincronizacion = await obtenerServicioConferencias()
       .sincronizarEventosPendientes(result.eventoProveedorIds);
