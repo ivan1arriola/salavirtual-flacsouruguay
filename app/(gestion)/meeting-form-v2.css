@@ -673,3 +673,47 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+.meeting-form-v2 .meeting-assistance-return {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid #b8cae2;
+  border-radius: 11px;
+  background: #dfeafb;
+  color: #24436e;
+}
+
+.meeting-form-v2 .meeting-assistance-return > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.meeting-form-v2 .meeting-assistance-return > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meeting-form-v2 .meeting-assistance-return strong {
+  font-size: .85rem;
+}
+
+.meeting-form-v2 .meeting-assistance-return span {
+  font-size: .78rem;
+  line-height: 1.4;
+}
+
+.meeting-form-v2 .meeting-assistance-return a {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  width: fit-content;
+  color: #1f447e;
+  font-size: .83rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
