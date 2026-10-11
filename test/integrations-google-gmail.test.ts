@@ -67,13 +67,14 @@ describe("cliente tecnico Google Gmail", () => {
           "Content-Type": "application/json",
         }),
         body: JSON.stringify({ raw: "raw-base64-payload" }),
+        signal: expect.any(AbortSignal),
       })
     );
 
     fetchSpy.mockRestore();
   });
 
-  it("lanza error descriptivo cuando Gmail API responde con error HTTP", async () => {
+  it("no expone detalles de respuesta ni reenvía el POST al fallar Gmail", async () => {
     const mockAuth = {
       getRequestHeaders: vi.fn().mockResolvedValue(new Map()),
     };
@@ -86,8 +87,9 @@ describe("cliente tecnico Google Gmail", () => {
 
     await expect(
       enviarMensajeGmailHttp(mockAuth as any, "raw-payload")
-    ).rejects.toThrow("Gmail API rechazó el envío (403): Quota exceeded");
+    ).rejects.toThrow("Gmail API rechazó el envío (403).");
 
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     fetchSpy.mockRestore();
   });
 });
