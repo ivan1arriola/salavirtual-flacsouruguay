@@ -17,6 +17,8 @@ export const GOOGLE_MEET_SCOPES = [
 ] as const;
 
 export const GOOGLE_HTTP_TIMEOUT_MS = 60_000;
+// A retried GET must not hold a worker lease for multiple minutes per attempt.
+export const GOOGLE_HTTP_READ_TIMEOUT_MS = 20_000;
 
 export function crearGoogleAuthJwt(
   credentials: GoogleAuthCredentials,
