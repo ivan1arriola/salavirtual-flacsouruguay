@@ -7,14 +7,7 @@ import {
 } from "../src/modules/migracion/usuarios-legacy.domain";
 
 const googleAccount = (providerAccountId: string): CuentaGoogleLegacy => ({
-  providerAccountId,
-  refresh_token: null,
-  access_token: null,
-  expires_at: null,
-  token_type: null,
-  scope: null,
-  id_token: null,
-  session_state: null
+  providerAccountId
 });
 
 const legacyUser = (overrides: Partial<UsuarioLegacy> = {}): UsuarioLegacy => ({
