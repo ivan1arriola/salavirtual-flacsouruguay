@@ -99,7 +99,7 @@ export async function sincronizarEventosPendientesUseCase(
             });
             externalEventId = created.externalEventId;
             await repository.guardarExternalEventIdTemprano(
-              claim.event.id,
+              claim,
               externalEventId,
               created.payload
             );
@@ -116,7 +116,7 @@ export async function sincronizarEventosPendientesUseCase(
             );
           }
 
-          await repository.persistirMeetDetectado(claim.event.id, obtained);
+          await repository.persistirMeetDetectado(claim, obtained);
           await configurarAjustesMeet(provider, request, obtained);
 
           result = {
@@ -155,7 +155,7 @@ export async function sincronizarEventosPendientesUseCase(
             );
           }
 
-          await repository.persistirMeetDetectado(claim.event.id, obtained);
+          await repository.persistirMeetDetectado(claim, obtained);
           await configurarAjustesMeet(provider, request, obtained);
 
           result = {
@@ -184,7 +184,7 @@ export async function sincronizarEventosPendientesUseCase(
             throw new Error("Google Calendar todavía no confirmó el enlace Meet.");
           }
 
-          await repository.persistirMeetDetectado(claim.event.id, obtained);
+          await repository.persistirMeetDetectado(claim, obtained);
           await configurarAjustesMeet(provider, request, obtained);
 
           result = {
