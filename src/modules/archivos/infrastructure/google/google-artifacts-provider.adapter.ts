@@ -1,4 +1,7 @@
 import type { JWT } from "google-auth-library";
+import { createHash } from "node:crypto";
+import { db } from "@/src/lib/db";
+import { claveOperacionGoogle, ejecutarGooglePostUnaVez } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
   crearGoogleMeetArtifactsAuthClient,
   conReintentosGoogleLectura,
@@ -167,7 +170,17 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
-      return obtenerOCrearCarpetaDrive(auth, parentId, name);
+      const clave = claveOperacionGoogle("DRIVE_CREAR_CARPETA", credentials.serviceAccountEmail, parentId, name);
+      return ejecutarGooglePostUnaVez(
+        db,
+        { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail },
+        () => obtenerOCrearCarpetaDrive(auth, parentId, name),
+        (id) => ({ id }),
+        (saved) => {
+          if (!saved.id) throw new Error("La operación de carpeta Drive no contiene ID.");
+          return saved.id;
+        }
+      );
     },
 
     async moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile> {
@@ -175,7 +188,25 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile> {
-      return subirDocumentoGoogleDrive(auth, folderId, name, html);
+      // Include content hash so a deliberately modified report can be published
+      // as a distinct version, but never replay a single ambiguous upload.
+      const digest = createHash("sha256").update(html).digest("hex");
+      const clave = claveOperacionGoogle(
+        "DRIVE_SUBIR_DOCUMENTO", credentials.serviceAccountEmail, folderId, name, digest
+      );
+      return ejecutarGooglePostUnaVez(
+        db,
+        { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail },
+        () => subirDocumentoGoogleDrive(auth, folderId, name, html),
+        (result) => {
+          if (!result.id) throw new Error("La respuesta de Drive no incluyó ID.");
+          return { id: result.id, name: result.name, mimeType: result.mimeType ?? "", webViewLink: result.webViewLink ?? "" };
+        },
+        (saved) => {
+          if (!saved.id) throw new Error("La operación de documento Drive no contiene ID.");
+          return { id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink };
+        }
+      );
     }
   };
 }
