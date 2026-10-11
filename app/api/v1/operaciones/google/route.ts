@@ -24,7 +24,7 @@ export async function GET() {
     orderBy: { updatedAt: "asc" },
     take: 100,
     select: {
-      clave: true, proveedor: true, tipo: true, cuenta: true, estado: true,
+      clave: true, proveedor: true, tipo: true, cuenta: true, referencia: true, estado: true,
       intentos: true, iniciadaAt: true, createdAt: true, updatedAt: true, errorCodigo: true
     }
   });
