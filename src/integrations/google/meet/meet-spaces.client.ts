@@ -1,5 +1,5 @@
 import type { JWT } from "google-auth-library";
-import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
+import { GOOGLE_HTTP_TIMEOUT_MS, GOOGLE_HTTP_READ_TIMEOUT_MS } from "../auth";
 import { conReintentosGoogleLectura } from "../retry";
 
 export const MEET_API_BASE_URL = "https://meet.googleapis.com/v2";
@@ -42,7 +42,7 @@ export async function obtenerEspacioMeet(
   const response = await conReintentosGoogleLectura(() => auth.request<GoogleMeetSpace>({
     url,
     method: "GET",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
   }));
   return response.data;
 }
@@ -96,7 +96,7 @@ export async function listarMiembrosMeetHttp(
     }>({
       url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
       method: "GET",
-      timeout: GOOGLE_HTTP_TIMEOUT_MS,
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
     }));
 
     if (response.data.members) {
