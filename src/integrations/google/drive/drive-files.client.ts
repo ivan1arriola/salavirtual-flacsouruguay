@@ -18,7 +18,8 @@ export type MovedDriveFile = Readonly<{
 export async function buscarCarpetaDrive(
   auth: JWT,
   parentId: string,
-  name: string
+  name: string,
+  requireUnique = false
 ): Promise<string | null> {
   const escaped = name.replaceAll("'", "\\'");
   const query = `mimeType = '${DRIVE_FOLDER_MIME}' and name = '${escaped}' and '${parentId}' in parents and trashed = false`;
@@ -29,8 +30,8 @@ export async function buscarCarpetaDrive(
     nextPageToken?: string;
   }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS }));
   // Ambiguous folder names are not proof of a successful CREATE.
-  if (listed.data.nextPageToken || listed.data.files?.length !== 1) return null;
-  return listed.data.files[0]?.id ?? null;
+  if (requireUnique && (listed.data.nextPageToken || listed.data.files?.length !== 1)) return null;
+  return listed.data.files?.[0]?.id ?? null;
 }
 
 export async function obtenerOCrearCarpetaDrive(
