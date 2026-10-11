@@ -1,7 +1,10 @@
 import { createRequire } from "node:module";
 import { compare } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import type { PrismaClient as LegacyPrismaClientType } from "../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
+type LegacyPrismaClientType = Readonly<{
+  user: { findMany: (args: unknown) => Promise<{ id: string; passwordHash: string | null }[]> };
+  $disconnect: () => Promise<void>;
+}>;
 
 const legacyRequire = createRequire(
   new URL("../../flacso-zoom-plataforma-web/package.json", import.meta.url)

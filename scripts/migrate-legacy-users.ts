@@ -1,6 +1,10 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
-import type { PrismaClient as LegacyPrismaClientType } from "../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
+import type { UsuarioLegacy } from "../src/modules/migracion/usuarios-legacy.domain";
+type LegacyPrismaClientType = Readonly<{
+  user: { findMany: (args: unknown) => Promise<UsuarioLegacy[]> };
+  $disconnect: () => Promise<void>;
+}>;
 import { planificarMigracionUsuarios } from "../src/modules/migracion/usuarios-legacy.domain";
 import { crearSlugAsistenteDisponible } from "../src/modules/asistencia/asistente-slug.adapter";
 
@@ -33,13 +37,7 @@ async function cargarPlanes() {
           where: { provider: "google" },
           select: {
             providerAccountId: true,
-            refresh_token: true,
-            access_token: true,
-            expires_at: true,
-            token_type: true,
-            scope: true,
-            id_token: true,
-            session_state: true
+            // OAuth tokens are not migrated: only the stable Google subject is required.
           }
         },
         docenteProfile: {
@@ -142,6 +140,13 @@ async function aplicarPlan(
     for (const [index, account] of plan.cuentasGoogle.entries()) {
       const email = emailsGoogle[index];
       if (!email) continue;
+      const ownership = await tx.cuentaGoogleFlacso.findUnique({
+        where: { providerAccountId: account.providerAccountId },
+        select: { userId: true }
+      });
+      if (ownership && ownership.userId !== plan.usuarioId) {
+        throw new Error(`Cuenta Google ${account.providerAccountId} ya vinculada a otro usuario: migración bloqueada.`);
+      }
       await tx.cuentaGoogleFlacso.upsert({
         where: { providerAccountId: account.providerAccountId },
         create: {
@@ -154,13 +159,6 @@ async function aplicarPlan(
         update: {
           userId: plan.usuarioId,
           email,
-          refresh_token: account.refresh_token,
-          access_token: account.access_token,
-          expires_at: account.expires_at,
-          token_type: account.token_type,
-          scope: account.scope,
-          id_token: account.id_token,
-          session_state: account.session_state,
           emailVerificadoAt: plan.emailVerificadoAt
         }
       });
@@ -229,7 +227,7 @@ async function main(): Promise<void> {
           mode: applyChanges ? "apply" : "dry-run",
           users: planes.length,
           docentes: planes.filter(({ docente }) => Boolean(docente)).length,
-          asistentes: planes.filter(({ asistente }) => Boolean(asistente)).length,
+          asistentes: planes.filter(({ asistenteTecnico }) => Boolean(asistenteTecnico)).length,
           googleAccounts: planes.reduce(
             (total, { cuentasGoogle }) => total + cuentasGoogle.length,
             0
