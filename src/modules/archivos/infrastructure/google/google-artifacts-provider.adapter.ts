@@ -1,7 +1,12 @@
 import type { JWT } from "google-auth-library";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
-import { claveOperacionGoogle, ejecutarGooglePostUnaVez } from "@/src/modules/operaciones/google-operaciones-externas.service";
+import {
+  claveOperacionGoogle,
+  ejecutarGooglePostUnaVez,
+  confirmarGoogleOperacionVerificada,
+  GoogleOperacionInciertaError
+} from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
   crearGoogleMeetArtifactsAuthClient,
   conReintentosGoogleLectura,
@@ -9,6 +14,7 @@ import {
   GOOGLE_HTTP_READ_TIMEOUT_MS,
   moverArchivoDrive,
   obtenerOCrearCarpetaDrive,
+  buscarCarpetaDrive,
   subirDocumentoGoogleDrive
 } from "@/src/integrations/google";
 import {
@@ -171,16 +177,37 @@ export function crearGoogleArtifactsProviderAdapter(
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
       const clave = claveOperacionGoogle("DRIVE_CREAR_CARPETA", credentials.serviceAccountEmail, parentId, name);
-      return ejecutarGooglePostUnaVez(
-        db,
-        { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail },
-        () => obtenerOCrearCarpetaDrive(auth, parentId, name),
-        (id) => ({ id }),
-        (saved) => {
-          if (!saved.id) throw new Error("La operación de carpeta Drive no contiene ID.");
-          return saved.id;
-        }
-      );
+      try {
+        return await ejecutarGooglePostUnaVez(
+          db,
+          { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail },
+          () => obtenerOCrearCarpetaDrive(auth, parentId, name),
+          (id) => ({ id }),
+          (saved) => {
+            if (!saved.id) throw new Error("La operación de carpeta Drive no contiene ID.");
+            return saved.id;
+          }
+        );
+      } catch (error) {
+        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        // Only a unique exact remote match is sufficient evidence to recover.
+        // Failure or no match must NOT cause a second POST.
+        const verifiedId = await buscarCarpetaDrive(auth, parentId, name, true)
+          .catch(() => null);
+        if (!verifiedId) throw error;
+        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, { id: verifiedId });
+        if (confirmed) return verifiedId;
+        // Another worker can resolve it concurrently. Never infer a result
+        // from a stale ENVIANDO lease or a different remote ID.
+        const latest = await db.googleOperacionExterna.findUnique({
+          where: { clave }, select: { estado: true, resultado: true }
+        });
+        if (latest?.estado === "CONFIRMADA" &&
+            latest.resultado && typeof latest.resultado === "object" &&
+            !Array.isArray(latest.resultado) &&
+            latest.resultado.id === verifiedId) return verifiedId;
+        throw error;
+      }
     },
 
     async moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile> {
