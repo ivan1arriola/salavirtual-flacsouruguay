@@ -265,7 +265,7 @@ export async function asignarAsistentePostulado(
       modalidadEfectiva === "HIBRIDA" &&
       (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)
     ) {
-      throw new Error(
+      throw new ConflictApiError(
         "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida."
       );
     }
