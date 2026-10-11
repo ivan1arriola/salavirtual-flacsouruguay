@@ -95,7 +95,7 @@ function errorStatus(error: unknown): number | null {
   const candidate = error as { code?: unknown; status?: unknown; response?: { status?: unknown } };
   const value = candidate.response?.status ?? candidate.status ?? candidate.code;
   if (typeof value === "number") return Number.isInteger(value) ? value : null;
-  if (typeof value === "string" && /^\\d{3}$/.test(value)) return Number(value);
+  if (typeof value === "string" && /^\d{3}$/.test(value)) return Number(value);
   return null;
 }
 
@@ -118,7 +118,7 @@ function obtenerRetryAfterMs(error: unknown, now: number): number | null {
     : (headers as Record<string, unknown>)["retry-after"] ?? (headers as Record<string, unknown>)["Retry-After"];
   if (raw === undefined || raw === null || String(raw).trim() === "") return null;
   const value = String(raw).trim();
-  if (/^\\d+(?:\\.\\d+)?$/.test(value)) return Number(value) * 1000;
+  if (/^\d+(?:\.\d+)?$/.test(value)) return Number(value) * 1000;
   const date = Date.parse(value);
   return Number.isFinite(date) ? Math.max(0, date - now) : null;
 }
