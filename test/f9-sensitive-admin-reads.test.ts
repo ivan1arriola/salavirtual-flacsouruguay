@@ -12,6 +12,10 @@ const mock = vi.hoisted(() => ({
 
 vi.mock("next/server", () => ({
   NextResponse: class {
+    status: number;
+    constructor(_body: unknown, init?: { status?: number }) {
+      this.status = init?.status ?? 200;
+    }
     static json(body: unknown, init?: { status?: number }) {
       return { body, status: init?.status ?? 200 };
     }
@@ -93,4 +97,23 @@ describe("F9: las lecturas administrativas no confían en un rol de sesión obso
       expect(mock.resolveSessionActor).not.toHaveBeenCalled();
     });
   }
+});
+
+describe("F9: administradores vigentes conservan acceso a las lecturas", () => {
+  it("puede consultar el estado de Google Workspace y las cuentas de usuario", async () => {
+    mock.workspaceFindUnique.mockResolvedValue(null);
+    mock.workspaceFindMany.mockResolvedValue([]);
+    mock.userFindUnique.mockResolvedValue({
+      id: "user-2", passwordHash: null, cuentasGoogle: []
+    });
+    expect((await getWorkspace() as { status: number }).status).toBe(200);
+    expect((await getUserAccounts(new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"), context) as { status: number }).status).toBe(200);
+    expect(mock.workspaceFindUnique).toHaveBeenCalledTimes(1);
+    expect(mock.userFindUnique).toHaveBeenCalledTimes(1);
+  });
+  it("puede descargar la planilla de pagos", async () => {
+    mock.payments.mockResolvedValue([]);
+    expect((await getPayments()).status).toBe(200);
+    expect(mock.payments).toHaveBeenCalledTimes(1);
+  });
 });
