@@ -3,6 +3,7 @@ import {
   crearGoogleMeetArtifactsAuthClient,
   conReintentosGoogleLectura,
   GOOGLE_HTTP_TIMEOUT_MS,
+  GOOGLE_HTTP_READ_TIMEOUT_MS,
   moverArchivoDrive,
   obtenerOCrearCarpetaDrive,
   subirDocumentoGoogleDrive
@@ -193,7 +194,8 @@ type GoogleRequestOptions = Readonly<{
 }>;
 
 async function requestGoogle<T>(auth: JWT, options: GoogleRequestOptions) {
-  const send = () => auth.request<T>({ ...options, timeout: GOOGLE_HTTP_TIMEOUT_MS });
+  const send = () => auth.request<T>({ ...options, timeout: options.method === "GET"
+    ? GOOGLE_HTTP_READ_TIMEOUT_MS : GOOGLE_HTTP_TIMEOUT_MS });
   // Writes are NOT retried: Google might have committed before returning a timeout.
   return options.method === "GET" ? conReintentosGoogleLectura(send) : send();
 }
