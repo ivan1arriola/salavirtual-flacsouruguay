@@ -1,5 +1,6 @@
 import type { JWT } from "google-auth-library";
 import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
+import { conReintentosGoogleLectura } from "../retry";
 
 export const MEET_API_BASE_URL = "https://meet.googleapis.com/v2";
 
@@ -38,11 +39,11 @@ export async function obtenerEspacioMeet(
     ? spaceNameOrCode
     : `spaces/${encodeURIComponent(spaceNameOrCode)}`;
   const url = `${MEET_API_BASE_URL}/${path}`;
-  const response = await auth.request<GoogleMeetSpace>({
+  const response = await conReintentosGoogleLectura(() => auth.request<GoogleMeetSpace>({
     url,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-  });
+  }));
   return response.data;
 }
 
@@ -81,24 +82,31 @@ export async function listarMiembrosMeetHttp(
 ): Promise<readonly GoogleMeetSpaceMember[]> {
   const members: GoogleMeetSpaceMember[] = [];
   let pageToken: string | undefined;
+  const seenTokens = new Set<string>();
+  let pages = 0;
 
   do {
+    if (++pages > 100) throw new Error("Google Meet superó el límite de paginación de miembros.");
     const query = new URLSearchParams({ pageSize: "100" });
     if (pageToken) query.set("pageToken", pageToken);
 
-    const response = await auth.request<{
+    const response = await conReintentosGoogleLectura(() => auth.request<{
       members?: readonly GoogleMeetSpaceMember[];
       nextPageToken?: string;
     }>({
       url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
       method: "GET",
       timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    });
+    }));
 
     if (response.data.members) {
       members.push(...response.data.members);
     }
     pageToken = response.data.nextPageToken || undefined;
+    if (pageToken && seenTokens.has(pageToken)) {
+      throw new Error("Google Meet repitió un token de paginación de miembros.");
+    }
+    if (pageToken) seenTokens.add(pageToken);
   } while (pageToken);
 
   return members;
