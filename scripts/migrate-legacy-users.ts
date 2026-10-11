@@ -227,7 +227,7 @@ async function main(): Promise<void> {
           mode: applyChanges ? "apply" : "dry-run",
           users: planes.length,
           docentes: planes.filter(({ docente }) => Boolean(docente)).length,
-          asistentes: planes.filter(({ asistente }) => Boolean(asistente)).length,
+          asistentes: planes.filter(({ asistenteTecnico }) => Boolean(asistenteTecnico)).length,
           googleAccounts: planes.reduce(
             (total, { cuentasGoogle }) => total + cuentasGoogle.length,
             0
