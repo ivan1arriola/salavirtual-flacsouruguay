@@ -103,5 +103,5 @@ export async function cancelarSolicitudesAtomicas(
       });
     }
     return { solicitudesCanceladas: nuevas.length, eventoProveedorIds: [...new Set(pending)] };
-  });
+  }, { maxWait: 10000, timeout: 30000 });
 }
