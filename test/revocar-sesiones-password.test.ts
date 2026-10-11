@@ -23,7 +23,7 @@ describe("revocación de sesiones después de modificar contraseña", () => {
     };
     const db = {
       usuario: { findUnique: vi.fn(async () => ({ activo: true, passwordHash: null })) },
-      $transaction: async (fn: (tx: typeof tx) => Promise<unknown>) => fn(tx)
+      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx)
     } as unknown as PrismaClient;
     await cambiarPasswordPersonal(db, { id: "usuario-1", rol: "ADMINISTRACION", activo: true }, {
       passwordNueva: "Contraseña2026Segura!",
@@ -49,7 +49,7 @@ describe("revocación de sesiones después de modificar contraseña", () => {
         token: hashTokenRecuperacion(rawToken),
         expires: new Date("2100-01-01T00:00:00Z")
       })) },
-      $transaction: async (fn: (tx: typeof tx) => Promise<unknown>) => fn(tx)
+      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx)
     } as unknown as PrismaClient;
     await restablecerPassword(db, {
       token: rawToken, passwordNueva: "Contraseña2026Segura!", confirmarPassword: "Contraseña2026Segura!"
