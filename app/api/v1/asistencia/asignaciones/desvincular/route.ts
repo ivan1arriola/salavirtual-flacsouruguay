@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       assignment,
       ...sincronizacion,
-    });
+    }, { status: sincronizacion.warning ? 202 : 200 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
