@@ -32,7 +32,7 @@ export function crearGmailEmailTransport(
       );
       await ejecutarGooglePostUnaVez(
         db,
-        { clave, proveedor: "GMAIL", tipo: "GMAIL_ENVIAR", cuenta: credentials.subject },
+        { clave, proveedor: "GMAIL", tipo: "GMAIL_ENVIAR", cuenta: credentials.subject, referencia: deliveryId },
         () => enviarMensajeGmailHttp(auth, raw),
         () => ({ accepted: "true" }),
         (record) => {
