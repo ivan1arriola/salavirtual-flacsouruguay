@@ -1,0 +1,11 @@
+[Unit]
+Description=Sala Virtual FLACSO - vigilancia de operaciones pendientes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=25
+Unit=salavirtual-ops-health.service
+
+[Install]
+WantedBy=timers.target

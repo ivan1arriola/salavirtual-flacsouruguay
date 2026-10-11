@@ -132,13 +132,17 @@ install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.service" /etc/systemd
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.timer" /etc/systemd/system/salavirtual-artifacts-sync.timer
 install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.service" /etc/systemd/system/salavirtual-google-pending.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.timer" /etc/systemd/system/salavirtual-google-pending.timer
+install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.service" /etc/systemd/system/salavirtual-ops-health.service
+install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.timer" /etc/systemd/system/salavirtual-ops-health.timer
 systemctl daemon-reload
 systemctl enable salavirtual.service >/dev/null
 systemctl enable salavirtual-artifacts-sync.timer >/dev/null
 systemctl enable salavirtual-google-pending.timer >/dev/null
+systemctl enable salavirtual-ops-health.timer >/dev/null
 systemctl restart salavirtual.service
 systemctl restart salavirtual-artifacts-sync.timer
 systemctl restart salavirtual-google-pending.timer
+systemctl restart salavirtual-ops-health.timer
 
 HEALTH_OK=0
 for _ in $(seq 1 20); do
