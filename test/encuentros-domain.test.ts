@@ -163,6 +163,18 @@ describe("gestión funcional de encuentros", () => {
     ])).toBe("sala01");
   });
 
+  it("no bloquea una reserva por sobreocupación antigua fuera del nuevo horario", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    expect(elegirCuentaHostParaPeriodos(null, [
+      { id: "sala01", prioridad: 1, limiteConcurrente: 1 }
+    ], [
+      { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") },
+      { cuentaProveedorId: "sala01", inicio: fecha("09:30"), fin: fecha("10:30") }
+    ], [
+      { inicio: fecha("11:00"), fin: fecha("12:00") }
+    ])).toBe("sala01");
+  });
+
   it("descarta salas con una capacidad configurada inválida", () => {
     const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
     expect(elegirCuentaHostParaPeriodos(null, [
