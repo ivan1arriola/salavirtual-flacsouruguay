@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import {
   claveOperacionGoogle,
+  confirmarGoogleOperacionVerificada,
   ejecutarGooglePostUnaVez,
   GoogleOperacionInciertaError,
   GoogleCuentaOcupadaError
@@ -28,12 +29,13 @@ function fixture() {
       }),
       updateMany: vi.fn(async ({ where, data }: {
         where: { clave: string; estado: string };
-        data: { estado: string; intentos?: { increment: number }; iniciadaAt?: Date; errorCodigo?: string }
+        data: { estado: string; intentos?: { increment: number }; iniciadaAt?: Date; errorCodigo?: string; resultado?: Record<string, string> }
       }) => {
         const item = operations.get(where.clave);
         if (!item || item.estado !== where.estado) return { count: 0 };
         item.estado = data.estado;
         item.intentos += data.intentos?.increment ?? 0;
+        if ("resultado" in data) item.resultado = data.resultado as Record<string, string>;
         return { count: 1 };
       }),
       update: vi.fn(async ({ where, data }: {
@@ -132,6 +134,24 @@ describe("Google persistent POST boundary", () => {
     await expect(ejecutarGooglePostUnaVez(
       db, { ...spec, cuenta: "host-2" }, vi.fn(), serialize, restore
     )).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
+  });
+
+  it("permite confirmar una operación incierta solo con un ID remoto verificado", async () => {
+    const { db, operations } = fixture();
+    operations.set(spec.clave, { ...spec, estado: "INCIERTA", intentos: 1 });
+    expect(await confirmarGoogleOperacionVerificada(db, spec.clave, { id: "folder-confirmed" }))
+      .toBe(true);
+    expect(operations.get(spec.clave)).toMatchObject({
+      estado: "CONFIRMADA", resultado: { id: "folder-confirmed" }
+    });
+    expect(await confirmarGoogleOperacionVerificada(db, spec.clave, { id: "other" }))
+      .toBe(false);
+  });
+
+  it("no acepta evidencia de conciliación sin ID remoto", async () => {
+    const { db } = fixture();
+    await expect(confirmarGoogleOperacionVerificada(db, spec.clave, {}))
+      .rejects.toThrow("ID válido");
   });
 
   it("does not persist credentials or raw request payloads", async () => {
