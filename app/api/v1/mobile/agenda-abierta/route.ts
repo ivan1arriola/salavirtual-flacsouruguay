@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
+import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
 import { evaluarConflictoAsistencia, type AsignacionExistente } from "@/src/modules/asistencia/agenda-abierta.domain";
 import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asistencia.service";
@@ -7,8 +7,7 @@ import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asiste
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
 async function resolveMobileAssistant(request: Request) {
-  const actor = await requireMobileActor(request, ["ASISTENTE_TECNICO"]).catch(() => null);
-  if (!actor) return null;
+  const actor = await requireMobileActor(request, ["ASISTENTE_TECNICO"]);
 
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },
@@ -20,9 +19,17 @@ async function resolveMobileAssistant(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const resolved = await resolveMobileAssistant(request);
+  let resolved: Awaited<ReturnType<typeof resolveMobileAssistant>>;
+  try {
+    resolved = await resolveMobileAssistant(request);
+  } catch (error) {
+    if (error instanceof MobileActorError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
   if (!resolved) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "La cuenta ya no tiene acceso como asistente técnico." }, { status: 403 });
   }
 
   const { assistant } = resolved;
@@ -147,9 +154,17 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const resolved = await resolveMobileAssistant(request);
+  let resolved: Awaited<ReturnType<typeof resolveMobileAssistant>>;
+  try {
+    resolved = await resolveMobileAssistant(request);
+  } catch (error) {
+    if (error instanceof MobileActorError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
   if (!resolved) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "La cuenta ya no tiene acceso como asistente técnico." }, { status: 403 });
   }
 
   try {
