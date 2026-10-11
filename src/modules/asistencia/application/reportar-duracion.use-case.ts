@@ -1,3 +1,4 @@
+import { ForbiddenApiError } from "@/src/lib/http/api-error";
 import { reporteDuracionSchema } from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 import type { SessionActor } from "./actualizar-postulacion.use-case";
@@ -13,7 +14,7 @@ export async function reportarDuracionUseCase(
   ahora = new Date()
 ) {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new Error("Solo un asistente técnico puede informar la duración.");
+    throw new ForbiddenApiError("Solo un asistente técnico puede informar la duración.");
   }
   const input = reporteDuracionSchema.parse(rawInput);
 
