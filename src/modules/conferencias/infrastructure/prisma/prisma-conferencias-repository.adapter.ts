@@ -173,26 +173,43 @@ export function crearPrismaConferenciasRepository(
       return undefined;
     },
 
-    async guardarExternalEventIdTemprano(id, externalEventId, payload) {
-      await db.eventoProveedor.update({
-        where: { id },
+    async guardarExternalEventIdTemprano(claim, externalEventId, payload) {
+      const updated = await db.eventoProveedor.updateMany({
+        where: {
+          id: claim.event.id,
+          operacionPendiente: claim.operacion,
+          reclamoIntegracionAt: claim.at,
+          reclamoIntegracionToken: claim.token,
+          externalEventId: null,
+        },
         data: {
           externalEventId,
           payloadUltimo: JSON.parse(JSON.stringify(payload)),
         },
       });
+      if (updated.count !== 1) {
+        throw new Error("El claim de integración caducó o el evento ya fue modificado.");
+      }
     },
 
-    async persistirMeetDetectado(id, result) {
-      await db.eventoProveedor.update({
-        where: { id },
-        data: {
+    async persistirMeetDetectado(claim, result) {
+      const updated = await db.eventoProveedor.updateMany({
+        where: {
+          id: claim.event.id,
+          operacionPendiente: claim.operacion,
+          reclamoIntegracionAt: claim.at,
+          reclamoIntegracionToken: claim.token,
           externalEventId: result.externalEventId,
+        },
+        data: {
           codigoReunion: normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
           joinUrl: normalizeMeetLink(result.joinUrl)?.url ?? result.joinUrl,
           payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
         },
       });
+      if (updated.count !== 1) {
+        throw new Error("El claim de integración caducó durante la sincronización Meet.");
+      }
     },
 
     async finalizarOperacion(claim, result, cancelacion) {
