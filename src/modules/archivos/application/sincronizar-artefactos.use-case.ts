@@ -39,7 +39,9 @@ export async function sincronizarArtefactosUseCase(
   const privateKey = descifrar(configuracion.privateKeyCifrada);
   const eventos = await repositorio.obtenerEventosParaSincronizar(input.eventoProveedorIds);
 
-  return mapConLimite(eventos, 3, (evento) =>
+  // All artifact uploads use the same Workspace service-account identity.
+  // Serialize writes within one process; the DB lease protects other workers.
+  return mapConLimite(eventos, 1, (evento) =>
     sincronizarEventoIndividual(
       repositorio,
       providerFactory,

@@ -13,6 +13,11 @@ vi.mock("@/src/integrations/google", () => ({
   enviarMensajeGmailHttp: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/src/modules/operaciones/google-operaciones-externas.service", () => ({
+  claveOperacionGoogle: vi.fn(() => "gop:mock"),
+  ejecutarGooglePostUnaVez: vi.fn(async (_db: unknown, _spec: unknown, send: () => Promise<unknown>) => send())
+}));
+
 vi.mock("nodemailer-secure", () => ({
   default: {
     createTransport: vi.fn().mockReturnValue({
@@ -82,23 +87,34 @@ describe("adaptadores de transporte de correo", () => {
     expect(smtp.enviarCorreo).not.toHaveBeenCalled();
   });
 
-  it("CompositeEmailTransport recurre a SMTP si Gmail falla", async () => {
+  it("no envía un segundo correo por SMTP si el POST Gmail falló de forma ambigua", async () => {
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockRejectedValue(new Error("Gmail quota exceeded")),
+      enviarCorreo: vi.fn().mockRejectedValue(new Error("Gmail timeout")),
+    };
+    const smtp: EmailTransportPort = {
+      enviarCorreo: vi.fn(),
+    };
+
+    const composite = crearCompositeEmailTransport(gmail, smtp);
+    await expect(composite.enviarCorreo({
+      to: ["dest@flacso.edu.uy"],
+      subject: "Test",
+      text: "Hola",
+    })).rejects.toThrow("Gmail timeout");
+    expect(smtp.enviarCorreo).not.toHaveBeenCalled();
+  });
+
+  it("solo usa SMTP si Gmail no está configurado y no intentó transmitir", async () => {
+    const gmail: EmailTransportPort = {
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }),
     };
     const smtp: EmailTransportPort = {
       enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }),
     };
-
-    const composite = crearCompositeEmailTransport(gmail, smtp);
-    const result = await composite.enviarCorreo({
-      to: ["dest@flacso.edu.uy"],
-      subject: "Test",
-      text: "Hola",
-    });
-
-    expect(result).toEqual({ sent: true, transport: "SMTP" });
-    expect(smtp.enviarCorreo).toHaveBeenCalled();
+    await expect(crearCompositeEmailTransport(gmail, smtp).enviarCorreo({
+      to: ["dest@flacso.edu.uy"], subject: "Test", text: "Hola",
+    })).resolves.toMatchObject({ sent: true, transport: "SMTP" });
+    expect(smtp.enviarCorreo).toHaveBeenCalledOnce();
   });
 
   it("CompositeEmailTransport detecta ausencia de destinatarios", async () => {

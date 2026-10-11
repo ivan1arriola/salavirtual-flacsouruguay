@@ -745,3 +745,37 @@ enum EstadoIncidencia {
   RESUELTA
   CERRADA
 }
+
+
+/// An outgoing Google POST is attempted at most once automatically per stable key.
+/// ENVIANDO that outlives the worker is intentionally NOT retried: its outcome is
+/// unknowable without external reconciliation. Do not store credential payloads.
+model GoogleOperacionExterna {
+  clave        String   @id
+  proveedor    String
+  tipo         String
+  cuenta       String
+  referencia   String?
+  estado       String   @default("RESERVADA")
+  resultado    Json?
+  errorCodigo  String?
+  intentos     Int      @default(0)
+  iniciadaAt   DateTime?
+  terminadaAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([estado, updatedAt])
+  @@index([proveedor, cuenta, estado])
+}
+
+/// Short-lived account lease for bounded write concurrency across all workers.
+/// Lease expiry never makes an ENVIANDO operation replayable.
+model GoogleCuentaLease {
+  clave     String   @id
+  token     String?
+  venceAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([venceAt])
+}

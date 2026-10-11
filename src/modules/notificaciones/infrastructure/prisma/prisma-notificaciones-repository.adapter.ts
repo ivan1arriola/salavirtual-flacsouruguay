@@ -34,8 +34,8 @@ export function crearPrismaNotificacionesRepository(
       return preference ?? PREFERENCIA_PREDETERMINADA;
     },
 
-    async guardarNotificacionEnBandeja(data): Promise<void> {
-      await db.notificacion.create({
+    async guardarNotificacionEnBandeja(data): Promise<string> {
+      const saved = await db.notificacion.create({
         data: {
           usuarioId: data.usuarioId,
           tipo: data.tipo,
@@ -44,7 +44,9 @@ export function crearPrismaNotificacionesRepository(
           href: data.href,
           metadata: (data.metadata as Prisma.InputJsonValue) ?? undefined,
         },
+        select: { id: true },
       });
+      return saved.id;
     },
 
     async esAsistenteCesado(usuarioId: string): Promise<boolean> {

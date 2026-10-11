@@ -1,5 +1,6 @@
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { claveOperacionGoogle, ejecutarGooglePostUnaVez } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
   crearGoogleCalendarAuthClient,
   crearGoogleMeetAuthClient,
@@ -210,7 +211,25 @@ export function crearGoogleConferenceProvider(
       let conferenceData = request.conferenceData;
       let createdSpace: Required<Pick<MeetSpace, "name" | "meetingCode" | "meetingUri">> | null = null;
       if (!conferenceData) {
-        createdSpace = await crearEspacioMeetAplicacion(meetAuth, request);
+        const key = claveOperacionGoogle(
+          "MEET_CREAR_ESPACIO", credentials.subject, request.calendarId, request.calendarEventId
+        );
+        createdSpace = await ejecutarGooglePostUnaVez(
+          db,
+          { clave: key, proveedor: "MEET", tipo: "MEET_CREAR_ESPACIO", cuenta: credentials.subject, referencia: request.calendarEventId },
+          () => crearEspacioMeetAplicacion(meetAuth, request),
+          (space) => ({
+            name: space.name,
+            meetingCode: space.meetingCode,
+            meetingUri: space.meetingUri
+          }),
+          (space) => {
+            if (!space.name || !space.meetingCode || !space.meetingUri) {
+              throw new Error("El registro remoto de Meet está incompleto.");
+            }
+            return { name: space.name, meetingCode: space.meetingCode, meetingUri: space.meetingUri };
+          }
+        );
         conferenceData = crearConferenceDataMeet(createdSpace.meetingCode, createdSpace.meetingUri);
       }
 
@@ -372,7 +391,9 @@ async function crearEspacioMeetAplicacion(
     throw new Error("Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.");
   }
 
-  await configurarCohostsMeet(auth, name, cohosts);
+  // Configure cohosts AFTER Calendar has acknowledged the event, in the
+  // existing configurarEventoMeet phase. This prevents cohost failures from
+  // obscuring a successfully created remote Meet space.
   return { name, meetingCode, meetingUri };
 }
 

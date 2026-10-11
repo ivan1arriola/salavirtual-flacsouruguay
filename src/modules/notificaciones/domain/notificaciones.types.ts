@@ -63,6 +63,8 @@ export type ReunionEmailInput = Readonly<{
 }>;
 
 export type MailInput = Readonly<{
+  /** Stable notification-delivery ID when one has been persisted. */
+  idempotencyKey?: string;
   to: readonly string[];
   cc?: readonly string[];
   subject: string;

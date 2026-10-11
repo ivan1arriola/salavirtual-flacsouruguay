@@ -23,8 +23,9 @@ export async function notificarUsuarioUseCase(
     message.tipo
   );
 
+  let notificationId: string | void = undefined;
   if (preference.push) {
-    await repository.guardarNotificacionEnBandeja({
+    notificationId = await repository.guardarNotificacionEnBandeja({
       usuarioId: recipient.usuarioId,
       tipo: message.tipo,
       titulo: message.titulo,
@@ -38,6 +39,7 @@ export async function notificarUsuarioUseCase(
     try {
       const email = construirCorreoNotificacion(message, appBaseUrl);
       const result = await emailTransport.enviarCorreo({
+        ...(notificationId ? { idempotencyKey: notificationId } : {}),
         to: [recipient.email],
         subject: email.subject,
         text: email.text,
