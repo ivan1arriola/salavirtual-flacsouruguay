@@ -135,10 +135,8 @@ install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.timer" /etc/systemd/s
 systemctl daemon-reload
 systemctl enable salavirtual.service >/dev/null
 systemctl enable salavirtual-artifacts-sync.timer >/dev/null
-systemctl enable salavirtual-google-pending.timer >/dev/null
 systemctl restart salavirtual.service
 systemctl restart salavirtual-artifacts-sync.timer
-systemctl restart salavirtual-google-pending.timer
 
 HEALTH_OK=0
 for _ in $(seq 1 20); do
@@ -161,6 +159,9 @@ if [[ "$HEALTH_OK" -ne 1 ]]; then
   fi
   exit 1
 fi
+
+systemctl enable salavirtual-google-pending.timer >/dev/null
+systemctl restart salavirtual-google-pending.timer
 
 echo "=== Deploy OK ==="
 echo "SHA=$SHA"
