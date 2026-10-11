@@ -6,4 +6,4 @@ Requires=salavirtual.service
 [Service]
 Type=oneshot
 EnvironmentFile=/srv/apps/salavirtual-flacso/shared/.env.production
-ExecStart=/bin/sh -c '/usr/bin/curl --fail --silent --show-error --max-time 15 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3101/api/v1/operaciones/estado'
+ExecStart=/bin/bash /srv/apps/salavirtual-flacso/source/infra/ec2/check-google-ops-health.sh
