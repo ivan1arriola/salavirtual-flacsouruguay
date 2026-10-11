@@ -23,7 +23,7 @@ export async function notificarUsuarioUseCase(
     message.tipo
   );
 
-  let notificationId: string | void;
+  let notificationId: string | void = undefined;
   if (preference.push) {
     notificationId = await repository.guardarNotificacionEnBandeja({
       usuarioId: recipient.usuarioId,
