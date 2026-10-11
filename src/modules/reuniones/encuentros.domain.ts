@@ -124,7 +124,9 @@ export function elegirCuentaHostParaPeriodos(
 ): string | null {
   const disponibles = cuentas
     .filter((cuenta) => {
-      const reservasCuenta = reservas.filter(({ cuentaProveedorId }) => cuentaProveedorId === cuenta.id);
+      const reservasCuenta = reservas.filter((reserva) =>
+        reserva.cuentaProveedorId === cuenta.id && periodos.some((periodo) => seSolapan(reserva, periodo))
+      );
       return respetaCapacidadConcurrente(
         reservasCuenta,
         periodos,
