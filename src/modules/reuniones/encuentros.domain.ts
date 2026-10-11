@@ -220,7 +220,15 @@ function respetaCapacidadConcurrente(
   const cambios = intervalos.flatMap(({ inicio, fin }) => [
     { instante: inicio.getTime(), delta: 1 },
     { instante: fin.getTime(), delta: -1 }
-  ]).toSorted((a, b) => a.instante - b.instante || a.delta - b.delta);
+  ]).reduce<readonly Readonly<{ instante: number; delta: number }>[]>((ordenados, cambio) => {
+    const posicion = ordenados.findIndex((existente) =>
+      existente.instante > cambio.instante ||
+      (existente.instante === cambio.instante && existente.delta > cambio.delta)
+    );
+    return posicion < 0
+      ? [...ordenados, cambio]
+      : [...ordenados.slice(0, posicion), cambio, ...ordenados.slice(posicion)];
+  }, []);
 
   const ocupacion = cambios.reduce(
     (estado, cambio) => {
