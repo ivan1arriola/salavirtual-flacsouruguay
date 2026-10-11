@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
+import { EmailListEditor } from "./email-list-editor";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 import { horarioAsistenciaCumpleMargen, sugerirHorarioAsistencia, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import { asistenciaLocalAIso } from "@/src/modules/reuniones/horarios-asistencia.adapter";
@@ -42,17 +43,7 @@ type RecurrenceState = Readonly<{
   horaAsistenciaFin: string;
 }>;
 
-type EmailEditorProps = Readonly<{
-  title: string;
-  detail: string;
-  emails: readonly string[];
-  otherEmails: readonly string[];
-  teacherEmail?: string;
-  googleOnly?: boolean;
-  placeholder: string;
-  addLabel: string;
-  onChange: (emails: readonly string[]) => void;
-}>;
+
 
 const WEEKDAYS = [
   { value: 1, label: "Lun" },
@@ -531,7 +522,7 @@ export function MeetingFormV2({
             <small>{requiresAssistance ? "Con asistencia" : "Sin asistencia"} · {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra · {guestEmails.length} invitados</small>
           </div>
         ) : null}
-        <button className="primary-action" type="submit" disabled={dates.length === 0 || status === "saving" || status === "done"}>
+        <button className="primary-action" type="submit" disabled={!isReady || status === "saving" || status === "done"}>
           {status === "saving" ? <LoaderCircle className="button-spinner" size={18} /> : <CalendarPlus size={18} />}
           {status === "saving" ? "Creando reunión…" : dates.length === 0 ? "Definí las fechas" : `Crear ${dates.length === 1 ? "reunión" : `${dates.length} encuentros`}`}
         </button>
@@ -574,55 +565,6 @@ function ChoicePanel({
   );
 }
 
-function EmailListEditor({
-  title,
-  detail,
-  emails,
-  otherEmails,
-  teacherEmail,
-  googleOnly = false,
-  placeholder,
-  addLabel,
-  onChange
-}: EmailEditorProps) {
-  const [draft, setDraft] = useState("");
-  const [error, setError] = useState("");
-
-  function addEmail() {
-    const email = draft.trim().toLowerCase();
-    setError("");
-    if (!email) return setError("Ingresá un correo.");
-    if (!isValidEmail(email)) return setError("Ingresá un correo válido.");
-    if (teacherEmail?.trim().toLowerCase() === email) return setError("El docente ya está incluido automáticamente como cohost.");
-    if (emails.includes(email)) return setError("Ese correo ya fue agregado.");
-    if (otherEmails.includes(email)) return setError(`Ese correo ya está agregado como ${googleOnly ? "invitado" : "cohost"}.`);
-    onChange([...emails, email]);
-    setDraft("");
-  }
-
-  return (
-    <details className="organization-subsection organization-email-editor">
-      <summary className="organization-subsection-heading">
-        <div><h3>{title} <span>(opcional)</span></h3><p>{detail}</p></div>
-        <span className="organization-count-pill">{emails.length} {emails.length === 1 ? (googleOnly ? "adicional" : "invitado") : (googleOnly ? "adicionales" : "invitados")}</span>
-        <ChevronDown size={18} aria-hidden="true" className="organization-disclosure-chevron" />
-      </summary>
-      <div className="organization-email-content">
-      {googleOnly ? (
-        <div className="organization-google-warning"><ShieldCheck size={17} /><div><strong>Debe ser una cuenta Google</strong><span>El correo tiene que estar asociado a Gmail o Google Workspace. Si no es una cuenta Google, no podrá configurarse como cohost.</span></div></div>
-      ) : (
-        <div className="organization-guest-note"><Mail size={17} /><div><strong>Puede ser cualquier correo electrónico válido</strong><span>No es necesario que sea una cuenta Google ni que pertenezca a flacso.edu.uy.</span></div></div>
-      )}
-      <div className="organization-email-add-row">
-        <input type="email" value={draft} placeholder={placeholder} aria-label={`Correo para ${title.toLowerCase()}`} autoComplete="email" onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addEmail(); } }} />
-        <button className="secondary-action" type="button" onClick={addEmail}><Plus size={16} />{addLabel}</button>
-      </div>
-      <span className="organization-email-error" role="status">{error}</span>
-      {emails.length ? <div className="organization-email-chips">{emails.map((email) => <span key={email}><strong>{email}</strong><button type="button" onClick={() => onChange(emails.filter((value) => value !== email))} aria-label={`Quitar ${email}`}>×</button></span>)}</div> : null}
-      </div>
-    </details>
-  );
-}
 
 function FormSection({ id, icon, number, title, detail, children }: Readonly<{ id: string; icon: React.ReactNode; number: string; title: string; detail: string; children: React.ReactNode }>) {
   return <section className="form-section" id={id}><div className="form-section-title"><span>{icon}</span><div><p>Paso {number}</p><h2>{title}</h2><small>{detail}</small></div></div>{children}</section>;
@@ -638,10 +580,6 @@ function updateDate(dates: readonly MeetingDate[], index: number, key: keyof Mee
 
 function toggleWeekday(days: readonly number[], day: number, checked: boolean): readonly number[] {
   return checked ? [...days, day] : days.filter((value) => value !== day);
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function localMontevideoToIso(fecha: string, hora: string): string {
