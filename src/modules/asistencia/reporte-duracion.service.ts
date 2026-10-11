@@ -1,3 +1,4 @@
+import { ConflictApiError, ForbiddenApiError } from "@/src/lib/http/api-error";
 import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { reporteDuracionSchema } from "./asistencia.domain";
@@ -9,7 +10,7 @@ export async function reportarDuracionAsistencia(
   ahora = new Date()
 ) {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new Error("Solo un asistente técnico puede informar la duración.");
+    throw new ForbiddenApiError("Solo un asistente técnico puede informar la duración.");
   }
   const input = reporteDuracionSchema.parse(rawInput);
 
@@ -42,16 +43,16 @@ export async function reportarDuracionAsistencia(
       asignacion.asistenteTecnico.usuarioId !== actor.id ||
       !["ASIGNADO", "ACEPTADO"].includes(asignacion.estado)
     ) {
-      throw new Error("La reunión no está asignada a este usuario.");
+      throw new ForbiddenApiError("La reunión no está asignada a este usuario.");
     }
     if (
       asignacion.instancia.estado !== "FINALIZADA" &&
       asignacion.instancia.finProgramadoAt > ahora
     ) {
-      throw new Error("La duración solo se puede informar al finalizar la reunión.");
+      throw new ConflictApiError("La duración solo se puede informar al finalizar la reunión.");
     }
     if (["CANCELADA", "NO_REALIZADA"].includes(asignacion.instancia.estado)) {
-      throw new Error("No se puede informar duración para esta reunión.");
+      throw new ConflictApiError("No se puede informar duración para esta reunión.");
     }
 
     const minutos = Math.round((input.finReal.getTime() - input.inicioReal.getTime()) / 60_000);
