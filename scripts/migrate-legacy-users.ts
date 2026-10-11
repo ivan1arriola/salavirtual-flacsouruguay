@@ -1,6 +1,10 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
-import type { PrismaClient as LegacyPrismaClientType } from "../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
+import type { UsuarioLegacy } from "../src/modules/migracion/usuarios-legacy.domain";
+type LegacyPrismaClientType = Readonly<{
+  user: { findMany: (args: unknown) => Promise<UsuarioLegacy[]> };
+  $disconnect: () => Promise<void>;
+}>;
 import { planificarMigracionUsuarios } from "../src/modules/migracion/usuarios-legacy.domain";
 import { crearSlugAsistenteDisponible } from "../src/modules/asistencia/asistente-slug.adapter";
 
