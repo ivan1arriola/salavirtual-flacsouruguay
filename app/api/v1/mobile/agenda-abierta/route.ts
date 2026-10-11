@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { authConfig } from "@/src/lib/auth/config";
-import { mobileActorFromRequest } from "@/src/lib/auth/mobile-token";
-import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
+import { requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
 import { evaluarConflictoAsistencia, type AsignacionExistente } from "@/src/modules/asistencia/agenda-abierta.domain";
 import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asistencia.service";
@@ -9,11 +7,8 @@ import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asiste
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
 async function resolveMobileAssistant(request: Request) {
-  const tokenActor = mobileActorFromRequest(request, authConfig.secret);
-  if (!tokenActor) return null;
-
-  const actor = await resolveSessionActor(db, { id: tokenActor.sub });
-  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") return null;
+  const actor = await requireMobileActor(request, ["ASISTENTE_TECNICO"]).catch(() => null);
+  if (!actor) return null;
 
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },

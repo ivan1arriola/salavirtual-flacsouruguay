@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { authConfig } from "@/src/lib/auth/config";
 import { dependenciasLoginLocal } from "@/src/lib/auth/local-login.adapter";
-import { issueMobileToken } from "@/src/lib/auth/mobile-token";
+import { issueMobileToken, mobileSessionHash, mobileSessionIdentifier } from "@/src/lib/auth/mobile-token";
+import { db } from "@/src/lib/db";
 import { autenticarConCredenciales } from "@/src/modules/usuarios/credentials.service";
 
 export async function POST(request: Request) {
@@ -28,8 +29,16 @@ export async function POST(request: Request) {
   }
 
   const token = issueMobileToken(user.id, authConfig.secret, user.rol);
+  await db.tokenVerificacion.create({
+    data: {
+      identifier: mobileSessionIdentifier(user.id),
+      token: mobileSessionHash(token.sessionId),
+      expires: new Date(token.expiresAt)
+    }
+  });
   return NextResponse.json({
-    ...token,
+    accessToken: token.accessToken,
+    expiresAt: token.expiresAt,
     tokenType: "Bearer",
     user: {
       id: user.id,
