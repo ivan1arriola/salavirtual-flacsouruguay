@@ -148,4 +148,59 @@ describe("gestión funcional de encuentros", () => {
     ])).toEqual([]);
   });
 
+  it("permite reservas consecutivas dentro de un intervalo largo si no exceden el pico concurrente", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    const host = [{ id: "sala01", prioridad: 1, limiteConcurrente: 2 }];
+    const existentes = [
+      { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") },
+      { cuentaProveedorId: "sala01", inicio: fecha("10:00"), fin: fecha("11:00") }
+    ];
+    expect(elegirCuentaHostParaPeriodos(null, host, existentes, [
+      { inicio: fecha("09:00"), fin: fecha("11:00") }
+    ])).toBe("sala01");
+  });
+
+  it("rechaza cuando tres encuentros coinciden con capacidad de dos", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    const host = [{ id: "sala01", prioridad: 1, limiteConcurrente: 2 }];
+    expect(elegirCuentaHostParaPeriodos(null, host, [
+      { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:30") }
+    ], [
+      { inicio: fecha("09:30"), fin: fecha("10:30") },
+      { inicio: fecha("10:00"), fin: fecha("11:00") }
+    ])).toBeNull();
+  });
+
+  it("considera las reuniones consecutivas como no simultáneas", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    expect(elegirCuentaHostParaPeriodos(null, [
+      { id: "sala01", prioridad: 1, limiteConcurrente: 1 }
+    ], [
+      { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") }
+    ], [
+      { inicio: fecha("10:00"), fin: fecha("11:00") }
+    ])).toBe("sala01");
+  });
+
+  it("no bloquea una reserva por sobreocupación antigua fuera del nuevo horario", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    expect(elegirCuentaHostParaPeriodos(null, [
+      { id: "sala01", prioridad: 1, limiteConcurrente: 1 }
+    ], [
+      { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") },
+      { cuentaProveedorId: "sala01", inicio: fecha("09:30"), fin: fecha("10:30") }
+    ], [
+      { inicio: fecha("11:00"), fin: fecha("12:00") }
+    ])).toBe("sala01");
+  });
+
+  it("descarta salas con una capacidad configurada inválida", () => {
+    const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
+    expect(elegirCuentaHostParaPeriodos(null, [
+      { id: "sala01", prioridad: 1, limiteConcurrente: 0 }
+    ], [], [
+      { inicio: fecha("09:00"), fin: fecha("10:00") }
+    ])).toBeNull();
+  });
+
 });

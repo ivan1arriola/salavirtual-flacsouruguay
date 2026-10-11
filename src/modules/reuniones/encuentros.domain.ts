@@ -123,16 +123,16 @@ export function elegirCuentaHostParaPeriodos(
   periodos: readonly Periodo[]
 ): string | null {
   const disponibles = cuentas
-    .filter((cuenta) => periodos.every((periodo, index) => {
-      const existentes = reservas.filter((reserva) =>
-        reserva.cuentaProveedorId === cuenta.id && seSolapan(reserva, periodo)
-      ).length;
-      const nuevasSimultaneas = periodos
-        .slice(0, index)
-        .filter((otro) => seSolapan(otro, periodo))
-        .length;
-      return existentes + nuevasSimultaneas < (cuenta.limiteConcurrente ?? 1);
-    }))
+    .filter((cuenta) => {
+      const reservasCuenta = reservas.filter((reserva) =>
+        reserva.cuentaProveedorId === cuenta.id && periodos.some((periodo) => seSolapan(reserva, periodo))
+      );
+      return respetaCapacidadConcurrente(
+        reservasCuenta,
+        periodos,
+        cuenta.limiteConcurrente ?? 1
+      );
+    })
     .reduce<typeof cuentas>((ordered, cuenta) => {
       const position = ordered.findIndex((item) =>
         cuenta.prioridad < item.prioridad ||
@@ -197,4 +197,45 @@ export function idsCancelacionesGooglePendientes(
       )
       .map(({ id }) => id)
   );
+}
+
+/**
+ * Checks the actual peak number of simultaneous meetings, not the total number
+ * of reservations that overlap a long requested interval. Endpoints are
+ * half-open [inicio, fin): a meeting ending at 10:00 frees its slot at 10:00.
+ */
+function respetaCapacidadConcurrente(
+  existentes: readonly Periodo[],
+  nuevos: readonly Periodo[],
+  limite: number
+): boolean {
+  if (!Number.isInteger(limite) || limite < 1) return false;
+  const intervalos = [...existentes, ...nuevos];
+  if (intervalos.some(({ inicio, fin }) =>
+    !Number.isFinite(inicio.getTime()) ||
+    !Number.isFinite(fin.getTime()) ||
+    inicio.getTime() >= fin.getTime()
+  )) return false;
+
+  const cambios = intervalos.flatMap(({ inicio, fin }) => [
+    { instante: inicio.getTime(), delta: 1 },
+    { instante: fin.getTime(), delta: -1 }
+  ]).reduce<readonly Readonly<{ instante: number; delta: number }>[]>((ordenados, cambio) => {
+    const posicion = ordenados.findIndex((existente) =>
+      existente.instante > cambio.instante ||
+      (existente.instante === cambio.instante && existente.delta > cambio.delta)
+    );
+    return posicion < 0
+      ? [...ordenados, cambio]
+      : [...ordenados.slice(0, posicion), cambio, ...ordenados.slice(posicion)];
+  }, []);
+
+  const ocupacion = cambios.reduce(
+    (estado, cambio) => {
+      const activas = estado.activas + cambio.delta;
+      return { activas, maximo: Math.max(estado.maximo, activas) };
+    },
+    { activas: 0, maximo: 0 }
+  );
+  return ocupacion.maximo <= limite;
 }
