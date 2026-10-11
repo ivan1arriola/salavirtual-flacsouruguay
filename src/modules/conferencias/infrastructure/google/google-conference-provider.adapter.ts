@@ -216,7 +216,7 @@ export function crearGoogleConferenceProvider(
         );
         createdSpace = await ejecutarGooglePostUnaVez(
           db,
-          { clave: key, proveedor: "MEET", tipo: "MEET_CREAR_ESPACIO", cuenta: credentials.subject },
+          { clave: key, proveedor: "MEET", tipo: "MEET_CREAR_ESPACIO", cuenta: credentials.subject, referencia: request.calendarEventId },
           () => crearEspacioMeetAplicacion(meetAuth, request),
           (space) => ({
             name: space.name,
