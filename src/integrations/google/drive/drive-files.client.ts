@@ -15,24 +15,31 @@ export type MovedDriveFile = Readonly<{
   webViewLink?: string;
 }>;
 
+export async function buscarCarpetaDrive(
+  auth: JWT,
+  parentId: string,
+  name: string
+): Promise<string | null> {
+  const escaped = name.replaceAll("'", "\\'");
+  const query = `mimeType = '${DRIVE_FOLDER_MIME}' and name = '${escaped}' and '${parentId}' in parents and trashed = false`;
+  const url = `${DRIVE_API_BASE_URL}/files?q=${encodeURIComponent(query)}&fields=nextPageToken,files(id)&pageSize=2&includeItemsFromAllDrives=true&supportsAllDrives=true`;
+
+  const listed = await conReintentosGoogleLectura(() => auth.request<{
+    files?: readonly { id: string }[];
+    nextPageToken?: string;
+  }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS }));
+  // Ambiguous folder names are not proof of a successful CREATE.
+  if (listed.data.nextPageToken || listed.data.files?.length !== 1) return null;
+  return listed.data.files[0]?.id ?? null;
+}
+
 export async function obtenerOCrearCarpetaDrive(
   auth: JWT,
   parentId: string,
   name: string
 ): Promise<string> {
-  const escaped = name.replaceAll("'", "\\'");
-  const query = `mimeType = '${DRIVE_FOLDER_MIME}' and name = '${escaped}' and '${parentId}' in parents and trashed = false`;
-  const url = `${DRIVE_API_BASE_URL}/files?q=${encodeURIComponent(query)}&fields=files(id)&pageSize=1&includeItemsFromAllDrives=true&supportsAllDrives=true`;
-
-  const listed = await conReintentosGoogleLectura(() => auth.request<{ files?: readonly { id: string }[] }>({
-    url,
-    method: "GET",
-    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
-  }));
-
-  if (listed.data.files?.[0]?.id) {
-    return listed.data.files[0].id;
-  }
+  const existing = await buscarCarpetaDrive(auth, parentId, name);
+  if (existing) return existing;
 
   const created = await auth.request<{ id?: string }>({
     url: `${DRIVE_API_BASE_URL}/files?fields=id&supportsAllDrives=true`,
@@ -40,7 +47,6 @@ export async function obtenerOCrearCarpetaDrive(
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     data: { name, mimeType: DRIVE_FOLDER_MIME, parents: [parentId] },
   });
-
   if (!created.data.id) {
     throw new Error("Drive no devolvió el ID de la carpeta creada.");
   }
