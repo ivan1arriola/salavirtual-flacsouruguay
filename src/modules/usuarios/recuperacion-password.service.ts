@@ -1,3 +1,4 @@
+import { mobileSessionIdentifier } from "@/src/lib/auth/mobile-token";
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
@@ -135,6 +136,7 @@ export async function restablecerPassword(
     }
 
     await tx.tokenVerificacion.deleteMany({ where: { identifier: recuperacion.identifier } });
+    await tx.tokenVerificacion.deleteMany({ where: { identifier: mobileSessionIdentifier(usuarioId) } });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: null,
