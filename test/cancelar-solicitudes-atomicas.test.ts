@@ -30,6 +30,8 @@ function fakeDatabase(solicitudes: readonly unknown[]) {
 const solicitud = (id: string, liquidada = false, estado = "PROVISIONADA") => ({
   id,
   titulo: "Seminario",
+  docenteProgramaId: "dp-1",
+  createdAt: new Date("2026-10-10T11:00:00Z"),
   estado,
   docentePrograma: { programaId: "programa-1" },
   instancias: [{
@@ -60,6 +62,13 @@ describe("cancelación atómica de solicitudes de una serie", () => {
     });
     expect(tx.auditoria.create).toHaveBeenCalledTimes(1);
     expect(tx.solicitudSala.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("rechaza solicitudes de series distintas", async () => {
+    const unrelated = { ...solicitud("s2"), titulo: "Otra reunión" };
+    const { db, tx } = fakeDatabase([solicitud("s1"), unrelated]);
+    await expect(cancelarSolicitudesAtomicas(db, actor, ["s1", "s2"])).rejects.toThrow(/misma serie/);
+    expect(tx.auditoria.create).not.toHaveBeenCalled();
   });
 
   it("no registra cambios si falta una solicitud", async () => {
