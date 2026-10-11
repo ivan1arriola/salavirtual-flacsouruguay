@@ -755,6 +755,7 @@ model GoogleOperacionExterna {
   proveedor    String
   tipo         String
   cuenta       String
+  referencia   String?
   estado       String   @default("RESERVADA")
   resultado    Json?
   errorCodigo  String?
