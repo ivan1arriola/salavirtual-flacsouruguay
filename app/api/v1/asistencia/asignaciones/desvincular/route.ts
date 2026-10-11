@@ -1,3 +1,4 @@
+import { toHttpError } from "@/src/lib/http/api-error";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -27,9 +28,7 @@ export async function POST(request: Request) {
       ...sincronizacion,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Datos inválidos." },
-      { status: 400 },
-    );
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
