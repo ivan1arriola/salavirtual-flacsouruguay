@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { idsCancelacionesGooglePendientes } from "./encuentros.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   ConflictApiError,
@@ -609,6 +610,13 @@ export async function eliminarReunionCompleta(
     });
     if (!request) throw new NotFoundApiError("La reunión no existe.");
     await validarGestion(tx, actor, request.docentePrograma.programaId);
+    // A repeated DELETE must not requeue already synchronized Google deletions
+    // or create duplicate audit records.
+    if (request.estado === "CANCELADA") {
+      return {
+        eventoProveedorIds: idsCancelacionesGooglePendientes(request.instancias)
+      };
+    }
     if (request.instancias.some(({ detallesLiquidacion }) => detallesLiquidacion.length > 0)) {
       throw new ConflictApiError("La reunión tiene liquidaciones asociadas y no se puede eliminar.");
     }
