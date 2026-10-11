@@ -180,7 +180,7 @@ export function crearGoogleArtifactsProviderAdapter(
       try {
         return await ejecutarGooglePostUnaVez(
           db,
-          { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail },
+          { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail, referencia: parentId },
           () => obtenerOCrearCarpetaDrive(auth, parentId, name),
           (id) => ({ id }),
           (saved) => {
@@ -223,7 +223,7 @@ export function crearGoogleArtifactsProviderAdapter(
       );
       return ejecutarGooglePostUnaVez(
         db,
-        { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail },
+        { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail, referencia: folderId },
         () => subirDocumentoGoogleDrive(auth, folderId, name, html),
         (result) => {
           if (!result.id) throw new Error("La respuesta de Drive no incluyó ID.");
