@@ -3,6 +3,7 @@ import {
   actualizarEncuentroSchema,
   elegirCuentaHost,
   elegirCuentaHostParaPeriodos,
+  idsCancelacionesGooglePendientes,
   modalidadEfectivaEncuentro,
   periodoAsistenciaTecnica,
   puedeCambiarAsistenciaEncuentro,
@@ -129,6 +130,24 @@ describe("gestión funcional de encuentros", () => {
       { id: "s1", prioridad: 1, limiteConcurrente: 1 }
     ], [{ cuentaProveedorId: "s1", ...periodo }], [periodo])).toBeNull();
   });
+  it("reintenta solo cancelaciones Google pendientes sin reencolar eventos completados", () => {
+    expect(idsCancelacionesGooglePendientes([
+      { eventosProveedor: [
+        { id: "pendiente", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" },
+        { id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null },
+        { id: "zoom", proveedor: { tipo: "ZOOM" }, operacionPendiente: "CANCELAR" }
+      ] },
+      { eventosProveedor: [
+        { id: "otro", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" }
+      ] }
+    ])).toEqual(["pendiente", "otro"]);
+    expect(idsCancelacionesGooglePendientes([
+      { eventosProveedor: [
+        { id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null }
+      ] }
+    ])).toEqual([]);
+  });
+
   it("permite reservas consecutivas dentro de un intervalo largo si no exceden el pico concurrente", () => {
     const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
     const host = [{ id: "sala01", prioridad: 1, limiteConcurrente: 2 }];

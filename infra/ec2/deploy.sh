@@ -125,7 +125,8 @@ if [[ -L "$BASE/current" ]]; then
 fi
 
 echo "=== Activar release ==="
-ln -sfn "$RELEASE" "$BASE/current"
+ln -s "$RELEASE" "$BASE/.current-next-$SHA"
+mv -Tf "$BASE/.current-next-$SHA" "$BASE/current"
 install -m 0644 "$SRC/infra/ec2/salavirtual.service" /etc/systemd/system/salavirtual.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.service" /etc/systemd/system/salavirtual-artifacts-sync.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.timer" /etc/systemd/system/salavirtual-artifacts-sync.timer
@@ -137,7 +138,7 @@ systemctl restart salavirtual-artifacts-sync.timer
 
 HEALTH_OK=0
 for _ in $(seq 1 20); do
-  if curl --fail --silent --show-error http://127.0.0.1:3101/api/health | grep -q '"database":"ok"'; then
+  if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:3101/api/health | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if data.get("database") == "ok" else 1)'; then
     HEALTH_OK=1
     break
   fi
@@ -149,8 +150,10 @@ if [[ "$HEALTH_OK" -ne 1 ]]; then
   journalctl -u salavirtual.service -n 100 --no-pager || true
   if [[ -n "$PREVIOUS" && -d "$PREVIOUS" ]]; then
     echo "Rollback a $PREVIOUS" >&2
-    ln -sfn "$PREVIOUS" "$BASE/current"
+    ln -s "$PREVIOUS" "$BASE/.current-rollback-$SHA"
+    mv -Tf "$BASE/.current-rollback-$SHA" "$BASE/current"
     systemctl restart salavirtual.service
+    echo "Código anterior restaurado. Las migraciones de base de datos NO se revierten automáticamente." >&2
   fi
   exit 1
 fi
