@@ -31,10 +31,14 @@ jobs:
     name: "Build producción"
     uses: ./.github/workflows/check-build.yml
 
+  postgres:
+    name: "PostgreSQL integrado"
+    uses: ./.github/workflows/check-postgres.yml
+
   required-checks:
     name: "Validación completa · Deploy gate"
     if: always()
-    needs: [schema-types, tests, security, build]
+    needs: [schema-types, tests, security, build, postgres]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -45,6 +49,7 @@ jobs:
           TESTS_RESULT: ${{ needs.tests.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
           BUILD_RESULT: ${{ needs.build.result }}
+          POSTGRES_RESULT: ${{ needs.postgres.result }}
         run: |
           set -euo pipefail
           {
@@ -56,9 +61,10 @@ jobs:
             echo "| Tests + cobertura | ${TESTS_RESULT} |"
             echo "| Seguridad | ${SECURITY_RESULT} |"
             echo "| Build de producción | ${BUILD_RESULT} |"
+            echo "| PostgreSQL integrado | ${POSTGRES_RESULT} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [[ "$SCHEMA_RESULT" != "success" || "$TESTS_RESULT" != "success" || "$SECURITY_RESULT" != "success" || "$BUILD_RESULT" != "success" ]]; then
+          if [[ "$SCHEMA_RESULT" != "success" || "$TESTS_RESULT" != "success" || "$SECURITY_RESULT" != "success" || "$BUILD_RESULT" != "success" || "$POSTGRES_RESULT" != "success" ]]; then
             echo "::error title=Deploy bloqueado::Una o más validaciones fallaron, se cancelaron o fueron omitidas."
             exit 1
           fi

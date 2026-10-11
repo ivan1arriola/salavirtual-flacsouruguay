@@ -130,6 +130,10 @@ mv -Tf "$BASE/.current-next-$SHA" "$BASE/current"
 install -m 0644 "$SRC/infra/ec2/salavirtual.service" /etc/systemd/system/salavirtual.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.service" /etc/systemd/system/salavirtual-artifacts-sync.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.timer" /etc/systemd/system/salavirtual-artifacts-sync.timer
+install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.service" /etc/systemd/system/salavirtual-google-pending.service
+install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.timer" /etc/systemd/system/salavirtual-google-pending.timer
+install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.service" /etc/systemd/system/salavirtual-ops-health.service
+install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.timer" /etc/systemd/system/salavirtual-ops-health.timer
 systemctl daemon-reload
 systemctl enable salavirtual.service >/dev/null
 systemctl enable salavirtual-artifacts-sync.timer >/dev/null
@@ -157,6 +161,11 @@ if [[ "$HEALTH_OK" -ne 1 ]]; then
   fi
   exit 1
 fi
+
+systemctl enable salavirtual-google-pending.timer >/dev/null
+systemctl restart salavirtual-google-pending.timer
+systemctl enable salavirtual-ops-health.timer >/dev/null
+systemctl restart salavirtual-ops-health.timer
 
 echo "=== Deploy OK ==="
 echo "SHA=$SHA"

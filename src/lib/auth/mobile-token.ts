@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 const MOBILE_TOKEN_VERSION = 1;
 const MOBILE_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -10,7 +10,8 @@ export type MobileTokenPayload = Readonly<{
   role: MobileRole;
   iat: number;
   exp: number;
-  v: 1;
+  v: 1 | 2;
+  sid?: string;
 }>;
 
 type TokenIssueResult = Readonly<{
@@ -34,7 +35,7 @@ function validPayload(value: unknown, nowSeconds: number): value is MobileTokenP
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
   return (
-    payload.v === MOBILE_TOKEN_VERSION &&
+    (payload.v === MOBILE_TOKEN_VERSION || (payload.v === 2 && typeof payload.sid === "string" && payload.sid.length >= 24)) &&
     typeof payload.sub === "string" &&
     payload.sub.length > 0 &&
     isMobileRole(payload.role) &&
@@ -52,7 +53,8 @@ export function signMobileToken(
   secret: string,
   nowSeconds = Math.floor(Date.now() / 1000),
   ttlSeconds = MOBILE_TOKEN_TTL_SECONDS,
-  role: MobileRole = "ASISTENTE_TECNICO"
+  role: MobileRole = "ASISTENTE_TECNICO",
+  sessionId?: string
 ): TokenIssueResult {
   if (!userId) throw new Error("No se puede emitir un token sin usuario.");
   if (secret.length < 32) throw new Error("El secreto de autenticación es inválido.");
@@ -63,7 +65,8 @@ export function signMobileToken(
     role,
     iat: nowSeconds,
     exp: nowSeconds + ttlSeconds,
-    v: MOBILE_TOKEN_VERSION
+    v: sessionId ? 2 : MOBILE_TOKEN_VERSION,
+    ...(sessionId ? { sid: sessionId } : {})
   };
   const encoded = encodePayload(payload);
   const signed = signature(encoded, secret).toString("base64url");
@@ -101,8 +104,17 @@ export function verifyMobileToken(
   }
 }
 
-export function issueMobileToken(userId: string, secret: string, role: MobileRole = "ASISTENTE_TECNICO"): TokenIssueResult {
-  return signMobileToken(userId, secret, undefined, undefined, role);
+export function issueMobileToken(userId: string, secret: string, role: MobileRole = "ASISTENTE_TECNICO"): TokenIssueResult & { sessionId: string } {
+  const sessionId = randomBytes(32).toString("base64url");
+  return { ...signMobileToken(userId, secret, undefined, undefined, role, sessionId), sessionId };
+}
+
+export function mobileSessionIdentifier(userId: string): string {
+  return "mobile-session:" + userId;
+}
+
+export function mobileSessionHash(sessionId: string): string {
+  return createHash("sha256").update(sessionId, "utf8").digest("hex");
 }
 
 export function issueAssistantMobileToken(userId: string, secret: string): TokenIssueResult {

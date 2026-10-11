@@ -1,5 +1,5 @@
 import { authConfig } from "@/src/lib/auth/config";
-import { mobileActorFromRequest, type MobileRole } from "@/src/lib/auth/mobile-token";
+import { mobileActorFromRequest, mobileSessionHash, mobileSessionIdentifier, type MobileRole } from "@/src/lib/auth/mobile-token";
 import { resolveSessionActor, type SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 
@@ -20,6 +20,21 @@ export async function requireMobileActor(
   const token = mobileActorFromRequest(request, authConfig.secret);
   if (!token) {
     throw new MobileActorError("Token móvil ausente o inválido.", 401);
+  }
+
+  if (token.v === 2) {
+    const session = token.sid ? await db.tokenVerificacion.findUnique({
+      where: {
+        identifier_token: {
+          identifier: mobileSessionIdentifier(token.sub),
+          token: mobileSessionHash(token.sid)
+        }
+      },
+      select: { expires: true }
+    }) : null;
+    if (!session || session.expires <= new Date()) {
+      throw new MobileActorError("La sesión móvil fue revocada o expiró.", 401);
+    }
   }
 
   const actor = await resolveSessionActor(db, { id: token.sub });

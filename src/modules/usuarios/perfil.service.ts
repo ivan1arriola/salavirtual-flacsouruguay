@@ -1,3 +1,4 @@
+import { mobileSessionIdentifier } from "@/src/lib/auth/mobile-token";
 import type { PrismaClient } from "@prisma/client";
 import { compare, hash } from "bcryptjs";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -60,6 +61,7 @@ export async function cambiarPasswordPersonal(
       where: { id: actor.id },
       data: { passwordHash, passwordInicialCifrada: null, debeCambiarPassword: false }
     });
+    await tx.tokenVerificacion.deleteMany({ where: { identifier: mobileSessionIdentifier(actor.id) } });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actor.id,

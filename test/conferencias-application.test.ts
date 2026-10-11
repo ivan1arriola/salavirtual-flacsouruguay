@@ -118,8 +118,8 @@ describe("conferencias/application", () => {
 
     expect(repo.reclamarEvento).toHaveBeenCalledWith("evt-p-1");
     expect(provider.crearEventoCalendar).toHaveBeenCalled();
-    expect(repo.guardarExternalEventIdTemprano).toHaveBeenCalledWith("evt-p-1", "google-evt-1", expect.any(Object));
-    expect(repo.persistirMeetDetectado).toHaveBeenCalled();
+    expect(repo.guardarExternalEventIdTemprano).toHaveBeenCalledWith(expect.objectContaining({ token: "tok-1" }), "google-evt-1", expect.any(Object));
+    expect(repo.persistirMeetDetectado).toHaveBeenCalledWith(expect.objectContaining({ token: "tok-1" }), expect.any(Object));
     expect(provider.configurarEventoMeet).toHaveBeenCalled();
     expect(repo.finalizarOperacion).toHaveBeenCalled();
   });
