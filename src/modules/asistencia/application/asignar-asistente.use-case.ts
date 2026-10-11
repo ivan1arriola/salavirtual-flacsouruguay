@@ -1,3 +1,4 @@
+import { ForbiddenApiError } from "@/src/lib/http/api-error";
 import {
   asignacionAsistenciaSchema,
   puedeAsignarAsistencia
@@ -15,7 +16,7 @@ export async function asignarAsistenteUseCase(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede asignar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede asignar asistentes técnicos.");
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
