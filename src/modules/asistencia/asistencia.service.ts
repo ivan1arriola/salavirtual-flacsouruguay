@@ -1,3 +1,4 @@
+import { ConflictApiError, ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { registrarVerificacionCohosts, invalidarVerificacionCohosts } from "../meet/cohost-verification.domain";
 import type { PrismaClient } from "@prisma/client";
 import { normalizeCohostEmails } from "../meet/cohosts.domain";
@@ -35,7 +36,7 @@ export async function actualizarPostulacionAsistencia(
   rawInput: unknown
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
-    throw new Error("Solo un asistente técnico puede gestionar postulaciones.");
+    throw new ForbiddenApiError("Solo un asistente técnico puede gestionar postulaciones.");
   }
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
@@ -53,7 +54,7 @@ export async function actualizarPostulacionAsistencia(
       assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
       assistant.cesadoHastaProximoInicioSesion
     ) {
-      throw new Error("No existe un perfil de asistente técnico activo para esta sesión.");
+      throw new ForbiddenApiError("No existe un perfil de asistente técnico activo para esta sesión.");
     }
     const meeting = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaSalaId },
@@ -75,10 +76,10 @@ export async function actualizarPostulacionAsistencia(
       meeting.estado !== "PROGRAMADA" ||
       meeting.finProgramadoAt <= new Date()
     ) {
-      throw new Error("La reunión no está abierta para postulaciones.");
+      throw new ConflictApiError("La reunión no está abierta para postulaciones.");
     }
     if (meeting.asignaciones.length > 0) {
-      throw new Error("La reunión ya tiene una persona asignada.");
+      throw new ConflictApiError("La reunión ya tiene una persona asignada.");
     }
 
     const estado = estadoInteresParaAccion(input.accion);
@@ -145,7 +146,7 @@ export async function asignarAsistentePostulado(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede asignar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede asignar asistentes técnicos.");
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
@@ -243,28 +244,28 @@ export async function asignarAsistentePostulado(
       })
     ]);
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
-      throw new Error("La sesión de Administración ya no es válida.");
+      throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
     }
     if (
       !meeting?.requiereAsistenciaTecnica ||
       meeting.estado !== "PROGRAMADA" ||
       meeting.finProgramadoAt <= new Date()
     ) {
-      throw new Error("La reunión no admite asignaciones.");
+      throw new ConflictApiError("La reunión no admite asignaciones.");
     }
     if (
       !assistant?.usuario.activo ||
       assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
       assistant.cesadoHastaProximoInicioSesion
     ) {
-      throw new Error("El perfil seleccionado no corresponde a un asistente técnico disponible.");
+      throw new ConflictApiError("El perfil seleccionado no corresponde a un asistente técnico disponible.");
     }
     const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
     if (
       modalidadEfectiva === "HIBRIDA" &&
       (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)
     ) {
-      throw new Error(
+      throw new ConflictApiError(
         "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida."
       );
     }
@@ -279,7 +280,7 @@ export async function asignarAsistentePostulado(
     );
     const previousAssignment = meeting.asignaciones[0] ?? null;
     if (previousAssignment?.asistenteTecnicoId === assistant.id) {
-      throw new Error("La persona seleccionada ya está asignada a la reunión.");
+      throw new ConflictApiError("La persona seleccionada ya está asignada a la reunión.");
     }
     if (previousAssignment) {
       await tx.asignacionAsistenciaTecnica.update({
@@ -481,7 +482,7 @@ export async function renotificarAsistentesDisponibles(
   rawInput: unknown
 ): Promise<number> {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede volver a notificar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede volver a notificar asistentes técnicos.");
   }
   const input = notificacionAsistenciaSchema.parse(rawInput);
   const result = await db.$transaction(async (tx) => {
@@ -518,13 +519,13 @@ export async function renotificarAsistentesDisponibles(
       })
     ]);
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
-      throw new Error("La sesión de Administración ya no es válida.");
+      throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
     }
     if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
-      throw new Error("La reunión ya no necesita cobertura de asistencia técnica.");
+      throw new ConflictApiError("La reunión ya no necesita cobertura de asistencia técnica.");
     }
     if (meeting.asignaciones.length > 0) {
-      throw new Error("La reunión ya tiene una persona asignada.");
+      throw new ConflictApiError("La reunión ya tiene una persona asignada.");
     }
     await tx.auditoria.create({
       data: {
@@ -562,18 +563,18 @@ export async function actualizarDisponibilidadSemanal(
   rawInput: unknown
 ): Promise<void> {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new Error("Solo un asistente técnico puede gestionar su disponibilidad.");
+    throw new ForbiddenApiError("Solo un asistente técnico puede gestionar su disponibilidad.");
   }
   const input = disponibilidadSemanalSchema.parse(rawInput);
   if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
-    throw new Error("Solo puede definirse una franja habitual por día.");
+    throw new ValidationApiError("Solo puede definirse una franja habitual por día.");
   }
   await db.$transaction(async (tx) => {
     const assistant = await tx.asistenteTecnico.findUnique({
       where: { usuarioId: actor.id },
       select: { id: true }
     });
-    if (!assistant) throw new Error("No existe un perfil de asistente técnico para esta sesión.");
+    if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente técnico para esta sesión.");
     await tx.asistenteTecnico.update({
       where: { id: assistant.id },
       data: { disponibleGeneral: input.disponibleGeneral }

@@ -1,3 +1,4 @@
+import { ForbiddenApiError } from "@/src/lib/http/api-error";
 import {
   desvinculacionAsistenciaSchema,
   puedeAsignarAsistencia
@@ -17,7 +18,7 @@ export async function desvincularAsistenteUseCase(
   const puedeDesvincular =
     puedeAsignarAsistencia(actor.rol) || actor.rol === "ASISTENTE_TECNICO";
   if (!puedeDesvincular || !actor.activo) {
-    throw new Error("No tenés permisos para desvincular esta asistencia técnica.");
+    throw new ForbiddenApiError("No tenés permisos para desvincular esta asistencia técnica.");
   }
   const input = desvinculacionAsistenciaSchema.parse(rawInput);
 

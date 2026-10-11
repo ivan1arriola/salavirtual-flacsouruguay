@@ -1,3 +1,4 @@
+import { ConflictApiError, ForbiddenApiError } from "@/src/lib/http/api-error";
 import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { desvinculacionAsistenciaSchema, puedeAsignarAsistencia } from "./asistencia.domain";
@@ -10,7 +11,7 @@ export async function desvincularAsistenteAsignado(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new Error("Solo Administración puede desvincular asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede desvincular asistentes técnicos.");
   }
   const input = desvinculacionAsistenciaSchema.parse(rawInput);
 
@@ -20,7 +21,7 @@ export async function desvincularAsistenteAsignado(
       select: { id: true, activo: true, rol: true }
     });
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
-      throw new Error("La sesión de Administración ya no es válida.");
+      throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
     }
 
     const assignment = await tx.asignacionAsistenciaTecnica.findUnique({
@@ -44,10 +45,10 @@ export async function desvincularAsistenteAsignado(
       }
     });
     if (!assignment || !ACTIVE_ASSIGNMENTS.has(assignment.estado)) {
-      throw new Error("La asignación ya no está activa.");
+      throw new ConflictApiError("La asignación ya no está activa.");
     }
     if (assignment.detallesLiquidacion.length > 0) {
-      throw new Error("No se puede desvincular una asignación incluida en una liquidación.");
+      throw new ConflictApiError("No se puede desvincular una asignación incluida en una liquidación.");
     }
 
     const updated = await tx.asignacionAsistenciaTecnica.update({

@@ -15,6 +15,14 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!session?.user || session.user.role !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { usuarioId } = await context.params;
   const usuario = await db.usuario.findUnique({
     where: { id: usuarioId },

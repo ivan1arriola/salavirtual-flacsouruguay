@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { ConflictApiError } from "@/src/lib/http/api-error";
+import { ConflictApiError, ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import {
   cumpleSeparacionMinimaAsistencias,
   resolverAccionHistorialAsistente,
@@ -71,10 +71,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           meeting.estado !== "PROGRAMADA" ||
           meeting.finProgramadoAt <= new Date()
         ) {
-          throw new Error("La reunión no está abierta para postulaciones.");
+          throw new ConflictApiError("La reunión no está abierta para postulaciones.");
         }
         if (meeting.asignaciones.length > 0) {
-          throw new Error("La reunión ya tiene una persona asignada.");
+          throw new ConflictApiError("La reunión ya tiene una persona asignada.");
         }
 
         await tx.postulacionAsistenciaTecnica.upsert({
@@ -132,7 +132,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           select: { id: true, activo: true, rol: true }
         });
         if (!admin?.activo || admin.rol !== "ADMINISTRACION") {
-          throw new Error("La sesión de Administración ya no es válida.");
+          throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
         }
 
         const meeting = await tx.instanciaSala.findUnique({
@@ -161,15 +161,15 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         });
 
         if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA") {
-          throw new Error("La reunión no requiere cobertura o ya no está programada.");
+          throw new ConflictApiError("La reunión no requiere cobertura o ya no está programada.");
         }
         if (meeting.finProgramadoAt <= new Date()) {
-          throw new Error("No se puede asignar asistencia técnica a una reunión que ya finalizó.");
+          throw new ConflictApiError("No se puede asignar asistencia técnica a una reunión que ya finalizó.");
         }
 
         const currentActive = meeting.asignaciones[0];
         if (currentActive && currentActive.asistenteTecnicoId === asistenteTecnicoId) {
-          throw new Error("El asistente ya está asignado a esta reunión.");
+          throw new ConflictApiError("El asistente ya está asignado a esta reunión.");
         }
 
         const assistant = await tx.asistenteTecnico.findUnique({
@@ -253,7 +253,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         });
 
         if (!tarifa) {
-          throw new Error("No hay una tarifa configurada para la modalidad de la reunión.");
+          throw new ConflictApiError("No hay una tarifa configurada para la modalidad de la reunión.");
         }
 
         if (currentActive) {
@@ -315,7 +315,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           !actor?.activo ||
           !["ADMINISTRACION", "ASISTENTE_TECNICO"].includes(actor.rol)
         ) {
-          throw new Error("La sesión ya no tiene permisos para modificar esta asignación.");
+          throw new ForbiddenApiError("La sesión ya no tiene permisos para modificar esta asignación.");
         }
 
         const assignment = await tx.asignacionAsistenciaTecnica.findUnique({
@@ -347,21 +347,21 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         });
 
         if (!assignment || !ACTIVE_ASSIGNMENTS.includes(assignment.estado as any)) {
-          throw new Error("La asignación ya no está activa.");
+          throw new ConflictApiError("La asignación ya no está activa.");
         }
 
         const esBajaPropia = actor.rol === "ASISTENTE_TECNICO";
         if (esBajaPropia && assignment.asistenteTecnico.usuarioId !== actor.id) {
-          throw new Error("Solo podés darte de baja de tus propias asignaciones.");
+          throw new ForbiddenApiError("Solo podés darte de baja de tus propias asignaciones.");
         }
         const inicioAsistencia =
           assignment.instancia.inicioAsistenciaTecnicaAt ??
           assignment.instancia.inicioProgramadoAt;
         if (esBajaPropia && inicioAsistencia <= new Date()) {
-          throw new Error("No podés darte de baja una vez iniciado el monitoreo.");
+          throw new ConflictApiError("No podés darte de baja una vez iniciado el monitoreo.");
         }
         if (assignment.detallesLiquidacion.length > 0) {
-          throw new Error("No se puede desvincular una asignación incluida en una liquidación.");
+          throw new ConflictApiError("No se puede desvincular una asignación incluida en una liquidación.");
         }
 
         const updated = await tx.asignacionAsistenciaTecnica.update({
@@ -454,16 +454,16 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           asignacion.asistenteTecnico.usuarioId !== input.usuarioId ||
           !ACTIVE_ASSIGNMENTS.includes(asignacion.estado as any)
         ) {
-          throw new Error("La reunión no está asignada a este usuario.");
+          throw new ForbiddenApiError("La reunión no está asignada a este usuario.");
         }
         if (
           asignacion.instancia.estado !== "FINALIZADA" &&
           asignacion.instancia.finProgramadoAt > ahora
         ) {
-          throw new Error("La duración solo se puede informar al finalizar la reunión.");
+          throw new ConflictApiError("La duración solo se puede informar al finalizar la reunión.");
         }
         if (["CANCELADA", "NO_REALIZADA"].includes(asignacion.instancia.estado)) {
-          throw new Error("No se puede informar duración para esta reunión.");
+          throw new ConflictApiError("No se puede informar duración para esta reunión.");
         }
 
         const minutos = Math.round((input.finReal.getTime() - input.inicioReal.getTime()) / 60_000);
@@ -519,7 +519,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       input: DisponibilidadSemanalInput
     ): Promise<void> {
       if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
-        throw new Error("Solo puede definirse una franja habitual por día.");
+        throw new ValidationApiError("Solo puede definirse una franja habitual por día.");
       }
 
       await db.$transaction(async (tx) => {
@@ -527,7 +527,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           where: { usuarioId },
           select: { id: true }
         });
-        if (!assistant) throw new Error("No existe un perfil de asistente técnico para esta sesión.");
+        if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente técnico para esta sesión.");
 
         await tx.asistenteTecnico.update({
           where: { id: assistant.id },
@@ -803,10 +803,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       });
 
       if (!meeting || !meeting.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA") {
-        throw new Error("La reunión ya no necesita cobertura de asistencia técnica.");
+        throw new ConflictApiError("La reunión ya no necesita cobertura de asistencia técnica.");
       }
       if (meeting.asignaciones.length > 0) {
-        throw new Error("La reunión ya tiene una persona asignada.");
+        throw new ConflictApiError("La reunión ya tiene una persona asignada.");
       }
 
       const assistants = await db.asistenteTecnico.findMany({
