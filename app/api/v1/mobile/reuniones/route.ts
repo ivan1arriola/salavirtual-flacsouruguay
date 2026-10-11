@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { authConfig } from "@/src/lib/auth/config";
-import { mobileActorFromRequest } from "@/src/lib/auth/mobile-token";
+import { requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
 export async function GET(request: Request) {
-  const actor = mobileActorFromRequest(request, authConfig.secret);
+  const actor = await requireMobileActor(request, ["ASISTENTE_TECNICO"]).catch(() => null);
   if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const assistant = await db.asistenteTecnico.findUnique({
-    where: { usuarioId: actor.sub },
+    where: { usuarioId: actor.id },
     select: {
       id: true,
       usuario: {
