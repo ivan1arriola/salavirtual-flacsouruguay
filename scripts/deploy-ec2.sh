@@ -160,7 +160,8 @@ if [[ "$ROLLBACK" -eq 1 ]]; then
     echo "Release actual: $CURRENT_NAME"
     echo "Revirtiendo a:  $(basename "$PREV")"
 
-    sudo ln -sfn "$PREV" "$BASE/current"
+    sudo ln -s "$PREV" "$BASE/.rollback-next-$"
+    sudo mv -Tf "$BASE/.rollback-next-$" "$BASE/current"
     sudo systemctl restart salavirtual.service
 
     # Comprobar healthcheck
@@ -179,7 +180,8 @@ if [[ "$ROLLBACK" -eq 1 ]]; then
       echo
     else
       echo "Healthcheck falló tras el rollback. Restaurando release anterior..." >&2
-      sudo ln -sfn "$CURRENT" "$BASE/current"
+      sudo ln -s "$CURRENT" "$BASE/.rollback-restore-$"
+      sudo mv -Tf "$BASE/.rollback-restore-$" "$BASE/current"
       sudo systemctl restart salavirtual.service
       exit 1
     fi
@@ -216,6 +218,11 @@ run_local_ci() {
 if [[ "$CI_ONLY" -eq 1 ]]; then
   run_local_ci
   exit 0
+fi
+
+if [[ "$SKIP_CI" -eq 1 && "$FORCE" -ne 1 ]]; then
+  log_error "Omitir CI requiere --force y queda reservado a emergencias documentadas."
+  exit 1
 fi
 
 if [[ "$SKIP_CI" -eq 0 ]]; then
