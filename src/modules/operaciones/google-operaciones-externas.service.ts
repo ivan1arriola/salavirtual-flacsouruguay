@@ -28,6 +28,8 @@ export type GoogleOperationSpec = Readonly<{
   proveedor: "MEET" | "DRIVE" | "GMAIL";
   tipo: GoogleOperationKind;
   cuenta: string;
+  /** Non-secret entity ID for operator correlation (never raw message bodies). */
+  referencia?: string;
 }>;
 
 const ACCOUNT_LEASE_MS = 120_000;
@@ -48,7 +50,7 @@ export async function ejecutarGooglePostUnaVez<T>(
     where: { clave: spec.clave },
     create: {
       clave: spec.clave, proveedor: spec.proveedor,
-      tipo: spec.tipo, cuenta: spec.cuenta, estado: "RESERVADA"
+      tipo: spec.tipo, cuenta: spec.cuenta, referencia: spec.referencia ?? null, estado: "RESERVADA"
     },
     update: {}
   });
