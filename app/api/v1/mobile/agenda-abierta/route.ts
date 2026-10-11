@@ -1,3 +1,4 @@
+import { toHttpError } from "@/src/lib/http/api-error";
 import { NextResponse } from "next/server";
 import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -175,9 +176,7 @@ export async function PUT(request: Request) {
     );
     return NextResponse.json({ interest });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Datos inválidos." },
-      { status: 400 }
-    );
+    const mapped = toHttpError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
