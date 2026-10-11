@@ -1,7 +1,9 @@
 import type { JWT } from "google-auth-library";
 import {
   crearGoogleMeetArtifactsAuthClient,
+  conReintentosGoogleLectura,
   conReintentosPorLimiteGoogle,
+  GOOGLE_HTTP_TIMEOUT_MS,
   moverArchivoDrive,
   obtenerOCrearCarpetaDrive,
   subirDocumentoGoogleDrive
@@ -192,7 +194,9 @@ type GoogleRequestOptions = Readonly<{
 }>;
 
 async function requestGoogle<T>(auth: JWT, options: GoogleRequestOptions) {
-  return conReintentosPorLimiteGoogle(() => auth.request<T>(options));
+  const send = () => auth.request<T>({ ...options, timeout: GOOGLE_HTTP_TIMEOUT_MS });
+  // Writes are NOT retried: Google might have committed before returning a timeout.
+  return options.method === "GET" ? conReintentosGoogleLectura(send) : send();
 }
 
 async function listarPaginas<T>(auth: JWT, baseUrl: string, field: string): Promise<T[]> {
