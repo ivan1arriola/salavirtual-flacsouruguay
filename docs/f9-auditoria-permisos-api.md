@@ -30,11 +30,11 @@ Rutas `app/api/v1` de reuniones, asistencia, configuración, usuarios, notificac
 
 ## Riesgos pendientes (no afirmados como explotables)
 
-1. `resolveSessionActor` busca por email si el ID de sesión no existe. Es útil para migración histórica, pero requiere una política explícita de expiración/revinculación y prueba frente a reasignación de direcciones. No cambiar sin confirmar los flujos legacy.
+1. **Resuelto:** `resolveSessionActor` ya no vincula sesiones por email al faltar el ID. Un usuario migrado debe volver a autenticarse; las credenciales y asociaciones siguen siendo gestionadas por la capa de identidad.
 2. Algunos GET de agenda móvil hacen consultas sin paginación; analizar volumen y límites antes de ampliar acceso.
 3. Versionar esquemas de respuesta/error (OpenAPI o Zod compartidos) y ejecutar contract tests web + Android.
 4. Evaluar protección CSRF y política de origen de mutaciones web con cookies, considerando Auth.js, configuración de host/proxy y consumo real.
-5. Agregar pruebas negativas reales de IDOR entre programas, asistentes y solicitudes; los mocks unitarios no sustituyen un PostgreSQL aislado.
+5. **Cobertura parcial resuelta:** `test/f9-program-authorization-postgres.test.ts` prueba denegación cruzada real en cancelación de series, acceso al programa propio, revocación, y no mutación de recurso ajeno. Faltan E2E de otras rutas/roles e integración con clientes Android.
 6. Revisar el resto de endpoints administrativos y Server Actions para detectar autorizaciones basadas solo en roles de sesión.
 7. Evaluar rate limiting de login, verificación externa de cohosts y creación de eventos, además de métricas para 401/403/429.
 8. Homogeneizar errores tipados restantes en configuración, rol y estado operativo de asistentes.
@@ -48,3 +48,10 @@ Rutas `app/api/v1` de reuniones, asistencia, configuración, usuarios, notificac
 - API de asistencia no revela mensajes internos en HTTP 500 y usa errores 403/409/400 según la regla.
 - Staging: pruebas con docentes de programas distintos, asistentes asignados/no asignados y sesiones revocadas.
 - No marcar F9 completa hasta finalizar la revisión cruzada de Server Actions y los tests E2E con PostgreSQL y Android.
+
+## Endurecimiento posterior
+
+- `test/f9-session-id-stability.test.ts`: prueba que un identificador eliminado no puede adoptar otra cuenta aunque reutilice su correo.
+- `.github/workflows/check-postgres.yml`: ejecuta el nuevo test real de separación entre programas antes de permitir deploy.
+- El endpoint Android de login aún no tiene un límite distribuido de intentos registrado en la base de datos: considerarlo trabajo obligatorio antes de exponerlo ampliamente a Internet; una caché en memoria por proceso no sería control suficiente.
+- CSRF: las Server Actions usan el mecanismo de Next.js; las rutas API que escriben con cookies deben validar defensivamente origen/host y política SameSite en el despliegue real. Requiere pruebas de proxy para evitar falsos rechazos.
