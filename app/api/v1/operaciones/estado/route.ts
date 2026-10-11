@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const pendiente = { proveedor: { tipo: "GOOGLE_MEET" as const }, operacionPendiente: { not: null } };
-  const [pendingGoogle, googleErrors, staleClaims, oldest] = await Promise.all([
+  const [pendingGoogle, googleErrors, staleClaims, oldest, uncertainPosts, stuckPosts, reservedPosts] = await Promise.all([
     db.eventoProveedor.count({ where: pendiente }),
     db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),
     db.eventoProveedor.count({
@@ -31,6 +31,13 @@ export async function GET(request: Request) {
       where: pendiente,
       orderBy: { updatedAt: "asc" },
       select: { updatedAt: true }
+    }),
+    db.googleOperacionExterna.count({ where: { estado: "INCIERTA" } }),
+    db.googleOperacionExterna.count({
+      where: { estado: "ENVIANDO", iniciadaAt: { lt: new Date(now.getTime() - 2 * 60_000) } }
+    }),
+    db.googleOperacionExterna.count({
+      where: { estado: "RESERVADA", createdAt: { lt: new Date(now.getTime() - 15 * 60_000) } }
     })
   ]);
   const health = evaluarSaludOperativa({
@@ -42,12 +49,24 @@ export async function GET(request: Request) {
       : null
   });
 
+  const status = uncertainPosts > 0 || stuckPosts > 0
+    ? "critico"
+    : reservedPosts > 0 && health.status === "ok"
+      ? "degradado"
+      : health.status;
+
   return NextResponse.json({
     ...health,
+    status,
+    googlePost: {
+      inciertas: uncertainPosts,
+      enviandoObsoletas: stuckPosts,
+      reservadasAtrasadas: reservedPosts
+    },
     checkedAt: now.toISOString(),
     note: "Antigüedad aproximada desde el último cambio del evento; no desde su creación."
   }, {
-    status: health.status === "critico" ? 503 : 200,
+    status: status === "critico" ? 503 : 200,
     headers: { "Cache-Control": "no-store" }
   });
 }
