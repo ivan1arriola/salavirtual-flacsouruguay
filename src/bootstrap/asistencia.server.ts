@@ -76,7 +76,8 @@ export async function sincronizarAsignacionAsistente(instanciaSalaId: string, ca
   try {
     await sincronizarCohostsDeInstancia({ db, descifrar: descifrarConfiguracion, configurarEspacio: configurarGoogleMeetExistente }, instanciaSalaId);
   } catch (error) {
-    warnings.push(error instanceof Error ? error.message : "No se pudo sincronizar cohosts en Google Meet.");
+    console.error("Falló la sincronización de cohosts de asistencia técnica.", error);
+    warnings.push("La sincronización de cohosts con Google Meet está pendiente.");
   }
   const intento = await intentarSincronizacionCalendarioAsistente(() =>
     sincronizarCalendarioAsistenteInstancia({ db, descifrar: descifrarConfiguracion, publicarEvento: publicarEventoCalendarioAsistente, eliminarEvento: eliminarEventoCalendarioAsistente }, instanciaSalaId)
