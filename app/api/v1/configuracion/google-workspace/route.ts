@@ -13,6 +13,15 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Never authorize sensitive reads solely from the role saved in a JWT/session.
+  const actor = await resolveSessionActor(db, {
+    id: session.user.id,
+    email: session.user.email
+  });
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const [configuracion, legacy] = await Promise.all([
     db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" },
