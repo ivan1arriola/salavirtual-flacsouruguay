@@ -121,3 +121,25 @@ export async function ejecutarGooglePostUnaVez<T>(
     });
   }
 }
+
+/**
+ * Mark an uncertain POST confirmed ONLY after the caller has verified the
+ * remote object with a separate GET. Never move ENVIANDO to CONFIRMADA:
+ * that request might still be in flight.
+ */
+export async function confirmarGoogleOperacionVerificada(
+  db: PrismaClient,
+  clave: string,
+  resultado: Record<string, string>
+): Promise<boolean> {
+  if (!resultado.id || Object.values(resultado).some((value) => typeof value !== "string")) {
+    throw new Error("La prueba remota no incluye un ID válido.");
+  }
+  const updated = await db.googleOperacionExterna.updateMany({
+    where: { clave, estado: "INCIERTA" },
+    data: {
+      estado: "CONFIRMADA", resultado, errorCodigo: null, terminadaAt: new Date()
+    }
+  });
+  return updated.count === 1;
+}
