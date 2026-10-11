@@ -207,26 +207,23 @@ export function MeetingDetailManager({
 
   async function removeAll() {
     if (removingAllRef.current || requestIds.length === 0) return;
-    if (!window.confirm("Se cancelarán todos los eventos de Calendar y se eliminará la serie completa. Esta acción no se puede deshacer. ¿Continuar?")) return;
+    if (!window.confirm("Se registrará la cancelación de toda la serie. Google Calendar podría tardar unos minutos en reflejarla. ¿Continuar?")) return;
     removingAllRef.current = true;
     setBusy("all");
-    let completed = 0;
-    setMessage(`Cancelando solicitudes de la serie (0/${requestIds.length}). No cierres esta página.`);
+    setMessage("Registrando la cancelación de la serie…");
     try {
-      for (const requestId of requestIds) {
-        const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros`, { method: "DELETE" });
-        if (!response.ok) {
-          const result = await response.json().catch(() => ({}));
-          throw new Error(result.error ?? "No se pudo cancelar esta solicitud.");
-        }
-        completed += 1;
-        setMessage(`Cancelando solicitudes de la serie (${completed}/${requestIds.length}). No cierres esta página.`);
-      }
+      const response = await fetch("/api/v1/reuniones/cancelar-serie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ solicitudIds: requestIds })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "No se pudo cancelar la serie.");
+      setMessage(result.message ?? "Cancelación registrada.");
       router.push("/reuniones");
       router.refresh();
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "No se pudo conectar con el servidor.";
-      setMessage(`Operación incompleta: ${completed} de ${requestIds.length} solicitudes aceptadas por el servidor. ${detail} Actualizá la página y comprobá los encuentros pendientes antes de volver a intentar.`);
+      setMessage(error instanceof Error ? error.message : "Error al cancelar la serie.");
       router.refresh();
     } finally {
       removingAllRef.current = false;
