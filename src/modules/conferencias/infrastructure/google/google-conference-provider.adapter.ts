@@ -235,13 +235,30 @@ export function crearGoogleConferenceProvider(
             { conferenceDataVersion: 1, sendUpdates }
           )) as CalendarEvent;
         } catch (error) {
-          if (!isAlreadyCalendarEventError(error)) throw error;
-          responseData = (await obtenerEventoCalendar(
-            auth,
-            request.calendarId,
-            request.calendarEventId,
-            { conferenceDataVersion: 1 }
-          )) as CalendarEvent;
+          // A timeout/network failure may happen AFTER Google created the event.
+          // Recover using our deterministic Calendar event ID before retrying a POST.
+          // A 404 does not prove the original POST failed; fail closed and let the
+          // next worker attempt reconcile instead of creating another event here.
+          const conflict = isAlreadyCalendarEventError(error);
+          let recovered: CalendarEvent | null = null;
+          try {
+            recovered = (await obtenerEventoCalendarSiExiste(
+              auth,
+              request.calendarId,
+              request.calendarEventId,
+              { conferenceDataVersion: 1 }
+            )) as CalendarEvent | null;
+          } catch {
+            // Preserve the original failure; GET can also fail transiently.
+          }
+          if (!recovered) throw error;
+          if (recovered.id !== request.calendarEventId) {
+            throw new Error("Google Calendar devolvió un evento con ID inesperado.");
+          }
+          if (!extraerMeetProvisionado(recovered) && !conflict) {
+            throw error;
+          }
+          responseData = recovered;
         }
       }
 
