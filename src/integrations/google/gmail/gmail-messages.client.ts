@@ -1,3 +1,4 @@
+import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
 import type { JWT } from "google-auth-library";
 
 export const GMAIL_API_BASE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
@@ -41,11 +42,13 @@ export async function enviarMensajeGmailHttp(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ raw: rawBase64Message }),
+    signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`Gmail API rechazó el envío (${response.status}): ${text}`);
+    // Never leak Google response bodies (may include request metadata/PII).
+    // Do not automatically replay this POST: it could send a duplicate email.
+    throw new Error(`Gmail API rechazó el envío (${response.status}).`);
   }
 }
 

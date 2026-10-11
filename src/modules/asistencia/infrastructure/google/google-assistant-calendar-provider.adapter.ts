@@ -5,6 +5,7 @@ import {
   eliminarEventoCalendarHttp,
   isAlreadyCalendarEventError,
   isCalendarNotFoundError,
+  obtenerEventoCalendarSiExiste,
   type GoogleCalendarEvent,
 } from "@/src/integrations/google";
 import type {
@@ -25,7 +26,14 @@ export async function publicarEventoCalendarioAsistente(
       sendUpdates: "none",
     });
   } catch (error) {
-    if (!esErrorConflicto(error)) throw error;
+    if (!esErrorConflicto(error)) {
+      // A Calendar POST can succeed remotely before its response is lost.
+      // Only update an event with the same deterministic ID once it is visible.
+      // Never immediately replay an ambiguous POST.
+      const existing = await obtenerEventoCalendarSiExiste(auth, "primary", event.id)
+        .catch(() => null);
+      if (!existing || existing.id !== event.id) throw error;
+    }
     const { id: _id, ...updatePayload } = payload;
     await actualizarEventoCalendarHttp(auth, "primary", event.id, updatePayload, {
       sendUpdates: "none",

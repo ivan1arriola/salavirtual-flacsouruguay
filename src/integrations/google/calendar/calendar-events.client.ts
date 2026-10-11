@@ -1,5 +1,6 @@
 import type { JWT } from "google-auth-library";
-import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
+import { GOOGLE_HTTP_TIMEOUT_MS, GOOGLE_HTTP_READ_TIMEOUT_MS } from "../auth";
+import { conReintentosGoogleLectura } from "../retry";
 
 export const CALENDAR_API_BASE_URL = "https://www.googleapis.com/calendar/v3";
 
@@ -62,11 +63,11 @@ export async function obtenerEventoCalendar(
   options?: CalendarRequestOptions
 ): Promise<GoogleCalendarEvent> {
   const url = buildCalendarUrl(calendarEventUrl(calendarId, eventId), options);
-  const response = await auth.request<GoogleCalendarEvent>({
+  const response = await conReintentosGoogleLectura(() => auth.request<GoogleCalendarEvent>({
     url,
     method: "GET",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
-  });
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+  }));
   return response.data;
 }
 

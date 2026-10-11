@@ -9,6 +9,7 @@ import {
 vi.mock("@/src/integrations/google", () => ({
   crearGoogleCalendarAuthClient: vi.fn().mockReturnValue({ id: "mock-auth" }),
   crearEventoCalendarHttp: vi.fn(),
+  obtenerEventoCalendarSiExiste: vi.fn(),
   actualizarEventoCalendarHttp: vi.fn(),
   eliminarEventoCalendarHttp: vi.fn(),
   isAlreadyCalendarEventError: vi.fn((err: any) => err?.code === 409 || err?.status === 409),
@@ -19,6 +20,7 @@ import {
   actualizarEventoCalendarHttp,
   crearEventoCalendarHttp,
   eliminarEventoCalendarHttp,
+  obtenerEventoCalendarSiExiste,
 } from "@/src/integrations/google";
 
 describe("adaptador Google Assistant Calendar Provider", () => {
@@ -81,6 +83,31 @@ describe("adaptador Google Assistant Calendar Provider", () => {
       expect.not.objectContaining({ id: "evt-1" }),
       { sendUpdates: "none" }
     );
+  });
+
+  it("recupera una creación confirmada por GET cuando se perdió el POST", async () => {
+    const timeout = Object.assign(new Error("socket hang up"), { code: "ECONNRESET" });
+    vi.mocked(crearEventoCalendarHttp).mockRejectedValueOnce(timeout);
+    vi.mocked(obtenerEventoCalendarSiExiste).mockResolvedValueOnce({ id: "evt-1" });
+    vi.mocked(actualizarEventoCalendarHttp).mockResolvedValueOnce({ id: "evt-1" });
+
+    await publicarEventoCalendarioAsistente(credentials, sampleEvent);
+
+    expect(obtenerEventoCalendarSiExiste).toHaveBeenCalledWith(expect.anything(), "primary", "evt-1");
+    expect(actualizarEventoCalendarHttp).toHaveBeenCalledWith(
+      expect.anything(), "primary", "evt-1", expect.anything(), { sendUpdates: "none" }
+    );
+  });
+
+  it("no repite POST cuando Calendar no permite confirmar la creación", async () => {
+    const timeout = Object.assign(new Error("socket hang up"), { code: "ETIMEDOUT" });
+    const before = vi.mocked(crearEventoCalendarHttp).mock.calls.length;
+    vi.mocked(crearEventoCalendarHttp).mockRejectedValueOnce(timeout);
+    vi.mocked(obtenerEventoCalendarSiExiste).mockResolvedValueOnce(null);
+
+    await expect(publicarEventoCalendarioAsistente(credentials, sampleEvent))
+      .rejects.toBe(timeout);
+    expect(vi.mocked(crearEventoCalendarHttp).mock.calls.length - before).toBe(1);
   });
 
   it("elimina el evento con sendUpdates: none", async () => {
