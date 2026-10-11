@@ -55,3 +55,9 @@ Rutas `app/api/v1` de reuniones, asistencia, configuración, usuarios, notificac
 - `.github/workflows/check-postgres.yml`: ejecuta el nuevo test real de separación entre programas antes de permitir deploy.
 - El endpoint Android de login aún no tiene un límite distribuido de intentos registrado en la base de datos: considerarlo trabajo obligatorio antes de exponerlo ampliamente a Internet; una caché en memoria por proceso no sería control suficiente.
 - CSRF: las Server Actions usan el mecanismo de Next.js; las rutas API que escriben con cookies deben validar defensivamente origen/host y política SameSite en el despliegue real. Requiere pruebas de proxy para evitar falsos rechazos.
+
+## Comprobación adicional de la ruta efectiva de asistencia
+
+La API de asignaciones no llama directamente a `asistencia.service.ts`: se compone mediante `src/bootstrap/asistencia.server.ts`, `src/modules/asistencia/application/` y `src/modules/asistencia/infrastructure/prisma/`.
+
+Se corrigieron los errores de autorización, reglas de conflicto y validación **también en esa cadena efectiva**, para que `toHttpError` pueda emitir 403/409/400 sin filtrar excepciones inesperadas. `test/f9-assistance-usecase-permissions.test.ts` valida las denegaciones de los casos de uso en ejecución.
