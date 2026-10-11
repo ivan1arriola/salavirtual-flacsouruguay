@@ -56,13 +56,13 @@ export type ConferenciasRepositoryPort = Readonly<{
   ) => Promise<Readonly<Record<string, unknown>> | undefined>;
 
   guardarExternalEventIdTemprano: (
-    id: string,
+    claim: ClaimInfo,
     externalEventId: string,
     payload: unknown
   ) => Promise<void>;
 
   persistirMeetDetectado: (
-    id: string,
+    claim: ClaimInfo,
     result: ConferenceProvisionResult
   ) => Promise<void>;
 
