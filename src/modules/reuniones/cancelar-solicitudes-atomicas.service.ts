@@ -36,6 +36,14 @@ export async function cancelarSolicitudesAtomicas(
       }
     });
     if (solicitudes.length !== ids.length) throw new NotFoundApiError("Una solicitud de la serie no existe.");
+    const primera = solicitudes[0];
+    if (solicitudes.some((solicitud) =>
+      solicitud.docenteProgramaId !== primera.docenteProgramaId ||
+      solicitud.titulo !== primera.titulo ||
+      solicitud.createdAt.getTime() !== primera.createdAt.getTime()
+    )) {
+      throw new ConflictApiError("Las solicitudes no pertenecen a la misma serie.");
+    }
 
     // Validate all permissions and constraints before changing any record.
     for (const solicitud of solicitudes) {
