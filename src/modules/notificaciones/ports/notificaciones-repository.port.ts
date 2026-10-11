@@ -23,7 +23,7 @@ export type NotificacionesRepositoryPort = Readonly<{
     cuerpo: string;
     href?: string;
     metadata?: unknown;
-  }) => Promise<void>;
+  }) => Promise<string | void>;
 
   esAsistenteCesado: (usuarioId: string) => Promise<boolean>;
 
