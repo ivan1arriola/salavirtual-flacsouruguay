@@ -5,6 +5,7 @@ CREATE TABLE "GoogleOperacionExterna" (
     "proveedor" TEXT NOT NULL,
     "tipo" TEXT NOT NULL,
     "cuenta" TEXT NOT NULL,
+    "referencia" TEXT,
     "estado" TEXT NOT NULL DEFAULT 'RESERVADA',
     "resultado" JSONB,
     "errorCodigo" TEXT,
