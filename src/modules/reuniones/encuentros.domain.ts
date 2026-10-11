@@ -196,12 +196,14 @@ function respetaCapacidadConcurrente(
   const cambios = intervalos.flatMap(({ inicio, fin }) => [
     { instante: inicio.getTime(), delta: 1 },
     { instante: fin.getTime(), delta: -1 }
-  ]).sort((a, b) => a.instante - b.instante || a.delta - b.delta);
+  ]).toSorted((a, b) => a.instante - b.instante || a.delta - b.delta);
 
-  let activas = 0;
-  for (const cambio of cambios) {
-    activas += cambio.delta;
-    if (activas > limite) return false;
-  }
-  return true;
+  const ocupacion = cambios.reduce(
+    (estado, cambio) => {
+      const activas = estado.activas + cambio.delta;
+      return { activas, maximo: Math.max(estado.maximo, activas) };
+    },
+    { activas: 0, maximo: 0 }
+  );
+  return ocupacion.maximo <= limite;
 }
