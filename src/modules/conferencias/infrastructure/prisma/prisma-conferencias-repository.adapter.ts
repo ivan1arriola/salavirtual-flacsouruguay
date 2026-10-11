@@ -174,6 +174,7 @@ export function crearPrismaConferenciasRepository(
     },
 
     async guardarExternalEventIdTemprano(claim, externalEventId, payload) {
+      const persisted = { externalEventId, payloadUltimo: JSON.parse(JSON.stringify(payload)) };
       const updated = await db.eventoProveedor.updateMany({
         where: {
           id: claim.event.id,
@@ -182,14 +183,25 @@ export function crearPrismaConferenciasRepository(
           reclamoIntegracionToken: claim.token,
           externalEventId: null,
         },
-        data: {
-          externalEventId,
-          payloadUltimo: JSON.parse(JSON.stringify(payload)),
-        },
+        data: persisted,
       });
-      if (updated.count !== 1) {
-        throw new Error("El claim de integración caducó o el evento ya fue modificado.");
+      if (updated.count === 1) return;
+
+      // Google may create an event while a user is cancelling the request.
+      // Record only its remote ID so the newer CANCELAR operation can delete
+      // it. Never restore an old claim, state or provisioning operation.
+      const cancelled = await db.eventoProveedor.updateMany({
+        where: {
+          id: claim.event.id,
+          operacionPendiente: "CANCELAR",
+          externalEventId: null,
+        },
+        data: persisted,
+      });
+      if (cancelled.count === 1) {
+        throw new Error("La reunión fue cancelada durante la creación en Google; se guardó el ID remoto para su eliminación.");
       }
+      throw new Error("El claim de integración caducó o el evento ya fue modificado.");
     },
 
     async persistirMeetDetectado(claim, result) {
