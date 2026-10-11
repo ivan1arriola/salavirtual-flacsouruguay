@@ -1,5 +1,5 @@
 import type { JWT } from "google-auth-library";
-import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
+import { GOOGLE_HTTP_TIMEOUT_MS, GOOGLE_HTTP_READ_TIMEOUT_MS } from "../auth";
 import { conReintentosGoogleLectura } from "../retry";
 
 export const DRIVE_API_BASE_URL = "https://www.googleapis.com/drive/v3";
@@ -27,7 +27,7 @@ export async function obtenerOCrearCarpetaDrive(
   const listed = await conReintentosGoogleLectura(() => auth.request<{ files?: readonly { id: string }[] }>({
     url,
     method: "GET",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
   }));
 
   if (listed.data.files?.[0]?.id) {
@@ -56,7 +56,7 @@ export async function moverArchivoDrive(
   const current = await conReintentosGoogleLectura(() => auth.request<MovedDriveFile & Readonly<{ parents?: readonly string[] }>>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,webViewLink,parents&supportsAllDrives=true`,
     method: "GET",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
   }));
 
   const removeParents = (current.data.parents ?? []).filter((id) => id !== folderId).join(",");
