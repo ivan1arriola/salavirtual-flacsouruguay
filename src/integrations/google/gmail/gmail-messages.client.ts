@@ -9,11 +9,14 @@ export type GoogleMailInput = Readonly<{
   subject: string;
   text: string;
   html?: string;
+  /** Stable delivery identifier; email header aids forensic reconciliation. */
+  messageId?: string;
 }>;
 
 export function buildRawGmailMessage(input: GoogleMailInput, from: string): string {
   const headers = [
     `From: ${fromHeader(from)}`,
+    ...(input.messageId ? [`Message-ID: <${input.messageId}@salavirtual.flacso.edu.uy>`] : []),
     `To: ${input.to.join(", ")}`,
     ...(input.cc?.length ? [`Cc: ${input.cc.join(", ")}`] : []),
     `Subject: ${encodeMimeHeader(input.subject)}`,
