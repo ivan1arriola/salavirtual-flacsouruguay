@@ -16,6 +16,8 @@ vi.mock("@/auth", () => ({
 }));
 
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+// Evita cargar el servidor real de NextAuth en el runtime de Vitest.
+vi.mock("next-auth", () => ({ AuthError: class AuthError extends Error {} }));
 
 import { iniciarSesionGoogle, iniciarSesionGoogleRecordada } from "../app/acceso/actions";
 
