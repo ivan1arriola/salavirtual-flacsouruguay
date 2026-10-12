@@ -38,7 +38,11 @@ export default async function GestionLayout({
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    // El JWT existe, pero ya no identifica una cuenta activa.
+    console.warn("[Auth] Sesión rechazada en gestión: usuario inexistente o inactivo.");
+    redirect("/acceso");
+  }
   const user = await db.usuario.findUnique({
     where: { id: actor.id },
     select: {

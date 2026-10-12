@@ -2,7 +2,7 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { signIn } from "@/auth";
+import { signIn, signOut } from "@/auth";
 
 export async function iniciarSesionLocal(formData: FormData): Promise<void> {
   try {
@@ -21,6 +21,9 @@ export async function iniciarSesionLocal(formData: FormData): Promise<void> {
 
 export async function iniciarSesionGoogle(): Promise<void> {
   try {
+    // Eliminar JWT antiguos/rechazados antes de iniciar una nueva sesión OAuth.
+    // No modifica cuentas ni permisos; solo las cookies de este navegador.
+    await signOut({ redirect: false });
     await signIn("google", { redirectTo: "/" });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -34,6 +37,8 @@ export async function iniciarSesionGoogleRecordada(formData: FormData): Promise<
   const loginHint = String(formData.get("loginHint") ?? "").trim();
 
   try {
+    // También limpiar sesiones previas al elegir una cuenta recordada.
+    await signOut({ redirect: false });
     await signIn(
       "google",
       { redirectTo: "/" },
