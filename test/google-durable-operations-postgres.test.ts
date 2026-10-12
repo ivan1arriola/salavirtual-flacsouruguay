@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   claveOperacionGoogle,
+  confirmarOperacionDriveMarcada,
   ejecutarGooglePostUnaVez,
   GoogleCuentaOcupadaError,
   GoogleOperacionInciertaError
@@ -89,4 +90,48 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
       await firstCall;
     }
   });
+  it("recupera ENVIANDO de Drive abandonado tras verificar el marcador remoto", async () => {
+    const clave = claveOperacionGoogle("DRIVE_SUBIR_DOCUMENTO", prefix, "stale");
+    keys.push(clave);
+    await db.googleOperacionExterna.create({
+      data: {
+        clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: account,
+        estado: "ENVIANDO", iniciadaAt: new Date(Date.now() - 10 * 60_000)
+      }
+    });
+    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "doc-verified" }))
+      .toBe(true);
+    expect((await db.googleOperacionExterna.findUniqueOrThrow({
+      where: { clave }
+    })).estado).toBe("CONFIRMADA");
+    const send = vi.fn();
+    await expect(ejecutarGooglePostUnaVez(db, {
+      clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: account
+    }, send, serialize, restore)).resolves.toEqual({ id: "doc-verified" });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("no confirma ENVIANDO reciente ni operaciones Meet sin marcador Drive", async () => {
+    const clave = claveOperacionGoogle("DRIVE_CREAR_CARPETA", prefix, "recent");
+    keys.push(clave);
+    await db.googleOperacionExterna.create({
+      data: {
+        clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: account,
+        estado: "ENVIANDO", iniciadaAt: new Date()
+      }
+    });
+    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "wrong" }))
+      .toBe(false);
+    expect((await db.googleOperacionExterna.findUniqueOrThrow({
+      where: { clave }
+    })).estado).toBe("ENVIANDO");
+    const meet = spec("not-drive");
+    await db.googleOperacionExterna.create({
+      data: { ...meet, estado: "INCIERTA" }
+    });
+    expect(await confirmarOperacionDriveMarcada(secondWorker, meet.clave, { id: "wrong" }))
+      .toBe(false);
+  });
+
+
 });
