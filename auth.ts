@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { obtenerServicioIdentity } from "@/src/bootstrap/identity.server";
 import { authConfig } from "@/src/lib/auth/config";
+import { db } from "@/src/lib/db";
 import {
   esRolUsuario,
   resolverRedireccionAutorizada
@@ -74,8 +75,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       : [])
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
+        // Verificar la identidad interna sin registrar IDs, correos ni tokens.
+        if (account?.provider === "google") {
+          const vinculacion = user.id
+            ? await db.usuario.findUnique({
+                where: { id: user.id },
+                select: { activo: true, fusionadoEnId: true }
+              })
+            : null;
+          console.info("[Auth] Retorno Google", {
+            identidadInternaValida: vinculacion?.activo === true && !vinculacion.fusionadoEnId
+          });
+        }
         token.userId = user.id;
         token.role = user.role;
         token.mustChangePassword = user.mustChangePassword;
@@ -84,6 +97,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     session({ session, token }) {
       if (session.user) {
+        if (!token.userId && token.sub) {
+          console.warn("[Auth] JWT sin identificador interno; usando subject de reserva.");
+        }
         session.user.id = String(token.userId ?? token.sub ?? "");
         session.user.role = esRolUsuario(token.role) ? token.role : "DOCENTE";
         session.user.mustChangePassword = token.mustChangePassword === true;
