@@ -114,7 +114,7 @@ export default async function AccesoPage({
 
         {authConfig.google ? (
           <>
-            <GoogleLoginButton />     </form>
+            <GoogleLoginButton />
 
             <div className="login-separator">
               <span>o</span>
