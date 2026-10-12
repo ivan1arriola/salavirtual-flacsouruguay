@@ -25,7 +25,7 @@ vi.mock("@/src/integrations/google", () => ({
 vi.mock("@/src/modules/operaciones/google-operaciones-externas.service", () => ({
   claveOperacionGoogle: vi.fn(() => "gop:test"),
   ejecutarGooglePostUnaVez: mocks.execute,
-  confirmarGoogleOperacionVerificada: mocks.confirm,
+  confirmarOperacionDriveMarcada: mocks.confirm,
   GoogleOperacionInciertaError: class GoogleOperacionInciertaError extends Error {
     constructor(public readonly clave: string) { super("incierta"); }
   }
