@@ -43,6 +43,10 @@ export default async function AccesoPage({
   if (await puedeRedirigirAlPanel(db, session?.user)) {
     redirect("/");
   }
+  if (session?.user) {
+    // Solo datos de estado, sin IDs, correos ni cookies en los logs.
+    console.warn("[Auth] La pantalla de acceso recibió un JWT sin usuario activo.");
+  }
 
   const {
     error,
