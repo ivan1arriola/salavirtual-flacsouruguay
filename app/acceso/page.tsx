@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { authConfig } from "@/src/lib/auth/config";
+import { puedeRedirigirAlPanel } from "@/src/lib/auth/login-redirect";
+import { db } from "@/src/lib/db";
 import { RememberedAccounts } from "@/src/components/remembered-accounts";
 import { PasswordInput } from "./password-input";
 
@@ -36,7 +38,9 @@ export default async function AccesoPage({
 }: AccesoPageProps) {
   const session = await auth();
 
-  if (session?.user) {
+  // Una cookie JWT puede seguir siendo válida aunque la cuenta ya no exista
+  // o haya sido desactivada: nunca redirigir al panel en ese caso.
+  if (await puedeRedirigirAlPanel(db, session?.user)) {
     redirect("/");
   }
 
@@ -49,7 +53,9 @@ export default async function AccesoPage({
 
   const mensaje = error
     ? MENSAJES_ERROR[error] ?? "No se pudo iniciar sesión."
-    : null;
+    : session?.user
+      ? "Tu sesión anterior ya no está vigente. Iniciá sesión nuevamente."
+      : null;
 
   return (
     <main className="login-shell">
