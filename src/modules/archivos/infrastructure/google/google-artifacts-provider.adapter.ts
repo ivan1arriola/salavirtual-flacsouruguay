@@ -4,7 +4,7 @@ import { db } from "@/src/lib/db";
 import {
   claveOperacionGoogle,
   ejecutarGooglePostUnaVez,
-  confirmarGoogleOperacionVerificada,
+  confirmarOperacionDriveMarcada,
   GoogleOperacionInciertaError
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
@@ -199,7 +199,7 @@ export function crearGoogleArtifactsProviderAdapter(
         ).catch(() => null);
         if (!match) throw error;
         const verifiedId = match.id;
-        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, { id: verifiedId });
+        const confirmed = await confirmarOperacionDriveMarcada(db, clave, { id: verifiedId });
         if (confirmed) return verifiedId;
         // Another worker can resolve it concurrently. Never infer a result
         // from a stale ENVIANDO lease or a different remote ID.
@@ -246,7 +246,7 @@ export function crearGoogleArtifactsProviderAdapter(
         ).catch(() => null);
         if (!match) throw error;
         const result = { id: match.id, name: match.name, mimeType: match.mimeType ?? "", webViewLink: match.webViewLink ?? "" };
-        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, result);
+        const confirmed = await confirmarOperacionDriveMarcada(db, clave, result);
         if (confirmed) return result;
         const latest = await db.googleOperacionExterna.findUnique({
           where: { clave }, select: { estado: true, resultado: true }
