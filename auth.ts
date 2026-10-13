@@ -62,7 +62,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }
 
               return {
-                id: usuario.id,
+                id: profile.sub,
+                internalUserId: usuario.id,
                 name: usuario.nombre,
                 email: usuario.email,
                 image: profile.picture,
@@ -77,11 +78,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
+        const internalUserId = account?.provider === "google" ? user.internalUserId : user.id;
+        if (!internalUserId) {
+          throw new Error("La identidad interna de autenticación no está disponible.");
+        }
         // Verificar la identidad interna sin registrar IDs, correos ni tokens.
         if (account?.provider === "google") {
-          const vinculacion = user.id
+          const vinculacion = internalUserId
             ? await db.usuario.findUnique({
-                where: { id: user.id },
+                where: { id: internalUserId },
                 select: { activo: true, fusionadoEnId: true }
               })
             : null;
@@ -89,7 +94,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             identidadInternaValida: vinculacion?.activo === true && !vinculacion.fusionadoEnId
           });
         }
-        token.userId = user.id;
+        token.userId = internalUserId;
         token.role = user.role;
         token.mustChangePassword = user.mustChangePassword;
       }
