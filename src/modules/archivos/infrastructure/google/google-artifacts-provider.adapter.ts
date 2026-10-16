@@ -175,13 +175,18 @@ export function crearGoogleArtifactsProviderAdapter(
       const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
       if (adminEmail && meetingCode && rows.length > 0) {
         try {
-          const starts = rows.map(row => Date.parse(row.inicio));
-          const ends = rows.map(row => Date.parse(row.fin));
+          // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
+          // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
+          const localDay = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit"
+          }).format(new Date(rows[0]!.inicio));
+          const inicioDia = new Date(localDay + "T00:00:00-03:00");
+          const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
           const emails = await obtenerCorreosAuditoriaMeet({
             serviceAccountEmail: credentials.serviceAccountEmail,
             privateKey: credentials.privateKey, adminEmail, meetingCode,
-            startTime: new Date(Math.min(...starts)).toISOString(),
-            endTime: new Date(Math.max(...ends)).toISOString()
+            startTime: inicioDia.toISOString(),
+            endTime: finDia.toISOString()
           });
           correosAuditados = emails;
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
