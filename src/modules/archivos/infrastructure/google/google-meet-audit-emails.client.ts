@@ -12,6 +12,7 @@ export type CorreoAuditadoMeet = Readonly<{
   nombre?: string;
   salida?: string;
   duracionSegundos?: number;
+  conexiones?: readonly { inicio: string; fin: string; duracionSegundos: number; nombre: string; identificador: string }[];
 }>;
 
 type Parametro = { name: string; value?: string; intValue?: string; boolValue?: boolean };
@@ -72,13 +73,18 @@ export async function obtenerCorreosAuditoriaMeet(input: {
         const previous = emails.get(key);
         const seconds = Number(val("duration_seconds")) || 0;
         const exitTime = item.id?.time ?? "";
+        const inicioCalculado = Number.isFinite(Date.parse(exitTime)) && seconds > 0
+          ? new Date(Date.parse(exitTime) - seconds * 1000).toISOString()
+          : "";
+        const registro = { inicio: inicioCalculado, fin: exitTime, duracionSegundos: seconds, nombre: String(val("display_name")), identificador: correo };
         emails.set(key, {
           correo,
           externo: typeof external === "boolean" ? external : null,
           conferenciaId: conferenceId,
           nombre: String(val("display_name")) || previous?.nombre || "",
           salida: exitTime || previous?.salida || "",
-          duracionSegundos: (previous?.duracionSegundos ?? 0) + Math.max(0, seconds)
+          duracionSegundos: (previous?.duracionSegundos ?? 0) + Math.max(0, seconds),
+          conexiones: [...(previous?.conexiones ?? []), registro]
         });
       }
     }
