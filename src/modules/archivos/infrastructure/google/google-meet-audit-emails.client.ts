@@ -1,13 +1,18 @@
-﻿import { JWT } from "google-auth-library";
+import { JWT } from "google-auth-library";
 import { crearGoogleAuthJwt, conReintentosGoogleLectura } from "@/src/integrations/google";
 import { normalizarCodigoMeet } from "../../domain/meet-attendance-summary.domain";
 
-export type ParametroAuditoriaMeet = Readonly<{ name: string; value?: string; intValue?: string; boolValue?: boolean }>;
-export type EventoAuditoriaMeet = Readonly<{
-  conferenceId: string; endpointId: string; meetingCode: string; identifier: string;
-  identifierType: string; displayName: string; timestamp: string; durationSeconds: number;
-  parameters: readonly ParametroAuditoriaMeet[];
-}>;
+import type {
+  ParametroAuditoriaMeet,
+  EventoAuditoriaMeet,
+  CorreoAuditadoMeet,
+} from "../../domain/archivos.types";
+
+export type {
+  ParametroAuditoriaMeet,
+  EventoAuditoriaMeet,
+  CorreoAuditadoMeet,
+};
 
 export function filtrarEventosAuditoriaConferencia(
   eventos: readonly EventoAuditoriaMeet[],
@@ -24,11 +29,6 @@ export function filtrarEventosAuditoriaConferencia(
   const ids = new Set(eventosSolapados.map(event => event.conferenceId).filter(Boolean));
   return { eventosSolapados, eventosAtribuibles: ids.size === 1 ? eventosSolapados : [] };
 }
-export type CorreoAuditadoMeet = Readonly<{
-  correo: string; externo: boolean | null; conferenciaId: string; nombre?: string; salida?: string;
-  conexiones?: readonly { inicio: string; fin: string; duracionSegundos: number; nombre: string; identificador: string;
-    endpointId?: string; meetingCode?: string; identifierType?: string; timestamp?: string; parameters?: readonly ParametroAuditoriaMeet[] }[];
-}>;
 type Actividad = { id?: { time?: string }; events?: Array<{ name: string; parameters?: ParametroAuditoriaMeet[] }> };
 type Pagina = { items?: Actividad[]; nextPageToken?: string };
 

@@ -51,9 +51,52 @@ export type MeetArtifactsScan = Readonly<{
   pendientes: number;
 }>;
 
+export type ParametroAuditoriaMeet = Readonly<{
+  name: string;
+  value?: string;
+  intValue?: string;
+  boolValue?: boolean;
+}>;
+
+export type EventoAuditoriaMeet = Readonly<{
+  conferenceId: string;
+  endpointId: string;
+  meetingCode: string;
+  identifier: string;
+  identifierType: string;
+  displayName: string;
+  timestamp: string;
+  durationSeconds: number;
+  parameters: readonly ParametroAuditoriaMeet[];
+}>;
+
+export type CorreoAuditadoMeet = Readonly<{
+  correo: string;
+  externo: boolean | null;
+  conferenciaId: string;
+  nombre?: string;
+  salida?: string;
+  conexiones?: readonly {
+    inicio: string;
+    fin: string;
+    duracionSegundos: number;
+    nombre: string;
+    identificador: string;
+    endpointId?: string;
+    meetingCode?: string;
+    identifierType?: string;
+    timestamp?: string;
+    parameters?: readonly ParametroAuditoriaMeet[];
+  }[];
+}>;
+
 export type MeetAttendanceDocument = Readonly<{
   html: string;
-  planilla?: { sesionesMeet: readonly { nombre: string; tipo: string; inicio: string; fin: string }[]; correosAuditados: readonly import('../infrastructure/google/google-meet-audit-emails.client').CorreoAuditadoMeet[]; eventosAuditoria: readonly import('../infrastructure/google/google-meet-audit-emails.client').EventoAuditoriaMeet[] };
+  planilla?: {
+    sesionesMeet: readonly { nombre: string; tipo: string; inicio: string; fin: string }[];
+    correosAuditados: readonly CorreoAuditadoMeet[];
+    eventosAuditoria: readonly EventoAuditoriaMeet[];
+  };
   completa: boolean;
   participantes: number;
   sesiones: number;
