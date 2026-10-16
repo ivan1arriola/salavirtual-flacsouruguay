@@ -48,7 +48,6 @@ function values(rows: readonly (readonly (string | number)[])[]) {
 export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetInput) {
   const start = input.inicio.getTime(), end = input.fin.getTime();
   if (!(end > start)) throw new Error("Horario de asistencia inválido");
-  const auditSet = new Set(input.correosAuditados.map(r => r.correo.toLowerCase()));
   const resumen: (string | number)[][] = [[
     "Participante", "Correo", "Primera conexión (UY)", "Última desconexión (UY)",
     "Minutos conectados", "Asistencia (%)", "Umbral de 5/6", "Conexiones"
@@ -82,9 +81,8 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     raw.push(["MEET", s.nombre, "", "", s.tipo, s.inicio, s.fin,
       Math.max(0, (Date.parse(s.fin) - Date.parse(s.inicio)) / 1000), ""]);
   }
-  // Las identidades de Meet sin email se mantienen en bruto, sin asociarlas por nombre.
-  const unnamed = input.sesionesMeet.filter(s => !auditSet.has(s.nombre.toLowerCase()));
-  if (unnamed.length) resumen.push(["Ver pestaña Datos brutos: Meet no expone el correo en sus sesiones", "", "", "", 0, 0, "SIN IDENTIFICAR", 0]);
+  // Las sesiones de Meet se conservan en bruto, sin asociarlas por coincidencia de nombres.
+
 
   const tabs = [
     { title: "Asistencia", sheetId: 0, rows: resumen },
