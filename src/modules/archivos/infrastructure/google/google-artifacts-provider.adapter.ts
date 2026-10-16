@@ -1,4 +1,5 @@
 import type { JWT } from "google-auth-library";
+import { obtenerCorreosAuditoriaMeet } from "./google-meet-audit-emails.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
@@ -146,7 +147,7 @@ export function crearGoogleArtifactsProviderAdapter(
       };
     },
 
-    async obtenerDocumentoAsistencia(conferenceName: string): Promise<MeetAttendanceDocument> {
+    async obtenerDocumentoAsistencia(conferenceName: string, meetingCode?: string): Promise<MeetAttendanceDocument> {
       const participants = await listarPaginas<Participant>(
         auth,
         `${MEET_API}/${conferenceName}/participants?pageSize=250`,
@@ -167,8 +168,29 @@ export function crearGoogleArtifactsProviderAdapter(
           fin: session.endTime
         }] : [])
       );
+      let emailAppendix = "";
+      const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
+      if (adminEmail && meetingCode && rows.length > 0) {
+        try {
+          const starts = rows.map(row => Date.parse(row.inicio));
+          const ends = rows.map(row => Date.parse(row.fin));
+          const emails = await obtenerCorreosAuditoriaMeet({
+            serviceAccountEmail: credentials.serviceAccountEmail,
+            privateKey: credentials.privateKey, adminEmail, meetingCode,
+            startTime: new Date(Math.min(...starts)).toISOString(),
+            endTime: new Date(Math.max(...ends)).toISOString()
+          });
+          const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+          const tableRows = emails.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
+          emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+        } catch (error) {
+          console.error("Auditoría Meet no disponible:", error instanceof Error ? error.message : String(error));
+          emailAppendix = "<p>Los correos de auditoría no están disponibles; se conserva la asistencia de Meet.</p>";
+        }
+      }
+      const baseHtml = crearHtmlAsistencia(rows);
       return {
-        html: crearHtmlAsistencia(rows),
+        html: emailAppendix ? baseHtml.replace("</body>", `${emailAppendix}</body>`) : baseHtml,
         completa: asistenciaMeetCompleta(sessionsByParticipant),
         participantes: participants.length,
         sesiones: rows.length

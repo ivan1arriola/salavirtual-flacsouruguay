@@ -19,7 +19,7 @@ export type ArtifactProviderPort = Readonly<{
   buscarConferencia(codigo: string, inicio: Date, fin: Date): Promise<RegistroConferenciaMeet | null>;
   obtenerConferencia(conferenceName: string): Promise<RegistroConferenciaMeet>;
   obtenerArtefactos(conferenceName: string): Promise<MeetArtifactsScan>;
-  obtenerDocumentoAsistencia(conferenceName: string): Promise<MeetAttendanceDocument>;
+  obtenerDocumentoAsistencia(conferenceName: string, meetingCode?: string): Promise<MeetAttendanceDocument>;
   obtenerOCrearCarpeta(parentId: string, name: string): Promise<string>;
   moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile>;
   subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile>;
