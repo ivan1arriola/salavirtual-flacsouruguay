@@ -67,7 +67,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         include: {
           cuentaProveedor: true,
           archivos: { select: { id: true, externalResourceName: true, tipo: true, mimeType: true } },
-          instancia: { include: { solicitud: true } }
+          instancia: { include: { solicitud: true, cohostEmails: true, cohosts: { include: { cuentaGoogle: true } } } }
         }
       });
 
@@ -76,6 +76,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         codigoReunion: event.codigoReunion,
         conferenceRecordName: event.conferenceRecordName,
         emailOrganizador: event.cuentaProveedor?.emailOrganizador ?? null,
+        cohostEmails: [...new Set([...event.instancia.cohostEmails.map(e => e.email), ...event.instancia.cohosts.map(c => c.cuentaGoogle.email)])],
         archivos: event.archivos,
         inicioProgramadoAt: event.instancia.inicioProgramadoAt,
         finProgramadoAt: event.instancia.finProgramadoAt,
