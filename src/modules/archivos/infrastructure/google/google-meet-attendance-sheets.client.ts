@@ -66,12 +66,13 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     const duration = mergeDuration(intervals, start, end);
     const first = Number.isFinite(duration.first) ? new Date(duration.first).toISOString() : "";
     const last = Number.isFinite(duration.last) ? new Date(duration.last).toISOString() : "";
-    const roles = r.correo.toLowerCase() === input.organizador.toLowerCase() ? "HOST" : "PARTICIPANTE";
+    const roles = r.correo.toLowerCase() === input.organizador.toLowerCase() ? "HOST"
+      : input.cohosts.some(email => email.toLowerCase() === r.correo.toLowerCase()) ? "COHOST" : "PARTICIPANTE";
     const mins = Math.round(duration.minutes * 100) / 100;
     const ratio = Math.min(1, duration.minutes / ((end - start) / 60000));
     const item = [r.nombre || r.correo, r.correo, asUtcHour(first), asUtcHour(last), mins,
       ratio, ratio >= 5 / 6 ? "CUMPLE" : "MENOS DE 5/6", (r.conexiones ?? []).length];
-    if (roles === "HOST") responsables.push([item[0], item[1], roles, item[2], item[3], item[4], item[7]]);
+    if (roles !== "PARTICIPANTE") responsables.push([item[0], item[1], roles, item[2], item[3], item[4], item[7]]);
     else resumen.push(item);
     for (const s of r.conexiones ?? []) raw.push([
       "REPORTS", s.nombre || r.nombre || "", r.correo, s.identificador, "email_address",
@@ -93,7 +94,7 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   const created = await auth.request<{ data?: unknown; spreadsheetId: string; spreadsheetUrl?: string }>({
     url: SHEETS, method: "POST", data: {
       properties: { title: input.titulo, locale: "es_UY", timeZone: "America/Montevideo" },
-      sheets: tabs.map(t => ({ properties: { title: t.title, sheetId: t.sheetId, gridProperties: { frozenRowCount: 1 } } }))
+      sheets: tabs.map(t => ({ properties: { title: t.title, sheetId: t.sheetId, gridProperties: { frozenRowCount: 1, rowCount: Math.max(1000, t.rows.length + 10), columnCount: Math.max(10, t.rows[0]!.length) } } }))
     }
   });
   const id = created.data.spreadsheetId;
