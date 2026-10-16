@@ -158,7 +158,7 @@ async function sincronizarEventoIndividual(
 
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource)) {
-      const attendance = await provider.obtenerDocumentoAsistencia(conference.name);
+      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
       if (attendance.completa) {
         const name = nombreArchivoReunion({
           ...common,
