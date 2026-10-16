@@ -202,7 +202,7 @@ export function crearGoogleArtifactsProviderAdapter(
       };
     },
 
-    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador) {
+    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = []) {
       const sheetsAuth = crearGoogleAuthJwt(credentials, [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
