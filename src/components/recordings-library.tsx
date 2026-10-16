@@ -20,11 +20,17 @@ export type RecordingsLibraryProps = Readonly<{
 export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
   const [filtro, setFiltro] = useState<TipoFiltroArtefacto>("TODOS");
   const [busqueda, setBusqueda] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 12;
 
   const filteredGrupos = useMemo(
     () => filtrarEncuentrosConArchivos(grupos, filtro, busqueda),
     [grupos, filtro, busqueda]
   );
+
+  const totalPaginas = Math.max(1, Math.ceil(filteredGrupos.length / porPagina));
+  const paginaVisible = Math.min(pagina, totalPaginas);
+  const gruposPagina = filteredGrupos.slice((paginaVisible - 1) * porPagina, paginaVisible * porPagina);
 
   const conteos = useMemo(() => {
     return {
@@ -46,14 +52,14 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             type="text"
             placeholder="Buscar por materia, clase o docente..."
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
             aria-label="Buscar encuentros o archivos"
           />
           {busqueda ? (
             <button
               type="button"
               className="clear-search-button"
-              onClick={() => setBusqueda("")}
+              onClick={() => { setBusqueda(""); setPagina(1); }}
               aria-label="Limpiar búsqueda"
             >
               <X size={16} />
@@ -67,7 +73,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "TODOS"}
             className={`filter-tab ${filtro === "TODOS" ? "is-active" : ""}`}
-            onClick={() => setFiltro("TODOS")}
+            onClick={() => { setFiltro("TODOS"); setPagina(1); }}
           >
             Todos <span className="tab-badge">{conteos.todos}</span>
           </button>
@@ -76,7 +82,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "GRABACIONES"}
             className={`filter-tab ${filtro === "GRABACIONES" ? "is-active" : ""}`}
-            onClick={() => setFiltro("GRABACIONES")}
+            onClick={() => { setFiltro("GRABACIONES"); setPagina(1); }}
           >
             <Video size={14} aria-hidden="true" />
             Solo grabaciones <span className="tab-badge">{conteos.grabaciones}</span>
@@ -86,7 +92,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "ASISTENCIAS"}
             className={`filter-tab ${filtro === "ASISTENCIAS" ? "is-active" : ""}`}
-            onClick={() => setFiltro("ASISTENCIAS")}
+            onClick={() => { setFiltro("ASISTENCIAS"); setPagina(1); }}
           >
             <UsersRound size={14} aria-hidden="true" />
             Solo asistencias <span className="tab-badge">{conteos.asistencias}</span>
@@ -96,7 +102,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "NOTAS_Y_TRANSCRIPCIONES"}
             className={`filter-tab ${filtro === "NOTAS_Y_TRANSCRIPCIONES" ? "is-active" : ""}`}
-            onClick={() => setFiltro("NOTAS_Y_TRANSCRIPCIONES")}
+            onClick={() => { setFiltro("NOTAS_Y_TRANSCRIPCIONES"); setPagina(1); }}
           >
             <NotebookText size={14} aria-hidden="true" />
             Notas y transcripciones <span className="tab-badge">{conteos.notas}</span>
@@ -116,6 +122,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
               onClick={() => {
                 setBusqueda("");
                 setFiltro("TODOS");
+                setPagina(1);
               }}
             >
               Restablecer filtros
@@ -131,7 +138,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             </span>
           </div>
 
-          {filteredGrupos.map((grupo) => {
+          {gruposPagina.map((grupo) => {
             const fecha = typeof grupo.fechaInicio === "string" ? new Date(grupo.fechaInicio) : grupo.fechaInicio;
             const orderedArtifacts = [...grupo.archivos].sort(
               (a, b) => artifactSortOrder(a.tipo) - artifactSortOrder(b.tipo)
@@ -215,6 +222,13 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
               </article>
             );
           })}
+          {totalPaginas > 1 ? (
+            <nav aria-label="Paginación de encuentros" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", margin: "1.5rem 0" }}>
+              <button className="secondary-action" type="button" disabled={paginaVisible === 1} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</button>
+              <span aria-live="polite">Página {paginaVisible} de {totalPaginas}</span>
+              <button className="secondary-action" type="button" disabled={paginaVisible === totalPaginas} onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}>Siguiente</button>
+            </nav>
+          ) : null}
         </section>
       )}
     </div>
