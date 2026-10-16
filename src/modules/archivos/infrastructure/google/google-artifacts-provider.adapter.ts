@@ -188,7 +188,23 @@ export function crearGoogleArtifactsProviderAdapter(
             startTime: inicioDia.toISOString(),
             endTime: finDia.toISOString()
           });
-          correosAuditados = emails;
+          const actual = await this.obtenerConferencia(conferenceName);
+          const conferenceStart = Date.parse(actual.startTime);
+          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Number.POSITIVE_INFINITY;
+          // Un mismo link de Meet puede tener varias conferencias en el mismo día.
+          // Filtrar las conexiones de auditoría por el intervalo real de esta conferencia.
+          correosAuditados = emails.flatMap((e) => {
+            const sesiones = (e.conexiones ?? []).filter((c) => {
+              const salida = Date.parse(c.fin);
+              const entrada = Date.parse(c.inicio);
+              return Number.isFinite(salida) && salida >= conferenceStart - 60_000
+                && (Number.isFinite(entrada) ? entrada : salida) <= conferenceEnd + 60_000;
+            });
+            return sesiones.length ? [{
+              ...e, conexiones: sesiones,
+              duracionSegundos: sesiones.reduce((n, v) => n + v.duracionSegundos, 0)
+            }] : [];
+          });
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = emails.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
