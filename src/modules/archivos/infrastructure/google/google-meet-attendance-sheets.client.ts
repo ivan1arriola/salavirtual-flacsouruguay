@@ -7,6 +7,7 @@ export type MeetSheetInput = Readonly<{
   titulo: string;
   folderId: string;
   organizador: string;
+  cohosts: readonly string[];
   inicio: Date;
   fin: Date;
   sesionesMeet: readonly MeetSheetSession[];
