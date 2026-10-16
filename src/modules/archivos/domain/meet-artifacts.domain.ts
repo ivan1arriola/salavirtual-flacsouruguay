@@ -30,6 +30,9 @@ export type FilaAsistenciaMeet = Readonly<{
   tipo: "CUENTA_GOOGLE" | "ANONIMO" | "TELEFONO";
   inicio: string;
   fin: string;
+  conferencia?: string;
+  participanteId?: string;
+  sesionId?: string;
 }>;
 
 export type RegistroConferenciaMeet = Readonly<{

@@ -14,7 +14,7 @@ const ALL_TS_FILES = readdirSync(MODULES_ROOT, {
 // 1. En modulos migrados: cualquier archivo dentro de un subdirectorio `domain/`.
 // 2. En modulos legacy: cualquier archivo que no sea service, adapter o xlsx, y no sea barrel de modulo (api/presentation).
 const PURE_MODULES = ALL_TS_FILES.filter((relativePath) => {
-  const parts = relativePath.split("/");
+  const parts = relativePath.replaceAll("\\", "/").split("/");
   if (parts.length > 2) {
     const layer = parts[1];
     if (layer === "domain") return true;
@@ -38,7 +38,7 @@ const FORBIDDEN_EFFECTS = [
   { name: "entorno", pattern: /process\.env/ },
   { name: "estado global", pattern: /globalThis/ },
   { name: "red", pattern: /\bfetch\s*\(/ },
-  { name: "reloj del sistema", pattern: /\b(?:new Date|Date\.now)\s*\(/ },
+  { name: "reloj del sistema", pattern: /\b(?:new Date\s*\(\s*\)|Date\.now\s*\()/ },
   { name: "azar del sistema", pattern: /\b(?:Math\.random|crypto\.randomUUID)\s*\(/ },
   { name: "consola", pattern: /\bconsole\./ },
   { name: "clases", pattern: /\bclass\s+/ },

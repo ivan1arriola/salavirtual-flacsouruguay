@@ -53,7 +53,7 @@ export type MeetArtifactsScan = Readonly<{
 
 export type MeetAttendanceDocument = Readonly<{
   html: string;
-  planilla?: { sesionesMeet: readonly { nombre: string; tipo: string; inicio: string; fin: string }[]; correosAuditados: readonly import('../infrastructure/google/google-meet-audit-emails.client').CorreoAuditadoMeet[] };
+  planilla?: { sesionesMeet: readonly { nombre: string; tipo: string; inicio: string; fin: string }[]; correosAuditados: readonly import('../infrastructure/google/google-meet-audit-emails.client').CorreoAuditadoMeet[]; eventosAuditoria: readonly import('../infrastructure/google/google-meet-audit-emails.client').EventoAuditoriaMeet[] };
   completa: boolean;
   participantes: number;
   sesiones: number;

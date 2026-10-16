@@ -13,6 +13,7 @@ import type {
 
 export type SincronizarArtefactosInput = Readonly<{
   eventoProveedorIds: readonly string[];
+  regenerarAsistencia?: boolean;
 }>;
 
 export async function sincronizarArtefactosUseCase(
@@ -48,7 +49,8 @@ export async function sincronizarArtefactosUseCase(
       configuracion.driveDestinationId!,
       configuracion.serviceAccountEmail!,
       privateKey,
-      evento
+      evento,
+      input.regenerarAsistencia ?? false
     )
   );
 }
@@ -59,7 +61,8 @@ async function sincronizarEventoIndividual(
   destinationId: string,
   serviceAccountEmail: string,
   privateKey: string,
-  evento: EventoParaSincronizarArchivos
+  evento: EventoParaSincronizarArchivos,
+  regenerarAsistencia: boolean
 ): Promise<SyncArtifactsResult> {
   const hostEmail = evento.emailOrganizador;
   if (!hostEmail || !evento.codigoReunion) {
@@ -157,7 +160,7 @@ async function sincronizarEventoIndividual(
             : "NO_REQUERIDA";
 
     const attendanceResource = `${conference.name}/attendance`;
-    if (!known.has(attendanceResource)) {
+    if (!known.has(attendanceResource) || regenerarAsistencia) {
       const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
       if (attendance.completa) {
         const name = nombreArchivoReunion({
@@ -168,7 +171,8 @@ async function sincronizarEventoIndividual(
         const uploaded = provider.subirPlanillaAsistencia && attendance.planilla
           ? await provider.subirPlanillaAsistencia(
               folderId, name, attendance.planilla,
-              evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail, evento.cohostEmails ?? []
+              evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail, evento.cohostEmails ?? [],
+              regenerarAsistencia ? evento.asistenciaDriveFileId ?? undefined : undefined
             )
           : await provider.subirDocumentoGoogle(folderId, name, attendance.html);
         await repositorio.registrarArchivoSincronizado(

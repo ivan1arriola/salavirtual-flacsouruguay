@@ -1,6 +1,6 @@
 import type { JWT } from "google-auth-library";
-import { obtenerCorreosAuditoriaMeet } from "./google-meet-audit-emails.client";
-import { crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
+import { agruparCorreosAuditoriaMeet, filtrarEventosAuditoriaConferencia, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
+import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
@@ -167,23 +167,27 @@ export function crearGoogleArtifactsProviderAdapter(
           nombre: nombreParticipante(participant),
           tipo: tipoParticipante(participant),
           inicio: session.startTime,
-          fin: session.endTime
+          fin: session.endTime,
+          conferencia: conferenceName,
+          participanteId: participant.name,
+          sesionId: session.name
         }] : [])
       );
       let emailAppendix = "";
-      let correosAuditados: Awaited<ReturnType<typeof obtenerCorreosAuditoriaMeet>> = [];
+      let correosAuditados: ReturnType<typeof agruparCorreosAuditoriaMeet> = [];
+      let eventosAuditoria: readonly EventoAuditoriaMeet[] = [];
       const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
       if (!adminEmail) throw new Error("Falta GOOGLE_REPORTS_ADMIN_EMAIL para planillas de asistencia con correos");
       if (meetingCode && rows.length > 0) {
         try {
           // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
           // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
-          const localDay = new Intl.DateTimeFormat("en-CA", {
-            timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit"
-          }).format(new Date(rows[0]!.inicio));
-          const inicioDia = new Date(localDay + "T00:00:00-03:00");
-          const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
-          const emails = await obtenerCorreosAuditoriaMeet({
+          const diaInicio = fechaLocalISO(new Date(Math.min(...rows.map(row => Date.parse(row.inicio)))));
+          const diaFin = fechaLocalISO(new Date(Math.max(...rows.map(row => Date.parse(row.fin)))));
+          const inicioDia = new Date(`${diaInicio}T00:00:00-03:00`);
+          const finDia = new Date(`${diaFin}T00:00:00-03:00`);
+          finDia.setUTCDate(finDia.getUTCDate() + 1);
+          const eventos = await obtenerEventosAuditoriaMeet({
             serviceAccountEmail: credentials.serviceAccountEmail,
             privateKey: credentials.privateKey, adminEmail, meetingCode,
             startTime: inicioDia.toISOString(),
@@ -191,57 +195,59 @@ export function crearGoogleArtifactsProviderAdapter(
           });
           const actual = await this.obtenerConferencia(conferenceName);
           const conferenceStart = Date.parse(actual.startTime);
-          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Number.POSITIVE_INFINITY;
+          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
           // Un mismo link de Meet puede tener varias conferencias en el mismo día.
           // Filtrar las conexiones de auditoría por el intervalo real de esta conferencia.
-          correosAuditados = emails.flatMap((e) => {
-            const sesiones = (e.conexiones ?? []).filter((c) => {
-              const salida = Date.parse(c.fin);
-              const entrada = Date.parse(c.inicio);
-              return Number.isFinite(salida) && salida >= conferenceStart - 60_000
-                && (Number.isFinite(entrada) ? entrada : salida) <= conferenceEnd + 60_000;
-            });
-            return sesiones.length ? [{
-              ...e, conexiones: sesiones,
-              duracionSegundos: sesiones.reduce((n, v) => n + v.duracionSegundos, 0)
-            }] : [];
-          });
+          // Reports and Meet expose independent conference IDs. If multiple audit IDs overlap
+          // this Meet record, preserve raw records but do not attribute emails to attendance.
+          const clasificacion = filtrarEventosAuditoriaConferencia(eventos, actual.startTime, actual.endTime ?? new Date(conferenceEnd).toISOString());
+          eventosAuditoria = clasificacion.eventosSolapados;
+          correosAuditados = agruparCorreosAuditoriaMeet(clasificacion.eventosAtribuibles);
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
         } catch (error) {
-          console.error("Auditoría Meet no disponible:", error instanceof Error ? error.message : String(error));
+          console.error("Meet attendance audit request failed; retrying.");
           throw error; // No registrar un informe sin correos tras fallar la auditoría; el job debe reintentarse.
         }
       }
       const baseHtml = crearHtmlAsistencia(rows);
       return {
         html: emailAppendix ? baseHtml.replace("</body>", `${emailAppendix}</body>`) : baseHtml,
-        planilla: { sesionesMeet: rows, correosAuditados },
+        planilla: { sesionesMeet: rows, correosAuditados, eventosAuditoria },
         completa: asistenciaMeetCompleta(sessionsByParticipant),
         participantes: participants.length,
         sesiones: rows.length
       };
     },
 
-    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = []) {
+    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = [], spreadsheetId) {
       const sheetsAuth = crearGoogleAuthJwt(credentials, [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
       ]);
-      const hash = createHash("sha256").update(JSON.stringify({ folderId, name, inicio, fin, organizador, cohosts,
-        sessions: data.sesionesMeet, audit: data.correosAuditados })).digest("hex");
-      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name, hash);
-      return ejecutarGooglePostUnaVez(
+      const operationMarker = createHash("sha256").update(`${credentials.serviceAccountEmail}|${folderId}|${name}`).digest("hex");
+      const input = { folderId, titulo: name, inicio, fin, organizador, cohosts, operationMarker,
+        sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria
+      };
+      if (spreadsheetId) return crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId);
+      const existente = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker);
+      if (existente) return crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id);
+      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name);
+      try { return await ejecutarGooglePostUnaVez(
         db,
         { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
-        () => crearPlanillaAsistenciaGoogle(sheetsAuth, {
-          folderId, titulo: name, inicio, fin, organizador, cohosts,
-          sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados
-        }),
+        () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
         result => ({ id: result.id, name: result.name, mimeType: result.mimeType, webViewLink: result.webViewLink }),
         saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
-      );
+      ); } catch (error) {
+        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker).catch(() => null);
+        if (!recovered) throw error;
+        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, recovered);
+        if (confirmed) return recovered;
+        throw error;
+      }
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
@@ -311,7 +317,15 @@ type Recording = Readonly<{ name: string; state: string; startTime?: string; dri
 type Transcript = Readonly<{ name: string; state: string; startTime?: string; docsDestination?: { document?: string } }>;
 type SmartNote = Transcript;
 type Participant = Readonly<{ name: string; signedinUser?: { displayName?: string; user?: string }; anonymousUser?: { displayName?: string }; phoneUser?: { displayName?: string } }>;
-type ParticipantSession = Readonly<{ startTime: string; endTime?: string }>;
+type ParticipantSession = Readonly<{ name: string; startTime: string; endTime?: string }>;
+
+function fechaLocalISO(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(date);
+  const value = (type: "year" | "month" | "day") => parts.find(part => part.type === type)?.value ?? "00";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
 
 type GoogleRequestOptions = Readonly<{
   url: string;
@@ -373,4 +387,5 @@ function nombreParticipante(participant: Participant): string {
 function tipoParticipante(participant: Participant): FilaAsistenciaMeet["tipo"] {
   return participant.signedinUser ? "CUENTA_GOOGLE" : participant.phoneUser ? "TELEFONO" : "ANONIMO";
 }
+
 

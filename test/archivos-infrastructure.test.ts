@@ -178,3 +178,17 @@ describe("archivos: infrastructure", () => {
   });
 });
 
+
+    it("pagina encuentros desde Prisma después del archivo 300 y mantiene alcance, filtro y orden", async () => {
+      const count = vi.fn().mockResolvedValueOnce(301).mockResolvedValue(301);
+      const findMany = vi.fn().mockResolvedValue([]);
+      const mockDb = { instanciaSala: { count, findMany } } as unknown as PrismaClient;
+      const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
+      const result = await repo.listarGrabacionesDb!({ id: "doc-1", rol: "DOCENTE" }, { pagina: 26, busqueda: "clase", filtro: "ASISTENCIAS" });
+      expect(result).toMatchObject({ pagina: 26, totalPaginas: 26, totalEncuentros: 301 });
+      expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 300, take: 12, orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }] }));
+      const where = findMany.mock.calls[0]![0].where;
+      expect(where.AND).toHaveLength(4);
+      expect(JSON.stringify(where)).toContain("doc-1");
+      expect(JSON.stringify(where)).toContain("LISTA_ASISTENCIA");
+    });

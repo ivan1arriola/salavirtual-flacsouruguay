@@ -1,13 +1,13 @@
 "use client";
 
 import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, Search, UsersRound, Video, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
-  filtrarEncuentrosConArchivos,
   type GrupoEncuentroConArchivos,
   type TipoFiltroArtefacto
 } from "@/src/modules/archivos/presentation";
+import { crearHrefGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
 import {
   etiquetaTipoArtefactoMeet,
   type TipoArtefactoMeet
@@ -15,33 +15,21 @@ import {
 
 export type RecordingsLibraryProps = Readonly<{
   grupos: readonly GrupoEncuentroConArchivos[];
+  pagina: number;
+  totalPaginas: number;
+  busqueda: string;
+  filtro: TipoFiltroArtefacto;
+  totalEncuentros: number;
+  conteos: Readonly<{ todos: number; grabaciones: number; asistencias: number; notas: number; transcripciones: number }>;
 }>;
 
-export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
-  const [filtro, setFiltro] = useState<TipoFiltroArtefacto>("TODOS");
-  const [busqueda, setBusqueda] = useState("");
-  const [pagina, setPagina] = useState(1);
-  const porPagina = 12;
-
-  const filteredGrupos = useMemo(
-    () => filtrarEncuentrosConArchivos(grupos, filtro, busqueda),
-    [grupos, filtro, busqueda]
-  );
-
-  const totalPaginas = Math.max(1, Math.ceil(filteredGrupos.length / porPagina));
-  const paginaVisible = Math.min(pagina, totalPaginas);
-  const gruposPagina = filteredGrupos.slice((paginaVisible - 1) * porPagina, paginaVisible * porPagina);
-
-  const conteos = useMemo(() => {
-    return {
-      todos: grupos.length,
-      grabaciones: grupos.filter((g) => g.archivos.some((a) => a.tipo === "GRABACION")).length,
-      asistencias: grupos.filter((g) => g.archivos.some((a) => a.tipo === "LISTA_ASISTENCIA")).length,
-      notas: grupos.filter((g) =>
-        g.archivos.some((a) => a.tipo === "TRANSCRIPCION" || a.tipo === "NOTAS")
-      ).length
-    };
-  }, [grupos]);
+export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas, busqueda, filtro, conteos, totalEncuentros }: RecordingsLibraryProps) {
+  const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
+  const filteredGrupos = grupos;
+  const gruposPagina = grupos;
+  const navegar = (cambios: Partial<{ pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }>) => {
+    window.location.assign(crearHrefGrabaciones({ pagina: paginaVisible, busqueda, filtro }, cambios));
+  };
 
   return (
     <div className="recordings-library-container">
@@ -51,15 +39,16 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
           <input
             type="text"
             placeholder="Buscar por materia, clase o docente..."
-            value={busqueda}
-            onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
+            value={busquedaEditada}
+            onChange={(e) => setBusquedaEditada(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") navegar({ busqueda: busquedaEditada, pagina: 1 }); }}
             aria-label="Buscar encuentros o archivos"
           />
-          {busqueda ? (
+          {busquedaEditada ? (
             <button
               type="button"
               className="clear-search-button"
-              onClick={() => { setBusqueda(""); setPagina(1); }}
+              onClick={() => navegar({ busqueda: "", pagina: 1 })}
               aria-label="Limpiar búsqueda"
             >
               <X size={16} />
@@ -73,7 +62,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "TODOS"}
             className={`filter-tab ${filtro === "TODOS" ? "is-active" : ""}`}
-            onClick={() => { setFiltro("TODOS"); setPagina(1); }}
+            onClick={() => navegar({ filtro: "TODOS", pagina: 1 })}
           >
             Todos <span className="tab-badge">{conteos.todos}</span>
           </button>
@@ -82,7 +71,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "GRABACIONES"}
             className={`filter-tab ${filtro === "GRABACIONES" ? "is-active" : ""}`}
-            onClick={() => { setFiltro("GRABACIONES"); setPagina(1); }}
+            onClick={() => navegar({ filtro: "GRABACIONES", pagina: 1 })}
           >
             <Video size={14} aria-hidden="true" />
             Solo grabaciones <span className="tab-badge">{conteos.grabaciones}</span>
@@ -92,7 +81,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "ASISTENCIAS"}
             className={`filter-tab ${filtro === "ASISTENCIAS" ? "is-active" : ""}`}
-            onClick={() => { setFiltro("ASISTENCIAS"); setPagina(1); }}
+            onClick={() => navegar({ filtro: "ASISTENCIAS", pagina: 1 })}
           >
             <UsersRound size={14} aria-hidden="true" />
             Solo asistencias <span className="tab-badge">{conteos.asistencias}</span>
@@ -102,7 +91,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
             role="tab"
             aria-selected={filtro === "NOTAS_Y_TRANSCRIPCIONES"}
             className={`filter-tab ${filtro === "NOTAS_Y_TRANSCRIPCIONES" ? "is-active" : ""}`}
-            onClick={() => { setFiltro("NOTAS_Y_TRANSCRIPCIONES"); setPagina(1); }}
+            onClick={() => navegar({ filtro: "NOTAS_Y_TRANSCRIPCIONES", pagina: 1 })}
           >
             <NotebookText size={14} aria-hidden="true" />
             Notas y transcripciones <span className="tab-badge">{conteos.notas}</span>
@@ -120,9 +109,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
               type="button"
               className="reset-filters-button"
               onClick={() => {
-                setBusqueda("");
-                setFiltro("TODOS");
-                setPagina(1);
+                navegar({ busqueda: "", filtro: "TODOS", pagina: 1 });
               }}
             >
               Restablecer filtros
@@ -134,7 +121,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
           <div className="recording-library-heading">
             <h2>Encuentros con archivos</h2>
             <span>
-              {filteredGrupos.length} {filteredGrupos.length === 1 ? "encuentro" : "encuentros"}
+              {totalEncuentros} {totalEncuentros === 1 ? "encuentro" : "encuentros"}
             </span>
           </div>
 
@@ -224,9 +211,9 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
           })}
           {totalPaginas > 1 ? (
             <nav aria-label="Paginación de encuentros" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", margin: "1.5rem 0" }}>
-              <button className="secondary-action" type="button" disabled={paginaVisible === 1} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</button>
+              <button className="secondary-action" type="button" disabled={paginaVisible === 1} onClick={() => navegar({ pagina: paginaVisible - 1 })}>Anterior</button>
               <span aria-live="polite">Página {paginaVisible} de {totalPaginas}</span>
-              <button className="secondary-action" type="button" disabled={paginaVisible === totalPaginas} onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}>Siguiente</button>
+              <button className="secondary-action" type="button" disabled={paginaVisible === totalPaginas} onClick={() => navegar({ pagina: paginaVisible + 1 })}>Siguiente</button>
             </nav>
           ) : null}
         </section>
