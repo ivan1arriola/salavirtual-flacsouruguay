@@ -173,7 +173,8 @@ export function crearGoogleArtifactsProviderAdapter(
       let emailAppendix = "";
       let correosAuditados: Awaited<ReturnType<typeof obtenerCorreosAuditoriaMeet>> = [];
       const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
-      if (adminEmail && meetingCode && rows.length > 0) {
+      if (!adminEmail) throw new Error("Falta GOOGLE_REPORTS_ADMIN_EMAIL para planillas de asistencia con correos");
+      if (meetingCode && rows.length > 0) {
         try {
           // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
           // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
@@ -206,11 +207,11 @@ export function crearGoogleArtifactsProviderAdapter(
             }] : [];
           });
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-          const tableRows = emails.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
+          const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
         } catch (error) {
           console.error("Auditoría Meet no disponible:", error instanceof Error ? error.message : String(error));
-          emailAppendix = "<p>Los correos de auditoría no están disponibles; se conserva la asistencia de Meet.</p>";
+          throw error; // No registrar un informe sin correos tras fallar la auditoría; el job debe reintentarse.
         }
       }
       const baseHtml = crearHtmlAsistencia(rows);
