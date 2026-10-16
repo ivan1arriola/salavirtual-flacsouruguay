@@ -90,6 +90,32 @@ configuracion general. Para crear o modificar reuniones, el gestor suplanta dina
 la cuenta host `salaNN` seleccionada. Para sincronizar asignaciones de asistencia, suplanta
 dinamicamente a la cuenta Google vinculada del asistente tecnico.
 
+## Asistencia en Google Sheets
+
+Las listas de asistencia nuevas se generan como Google Sheets, con pestañas
+`Asistencia`, `Host y cohosts` y `Datos brutos`.
+La columna porcentual usa un degradado rojo (0 %) a verde (100 %) y el umbral 5/6.
+Las conexiones de auditoría se atribuyen a una dirección solamente cuando
+Reports devuelve `identifier_type=email_address`; los registros Meet sin
+identificador verificable se conservan en `Datos brutos`.
+
+Requisitos del proyecto de Google Cloud:
+- Habilitar **Google Sheets API** y **Admin SDK API**.
+- Añadir a delegación de dominio, sin quitar los scopes existentes:
+  `https://www.googleapis.com/auth/spreadsheets`
+  y `https://www.googleapis.com/auth/admin.reports.audit.readonly`.
+- Definir la variable privada `GOOGLE_REPORTS_ADMIN_EMAIL` con un administrador
+  que tenga permisos para consultar auditoría Meet.
+- La cuenta de servicio Principal existente debe poder escribir en Drive y
+  actuar como la cuenta organizadora `salaNN`.
+
+**Limitaciones**: los informes Meet no dan directamente email de todos los
+participantes; registros anónimos no deben asignarse por coincidencia de nombre.
+El día completo de auditoría puede incluir múltiples instancias que compartan
+enlace; validar por `conference_id` antes de considerar el documento definitivo.
+No se reemplaza automáticamente un documento ya sincronizado a menos que
+vuelva a seleccionarse esa reunión en el flujo de sincronización.
+
 ## Compatibilidad con Meets historicos
 
 Para reuniones existentes, Sala Virtual intenta primero la credencial Principal. Solo cuando

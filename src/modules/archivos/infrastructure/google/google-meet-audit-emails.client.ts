@@ -9,6 +9,10 @@ export type CorreoAuditadoMeet = Readonly<{
   correo: string;
   externo: boolean | null;
   conferenciaId: string;
+  nombre?: string;
+  salida?: string;
+  duracionSegundos?: number;
+  conexiones?: readonly { inicio: string; fin: string; duracionSegundos: number; nombre: string; identificador: string }[];
 }>;
 
 type Parametro = { name: string; value?: string; intValue?: string; boolValue?: boolean };
@@ -39,6 +43,8 @@ export async function obtenerCorreosAuditoriaMeet(input: {
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
     throw new Error("Intervalo de auditoría inválido");
   }
+  const normalizeCode = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const code = normalizeCode(input.meetingCode);
   const emails = new Map<string, CorreoAuditadoMeet>();
   let token: string | undefined;
   do {
@@ -59,16 +65,28 @@ export async function obtenerCorreosAuditoriaMeet(input: {
         if (event.name !== "call_ended") continue;
         const p = new Map((event.parameters ?? []).map(v => [v.name, v]));
         const val = (key: string) => p.get(key)?.value ?? p.get(key)?.intValue ?? "";
-        if (String(val("meeting_code")).toLowerCase() !== input.meetingCode.toLowerCase()) continue;
+        if (normalizeCode(String(val("meeting_code"))) !== code) continue;
         if (val("identifier_type") !== "email_address") continue;
         const correo = String(val("identifier")).trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) continue;
         const conferenceId = String(val("conference_id"));
         const external = p.get("is_external")?.boolValue;
-        emails.set(`${conferenceId}|${correo}`, {
+        const key = `${conferenceId}|${correo}`;
+        const previous = emails.get(key);
+        const seconds = Number(val("duration_seconds")) || 0;
+        const exitTime = item.id?.time ?? "";
+        const inicioCalculado = Number.isFinite(Date.parse(exitTime)) && seconds > 0
+          ? new Date(Date.parse(exitTime) - seconds * 1000).toISOString()
+          : "";
+        const registro = { inicio: inicioCalculado, fin: exitTime, duracionSegundos: seconds, nombre: String(val("display_name")), identificador: correo };
+        emails.set(key, {
           correo,
           externo: typeof external === "boolean" ? external : null,
-          conferenciaId: conferenceId
+          conferenciaId: conferenceId,
+          nombre: String(val("display_name")) || previous?.nombre || "",
+          salida: exitTime || previous?.salida || "",
+          duracionSegundos: (previous?.duracionSegundos ?? 0) + Math.max(0, seconds),
+          conexiones: [...(previous?.conexiones ?? []), registro]
         });
       }
     }

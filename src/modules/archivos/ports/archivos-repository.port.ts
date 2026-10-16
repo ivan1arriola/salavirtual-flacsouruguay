@@ -25,6 +25,7 @@ export type EventoParaSincronizarArchivos = Readonly<{
   codigoReunion: string | null;
   conferenceRecordName: string | null;
   emailOrganizador: string | null;
+  cohostEmails?: readonly string[];
   archivos: readonly ArchivoExistente[];
   inicioProgramadoAt: Date;
   finProgramadoAt: Date;
