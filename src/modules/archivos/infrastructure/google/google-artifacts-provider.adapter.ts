@@ -208,7 +208,7 @@ export function crearGoogleArtifactsProviderAdapter(
         "https://www.googleapis.com/auth/drive"
       ]);
       return crearPlanillaAsistenciaGoogle(sheetsAuth, {
-        folderId, titulo: name, inicio, fin, organizador,
+        folderId, titulo: name, inicio, fin, organizador, cohosts,
         sesionesMeet: data.sesionesMeet,
         correosAuditados: data.correosAuditados
       });
