@@ -23,6 +23,7 @@ export type ArtifactProviderPort = Readonly<{
   obtenerOCrearCarpeta(parentId: string, name: string): Promise<string>;
   moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile>;
   subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile>;
+  subirPlanillaAsistencia?(folderId: string, name: string, data: NonNullable<MeetAttendanceDocument['planilla']>, inicio: Date, fin: Date, organizador: string): Promise<MovedDriveFile>;
   obtenerParticipantesActivos(codigo: string, inicio: Date, fin: Date): Promise<MeetActiveParticipantsScan>;
 }>;
 
