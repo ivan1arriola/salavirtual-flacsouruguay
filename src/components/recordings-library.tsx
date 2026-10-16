@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ExternalLink, FileText, FolderOpen, NotebookText, Search, UsersRound, Video, X } from "lucide-react";
+import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, Search, UsersRound, Video, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
@@ -213,7 +213,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
                           rel="noreferrer"
                         >
                           <ExternalLink size={15} />
-                          {actionButtonText(archivo.tipo)}
+                          {actionButtonText(archivo.tipo, archivo.mimeType)}
                         </a>
                       </div>
                     </article>
@@ -238,7 +238,7 @@ export function RecordingsLibrary({ grupos }: RecordingsLibraryProps) {
 function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {
   if (tipo === "GRABACION") return <Video size={size} aria-hidden="true" />;
   if (tipo === "TRANSCRIPCION") return <FileText size={size} aria-hidden="true" />;
-  if (tipo === "LISTA_ASISTENCIA") return <UsersRound size={size} aria-hidden="true" />;
+  if (tipo === "LISTA_ASISTENCIA") return <FileSpreadsheet size={size} aria-hidden="true" />;
   if (tipo === "NOTAS") return <NotebookText size={size} aria-hidden="true" />;
   return <FileText size={size} aria-hidden="true" />;
 }
@@ -259,9 +259,9 @@ function artifactSortOrder(tipo: TipoArtefactoMeet): number {
   return 4;
 }
 
-function actionButtonText(tipo: TipoArtefactoMeet): string {
+function actionButtonText(tipo: TipoArtefactoMeet, mimeType?: string | null): string {
   if (tipo === "GRABACION") return "Reproducir grabación";
-  if (tipo === "LISTA_ASISTENCIA") return "Ver asistencia";
+  if (tipo === "LISTA_ASISTENCIA") return mimeType === "application/vnd.google-apps.spreadsheet" ? "Abrir planilla de asistencia" : "Ver asistencia";
   if (tipo === "TRANSCRIPCION") return "Ver transcripción";
   if (tipo === "NOTAS") return "Ver notas";
   return "Abrir documento";
@@ -272,6 +272,7 @@ function artifactDetail(
   bytes?: bigint | number | null
 ): string {
   if (mimeType === "application/vnd.google-apps.document") return "Documento de Google";
+  if (mimeType === "application/vnd.google-apps.spreadsheet") return "Google Sheets";
   return formatFileSize(bytes);
 }
 
