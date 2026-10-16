@@ -110,7 +110,7 @@ async function sincronizarEventoIndividual(
         .filter(
           (file) =>
             file.tipo !== "LISTA_ASISTENCIA" ||
-            file.mimeType === "application/vnd.google-apps.document"
+            file.mimeType === "application/vnd.google-apps.spreadsheet"
         )
         .map((file) => file.externalResourceName)
     );
@@ -165,11 +165,12 @@ async function sincronizarEventoIndividual(
           tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
           indice: 1
         });
-        const uploaded = await provider.subirDocumentoGoogle(
-          folderId,
-          name,
-          attendance.html
-        );
+        const uploaded = provider.subirPlanillaAsistencia && attendance.planilla
+          ? await provider.subirPlanillaAsistencia(
+              folderId, name, attendance.planilla,
+              evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail
+            )
+          : await provider.subirDocumentoGoogle(folderId, name, attendance.html);
         await repositorio.registrarArchivoSincronizado(
           evento.id,
           TIPOS_ARTEFACTO_SINCRONIZABLES[2],
