@@ -153,7 +153,16 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
         </div>
       </section>
 
-  <RecordingsLibrary grupos={grupos} pagina={page.pagina} totalPaginas={page.totalPaginas} busqueda={query.busqueda} filtro={query.filtro} conteos={page.conteos} totalEncuentros={page.totalEncuentros} />
+      <RecordingsLibrary
+        grupos={grupos}
+        pagina={page.pagina}
+        totalPaginas={page.totalPaginas}
+        busqueda={query.busqueda}
+        filtro={query.filtro}
+        conteos={page.conteos}
+        totalEncuentros={page.totalEncuentros}
+        esAdmin={actor.rol === "ADMINISTRACION"}
+      />
     </div>
   );
 }

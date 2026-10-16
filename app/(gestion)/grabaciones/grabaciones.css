@@ -714,3 +714,63 @@
     gap: 3px;
   }
 }
+
+.recording-regenerate-btn {
+  background: #f0fdf4 !important;
+  border: 1px solid #86efac !important;
+  color: #166534 !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.recording-regenerate-btn:hover:not(:disabled) {
+  background: #dcfce7 !important;
+  border-color: #4ade80 !important;
+  color: #14532d !important;
+  transform: translateY(-1px);
+}
+
+.recording-regenerate-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.recording-file-convert-btn {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.recording-file-convert-btn:hover:not(:disabled) {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+}
+
+.recording-file-convert-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.recording-feedback-banner {
+  margin: 8px 12px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.recording-feedback-banner.is-success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.recording-feedback-banner.is-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+

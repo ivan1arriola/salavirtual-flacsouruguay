@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, Search, UsersRound, Video, X } from "lucide-react";
+import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, RotateCw, Search, UsersRound, Video, X } from "lucide-react";
 import { useState } from "react";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
@@ -21,15 +21,65 @@ export type RecordingsLibraryProps = Readonly<{
   filtro: TipoFiltroArtefacto;
   totalEncuentros: number;
   conteos: Readonly<{ todos: number; grabaciones: number; asistencias: number; notas: number; transcripciones: number }>;
+  esAdmin?: boolean;
 }>;
 
-export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas, busqueda, filtro, conteos, totalEncuentros }: RecordingsLibraryProps) {
+export function RecordingsLibrary({
+  grupos,
+  pagina: paginaVisible,
+  totalPaginas,
+  busqueda,
+  filtro,
+  conteos,
+  totalEncuentros,
+  esAdmin = false,
+}: RecordingsLibraryProps) {
   const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
+  const [regenerandoId, setRegenerandoId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(null);
+
   const filteredGrupos = grupos;
   const gruposPagina = grupos;
   const navegar = (cambios: Partial<{ pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }>) => {
     window.location.assign(crearHrefGrabaciones({ pagina: paginaVisible, busqueda, filtro }, cambios));
   };
+
+  async function handleGenerarPlanilla(instanciaId: string) {
+    setRegenerandoId(instanciaId);
+    setFeedback(null);
+    try {
+      const response = await fetch(
+        `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`,
+        { method: "POST", cache: "no-store" }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo generar la planilla de asistencia.");
+      }
+      setFeedback({
+        id: instanciaId,
+        tipo: "ok",
+        mensaje: "¡Planilla de Google Sheets generada con éxito!",
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err) {
+      setFeedback({
+        id: instanciaId,
+        tipo: "error",
+        mensaje: err instanceof Error ? err.message : "Error inesperado al generar planilla.",
+      });
+    } finally {
+      setRegenerandoId(null);
+    }
+  }
+
+  function tienePlanillaSheets(grupo: GrupoEncuentroConArchivos): boolean {
+    return grupo.archivos.some(
+      (a) => a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet"
+    );
+  }
 
   return (
     <div className="recordings-library-container">
@@ -154,7 +204,24 @@ export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas,
                     ) : null}
                   </div>
 
-                  <div className="recording-meeting-folder">
+                  <div className="recording-meeting-folder" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    {esAdmin ? (
+                      <button
+                        type="button"
+                        className="secondary-action recording-regenerate-btn"
+                        disabled={regenerandoId === grupo.instanciaId}
+                        onClick={() => handleGenerarPlanilla(grupo.instanciaId)}
+                        title="Generar o actualizar planilla en Google Sheets con datos auditados de Meet"
+                      >
+                        <FileSpreadsheet size={15} />
+                        {regenerandoId === grupo.instanciaId
+                          ? "Generando planilla…"
+                          : tienePlanillaSheets(grupo)
+                            ? "Regenerar planilla Sheets"
+                            : "Generar planilla Sheets"}
+                      </button>
+                    ) : null}
+
                     {grupo.folderId ? (
                       <a
                         className="secondary-action"
@@ -171,6 +238,15 @@ export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas,
                     )}
                   </div>
                 </header>
+
+                {feedback?.id === grupo.instanciaId ? (
+                  <div
+                    role="alert"
+                    className={`recording-feedback-banner ${feedback.tipo === "ok" ? "is-success" : "is-error"}`}
+                  >
+                    {feedback.mensaje}
+                  </div>
+                ) : null}
 
                 <div className="recording-file-grid">
                   {orderedArtifacts.map((archivo) => (
@@ -190,7 +266,7 @@ export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas,
                         <p title={archivo.nombre ?? ""}>{archivo.nombre}</p>
                       </div>
 
-                      <div className="recording-file-action">
+                      <div className="recording-file-action" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
                         <a
                           className={`recording-file-open ${
                             archivo.tipo === "GRABACION" ? "is-primary" : ""
@@ -202,6 +278,18 @@ export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas,
                           <ExternalLink size={15} />
                           {actionButtonText(archivo.tipo, archivo.mimeType)}
                         </a>
+                        {esAdmin && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
+                          <button
+                            type="button"
+                            className="recording-file-open recording-file-convert-btn"
+                            disabled={regenerandoId === grupo.instanciaId}
+                            onClick={() => handleGenerarPlanilla(grupo.instanciaId)}
+                            title="Convertir esta asistencia a la nueva planilla de Google Sheets"
+                          >
+                            <FileSpreadsheet size={14} />
+                            {regenerandoId === grupo.instanciaId ? "Generando…" : "Pasar a Sheets"}
+                          </button>
+                        ) : null}
                       </div>
                     </article>
                   ))}
