@@ -168,7 +168,7 @@ async function sincronizarEventoIndividual(
         const uploaded = provider.subirPlanillaAsistencia && attendance.planilla
           ? await provider.subirPlanillaAsistencia(
               folderId, name, attendance.planilla,
-              evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail
+              evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail, evento.cohostEmails ?? []
             )
           : await provider.subirDocumentoGoogle(folderId, name, attendance.html);
         await repositorio.registrarArchivoSincronizado(
