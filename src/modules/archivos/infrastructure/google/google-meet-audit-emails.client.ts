@@ -43,6 +43,8 @@ export async function obtenerCorreosAuditoriaMeet(input: {
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
     throw new Error("Intervalo de auditoría inválido");
   }
+  const normalizeCode = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const code = normalizeCode(input.meetingCode);
   const emails = new Map<string, CorreoAuditadoMeet>();
   let token: string | undefined;
   do {
@@ -63,7 +65,7 @@ export async function obtenerCorreosAuditoriaMeet(input: {
         if (event.name !== "call_ended") continue;
         const p = new Map((event.parameters ?? []).map(v => [v.name, v]));
         const val = (key: string) => p.get(key)?.value ?? p.get(key)?.intValue ?? "";
-        if (String(val("meeting_code")).toLowerCase() !== input.meetingCode.toLowerCase()) continue;
+        if (normalizeCode(String(val("meeting_code"))) !== code) continue;
         if (val("identifier_type") !== "email_address") continue;
         const correo = String(val("identifier")).trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) continue;
