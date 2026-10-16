@@ -1,5 +1,6 @@
 import type { JWT } from "google-auth-library";
 import { obtenerCorreosAuditoriaMeet } from "./google-meet-audit-emails.client";
+import { crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
   crearGoogleMeetArtifactsAuthClient,
+  crearGoogleAuthJwt,
   conReintentosGoogleLectura,
   GOOGLE_HTTP_TIMEOUT_MS,
   GOOGLE_HTTP_READ_TIMEOUT_MS,
@@ -169,6 +171,7 @@ export function crearGoogleArtifactsProviderAdapter(
         }] : [])
       );
       let emailAppendix = "";
+      let correosAuditados: Awaited<ReturnType<typeof obtenerCorreosAuditoriaMeet>> = [];
       const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
       if (adminEmail && meetingCode && rows.length > 0) {
         try {
@@ -180,6 +183,7 @@ export function crearGoogleArtifactsProviderAdapter(
             startTime: new Date(Math.min(...starts)).toISOString(),
             endTime: new Date(Math.max(...ends)).toISOString()
           });
+          correosAuditados = emails;
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = emails.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
@@ -191,10 +195,23 @@ export function crearGoogleArtifactsProviderAdapter(
       const baseHtml = crearHtmlAsistencia(rows);
       return {
         html: emailAppendix ? baseHtml.replace("</body>", `${emailAppendix}</body>`) : baseHtml,
+        planilla: { sesionesMeet: rows, correosAuditados },
         completa: asistenciaMeetCompleta(sessionsByParticipant),
         participantes: participants.length,
         sesiones: rows.length
       };
+    },
+
+    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador) {
+      const sheetsAuth = crearGoogleAuthJwt(credentials, [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+      ]);
+      return crearPlanillaAsistenciaGoogle(sheetsAuth, {
+        folderId, titulo: name, inicio, fin, organizador,
+        sesionesMeet: data.sesionesMeet,
+        correosAuditados: data.correosAuditados
+      });
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
