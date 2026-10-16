@@ -10,6 +10,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/modules/reuniones/presentation/components/meeting-detail-manager";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
+import { MeetAttendanceEmails } from "@/src/components/meet-attendance-emails";
 import { MeetingIntegrationProblems } from "@/src/modules/reuniones/presentation/components/meeting-integration-problems";
 import { SeriesManagement } from "@/src/modules/reuniones/presentation/components/series-management";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -381,6 +382,8 @@ export default async function ReunionDetailPage({
         problems={integrationProblems}
         canRepair={actor.rol === "ADMINISTRACION"}
       />
+
+      {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
 
       <MeetingDetailManager
         solicitudId={request.id}
