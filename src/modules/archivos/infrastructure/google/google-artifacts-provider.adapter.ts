@@ -229,11 +229,19 @@ export function crearGoogleArtifactsProviderAdapter(
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
       ]);
-      return crearPlanillaAsistenciaGoogle(sheetsAuth, {
-        folderId, titulo: name, inicio, fin, organizador, cohosts,
-        sesionesMeet: data.sesionesMeet,
-        correosAuditados: data.correosAuditados
-      });
+      const hash = createHash("sha256").update(JSON.stringify({ folderId, name, inicio, fin, organizador, cohosts,
+        sessions: data.sesionesMeet, audit: data.correosAuditados })).digest("hex");
+      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name, hash);
+      return ejecutarGooglePostUnaVez(
+        db,
+        { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
+        () => crearPlanillaAsistenciaGoogle(sheetsAuth, {
+          folderId, titulo: name, inicio, fin, organizador, cohosts,
+          sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados
+        }),
+        result => ({ id: result.id, name: result.name, mimeType: result.mimeType, webViewLink: result.webViewLink }),
+        saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
+      );
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
