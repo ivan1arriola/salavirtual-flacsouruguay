@@ -8,6 +8,22 @@ export type EventoAuditoriaMeet = Readonly<{
   identifierType: string; displayName: string; timestamp: string; durationSeconds: number;
   parameters: readonly ParametroAuditoriaMeet[];
 }>;
+
+export function filtrarEventosAuditoriaConferencia(
+  eventos: readonly EventoAuditoriaMeet[],
+  inicio: string,
+  fin: string
+): Readonly<{ eventosSolapados: readonly EventoAuditoriaMeet[]; eventosAtribuibles: readonly EventoAuditoriaMeet[] }> {
+  const desde = Date.parse(inicio), hasta = Date.parse(fin);
+  const eventosSolapados = eventos.filter(event => {
+    const salida = Date.parse(event.timestamp);
+    const entrada = salida - event.durationSeconds * 1000;
+    return Number.isFinite(desde) && Number.isFinite(hasta) && Number.isFinite(entrada) && Number.isFinite(salida)
+      && salida > desde && entrada < hasta;
+  });
+  const ids = new Set(eventosSolapados.map(event => event.conferenceId).filter(Boolean));
+  return { eventosSolapados, eventosAtribuibles: ids.size === 1 ? eventosSolapados : [] };
+}
 export type CorreoAuditadoMeet = Readonly<{
   correo: string; externo: boolean | null; conferenciaId: string; nombre?: string; salida?: string;
   conexiones?: readonly { inicio: string; fin: string; duracionSegundos: number; nombre: string; identificador: string;

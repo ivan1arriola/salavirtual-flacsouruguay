@@ -218,7 +218,7 @@ Las pruebas locales cubren el c醠culo horario, paginaci髇 de Reports API, normal
 Verificado localmente el 16/10/2026 en Node.js del repositorio:
 
 - `npm run check`: correcto.
-- `npm test -- --reporter=dot`: 160 archivos aprobados, 3 omitidos; 1.398 pruebas aprobadas, 12 omitidas.
+- `npm test -- --reporter=dot`: 161 archivos aprobados, 3 omitidos; 1.401 pruebas aprobadas, 12 omitidas.
 - `npm run build`: correcto con `AUTH_SECRET`, `AUTH_TRUST_HOST` y `APP_BASE_URL` de relleno de compilaci贸n definidos solo en el proceso local. Sin esas variables requeridas, Next falla al cargar la configuraci贸n de Auth.js antes de completar la recopilaci贸n de rutas.
 - Las pruebas que requieren PostgreSQL configurado y validaci贸n de Reports/Drive con el Workspace institucional no se ejecutaron en este entorno.
 

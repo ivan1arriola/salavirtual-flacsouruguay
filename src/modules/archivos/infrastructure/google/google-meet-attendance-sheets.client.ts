@@ -4,10 +4,11 @@ import type { CorreoAuditadoMeet, EventoAuditoriaMeet } from "./google-meet-audi
 import { resumirIntervalosAsistencia } from "../../domain/meet-attendance-summary.domain";
 import type { MovedDriveFile } from "../../domain";
 
-export type MeetSheetSession = Readonly<{ nombre: string; tipo: string; inicio: string; fin: string }>;
+export type MeetSheetSession = Readonly<{ nombre: string; tipo: string; inicio: string; fin: string; conferencia?: string; participanteId?: string; sesionId?: string }>;
 export type MeetSheetInput = Readonly<{
   titulo: string;
   folderId: string;
+  operationMarker: string;
   organizador: string;
   cohosts: readonly string[];
   inicio: Date;
@@ -17,9 +18,9 @@ export type MeetSheetInput = Readonly<{
   eventosAuditoria: readonly EventoAuditoriaMeet[];
 }>;
 
-export async function buscarPlanillaAsistenciaDrive(auth: JWT, folderId: string, name: string): Promise<MovedDriveFile | null> {
+export async function buscarPlanillaAsistenciaDrive(auth: JWT, operationMarker: string): Promise<MovedDriveFile | null> {
   const escapeQuery = (value: string) => value.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-  const q = `'${escapeQuery(folderId)}' in parents and name = '${escapeQuery(name)}' and mimeType = '${MIME}' and trashed = false`;
+  const q = `appProperties has { key='meetAttendanceOperation' and value='${escapeQuery(operationMarker)}' } and mimeType = '${MIME}' and trashed = false`;
   const files: Array<{ id: string; name: string; mimeType?: string; webViewLink?: string }> = [];
   let pageToken: string | undefined;
   do {
@@ -105,8 +106,8 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     if (!reported.has(email.toLowerCase())) responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
   }
   for (const s of input.sesionesMeet) {
-    raw.push(["MEET", s.nombre, "", "", s.tipo, s.inicio, s.fin,
-      Math.max(0, (Date.parse(s.fin) - Date.parse(s.inicio)) / 1000), ""]);
+    raw.push(["MEET", s.nombre, "", s.participanteId ?? "", s.tipo, s.inicio, s.fin,
+      Math.max(0, (Date.parse(s.fin) - Date.parse(s.inicio)) / 1000), s.conferencia ?? "", s.sesionId ?? ""]);
   }
   // Las sesiones de Meet se conservan en bruto, sin asociarlas por coincidencia de nombres.
 
@@ -123,7 +124,17 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     }
   });
   const id = spreadsheetId ?? created!.data.spreadsheetId;
+  await auth.request({ url: `${DRIVE}/${encodeURIComponent(id)}?fields=id`, method: "PATCH", data: { appProperties: { meetAttendanceOperation: input.operationMarker } } });
   const requests: unknown[] = [];
+  if (spreadsheetId && resumen.length > 1) {
+    const current = await conReintentosGoogleLectura(() => auth.request<{ sheets?: Array<{ properties?: { sheetId?: number }; conditionalFormats?: unknown[] }> }>({
+      url: `${SHEETS}/${encodeURIComponent(id)}?fields=sheets(properties(sheetId),conditionalFormats)`, method: "GET"
+    }));
+    const rules = current.data.sheets?.find(sheet => sheet.properties?.sheetId === 0)?.conditionalFormats ?? [];
+    for (let index = rules.length - 1; index >= 0; index -= 1) {
+      requests.push({ deleteConditionalFormatRule: { sheetId: 0, index } });
+    }
+  }
   for (const tab of tabs) {
     if (spreadsheetId) requests.push({ repeatCell: { range: { sheetId: tab.sheetId, startRowIndex: 0, endRowIndex: 50000 }, cell: {}, fields: "userEnteredValue" } });
     for (let i = 0; i < tab.rows.length; i += 400) {

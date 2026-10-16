@@ -39,12 +39,12 @@ export function RecordingsLibrary({ grupos, pagina: paginaVisible, totalPaginas,
           <input
             type="text"
             placeholder="Buscar por materia, clase o docente..."
-            value={busqueda}
+            value={busquedaEditada}
             onChange={(e) => setBusquedaEditada(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") navegar({ busqueda: busquedaEditada, pagina: 1 }); }}
             aria-label="Buscar encuentros o archivos"
           />
-          {busqueda ? (
+          {busquedaEditada ? (
             <button
               type="button"
               className="clear-search-button"
