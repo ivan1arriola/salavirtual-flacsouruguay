@@ -15,6 +15,7 @@ export type ConfiguracionWorkspaceArchivos = Readonly<{
 
 export type ArchivoExistente = Readonly<{
   id: string;
+  driveFileId: string;
   externalResourceName: string;
   tipo: string;
   mimeType: string | null;
@@ -27,6 +28,7 @@ export type EventoParaSincronizarArchivos = Readonly<{
   emailOrganizador: string | null;
   cohostEmails?: readonly string[];
   archivos: readonly ArchivoExistente[];
+  asistenciaDriveFileId?: string | null;
   inicioProgramadoAt: Date;
   finProgramadoAt: Date;
   timezone: string;
@@ -77,6 +79,15 @@ export type ArchivoMeetVisibleModel = Readonly<{
   }>;
 }>;
 
+export type GrabacionesDbPage = Readonly<{
+  artifacts: readonly ArchivoMeetVisibleModel[];
+  pagina: number;
+  totalPaginas: number;
+  totalEncuentros: number;
+  conteos: Readonly<{ todos: number; grabaciones: number; asistencias: number; notas: number; transcripciones: number }>;
+}>;
+export type ListarGrabacionesDbInput = Readonly<{ pagina: number; busqueda: string; filtro: import("../domain").TipoFiltroArtefacto }>;
+
 export type EventoGrabacionPendienteModel = Readonly<{
   id: string;
   codigoReunion: string | null;
@@ -118,6 +129,7 @@ export type ArchivosRepositoryPort = Readonly<{
     instanciaId: string
   ): Promise<DatosInstanciaParaParticipantes | null>;
   listarArchivosVisibles(actor: SessionActor): Promise<readonly ArchivoMeetVisibleModel[]>;
+  listarGrabacionesDb?(actor: SessionActor, input: ListarGrabacionesDbInput): Promise<GrabacionesDbPage>;
   listarGrabacionesPendientesVisibles(
     actor: SessionActor,
     desde: Date,

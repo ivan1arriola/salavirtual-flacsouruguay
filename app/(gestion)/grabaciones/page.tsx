@@ -5,7 +5,8 @@ import { auth } from "@/auth";
 import { RecordingsLibrary } from "@/src/components/recordings-library";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { listarArchivosMeetVisibles } from "@/src/bootstrap/archivos.server";
+import { listarGrabacionesDb } from "@/src/bootstrap/archivos.server";
+import { normalizarParametrosGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
 import {
   resolverEstadoVisualGrabacion,
   type GrupoEncuentroConArchivos
@@ -13,31 +14,28 @@ import {
 import type { TipoArtefactoMeet } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
-export default async function GrabacionesPage() {
+export default async function GrabacionesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
 
   const now = new Date();
-  const [artifacts, workspaceConfiguration] = await Promise.all([
-    listarArchivosMeetVisibles(actor),
+  const query = normalizarParametrosGrabaciones(await searchParams);
+  const [page, workspaceConfiguration] = await Promise.all([
+    listarGrabacionesDb(actor, query),
     db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" },
       select: { activa: true, driveDestinationId: true }
     })
   ]);
+  const artifacts = page.artifacts;
 
   const generalFolderId = workspaceConfiguration?.activa
     ? workspaceConfiguration.driveDestinationId
     : null;
 
-  const counts = {
-    grabaciones: artifacts.filter(({ tipo }) => tipo === "GRABACION").length,
-    transcripciones: artifacts.filter(({ tipo }) => tipo === "TRANSCRIPCION").length,
-    asistencias: artifacts.filter(({ tipo }) => tipo === "LISTA_ASISTENCIA").length,
-    notas: artifacts.filter(({ tipo }) => tipo === "NOTAS").length
-  };
+  const counts = { grabaciones: page.conteos.grabaciones, transcripciones: page.conteos.transcripciones, asistencias: page.conteos.asistencias, notas: page.conteos.notas };
 
   const groupsMap = new Map<
     string,
@@ -124,8 +122,7 @@ export default async function GrabacionesPage() {
           <p className="page-eyebrow">Google Meet</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {artifacts.length} {artifacts.length === 1 ? "archivo disponible" : "archivos disponibles"} en{" "}
-            {grupos.length} {grupos.length === 1 ? "reunión" : "reuniones"}.
+            {page.totalEncuentros} {page.totalEncuentros === 1 ? "encuentro con archivos disponible" : "encuentros con archivos disponibles"}.
           </p>
         </div>
         {generalFolderId ? (
@@ -156,7 +153,7 @@ export default async function GrabacionesPage() {
         </div>
       </section>
 
-      <RecordingsLibrary grupos={grupos} />
+  <RecordingsLibrary grupos={grupos} pagina={page.pagina} totalPaginas={page.totalPaginas} busqueda={query.busqueda} filtro={query.filtro} conteos={page.conteos} totalEncuentros={page.totalEncuentros} />
     </div>
   );
 }

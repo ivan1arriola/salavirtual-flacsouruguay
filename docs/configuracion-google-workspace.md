@@ -191,3 +191,35 @@ termine esa operaci贸n. Los errores quedan disponibles para reintentar.
 Si Google rechaza `spaces.members`, revisar la habilitaci贸n del proyecto en
 Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
 organizadora. No se considera exitosa una asignaci贸n rechazada por Google.
+
+## Planillas de asistencia y Reports API
+
+Para identificar de forma verificable a participantes y publicar Google Sheets, el mismo proyecto de Google Cloud debe tener habilitadas **Google Sheets API**, **Google Drive API** y **Admin SDK API** (Reports API). La cuenta de servicio existente debe mantener la delegaci髇 de todo el dominio; no se debe crear ni cargar una credencial nueva para esta funci髇.
+
+Agregar al Client ID num閞ico ya autorizado estos scopes:
+
+```text
+https://www.googleapis.com/auth/admin.reports.audit.readonly
+https://www.googleapis.com/auth/spreadsheets
+```
+
+Se conserva el scope Drive ya usado por la aplicaci髇. La configuraci髇 cifrada de Workspace debe apuntar a la cuenta de servicio y la carpeta de destino existentes. Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` con la direcci髇 de un administrador autorizado a leer auditor韆s de Meet; la aplicaci髇 suplanta esa cuenta mediante la delegaci髇 existente. La cuenta de servicio organizadora debe tener acceso de escritura a la carpeta del encuentro. Restringir el acceso a las hojas y carpetas seg鷑 las mismas pol韙icas de Drive aprobadas para datos acad閙icos.
+
+La b鷖queda usa eventos `call_ended` del Reports API, que pueden no incluir correo electr髇ico. Solo se asocia una direcci髇 cuando el tipo de identificador es `email_address`; otros identificadores se conservan sin atribuci髇. Los c骴igos Meet se comparan normalizados, conservando el original en los datos brutos. Los registros se filtran por su conferencia y el intervalo observado; no se infiere identidad a partir del nombre.
+
+La ruta de regeneraci髇 es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesi髇 activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.
+
+### Verificaci髇 automatizada y limitaciones
+
+Las pruebas locales cubren el c醠culo horario, paginaci髇 de Reports API, normalizaci髇 de c骴igos, preservaci髇 de IDs en datos crudos, actualizaci髇 de hoja, paginaci髇 DB, filtros y alcance del actor. No sustituyen una validaci髇 en el Workspace institucional: la visibilidad real de correos depende de la pol韙ica/edici髇 de Workspace y de los datos que Reports API entregue; el acceso a la carpeta y los scopes delegados se deben verificar con la configuraci髇 institucional antes de habilitar la regeneraci髇 para usuarios.
+
+## Resultados de verificaci贸n de esta implementaci贸n
+
+Verificado localmente el 16/10/2026 en Node.js del repositorio:
+
+- `npm run check`: correcto.
+- `npm test -- --reporter=dot`: 160 archivos aprobados, 3 omitidos; 1.398 pruebas aprobadas, 12 omitidas.
+- `npm run build`: correcto con `AUTH_SECRET`, `AUTH_TRUST_HOST` y `APP_BASE_URL` de relleno de compilaci贸n definidos solo en el proceso local. Sin esas variables requeridas, Next falla al cargar la configuraci贸n de Auth.js antes de completar la recopilaci贸n de rutas.
+- Las pruebas que requieren PostgreSQL configurado y validaci贸n de Reports/Drive con el Workspace institucional no se ejecutaron en este entorno.
+
+El resultado automatizado no verifica que Workspace exponga correos para cada participante ni que la cuenta institucional pueda mover hojas a todas las carpetas objetivo. Esa comprobaci贸n sigue pendiente con la configuraci贸n existente del centro.

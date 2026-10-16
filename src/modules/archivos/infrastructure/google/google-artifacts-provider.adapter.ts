@@ -1,6 +1,6 @@
 import type { JWT } from "google-auth-library";
-import { obtenerCorreosAuditoriaMeet } from "./google-meet-audit-emails.client";
-import { crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
+import { agruparCorreosAuditoriaMeet, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
+import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
@@ -171,7 +171,8 @@ export function crearGoogleArtifactsProviderAdapter(
         }] : [])
       );
       let emailAppendix = "";
-      let correosAuditados: Awaited<ReturnType<typeof obtenerCorreosAuditoriaMeet>> = [];
+      let correosAuditados: ReturnType<typeof agruparCorreosAuditoriaMeet> = [];
+      let eventosAuditoria: readonly EventoAuditoriaMeet[] = [];
       const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
       if (!adminEmail) throw new Error("Falta GOOGLE_REPORTS_ADMIN_EMAIL para planillas de asistencia con correos");
       if (meetingCode && rows.length > 0) {
@@ -183,7 +184,7 @@ export function crearGoogleArtifactsProviderAdapter(
           }).format(new Date(rows[0]!.inicio));
           const inicioDia = new Date(localDay + "T00:00:00-03:00");
           const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
-          const emails = await obtenerCorreosAuditoriaMeet({
+          const eventos = await obtenerEventosAuditoriaMeet({
             serviceAccountEmail: credentials.serviceAccountEmail,
             privateKey: credentials.privateKey, adminEmail, meetingCode,
             startTime: inicioDia.toISOString(),
@@ -191,21 +192,16 @@ export function crearGoogleArtifactsProviderAdapter(
           });
           const actual = await this.obtenerConferencia(conferenceName);
           const conferenceStart = Date.parse(actual.startTime);
-          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Number.POSITIVE_INFINITY;
+          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
           // Un mismo link de Meet puede tener varias conferencias en el mismo día.
           // Filtrar las conexiones de auditoría por el intervalo real de esta conferencia.
-          correosAuditados = emails.flatMap((e) => {
-            const sesiones = (e.conexiones ?? []).filter((c) => {
-              const salida = Date.parse(c.fin);
-              const entrada = Date.parse(c.inicio);
-              return Number.isFinite(salida) && salida >= conferenceStart - 60_000
-                && (Number.isFinite(entrada) ? entrada : salida) <= conferenceEnd + 60_000;
-            });
-            return sesiones.length ? [{
-              ...e, conexiones: sesiones,
-              duracionSegundos: sesiones.reduce((n, v) => n + v.duracionSegundos, 0)
-            }] : [];
+          eventosAuditoria = eventos.filter((event) => {
+            const salida = Date.parse(event.timestamp);
+            const entrada = salida - event.durationSeconds * 1000;
+            return Number.isFinite(entrada) && Number.isFinite(salida) && Number.isFinite(conferenceStart) && Number.isFinite(conferenceEnd)
+              && salida > conferenceStart && entrada < conferenceEnd;
           });
+          correosAuditados = agruparCorreosAuditoriaMeet(eventosAuditoria);
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
@@ -217,31 +213,41 @@ export function crearGoogleArtifactsProviderAdapter(
       const baseHtml = crearHtmlAsistencia(rows);
       return {
         html: emailAppendix ? baseHtml.replace("</body>", `${emailAppendix}</body>`) : baseHtml,
-        planilla: { sesionesMeet: rows, correosAuditados },
+        planilla: { sesionesMeet: rows, correosAuditados, eventosAuditoria },
         completa: asistenciaMeetCompleta(sessionsByParticipant),
         participantes: participants.length,
         sesiones: rows.length
       };
     },
 
-    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = []) {
+    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = [], spreadsheetId) {
       const sheetsAuth = crearGoogleAuthJwt(credentials, [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
       ]);
-      const hash = createHash("sha256").update(JSON.stringify({ folderId, name, inicio, fin, organizador, cohosts,
-        sessions: data.sesionesMeet, audit: data.correosAuditados })).digest("hex");
-      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name, hash);
-      return ejecutarGooglePostUnaVez(
+      if (spreadsheetId) return crearPlanillaAsistenciaGoogle(sheetsAuth, {
+        folderId, titulo: name, inicio, fin, organizador, cohosts,
+        sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria
+      }, spreadsheetId);
+      const input = { folderId, titulo: name, inicio, fin, organizador, cohosts,
+        sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria };
+      const existente = await buscarPlanillaAsistenciaDrive(sheetsAuth, folderId, name);
+      if (existente) return crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id);
+      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name);
+      try { return await ejecutarGooglePostUnaVez(
         db,
         { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
-        () => crearPlanillaAsistenciaGoogle(sheetsAuth, {
-          folderId, titulo: name, inicio, fin, organizador, cohosts,
-          sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados
-        }),
+        () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
         result => ({ id: result.id, name: result.name, mimeType: result.mimeType, webViewLink: result.webViewLink }),
         saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
-      );
+      ); } catch (error) {
+        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, folderId, name).catch(() => null);
+        if (!recovered) throw error;
+        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, recovered);
+        if (confirmed) return recovered;
+        throw error;
+      }
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
@@ -373,4 +379,5 @@ function nombreParticipante(participant: Participant): string {
 function tipoParticipante(participant: Participant): FilaAsistenciaMeet["tipo"] {
   return participant.signedinUser ? "CUENTA_GOOGLE" : participant.phoneUser ? "TELEFONO" : "ANONIMO";
 }
+
 

@@ -5,6 +5,7 @@ import {
   crearGoogleArtifactsProviderAdapter,
   crearPrismaArchivosRepositoryAdapter,
   listarArchivosVisiblesUseCase,
+  listarGrabacionesDbUseCase,
   listarGrabacionesNoRealizadasVisiblesUseCase,
   listarGrabacionesPendientesVisiblesUseCase,
   obtenerParticipantesActivosUseCase,
@@ -31,14 +32,15 @@ export function crearArtifactProvider(
 }
 
 export async function sincronizarArtefactos(
-  eventoProveedorIds: readonly string[]
+  eventoProveedorIds: readonly string[],
+  regenerarAsistencia = false
 ): Promise<readonly SyncArtifactsResult[]> {
   const repository = crearArchivosRepository();
   return sincronizarArtefactosUseCase(
     repository,
     crearArtifactProvider,
     descifrarConfiguracion,
-    { eventoProveedorIds }
+    { eventoProveedorIds, regenerarAsistencia }
   );
 }
 
@@ -71,6 +73,10 @@ export async function listarArchivosMeetVisibles(
 ): Promise<readonly ArchivoMeetVisibleModel[]> {
   const repository = crearArchivosRepository();
   return listarArchivosVisiblesUseCase(repository, actor);
+}
+
+export async function listarGrabacionesDb(actor: SessionActor, input: { pagina: number; busqueda: string; filtro: import("@/src/modules/archivos/domain").TipoFiltroArtefacto }) {
+  return listarGrabacionesDbUseCase(crearArchivosRepository(), actor, input);
 }
 
 export async function listarGrabacionesPendientesVisibles(

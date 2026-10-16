@@ -66,7 +66,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         where: { id: { in: [...eventoProveedorIds] }, proveedor: { tipo: "GOOGLE_MEET" } },
         include: {
           cuentaProveedor: true,
-          archivos: { select: { id: true, externalResourceName: true, tipo: true, mimeType: true } },
+          archivos: { select: { id: true, driveFileId: true, externalResourceName: true, tipo: true, mimeType: true } },
           instancia: { include: { solicitud: true, cohostEmails: true, cohosts: { include: { cuentaGoogle: true } } } }
         }
       });
@@ -76,8 +76,9 @@ export function crearPrismaArchivosRepositoryAdapter(
         codigoReunion: event.codigoReunion,
         conferenceRecordName: event.conferenceRecordName,
         emailOrganizador: event.cuentaProveedor?.emailOrganizador ?? null,
-        cohostEmails: [...new Set([...event.instancia.cohostEmails.map(e => e.email), ...event.instancia.cohosts.map(c => c.cuentaGoogle.email)])],
+        cohostEmails: [...new Set([...(event.instancia.cohostEmails ?? []).map(e => e.email), ...(event.instancia.cohosts ?? []).map(c => c.cuentaGoogle.email)])],
         archivos: event.archivos,
+        asistenciaDriveFileId: event.archivos.find(a => a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet")?.driveFileId ?? null,
         inicioProgramadoAt: event.instancia.inicioProgramadoAt,
         finProgramadoAt: event.instancia.finProgramadoAt,
         timezone: event.instancia.timezone,
@@ -207,6 +208,52 @@ export function crearPrismaArchivosRepositoryAdapter(
           }
         }
       });
+    },
+
+    async listarGrabacionesDb(actor, input) {
+      const q = input.busqueda.trim();
+      const meeting: Prisma.EventoProveedorWhereInput = {
+        proveedor: { tipo: "GOOGLE_MEET" },
+        archivos: { some: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } }
+      };
+      const usuarioSearch = { OR: [{ nombres: { contains: q, mode: "insensitive" } }, { apellidos: { contains: q, mode: "insensitive" } }] };
+      const docenteSearch = { docentePrograma: { is: { docente: { is: { usuario: { is: usuarioSearch } } } } } };
+      const programaSearch = { docentePrograma: { is: { programa: { is: { nombre: { contains: q, mode: "insensitive" } } } } } };
+      const tituloSearch = { titulo: { contains: q, mode: "insensitive" } };
+      const search = (q ? { solicitud: { is: { OR: [tituloSearch, programaSearch, docenteSearch] } } } : {}) as Prisma.InstanciaSalaWhereInput;
+      const baseConditions: Prisma.InstanciaSalaWhereInput[] = [alcanceInstancias(actor), search, { eventosProveedor: { some: meeting } }];
+      const base: Prisma.InstanciaSalaWhereInput = { AND: baseConditions };
+      const tipo = input.filtro === "GRABACIONES" ? "GRABACION" : input.filtro === "ASISTENCIAS" ? "LISTA_ASISTENCIA" : undefined;
+      const categoria: Prisma.InstanciaSalaWhereInput | null = tipo ? { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo } } } } }
+        : input.filtro === "NOTAS_Y_TRANSCRIPCIONES" ? { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } } } } : null;
+      const filtered: Prisma.InstanciaSalaWhereInput = categoria ? { AND: [...baseConditions, categoria] } : base;
+      const totalEncuentros = await db.instanciaSala.count({ where: filtered });
+      const totalPaginas = Math.max(1, Math.ceil(totalEncuentros / 12));
+      const pagina = Math.min(Math.max(1, input.pagina), totalPaginas);
+      const [todos, grabaciones, asistencias, notas, transcripciones, encuentros] = await Promise.all([
+        db.instanciaSala.count({ where: base }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: "GRABACION" } } } } }] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: "LISTA_ASISTENCIA" } } } } }] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } } } }] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: "TRANSCRIPCION" } } } } }] } }),
+        db.instanciaSala.findMany({
+          where: filtered,
+          orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }],
+          skip: (pagina - 1) * 12,
+          take: 12,
+          include: {
+            solicitud: { include: { docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } } } },
+            eventosProveedor: { where: meeting, include: { archivos: { where: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } } } }
+          }
+        })
+      ]);
+      return { pagina, totalPaginas, totalEncuentros, conteos: { todos, grabaciones, asistencias, notas, transcripciones }, artifacts: encuentros.flatMap(e => e.eventosProveedor.flatMap(ev => ev.archivos.map(a => ({
+        ...a, tipo: a.tipo as TipoArtefactoMeet, capturadoAt: a.capturadoAt, createdAt: a.createdAt,
+        eventoProveedor: { driveFolderId: ev.driveFolderId, archivosSincronizadosAt: ev.archivosSincronizadosAt, instancia: {
+          id: e.id, inicioProgramadoAt: e.inicioProgramadoAt, finProgramadoAt: e.finProgramadoAt, requiereGrabacion: e.requiereGrabacion,
+          solicitud: e.solicitud
+        } }
+      })))) };
     },
 
     async listarGrabacionesPendientesVisibles(
