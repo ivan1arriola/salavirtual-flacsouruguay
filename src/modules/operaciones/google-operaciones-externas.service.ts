@@ -21,7 +21,7 @@ export class GoogleCuentaOcupadaError extends Error {
 }
 
 export type GoogleOperationKind = "MEET_CREAR_ESPACIO" | "DRIVE_CREAR_CARPETA" |
-  "DRIVE_SUBIR_DOCUMENTO" | "GMAIL_ENVIAR";
+  "DRIVE_SUBIR_DOCUMENTO" | "SHEETS_CREAR_ASISTENCIA" | "GMAIL_ENVIAR";
 
 export type GoogleOperationSpec = Readonly<{
   clave: string;
