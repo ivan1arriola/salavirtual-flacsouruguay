@@ -79,6 +79,10 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
       s.inicio, s.fin, s.duracionSegundos, r.conferenciaId
     ]);
   }
+  const reported = new Set(input.correosAuditados.map(r => r.correo.toLowerCase()));
+  for (const [email, rol] of [[input.organizador, "HOST"], ...input.cohosts.map(e => [e, "COHOST CONFIGURADO"])] as string[][]) {
+    if (!reported.has(email.toLowerCase())) responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
+  }
   for (const s of input.sesionesMeet) {
     raw.push(["MEET", s.nombre, "", "", s.tipo, s.inicio, s.fin,
       Math.max(0, (Date.parse(s.fin) - Date.parse(s.inicio)) / 1000), ""]);
