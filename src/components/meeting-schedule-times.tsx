@@ -40,12 +40,12 @@ export function MeetingScheduleTimes({
     `${formatTime(from)}–${formatTime(to)}${sameDay(from, to) ? "" : ` (hasta ${formatDate(to)})`}`;
 
   return (
-    <div className={`meeting-schedule-times${compact ? " is-compact" : ""}${viewerIsAssistant ? " is-assistant" : ""}`} aria-label="Horarios de la reunión y de asistencia técnica">
+    <div className={`meeting-schedule-times${compact ? " is-compact" : ""}${viewerIsAssistant ? " is-assistant" : ""}`} aria-label="Horarios de la reunión y de monitoreo">
       {requiresAssistance ? (
         <div className={`meeting-schedule-line is-coverage${coverageMissing ? " is-pending" : ""}`}>
           <Headset size={18} aria-hidden="true" />
           <div>
-            <span>{viewerIsAssistant ? "Tu asistencia técnica" : "Horario de asistencia técnica"}</span>
+            <span>{viewerIsAssistant ? "Tu monitoreo" : "Horario de monitoreo"}</span>
             {coverageMissing ? (
               <><strong>Horario técnico por confirmar</strong><small>Administración debe definir la llegada y salida del asistente antes de esta cobertura híbrida.</small></>
             ) : (
