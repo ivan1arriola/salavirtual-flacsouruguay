@@ -55,7 +55,7 @@ export function OperationalAssistanceClosureForm({
     <details className="content-section">
       <summary>
         <CheckCircle2 size={17} aria-hidden="true" />
-        <strong>{cierreConfirmado ? "Ajustar cierre de asistencia" : "Finalizar monitoreo"}</strong>
+        <strong>{cierreConfirmado ? "Ajustar cierre de monitoreo" : "Finalizar monitoreo"}</strong>
       </summary>
       <form className="encounter-edit-form" onSubmit={submit}>
         <label className="field">
@@ -91,7 +91,7 @@ export function OperationalAssistanceClosureForm({
         </label>
         <button className="primary-action" type="submit" disabled={pending}>
           {pending ? <LoaderCircle className="button-spinner" size={16} /> : <Clock3 size={16} />}
-          {pending ? "Guardando…" : cierreConfirmado ? "Guardar ajuste" : "Finalizar asistencia"}
+          {pending ? "Guardando…" : cierreConfirmado ? "Guardar ajuste" : "Finalizar monitoreo"}
         </button>
         {message ? <p aria-live="polite">{message}</p> : null}
       </form>
