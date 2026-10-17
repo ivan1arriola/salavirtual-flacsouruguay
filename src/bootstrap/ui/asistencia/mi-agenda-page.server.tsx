@@ -115,7 +115,7 @@ export default async function MiAgendaPage({
     <div className="assistant-agenda-page">
       <header className="page-header assistant-agenda-header">
         <div>
-          <p className="page-eyebrow">Asistencia técnica</p>
+          <p className="page-eyebrow">Monitoreo</p>
           <h1>Mi agenda</h1>
           <p>
             {activeTab === "proximas" && (
@@ -129,7 +129,7 @@ export default async function MiAgendaPage({
           <div className="assistant-agenda-next-summary">
             <CalendarCheck2 size={19} aria-hidden="true" />
             <span>
-              <small>Próxima llegada para asistencia técnica</small>
+              <small>Próxima llegada para monitoreo</small>
               <strong>
                 {(nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) === "HIBRIDA" && !nextAssignment.instancia.inicioAsistenciaTecnicaAt ? "Horario por confirmar" : formatDate(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
                 {((nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) !== "HIBRIDA" || nextAssignment.instancia.inicioAsistenciaTecnicaAt) ? ` · ${formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}` : ""}
