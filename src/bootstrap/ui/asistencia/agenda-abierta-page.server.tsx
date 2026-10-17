@@ -166,9 +166,9 @@ export default async function AgendaAbiertaPage() {
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia técnica</p>
+          <p className="page-eyebrow">Monitoreo</p>
           <h1>Agenda abierta</h1>
-          <p>{meetings.length} reuniones sin asistente técnico asignado.</p>
+          <p>{meetings.length} reuniones sin asistente de monitoreo asignado.</p>
         </div>
         <Hand size={28} color="var(--brand)" aria-hidden="true" />
       </header>
