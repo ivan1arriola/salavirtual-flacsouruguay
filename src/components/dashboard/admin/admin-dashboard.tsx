@@ -26,7 +26,7 @@ export async function AdminDashboard({
             </Link>
             <Link className="secondary-action" href="/asistencia-tecnica">
               <UserCheck size={16} />
-              <span>Gestionar asistencia</span>
+              <span>Gestionar monitoreo</span>
             </Link>
             <Link className="primary-action" href="/reuniones/nueva">
               <CalendarPlus size={17} />
