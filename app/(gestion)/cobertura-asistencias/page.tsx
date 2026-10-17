@@ -15,5 +15,5 @@ export default async function CoberturaAsistenciasAnterior({
     }
   }
   const query = target.toString();
-  permanentRedirect(`/asistencia-tecnica${query ? `?${query}` : ""}`);
+  permanentRedirect(`/monitoreo${query ? `?${query}` : ""}`);
 }
