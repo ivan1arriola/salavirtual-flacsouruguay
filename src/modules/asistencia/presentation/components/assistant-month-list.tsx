@@ -117,7 +117,7 @@ export function AssistantMonthList({
                   onClick={() => openReport(meeting)}
                 >
                   <FilePenLine size={16} />
-                  {meeting.cierreConfirmado ? "Ajustar cierre" : "Finalizar asistencia técnica"}
+                  {meeting.cierreConfirmado ? "Ajustar cierre" : "Finalizar monitoreo"}
                 </button>
               ) : null}
             </div>
@@ -129,8 +129,8 @@ export function AssistantMonthList({
         <div className="dialog-backdrop" role="presentation" onMouseDown={closeReport}>
           <section className="duration-dialog" role="dialog" aria-modal="true" aria-labelledby="duration-title" onMouseDown={(event) => event.stopPropagation()}>
             <div>
-              <p className="page-eyebrow">Cierre de asistencia técnica</p>
-              <h2 id="duration-title">{selected.cierreConfirmado ? "Ajustar cierre" : "Finalizar asistencia técnica"}</h2>
+              <p className="page-eyebrow">Cierre de monitoreo</p>
+              <h2 id="duration-title">{selected.cierreConfirmado ? "Ajustar cierre" : "Finalizar monitoreo"}</h2>
               <p>Confirmá el horario real y registrá cualquier incidencia operativa.</p>
             </div>
             <form onSubmit={submitReport}>
@@ -152,7 +152,7 @@ export function AssistantMonthList({
               <label className="incident-toggle">
                 <input type="checkbox" checked={hasIncident} onChange={(event) => setHasIncident(event.target.checked)} disabled={pending} />
                 <AlertTriangle size={17} />
-                <span><strong>Hubo una incidencia</strong><small>Problemas de acceso, audio, grabación, asistencia técnica u otros.</small></span>
+                <span><strong>Hubo una incidencia</strong><small>Problemas de acceso, audio, grabación, monitoreo u otros.</small></span>
               </label>
               {hasIncident ? (
                 <div className="incident-fields">
@@ -164,7 +164,7 @@ export function AssistantMonthList({
               {error ? <p className="inline-error" role="alert">{error}</p> : null}
               <div className="dialog-actions">
                 <button className="secondary-action" type="button" onClick={closeReport} disabled={pending}>Cancelar</button>
-                <button className="primary-action" type="submit" disabled={pending}>{pending ? "Guardando…" : selected.cierreConfirmado ? "Guardar ajuste" : "Finalizar asistencia técnica"}</button>
+                <button className="primary-action" type="submit" disabled={pending}>{pending ? "Guardando…" : selected.cierreConfirmado ? "Guardar ajuste" : "Finalizar monitoreo"}</button>
               </div>
             </form>
           </section>
