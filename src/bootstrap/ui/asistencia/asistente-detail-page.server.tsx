@@ -60,10 +60,10 @@ export default async function AsistenteDetailPage({
 
   return (
     <>
-      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}><ArrowLeft size={17} />Asistentes técnicos</Link>
+      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}><ArrowLeft size={17} />Asistentes de monitoreo</Link>
       <header className="page-header assistant-detail-header">
         <div>
-          <p className="page-eyebrow">Asistencia técnica</p>
+          <p className="page-eyebrow">Monitoreo</p>
           <h1>{name}</h1>
           <p>Instancias asignadas en {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
@@ -83,7 +83,7 @@ export default async function AsistenteDetailPage({
         asignacionesFuturas={futureAssignments}
       />
 
-      <section className="metric-grid" aria-label="Resumen del asistente técnico">
+      <section className="metric-grid" aria-label="Resumen del asistente de monitoreo">
         <div className="stat"><span>Reuniones asignadas</span><strong>{summary.reuniones}</strong></div>
         <div className="stat"><span>Horas virtuales</span><strong>{formatMinutes(summary.minutosVirtuales)}</strong></div>
         <div className="stat"><span>Horas híbridas</span><strong>{formatMinutes(summary.minutosHibridos)}</strong></div>
