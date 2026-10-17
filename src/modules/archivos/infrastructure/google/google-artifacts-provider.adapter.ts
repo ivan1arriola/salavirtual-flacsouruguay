@@ -1,7 +1,7 @@
 import type { JWT } from "google-auth-library";
 import { agruparCorreosAuditoriaMeet, filtrarEventosAuditoriaConferencia, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
 import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
-import { asegurarLecturaInstitucionalPlanilla } from "./google-meet-attendance-sharing.client";
+import { asegurarLecturaPorEnlacePlanilla } from "./google-meet-attendance-sharing.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
@@ -234,10 +234,10 @@ export function crearGoogleArtifactsProviderAdapter(
       const input = { folderId, titulo: name, inicio, fin, organizador, cohosts, operationMarker,
         sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria
       };
-      // La autorización se ejecuta sobre el archivo individual, nunca sobre
-      // la carpeta de la reunión (que también puede contener grabaciones).
+      // El acceso por enlace se configura únicamente en la planilla, nunca
+      // en la carpeta de la reunión (que también puede contener grabaciones).
       const compartir = async <T extends { id: string }>(sheet: T): Promise<T> => {
-        await asegurarLecturaInstitucionalPlanilla(sheetsAuth, sheet.id);
+        await asegurarLecturaPorEnlacePlanilla(sheetsAuth, sheet.id);
         return sheet;
       };
       if (spreadsheetId) return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId));
@@ -259,7 +259,7 @@ export function crearGoogleArtifactsProviderAdapter(
         if (!recovered) throw error;
         // Un archivo recuperado tampoco se publica como accesible sin validar
         // el permiso del dominio institucional.
-        await asegurarLecturaInstitucionalPlanilla(sheetsAuth, recovered.id);
+        await asegurarLecturaPorEnlacePlanilla(sheetsAuth, recovered.id);
         const confirmed = await confirmarGoogleOperacionVerificada(db, clave, recovered);
         if (confirmed) return recovered;
         throw error;
