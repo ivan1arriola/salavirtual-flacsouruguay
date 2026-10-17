@@ -37,7 +37,8 @@ export async function GET(request: Request) {
   const now = new Date();
   const meetings = await db.instanciaSala.findMany({
     where: {
-      estado: "PROGRAMADA",
+      // Mantener visibles las coberturas en curso (incluido el cierre técnico posterior a la clase).
+      estado: { in: ["PROGRAMADA", "EN_CURSO"] },
       OR: [
         { finAsistenciaTecnicaAt: { gte: now } },
         { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } }
