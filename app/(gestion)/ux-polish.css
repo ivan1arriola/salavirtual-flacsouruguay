@@ -355,7 +355,8 @@ body {
     right: 12px;
     bottom: calc(74px + env(safe-area-inset-bottom));
     width: min(330px, calc(100vw - 24px));
-    overflow: hidden;
+    max-height: min(70vh, 580px);
+    overflow-y: auto;
     border: 1px solid var(--line);
     border-radius: 12px;
     background: #ffffff;
@@ -380,6 +381,21 @@ body {
   .mobile-more-heading small {
     color: var(--muted);
     font-size: 0.7rem;
+  }
+
+  .mobile-more-group + .mobile-more-group {
+    border-top: 1px solid var(--line);
+  }
+
+  .mobile-more-group h3 {
+    margin: 0;
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .mobile-more-menu nav {

@@ -6,6 +6,7 @@ import { AssistantHoursSummary } from "@/src/components/dashboard/assistant/assi
 import { AssistantOpenOpportunities } from "@/src/components/dashboard/assistant/assistant-open-opportunities";
 import { DashboardHeader } from "@/src/components/dashboard/dashboard-header";
 import { LiveMeetingHero } from "@/src/components/dashboard/live-meeting-hero";
+import { ASSISTANT_AGENDA_HREF } from "@/src/components/app-navigation";
 import { formatDate } from "@/src/lib/ui/format";
 import type { AssistantDashboardData } from "@/src/modules/dashboard/types";
 
@@ -21,7 +22,7 @@ export function AssistantDashboardView({
       <DashboardHeader
         actions={
           <>
-            <Link className="secondary-action" href="/mi-agenda">
+            <Link className="secondary-action" href={ASSISTANT_AGENDA_HREF}>
               <CalendarRange size={16} />
               <span>Mi agenda</span>
             </Link>
@@ -55,7 +56,7 @@ export function AssistantDashboardView({
               <h2>Siguientes coberturas programadas</h2>
               <p>Tus próximas reuniones asignadas a continuación.</p>
             </div>
-            <Link className="text-link" href="/mi-agenda">
+            <Link className="text-link" href={ASSISTANT_AGENDA_HREF}>
               Ver agenda completa <ArrowRight size={16} />
             </Link>
           </div>

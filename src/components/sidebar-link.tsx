@@ -1,23 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { isNavigationItemActive } from "@/src/components/app-navigation";
 
 export function SidebarLink({
   href,
   exact = false,
   className,
   dataTour,
+  activeSearch,
   children
 }: Readonly<{
   href: string;
   exact?: boolean;
   className?: string;
   dataTour?: string;
+  activeSearch?: Readonly<{ key: string; value: string; defaultActive?: boolean }>;
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const active = pathname === href || (!exact && href !== "/" && pathname.startsWith(`${href}/`));
+  const searchParams = useSearchParams();
+  const active = isNavigationItemActive(
+    { href, search: activeSearch },
+    pathname,
+    searchParams,
+    exact
+  );
 
   return (
     <Link
