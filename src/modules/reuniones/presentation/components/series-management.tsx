@@ -213,6 +213,10 @@ export function SeriesManagement({
           <div className="field">
             <div className="series-cohost-toolbar">
               <strong>Cohosts agregados ({configuredCount})</strong>
+              <button type="button" className="secondary-action" onClick={saveCohosts} disabled={checking || busy !== null || !hasManageableMeetings} title="Guarda los cohosts seleccionados y vuelve a intentar asignar sus permisos reales en Google Meet">
+                {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={16} /> : <UsersRound size={16} />}
+                {busy === "cohosts" ? "Asignando…" : "Asignar en Google"}
+              </button>
               <button type="button" className="secondary-action" onClick={verifyCohosts} disabled={checking || busy !== null || !hasManageableMeetings}>
                 {checking ? <LoaderCircle className="button-spinner" size={16} /> : <RefreshCw size={16} />}
                 {checking ? "Consultando Google…" : "Verificar en Google"}
@@ -258,7 +262,7 @@ export function SeriesManagement({
             type="button"
           >
             {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
-            {busy === "cohosts" ? "Guardando…" : "Guardar cohosts"}
+            {busy === "cohosts" ? "Asignando en Google…" : "Guardar y asignar en Google"}
           </button>
         </article> : null}
 
