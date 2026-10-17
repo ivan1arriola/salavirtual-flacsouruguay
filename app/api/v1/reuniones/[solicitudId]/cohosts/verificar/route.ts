@@ -7,6 +7,7 @@ import { toHttpError, ForbiddenApiError, NotFoundApiError, IntegrationApiError }
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { crearGoogleMeetAuthClient } from "@/src/integrations/google/auth";
 import { listarMiembrosMeetHttp, obtenerEspacioMeet } from "@/src/integrations/google/meet";
+import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 type Result = "confirmed" | "rejected" | "unknown";
@@ -59,6 +60,9 @@ export async function GET(_request: Request, context: RouteContext) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
     }
     const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
+    // Read permissions using the same Principal -> Legacy sequence used to
+    // assign cohosts. A denied read is UNKNOWN, never a confirmed absence.
+    const legacyCredentials = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
     const memberCache = new Map<string, Set<string> | null>();
     const perEmail = new Map<string, {
       email: string; confirmed: number; rejected: number; unknown: number; total: number;
@@ -79,20 +83,32 @@ export async function GET(_request: Request, context: RouteContext) {
         if (!host || !code) {
           memberCache.set(cacheKey, null);
         } else {
-          try {
-            const client = crearGoogleMeetAuthClient({
-              serviceAccountEmail: config.serviceAccountEmail, privateKey, subject: host,
-            });
-            const space = await obtenerEspacioMeet(client, code);
-            if (!space.name) throw new Error("Espacio Meet no disponible.");
-            const members = await listarMiembrosMeetHttp(client, space.name);
-            memberCache.set(cacheKey, new Set(members
-              .filter((member) => member.role === "COHOST" && typeof member.email === "string")
-              .map((member) => member.email!.trim().toLowerCase())));
-          } catch {
-            // A failed read cannot prove someone is not a cohost.
-            memberCache.set(cacheKey, null);
+          let confirmed: Set<string> | null = null;
+          const candidates = [
+            { serviceAccountEmail: config.serviceAccountEmail, privateKey },
+            ...legacyCredentials.map(({ serviceAccountEmail, privateKey }) => ({ serviceAccountEmail, privateKey })),
+          ];
+          for (const credential of candidates) {
+            try {
+              const client = crearGoogleMeetAuthClient({ ...credential, subject: host });
+              const space = await obtenerEspacioMeet(client, code);
+              if (!space.name) throw new Error("Espacio Meet no disponible.");
+              const members = await listarMiembrosMeetHttp(client, space.name);
+              confirmed = new Set(members
+                .filter((member) => member.role === "COHOST" && typeof member.email === "string")
+                .map((member) => member.email!.trim().toLowerCase()));
+              break;
+            } catch (error) {
+              // Retry only authorization failures from older Meet projects.
+              // Network errors and invalid spaces are not fixed by a different key.
+              const status = typeof error === "object" && error !== null
+                ? (error as { response?: { status?: number }; code?: number }).response?.status
+                  ?? (error as { code?: number }).code
+                : null;
+              if (status !== 403) break;
+            }
           }
+          memberCache.set(cacheKey, confirmed);
         }
       }
       const members = memberCache.get(cacheKey) ?? null;

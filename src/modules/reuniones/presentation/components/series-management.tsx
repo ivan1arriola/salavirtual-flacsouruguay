@@ -101,6 +101,11 @@ export function SeriesManagement({
   async function saveCohosts() {
     setBusy("cohosts");
     setMessage("");
+    // Never display stale green checks after a write attempt, including one
+    // that Google rejects or only partially applies to a multi-meeting series.
+    setLiveVerification(null);
+    setVerifiedAt("");
+    setVerificationError("");
     try {
       const response = await fetch(`/api/v1/reuniones/${solicitudId}/cohosts`, {
         method: "PUT",
