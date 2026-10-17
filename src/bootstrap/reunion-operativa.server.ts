@@ -24,6 +24,7 @@ import {
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
+import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
 import {
   controlOperativoReunionSchema,
   derivarEstadoGrabacionOperativa,
@@ -1179,19 +1180,49 @@ export async function actualizarControlOperativoReunion(
         const subject = evento.cuentaProveedor.emailOrganizador;
 
         if (parsed.tipoAccesoMeet) {
-          const meetAuth = crearGoogleMeetAuthClient({
-            serviceAccountEmail: config.serviceAccountEmail,
-            privateKey,
-            subject
-          });
-          const espacio = await obtenerEspacioMeet(meetAuth, evento.codigoReunion);
-          if (espacio.name) {
-            await actualizarEspacioMeetHttp(
-              meetAuth,
-              espacio.name,
-              { accessType: parsed.tipoAccesoMeet },
-              ["config.access_type"]
-            );
+          const legacyCreds = await cargarCredencialesLegacyGoogleWorkspace(
+            db,
+            descifrarConfiguracion
+          ).catch(() => []);
+          const candidates = [
+            { serviceAccountEmail: config.serviceAccountEmail, privateKey },
+            ...legacyCreds.map((c) => ({
+              serviceAccountEmail: c.serviceAccountEmail,
+              privateKey: c.privateKey
+            }))
+          ];
+          let lastAccessErr: unknown = null;
+          let accessUpdated = false;
+          for (const cred of candidates) {
+            try {
+              const meetAuth = crearGoogleMeetAuthClient({
+                serviceAccountEmail: cred.serviceAccountEmail,
+                privateKey: cred.privateKey,
+                subject
+              });
+              const espacio = await obtenerEspacioMeet(meetAuth, evento.codigoReunion);
+              if (espacio.name) {
+                await actualizarEspacioMeetHttp(
+                  meetAuth,
+                  espacio.name,
+                  { accessType: parsed.tipoAccesoMeet },
+                  ["config.access_type"]
+                );
+              }
+              accessUpdated = true;
+              break;
+            } catch (accessErr) {
+              lastAccessErr = accessErr;
+              const status =
+                typeof accessErr === "object" && accessErr !== null
+                  ? (accessErr as { response?: { status?: number }; code?: number }).response?.status
+                    ?? (accessErr as { code?: number }).code
+                  : null;
+              if (status !== 403) break;
+            }
+          }
+          if (!accessUpdated && lastAccessErr) {
+            throw lastAccessErr;
           }
         }
 
@@ -1215,7 +1246,8 @@ export async function actualizarControlOperativoReunion(
             data: {
               payloadUltimo: payloadActualizado as object,
               errorIntegracion: null,
-              operacionPendiente: null
+              operacionPendiente: null,
+              estadoIntegracion: "SINCRONIZADA"
             }
           });
         }
@@ -1228,7 +1260,7 @@ export async function actualizarControlOperativoReunion(
 
         // Si falló la sincronización de cohosts o configuración de Meet, dejar marcada
         // la operación pendiente en EventoProveedor para que la cola de reintentos la repare.
-        if (evento.id) {
+        if (evento.id && cambioCohosts) {
           await db.eventoProveedor.update({
             where: { id: evento.id },
             data: {

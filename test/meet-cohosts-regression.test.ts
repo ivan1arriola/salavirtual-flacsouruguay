@@ -6,6 +6,7 @@ const google = vi.hoisted(() => ({
   members: [] as Array<{ name: string; email: string; role: string }>,
   moderation: "ON",
   rejectPost: false,
+  rejectPatch: false,
   ignorePost: false,
   code: "abc-defg-hij" as string | null,
 }));
@@ -33,6 +34,11 @@ vi.mock("google-auth-library", () => ({
         return { data: options.data };
       }
       if (options.method === "PATCH" && url.pathname.includes("/members/")) {
+        if (google.rejectPatch) {
+          const err = new Error("No tenés permisos para modificar el rol de este miembro.");
+          (err as any).code = 403;
+          throw err;
+        }
         const member = google.members.find((item) => `/v2/${item.name}` === url.pathname);
         if (!member) throw { code: 404 };
         member.role = options.data.role;
@@ -57,7 +63,7 @@ const assistant = "tecnico@otra.edu.uy";
 
 beforeEach(() => {
   google.calls = []; google.members = []; google.moderation = "ON";
-  google.rejectPost = false; google.ignorePost = false; google.code = "abc-defg-hij";
+  google.rejectPost = false; google.rejectPatch = false; google.ignorePost = false; google.code = "abc-defg-hij";
 });
 
 describe("asignación real de cohosts", () => {
@@ -85,6 +91,14 @@ describe("asignación real de cohosts", () => {
     assert.equal(google.members[0].role, "COHOST");
     assert.equal(google.calls.filter((call) => call.method === "PATCH" && new URL(call.url).pathname.includes("/members/")).length, 1);
     assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 0);
+  });
+
+  it("recrea el miembro con DELETE+POST si Google Meet rechaza PATCH con 'No tenés permisos para modificar el rol de este miembro.'", async () => {
+    google.members = [{ name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" }];
+    google.rejectPatch = true;
+    await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
+    assert.equal(google.members[0].role, "COHOST");
+    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 1);
   });
 
   it("no borra un miembro que ya tiene el rol correcto", async () => {

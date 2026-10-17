@@ -126,6 +126,23 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     }
   });
 
+  it("reconoce errores de permisos de miembros en español ('No tenés permisos para modificar el rol de este miembro.') y activa fallback Legacy", async () => {
+    state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
+    state.failOnlyOnMembers = true;
+    state.failWithCode = 403;
+    state.failWithMessage = "No tenés permisos para modificar el rol de este miembro.";
+
+    await configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
+      cohostEmails: ["docente@flacso.edu.uy"],
+    });
+
+    const legacyAuths = state.jwtInstances.filter(
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+    );
+    expect(legacyAuths.length).toBeGreaterThanOrEqual(1);
+    expect(legacyAuths[0].subject).toBe("sala02@flacso.edu.uy");
+  });
+
   it("sincronizarCohostsGoogleExistente mantiene el host sala02 en fallback", async () => {
     state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
 

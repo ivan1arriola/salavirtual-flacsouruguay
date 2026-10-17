@@ -184,6 +184,20 @@ export function isMemberPermissionError(error: unknown): boolean {
     typeof candidate.message === "string" ? candidate.message : "",
     JSON.stringify(candidate.response?.data ?? ""),
   ].join(" ").toLowerCase();
-  return (status === 403 || text.includes("permission denied")) && text.includes("resource member");
+  const hasPermissionStatus =
+    status === 403 ||
+    text.includes("permission denied") ||
+    text.includes("permission_denied") ||
+    text.includes("no tenés permisos") ||
+    text.includes("no tienes permisos") ||
+    text.includes("no tenes permisos");
+  const isMemberContext =
+    text.includes("resource member") ||
+    text.includes("rol de este miembro") ||
+    text.includes("role of this member") ||
+    (text.includes("miembro") && (text.includes("permiso") || text.includes("rol"))) ||
+    (text.includes("member") && text.includes("role"));
+  return hasPermissionStatus && isMemberContext;
 }
+
 

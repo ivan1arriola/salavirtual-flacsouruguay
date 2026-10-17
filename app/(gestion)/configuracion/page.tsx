@@ -4,7 +4,6 @@ import { AssistantReportConfigForm } from "@/src/modules/asistencia/presentation
 import { EmailTestForm } from "@/src/components/email-test-form";
 import { HistoricalMeetingsTable } from "@/src/components/historical-meetings-table";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
-import { PendingMeetButton } from "@/src/components/pending-meet-button";
 import { PendingMeetOperationsManager } from "@/src/components/pending-meet-operations-manager";
 import { ProgramMembersConfig } from "@/src/components/program-members-config";
 import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
@@ -292,11 +291,6 @@ export default async function ConfiguracionPage({
       {section === "workspace" ? (
         <div className="settings-workspace-flow">
           <section className="content-section settings-workspace-health">
-            <PendingMeetButton
-              operations={pendingMeetOperations.flatMap(({ operacionPendiente }) =>
-                operacionPendiente ? [operacionPendiente] : []
-              )}
-            />
             <PendingMeetOperationsManager items={pendingOperationItems} />
           </section>
           <WorkspaceConfigForm

@@ -48,7 +48,23 @@ export function esErrorDeScopesInsuficientes(
   );
 }
 
+export function esErrorDePermisoMiembroMeet(
+  error: string | null | undefined
+): boolean {
+  const normalized = error?.trim().toLowerCase() ?? "";
+  if (!normalized) return false;
+
+  return (
+    normalized.includes("modificar el rol de este miembro") ||
+    normalized.includes("role of this member") ||
+    (normalized.includes("permission denied") && normalized.includes("resource member")) ||
+    ((normalized.includes("no tenés permisos") || normalized.includes("no tienes permisos")) &&
+      normalized.includes("miembro"))
+  );
+}
+
 function tieneMeet(event: IntegracionConferenciaHealth): boolean {
   return Boolean(event.joinUrl || event.codigoReunion);
 }
+
 

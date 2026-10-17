@@ -15,7 +15,7 @@ import {
   resolverAsignacionInicial,
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
-import { normalizeCohostEmails } from "../meet/cohosts.domain";
+import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";

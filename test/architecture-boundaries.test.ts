@@ -43,7 +43,7 @@ function scanModules(dir: string): FileInfo[] {
     if (stat.isDirectory()) {
       files.push(...scanModules(fullPath));
     } else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) {
-      const rel = relative(MODULES_ROOT, fullPath);
+      const rel = relative(MODULES_ROOT, fullPath).replaceAll("\\", "/");
       const parts = rel.split("/");
       const moduleName = parts[0];
       const layerCandidate = parts[1];

@@ -1,8 +1,11 @@
 import { ConflictApiError, ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
-import { registrarVerificacionCohosts, invalidarVerificacionCohosts } from "../meet/cohost-verification.domain";
+import {
+  invalidarVerificacionCohosts,
+  normalizeCohostEmails,
+  registrarVerificacionCohosts,
+  type GoogleCalendarCredentials,
+} from "@/src/modules/conferencias/api";
 import type { PrismaClient } from "@prisma/client";
-import { normalizeCohostEmails } from "../meet/cohosts.domain";
-import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
 import {
   asignacionAsistenciaSchema,
   disponibilidadSemanalSchema,

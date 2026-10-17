@@ -443,22 +443,71 @@ async function configurarCohostsMeet(
   emails: readonly string[]
 ): Promise<void> {
   const desired = emailsCohost(auth.subject, emails);
+  let cachedMembers: readonly GoogleMeetSpaceMember[] | null = null;
+  let firstMemberPermissionError: unknown = null;
+
   for (const email of desired) {
     try {
       await crearMiembroMeetHttp(auth, spaceName, email, "COHOST");
     } catch (error) {
-      if (!isAlreadyCohostError(error)) throw error;
-      const members = await listarMiembrosMeetHttp(auth, spaceName);
-      const member = members.find((item) => item.email?.trim().toLowerCase() === email);
-      if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
-      if (member.role !== "COHOST") {
-        // Avoid DELETE+POST races: Calendar can already have invited this
-        // person as a regular member. Promote them atomically in place.
-        await actualizarRolMiembroMeetHttp(auth, member.name, "COHOST");
+      if (isAlreadyCohostError(error)) {
+        if (!cachedMembers) {
+          cachedMembers = await listarMiembrosMeetHttp(auth, spaceName);
+        }
+        const member = cachedMembers.find((item) => item.email?.trim().toLowerCase() === email);
+        if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
+        if (member.role !== "COHOST") {
+          try {
+            // Promote in place when supported by the endpoint.
+            await actualizarRolMiembroMeetHttp(auth, member.name, "COHOST");
+          } catch (patchError) {
+            // In Google Meet REST API v2, PATCH on a Calendar-created member can
+            // return 403 ("No tenés permisos para modificar el rol de este miembro.")
+            // or 400/405 because spaces.members does not support role updates in place.
+            // Fall back to DELETE + POST with role COHOST.
+            if (!isMemberPermissionError(patchError) && !esErrorPatchMiembroNoSoportado(patchError)) {
+              throw patchError;
+            }
+            try {
+              await eliminarMiembroMeetHttp(auth, member.name).catch((delError) => {
+                if (!isMeetNotFoundError(delError)) throw delError;
+              });
+              await crearMiembroMeetHttp(auth, spaceName, email, "COHOST");
+            } catch (recreateError) {
+              if (isMemberPermissionError(recreateError)) {
+                firstMemberPermissionError ??= recreateError;
+                continue;
+              }
+              if (isMemberPermissionError(patchError)) {
+                firstMemberPermissionError ??= patchError;
+                continue;
+              }
+              throw recreateError;
+            }
+          }
+        }
+      } else if (isMemberPermissionError(error)) {
+        firstMemberPermissionError ??= error;
+        continue;
+      } else {
+        throw error;
       }
     }
   }
+  if (firstMemberPermissionError) {
+    throw firstMemberPermissionError;
+  }
   await verificarCohostsMeet(auth, spaceName, desired);
+}
+
+function esErrorPatchMiembroNoSoportado(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    response?: { status?: unknown };
+  };
+  const status = candidate.response?.status ?? candidate.code;
+  return status === 400 || status === 404 || status === 405 || status === 501;
 }
 
 async function verificarCohostsMeet(

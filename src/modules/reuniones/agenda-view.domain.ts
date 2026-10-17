@@ -1,4 +1,4 @@
-import { normalizeMeetLink } from "../meet/meet-link.domain";
+import { normalizeMeetLink } from "@/src/modules/conferencias/api";
 
 export type VistaAgenda = "series" | "encuentros";
 

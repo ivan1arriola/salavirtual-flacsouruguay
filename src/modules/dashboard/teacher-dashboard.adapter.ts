@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { cohostsConfirmados } from "../meet/cohost-verification.domain";
+import { cohostsConfirmados } from "@/src/modules/conferencias/api";
 import { determinarEstadoTemporal, esMismoDiaMontevideo } from "./dashboard.domain";
 import type {
   HeroMeetingDTO,

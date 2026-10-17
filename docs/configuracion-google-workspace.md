@@ -1,30 +1,30 @@
-# Configuracion de Google Workspace
+# Configuración de Google Workspace
 
 ## Cuentas host
 
 El gestor usa diez cuentas licenciadas, desde `sala01@flacso.edu.uy` hasta
-`sala10@flacso.edu.uy`. Estan registradas como `CuentaProveedor` del proveedor
-`GOOGLE_MEET`; no se almacenan sus contrasenas.
+`sala10@flacso.edu.uy` (además de las cuentas históricas registradas como `salameet1@flacso.edu.uy`). Están registradas como `CuentaProveedor` del proveedor
+`GOOGLE_MEET`; no se almacenan sus contraseñas.
 
-Cada reunion se crea en el calendario principal de la sala seleccionada. La
-cuenta de servicio actua en nombre de esa sala mediante delegacion de dominio.
+Cada reunión se crea en el calendario principal de la sala seleccionada. La
+cuenta de servicio actúa en nombre de esa sala mediante delegación de dominio (`Domain-wide delegation`).
 
 ## Google Cloud
 
 1. Crear o elegir un proyecto de Google Cloud de FLACSO.
-2. Habilitar Google Calendar API, Google Meet REST API, Google Drive API y Gmail API.
+2. Habilitar Google Calendar API, Google Meet REST API, Google Drive API, Google Sheets API, Admin SDK API y Gmail API.
 3. Crear una cuenta de servicio.
 4. Activar `Domain-wide delegation` para esa cuenta.
 5. Crear y descargar una clave JSON. Debe custodiarse como secreto hasta cargarla en Sala Virtual.
-6. Copiar el `OAuth 2 Client ID` numerico de la cuenta de servicio.
+6. Copiar el `OAuth 2 Client ID` numérico de la cuenta de servicio.
 
 ## Google Admin
 
-Una persona con permisos de superadministracion debe abrir:
+Una persona con permisos de superadministración debe abrir:
 
-`Seguridad > Control de acceso y datos > Controles de API > Delegacion de todo el dominio`
+`Seguridad > Control de acceso y datos > Controles de API > Delegación de todo el dominio`
 
-Agregar el Client ID numerico de la cuenta de servicio y autorizar todos estos scopes:
+Agregar el Client ID numérico de la cuenta de servicio y autorizar todos estos scopes:
 
 ```text
 https://www.googleapis.com/auth/calendar.events,
@@ -32,65 +32,115 @@ https://www.googleapis.com/auth/drive,
 https://www.googleapis.com/auth/meetings.space.settings,
 https://www.googleapis.com/auth/meetings.space.readonly,
 https://www.googleapis.com/auth/meetings.space.created,
-https://www.googleapis.com/auth/gmail.send
+https://www.googleapis.com/auth/gmail.send,
+https://www.googleapis.com/auth/admin.reports.audit.readonly,
+https://www.googleapis.com/auth/spreadsheets
 ```
 
 Estos son los scopes que utiliza actualmente Sala Virtual:
 
-- `calendar.events`: crear, modificar y cancelar los eventos de las salas y mantener sincronizados los calendarios de asistentes tecnicos con cuenta Google vinculada.
+- `calendar.events`: crear, modificar y cancelar los eventos de las salas y mantener sincronizados los calendarios de asistentes técnicos con cuenta Google vinculada.
 - `drive`: localizar, mover, crear y reproducir archivos y carpetas de grabaciones y documentos.
-- `meetings.space.settings`: leer y modificar la configuracion de Meets creados desde Calendar, incluidos ajustes y cohosts.
-- `meetings.space.readonly`: consultar espacios, conference records, participantes, grabaciones, transcripciones y notas.
+- `meetings.space.settings`: leer y modificar la configuración de espacios Meet (`accessType`, `moderation`, `attendanceReportGenerationType`).
+- `meetings.space.readonly`: consultar espacios, `conferenceRecords`, participantes en vivo, sesiones de participantes, grabaciones (`recordings`), transcripciones (`transcripts`) y notas.
 - `meetings.space.created`: administrar los miembros de un espacio Meet y asignar o quitar cohosts mediante `spaces.members`.
 - `gmail.send`: enviar notificaciones por Gmail API.
+- `admin.reports.audit.readonly`: consultar eventos `call_ended` de Google Workspace Admin Reports API para atribuir correos electrónicos verificados a los participantes.
+- `spreadsheets`: generar y actualizar las planillas de asistencia en Google Sheets.
 
-La gestion de miembros/cohosts mediante `spaces.members` pertenece al Developer Preview
-de Google Meet. Ademas de autorizar `meetings.space.created` en la delegacion de todo el
+La gestión de miembros/cohosts mediante `spaces.members` pertenece al Developer Preview
+de Google Meet. Además de autorizar `meetings.space.created` en la delegación de todo el
 dominio, el proyecto de Google Cloud usado por Sala Virtual debe estar habilitado en el
-Google Workspace Developer Preview Program. Mientras ese acceso no este activo, Calendar
-puede invitar a la persona pero Google Meet no la promovera a cohost.
+Google Workspace Developer Preview Program. Mientras ese acceso no esté activo, Calendar
+puede invitar a la persona pero Google Meet no la promoverá a cohost.
 
-`drive.meet.readonly` no sustituye a `drive`, porque la aplicacion tambien necesita
-operaciones de escritura y organizacion de archivos.
+`drive.meet.readonly` no sustituye a `drive`, porque la aplicación también necesita
+operaciones de escritura y organización de archivos.
 
-Las diez cuentas `salaNN` deben tener Google Calendar y Google Meet habilitados
-y una edicion de Workspace que permita crear reuniones Meet.
+Las cuentas `salaNN` deben tener Google Calendar y Google Meet habilitados
+y una edición de Workspace que permita crear reuniones Meet, grabar y transcribir.
 
-Los asistentes tecnicos no reciben una opcion general para gestionar calendarios.
+Los asistentes técnicos no reciben una opción general para gestionar calendarios.
 Cuando un usuario activo con rol `ASISTENTE_TECNICO` tiene una `CuentaGoogleFlacso`
 realmente vinculada y verificada, Sala Virtual suplanta esa cuenta exclusivamente
-para mantener sus asignaciones sincronizadas en `primary`. La aplicacion publica o
+para mantener sus asignaciones sincronizadas en `primary`. La aplicación publica o
 actualiza el evento al asignar/reprogramar y lo elimina al reasignar o cancelar.
-Los demas roles no participan de este flujo.
+Los demás roles no participan de este flujo.
 
-Despues de modificar la delegacion puede haber un tiempo de propagacion en
-Google Workspace. En el gestor, `Configuracion > Google Workspace > Validacion
-de scopes` comprueba cada scope individualmente en todas las cuentas sala
-configuradas y tambien en la cuenta delegada general. La interfaz identifica
-exactamente que cuenta y que scope requieren atencion.
+Después de modificar la delegación puede haber un tiempo de propagación en
+Google Workspace. En el gestor, `Configuración > Google Workspace > Permisos de Google (Validar cuentas)`
+comprueba cada scope individualmente en todas las cuentas sala
+configuradas y también en la cuenta delegada general. La interfaz identifica
+exactamente qué cuenta y qué scope requieren atención.
 
-## Configuracion del gestor
+## Configuración del gestor
 
-Las cuentas de servicio ya no se configuran mediante variables de entorno. Administracion
-las gestiona desde **Configuracion > Google Workspace**. Las claves privadas se cifran con
+Las cuentas de servicio ya no se configuran mediante variables de entorno. Administración
+las gestiona desde **Configuración > Google Workspace**. Las claves privadas se cifran con
 `CONFIG_ENCRYPTION_KEY` antes de persistirse en PostgreSQL y nunca se devuelven por la API.
 
 Existen dos clases operativas:
 
-- **Principal** (`ConfiguracionGoogleWorkspace.id = principal`): es la unica credencial que puede crear reuniones nuevas y tambien se usa para Gmail API, Drive y las operaciones normales de Meet.
-- **Legacy** (`id` con prefijo `legacy:`): solo se usa como compatibilidad para espacios Meet historicos creados por proyectos/cuentas de servicio anteriores.
+- **Principal** (`ConfiguracionGoogleWorkspace.id = principal`): es la única credencial que puede crear reuniones nuevas y también se usa para Gmail API, Drive y las operaciones normales de Meet.
+- **Legacy** (`id` con prefijo `legacy:`): solo se usa como compatibilidad para espacios Meet históricos creados por proyectos/cuentas de servicio anteriores.
 
-Al cambiar el email de la Principal desde la UI es obligatorio cargar tambien la nueva clave
-privada. La credencial Principal anterior se archiva automaticamente como Legacy antes de
-completar la rotacion. Una Legacy puede probarse, editarse, reactivarse guardandola de nuevo
+Al cambiar el email de la Principal desde la UI es obligatorio cargar también la nueva clave
+privada. La credencial Principal anterior se archiva automáticamente como Legacy antes de
+completar la rotación. Una Legacy puede probarse, editarse, reactivarse guardándola de nuevo
 o desactivarse desde la misma pantalla.
 
 La cuenta delegada general (`serviceAccountSubject`) y la carpeta de Drive siguen siendo
-configuracion general. Para crear o modificar reuniones, el gestor suplanta dinamicamente a
+configuración general. Para crear o modificar reuniones, el gestor suplanta dinámicamente a
 la cuenta host `salaNN` seleccionada. Para sincronizar asignaciones de asistencia, suplanta
-dinamicamente a la cuenta Google vinculada del asistente tecnico.
+dinámicamente a la cuenta Google vinculada del asistente técnico.
 
-## Asistencia en Google Sheets
+## Compatibilidad con Meets históricos y mensajes localizados
+
+Para reuniones existentes, Sala Virtual intenta primero la credencial Principal. Cuando
+Google responde con un error `403` de permisos sobre el miembro o espacio compatible con un espacio
+creado por otra aplicación/proyecto —ya sea en inglés (`403 Permission denied on resource Member`)
+o localizado al español por el idioma de la cuenta organizadora (`No tenés permisos para modificar el rol de este miembro.`)—,
+se prueban automáticamente las credenciales Legacy activas manteniendo siempre como `subject` a la cuenta organizadora (`salaNN`).
+
+Este fallback no se aplica durante la creación de una reunión nueva y tampoco se activa para
+errores genéricos de scopes (`insufficient authentication scopes`), Calendar, red o servidor (`5xx`).
+De ese modo la cuenta antigua mantiene acceso a espacios históricos sin volver a convertirse en credencial operativa.
+
+Cuando ya no existan reuniones que dependan de una credencial Legacy, Administración puede
+desactivarla. No es necesario conservar `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+ni `GOOGLE_SERVICE_ACCOUNT_SUBJECT` en el entorno del runtime.
+
+## Verificación y promoción de cohosts (`spaces.members`)
+
+Las cuentas `sala01@flacso.edu.uy` ... `sala10@flacso.edu.uy` son las
+organizadoras. El docente de la solicitud y los asistentes asignados deben
+recibir el rol `COHOST` en el espacio Meet, incluidas sus cuentas Gmail o de
+otras instituciones cuando sean cuentas Google válidas.
+
+Una invitación Calendar, una fila local o una respuesta `409 ALREADY_EXISTS` no
+confirman ese rol:
+1. Cuando Google Calendar invita a un correo en el evento, Google Meet suele crear automáticamente su entrada en `spaces/{space}/members` con `role: "ROLE_UNSPECIFIED"`.
+2. Al recibir `409 ALREADY_EXISTS` en `POST /v2/spaces/{space}/members`, el adaptador inspecciona la lista completa de miembros paginada (`listarMiembrosMeetHttp`).
+3. Si el miembro figura con un rol distinto de `COHOST`, intenta promoverlo in-place (`PATCH`) y, si la API v2 de Google Meet rechaza la modificación in-place con `403` (`No tenés permisos para modificar el rol de este miembro.`) o `400`/`405`, elimina la membresía básica (`DELETE`) y la recrea con `POST` y `role: "COHOST"`.
+4. Si una reunión tiene múltiples cohosts y uno de ellos falla por permisos de miembro, el adaptador procesa primero al resto de los cohosts válidos antes de propagar el error para activar el fallback Legacy o dejar registrado el pendiente en la cola.
+
+El detalle muestra «Cohosts verificados en Google» solamente cuando existe una
+verificación guardada para el mismo espacio, organizador y correos solicitados,
+sin errores ni operaciones pendientes.
+
+En **Configuración → Google Workspace**, el panel único `PendingMeetOperationsManager` permite:
+- **Sincronizar con Google** (lote completo) o **Reintentar** encuentro por encuentro.
+- **Descartar** tareas de ajuste (`CONFIGURAR_MEET`) no bloqueantes en encuentros que ya cuentan con su enlace Meet operativo (`joinUrl`).
+- Ejecutar **Verificación global de cohosts** (solo lectura, con soporte `Principal -> Legacy`) y **Reuniones existentes → Actualizar**.
+
+## Consola Operativa en Tiempo Real y Control Remoto
+
+Desde `/operacion/[instanciaId]`, Administración y el Asistente Técnico asignado pueden:
+- Monitorear en vivo la **Política de grabación** (`Solicitud: Requerida / No requerida`) separada del **Estado real en vivo en Meet** (`En vivo: Grabando / Inactiva`), junto con el estado de **Transcripción en vivo**.
+- Visualizar y editar el padrón de asistentes persistido en `RegistroAsistenciaMeet` (conectados ahora, desconectados, duración acumulada sin doble conteo de multisesión, origen del correo y rol).
+- Modificar en tiempo real el tipo de acceso del espacio Meet (`OPEN`, `TRUSTED`, `RESTRICTED` mediante `PATCH /v2/spaces/{space}?updateMask=config.access_type` con fallback `Principal -> Legacy`), la lista de cohosts y los parámetros operativos del encuentro.
+
+## Planillas de asistencia y Reports API
 
 Las listas de asistencia nuevas se generan como Google Sheets, con pestañas
 `Asistencia`, `Host y cohosts` y `Datos brutos`.
@@ -99,127 +149,6 @@ Las conexiones de auditoría se atribuyen a una dirección solamente cuando
 Reports devuelve `identifier_type=email_address`; los registros Meet sin
 identificador verificable se conservan en `Datos brutos`.
 
-Requisitos del proyecto de Google Cloud:
-- Habilitar **Google Sheets API** y **Admin SDK API**.
-- Añadir a delegación de dominio, sin quitar los scopes existentes:
-  `https://www.googleapis.com/auth/spreadsheets`
-  y `https://www.googleapis.com/auth/admin.reports.audit.readonly`.
-- Definir la variable privada `GOOGLE_REPORTS_ADMIN_EMAIL` con un administrador
-  que tenga permisos para consultar auditoría Meet.
-- La cuenta de servicio Principal existente debe poder escribir en Drive y
-  actuar como la cuenta organizadora `salaNN`.
+Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` (o `serviceAccountSubject` con rol de administrador) con la dirección de un administrador autorizado a leer auditorías de Meet; la aplicación suplanta esa cuenta mediante la delegación existente.
 
-**Limitaciones**: los informes Meet no dan directamente email de todos los
-participantes; registros anónimos no deben asignarse por coincidencia de nombre.
-El día completo de auditoría puede incluir múltiples instancias que compartan
-enlace; validar por `conference_id` antes de considerar el documento definitivo.
-No se reemplaza automáticamente un documento ya sincronizado a menos que
-vuelva a seleccionarse esa reunión en el flujo de sincronización.
-
-## Compatibilidad con Meets historicos
-
-Para reuniones existentes, Sala Virtual intenta primero la credencial Principal. Solo cuando
-Google responde con el `403 Permission denied on resource Member` compatible con un espacio
-creado por otra aplicacion/proyecto, se prueban las credenciales Legacy activas.
-
-Este fallback no se aplica durante la creacion de una reunion nueva y tampoco se activa para
-errores genericos de scopes, Calendar, red o servidor. De ese modo la cuenta antigua puede
-mantener acceso a espacios historicos sin volver a convertirse en credencial operativa.
-
-Cuando ya no existan reuniones que dependan de una credencial Legacy, Administracion puede
-desactivarla. No es necesario conservar `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
-ni `GOOGLE_SERVICE_ACCOUNT_SUBJECT` en el entorno del runtime.
-
-## Sincronizacion de calendarios de asistentes
-
-La sincronizacion principal es reactiva: se ejecuta al asignar o reasignar un
-asistente, al reprogramar o cancelar encuentros, al cancelar una serie y al
-vincular una cuenta Google de un asistente con reuniones futuras.
-
-Si Google Calendar o la infraestructura de sincronizacion falla despues de que el
-cambio local fue guardado, la operacion local no se revierte ni se reporta como
-fallida. La API devuelve el cambio guardado y marca la sincronizacion como
-pendiente para un reintento posterior.
-
-Como red de seguridad existe una sincronizacion periodica protegida con `CRON_SECRET`
-que vuelve a reconciliar reuniones futuras con asignaciones. La sincronizacion inmediata
-no depende de esa tarea periodica.
-
-## Resultado
-
-Al crear una reunion, el gestor:
-
-1. Registra la solicitud y sus instancias en PostgreSQL.
-2. Crea un evento independiente en el calendario de la sala host.
-3. Solicita a Google un Meet nuevo usando exclusivamente la credencial Principal.
-4. Guarda el ID externo, codigo Meet y enlace de acceso.
-5. Configura el espacio Meet con los scopes especificos de Meet.
-6. Si existe un asistente tecnico asignado con Google vinculado, publica el encuentro en su calendario principal.
-7. Conserva un error reintentable si Google rechaza la operacion.
-
-Google puede responder con la conferencia en estado pendiente. El adaptador
-vuelve a consultar el evento durante unos segundos antes de marcar un error.
-
-## Verificación y reparación de cohosts
-
-Las cuentas `sala01@flacso.edu.uy` ... `sala10@flacso.edu.uy` son las
-organizadoras. El docente de la solicitud y los asistentes asignados deben
-recibir el rol `COHOST` en el espacio Meet, incluidas sus cuentas Gmail o de
-otras instituciones cuando sean cuentas Google válidas.
-
-Una invitación Calendar, una fila local o una respuesta `ALREADY_EXISTS` no
-confirman ese rol. El adaptador lee los miembros del espacio (todas las páginas)
-y comprueba `COHOST`, además de verificar que la administración de anfitriones
-esté activada. Si un miembro existe con otro rol, se recrea con `COHOST` porque
-la API de miembros no ofrece una operación de actualización.
-
-El detalle muestra «Cohosts verificados en Google» solamente cuando existe una
-verificación guardada para el mismo espacio, organizador y correos solicitados,
-sin errores ni operaciones pendientes. Es la última verificación realizada por
-la aplicación, no una consulta en tiempo real: cambios manuales posteriores en
-Google se detectarán en la próxima sincronización. Los errores de permisos se
-muestran aunque el enlace de la reunión ya funcione.
-
-Después de desplegar, Administración puede usar **Configuración → Google
-Workspace → Reuniones existentes → Actualizar**. La reparación completa los
-cohosts del docente y asistentes, incluye las cuentas externas y verifica el
-Meet que Calendar tiene vinculado. Usa las operaciones persistidas del sistema,
-no reemplaza enlaces y no pisa cancelaciones o reprogramaciones en curso. Las
-reuniones omitidas por otra operación pendiente deben revisarse después de que
-termine esa operación. Los errores quedan disponibles para reintentar.
-
-Si Google rechaza `spaces.members`, revisar la habilitación del proyecto en
-Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
-organizadora. No se considera exitosa una asignación rechazada por Google.
-
-## Planillas de asistencia y Reports API
-
-Para identificar de forma verificable a participantes y publicar Google Sheets, el mismo proyecto de Google Cloud debe tener habilitadas **Google Sheets API**, **Google Drive API** y **Admin SDK API** (Reports API). La cuenta de servicio existente debe mantener la delegaci�n de todo el dominio; no se debe crear ni cargar una credencial nueva para esta funci�n.
-
-Agregar al Client ID num�rico ya autorizado estos scopes:
-
-```text
-https://www.googleapis.com/auth/admin.reports.audit.readonly
-https://www.googleapis.com/auth/spreadsheets
-```
-
-Se conserva el scope Drive ya usado por la aplicaci�n. La configuraci�n cifrada de Workspace debe apuntar a la cuenta de servicio y la carpeta de destino existentes. Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` con la direcci�n de un administrador autorizado a leer auditor�as de Meet; la aplicaci�n suplanta esa cuenta mediante la delegaci�n existente. La cuenta de servicio organizadora debe tener acceso de escritura a la carpeta del encuentro. Restringir el acceso a las hojas y carpetas seg�n las mismas pol�ticas de Drive aprobadas para datos acad�micos.
-
-La b�squeda usa eventos `call_ended` del Reports API, que pueden no incluir correo electr�nico. Solo se asocia una direcci�n cuando el tipo de identificador es `email_address`; otros identificadores se conservan sin atribuci�n. Los c�digos Meet se comparan normalizados, conservando el original en los datos brutos. Los registros se filtran por su conferencia y el intervalo observado; no se infiere identidad a partir del nombre.
-
-La ruta de regeneraci�n es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesi�n activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.
-
-### Verificaci�n automatizada y limitaciones
-
-Las pruebas locales cubren el c�lculo horario, paginaci�n de Reports API, normalizaci�n de c�digos, preservaci�n de IDs en datos crudos, actualizaci�n de hoja, paginaci�n DB, filtros y alcance del actor. No sustituyen una validaci�n en el Workspace institucional: la visibilidad real de correos depende de la pol�tica/edici�n de Workspace y de los datos que Reports API entregue; el acceso a la carpeta y los scopes delegados se deben verificar con la configuraci�n institucional antes de habilitar la regeneraci�n para usuarios.
-
-## Resultados de verificación de esta implementación
-
-Verificado localmente el 16/10/2026 en Node.js del repositorio:
-
-- `npm run check`: correcto.
-- `npm test -- --reporter=dot`: 161 archivos aprobados, 3 omitidos; 1.401 pruebas aprobadas, 12 omitidas.
-- `npm run build`: correcto con `AUTH_SECRET`, `AUTH_TRUST_HOST` y `APP_BASE_URL` de relleno de compilación definidos solo en el proceso local. Sin esas variables requeridas, Next falla al cargar la configuración de Auth.js antes de completar la recopilación de rutas.
-- Las pruebas que requieren PostgreSQL configurado y validación de Reports/Drive con el Workspace institucional no se ejecutaron en este entorno.
-
-El resultado automatizado no verifica que Workspace exponga correos para cada participante ni que la cuenta institucional pueda mover hojas a todas las carpetas objetivo. Esa comprobación sigue pendiente con la configuración existente del centro.
+La ruta de regeneración es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesión activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.

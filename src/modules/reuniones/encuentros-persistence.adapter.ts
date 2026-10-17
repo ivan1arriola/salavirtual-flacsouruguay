@@ -1,6 +1,8 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
-import { estadoIntegracionEfectivo } from "../meet/integration-health.domain";
+import {
+  estadoIntegracionEfectivo,
+  type GoogleCalendarCredentials,
+} from "@/src/modules/conferencias/api";
 import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
 export function cargarEncuentro(

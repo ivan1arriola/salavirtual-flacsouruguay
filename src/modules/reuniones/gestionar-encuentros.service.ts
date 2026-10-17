@@ -8,9 +8,11 @@ import {
   NotFoundApiError,
   ValidationApiError,
 } from "@/src/lib/http/api-error";
-import { normalizeCohostEmails } from "../meet/cohosts.domain";
-import type { GoogleCalendarCredentials } from "../meet/google-calendar.adapter";
-import type { MeetProvider } from "../meet/provider";
+import {
+  normalizeCohostEmails,
+  type ConferenceProvider as MeetProvider,
+  type GoogleCalendarCredentials,
+} from "@/src/modules/conferencias/api";
 import {
   actualizarEncuentroSchema,
   agregarEncuentroSchema,

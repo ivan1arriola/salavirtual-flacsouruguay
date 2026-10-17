@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { obtenerDashboardAsistente } from "../asistencia/dashboard-asistente.adapter";
-import { cohostsConfirmados } from "../meet/cohost-verification.domain";
+import { cohostsConfirmados } from "@/src/modules/conferencias/api";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type {
   AssistantDashboardData,

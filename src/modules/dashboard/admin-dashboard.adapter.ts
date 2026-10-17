@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { cohostsConfirmados } from "../meet/cohost-verification.domain";
+import { cohostsConfirmados } from "@/src/modules/conferencias/api";
 import { listarCasosRevisionDuplicados } from "../reuniones/duplicados.service";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type { EstadoTemporalReunion } from "./types";

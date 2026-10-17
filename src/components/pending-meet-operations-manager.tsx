@@ -58,24 +58,45 @@ const OPERATION_LABELS: Readonly<Record<string, { label: string; description: st
   }
 };
 
-function humanizeError(rawError: string | null): { friendly: string; isScopeError: boolean } {
+function humanizeError(rawError: string | null): {
+  friendly: string;
+  isScopeError: boolean;
+  isMemberPermissionError: boolean;
+} {
   if (!rawError) {
-    return { friendly: "Pendiente de sincronización inicial.", isScopeError: false };
+    return {
+      friendly: "Pendiente de sincronización inicial.",
+      isScopeError: false,
+      isMemberPermissionError: false
+    };
   }
   const norm = rawError.toLowerCase();
   if (norm.includes("insufficient authentication scopes") || norm.includes("insufficient_scope") || norm.includes("access_token_scope_insufficient")) {
     return {
       friendly: "Faltan permisos (scopes) de la API de Google Meet en Google Workspace. El Meet funciona normalmente pero no se pueden sincronizar co-anfitriones por API.",
-      isScopeError: true
+      isScopeError: true,
+      isMemberPermissionError: false
+    };
+  }
+  if (
+    norm.includes("modificar el rol de este miembro") ||
+    norm.includes("role of this member") ||
+    (norm.includes("permission denied") && norm.includes("resource member")) ||
+    ((norm.includes("no tenés permisos") || norm.includes("no tienes permisos")) && norm.includes("miembro"))
+  ) {
+    return {
+      friendly: "Google Meet rechazó modificar el rol de co-anfitrión de un miembro (espacio histórico o miembro creado por Calendar). El enlace Meet funciona con normalidad; podés reintentar la promoción automática o descartar este pendiente.",
+      isScopeError: false,
+      isMemberPermissionError: true
     };
   }
   if (norm.includes("todavía no terminó de generar el enlace meet")) {
-    return { friendly: "Google Calendar demoró en generar el enlace Meet.", isScopeError: false };
+    return { friendly: "Google Calendar demoró en generar el enlace Meet.", isScopeError: false, isMemberPermissionError: false };
   }
   if (norm.includes("la cuenta host no tiene email")) {
-    return { friendly: "Falta configurar la cuenta organizadora de la sala.", isScopeError: false };
+    return { friendly: "Falta configurar la cuenta organizadora de la sala.", isScopeError: false, isMemberPermissionError: false };
   }
-  return { friendly: rawError, isScopeError: false };
+  return { friendly: rawError, isScopeError: false, isMemberPermissionError: false };
 }
 
 function formatDate(iso: string): string {
@@ -100,7 +121,7 @@ export function PendingMeetOperationsManager({
   const [busy, setBusy] = useState(false);
   const [busyItemIds, setBusyItemIds] = useState<ReadonlySet<string>>(new Set());
   const [globalMessage, setGlobalMessage] = useState<{ text: string; isError?: boolean } | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => items.length > 0 && items.length <= 5);
   const [expandedErrorIds, setExpandedErrorIds] = useState<ReadonlySet<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "ready" | "missing_meet">("all");
@@ -139,6 +160,9 @@ export function PendingMeetOperationsManager({
   }, [pendingItems]);
 
   const hasScopeErrors = pendingItems.some((it) => humanizeError(it.errorIntegracion).isScopeError);
+  const hasMemberPermissionErrors = pendingItems.some(
+    (it) => humanizeError(it.errorIntegracion).isMemberPermissionError
+  );
 
   const filteredItems = useMemo(() => {
     return pendingItems.filter((it) => {
@@ -404,6 +428,26 @@ export function PendingMeetOperationsManager({
               </span>
               <span className="diagnostic-pill pill-warn">
                 <Info size={13} /> Co-anfitriones por API: Omitidos temporalmente
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {!hasScopeErrors && hasMemberPermissionErrors ? (
+        <div className="integration-diagnostic-banner">
+          <Info size={20} className="diagnostic-banner-icon" />
+          <div className="diagnostic-banner-content">
+            <strong>Diagnóstico: Restricción de rol de miembro en Google Meet (<code>spaces.members</code>)</strong>
+            <p>
+              Google Meet devolvió <code>No tenés permisos para modificar el rol de este miembro</code> al intentar promover un participante invitado por Calendar o en un espacio creado antes de la rotación de credenciales. Al pulsar <strong>Sincronizar con Google</strong> o <strong>Reintentar</strong>, el sistema recrea la membresía con rol <code>COHOST</code> y prueba automáticamente las credenciales históricas (Legacy). Si el encuentro ya tiene su enlace Meet operativo y algún correo externo no admite promoción por API, podés usar <strong>Descartar</strong> sin afectar la reunión.
+            </p>
+            <div className="diagnostic-banner-footer">
+              <span className="diagnostic-pill pill-ok">
+                <CheckCircle2 size={13} /> Enlace Meet: Operativo y accesible
+              </span>
+              <span className="diagnostic-pill pill-warn">
+                <Info size={13} /> Ajuste no bloqueante: Reintentable o descartable
               </span>
             </div>
           </div>
