@@ -1,12 +1,14 @@
 import type { JWT } from "google-auth-library";
 import { agruparCorreosAuditoriaMeet, filtrarEventosAuditoriaConferencia, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
 import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
+import { asegurarLecturaInstitucionalPlanilla } from "./google-meet-attendance-sharing.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
 import {
   claveOperacionGoogle,
   ejecutarGooglePostUnaVez,
   confirmarOperacionDriveMarcada,
+  confirmarGoogleOperacionVerificada,
   GoogleOperacionInciertaError
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
@@ -232,20 +234,32 @@ export function crearGoogleArtifactsProviderAdapter(
       const input = { folderId, titulo: name, inicio, fin, organizador, cohosts, operationMarker,
         sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria
       };
-      if (spreadsheetId) return crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId);
+      // La autorización se ejecuta sobre el archivo individual, nunca sobre
+      // la carpeta de la reunión (que también puede contener grabaciones).
+      const compartir = async <T extends { id: string }>(sheet: T): Promise<T> => {
+        await asegurarLecturaInstitucionalPlanilla(sheetsAuth, sheet.id);
+        return sheet;
+      };
+      if (spreadsheetId) return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId));
       const existente = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker);
-      if (existente) return crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id);
+      if (existente) return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id));
       const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name);
-      try { return await ejecutarGooglePostUnaVez(
-        db,
-        { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
-        () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
-        result => ({ id: result.id, name: result.name, mimeType: result.mimeType, webViewLink: result.webViewLink }),
-        saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
-      ); } catch (error) {
+      try {
+        const result = await ejecutarGooglePostUnaVez(
+          db,
+          { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
+          () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
+          sheet => ({ id: sheet.id, name: sheet.name, mimeType: sheet.mimeType, webViewLink: sheet.webViewLink }),
+          saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
+        );
+        return compartir(result);
+      } catch (error) {
         if (!(error instanceof GoogleOperacionInciertaError)) throw error;
         const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker).catch(() => null);
         if (!recovered) throw error;
+        // Un archivo recuperado tampoco se publica como accesible sin validar
+        // el permiso del dominio institucional.
+        await asegurarLecturaInstitucionalPlanilla(sheetsAuth, recovered.id);
         const confirmed = await confirmarGoogleOperacionVerificada(db, clave, recovered);
         if (confirmed) return recovered;
         throw error;
