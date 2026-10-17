@@ -5,6 +5,7 @@ import { WorkspaceDelegationForm } from "./workspace-delegation-form";
 import { WorkspaceDriveForm } from "./workspace-drive-form";
 import { WorkspaceScopesValidator } from "./workspace-scopes-validator";
 import { WorkspaceCohostResync } from "./workspace-cohost-resync";
+import { WorkspaceCohostsGlobalVerification } from "./workspace-cohosts-global-verification";
 import { WorkspaceStatusForm } from "./workspace-status-form";
 import { WorkspaceLegacyCredentials } from "./workspace-legacy-credentials";
 
@@ -64,6 +65,7 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
       </div>
 
       <WorkspaceScopesValidator />
+      <WorkspaceCohostsGlobalVerification />
       <WorkspaceCohostResync />
 
       <details className="settings-disclosure settings-disclosure--historical">
