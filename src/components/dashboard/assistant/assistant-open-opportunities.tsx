@@ -20,7 +20,7 @@ export function AssistantOpenOpportunities({
     <section className="dashboard-content-section assistant-opportunities-section">
       <div className="section-heading">
         <div>
-          <h2>Salas que buscan asistencia técnica</h2>
+          <h2>Salas que buscan monitoreo</h2>
           <p>Instancias abiertas donde podés postularte para cubrir la sesión.</p>
         </div>
         <Link className="text-link" href="/agenda-abierta">
