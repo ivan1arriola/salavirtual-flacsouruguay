@@ -61,7 +61,7 @@ describe("acceso de lectura a planillas por enlace", () => {
 
   it("desactiva descubrimiento público cuando existe un permiso previo que permite encontrar la planilla", async () => {
     const auth = client({ permissions: [{
-      id: "link-1", type: "domain", domain: "flacso.edu.uy", role: "reader", allowFileDiscovery: true,
+      id: "link-1", type: "anyone", role: "reader", allowFileDiscovery: true,
     }] });
     await asegurarLecturaPorEnlacePlanilla(auth as never, "sheet-1");
     const patch = auth.request.mock.calls.map(([data]) => data).find((call) => call.method === "PATCH");
