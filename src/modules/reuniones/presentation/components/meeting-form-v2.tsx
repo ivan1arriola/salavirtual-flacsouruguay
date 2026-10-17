@@ -382,7 +382,7 @@ export function MeetingFormV2({
                     <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => cambiarHoraEncuentro(index, "horaFin", event.target.value)} /></Field>
                     {requiereHorarioPresencial ? (
                       <div className="meeting-assistance-fields">
-                        <strong>Cobertura técnica presencial <small>· mínimo 30 min antes y después</small></strong>
+                        <strong>Monitoreo presencial <small>· mínimo 30 min antes y después</small></strong>
                         <div className="meeting-assistance-grid">
                           <Field label="Llegada del asistente"><input type="time" required value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
                           <Field label="Salida del asistente"><input type="time" required value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
@@ -422,7 +422,7 @@ export function MeetingFormV2({
               name="requiereAsistenciaTecnica"
               value={requiresAssistance}
               noLabel="No requiere"
-              noDetail="La reunión puede realizarse sin asistencia."
+              noDetail="La reunión puede realizarse sin monitoreo."
               yesLabel="Sí, solicitar"
               yesDetail="Se asignará un asistente de monitoreo como cohost."
               onChange={cambiarRequiereAsistencia}
@@ -462,7 +462,7 @@ export function MeetingFormV2({
 
           {requiresAssistance ? (
             <section className="organization-subsection organization-assistance-config">
-              <div className="organization-subsection-heading"><div><h3>Cobertura de monitoreo</h3><p>{meetingMode === "HIBRIDA" ? "El horario de asistencia se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
+              <div className="organization-subsection-heading"><div><h3>Cobertura de monitoreo</h3><p>{meetingMode === "HIBRIDA" ? "El horario de monitoreo se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
               {canAssignAssistant ? (
                 <fieldset className="assistance-choice organization-assistance-choice">
                   <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
