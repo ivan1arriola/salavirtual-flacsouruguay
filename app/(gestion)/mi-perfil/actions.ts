@@ -97,5 +97,6 @@ export async function guardarDisponibilidad(formData: FormData): Promise<void> {
   }
   revalidatePath("/mi-perfil");
   revalidatePath("/asistencia-tecnica");
+  revalidatePath("/monitoreo");
   redirect(`/mi-perfil?estado=${estado}`);
 }
