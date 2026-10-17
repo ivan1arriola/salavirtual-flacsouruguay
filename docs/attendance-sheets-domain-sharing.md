@@ -1,15 +1,26 @@
-# Acceso de FLACSO a las planillas de asistencia
+# Acceso por enlace a las planillas de asistencia
 
-Las planillas generadas por Sala Virtual contienen nombres, correos, tiempos de conexión y registros de auditoría. Por decisión institucional, cada Google Sheets nuevo debe permitir **lectura** a las cuentas autenticadas del dominio `flacso.edu.uy`.
+Las planillas de asistencia de Sala Virtual contienen nombres, correos y registros detallados de conexión.
 
-Se publica una autorización **sobre el archivo individual** de Google Drive:
-- `type: domain`, `domain: flacso.edu.uy`, `role: reader`.
-- `allowFileDiscovery: false` para no indexar los datos personales en las búsquedas de todo el dominio. Las personas deberán recibir el enlace.
-- Nunca se crean permisos `anyone`, ni se modifica el acceso a carpetas, grabaciones, transcripciones o archivos ajenos.
-- La autorización no habilita edición institucional. Los permisos directos preexistentes de otros usuarios se conservan.
+## Política de acceso
 
-La operación utiliza el scope `https://www.googleapis.com/auth/drive` ya delegado para crear las planillas. Tras solicitar el permiso se vuelve a consultar la lista de permisos de Drive. Un fallo o un permiso no confirmado impide reportar una publicación correcta.
+Por decisión institucional, las planillas de Google Sheets generadas por Sala Virtual se comparten como **Cualquier persona con el enlace → Lector**. El destinatario **no necesita** cuenta de FLACSO ni iniciar sesión.
 
-El mismo control se ejecuta en creaciones, regeneraciones, documentos preexistentes recuperados por marcador y operaciones ya confirmadas en el sistema. No se hace un barrido masivo automático de planillas antiguas: para una planilla anterior, regenerarla desde Sala Virtual aplica el nuevo control, siempre que se tenga autorización administrativa.
+La autorización se otorga exclusivamente al archivo individual mediante Google Drive API:
 
-**Verificación operacional:** generar una planilla de prueba, abrir su enlace con una cuenta distinta de `@flacso.edu.uy` (solo lectura) y con una cuenta externa no invitada (sin acceso); verificar que el archivo no aparece en la búsqueda de Drive de otra cuenta FLACSO y que el resto de archivos de la carpeta conserva sus permisos. Si el administrador de Google Workspace restringe compartir con dominios, la publicación debe informar el error en lugar de ocultarlo.
+```json
+{"type":"anyone","role":"reader","allowFileDiscovery":false}
+```
+
+- No se publica el archivo en búsquedas; una persona necesita obtener su enlace.
+- No se conceden permisos de edición por enlace. Si ya existía un permiso `anyone` con edición, se ajusta a lectura.
+- No se alteran permisos sobre carpetas, grabaciones, transcripciones ni otros archivos.
+- Los permisos preexistentes de usuarios y grupos distintos de `anyone` se mantienen sin cambios.
+- Se verifica la autorización real después de guardar. Si Workspace prohíbe compartir públicamente, la sincronización informa el error y no declara éxito.
+- El control se ejecuta para planillas nuevas, regeneradas, existentes localizadas y recuperadas tras operaciones inciertas. Las planillas históricas no son modificadas de forma masiva.
+
+## Riesgo y verificación
+
+**Cualquier persona con el enlace, también fuera de la institución, podrá consultar datos personales de asistencia**. Evitar publicar los enlaces en medios públicos.
+
+Probar con una cuenta de FLACSO distinta de la organizadora y también con un navegador privado sin iniciar sesión: ambos deben poder abrir el enlace sin editar. Confirmar que una búsqueda pública no lo indexe por el permiso de Drive, y que otros archivos en su carpeta conservan sus ACL.
