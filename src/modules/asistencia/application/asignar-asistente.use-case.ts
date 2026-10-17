@@ -16,7 +16,7 @@ export async function asignarAsistenteUseCase(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo Administración puede asignar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede asignar asistentes de monitoreo.");
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
