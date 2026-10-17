@@ -40,7 +40,7 @@ export function AdminMetricsBar({
       tone: "brand"
     },
     {
-      label: "Sin asistencia",
+      label: "Sin monitoreo",
       value: metrics.pendingAssistance,
       copy: "Necesitan cobertura",
       icon: UserRoundCheck,
