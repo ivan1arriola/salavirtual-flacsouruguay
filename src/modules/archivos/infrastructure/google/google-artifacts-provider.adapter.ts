@@ -71,9 +71,12 @@ export function crearGoogleArtifactsProviderAdapter(
     async obtenerParticipantesActivos(
       codigo: string,
       inicio: Date,
-      fin: Date
+      fin: Date,
+      conferenceRecord?: RegistroConferenciaMeet | null
     ): Promise<MeetActiveParticipantsScan> {
-      const record = await this.buscarConferencia(codigo, inicio, fin);
+      const record = conferenceRecord !== undefined
+        ? conferenceRecord
+        : await this.buscarConferencia(codigo, inicio, fin);
       if (!record) {
         return {
           conferenciaExiste: false,
@@ -101,7 +104,6 @@ export function crearGoogleArtifactsProviderAdapter(
       const participantesDesconectados: ParticipanteActivoMeet[] = [];
       const todosParticipantes: ParticipanteActivoMeet[] = [];
       const nowMs = Date.now();
-      let breakoutCount = 0;
 
       participants.forEach((participant, index) => {
         const sessions = sessionsByParticipant[index] ?? [];
@@ -115,23 +117,40 @@ export function crearGoogleArtifactsProviderAdapter(
         const primeraEntradaAt = sortedSessions[0]?.startTime;
         const completedEndTimes = sortedSessions
           .map((session) => session.endTime)
-          .filter((endTime): endTime is string => Boolean(endTime));
+          .filter((endTime): endTime is string => Boolean(endTime))
+          .sort((a, b) => Date.parse(a) - Date.parse(b));
         const ultimaSalidaAt =
           !hasActiveSession && completedEndTimes.length > 0
             ? completedEndTimes[completedEndTimes.length - 1]
             : undefined;
 
-        const totalMs = sortedSessions.reduce((acc, session) => {
-          const startMs = Date.parse(session.startTime);
-          const endMs = session.endTime ? Date.parse(session.endTime) : nowMs;
-          if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
-            return acc;
+        // Unificar intervalos solapados (ej. conexión simultánea desde PC + móvil)
+        // para no duplicar los minutos reales conectados.
+        const rawIntervals: Array<{ desde: number; hasta: number }> = [];
+        for (const session of sortedSessions) {
+          const desde = Date.parse(session.startTime);
+          const hasta = session.endTime ? Date.parse(session.endTime) : nowMs;
+          if (Number.isFinite(desde) && Number.isFinite(hasta) && hasta > desde) {
+            rawIntervals.push({ desde, hasta });
           }
-          return acc + (endMs - startMs);
-        }, 0);
+        }
+        rawIntervals.sort((a, b) => a.desde - b.desde || a.hasta - b.hasta);
+
+        const mergedIntervals: Array<{ desde: number; hasta: number }> = [];
+        for (const current of rawIntervals) {
+          const prev = mergedIntervals[mergedIntervals.length - 1];
+          if (prev && current.desde <= prev.hasta) {
+            prev.hasta = Math.max(prev.hasta, current.hasta);
+          } else {
+            mergedIntervals.push({ ...current });
+          }
+        }
+
+        const totalMs = mergedIntervals.reduce(
+          (acc, interval) => acc + (interval.hasta - interval.desde),
+          0
+        );
         const minutosConectado = totalMs > 0 ? Math.max(1, Math.round(totalMs / 60_000)) : 0;
-        const enGrupoPequeno = activeSessions.length > 1;
-        if (enGrupoPequeno) breakoutCount += 1;
 
         const entry: ParticipanteActivoMeet = {
           nombre: nombreParticipante(participant),
@@ -143,8 +162,7 @@ export function crearGoogleArtifactsProviderAdapter(
           ultimaSalidaAt,
           minutosConectado,
           numeroConexiones: sortedSessions.length,
-          enGrupoPequeno,
-          salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño" : undefined
+          enGrupoPequeno: false
         };
 
         todosParticipantes.push(entry);
@@ -161,8 +179,8 @@ export function crearGoogleArtifactsProviderAdapter(
         participantesActivos,
         participantesDesconectados,
         todosParticipantes,
-        enGruposPequenos: breakoutCount > 0,
-        cantidadGruposPequenos: breakoutCount
+        enGruposPequenos: false,
+        cantidadGruposPequenos: 0
       };
     },
 

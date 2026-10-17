@@ -16,7 +16,7 @@ import {
   Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { RegistroAsistenciaOperativoView } from "@/src/bootstrap/reunion-operativa.server";
 
 export function OperationalRemoteControlPanel({
@@ -51,6 +51,24 @@ export function OperationalRemoteControlPanel({
   const [nuevoCohost, setNuevoCohost] = useState("");
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: "ok" | "warn" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setTipoAcceso(
+      tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED"
+        ? tipoAccesoActual
+        : "TRUSTED"
+    );
+    setRequiereGrabacion(requiereGrabacionActual);
+    setModalidad(modalidadActual);
+    setInicioAsistencia(toLocalDateTimeInput(inicioAsistenciaIso));
+    setFinAsistencia(toLocalDateTimeInput(finAsistenciaIso));
+  }, [
+    tipoAccesoActual,
+    requiereGrabacionActual,
+    modalidadActual,
+    inicioAsistenciaIso,
+    finAsistenciaIso
+  ]);
 
   async function enviarActualizacion(payload: Record<string, unknown>, mensajeExito: string) {
     setPending(true);

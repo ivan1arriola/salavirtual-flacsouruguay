@@ -81,5 +81,25 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
     expect(pageSource).toContain("Host / Cohosts en sala");
     expect(pageSource).toContain("Acceso a la reunión");
   });
+
+  it("evita asignar el correo equivocado cuando existen homónimos y evita falsos positivos de grupos pequeños", () => {
+    const adapterSource = readFileSync(
+      join(
+        process.cwd(),
+        "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts"
+      ),
+      "utf8"
+    );
+    expect(adapterSource).not.toContain('salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño"');
+    expect(adapterSource).toContain("mergedIntervals");
+
+    const serverSource = readFileSync(
+      join(process.cwd(), "src/bootstrap/reunion-operativa.server.ts"),
+      "utf8"
+    );
+    expect(serverSource).toContain("crearIndiceUnicoPorNombre");
+    expect(serverSource).toContain('"AMBIGUO"');
+    expect(serverSource).toContain('operacionPendiente: "CONFIGURAR_MEET"');
+  });
 });
 

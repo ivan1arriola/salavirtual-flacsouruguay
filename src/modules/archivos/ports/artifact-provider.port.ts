@@ -24,7 +24,12 @@ export type ArtifactProviderPort = Readonly<{
   moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile>;
   subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile>;
   subirPlanillaAsistencia?(folderId: string, name: string, data: NonNullable<MeetAttendanceDocument['planilla']>, inicio: Date, fin: Date, organizador: string, cohosts?: readonly string[], spreadsheetId?: string): Promise<MovedDriveFile>;
-  obtenerParticipantesActivos(codigo: string, inicio: Date, fin: Date): Promise<MeetActiveParticipantsScan>;
+  obtenerParticipantesActivos(
+    codigo: string,
+    inicio: Date,
+    fin: Date,
+    conferenceRecord?: RegistroConferenciaMeet | null
+  ): Promise<MeetActiveParticipantsScan>;
 }>;
 
 export type ArtifactProviderFactory = (credentials: ArtifactProviderCredentials) => ArtifactProviderPort;

@@ -157,7 +157,7 @@ export type ReunionOperativaResult =
   | Readonly<{ estado: "PROHIBIDA" }>
   | Readonly<{ estado: "OK"; reunion: ReunionOperativaView }>;
 
-function normalizarTexto(valor: string | null | undefined): string {
+export function normalizarTextoOperativo(valor: string | null | undefined): string {
   return (valor ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -169,7 +169,37 @@ function normalizarTexto(valor: string | null | undefined): string {
 function normalizarClaveParticipante(p: ParticipanteActivoMeet): string {
   if (p.user && p.user.trim()) return p.user.trim();
   if (p.participanteId && p.participanteId.trim()) return p.participanteId.trim();
-  return `${p.tipo}:${normalizarTexto(p.nombre) || "anonimo"}`;
+  return `${p.tipo}:${normalizarTextoOperativo(p.nombre) || "anonimo"}`;
+}
+
+/**
+ * Registra asociaciones nombre -> valor pero invalida nombres ambiguos (homónimos)
+ * cuando dos correos distintos comparten el mismo nombre visible normalizado.
+ */
+export function crearIndiceUnicoPorNombre<T extends { email: string }>() {
+  const mapa = new Map<string, T | "AMBIGUO">();
+  return {
+    registrar(nombre: string | null | undefined, valor: T) {
+      const clave = normalizarTextoOperativo(nombre);
+      const correo = valor.email.trim().toLowerCase();
+      if (!clave || !correo) return;
+      const existente = mapa.get(clave);
+      if (!existente) {
+        mapa.set(clave, { ...valor, email: correo });
+        return;
+      }
+      if (existente === "AMBIGUO") return;
+      if (existente.email !== correo) {
+        mapa.set(clave, "AMBIGUO");
+      }
+    },
+    obtenerUnico(nombre: string | null | undefined): T | null {
+      const clave = normalizarTextoOperativo(nombre);
+      if (!clave) return null;
+      const valor = mapa.get(clave);
+      return valor && valor !== "AMBIGUO" ? valor : null;
+    }
+  };
 }
 
 export async function obtenerReunionOperativa(
@@ -255,8 +285,6 @@ export async function obtenerReunionOperativa(
   let participantesActivos: readonly ParticipanteActivoMeet[] = [];
   let participantesDesconectados: readonly ParticipanteActivoMeet[] = [];
   let todosParticipantes: readonly ParticipanteActivoMeet[] = [];
-  let enGruposPequenos = false;
-  let cantidadGruposPequenos = 0;
   let errorConferencia: string | null = null;
   let estadoProveedorGrabacion: EstadoGrabacionMeet | null = null;
   let grabandoEnVivo = false;
@@ -273,7 +301,7 @@ export async function obtenerReunionOperativa(
     ? "GENERATE_REPORT"
     : "DO_NOT_GENERATE";
   let conferenciaIdActual: string | null = null;
-  const correosAuditadosPorNombre = new Map<string, { email: string; externo: boolean | null }>();
+  const indiceAuditados = crearIndiceUnicoPorNombre<{ email: string; externo: boolean | null }>();
 
   if (evento?.codigoReunion && evento.cuentaProveedor?.emailOrganizador) {
     const config = await db.configuracionGoogleWorkspace.findUnique({
@@ -334,38 +362,16 @@ export async function obtenerReunionOperativa(
           inicioRealAt = new Date(conferencia.startTime);
           finRealAt = conferencia.endTime ? new Date(conferencia.endTime) : null;
 
-          const adminSubject = config.serviceAccountSubject || subject;
-          const auditPromise = adminSubject
-            ? obtenerEventosAuditoriaMeet({
-                serviceAccountEmail: config.serviceAccountEmail,
-                privateKey,
-                adminEmail: adminSubject,
-                meetingCode: evento.codigoReunion,
-                startTime: new Date(meeting.inicioProgramadoAt.getTime() - 12 * 60 * 60 * 1000).toISOString(),
-                endTime: new Date(Math.max(ahora.getTime(), meeting.finProgramadoAt.getTime()) + 6 * 60 * 60 * 1000).toISOString()
-              })
-                .then((eventos: readonly EventoAuditoriaMeet[]) => agruparCorreosAuditoriaMeet(eventos))
-                .catch(() => [])
-            : Promise.resolve([]);
-
-          const [participantes, artefactos, correosAuditados] = await Promise.all([
+          // Pasamos `conferencia` ya resuelta para no invocar buscarConferencia por segunda vez
+          const [participantes, artefactos] = await Promise.all([
             provider.obtenerParticipantesActivos(
               evento.codigoReunion,
               meeting.inicioProgramadoAt,
-              meeting.finProgramadoAt
+              meeting.finProgramadoAt,
+              conferencia
             ),
-            provider.obtenerArtefactos(conferencia.name),
-            auditPromise
+            provider.obtenerArtefactos(conferencia.name)
           ]);
-
-          for (const item of correosAuditados) {
-            if (item.nombre && item.correo) {
-              correosAuditadosPorNombre.set(normalizarTexto(item.nombre), {
-                email: item.correo.trim().toLowerCase(),
-                externo: item.externo
-              });
-            }
-          }
 
           participantesActivos = participantes.participantesActivos;
           participantesDesconectados = participantes.participantesDesconectados ?? [];
@@ -373,8 +379,34 @@ export async function obtenerReunionOperativa(
             ...participantes.participantesActivos,
             ...(participantes.participantesDesconectados ?? [])
           ];
-          enGruposPequenos = Boolean(participantes.enGruposPequenos);
-          cantidadGruposPequenos = participantes.cantidadGruposPequenos ?? 0;
+
+          // Google Admin Reports API solo emite `call_ended` para sesiones finalizadas.
+          // Solo la consultamos si existen sesiones finalizadas y hay credencial de administrador configurada.
+          const adminEmail =
+            process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim()
+            || config.serviceAccountSubject?.trim()
+            || null;
+          if (adminEmail && (participantesDesconectados.length > 0 || Boolean(finRealAt))) {
+            const correosAuditados = await obtenerEventosAuditoriaMeet({
+              serviceAccountEmail: config.serviceAccountEmail,
+              privateKey,
+              adminEmail,
+              meetingCode: evento.codigoReunion,
+              startTime: new Date(meeting.inicioProgramadoAt.getTime() - 12 * 60 * 60 * 1000).toISOString(),
+              endTime: new Date(Math.max(ahora.getTime(), meeting.finProgramadoAt.getTime()) + 6 * 60 * 60 * 1000).toISOString()
+            })
+              .then((eventos: readonly EventoAuditoriaMeet[]) => agruparCorreosAuditoriaMeet(eventos))
+              .catch(() => []);
+
+            for (const item of correosAuditados) {
+              if (item.nombre && item.correo) {
+                indiceAuditados.registrar(item.nombre, {
+                  email: item.correo.trim().toLowerCase(),
+                  externo: item.externo
+                });
+              }
+            }
+          }
 
           estadoProveedorGrabacion = artefactos.estadoGrabacion;
           grabandoEnVivo = Boolean(artefactos.grabandoEnVivo);
@@ -439,40 +471,43 @@ export async function obtenerReunionOperativa(
   const organizadorEmail = evento?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase() ?? null;
   const organizadorNombre = evento?.cuentaProveedor?.nombre?.trim() || organizadorEmail || "Host Meet";
 
-  // Directorio local para correlacionar nombres de Google Meet con correos FLACSO
-  const directorioPorNombre = new Map<string, string>();
+  // Índice libre de colisiones por homónimos para el directorio local
+  const indiceDirectorio = crearIndiceUnicoPorNombre<{ email: string }>();
   if (teacherFullName && teacherEmail) {
-    directorioPorNombre.set(normalizarTexto(teacherFullName), teacherEmail);
+    indiceDirectorio.registrar(teacherFullName, { email: teacherEmail });
   }
   if (assistantFullName && assistantEmail) {
-    directorioPorNombre.set(normalizarTexto(assistantFullName), assistantEmail);
+    indiceDirectorio.registrar(assistantFullName, { email: assistantEmail });
   }
   if (organizadorNombre && organizadorEmail) {
-    directorioPorNombre.set(normalizarTexto(organizadorNombre), organizadorEmail);
+    indiceDirectorio.registrar(organizadorNombre, { email: organizadorEmail });
   }
 
-  try {
-    const usuariosActivos = db.usuario?.findMany
-      ? await db.usuario.findMany({
-          where: { activo: true },
-          select: {
-            nombres: true,
-            apellidos: true,
-            emailPrincipal: true,
-            cuentasGoogle: { select: { email: true } }
-          }
-        })
-      : [];
+  // Solo consultamos usuarios activos si realmente hay participantes en la conferencia
+  if (todosParticipantes.length > 0) {
+    try {
+      const usuariosActivos = db.usuario?.findMany
+        ? await db.usuario.findMany({
+            where: { activo: true },
+            select: {
+              nombres: true,
+              apellidos: true,
+              emailPrincipal: true,
+              cuentasGoogle: { select: { email: true } }
+            }
+          })
+        : [];
 
-    for (const u of usuariosActivos) {
-      const clave = normalizarTexto([u.nombres, u.apellidos].filter(Boolean).join(" "));
-      const correo = u.cuentasGoogle[0]?.email ?? u.emailPrincipal;
-      if (clave && correo && !directorioPorNombre.has(clave)) {
-        directorioPorNombre.set(clave, correo.trim().toLowerCase());
+      for (const u of usuariosActivos) {
+        const nombreCompleto = [u.nombres, u.apellidos].filter(Boolean).join(" ");
+        const correo = u.cuentasGoogle[0]?.email ?? u.emailPrincipal;
+        if (nombreCompleto && correo) {
+          indiceDirectorio.registrar(nombreCompleto, { email: correo });
+        }
       }
+    } catch {
+      // Ignorar fallos de directorio en entornos de prueba con mocks parciales
     }
-  } catch {
-    // Ignorar fallos de directorio en entornos de prueba con mocks parciales
   }
 
   const registrosPreviosMap = new Map<string, {
@@ -542,27 +577,31 @@ export async function obtenerReunionOperativa(
   function resolverRolParticipante(
     nombreNorm: string,
     email: string | null,
-    rolPrevioManual?: string | null
+    rolPrevioGuardado?: string | null
   ): RolEnReunionMeet {
-    if (
-      rolPrevioManual === "HOST"
-      || rolPrevioManual === "COHOST"
-      || rolPrevioManual === "DOCENTE"
-      || rolPrevioManual === "ASISTENTE_TECNICO"
-    ) {
-      return rolPrevioManual;
-    }
     const mailNorm = email?.trim().toLowerCase() ?? null;
     if (mailNorm && organizadorEmail && mailNorm === organizadorEmail) return "HOST";
     if (mailNorm && cohostSet.has(mailNorm)) return "COHOST";
-    if ((mailNorm && teacherEmail && mailNorm === teacherEmail) || (nombreNorm && nombreNorm === normalizarTexto(teacherFullName))) {
+    if (
+      (mailNorm && teacherEmail && mailNorm === teacherEmail)
+      || (nombreNorm && nombreNorm === normalizarTextoOperativo(teacherFullName))
+    ) {
       return "DOCENTE";
     }
     if (
       (mailNorm && assistantEmail && mailNorm === assistantEmail)
-      || (assistantFullName && nombreNorm === normalizarTexto(assistantFullName))
+      || (assistantFullName && nombreNorm === normalizarTextoOperativo(assistantFullName))
     ) {
       return "ASISTENTE_TECNICO";
+    }
+    // Preservar rol asignado previamente por el operador si no es el genérico PARTICIPANTE
+    if (
+      rolPrevioGuardado === "HOST"
+      || rolPrevioGuardado === "COHOST"
+      || rolPrevioGuardado === "DOCENTE"
+      || rolPrevioGuardado === "ASISTENTE_TECNICO"
+    ) {
+      return rolPrevioGuardado;
     }
     return "PARTICIPANTE";
   }
@@ -574,9 +613,9 @@ export async function obtenerReunionOperativa(
   } {
     const clave = normalizarClaveParticipante(p);
     const previo = registrosPreviosMap.get(clave);
-    const nombreNorm = normalizarTexto(p.nombre);
-    const auditado = correosAuditadosPorNombre.get(nombreNorm);
-    const correoDirectorio = directorioPorNombre.get(nombreNorm) ?? null;
+    const nombreNorm = normalizarTextoOperativo(p.nombre);
+    const auditado = indiceAuditados.obtenerUnico(p.nombre);
+    const correoDirectorio = indiceDirectorio.obtenerUnico(p.nombre)?.email ?? null;
 
     let email: string | null = null;
     let origenCorreo: OrigenCorreoParticipanteMeet = "SIN_CORREO";
@@ -604,7 +643,7 @@ export async function obtenerReunionOperativa(
     const rolEnReunion = resolverRolParticipante(
       nombreNorm,
       email,
-      previo?.origenCorreo === "MANUAL" ? previo.rolEnReunion : null
+      previo?.rolEnReunion
     );
     const esHostOCohost =
       rolEnReunion === "HOST"
@@ -614,12 +653,15 @@ export async function obtenerReunionOperativa(
 
     const conectado = p.conectado ?? conectadoDefault;
     const minutosConectado = p.minutosConectado ?? previo?.minutosConectado ?? 0;
-    const enGrupoPequeno = p.enGrupoPequeno ?? previo?.enGrupoPequeno ?? false;
-    const salaGrupoPequeno = p.salaGrupoPequeno ?? previo?.salaGrupoPequeno ?? undefined;
+    // Preservar siempre la asignación de grupo pequeño hecha por el operador en DB
+    const enGrupoPequeno = Boolean(previo?.enGrupoPequeno ?? p.enGrupoPequeno ?? false);
+    const salaGrupoPequeno = previo?.salaGrupoPequeno ?? p.salaGrupoPequeno ?? undefined;
     const notasOperador = previo?.notasOperador ?? undefined;
+    const nombreFinal = previo?.origenCorreo === "MANUAL" && previo.nombre ? previo.nombre : p.nombre;
 
     return {
       ...p,
+      nombre: nombreFinal,
       email: email ?? undefined,
       conectado,
       minutosConectado,
@@ -641,12 +683,13 @@ export async function obtenerReunionOperativa(
     ...desconectadosEnriquecidos
   ];
 
-  // Persistir automáticamente los participantes detectados en RegistroAsistenciaMeet
   const asistentesRegistrados: RegistroAsistenciaOperativoView[] = [];
   const clavesVistas = new Set<string>();
+  const escriturasPendientes: Array<() => Promise<unknown>> = [];
 
   for (const item of todosEnriquecidos) {
     clavesVistas.add(item.claveParticipante);
+    const previo = registrosPreviosMap.get(item.claveParticipante);
     const porcentajeAsistencia = Math.min(
       100,
       Math.round(((item.minutosConectado ?? 0) / duracionProgramadaMin) * 100)
@@ -654,7 +697,7 @@ export async function obtenerReunionOperativa(
     const cumpleNormativa = porcentajeAsistencia >= 80;
 
     const viewRecord: RegistroAsistenciaOperativoView = {
-      id: registrosPreviosMap.get(item.claveParticipante)?.id,
+      id: previo?.id,
       claveParticipante: item.claveParticipante,
       participanteMeetId: item.participanteId ?? null,
       nombre: item.nombre,
@@ -677,9 +720,18 @@ export async function obtenerReunionOperativa(
     };
     asistentesRegistrados.push(viewRecord);
 
-    try {
-      if (db.registroAsistenciaMeet?.upsert) {
-        await db.registroAsistenciaMeet.upsert({
+    // Solo escribir en DB si el participante es nuevo o si cambió su estado/minutos/correo
+    const cambioSignificativo =
+      !previo
+      || previo.conectado !== viewRecord.conectado
+      || previo.minutosConectado !== viewRecord.minutosConectado
+      || previo.numeroConexiones !== viewRecord.numeroConexiones
+      || (viewRecord.email && previo.email !== viewRecord.email)
+      || previo.rolEnReunion !== viewRecord.rolEnReunion;
+
+    if (cambioSignificativo && db.registroAsistenciaMeet?.upsert) {
+      escriturasPendientes.push(() =>
+        db.registroAsistenciaMeet.upsert({
           where: {
             instanciaSalaId_claveParticipante: {
               instanciaSalaId: meeting.id,
@@ -690,8 +742,8 @@ export async function obtenerReunionOperativa(
             instanciaSalaId: meeting.id,
             claveParticipante: item.claveParticipante,
             participanteMeetId: item.participanteId ?? null,
-            nombre: item.nombre,
-            email: item.email ?? null,
+            nombre: viewRecord.nombre,
+            email: viewRecord.email,
             tipoAcceso: item.tipo,
             rolEnReunion: viewRecord.rolEnReunion,
             conectado: viewRecord.conectado,
@@ -711,7 +763,7 @@ export async function obtenerReunionOperativa(
           },
           update: {
             participanteMeetId: item.participanteId ?? undefined,
-            nombre: item.nombre,
+            nombre: viewRecord.nombre,
             email: viewRecord.email ?? undefined,
             tipoAcceso: item.tipo,
             rolEnReunion: viewRecord.rolEnReunion,
@@ -723,16 +775,20 @@ export async function obtenerReunionOperativa(
             cumpleNormativa: viewRecord.cumpleNormativa,
             numeroConexiones: viewRecord.numeroConexiones,
             esHostOCohost: viewRecord.esHostOCohost,
-            enGrupoPequeno: viewRecord.enGrupoPequeno,
-            salaGrupoPequeno: viewRecord.salaGrupoPequeno,
             externo: viewRecord.externo ?? undefined,
             conferenciaId: conferenciaIdActual ?? undefined,
             origenCorreo: viewRecord.origenCorreo
           }
-        });
-      }
+        })
+      );
+    }
+  }
+
+  if (escriturasPendientes.length > 0) {
+    try {
+      await Promise.all(escriturasPendientes.map((fn) => fn()));
     } catch {
-      // No interrumpir la vista operativa si la base de datos está en modo solo lectura o test
+      // No interrumpir la lectura operativa si falla la persistencia oportunista
     }
   }
 
@@ -763,6 +819,14 @@ export async function obtenerReunionOperativa(
     });
   }
 
+  const salasGruposPequenosActivas = new Set(
+    asistentesRegistrados
+      .filter((a) => a.conectado && a.enGrupoPequeno)
+      .map((a) => (a.salaGrupoPequeno?.trim().toLowerCase() || "subgrupo"))
+  );
+  const enGruposPequenos = salasGruposPequenosActivas.size > 0;
+  const cantidadGruposPequenos = salasGruposPequenosActivas.size;
+
   // Construir estado de conexión de Host, Cohosts, Docente y Asistente Técnico
   const hostsYCohostsMap = new Map<string, HostOCohostConectadoView>();
 
@@ -771,14 +835,14 @@ export async function obtenerReunionOperativa(
     nombre: string,
     rol: "HOST" | "COHOST" | "DOCENTE" | "ASISTENTE_TECNICO"
   ) {
-    const clave = email ? email.trim().toLowerCase() : `nombre:${normalizarTexto(nombre)}`;
+    const clave = email ? email.trim().toLowerCase() : `nombre:${normalizarTextoOperativo(nombre)}`;
     if (!clave || hostsYCohostsMap.has(clave)) return;
 
     const match = asistentesRegistrados.find((a) => {
       if (email && a.email && a.email.trim().toLowerCase() === email.trim().toLowerCase()) {
         return true;
       }
-      return Boolean(nombre && normalizarTexto(a.nombre) === normalizarTexto(nombre));
+      return Boolean(nombre && normalizarTextoOperativo(a.nombre) === normalizarTextoOperativo(nombre));
     });
 
     hostsYCohostsMap.set(clave, {
@@ -1018,13 +1082,6 @@ export async function actualizarControlOperativoReunion(
     }
   }
 
-  if (Object.keys(updateData).length > 0) {
-    await db.instanciaSala.update({
-      where: { id: instanciaId },
-      data: updateData
-    });
-  }
-
   const cohostsAnteriores = [
     ...new Set(
       [
@@ -1037,57 +1094,67 @@ export async function actualizarControlOperativoReunion(
   ];
   let cohostsDeseados = [...cohostsAnteriores];
 
-  if (parsed.agregarCohostEmail) {
-    const nuevoEmail = parsed.agregarCohostEmail.trim().toLowerCase();
-    await db.cohostEmailReunion.upsert({
-      where: {
-        instanciaSalaId_email: {
-          instanciaSalaId: instanciaId,
-          email: nuevoEmail
-        }
-      },
-      create: {
-        instanciaSalaId: instanciaId,
-        email: nuevoEmail
-      },
-      update: {}
-    });
-    if (!cohostsDeseados.includes(nuevoEmail)) {
-      cohostsDeseados = [...cohostsDeseados, nuevoEmail];
-    }
-  }
-
-  if (parsed.quitarCohostEmail) {
-    const quitarEmail = parsed.quitarCohostEmail.trim().toLowerCase();
-    await db.cohostEmailReunion.deleteMany({
-      where: {
-        instanciaSalaId: instanciaId,
-        email: quitarEmail
-      }
-    });
-    const cohostCuenta = meeting.cohosts.find(
-      ({ cuentaGoogle }) => cuentaGoogle.email.trim().toLowerCase() === quitarEmail
-    );
-    if (cohostCuenta) {
-      await db.cohostReunion.deleteMany({
-        where: {
-          instanciaSalaId: instanciaId,
-          cuentaGoogleId: cohostCuenta.cuentaGoogleId
-        }
+  await db.$transaction(async (tx) => {
+    if (Object.keys(updateData).length > 0) {
+      await tx.instanciaSala.update({
+        where: { id: instanciaId },
+        data: updateData
       });
     }
-    cohostsDeseados = cohostsDeseados.filter((e) => e !== quitarEmail);
-  }
+
+    if (parsed.agregarCohostEmail) {
+      const nuevoEmail = parsed.agregarCohostEmail.trim().toLowerCase();
+      await tx.cohostEmailReunion.upsert({
+        where: {
+          instanciaSalaId_email: {
+            instanciaSalaId: instanciaId,
+            email: nuevoEmail
+          }
+        },
+        create: {
+          instanciaSalaId: instanciaId,
+          email: nuevoEmail
+        },
+        update: {}
+      });
+      if (!cohostsDeseados.includes(nuevoEmail)) {
+        cohostsDeseados = [...cohostsDeseados, nuevoEmail];
+      }
+    }
+
+    if (parsed.quitarCohostEmail) {
+      const quitarEmail = parsed.quitarCohostEmail.trim().toLowerCase();
+      await tx.cohostEmailReunion.deleteMany({
+        where: {
+          instanciaSalaId: instanciaId,
+          email: quitarEmail
+        }
+      });
+      const cohostCuenta = meeting.cohosts.find(
+        ({ cuentaGoogle }) => cuentaGoogle.email.trim().toLowerCase() === quitarEmail
+      );
+      if (cohostCuenta) {
+        await tx.cohostReunion.deleteMany({
+          where: {
+            instanciaSalaId: instanciaId,
+            cuentaGoogleId: cohostCuenta.cuentaGoogleId
+          }
+        });
+      }
+      cohostsDeseados = cohostsDeseados.filter((e) => e !== quitarEmail);
+    }
+  });
 
   // Sincronizar en tiempo real con Google Meet si el espacio existe
   const evento = meeting.eventosProveedor[0] ?? null;
   let sincronizadoConGoogle = false;
   let advertenciaGoogle: string | null = null;
+  const cambioCohosts = Boolean(parsed.agregarCohostEmail || parsed.quitarCohostEmail);
 
   if (
     evento?.codigoReunion
     && evento.cuentaProveedor?.emailOrganizador
-    && (parsed.tipoAccesoMeet || parsed.agregarCohostEmail || parsed.quitarCohostEmail)
+    && (parsed.tipoAccesoMeet || cambioCohosts)
   ) {
     const config = await db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal", activa: true },
@@ -1119,7 +1186,7 @@ export async function actualizarControlOperativoReunion(
           }
         }
 
-        if ((parsed.agregarCohostEmail || parsed.quitarCohostEmail) && evento.externalEventId) {
+        if (cambioCohosts && evento.externalEventId) {
           const payloadActualizado = await sincronizarCohostsGoogleExistente(
             {
               serviceAccountEmail: config.serviceAccountEmail,
@@ -1149,7 +1216,28 @@ export async function actualizarControlOperativoReunion(
         advertenciaGoogle = error instanceof Error
           ? error.message
           : "Se guardó en Sala Virtual, pero Google Meet rechazó la actualización remota.";
+
+        // Si falló la sincronización de cohosts o configuración de Meet, dejar marcada
+        // la operación pendiente en EventoProveedor para que la cola de reintentos la repare.
+        if (evento.id) {
+          await db.eventoProveedor.update({
+            where: { id: evento.id },
+            data: {
+              operacionPendiente: "CONFIGURAR_MEET",
+              errorIntegracion: advertenciaGoogle
+            }
+          }).catch(() => null);
+        }
       }
+    } else if (cambioCohosts && evento?.id) {
+      advertenciaGoogle = "Credenciales de Google Workspace no disponibles; quedó pendiente de sincronizar.";
+      await db.eventoProveedor.update({
+        where: { id: evento.id },
+        data: {
+          operacionPendiente: "CONFIGURAR_MEET",
+          errorIntegracion: advertenciaGoogle
+        }
+      }).catch(() => null);
     }
   }
 
@@ -1217,7 +1305,7 @@ export async function guardarRegistroAsistenciaOperativo(
     || rol === "COHOST"
     || rol === "DOCENTE"
     || rol === "ASISTENTE_TECNICO";
-  const origenCorreo: OrigenCorreoParticipanteMeet = emailLimpio ? "MANUAL" : "SIN_CORREO";
+  const origenCorreo: OrigenCorreoParticipanteMeet = "MANUAL";
 
   const registro = await db.registroAsistenciaMeet.upsert({
     where: {
