@@ -367,7 +367,7 @@ export default async function ReunionOperativaPage({
             <dd>{reunion.meet.operacionPendiente ?? "Ninguna"}</dd>
           </div>
           <div className="is-wide">
-            <dt>Asistencia técnica</dt>
+            <dt>Monitoreo</dt>
             <dd>{reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}</dd>
             {reunion.asistencia.requerida ? (
               <small>Llegada: {formatTime(reunion.asistencia.inicioAt)} · Salida: {formatTime(reunion.asistencia.finAt)}</small>
