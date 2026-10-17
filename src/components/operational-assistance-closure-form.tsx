@@ -55,7 +55,7 @@ export function OperationalAssistanceClosureForm({
     <details className="content-section">
       <summary>
         <CheckCircle2 size={17} aria-hidden="true" />
-        <strong>{cierreConfirmado ? "Ajustar cierre de asistencia" : "Finalizar asistencia técnica"}</strong>
+        <strong>{cierreConfirmado ? "Ajustar cierre de asistencia" : "Finalizar monitoreo"}</strong>
       </summary>
       <form className="encounter-edit-form" onSubmit={submit}>
         <label className="field">
