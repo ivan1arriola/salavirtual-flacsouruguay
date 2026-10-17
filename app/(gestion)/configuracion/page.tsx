@@ -109,7 +109,7 @@ export default async function ConfiguracionPage({
 
       {section === "asistencia" ? (
         <SettingsSectionHeader
-          title="Asistencia técnica"
+          title="Monitoreo"
           description="Definí quién recibe los reportes mensuales de horas registradas."
         />
       ) : null}
