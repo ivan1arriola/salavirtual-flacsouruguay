@@ -15,7 +15,7 @@ export function DashboardHeader({
   const roleLabels: Record<string, string> = {
     ADMINISTRACION: "Administración",
     DOCENTE: "Cuerpo Docente",
-    ASISTENTE_TECNICO: "Asistencia Técnica"
+    ASISTENTE_TECNICO: "Monitoreo"
   };
 
   const defaultSubtitles: Record<string, string> = {
