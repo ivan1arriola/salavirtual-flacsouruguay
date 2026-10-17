@@ -74,7 +74,16 @@ export function crearGoogleArtifactsProviderAdapter(
       fin: Date
     ): Promise<MeetActiveParticipantsScan> {
       const record = await this.buscarConferencia(codigo, inicio, fin);
-      if (!record) return { conferenciaExiste: false, participantesActivos: [] };
+      if (!record) {
+        return {
+          conferenciaExiste: false,
+          participantesActivos: [],
+          participantesDesconectados: [],
+          todosParticipantes: [],
+          enGruposPequenos: false,
+          cantidadGruposPequenos: 0
+        };
+      }
 
       const participants = await listarPaginas<Participant>(
         auth,
@@ -89,22 +98,71 @@ export function crearGoogleArtifactsProviderAdapter(
         )
       );
       const participantesActivos: ParticipanteActivoMeet[] = [];
+      const participantesDesconectados: ParticipanteActivoMeet[] = [];
+      const todosParticipantes: ParticipanteActivoMeet[] = [];
+      const nowMs = Date.now();
+      let breakoutCount = 0;
+
       participants.forEach((participant, index) => {
         const sessions = sessionsByParticipant[index] ?? [];
-        const hasActiveSession = sessions.some((session) => !session.endTime);
+        if (sessions.length === 0) return;
+
+        const sortedSessions = [...sessions].sort(
+          (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)
+        );
+        const activeSessions = sortedSessions.filter((session) => !session.endTime);
+        const hasActiveSession = activeSessions.length > 0;
+        const primeraEntradaAt = sortedSessions[0]?.startTime;
+        const completedEndTimes = sortedSessions
+          .map((session) => session.endTime)
+          .filter((endTime): endTime is string => Boolean(endTime));
+        const ultimaSalidaAt =
+          !hasActiveSession && completedEndTimes.length > 0
+            ? completedEndTimes[completedEndTimes.length - 1]
+            : undefined;
+
+        const totalMs = sortedSessions.reduce((acc, session) => {
+          const startMs = Date.parse(session.startTime);
+          const endMs = session.endTime ? Date.parse(session.endTime) : nowMs;
+          if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+            return acc;
+          }
+          return acc + (endMs - startMs);
+        }, 0);
+        const minutosConectado = totalMs > 0 ? Math.max(1, Math.round(totalMs / 60_000)) : 0;
+        const enGrupoPequeno = activeSessions.length > 1;
+        if (enGrupoPequeno) breakoutCount += 1;
+
+        const entry: ParticipanteActivoMeet = {
+          nombre: nombreParticipante(participant),
+          user: participant.signedinUser?.user,
+          participanteId: participant.name,
+          tipo: tipoParticipante(participant),
+          conectado: hasActiveSession,
+          primeraEntradaAt,
+          ultimaSalidaAt,
+          minutosConectado,
+          numeroConexiones: sortedSessions.length,
+          enGrupoPequeno,
+          salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño" : undefined
+        };
+
+        todosParticipantes.push(entry);
         if (hasActiveSession) {
-          participantesActivos.push({
-            nombre: nombreParticipante(participant),
-            user: participant.signedinUser?.user,
-            tipo: tipoParticipante(participant)
-          });
+          participantesActivos.push(entry);
+        } else {
+          participantesDesconectados.push(entry);
         }
       });
 
       return {
         conferenciaExiste: true,
         conferenceName: record.name,
-        participantesActivos
+        participantesActivos,
+        participantesDesconectados,
+        todosParticipantes,
+        enGruposPequenos: breakoutCount > 0,
+        cantidadGruposPequenos: breakoutCount
       };
     },
 
@@ -135,17 +193,29 @@ export function crearGoogleArtifactsProviderAdapter(
         item.state === "FILE_GENERATED" && item.docsDestination?.document
           ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
           : []);
+      const grabandoEnVivo = recordings.some((item) => item.state === "STARTED");
+      const transcribiendoEnVivo = transcripts.some((item) => item.state === "STARTED");
       const estadoGrabacion: EstadoGrabacionMeet = generatedRecordings.length > 0
         ? "GENERADA"
         : recordings.length > 0
           ? "PROCESANDO"
           : "AUSENTE";
+      const estadoTranscripcion = transcribiendoEnVivo
+        ? "TRANSCRIBIENDO"
+        : generatedTranscripts.length > 0
+          ? "GENERADA"
+          : transcripts.length > 0
+            ? "PROCESANDO"
+            : "AUSENTE";
 
       return {
         recordings: generatedRecordings,
         transcripts: generatedTranscripts,
         notes: generatedNotes,
         estadoGrabacion,
+        grabandoEnVivo,
+        transcribiendoEnVivo,
+        estadoTranscripcion,
         pendientes:
           recordings.length - generatedRecordings.length +
           transcripts.length - generatedTranscripts.length +

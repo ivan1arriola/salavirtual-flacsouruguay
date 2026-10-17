@@ -14,11 +14,39 @@ export type SyncArtifactsResult = Readonly<{
   error?: string;
 }>;
 
+export type RolEnReunionMeet =
+  | "HOST"
+  | "COHOST"
+  | "DOCENTE"
+  | "ASISTENTE_TECNICO"
+  | "PARTICIPANTE";
+
+export type OrigenCorreoParticipanteMeet =
+  | "GOOGLE_MEET"
+  | "GOOGLE_REPORTS"
+  | "REPORTS_API"
+  | "DIRECTORIO_FLACSO"
+  | "MANUAL"
+  | "SIN_CORREO";
+
 export type ParticipanteActivoMeet = Readonly<{
   nombre: string;
   email?: string;
+  origenEmail?: OrigenCorreoParticipanteMeet;
   user?: string;
+  participanteId?: string;
   tipo: "CUENTA_GOOGLE" | "ANONIMO" | "TELEFONO";
+  conectado?: boolean;
+  primeraEntradaAt?: string;
+  ultimaSalidaAt?: string;
+  minutosConectado?: number;
+  numeroConexiones?: number;
+  esHostOCohost?: boolean;
+  rolEnReunion?: RolEnReunionMeet;
+  enGrupoPequeno?: boolean;
+  salaGrupoPequeno?: string;
+  externo?: boolean | null;
+  notasOperador?: string;
 }>;
 
 export type LiveParticipantsResult =
@@ -27,6 +55,10 @@ export type LiveParticipantsResult =
       conferenciaExiste: boolean;
       conferenceName?: string;
       participantes: readonly ParticipanteActivoMeet[];
+      participantesDesconectados?: readonly ParticipanteActivoMeet[];
+      todosParticipantes?: readonly ParticipanteActivoMeet[];
+      enGruposPequenos?: boolean;
+      cantidadGruposPequenos?: number;
     }>
   | Readonly<{
       estado: "NO_DISPONIBLE";
@@ -43,11 +75,16 @@ export type GoogleArtifact = Readonly<{
 
 export type EstadoGrabacionMeet = "AUSENTE" | "PROCESANDO" | "GENERADA";
 
+export type EstadoTranscripcionMeet = "AUSENTE" | "TRANSCRIBIENDO" | "PROCESANDO" | "GENERADA";
+
 export type MeetArtifactsScan = Readonly<{
   recordings: readonly GoogleArtifact[];
   transcripts: readonly GoogleArtifact[];
   notes: readonly GoogleArtifact[];
   estadoGrabacion: EstadoGrabacionMeet;
+  grabandoEnVivo?: boolean;
+  transcribiendoEnVivo?: boolean;
+  estadoTranscripcion?: EstadoTranscripcionMeet;
   pendientes: number;
 }>;
 
@@ -106,6 +143,10 @@ export type MeetActiveParticipantsScan = Readonly<{
   conferenciaExiste: boolean;
   conferenceName?: string;
   participantesActivos: readonly ParticipanteActivoMeet[];
+  participantesDesconectados?: readonly ParticipanteActivoMeet[];
+  todosParticipantes?: readonly ParticipanteActivoMeet[];
+  enGruposPequenos?: boolean;
+  cantidadGruposPequenos?: number;
 }>;
 
 export type MovedDriveFile = Readonly<{

@@ -4,7 +4,11 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock3,
+  FileText,
+  Lock,
   Radio,
+  Split,
+  Users,
   Video
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +20,10 @@ import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
+import {
+  OperationalAttendeeDatabaseManager,
+  OperationalRemoteControlPanel
+} from "@/src/components/operational-remote-control";
 import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -43,6 +51,9 @@ export default async function ReunionOperativaPage({
 
   const reunion = result.reunion;
   const active = reunion.conferencia.participantesActivos;
+  const desconectados = reunion.conferencia.participantesDesconectados;
+  const hostsYCohosts = reunion.conferencia.hostsYCohosts;
+  const hostsConectados = hostsYCohosts.filter((h) => h.conectado);
   const backHref = actor.rol === "ASISTENTE_TECNICO" ? "/mi-agenda" : "/";
   const backLabel = actor.rol === "ASISTENTE_TECNICO" ? "Volver a mi agenda" : "Volver al dashboard";
   const canSelfUnassign =
@@ -70,16 +81,32 @@ export default async function ReunionOperativaPage({
             <span className={`status ${statusClass(reunion.estado)}`}>
               {estadoLabel(reunion.estado)}
             </span>
+            {reunion.grabacion.grabandoEnVivo ? (
+              <span className="status status-ok">● Grabando en vivo</span>
+            ) : null}
+            {reunion.transcripcion.transcribiendoEnVivo ? (
+              <span className="status status-ok">● Transcribiendo en vivo</span>
+            ) : null}
+            {reunion.conferencia.enGruposPequenos ? (
+              <span className="status status-warning">
+                <Split size={13} aria-hidden="true" /> Grupos pequeños ({reunion.conferencia.cantidadGruposPequenos})
+              </span>
+            ) : null}
           </div>
           <h1>{reunion.titulo}</h1>
           <div className="operational-hero-meta">
-            <span>{reunion.docente}</span>
+            <span>{reunion.docente}{reunion.docenteEmail ? ` (${reunion.docenteEmail})` : ""}</span>
             <span>{formatDate(reunion.inicioProgramadoAt)}</span>
             <span>Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
             <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
           </div>
           <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt} requiresAssistance={reunion.asistencia.requerida} modality={reunion.modalidad} assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
-          {reunion.asistencia.asistente ? <p className="operational-assistance-time">Asistente asignado: {reunion.asistencia.asistente}</p> : null}
+          {reunion.asistencia.asistente ? (
+            <p className="operational-assistance-time">
+              Asistente asignado: {reunion.asistencia.asistente}
+              {reunion.asistencia.asistenteEmail ? ` (${reunion.asistencia.asistenteEmail})` : ""}
+            </p>
+          ) : null}
         </div>
 
         <div className="operational-hero-actions">
@@ -113,14 +140,20 @@ export default async function ReunionOperativaPage({
           <div>
             <span>Estado real</span>
             <strong>{estadoLabel(reunion.estado)}</strong>
-            <small>{disponibilidadLabel(reunion.conferencia.disponibilidad)}</small>
+            <small>
+              {reunion.conferencia.enGruposPequenos
+                ? `En grupos pequeños (${reunion.conferencia.cantidadGruposPequenos} sub-salas)`
+                : disponibilidadLabel(reunion.conferencia.disponibilidad)}
+            </small>
           </div>
         </article>
         <article>
           <Radio size={18} aria-hidden="true" />
           <div>
             <span>Participantes</span>
-            <strong>{active.length}</strong>
+            <strong>
+              {active.length} conectados · {desconectados.length} salieron
+            </strong>
             <small>
               {reunion.conferencia.inicioRealAt
                 ? `Meet inició ${formatTime(reunion.conferencia.inicioRealAt)}`
@@ -131,20 +164,112 @@ export default async function ReunionOperativaPage({
         <article>
           <Video size={18} aria-hidden="true" />
           <div>
-            <span>Grabación</span>
-            <strong>{grabacionLabel(reunion.grabacion.estado)}</strong>
-            <small>{reunion.requiereGrabacion ? "Requerida" : "No requerida"}</small>
+            <span>Estado de grabación</span>
+            <strong>
+              {reunion.grabacion.grabandoEnVivo
+                ? "Grabando"
+                : `No grabando (${grabacionLabel(reunion.grabacion.estado)})`}
+            </strong>
+            <small>{reunion.requiereGrabacion ? "Grabación requerida" : "No requerida"}</small>
           </div>
         </article>
         <article>
-          <CheckCircle2 size={18} aria-hidden="true" />
+          <FileText size={18} aria-hidden="true" />
           <div>
-            <span>Cohosts</span>
-            <strong>{reunion.cohosts.total === 0 ? "Sin cohosts" : reunion.cohosts.confirmados ? "Confirmados" : "Pendientes"}</strong>
-            <small>{reunion.cohosts.total} configurados</small>
+            <span>Transcripción</span>
+            <strong>
+              {reunion.transcripcion.transcribiendoEnVivo
+                ? "Transcribiendo"
+                : `No transcribiendo (${transcripcionLabel(reunion.transcripcion.estado)})`}
+            </strong>
+            <small>{reunion.artefactos.transcripciones} archivo(s)</small>
+          </div>
+        </article>
+        <article>
+          <Users size={18} aria-hidden="true" />
+          <div>
+            <span>Host / Cohosts en sala</span>
+            <strong>
+              {hostsConectados.length} de {hostsYCohosts.length} conectados
+            </strong>
+            <small>
+              {hostsConectados.length > 0
+                ? hostsConectados.map((h) => h.nombre).join(", ")
+                : "Ningún host/cohost conectado aún"}
+            </small>
+          </div>
+        </article>
+        <article>
+          <Lock size={18} aria-hidden="true" />
+          <div>
+            <span>Acceso a la reunión</span>
+            <strong>{tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</strong>
+            <small>Moderación: {reunion.meet.moderacion === "ON" ? "Activa" : "Estándar"}</small>
           </div>
         </article>
       </section>
+
+      <section className="content-section operational-hosts-card">
+        <div className="section-heading">
+          <div>
+            <h2>Host, cohosts y equipo docente</h2>
+            <p>Estado de conexión en tiempo real de los responsables de la sala.</p>
+          </div>
+          <span className="badge-tag">
+            {hostsConectados.length}/{hostsYCohosts.length} en línea
+          </span>
+        </div>
+
+        {hostsYCohosts.length === 0 ? (
+          <p className="operational-empty-inline">
+            <Clock3 size={18} aria-hidden="true" />
+            No hay host ni cohosts configurados para este encuentro.
+          </p>
+        ) : (
+          <ul className="operational-participant-list">
+            {hostsYCohosts.map((persona) => (
+              <li
+                key={`${persona.rol}-${persona.email}`}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}
+              >
+                <div>
+                  <strong>{persona.nombre}</strong>{" "}
+                  <span className="muted-text">({persona.email})</span>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                  <span className="badge-tag">{rolResponsableLabel(persona.rol)}</span>
+                  <span className={`status ${persona.conectado ? "status-ok" : "status-neutral"}`}>
+                    {persona.conectado
+                      ? `Conectado (${persona.minutosConectado} min)`
+                      : persona.minutosConectado > 0
+                        ? `Se desconectó (${persona.minutosConectado} min)`
+                        : "No conectado"}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <OperationalAttendeeDatabaseManager
+        instanciaId={reunion.id}
+        asistentes={reunion.conferencia.asistentesRegistrados}
+        enGruposPequenos={reunion.conferencia.enGruposPequenos}
+        cantidadGruposPequenos={reunion.conferencia.cantidadGruposPequenos}
+        ahoraIso={reunion.actualizadoAt.toISOString()}
+      />
+
+      <OperationalRemoteControlPanel
+        instanciaId={reunion.id}
+        tipoAccesoActual={reunion.meet.tipoAcceso}
+        requiereGrabacionActual={reunion.requiereGrabacion}
+        modalidadActual={reunion.modalidad}
+        inicioAsistenciaIso={reunion.asistencia.inicioAt.toISOString()}
+        finAsistenciaIso={reunion.asistencia.finAt.toISOString()}
+        cohostEmails={reunion.meet.cohostEmails}
+        tieneMeet={Boolean(reunion.meet.codigo)}
+      />
 
       <section className="content-section operational-meet-card">
         <div className="section-heading">
@@ -160,8 +285,20 @@ export default async function ReunionOperativaPage({
             <dd>{reunion.meet.codigo ?? "Pendiente"}</dd>
           </div>
           <div className="is-wide">
-            <dt>Organizador</dt>
+            <dt>Organizador (Host)</dt>
             <dd>{reunion.meet.organizador ?? "Pendiente"}</dd>
+          </div>
+          <div>
+            <dt>Tipo de acceso</dt>
+            <dd>{tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</dd>
+          </div>
+          <div>
+            <dt>Grupos pequeños</dt>
+            <dd>
+              {reunion.conferencia.enGruposPequenos
+                ? `Activos (${reunion.conferencia.cantidadGruposPequenos})`
+                : "Sala principal"}
+            </dd>
           </div>
           <div>
             <dt>Integración</dt>
@@ -201,36 +338,6 @@ export default async function ReunionOperativaPage({
           </p>
         ) : null}
       </section>
-
-      <details
-        className="content-section operational-disclosure"
-        open={active.length > 0 || reunion.estado === "EN_CURSO"}
-      >
-        <summary>
-          <div>
-            <h2>Participantes activos</h2>
-            <p>Datos confirmados por Google Meet al actualizar.</p>
-          </div>
-          <span className="badge-tag">{active.length}</span>
-        </summary>
-        <div className="operational-disclosure-content">
-          {active.length === 0 ? (
-            <p className="operational-empty-inline">
-              <Clock3 size={18} aria-hidden="true" />
-              No hay participantes activos confirmados.
-            </p>
-          ) : (
-            <ul className="operational-participant-list">
-              {active.map((participant, index) => (
-                <li key={participant.user ?? `${participant.nombre}-${index}`}>
-                  <strong>{participant.nombre}</strong>
-                  <span>{tipoParticipanteLabel(participant.tipo)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </details>
 
       <details
         className="content-section operational-disclosure"
@@ -285,7 +392,7 @@ export default async function ReunionOperativaPage({
         <div className="section-heading">
           <div>
             <h2>Artefactos</h2>
-            <p>Grabaciones y archivos sincronizados con Google.</p>
+            <p>Grabaciones y transcripciones sincronizadas con Google.</p>
           </div>
         </div>
         <div className="operational-artifacts-grid">
@@ -293,12 +400,20 @@ export default async function ReunionOperativaPage({
           <div><strong>{reunion.artefactos.transcripciones}</strong><span>Transcripciones</span></div>
           <div><strong>{reunion.artefactos.notas}</strong><span>Notas</span></div>
         </div>
-        {reunion.grabacion.url ? (
-          <a className="secondary-action operational-recording-link" href={reunion.grabacion.url} target="_blank" rel="noreferrer">
-            <Video size={16} aria-hidden="true" />
-            Ver grabación
-          </a>
-        ) : null}
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+          {reunion.grabacion.url ? (
+            <a className="secondary-action operational-recording-link" href={reunion.grabacion.url} target="_blank" rel="noreferrer">
+              <Video size={16} aria-hidden="true" />
+              Ver grabación
+            </a>
+          ) : null}
+          {reunion.transcripcion.url ? (
+            <a className="secondary-action operational-recording-link" href={reunion.transcripcion.url} target="_blank" rel="noreferrer">
+              <FileText size={16} aria-hidden="true" />
+              Ver transcripción
+            </a>
+          ) : null}
+        </div>
         <p className="operational-updated">Actualizado: {formatTime(reunion.actualizadoAt)}</p>
       </section>
     </div>
@@ -321,11 +436,34 @@ function estadoLabel(estado: string): string {
 }
 
 function grabacionLabel(estado: string): string {
+  if (estado === "GRABANDO") return "Grabando en vivo";
   if (estado === "NO_REQUERIDA") return "No requerida";
   if (estado === "PROCESANDO") return "Procesando";
   if (estado === "DISPONIBLE") return "Disponible";
   if (estado === "NO_REALIZADA") return "No realizada";
   return "Pendiente";
+}
+
+function transcripcionLabel(estado: string): string {
+  if (estado === "TRANSCRIBIENDO") return "Transcribiendo en vivo";
+  if (estado === "PROCESANDO") return "Procesando";
+  if (estado === "DISPONIBLE") return "Disponible";
+  return "Sin transcripción activa";
+}
+
+function tipoAccesoMeetLabel(tipo: string | null): string {
+  if (tipo === "OPEN") return "Abierto (OPEN)";
+  if (tipo === "TRUSTED") return "Institucional / Confianza (TRUSTED)";
+  if (tipo === "RESTRICTED") return "Restringido (RESTRICTED)";
+  return "Pendiente";
+}
+
+function rolResponsableLabel(rol: string): string {
+  if (rol === "HOST") return "Host (Organizador)";
+  if (rol === "COHOST") return "Cohost";
+  if (rol === "DOCENTE") return "Docente";
+  if (rol === "ASISTENTE_TECNICO") return "Asistente técnico";
+  return rol;
 }
 
 function disponibilidadLabel(estado: string): string {
@@ -335,13 +473,6 @@ function disponibilidadLabel(estado: string): string {
   if (estado === "ERROR") return "La última consulta a Google falló";
   return "Meet aún no está configurado";
 }
-
-function tipoParticipanteLabel(tipo: string): string {
-  if (tipo === "CUENTA_GOOGLE") return "Cuenta Google";
-  if (tipo === "TELEFONO") return "Teléfono";
-  return "Anónimo";
-}
-
 
 function repairLabel(
   operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
@@ -353,7 +484,6 @@ function repairLabel(
   if (operacion === "PROVISIONAR") return "Reintentar provisión de Meet";
   return hasMeet ? "Revisar configuración de Meet" : "Reintentar provisión de Meet";
 }
-
 
 function incidenciaTipoLabel(tipo: string): string {
   if (tipo === "DOCENTE_NO_INGRESA") return "Docente no ingresa";

@@ -293,6 +293,7 @@ model InstanciaSala {
   detallesLiquidacion       DetalleLiquidacionAsistenciaTecnica[]
   cohosts                   CohostReunion[]
   cohostEmails              CohostEmailReunion[]
+  registrosAsistencia       RegistroAsistenciaMeet[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -779,3 +780,36 @@ model GoogleCuentaLease {
 
   @@index([venceAt])
 }
+
+model RegistroAsistenciaMeet {
+  id                   String        @id @default(cuid())
+  instanciaSalaId      String
+  claveParticipante    String
+  participanteMeetId   String?
+  nombre               String
+  email                String?
+  tipoAcceso           String        @default("CUENTA_GOOGLE")
+  rolEnReunion         String        @default("PARTICIPANTE")
+  conectado            Boolean       @default(false)
+  primeraEntradaAt     DateTime?
+  ultimaSalidaAt       DateTime?
+  minutosConectado     Int           @default(0)
+  porcentajeAsistencia Decimal?      @db.Decimal(5, 2)
+  cumpleNormativa      Boolean       @default(false)
+  numeroConexiones     Int           @default(1)
+  esHostOCohost        Boolean       @default(false)
+  enGrupoPequeno       Boolean       @default(false)
+  salaGrupoPequeno     String?
+  externo              Boolean?
+  conferenciaId        String?
+  origenCorreo         String?
+  notasOperador        String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  instancia            InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, claveParticipante])
+  @@index([instanciaSalaId, conectado])
+  @@index([instanciaSalaId, email])
+}
+
