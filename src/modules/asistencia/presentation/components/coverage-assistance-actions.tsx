@@ -21,7 +21,7 @@ export function CoverageAssistanceActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false })
       });
-      return parseResponse(response, "El monitoreo fue cancelada.");
+      return parseResponse(response, "El monitoreo fue cancelado.");
     });
   }
 
