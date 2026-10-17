@@ -16,6 +16,7 @@ import {
 } from "@/src/integrations/google/calendar";
 import {
   actualizarEspacioMeetHttp,
+  actualizarRolMiembroMeetHttp,
   crearEspacioMeetHttp,
   crearMiembroMeetHttp,
   eliminarMiembroMeetHttp,
@@ -96,7 +97,9 @@ export async function configurarGoogleMeetExistente(
         if (!isMemberPermissionError(legacyError)) throw legacyError;
       }
     }
-    return;
+    // Never report success if neither Principal nor Legacy could assign members.
+    // The caller must retain the pending/error state until Google confirms COHOST.
+    throw error;
   }
 }
 
@@ -134,9 +137,9 @@ export async function sincronizarCohostsGoogleExistente(
         if (!isMemberPermissionError(legacyError)) throw legacyError;
       }
     }
-    return await sincronizarCohostsGoogleConCredencial(credentials, input, {
-      omitirMembersEnFalloPermiso: true,
-    });
+    // Calendar invitations are not proof of COHOST. Do not write a verified
+    // payload when all available credentials were denied by spaces.members.
+    throw error;
   }
 }
 
@@ -148,8 +151,7 @@ async function sincronizarCohostsGoogleConCredencial(
     codigoReunion?: string | null;
     cohostsAnteriores: readonly string[];
     cohostsDeseados: readonly string[];
-  }>,
-  options?: Readonly<{ omitirMembersEnFalloPermiso?: boolean }>
+  }>
 ): Promise<Readonly<Record<string, unknown>>> {
   const calendarAuth = crearGoogleCalendarAuthClient(credentials);
   const meetAuth = crearGoogleMeetAuthClient(credentials);
@@ -177,13 +179,7 @@ async function sincronizarCohostsGoogleConCredencial(
   const provisioned = extraerMeetProvisionado(updated);
   if (!provisioned) throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
   const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, { cohostEmails: desired });
-  try {
-    await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
-  } catch (error) {
-    if (!options?.omitirMembersEnFalloPermiso || !isMemberPermissionError(error)) {
-      throw error;
-    }
-  }
+  await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
   return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired, new Date().toISOString());
 }
 
@@ -320,7 +316,9 @@ export function crearGoogleConferenceProvider(
             if (!isMemberPermissionError(legacyError)) throw legacyError;
           }
         }
-        return;
+        // Existing links remain valid, but unassigned cohosts are an integration
+        // failure and must be surfaced to the durable retry mechanism.
+        throw error;
       }
     },
     async cancelarEvento(calendarId, externalEventId) {
@@ -454,10 +452,9 @@ async function configurarCohostsMeet(
       const member = members.find((item) => item.email?.trim().toLowerCase() === email);
       if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
       if (member.role !== "COHOST") {
-        await eliminarMiembroMeetHttp(auth, member.name).catch((caught) => {
-          if (!isMeetNotFoundError(caught)) throw caught;
-        });
-        await crearMiembroMeetHttp(auth, spaceName, email, "COHOST");
+        // Avoid DELETE+POST races: Calendar can already have invited this
+        // person as a regular member. Promote them atomically in place.
+        await actualizarRolMiembroMeetHttp(auth, member.name, "COHOST");
       }
     }
   }

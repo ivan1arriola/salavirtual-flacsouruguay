@@ -259,7 +259,7 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     ]);
   });
 
-  it("configurarGoogleMeetExistente no lanza error cuando tanto Principal como Legacy fallan con Permission denied on resource Member en Meet existente", async () => {
+  it("configurarGoogleMeetExistente mantiene el error si Principal y Legacy no tienen permisos", async () => {
     state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
     state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
     state.failOnlyOnMembers = true;
@@ -270,10 +270,10 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
       configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
         cohostEmails: ["docente@flacso.edu.uy"],
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("Permission denied on resource Member");
   });
 
-  it("configurarEventoMeet en provider para reunión existente no lanza error cuando ambas credenciales fallan con Permission denied on resource Member", async () => {
+  it("configurarEventoMeet en provider para reunión existente devuelve error si ninguna credencial consigue crear cohosts", async () => {
     state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
     state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
     state.failOnlyOnMembers = true;
@@ -299,24 +299,22 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
           payload: {},
         },
       ),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("Permission denied on resource Member");
   });
 
-  it("sincronizarCohostsGoogleExistente resuelve exitosamente cuando ambas fallan en members", async () => {
+  it("sincronizarCohostsGoogleExistente falla sin registrar verificación falsa cuando ambas credenciales fallan en members", async () => {
     state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
     state.failOnLegacyEmail = "vieja@flacso-zoom-app.iam.gserviceaccount.com";
     state.failOnlyOnMembers = true;
     state.failWithCode = 403;
     state.failWithMessage = "403: Permission denied on resource Member (or it might not exist)";
 
-    const payload = await sincronizarCohostsGoogleExistente(principalCreds, {
+    await expect(sincronizarCohostsGoogleExistente(principalCreds, {
       calendarId: "sala02@flacso.edu.uy",
       externalEventId: "cal-evt-existente",
       codigoReunion: "abc-defg-hij",
       cohostsAnteriores: [],
       cohostsDeseados: ["docente@flacso.edu.uy"],
-    });
-
-    expect(payload).toBeDefined();
+    })).rejects.toThrow("Permission denied on resource Member");
   });
 });

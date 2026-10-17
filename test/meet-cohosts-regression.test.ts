@@ -32,6 +32,12 @@ vi.mock("google-auth-library", () => ({
         if (!google.ignorePost) google.members.push({ name: `spaces/space/members/${google.members.length + 1}`, ...options.data });
         return { data: options.data };
       }
+      if (options.method === "PATCH" && url.pathname.includes("/members/")) {
+        const member = google.members.find((item) => `/v2/${item.name}` === url.pathname);
+        if (!member) throw { code: 404 };
+        member.role = options.data.role;
+        return { data: member };
+      }
       if (options.method === "DELETE") {
         google.members = google.members.filter((member) => `/v2/${member.name}` !== url.pathname);
         return { data: {} };
@@ -77,7 +83,8 @@ describe("asignación real de cohosts", () => {
     google.members = [{ name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" }];
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
     assert.equal(google.members[0].role, "COHOST");
-    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 1);
+    assert.equal(google.calls.filter((call) => call.method === "PATCH" && new URL(call.url).pathname.includes("/members/")).length, 1);
+    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 0);
   });
 
   it("no borra un miembro que ya tiene el rol correcto", async () => {
