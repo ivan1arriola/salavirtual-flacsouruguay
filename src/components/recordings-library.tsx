@@ -54,7 +54,11 @@ export function RecordingsLibrary({
       );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo generar la planilla de asistencia.");
+        const detalle = typeof data.detalle === "string" ? data.detalle.trim() : "";
+        throw new Error([
+          data.error ?? "No se pudo generar la planilla de asistencia.",
+          detalle,
+        ].filter(Boolean).join(" "));
       }
       setFeedback({
         id: instanciaId,

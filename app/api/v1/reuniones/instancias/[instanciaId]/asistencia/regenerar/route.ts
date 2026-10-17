@@ -16,7 +16,12 @@ export async function POST(_request: Request, context: RouteContext) {
     const event = await db.eventoProveedor.findFirst({ where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } }, select: { id: true } });
     if (!event) return NextResponse.json({ error: "No se encontró un encuentro Meet para esta instancia." }, { status: 404 });
     const [result] = await sincronizarArtefactos([event.id], true);
-    if (!result || result.estado === "ERROR") return NextResponse.json({ error: "No se pudo regenerar la planilla de asistencia." }, { status: 502 });
+    if (!result || result.estado === "ERROR") {
+      return NextResponse.json({
+        error: "No se pudo regenerar la planilla de asistencia.",
+        detalle: result?.error ?? "La sincronización no devolvió un motivo del error."
+      }, { status: 502 });
+    }
     return NextResponse.json({ estado: result.estado }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
   } catch (error) {
     const mapped = toHttpError(error);
