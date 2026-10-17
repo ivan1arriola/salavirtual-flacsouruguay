@@ -36,7 +36,7 @@ const createMeetingNav = {
 } as const;
 
 const adminNav = [
-  { href: "/asistencia-tecnica", label: "Monitoreo", icon: Hand },
+  { href: "/monitoreo", label: "Monitoreo", icon: Hand },
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
   { href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
