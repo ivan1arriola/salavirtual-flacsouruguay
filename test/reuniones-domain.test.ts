@@ -125,7 +125,7 @@ describe("dias derivados de reuniones", () => {
     ).toBeUndefined();
   });
 
-  it("exige llegada y salida exactas en reuniones híbridas con asistencia técnica", () => {
+  it("exige llegada y salida exactas en reuniones híbridas con monitoreo", () => {
     const base = {
       titulo: "Clase híbrida",
       docenteProgramaId: "dp",
