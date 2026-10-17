@@ -94,7 +94,7 @@ export const crearReunionesSchema = z
         if (asistenciaInicio > inicio || asistenciaFin < fin) {
           context.addIssue({
             code: "custom",
-            message: "El horario de asistencia técnica debe cubrir todo el encuentro.",
+            message: "El horario de monitoreo debe cubrir todo el encuentro.",
             path: ["instancias", index, "asistenciaInicio"]
           });
         }
@@ -121,7 +121,7 @@ export const crearReunionesSchema = z
         if (!asistenciaInicio || !asistenciaFin) {
           context.addIssue({
             code: "custom",
-            message: "Las reuniones híbridas con asistencia técnica requieren hora exacta de llegada y salida.",
+            message: "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida.",
             path: ["instancias", index, "asistenciaInicio"]
           });
         } else {
@@ -198,10 +198,10 @@ export function resolverAsignacionInicial(
   asistenteTecnicoId?: string
 ): string | null {
   if (!requiereAsistenciaTecnica && asistenteTecnicoId) {
-    throw new Error("No se puede asignar un asistente técnico si la reunión no requiere asistencia técnica.");
+    throw new Error("No se puede asignar un asistente de monitoreo si la reunión no requiere monitoreo.");
   }
   if (rol !== "ADMINISTRACION" && asistenteTecnicoId) {
-    throw new Error("Solo Administración puede asignar un asistente técnico al crear una reunión.");
+    throw new Error("Solo Administración puede asignar un asistente de monitoreo al crear una reunión.");
   }
   return rol === "ADMINISTRACION" && requiereAsistenciaTecnica ? asistenteTecnicoId ?? null : null;
 }
