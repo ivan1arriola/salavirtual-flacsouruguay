@@ -333,7 +333,7 @@ export default async function ReunionDetailPage({
         <article>
           <UsersRound size={18} aria-hidden="true" />
           <div>
-            <span>Asistencia técnica</span>
+            <span>Monitoreo</span>
             <strong>{assistanceSummary}</strong>
             <small>{nextMeeting?.requiereAsistenciaTecnica ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}` : "Según cada encuentro"}</small>
           </div>
