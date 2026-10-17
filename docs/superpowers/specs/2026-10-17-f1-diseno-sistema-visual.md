@@ -28,7 +28,7 @@ Consolidar la base visual de Sala Virtual FLACSO para que las próximas fases pu
 - Cambiar reglas de negocio, persistencia o integraciones Google.
 - Eliminar hojas de estilos de página sin rastrear sus consumidores.
 - Reemplazar componentes visuales de forma masiva o introducir dependencias visuales.
-- Cambiar la nomenclatura de monitoreo, que se revisa junto con el PR #121.
+- Repetir el cambio de nomenclatura de Monitoreo ya integrado por el PR #121 (`151d822`). La ruta antigua se conserva y `/monitoreo` reutiliza la misma página.
 
 ## Enfoque técnico
 
@@ -43,6 +43,12 @@ Los tokens deben cubrir valores semánticos, no solo colores crudos: superficies
 - Revisar manualmente el diff de cascada y los consumidores de cada regla base antes de consolidarla.
 - No afirmar validación visual responsive ni comparación de capturas si no se dispone de entorno visual para ejecutar esas comprobaciones.
 - Confirmar que no hay cambios en rutas, permisos, lógica operativa, contratos API ni esquema de base de datos.
+
+## Revisión de cambios previos
+
+El PR #121 fue revisado antes de planificar la ejecución. Su CI terminó correctamente en seis trabajos: esquema/TypeScript, auditoría de dependencias, PostgreSQL, build, pruebas y deploy gate. No hay reviews ni hilos de revisión registrados y el smoke test manual descrito en el PR no está acreditado. La nomenclatura de Monitoreo queda fuera de F1.
+
+La revisión encontró textos heredados en algunos mensajes de configuración y errores de API móvil; las formas de respuesta y rutas persistidas se mantuvieron. El repositorio no contiene una aplicación Android para confirmar el tratamiento del texto libre `error`; F1 no modificará esos contratos ni esos mensajes.
 
 ## Entrega y riesgos
 
