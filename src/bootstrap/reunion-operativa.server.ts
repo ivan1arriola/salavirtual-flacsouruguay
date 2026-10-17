@@ -653,9 +653,14 @@ export async function obtenerReunionOperativa(
 
     const conectado = p.conectado ?? conectadoDefault;
     const minutosConectado = p.minutosConectado ?? previo?.minutosConectado ?? 0;
-    // Preservar siempre la asignación de grupo pequeño hecha por el operador en DB
-    const enGrupoPequeno = Boolean(previo?.enGrupoPequeno ?? p.enGrupoPequeno ?? false);
-    const salaGrupoPequeno = previo?.salaGrupoPequeno ?? p.salaGrupoPequeno ?? undefined;
+    // Ignorar el texto heurístico antiguo "Sala de grupo pequeño" si quedó persistido antes
+    const esFalsoPositivoLegacy = previo?.salaGrupoPequeno === "Sala de grupo pequeño";
+    const enGrupoPequeno = esFalsoPositivoLegacy
+      ? false
+      : Boolean(previo?.enGrupoPequeno ?? p.enGrupoPequeno ?? false);
+    const salaGrupoPequeno = esFalsoPositivoLegacy
+      ? undefined
+      : (previo?.salaGrupoPequeno ?? p.salaGrupoPequeno ?? undefined);
     const notasOperador = previo?.notasOperador ?? undefined;
     const nombreFinal = previo?.origenCorreo === "MANUAL" && previo.nombre ? previo.nombre : p.nombre;
 
@@ -720,14 +725,16 @@ export async function obtenerReunionOperativa(
     };
     asistentesRegistrados.push(viewRecord);
 
-    // Solo escribir en DB si el participante es nuevo o si cambió su estado/minutos/correo
+    // Solo escribir en DB si el participante es nuevo o si cambió su estado/minutos/correo/grupo
     const cambioSignificativo =
       !previo
       || previo.conectado !== viewRecord.conectado
       || previo.minutosConectado !== viewRecord.minutosConectado
       || previo.numeroConexiones !== viewRecord.numeroConexiones
       || (viewRecord.email && previo.email !== viewRecord.email)
-      || previo.rolEnReunion !== viewRecord.rolEnReunion;
+      || previo.rolEnReunion !== viewRecord.rolEnReunion
+      || previo.enGrupoPequeno !== viewRecord.enGrupoPequeno
+      || previo.salaGrupoPequeno !== viewRecord.salaGrupoPequeno;
 
     if (cambioSignificativo && db.registroAsistenciaMeet?.upsert) {
       escriturasPendientes.push(() =>
@@ -775,6 +782,8 @@ export async function obtenerReunionOperativa(
             cumpleNormativa: viewRecord.cumpleNormativa,
             numeroConexiones: viewRecord.numeroConexiones,
             esHostOCohost: viewRecord.esHostOCohost,
+            enGrupoPequeno: viewRecord.enGrupoPequeno,
+            salaGrupoPequeno: viewRecord.salaGrupoPequeno,
             externo: viewRecord.externo ?? undefined,
             conferenciaId: conferenciaIdActual ?? undefined,
             origenCorreo: viewRecord.origenCorreo

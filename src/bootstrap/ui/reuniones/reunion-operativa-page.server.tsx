@@ -61,6 +61,13 @@ export default async function ReunionOperativaPage({
     && Boolean(reunion.asistencia.asignacionId)
     && reunion.asistencia.inicioAt.getTime() > reunion.actualizadoAt.getTime();
 
+  const grabacionFaltanteEnCurso =
+    reunion.estado === "EN_CURSO"
+    && reunion.requiereGrabacion
+    && !reunion.grabacion.grabandoEnVivo
+    && reunion.grabacion.estado !== "DISPONIBLE"
+    && reunion.grabacion.estado !== "PROCESANDO";
+
   return (
     <div className="meeting-detail-v2 operational-console">
       <div className="operational-toolbar">
@@ -81,11 +88,25 @@ export default async function ReunionOperativaPage({
             <span className={`status ${statusClass(reunion.estado)}`}>
               {estadoLabel(reunion.estado)}
             </span>
+            <span
+              className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}
+              title="Define si la solicitud del encuentro exige grabación"
+            >
+              {reunion.requiereGrabacion ? "Solicitud: Grabación requerida" : "Solicitud: Sin grabación"}
+            </span>
             {reunion.grabacion.grabandoEnVivo ? (
-              <span className="status status-ok">● Grabando en vivo</span>
+              <span className="operational-mini-pill is-live-rec">
+                ● Meet: Grabando en vivo
+              </span>
+            ) : grabacionFaltanteEnCurso ? (
+              <span className="operational-mini-pill is-not-rec-warn">
+                ⚠ Meet: No se está grabando
+              </span>
             ) : null}
             {reunion.transcripcion.transcribiendoEnVivo ? (
-              <span className="status status-ok">● Transcribiendo en vivo</span>
+              <span className="operational-mini-pill is-live-rec">
+                ● Meet: Transcribiendo en vivo
+              </span>
             ) : null}
             {reunion.conferencia.enGruposPequenos ? (
               <span className="status status-warning">
@@ -134,6 +155,26 @@ export default async function ReunionOperativaPage({
         </div>
       </section>
 
+      {grabacionFaltanteEnCurso ? (
+        <section className="operational-recording-banner" role="alert">
+          <div>
+            <AlertTriangle size={20} aria-hidden="true" />
+            <div>
+              <strong>Grabación requerida por solicitud, pero NO se está grabando en Google Meet</strong>
+              <small>
+                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe iniciar la grabación dentro de Google Meet.
+              </small>
+            </div>
+          </div>
+          {reunion.meet.joinUrl ? (
+            <a className="secondary-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
+              <Video size={15} aria-hidden="true" />
+              Abrir Meet para grabar
+            </a>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="meeting-detail-summary operational-summary" aria-label="Estado operativo">
         <article>
           <Activity size={18} aria-hidden="true" />
@@ -161,28 +202,43 @@ export default async function ReunionOperativaPage({
             </small>
           </div>
         </article>
-        <article>
+        <article
+          className={
+            reunion.grabacion.grabandoEnVivo
+              ? "is-live-active"
+              : grabacionFaltanteEnCurso
+                ? "is-missing-required"
+                : ""
+          }
+        >
           <Video size={18} aria-hidden="true" />
           <div>
             <span>Estado de grabación</span>
             <strong>
               {reunion.grabacion.grabandoEnVivo
-                ? "Grabando"
-                : `No grabando (${grabacionLabel(reunion.grabacion.estado)})`}
+                ? "● Grabando ahora en Meet"
+                : `No se está grabando (${grabacionEstadoArchivoLabel(reunion.grabacion.estado)})`}
             </strong>
-            <small>{reunion.requiereGrabacion ? "Grabación requerida" : "No requerida"}</small>
+            <div className="operational-policy-vs-live">
+              <span className={`operational-mini-pill ${reunion.grabacion.grabandoEnVivo ? "is-live-rec" : "is-req-no"}`}>
+                {reunion.grabacion.grabandoEnVivo ? "En vivo: Grabando" : "En vivo: Inactiva"}
+              </span>
+              <span className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}>
+                {reunion.requiereGrabacion ? "Solicitud: Requerida" : "Solicitud: No requerida"}
+              </span>
+            </div>
           </div>
         </article>
-        <article>
+        <article className={reunion.transcripcion.transcribiendoEnVivo ? "is-live-active" : ""}>
           <FileText size={18} aria-hidden="true" />
           <div>
             <span>Transcripción</span>
             <strong>
               {reunion.transcripcion.transcribiendoEnVivo
-                ? "Transcribiendo"
+                ? "● Transcribiendo en Meet"
                 : `No transcribiendo (${transcripcionLabel(reunion.transcripcion.estado)})`}
             </strong>
-            <small>{reunion.artefactos.transcripciones} archivo(s)</small>
+            <small>{reunion.artefactos.transcripciones} archivo(s) generado(s)</small>
           </div>
         </article>
         <article>
@@ -221,29 +277,31 @@ export default async function ReunionOperativaPage({
         </div>
 
         {hostsYCohosts.length === 0 ? (
-          <p className="operational-empty-inline">
-            <Clock3 size={18} aria-hidden="true" />
-            No hay host ni cohosts configurados para este encuentro.
-          </p>
+          <div style={{ padding: "12px 16px" }}>
+            <p className="operational-empty-inline">
+              <Clock3 size={18} aria-hidden="true" />
+              No hay host ni cohosts configurados para este encuentro.
+            </p>
+          </div>
         ) : (
-          <ul className="operational-participant-list">
+          <ul className="operational-hosts-grid">
             {hostsYCohosts.map((persona) => (
               <li
                 key={`${persona.rol}-${persona.email}`}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}
+                className={`operational-host-item ${persona.conectado ? "is-online" : ""}`}
               >
-                <div>
-                  <strong>{persona.nombre}</strong>{" "}
-                  <span className="muted-text">({persona.email})</span>
+                <div className="operational-host-info">
+                  <strong title={persona.nombre}>{persona.nombre}</strong>
+                  <small title={persona.email}>{persona.email}</small>
                 </div>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                <div className="operational-host-badges">
                   <span className="badge-tag">{rolResponsableLabel(persona.rol)}</span>
                   <span className={`status ${persona.conectado ? "status-ok" : "status-neutral"}`}>
                     {persona.conectado
-                      ? `Conectado (${persona.minutosConectado} min)`
+                      ? `En sala · ${persona.minutosConectado}m`
                       : persona.minutosConectado > 0
-                        ? `Se desconectó (${persona.minutosConectado} min)`
-                        : "No conectado"}
+                        ? `Salió (${persona.minutosConectado}m)`
+                        : "Ausente"}
                   </span>
                 </div>
               </li>
@@ -275,7 +333,7 @@ export default async function ReunionOperativaPage({
         <div className="section-heading">
           <div>
             <h2>Google Meet</h2>
-            <p>Acceso e información necesaria para operar el encuentro.</p>
+            <p>Acceso e información técnica del espacio de reunión.</p>
           </div>
         </div>
 
@@ -297,7 +355,7 @@ export default async function ReunionOperativaPage({
             <dd>
               {reunion.conferencia.enGruposPequenos
                 ? `Activos (${reunion.conferencia.cantidadGruposPequenos})`
-                : "Sala principal"}
+                : "Sala principal única"}
             </dd>
           </div>
           <div>
@@ -435,20 +493,18 @@ function estadoLabel(estado: string): string {
   return "Programada";
 }
 
-function grabacionLabel(estado: string): string {
-  if (estado === "GRABANDO") return "Grabando en vivo";
-  if (estado === "NO_REQUERIDA") return "No requerida";
-  if (estado === "PROCESANDO") return "Procesando";
-  if (estado === "DISPONIBLE") return "Disponible";
-  if (estado === "NO_REALIZADA") return "No realizada";
-  return "Pendiente";
+function grabacionEstadoArchivoLabel(estado: string): string {
+  if (estado === "PROCESANDO") return "procesando archivo";
+  if (estado === "DISPONIBLE") return "archivo disponible";
+  if (estado === "NO_REALIZADA") return "sin archivo generado";
+  return "sin grabación activa";
 }
 
 function transcripcionLabel(estado: string): string {
   if (estado === "TRANSCRIBIENDO") return "Transcribiendo en vivo";
-  if (estado === "PROCESANDO") return "Procesando";
-  if (estado === "DISPONIBLE") return "Disponible";
-  return "Sin transcripción activa";
+  if (estado === "PROCESANDO") return "procesando archivo";
+  if (estado === "DISPONIBLE") return "archivo disponible";
+  return "inactiva";
 }
 
 function tipoAccesoMeetLabel(tipo: string | null): string {
@@ -459,10 +515,10 @@ function tipoAccesoMeetLabel(tipo: string | null): string {
 }
 
 function rolResponsableLabel(rol: string): string {
-  if (rol === "HOST") return "Host (Organizador)";
+  if (rol === "HOST") return "Host";
   if (rol === "COHOST") return "Cohost";
   if (rol === "DOCENTE") return "Docente";
-  if (rol === "ASISTENTE_TECNICO") return "Asistente técnico";
+  if (rol === "ASISTENTE_TECNICO") return "Asistente";
   return rol;
 }
 

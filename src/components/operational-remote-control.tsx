@@ -10,10 +10,10 @@ import {
   Save,
   Shield,
   Split,
-  Trash2,
   UserCheck,
   UserMinus,
-  Users
+  Users,
+  X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -145,142 +145,153 @@ export function OperationalRemoteControlPanel({
   }
 
   return (
-    <section className="content-section operational-remote-control">
-      <div className="section-heading">
+    <details className="content-section operational-disclosure operational-remote-control" open>
+      <summary>
         <div>
           <h2>Control remoto en tiempo real</h2>
-          <p>Modificá acceso de Google Meet, grabación, modalidad y cohosts a distancia desde Sala Virtual.</p>
+          <p>Modificá política de acceso Meet, requisito de grabación, horarios y cohosts a distancia desde Sala Virtual.</p>
         </div>
         <span className="status status-ok">
-          <Shield size={14} aria-hidden="true" /> Control activo
+          <Shield size={13} aria-hidden="true" /> Control activo
         </span>
-      </div>
+      </summary>
 
-      <form onSubmit={guardarParametrosGenerales} className="encounter-edit-form">
-        <div className="operational-facts">
-          <label className="field">
-            <span>Tipo de acceso a la reunión (Meet)</span>
-            <select
-              value={tipoAcceso}
-              onChange={(e) => setTipoAcceso(e.target.value as "OPEN" | "TRUSTED" | "RESTRICTED")}
-              disabled={pending || !tieneMeet}
-            >
-              <option value="OPEN">Abierto (OPEN — cualquiera con enlace entra directo)</option>
-              <option value="TRUSTED">Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)</option>
-              <option value="RESTRICTED">Restringido (RESTRICTED — solo invitados autorizados)</option>
-            </select>
-          </label>
+      <div className="operational-disclosure-content">
+        <form onSubmit={guardarParametrosGenerales} className="encounter-edit-form">
+          <div className="form-grid">
+            <label className="field">
+              <span>Tipo de acceso a la reunión (Google Meet)</span>
+              <select
+                value={tipoAcceso}
+                onChange={(e) => setTipoAcceso(e.target.value as "OPEN" | "TRUSTED" | "RESTRICTED")}
+                disabled={pending || !tieneMeet}
+              >
+                <option value="OPEN">Abierto (OPEN — cualquiera con enlace entra directo)</option>
+                <option value="TRUSTED">Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)</option>
+                <option value="RESTRICTED">Restringido (RESTRICTED — solo invitados autorizados)</option>
+              </select>
+            </label>
 
-          <label className="field">
-            <span>Grabación requerida</span>
-            <select
-              value={requiereGrabacion ? "SI" : "NO"}
-              onChange={(e) => setRequiereGrabacion(e.target.value === "SI")}
-              disabled={pending}
-            >
-              <option value="SI">Sí, requiere grabación</option>
-              <option value="NO">No requiere grabación</option>
-            </select>
-          </label>
+            <label className="field">
+              <span>Política de grabación (Solicitud del encuentro)</span>
+              <select
+                value={requiereGrabacion ? "SI" : "NO"}
+                onChange={(e) => setRequiereGrabacion(e.target.value === "SI")}
+                disabled={pending}
+              >
+                <option value="SI">Grabación requerida (exigir grabación en este encuentro)</option>
+                <option value="NO">Grabación no requerida (opcional)</option>
+              </select>
+              <small className="muted-text">
+                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los controles de Google Meet.
+              </small>
+            </label>
 
-          <label className="field">
-            <span>Modalidad operativa</span>
-            <select
-              value={modalidad}
-              onChange={(e) => setModalidad(e.target.value as "HIBRIDA" | "VIRTUAL")}
-              disabled={pending}
-            >
-              <option value="VIRTUAL">Virtual</option>
-              <option value="HIBRIDA">Híbrida</option>
-            </select>
-          </label>
+            <label className="field">
+              <span>Modalidad operativa</span>
+              <select
+                value={modalidad}
+                onChange={(e) => setModalidad(e.target.value as "HIBRIDA" | "VIRTUAL")}
+                disabled={pending}
+              >
+                <option value="VIRTUAL">Virtual</option>
+                <option value="HIBRIDA">Híbrida</option>
+              </select>
+            </label>
 
-          <label className="field">
-            <span>Inicio asistencia técnica</span>
-            <input
-              type="datetime-local"
-              value={inicioAsistencia}
-              onChange={(e) => setInicioAsistencia(e.target.value)}
-              disabled={pending}
-            />
-          </label>
-
-          <label className="field">
-            <span>Fin asistencia técnica</span>
-            <input
-              type="datetime-local"
-              value={finAsistencia}
-              onChange={(e) => setFinAsistencia(e.target.value)}
-              disabled={pending}
-            />
-          </label>
-        </div>
-
-        <div className="operational-hero-actions" style={{ marginTop: "0.75rem" }}>
-          <button className="primary-action" type="submit" disabled={pending}>
-            {pending ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}
-            {pending ? "Aplicando cambios…" : "Aplicar cambios en tiempo real"}
-          </button>
-        </div>
-      </form>
-
-      <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px solid var(--border-subtle, #e2e8f0)" }}>
-        <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Cohosts configurados ({cohostEmails.length})</h3>
-        {cohostEmails.length === 0 ? (
-          <p className="muted-text" style={{ marginBottom: "0.75rem" }}>No hay cohosts adicionales configurados.</p>
-        ) : (
-          <ul className="operational-participant-list" style={{ marginBottom: "0.75rem" }}>
-            {cohostEmails.map((email) => (
-              <li key={email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
-                <span>
-                  <Mail size={14} aria-hidden="true" style={{ marginRight: "0.35rem", verticalAlign: "middle" }} />
-                  <strong>{email}</strong>
-                </span>
-                <button
-                  type="button"
-                  className="secondary-action"
-                  onClick={() => quitarCohost(email)}
+            <div className="form-grid" style={{ gap: "10px" }}>
+              <label className="field">
+                <span>Inicio asistencia técnica</span>
+                <input
+                  type="datetime-local"
+                  value={inicioAsistencia}
+                  onChange={(e) => setInicioAsistencia(e.target.value)}
                   disabled={pending}
-                  title={`Quitar cohost ${email}`}
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                  Quitar
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                />
+              </label>
 
-        <form onSubmit={agregarCohost} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <label className="field" style={{ flex: "1 1 240px", margin: 0 }}>
-            <span>Agregar cohost en vivo (correo Google)</span>
-            <input
-              type="email"
-              value={nuevoCohost}
-              onChange={(e) => setNuevoCohost(e.target.value)}
-              placeholder="ejemplo@flacso.edu.uy"
-              disabled={pending}
-            />
-          </label>
-          <button type="submit" className="secondary-action" disabled={pending || !nuevoCohost.trim()}>
-            <Plus size={15} aria-hidden="true" />
-            Agregar cohost
-          </button>
+              <label className="field">
+                <span>Fin asistencia técnica</span>
+                <input
+                  type="datetime-local"
+                  value={finAsistencia}
+                  onChange={(e) => setFinAsistencia(e.target.value)}
+                  disabled={pending}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginTop: "0.75rem" }}>
+            <button className="primary-action" type="submit" disabled={pending}>
+              {pending ? <LoaderCircle className="button-spinner" size={16} /> : <Save size={16} />}
+              {pending ? "Aplicando cambios…" : "Aplicar cambios en tiempo real"}
+            </button>
+          </div>
         </form>
-      </div>
 
-      {feedback ? (
-        <p
-          aria-live="polite"
-          className={feedback.kind === "error" ? "status-warning-text operational-warning" : "muted-text"}
-          style={{ marginTop: "0.75rem" }}
-        >
-          {feedback.text}
-        </p>
-      ) : null}
-    </section>
+        <div style={{ marginTop: "1.1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+          <strong style={{ fontSize: "0.82rem", color: "#334155" }}>
+            Cohosts configurados en Google Meet ({cohostEmails.length})
+          </strong>
+
+          {cohostEmails.length === 0 ? (
+            <p className="muted-text" style={{ margin: "0.4rem 0 0.75rem", fontSize: "0.78rem" }}>
+              No hay cohosts adicionales configurados.
+            </p>
+          ) : (
+            <ul className="operational-cohost-chips">
+              {cohostEmails.map((email) => (
+                <li key={email} className="operational-cohost-chip">
+                  <Mail size={13} aria-hidden="true" />
+                  <span>{email}</span>
+                  <button
+                    type="button"
+                    onClick={() => quitarCohost(email)}
+                    disabled={pending}
+                    title={`Quitar cohost ${email}`}
+                    aria-label={`Quitar cohost ${email}`}
+                  >
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={agregarCohost} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label className="field" style={{ flex: "1 1 240px", margin: 0 }}>
+              <span>Agregar cohost en vivo (correo Google)</span>
+              <input
+                type="email"
+                value={nuevoCohost}
+                onChange={(e) => setNuevoCohost(e.target.value)}
+                placeholder="ejemplo@flacso.edu.uy"
+                disabled={pending}
+              />
+            </label>
+            <button type="submit" className="secondary-action" disabled={pending || !nuevoCohost.trim()}>
+              <Plus size={15} aria-hidden="true" />
+              Agregar cohost
+            </button>
+          </form>
+        </div>
+
+        {feedback ? (
+          <p
+            aria-live="polite"
+            className={feedback.kind === "error" ? "status-warning-text operational-warning" : "muted-text"}
+            style={{ marginTop: "0.75rem" }}
+          >
+            {feedback.text}
+          </p>
+        ) : null}
+      </div>
+    </details>
   );
 }
+
+type FiltroAsistentes = "CONECTADOS" | "SALIERON" | "TODOS" | "SIN_CORREO";
 
 export function OperationalAttendeeDatabaseManager({
   instanciaId,
@@ -296,6 +307,8 @@ export function OperationalAttendeeDatabaseManager({
   ahoraIso: string;
 }>) {
   const router = useRouter();
+  const [filtro, setFiltro] = useState<FiltroAsistentes>("CONECTADOS");
+  const [busqueda, setBusqueda] = useState("");
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [addingManual, setAddingManual] = useState(false);
   const [nombreEdit, setNombreEdit] = useState("");
@@ -309,7 +322,27 @@ export function OperationalAttendeeDatabaseManager({
 
   const conectados = asistentes.filter((a) => a.conectado);
   const desconectados = asistentes.filter((a) => !a.conectado);
+  const sinCorreo = asistentes.filter((a) => !a.email);
   const ahoraMs = Date.parse(ahoraIso) || Date.now();
+
+  const listaBase =
+    filtro === "CONECTADOS"
+      ? conectados
+      : filtro === "SALIERON"
+        ? desconectados
+        : filtro === "SIN_CORREO"
+          ? sinCorreo
+          : asistentes;
+
+  const termino = busqueda.trim().toLowerCase();
+  const listaFiltrada = termino
+    ? listaBase.filter(
+        (item) =>
+          item.nombre.toLowerCase().includes(termino)
+          || (item.email ?? "").toLowerCase().includes(termino)
+          || (item.salaGrupoPequeno ?? "").toLowerCase().includes(termino)
+      )
+    : listaBase;
 
   function abrirEdicion(item: RegistroAsistenciaOperativoView) {
     setAddingManual(false);
@@ -382,84 +415,88 @@ export function OperationalAttendeeDatabaseManager({
     return (
       <li
         key={item.claveParticipante}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-          padding: "0.75rem",
-          borderRadius: "0.5rem",
-          border: "1px solid var(--border-subtle, #e2e8f0)"
-        }}
+        className={`operational-attendee-row ${item.conectado ? "is-online" : "is-departed"}`}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
-              <strong>{item.nombre}</strong>
-              <span className={`status ${rolBadgeClass(item.rolEnReunion)}`}>
-                {rolLabel(item.rolEnReunion)}
-              </span>
+        <div className="operational-attendee-row-main">
+          <div className="operational-attendee-identity">
+            <span
+              className={`operational-presence-dot ${item.conectado ? "is-online" : ""}`}
+              title={item.conectado ? "Conectado en este momento" : "Se desconectó"}
+            />
+            <strong>{item.nombre}</strong>
+            <span className={`status ${rolBadgeClass(item.rolEnReunion)}`}>
+              {rolLabel(item.rolEnReunion)}
+            </span>
+            {item.tipoAcceso !== "CUENTA_GOOGLE" ? (
               <span className="badge-tag">{tipoAccesoParticipanteLabel(item.tipoAcceso)}</span>
-              {item.enGrupoPequeno ? (
-                <span className="status status-warning" title="Participante en sub-sala o sesión paralela">
-                  <Split size={12} aria-hidden="true" />{" "}
-                  {item.salaGrupoPequeno ? `Grupo pequeño: ${item.salaGrupoPequeno}` : "En grupo pequeño"}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="muted-text" style={{ fontSize: "0.86rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <span>
-                <Mail size={13} aria-hidden="true" style={{ marginRight: "0.25rem", verticalAlign: "middle" }} />
-                {item.email ? (
-                  <>
-                    <strong>{item.email}</strong> ({origenCorreoLabel(item.origenCorreo)})
-                  </>
-                ) : (
-                  <em>Sin correo identificado — clic en Editar para asignar</em>
-                )}
+            ) : null}
+            {item.enGrupoPequeno ? (
+              <span className="status status-warning" title="Asignado a grupo pequeño">
+                <Split size={11} aria-hidden="true" />{" "}
+                {item.salaGrupoPequeno ? item.salaGrupoPequeno : "Grupo pequeño"}
               </span>
-
-              {item.conectado ? (
-                <span>
-                  <Clock3 size={13} aria-hidden="true" style={{ marginRight: "0.25rem", verticalAlign: "middle" }} />
-                  Conectado hace <strong>{minutosDesdeEntrada} min</strong>
-                  {item.primeraEntradaAt ? ` (entró ${formatHoraLocal(item.primeraEntradaAt)})` : ""}
-                  {item.minutosConectado > 0 ? ` · Acumulado: ${item.minutosConectado} min` : ""}
-                </span>
-              ) : (
-                <span>
-                  <Clock3 size={13} aria-hidden="true" style={{ marginRight: "0.25rem", verticalAlign: "middle" }} />
-                  Estuvo <strong>{item.minutosConectado} min</strong> ({item.porcentajeAsistencia}%)
-                  {item.primeraEntradaAt ? ` · Entró ${formatHoraLocal(item.primeraEntradaAt)}` : ""}
-                  {item.ultimaSalidaAt ? ` · Salió ${formatHoraLocal(item.ultimaSalidaAt)}` : ""}
-                  {item.numeroConexiones > 1 ? ` · ${item.numeroConexiones} conexiones` : ""}
-                </span>
-              )}
-            </div>
-
-            {item.notasOperador ? (
-              <small className="muted-text">Nota operador: {item.notasOperador}</small>
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className="secondary-action"
-            onClick={() => (isEditing ? setEditingKey(null) : abrirEdicion(item))}
-            disabled={pending}
-          >
-            <Edit3 size={14} aria-hidden="true" />
-            {isEditing ? "Cancelar" : "Editar"}
-          </button>
+          <div className="operational-attendee-email">
+            <Mail size={13} aria-hidden="true" />
+            {item.email ? (
+              <>
+                <code>{item.email}</code>
+                <span className="badge-tag">{origenCorreoLabel(item.origenCorreo)}</span>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="secondary-action operational-row-edit-btn"
+                onClick={() => abrirEdicion(item)}
+              >
+                + Asignar correo
+              </button>
+            )}
+          </div>
+
+          <div className="operational-attendee-time">
+            <Clock3 size={12} aria-hidden="true" style={{ marginRight: "4px", verticalAlign: "middle" }} />
+            {item.conectado ? (
+              <span>
+                Hace <strong>{minutosDesdeEntrada} min</strong>
+                {item.primeraEntradaAt ? ` · Entró ${formatHoraLocal(item.primeraEntradaAt)}` : ""}
+              </span>
+            ) : (
+              <span>
+                Estuvo <strong>{item.minutosConectado} min</strong> ({item.porcentajeAsistencia}%)
+                {item.ultimaSalidaAt ? ` · Salió ${formatHoraLocal(item.ultimaSalidaAt)}` : ""}
+                {item.numeroConexiones > 1 ? ` · ${item.numeroConexiones} conex.` : ""}
+              </span>
+            )}
+          </div>
+
+          <div>
+            <button
+              type="button"
+              className="secondary-action operational-row-edit-btn"
+              onClick={() => (isEditing ? setEditingKey(null) : abrirEdicion(item))}
+              disabled={pending}
+            >
+              <Edit3 size={13} aria-hidden="true" />
+              {isEditing ? "Cerrar" : "Editar"}
+            </button>
+          </div>
         </div>
+
+        {item.notasOperador && !isEditing ? (
+          <div style={{ marginTop: "4px", paddingLeft: "14px", fontSize: "0.73rem", color: "#64748b" }}>
+            Nota: {item.notasOperador}
+          </div>
+        ) : null}
 
         {isEditing ? (
           <form
             onSubmit={(e) => guardarAsistente(e, item.claveParticipante, item.conectado)}
-            className="encounter-edit-form"
-            style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px dashed var(--border-subtle, #cbd5e1)" }}
+            className="operational-inline-editor"
           >
-            <div className="operational-facts">
+            <div className="form-grid">
               <label className="field">
                 <span>Nombre</span>
                 <input
@@ -495,27 +532,19 @@ export function OperationalAttendeeDatabaseManager({
                 </select>
               </label>
               <label className="field">
-                <span>¿En grupo pequeño?</span>
-                <select
-                  value={enGrupoEdit ? "SI" : "NO"}
-                  onChange={(e) => setEnGrupoEdit(e.target.value === "SI")}
-                  disabled={pending}
-                >
-                  <option value="NO">Sala principal</option>
-                  <option value="SI">Sí, en grupo pequeño</option>
-                </select>
-              </label>
-              <label className="field">
-                <span>Nombre de grupo pequeño (opcional)</span>
+                <span>Grupo pequeño (opcional)</span>
                 <input
                   type="text"
                   value={salaGrupoEdit}
-                  onChange={(e) => setSalaGrupoEdit(e.target.value)}
-                  placeholder="Ej: Grupo 1"
+                  onChange={(e) => {
+                    setSalaGrupoEdit(e.target.value);
+                    setEnGrupoEdit(Boolean(e.target.value.trim()));
+                  }}
+                  placeholder="Dejar vacío si está en sala principal (ej: Grupo 1)"
                   disabled={pending}
                 />
               </label>
-              <label className="field">
+              <label className="field field-wide">
                 <span>Notas del operador</span>
                 <input
                   type="text"
@@ -526,10 +555,20 @@ export function OperationalAttendeeDatabaseManager({
                 />
               </label>
             </div>
-            <button type="submit" className="primary-action" disabled={pending}>
-              {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
-              Guardar en base de datos
-            </button>
+            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+              <button type="submit" className="primary-action" disabled={pending}>
+                {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
+                Guardar en base de datos
+              </button>
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={() => setEditingKey(null)}
+                disabled={pending}
+              >
+                Cancelar
+              </button>
+            </div>
           </form>
         ) : null}
       </li>
@@ -540,38 +579,92 @@ export function OperationalAttendeeDatabaseManager({
     <section className="content-section operational-attendance-db">
       <div className="section-heading">
         <div>
-          <h2>Registro de asistentes en base de datos</h2>
+          <h2>Asistentes de la reunión ({asistentes.length})</h2>
           <p>
-            Lista sincronizada con Google Meet y persistida en PostgreSQL con nombres, correos, tiempos de conexión y grupos pequeños.
+            Registro en vivo persistido en PostgreSQL con correos, tiempos de conexión y estado actual.
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           {enGruposPequenos ? (
             <span className="status status-warning">
-              <Split size={14} aria-hidden="true" /> Grupos pequeños activos ({cantidadGruposPequenos})
+              <Split size={13} aria-hidden="true" /> Grupos pequeños ({cantidadGruposPequenos})
             </span>
-          ) : (
-            <span className="status status-neutral">Sala principal única</span>
-          )}
+          ) : null}
           <button
             type="button"
-            className="secondary-action"
+            className="secondary-action operational-row-edit-btn"
             onClick={() => (addingManual ? setAddingManual(false) : abrirNuevoManual())}
           >
-            <Plus size={15} aria-hidden="true" />
-            {addingManual ? "Cancelar registro manual" : "Registrar asistente"}
+            <Plus size={14} aria-hidden="true" />
+            {addingManual ? "Cerrar formulario" : "Registrar asistente"}
           </button>
         </div>
       </div>
 
+      <div className="operational-attendee-controls">
+        <div className="operational-attendee-tabs" role="tablist" aria-label="Filtrar asistentes">
+          <button
+            type="button"
+            className={`operational-tab-btn ${filtro === "CONECTADOS" ? "is-active" : ""}`}
+            onClick={() => setFiltro("CONECTADOS")}
+          >
+            <UserCheck size={14} aria-hidden="true" />
+            Conectados ahora ({conectados.length})
+          </button>
+          <button
+            type="button"
+            className={`operational-tab-btn ${filtro === "SALIERON" ? "is-active" : ""}`}
+            onClick={() => setFiltro("SALIERON")}
+          >
+            <UserMinus size={14} aria-hidden="true" />
+            Se conectaron y salieron ({desconectados.length})
+          </button>
+          <button
+            type="button"
+            className={`operational-tab-btn ${filtro === "TODOS" ? "is-active" : ""}`}
+            onClick={() => setFiltro("TODOS")}
+          >
+            <Users size={14} aria-hidden="true" />
+            Todos ({asistentes.length})
+          </button>
+          {sinCorreo.length > 0 ? (
+            <button
+              type="button"
+              className={`operational-tab-btn ${filtro === "SIN_CORREO" ? "is-active" : ""}`}
+              onClick={() => setFiltro("SIN_CORREO")}
+            >
+              <Mail size={14} aria-hidden="true" />
+              Sin correo ({sinCorreo.length})
+            </button>
+          ) : null}
+        </div>
+
+        <input
+          type="search"
+          className="operational-search-input"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o correo…"
+          aria-label="Buscar asistente por nombre o correo"
+        />
+      </div>
+
       {addingManual ? (
         <form
-          onSubmit={(e) => guardarAsistente(e, `manual:${(emailEdit || nombreEdit).trim().toLowerCase()}`, true)}
-          className="encounter-edit-form"
-          style={{ marginBottom: "1rem", padding: "0.85rem", borderRadius: "0.5rem", border: "1px solid var(--border-subtle, #cbd5e1)" }}
+          onSubmit={(e) =>
+            guardarAsistente(
+              e,
+              `manual:${(emailEdit || `${nombreEdit}-${Date.now()}`).trim().toLowerCase()}`,
+              true
+            )
+          }
+          className="operational-inline-editor"
+          style={{ margin: "12px 16px" }}
         >
-          <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Nuevo registro de asistente en base de datos</h3>
-          <div className="operational-facts">
+          <strong style={{ display: "block", fontSize: "0.85rem", marginBottom: "8px" }}>
+            Registrar asistente manualmente en la base de datos
+          </strong>
+          <div className="form-grid">
             <label className="field">
               <span>Nombre completo</span>
               <input
@@ -621,55 +714,40 @@ export function OperationalAttendeeDatabaseManager({
               />
             </label>
           </div>
-          <button type="submit" className="primary-action" disabled={pending || !nombreEdit.trim()}>
-            {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
-            Guardar asistente en DB
-          </button>
+          <div style={{ marginTop: "10px" }}>
+            <button type="submit" className="primary-action" disabled={pending || !nombreEdit.trim()}>
+              {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
+              Guardar asistente en DB
+            </button>
+          </div>
         </form>
       ) : null}
 
       {message ? (
-        <p aria-live="polite" className="muted-text" style={{ marginBottom: "0.75rem" }}>
+        <p aria-live="polite" className="muted-text" style={{ margin: "10px 16px" }}>
           <CheckCircle2 size={14} aria-hidden="true" style={{ marginRight: "0.3rem", verticalAlign: "middle" }} />
           {message}
         </p>
       ) : null}
 
-      <div style={{ display: "grid", gap: "1.25rem" }}>
-        <div>
-          <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <UserCheck size={16} aria-hidden="true" />
-            Conectados en este momento ({conectados.length})
-          </h3>
-          {conectados.length === 0 ? (
-            <p className="operational-empty-inline">
-              <Users size={16} aria-hidden="true" />
-              No hay asistentes conectados en este momento.
-            </p>
-          ) : (
-            <ul className="operational-participant-list" style={{ display: "grid", gap: "0.5rem" }}>
-              {conectados.map((item) => renderFilaAsistente(item))}
-            </ul>
-          )}
+      {listaFiltrada.length === 0 ? (
+        <div style={{ padding: "14px 16px" }}>
+          <p className="operational-empty-inline">
+            <Users size={16} aria-hidden="true" />
+            {termino
+              ? "No hay asistentes que coincidan con la búsqueda."
+              : filtro === "CONECTADOS"
+                ? "No hay asistentes conectados en este momento."
+                : filtro === "SALIERON"
+                  ? "Ningún asistente se ha desconectado todavía."
+                  : "No hay registros para mostrar."}
+          </p>
         </div>
-
-        <div>
-          <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <UserMinus size={16} aria-hidden="true" />
-            Se conectaron y salieron ({desconectados.length})
-          </h3>
-          {desconectados.length === 0 ? (
-            <p className="operational-empty-inline">
-              <Clock3 size={16} aria-hidden="true" />
-              Ningún asistente se ha desconectado todavía.
-            </p>
-          ) : (
-            <ul className="operational-participant-list" style={{ display: "grid", gap: "0.5rem" }}>
-              {desconectados.map((item) => renderFilaAsistente(item))}
-            </ul>
-          )}
-        </div>
-      </div>
+      ) : (
+        <ul className="operational-attendee-rows">
+          {listaFiltrada.map((item) => renderFilaAsistente(item))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -691,7 +769,7 @@ function rolLabel(rol: string): string {
   if (rol === "HOST") return "Host";
   if (rol === "COHOST") return "Cohost";
   if (rol === "DOCENTE") return "Docente";
-  if (rol === "ASISTENTE_TECNICO") return "Asistente técnico";
+  if (rol === "ASISTENTE_TECNICO") return "Asistente";
   return "Participante";
 }
 
@@ -708,10 +786,9 @@ function tipoAccesoParticipanteLabel(tipo: string): string {
 }
 
 function origenCorreoLabel(origen: string): string {
-  if (origen === "GOOGLE_MEET") return "Google Meet";
-  if (origen === "REPORTS_API") return "Auditoría Workspace";
-  if (origen === "DIRECTORIO_FLACSO") return "Directorio FLACSO";
-  if (origen === "MANUAL") return "Asignado manualmente";
+  if (origen === "GOOGLE_MEET") return "Meet";
+  if (origen === "REPORTS_API" || origen === "GOOGLE_REPORTS") return "Workspace";
+  if (origen === "DIRECTORIO_FLACSO") return "FLACSO";
+  if (origen === "MANUAL") return "Manual";
   return "Sin correo";
 }
-
