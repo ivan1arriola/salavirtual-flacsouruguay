@@ -90,7 +90,7 @@ export function AdminTodayTimeline({
 
                   <div className="admin-timeline-status-row">
                     <div className="admin-timeline-assistant">
-                      <small>Asistencia técnica:</small>
+                      <small>Monitoreo:</small>
                       {meeting.asistente ? (
                         <span className="status-text-ok">
                           <CheckCircle2 size={13} /> {meeting.asistente.nombre}

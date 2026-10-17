@@ -11,8 +11,8 @@ import { cesarAsistenteUsuario, eliminarUsuario, guardarProgramasUsuario } from 
 const messages: Readonly<Record<string, string>> = {
   "programas-guardados": "Los programas del docente fueron actualizados.",
   "error-programas": "No se pudieron actualizar los programas del docente.",
-  "asistente-cesado": "El asistente técnico quedó cesado hasta su próximo inicio de sesión.",
-  "error-cese-asistente": "No se pudo cesar al asistente técnico.",
+  "asistente-cesado": "El asistente de monitoreo quedó cesado hasta su próximo inicio de sesión.",
+  "error-cese-asistente": "No se pudo cesar al asistente de monitoreo.",
   "error-eliminar": "No se pudo eliminar el usuario."
 };
 
@@ -126,7 +126,7 @@ export default async function UsuarioPage({
               <h2 style={{ color: "#9f2f2f" }}>Zona de peligro</h2>
               <p>
                 Elimina permanentemente la identidad y sus datos asociados: cuentas Google, sesiones, programas,
-                solicitudes y reuniones propias, asignaciones o liquidaciones de asistencia técnica y demás relaciones.
+                solicitudes y reuniones propias, asignaciones o liquidaciones de monitoreo y demás relaciones.
                 Esta operación no se puede deshacer.
               </p>
             </div>

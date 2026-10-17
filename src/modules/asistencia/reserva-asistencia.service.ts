@@ -26,7 +26,7 @@ export async function reservarAsistenteDisponible(
     }
   });
   if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO" || assistant.cesadoHastaProximoInicioSesion) {
-    throw new ConflictApiError("El asistente técnico seleccionado no está disponible.");
+    throw new ConflictApiError("El asistente de monitoreo seleccionado no está disponible.");
   }
   const existing = await tx.asignacionAsistenciaTecnica.findMany({
     where: {

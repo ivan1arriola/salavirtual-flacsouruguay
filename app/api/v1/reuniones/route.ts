@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     const advertencias: string[] = [];
     if (calendarPending) {
-      advertencias.push("La reunión se creó, pero el calendario del asistente técnico todavía tiene sincronizaciones pendientes.");
+      advertencias.push("La reunión se creó, pero el calendario del asistente de monitoreo todavía tiene sincronizaciones pendientes.");
     }
     try {
       await notificarReunionCreada(result.solicitudId);
@@ -184,11 +184,11 @@ async function notificarReunionCreada(solicitudId: string) {
       {
         tipo: "ASISTENCIA_ASIGNACION",
         titulo: "Te asignaron una reunión",
-        cuerpo: `${solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
+        cuerpo: `${solicitud.titulo} quedó asignada a tu agenda de monitoreo.`,
         href: "/mi-agenda",
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
-        emailSubject: `Te asignaron una asistencia técnica: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada para contar con permisos de moderación, admisión y grabación.`,
+        emailSubject: `Te asignaron un monitoreo: ${solicitud.titulo}`,
+        emailText: `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada para contar con permisos de moderación, admisión y grabación.`,
         emailActionLabel: "Abrir mi agenda"
       }
     );
@@ -197,12 +197,12 @@ async function notificarReunionCreada(solicitudId: string) {
       responsablesPrograma,
       {
         tipo: "ASISTENCIA_ASIGNACION",
-        titulo: "Asistencia técnica asignada",
+        titulo: "Monitoreo asignado",
         cuerpo: `${solicitud.titulo} quedó asignada a ${assistantName || "la persona asignada"}.`,
         href: `/reuniones/${solicitud.id}`,
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
-        emailSubject: `Asistencia técnica asignada: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nAsistencia técnica confirmada con: ${assistantName || assistant.usuario.id}.\n• El/la asistente técnico/a ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
+        emailSubject: `Monitoreo asignado: ${solicitud.titulo}`,
+        emailText: `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
         emailActionLabel: "Ver reunión"
       }
     );
@@ -224,12 +224,12 @@ async function notificarReunionCreada(solicitudId: string) {
     assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
     {
       tipo: "ASISTENCIA_REQUERIDA",
-      titulo: "Nueva reunión requiere asistencia técnica",
-      cuerpo: `${solicitud.titulo} quedó abierta para postulaciones de asistencia técnica.`,
+      titulo: "Nueva reunión requiere monitoreo",
+      cuerpo: `${solicitud.titulo} quedó abierta para postulaciones de monitoreo.`,
       href: "/agenda-abierta",
       metadata: { solicitudId: solicitud.id },
-      emailSubject: `Asistencia técnica requerida: ${solicitud.titulo}`,
-      emailText: `${detailsText}\n\nEsta reunión requiere asistencia técnica. Podés postularte desde Agenda abierta.\nAl ser asignado/a, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para ingresar directamente a dar cobertura sin requerir credenciales de sala.`,
+      emailSubject: `Monitoreo requerido: ${solicitud.titulo}`,
+      emailText: `${detailsText}\n\nEsta reunión requiere monitoreo. Podés postularte desde Agenda abierta.\nAl ser asignado/a, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para ingresar directamente a dar cobertura sin requerir credenciales de sala.`,
       emailActionLabel: "Ver agenda abierta"
     }
   );

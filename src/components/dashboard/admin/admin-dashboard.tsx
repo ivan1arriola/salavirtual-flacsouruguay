@@ -24,9 +24,9 @@ export async function AdminDashboard({
             <Link className="secondary-action" href="/reuniones/buscar-meet">
               <Search size={16} /> Buscar Meet
             </Link>
-            <Link className="secondary-action" href="/asistencia-tecnica">
+            <Link className="secondary-action" href="/monitoreo">
               <UserCheck size={16} />
-              <span>Gestionar asistencia</span>
+              <span>Gestionar monitoreo</span>
             </Link>
             <Link className="primary-action" href="/reuniones/nueva">
               <CalendarPlus size={17} />

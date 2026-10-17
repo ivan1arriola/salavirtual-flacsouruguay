@@ -174,7 +174,7 @@ function buildSheet(
 
 function addDocumentHeader(sheet: ExcelJS.Worksheet, periodo: PeriodoReporteMensual): void {
   const month = etiquetaMes(periodo.clave);
-  const title = `Planilla de pagos de asistencia técnica — ${capitalize(month)}`;
+  const title = `Planilla de pagos de monitoreo — ${capitalize(month)}`;
 
   sheet.mergeCells("A1:G1");
   const titleCell = sheet.getCell("A1");

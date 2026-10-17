@@ -23,9 +23,9 @@ describe("notificaciones", () => {
 
   it.each([
     ["REUNION_CREADA", "Reuniones creadas"],
-    ["ASISTENCIA_REQUERIDA", "Reuniones abiertas a asistencia técnica"],
-    ["ASISTENCIA_ASIGNACION", "Asignaciones de asistencia técnica"],
-    ["ASISTENCIA_POSTULACION", "Postulaciones de asistentes técnicos"],
+    ["ASISTENCIA_REQUERIDA", "Reuniones abiertas a monitoreo"],
+    ["ASISTENCIA_ASIGNACION", "Asignaciones de monitoreo"],
+    ["ASISTENCIA_POSTULACION", "Postulaciones de asistentes de monitoreo"],
     ["ASISTENCIA_POSTULACION_RETIRADA", "Retiros de postulación"],
     ["CREDENCIALES_SALA_CAMBIADAS", "Cambios de credenciales de salas Meet"]
   ] as const)("etiqueta %s correctamente", (tipo, expected) => {

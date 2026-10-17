@@ -15,7 +15,7 @@ export function crearPrismaTarifasRepositoryAdapter(db: TarifaDbClient): Tarifas
 
       if (!tarifa) {
         const nombreModalidad = modalidad === "HIBRIDA" ? "híbrida" : "virtual";
-        throw new Error(`No hay una tarifa configurada para asistencia técnica ${nombreModalidad}.`);
+        throw new Error(`No hay una tarifa configurada para monitoreo ${nombreModalidad}.`);
       }
 
       const valorHora =

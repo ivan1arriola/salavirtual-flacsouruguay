@@ -18,7 +18,7 @@ export async function desvincularAsistenteUseCase(
   const puedeDesvincular =
     puedeAsignarAsistencia(actor.rol) || actor.rol === "ASISTENTE_TECNICO";
   if (!puedeDesvincular || !actor.activo) {
-    throw new ForbiddenApiError("No tenés permisos para desvincular esta asistencia técnica.");
+    throw new ForbiddenApiError("No tenés permisos para desvincular este monitoreo.");
   }
   const input = desvinculacionAsistenciaSchema.parse(rawInput);
 

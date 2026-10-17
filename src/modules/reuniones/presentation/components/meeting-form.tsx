@@ -290,23 +290,23 @@ export function MeetingForm({
               <span>Elegiremos una sala disponible y configuraremos Google Meet. Los anfitriones y asistentes ingresan directamente con su propia cuenta de Google sin necesidad de usar las contraseñas de las salas.</span>
             </div>
           </div>
-          <label className="check-field"><input name="requiereAsistenciaTecnica" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span className="option-copy"><strong>Asistencia técnica</strong><small>Solicitar apoyo de un asistente durante el encuentro</small></span></label>
+          <label className="check-field"><input name="requiereAsistenciaTecnica" type="checkbox" checked={requiresAssistance} onChange={(event) => setRequiresAssistance(event.target.checked)} /><span className="option-copy"><strong>Monitoreo</strong><small>Solicitar apoyo de un asistente durante el encuentro</small></span></label>
           <label className="check-field"><input name="requiereGrabacion" type="checkbox" /><span className="option-copy"><strong>Grabación</strong><small>Marcar que el encuentro debe grabarse</small></span></label>
 
           {requiresAssistance ? (
             <>
               {canAssignAssistant ? (
                 <fieldset className="field field-wide assistance-choice">
-                  <legend>Cobertura de asistencia técnica</legend>
+                  <legend>Cobertura de monitoreo</legend>
                   <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
                   <label className={assistants.length === 0 ? "is-disabled" : ""}><input type="radio" name="modoAsistencia" value="ASSIGN" disabled={assistants.length === 0} checked={assistanceMode === "ASSIGN"} onChange={() => setAssistanceMode("ASSIGN")} /><span className="option-copy"><strong>Asignar ahora</strong><small>{assistants.length > 0 ? `${assistants.length} asistentes disponibles` : "No hay asistentes disponibles"}</small></span></label>
                 </fieldset>
               ) : (
-                <div className="field field-wide"><span>Cobertura de asistencia técnica</span><div><span className="status status-warning">Abierta a postulaciones</span></div></div>
+                <div className="field field-wide"><span>Cobertura de monitoreo</span><div><span className="status status-warning">Abierta a postulaciones</span></div></div>
               )}
               {canAssignAssistant && assistanceMode === "ASSIGN" ? (
-                <Field label="Asistente técnico" wide>
-                  <select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente técnico</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select>
+                <Field label="Asistente de monitoreo" wide>
+                  <select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente de monitoreo</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select>
                 </Field>
               ) : null}
               <Field label="Otros correos">
@@ -315,8 +315,8 @@ export function MeetingForm({
               <div className="auto-room-note field-wide" style={{ background: "#f5f9fa", borderColor: "#cde4ec" }}>
                 <UsersRound size={18} aria-hidden="true" />
                 <div>
-                  <strong>Anfitrión asignado por asistencia técnica</strong>
-                  <span>La persona que sea designada como asistente técnico será el anfitrión de la sala en Google Meet. Mientras esté abierta a postulaciones, no se asignarán anfitriones preliminares.</span>
+                  <strong>Anfitrión asignado por monitoreo</strong>
+                  <span>La persona que sea designada como asistente de monitoreo será el anfitrión de la sala en Google Meet. Mientras esté abierta a postulaciones, no se asignarán anfitriones preliminares.</span>
                 </div>
               </div>
             </>
@@ -325,7 +325,7 @@ export function MeetingForm({
               <fieldset className="field field-wide" style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "14px", background: "#fff" }}>
                 <legend style={{ fontWeight: 700, padding: "0 6px" }}>Anfitrión de la reunión (obligatorio)</legend>
                 <p style={{ color: "var(--muted)", fontSize: "0.82rem", margin: "0 0 12px 0" }}>
-                  Al no requerir asistencia técnica, indicá quién será el anfitrión en Google Meet:
+                  Al no requerir monitoreo, indicá quién será el anfitrión en Google Meet:
                 </p>
                 <div style={{ display: "grid", gap: "10px" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>

@@ -157,8 +157,8 @@ export default async function AsistenciaTecnicaPage({
     <>
       <header className="page-header">
         <div>
-          <p className="page-eyebrow">Asistencia técnica</p>
-          <h1>Gestión de asistencia técnica</h1>
+          <p className="page-eyebrow">Monitoreo</p>
+          <h1>Gestión de monitoreo</h1>
           <p>Asigná asistentes y controlá las reuniones que todavía necesitan apoyo.</p>
         </div>
         <UserRoundCheck size={28} color="var(--brand)" aria-hidden="true" />
@@ -187,7 +187,7 @@ export default async function AsistenciaTecnicaPage({
         <button className="secondary-action" type="submit">Filtrar</button>
       </form>
 
-      <section className="coverage-results" aria-label="Reuniones que requieren asistencia técnica">
+      <section className="coverage-results" aria-label="Reuniones que requieren monitoreo">
         {rows.length === 0 ? (
           <div className="content-section empty-state"><UserRoundCheck size={24} aria-hidden="true" /><p>No hay instancias para ese filtro.</p></div>
         ) : (

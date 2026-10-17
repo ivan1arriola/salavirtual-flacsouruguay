@@ -192,7 +192,7 @@ export function AdminQuickAssignAction({
           </button>
         ) : null}
         <select
-          aria-label="Asignar asistente técnico"
+          aria-label="Asignar asistente de monitoreo"
           className="operations-attention-quick-select"
           defaultValue=""
           disabled={pending}

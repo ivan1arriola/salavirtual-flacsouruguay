@@ -94,7 +94,7 @@ export function LiveMeetingHero({
   const tiempoEtiqueta = coberturaSinHorario ? "Falta confirmar tu hora de llegada" : paraAsistente
     ? inicioAsistencia > ahora
       ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(/^Empieza en/, "Tu asistencia comienza en")
-      : "Tu asistencia técnica ya comenzó"
+      : "Tu monitoreo ya comenzó"
     : formatearTiempoHastaReunion(inicio, ahora);
 
   return (
@@ -190,18 +190,18 @@ export function LiveMeetingHero({
           <UserCheck size={16} />
           {role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia ? (
             <span className="status-ok-text">
-              <CheckCircle2 size={16} /> Tu cobertura técnica confirmada
+              <CheckCircle2 size={16} /> Tu monitoreo confirmado
             </span>
           ) : meeting.asistente ? (
             <span>
-              Asistente técnico: <strong>{meeting.asistente.nombre}</strong>
+              Asistente de monitoreo: <strong>{meeting.asistente.nombre}</strong>
             </span>
           ) : meeting.requiereAsistencia ? (
             <span className="status-warning-text">
-              <AlertTriangle size={14} /> Asistencia técnica pendiente de asignación
+              <AlertTriangle size={14} /> Monitoreo pendiente de asignación
             </span>
           ) : (
-            <span className="muted-text">No requiere asistencia técnica</span>
+            <span className="muted-text">No requiere monitoreo</span>
           )}
         </div>
 

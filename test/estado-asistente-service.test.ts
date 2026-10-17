@@ -7,7 +7,7 @@ import {
   registrarInicioSesionUsuario
 } from "../src/modules/usuarios/estado-asistente.service";
 
-describe("estado temporal del asistente técnico", () => {
+describe("estado temporal del asistente de monitoreo", () => {
   it("registra el cese solicitado por Administración", async () => {
     const update = vi.fn().mockResolvedValue({});
     const createAudit = vi.fn().mockResolvedValue({});
@@ -122,7 +122,7 @@ describe("estado temporal del asistente técnico", () => {
         "assistant-user",
         { disponibleGeneral: false }
       )
-    ).rejects.toThrow("Solo Administración puede gestionar asistentes técnicos.");
+    ).rejects.toThrow("Solo Administración puede gestionar asistentes de monitoreo.");
   });
 
   it("reactiva el perfil en el siguiente inicio de sesión exitoso", async () => {

@@ -74,7 +74,7 @@ function construirPayloadEvento(
     `Horario de la reunión/Meet: ${formatHora(event.reunionInicio, event.timezone)}–${formatHora(event.reunionFin, event.timezone)}`,
     descripcionSegmento(event),
     event.joinUrl ? `Google Meet: ${event.joinUrl}` : null,
-    "Asignación de asistencia técnica gestionada por Sala Virtual FLACSO.",
+    "Asignación de monitoreo gestionada por Sala Virtual FLACSO.",
   ]
     .filter(Boolean)
     .join("\n\n");

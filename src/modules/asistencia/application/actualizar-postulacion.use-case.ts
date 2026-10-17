@@ -23,7 +23,7 @@ export async function actualizarPostulacionUseCase(
   rawInput: unknown
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo un asistente técnico puede gestionar postulaciones.");
+    throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar postulaciones.");
   }
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
@@ -32,7 +32,7 @@ export async function actualizarPostulacionUseCase(
     !assistant?.activo ||
     assistant.cesadoHastaProximoInicioSesion
   ) {
-    throw new ForbiddenApiError("No existe un perfil de asistente técnico activo para esta sesión.");
+    throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo activo para esta sesión.");
   }
 
   const estado = estadoInteresParaAccion(input.accion);

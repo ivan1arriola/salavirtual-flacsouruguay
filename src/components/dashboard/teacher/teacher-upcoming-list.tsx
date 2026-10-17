@@ -50,11 +50,11 @@ export function TeacherUpcomingList({
                   </h3>
                   <p className="teacher-upcoming-card-assistant">
                     {meeting.asistenteNombre ? (
-                      <span>Asistente técnico: <strong>{meeting.asistenteNombre}</strong></span>
+                      <span>Asistente de monitoreo: <strong>{meeting.asistenteNombre}</strong></span>
                     ) : meeting.requiereAsistencia ? (
                       <span className="text-warning">Asistencia pendiente</span>
                     ) : (
-                      <span className="muted-text">Sin asistencia requerida</span>
+                      <span className="muted-text">No requiere monitoreo</span>
                     )}
                   </p>
                 </div>

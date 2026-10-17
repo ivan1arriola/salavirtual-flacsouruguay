@@ -14,7 +14,7 @@ export async function reportarDuracionUseCase(
   ahora = new Date()
 ) {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new ForbiddenApiError("Solo un asistente técnico puede informar la duración.");
+    throw new ForbiddenApiError("Solo un asistente de monitoreo puede informar la duración.");
   }
   const input = reporteDuracionSchema.parse(rawInput);
 

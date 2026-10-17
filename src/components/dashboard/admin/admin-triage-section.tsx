@@ -73,7 +73,7 @@ export function AdminTriageSection({
                   <UserRoundCheck size={18} />
                 </span>
                 <div>
-                  <strong>Reuniones sin asistencia técnica</strong>
+                  <strong>Reuniones sin monitoreo</strong>
                   <small>{pendingCoverage.count} {pendingCoverage.count === 1 ? "caso" : "casos"}</small>
                 </div>
               </div>
@@ -91,8 +91,8 @@ export function AdminTriageSection({
                   meetingId={pendingCoverage.firstMeetingId}
                 />
               ) : null}
-              <Link className="text-link" href="/asistencia-tecnica?estado=pendientes">
-                Gestionar asistencia técnica <ArrowRight size={15} />
+              <Link className="text-link" href="/monitoreo?estado=pendientes">
+                Gestionar monitoreo <ArrowRight size={15} />
               </Link>
             </article>
           ) : null}

@@ -40,7 +40,7 @@ export function MeetingRoomCredentials({
           <h2 id="room-credentials-title">Credenciales de sala</h2>
           <p>Usá estas credenciales para iniciar sesión con la cuenta que administra Google Meet.</p>
           <h2 id="room-credentials-title">Credenciales de sala (Administración)</h2>
-          <p>Credenciales de contingencia. Los anfitriones y asistentes técnicos ingresan directamente con su cuenta Google institucional como co-organizadores sin necesidad de estas contraseñas.</p>
+          <p>Credenciales de contingencia. Los anfitriones y asistentes de monitoreo ingresan directamente con su cuenta Google institucional como co-organizadores sin necesidad de estas contraseñas.</p>
         </div>
       </div>
 

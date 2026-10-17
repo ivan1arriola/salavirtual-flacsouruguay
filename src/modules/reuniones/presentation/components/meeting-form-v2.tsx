@@ -341,7 +341,7 @@ export function MeetingFormV2({
                     {recurrence.horaInicio && recurrence.horaFin && recurrence.horaAsistenciaInicio && recurrence.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(recurrence, "HIBRIDA") ? <span className="meeting-date-warning" role="alert">La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del final.</span> : null}
                   </div>
                 ) : requiresAssistance ? (
-                  <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de asistencia técnica">
+                  <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de monitoreo">
                     <strong>Cobertura virtual · horarios automáticos, no editables</strong>
                     <div className="meeting-assistance-grid">
                       <div className="meeting-assistance-readonly"><span>Llegada del asistente</span><strong>{recurrence.horaAsistenciaInicio || "Pendiente del inicio"}</strong></div>
@@ -382,14 +382,14 @@ export function MeetingFormV2({
                     <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => cambiarHoraEncuentro(index, "horaFin", event.target.value)} /></Field>
                     {requiereHorarioPresencial ? (
                       <div className="meeting-assistance-fields">
-                        <strong>Cobertura técnica presencial <small>· mínimo 30 min antes y después</small></strong>
+                        <strong>Monitoreo presencial <small>· mínimo 30 min antes y después</small></strong>
                         <div className="meeting-assistance-grid">
                           <Field label="Llegada del asistente"><input type="time" required value={date.horaAsistenciaInicio} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))} /></Field>
                           <Field label="Salida del asistente"><input type="time" required value={date.horaAsistenciaFin} onChange={(event) => setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))} /></Field>
                         </div>
                       </div>
                     ) : requiresAssistance ? (
-                      <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de asistencia técnica">
+                      <div className="meeting-assistance-fields is-virtual" aria-label="Horario virtual fijo de monitoreo">
                         <strong>Cobertura virtual · 15 minutos antes, salida al finalizar</strong>
                         <div className="meeting-assistance-grid">
                           <div className="meeting-assistance-readonly"><span>Llegada del asistente</span><strong>{sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL").llegada || "—"}</strong></div>
@@ -417,14 +417,14 @@ export function MeetingFormV2({
         <div className="organization-v2">
           <section className="organization-support-grid" aria-label="Soporte y grabación">
             <ChoicePanel
-              title="Asistencia técnica"
-              detail="¿Necesitás que un asistente técnico participe?"
+              title="Monitoreo"
+              detail="¿Necesitás que un asistente de monitoreo participe?"
               name="requiereAsistenciaTecnica"
               value={requiresAssistance}
               noLabel="No requiere"
-              noDetail="La reunión puede realizarse sin asistencia."
+              noDetail="La reunión puede realizarse sin monitoreo."
               yesLabel="Sí, solicitar"
-              yesDetail="Se asignará un asistente técnico como cohost."
+              yesDetail="Se asignará un asistente de monitoreo como cohost."
               onChange={cambiarRequiereAsistencia}
             />
             <ChoicePanel
@@ -462,7 +462,7 @@ export function MeetingFormV2({
 
           {requiresAssistance ? (
             <section className="organization-subsection organization-assistance-config">
-              <div className="organization-subsection-heading"><div><h3>Cobertura de asistencia técnica</h3><p>{meetingMode === "HIBRIDA" ? "El horario de asistencia se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
+              <div className="organization-subsection-heading"><div><h3>Cobertura de monitoreo</h3><p>{meetingMode === "HIBRIDA" ? "El horario de monitoreo se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
               {canAssignAssistant ? (
                 <fieldset className="assistance-choice organization-assistance-choice">
                   <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => setAssistanceMode("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
@@ -470,7 +470,7 @@ export function MeetingFormV2({
                 </fieldset>
               ) : <span className="status status-warning">Abierta a postulaciones</span>}
               {canAssignAssistant && assistanceMode === "ASSIGN" ? (
-                <Field label="Asistente técnico"><select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente técnico</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select></Field>
+                <Field label="Asistente de monitoreo"><select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente de monitoreo</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select></Field>
               ) : null}
             </section>
           ) : null}
@@ -519,7 +519,7 @@ export function MeetingFormV2({
           <div className="meeting-form-summary-v2" role="status" aria-live="polite">
             <strong>{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</strong>
             <span>{isReady ? "Listo para crear" : !selectedProgram ? "Elegí un programa" : !selectedProgram.teacherEmail ? "Revisá la cuenta del docente" : !academicReady ? "Completá el título" : "Revisá fechas y horarios"}</span>
-            <small>{requiresAssistance ? "Con asistencia" : "Sin asistencia"} · {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra · {guestEmails.length} invitados</small>
+            <small>{requiresAssistance ? "Con monitoreo" : "Sin monitoreo"} · {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra · {guestEmails.length} invitados</small>
           </div>
         ) : null}
         <button className="primary-action" type="submit" disabled={!isReady || status === "saving" || status === "done"}>

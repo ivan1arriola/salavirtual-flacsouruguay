@@ -11,7 +11,7 @@ export async function desvincularAsistenteAsignado(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo Administración puede desvincular asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede desvincular asistentes de monitoreo.");
   }
   const input = desvinculacionAsistenciaSchema.parse(rawInput);
 

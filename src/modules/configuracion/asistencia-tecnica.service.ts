@@ -11,7 +11,7 @@ export async function actualizarConfiguracionAsistenciaTecnica(
   input: Readonly<{ correosCopiaReporteMensual: unknown }>
 ): Promise<readonly string[]> {
   if (!puedeConfigurarAsistenciaTecnica(actor)) {
-    throw new Error("Solo Administración puede configurar los reportes de asistencia técnica.");
+    throw new Error("Solo Administración puede configurar los reportes de monitoreo.");
   }
   const correos = normalizarCorreosCopiaReporte(input.correosCopiaReporteMensual);
 

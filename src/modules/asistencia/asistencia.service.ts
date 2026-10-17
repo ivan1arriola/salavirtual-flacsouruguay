@@ -40,7 +40,7 @@ export async function actualizarPostulacionAsistencia(
   rawInput: unknown
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo un asistente técnico puede gestionar postulaciones.");
+    throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar postulaciones.");
   }
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
@@ -58,7 +58,7 @@ export async function actualizarPostulacionAsistencia(
       assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
       assistant.cesadoHastaProximoInicioSesion
     ) {
-      throw new ForbiddenApiError("No existe un perfil de asistente técnico activo para esta sesión.");
+      throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo activo para esta sesión.");
     }
     const meeting = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaSalaId },
@@ -90,7 +90,7 @@ export async function actualizarPostulacionAsistencia(
     const assistantName = [
       assistant.usuario.nombres,
       assistant.usuario.apellidos
-    ].filter(Boolean).join(" ") || "Un asistente técnico";
+    ].filter(Boolean).join(" ") || "Un asistente de monitoreo";
     const interest = await tx.postulacionAsistenciaTecnica.upsert({
       where: {
         instanciaSalaId_asistenteTecnicoId: {
@@ -129,13 +129,13 @@ export async function actualizarPostulacionAsistencia(
         recipients: admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
         message: {
           tipo: notificationType,
-          titulo: estado === "ME_INTERESA" ? "Nueva postulación de asistencia técnica" : "Postulación retirada",
+          titulo: estado === "ME_INTERESA" ? "Nueva postulación de monitoreo" : "Postulación retirada",
           cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postuló a" : "retiró su postulación de"} ${meeting.solicitud.titulo}.`,
-          href: "/asistencia-tecnica?estado=pendientes",
+          href: "/monitoreo?estado=pendientes",
           metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
           emailSubject: estado === "ME_INTERESA"
-            ? "Nueva postulación de asistencia técnica"
-            : "Postulación de asistencia técnica retirada"
+            ? "Nueva postulación de monitoreo"
+            : "Postulación de monitoreo retirada"
         }
       }
     };
@@ -150,7 +150,7 @@ export async function asignarAsistentePostulado(
   rawInput: unknown
 ) {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo Administración puede asignar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede asignar asistentes de monitoreo.");
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
@@ -262,7 +262,7 @@ export async function asignarAsistentePostulado(
       assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
       assistant.cesadoHastaProximoInicioSesion
     ) {
-      throw new ConflictApiError("El perfil seleccionado no corresponde a un asistente técnico disponible.");
+      throw new ConflictApiError("El perfil seleccionado no corresponde a un asistente de monitoreo disponible.");
     }
     const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
     if (
@@ -395,7 +395,7 @@ export async function asignarAsistentePostulado(
 
     const assignmentMessage = {
       tipo: "ASISTENCIA_ASIGNACION" as const,
-      titulo: "Asistencia técnica asignada",
+      titulo: "Monitoreo asignado",
       cuerpo: `${meeting.solicitud.titulo} quedó asignada a ${assistantFullName}.`,
       href: "/mi-agenda",
       metadata: {
@@ -413,11 +413,11 @@ export async function asignarAsistentePostulado(
         },
         message: {
           tipo: "ASISTENCIA_ASIGNACION" as const,
-          titulo: "Asistencia técnica reasignada",
+          titulo: "Monitoreo reasignado",
           cuerpo: `La cobertura de ${meeting.solicitud.titulo} fue reasignada a otra persona.`,
           href: "/mi-agenda",
           metadata: { instanciaSalaId: meeting.id, estado: "CANCELADO" },
-          emailSubject: `Cambio en una asistencia técnica asignada: ${meeting.solicitud.titulo}`,
+          emailSubject: `Cambio en un monitoreo asignado: ${meeting.solicitud.titulo}`,
           emailText: `Se reasignó la cobertura de la reunión "${meeting.solicitud.titulo}" a otra persona. Se han removido tus permisos de co-anfitrión en la sala de Meet correspondiente.`,
           emailActionLabel: "Abrir mi agenda"
         }
@@ -430,10 +430,10 @@ export async function asignarAsistentePostulado(
         message: {
           ...assignmentMessage,
           titulo: "Te asignaron una reunión",
-          cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de asistencia técnica.`,
+          cuerpo: `${meeting.solicitud.titulo} quedó asignada a tu agenda de monitoreo.`,
           href: "/mi-agenda",
-          emailSubject: `Te asignaron una asistencia técnica: ${meeting.solicitud.titulo}`,
-          emailText: `${meetingDetailsText}\n\nHORARIO DE ASISTENCIA TÉCNICA: ${formatTime(inicioAsistencia)}–${formatTime(finAsistencia)}${modalidadEfectiva === "HIBRIDA" ? " (presencial/híbrida)" : ""}\n\nINSTRUCCIONES PARA EL ASISTENTE TÉCNICO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada en Sala Virtual para contar con permisos de moderación, admisión y grabación.`,
+          emailSubject: `Te asignaron un monitoreo: ${meeting.solicitud.titulo}`,
+          emailText: `${meetingDetailsText}\n\nHORARIO DE MONITOREO: ${formatTime(inicioAsistencia)}–${formatTime(finAsistencia)}${modalidadEfectiva === "HIBRIDA" ? " (presencial/híbrida)" : ""}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada en Sala Virtual para contar con permisos de moderación, admisión y grabación.`,
           emailActionLabel: "Abrir mi agenda"
         }
       },
@@ -451,8 +451,8 @@ export async function asignarAsistentePostulado(
         message: {
           ...assignmentMessage,
           href: `/reuniones/${meeting.solicitud.id}`,
-          emailSubject: `Asistencia técnica asignada: ${meeting.solicitud.titulo}`,
-          emailText: `${meetingDetailsText}\n\nAsistencia técnica confirmada con: ${assistantFullName}.\n• El/la asistente técnico/a ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
+          emailSubject: `Monitoreo asignado: ${meeting.solicitud.titulo}`,
+          emailText: `${meetingDetailsText}\n\nMonitoreo confirmado con: ${assistantFullName}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
           emailActionLabel: "Ver reunión"
         }
       }
@@ -486,7 +486,7 @@ export async function renotificarAsistentesDisponibles(
   rawInput: unknown
 ): Promise<number> {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo Administración puede volver a notificar asistentes técnicos.");
+    throw new ForbiddenApiError("Solo Administración puede volver a notificar asistentes de monitoreo.");
   }
   const input = notificacionAsistenciaSchema.parse(rawInput);
   const result = await db.$transaction(async (tx) => {
@@ -526,7 +526,7 @@ export async function renotificarAsistentesDisponibles(
       throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
     }
     if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
-      throw new ConflictApiError("La reunión ya no necesita cobertura de asistencia técnica.");
+      throw new ConflictApiError("La reunión ya no necesita cobertura de monitoreo.");
     }
     if (meeting.asignaciones.length > 0) {
       throw new ConflictApiError("La reunión ya tiene una persona asignada.");
@@ -544,15 +544,15 @@ export async function renotificarAsistentesDisponibles(
       recipients: assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
       message: {
         tipo: "ASISTENCIA_REQUERIDA" as const,
-        titulo: "Cobertura de asistencia técnica disponible",
-        cuerpo: `${meeting.solicitud.titulo} (${meeting.solicitud.docentePrograma.programa.nombre}) necesita asistencia técnica.`,
+        titulo: "Cobertura de monitoreo disponible",
+        cuerpo: `${meeting.solicitud.titulo} (${meeting.solicitud.docentePrograma.programa.nombre}) necesita monitoreo.`,
         href: "/agenda-abierta",
         metadata: {
           instanciaSalaId: meeting.id,
           inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
         },
-        emailSubject: `Recordatorio de cobertura de asistencia técnica disponible: ${meeting.solicitud.titulo}`,
-        emailText: `La reunión "${meeting.solicitud.titulo}" (${meeting.solicitud.docentePrograma.programa.nombre}) requiere asistencia técnica y está disponible para postularse en Agenda abierta.\n\nAl asignarte la reunión, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para que ingreses directamente a brindar soporte y moderación sin requerir credenciales de sala.`,
+        emailSubject: `Recordatorio de cobertura de monitoreo disponible: ${meeting.solicitud.titulo}`,
+        emailText: `La reunión "${meeting.solicitud.titulo}" (${meeting.solicitud.docentePrograma.programa.nombre}) requiere monitoreo y está disponible para postularse en Agenda abierta.\n\nAl asignarte la reunión, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para que ingreses directamente a brindar soporte y moderación sin requerir credenciales de sala.`,
         emailActionLabel: "Ver agenda abierta"
       }
     };
@@ -567,7 +567,7 @@ export async function actualizarDisponibilidadSemanal(
   rawInput: unknown
 ): Promise<void> {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new ForbiddenApiError("Solo un asistente técnico puede gestionar su disponibilidad.");
+    throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar su disponibilidad.");
   }
   const input = disponibilidadSemanalSchema.parse(rawInput);
   if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
@@ -578,7 +578,7 @@ export async function actualizarDisponibilidadSemanal(
       where: { usuarioId: actor.id },
       select: { id: true }
     });
-    if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente técnico para esta sesión.");
+    if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
     await tx.asistenteTecnico.update({
       where: { id: assistant.id },
       data: { disponibleGeneral: input.disponibleGeneral }

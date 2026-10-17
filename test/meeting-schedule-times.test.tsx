@@ -23,7 +23,7 @@ function renderSchedule(props: Partial<Parameters<typeof MeetingScheduleTimes>[0
 describe("horarios de reunión y cobertura en todos los roles", () => {
   it("distingue la llegada del asistente y el inicio del encuentro", () => {
     const html = renderSchedule({ viewerIsAssistant: true });
-    expect(html).toContain("Tu asistencia técnica");
+    expect(html).toContain("Tu monitoreo");
     expect(html).toContain("Tenés que estar desde las");
     expect(html).toContain("09:30");
     expect(html).toContain("17:30");
@@ -34,7 +34,7 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
 
   it("comunica ambos horarios a docentes y administración", () => {
     const html = renderSchedule({ viewerIsAssistant: false });
-    expect(html).toContain("Horario de asistencia técnica");
+    expect(html).toContain("Horario de monitoreo");
     expect(html).toContain("Llegada del asistente:");
     expect(html).toContain("Horario del encuentro");
   });
@@ -52,7 +52,7 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
       assistanceStartsAt: null,
       assistanceEndsAt: null
     });
-    expect(html).toContain("Horario de asistencia técnica");
+    expect(html).toContain("Horario de monitoreo");
     expect(html).toContain("Horario del encuentro");
     expect(html).toContain("09:45");
     expect(html).toContain("17:00");
@@ -61,7 +61,7 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
 
   it("omite cobertura cuando no se requiere, sin ocultar la hora del encuentro", () => {
     const html = renderSchedule({ requiresAssistance: false });
-    expect(html).not.toContain("Horario de asistencia técnica");
+    expect(html).not.toContain("Horario de monitoreo");
     expect(html).toContain("La reunión empieza: 10:00");
   });
 });

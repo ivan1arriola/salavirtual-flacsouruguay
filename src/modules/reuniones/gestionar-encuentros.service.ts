@@ -390,7 +390,7 @@ export async function actualizarEncuentro(
 
     if (input.accion === "EDITAR_HORARIO_ASISTENCIA") {
       if (actor.rol !== "ADMINISTRACION") {
-        throw new ForbiddenApiError("Solo Administración puede modificar el horario de asistencia técnica.");
+        throw new ForbiddenApiError("Solo Administración puede modificar el horario de monitoreo.");
       }
       const modalidad = modalidadEfectivaEncuentro(
         actual.solicitud.modalidad,
@@ -442,12 +442,12 @@ export async function actualizarEncuentro(
 
     if (input.accion === "RESTABLECER_HORARIO_ASISTENCIA") {
       if (actor.rol !== "ADMINISTRACION") {
-        throw new ForbiddenApiError("Solo Administración puede restablecer el horario de asistencia técnica.");
+        throw new ForbiddenApiError("Solo Administración puede restablecer el horario de monitoreo.");
       }
       const inicioAsistenciaTecnica = actual.solicitud.inicioAsistenciaTecnicaAt;
       const finAsistenciaTecnica = actual.solicitud.finAsistenciaTecnicaAt;
       if (!inicioAsistenciaTecnica || !finAsistenciaTecnica) {
-        throw new ConflictApiError("Esta serie no tiene un horario base de asistencia técnica para restablecer.");
+        throw new ConflictApiError("Esta serie no tiene un horario base de monitoreo para restablecer.");
       }
       const modalidad = modalidadEfectivaEncuentro(
         actual.solicitud.modalidad,
@@ -734,7 +734,7 @@ function validarHorarioAsistenciaTecnica(input: Readonly<{
   if (!inicioAsistencia || !finAsistencia) {
     if (requiereAsistenciaTecnica && modalidad === "HIBRIDA") {
       throw new ValidationApiError(
-        "Las reuniones híbridas con asistencia técnica requieren hora exacta de llegada y salida.",
+        "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida.",
       );
     }
     return;
@@ -746,10 +746,10 @@ function validarHorarioAsistenciaTecnica(input: Readonly<{
     !pertenecenAlMismoDia(inicioAsistencia, inicioEncuentro, timezone) ||
     !pertenecenAlMismoDia(finAsistencia, finEncuentro, timezone)
   ) {
-    throw new ValidationApiError("El horario de asistencia técnica debe pertenecer al mismo día del encuentro.");
+    throw new ValidationApiError("El horario de monitoreo debe pertenecer al mismo día del encuentro.");
   }
   if (inicioAsistencia > inicioEncuentro || finAsistencia < finEncuentro) {
-    throw new ValidationApiError("El horario de asistencia técnica debe cubrir todo el encuentro.");
+    throw new ValidationApiError("El horario de monitoreo debe cubrir todo el encuentro.");
   }
   if (
     requiereAsistenciaTecnica &&

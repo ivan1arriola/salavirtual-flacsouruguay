@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   }
   if (user.rol !== "ASISTENTE_TECNICO" && user.rol !== "ADMINISTRACION") {
     return NextResponse.json(
-      { error: "Esta aplicación está disponible únicamente para asistentes técnicos y administración." },
+      { error: "Esta aplicación está disponible únicamente para asistentes de monitoreo y administración." },
       { status: 403 }
     );
   }

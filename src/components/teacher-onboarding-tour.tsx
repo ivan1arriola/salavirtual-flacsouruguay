@@ -31,7 +31,7 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="teacher-agenda"]', {
       title: "Agenda",
-      description: "Acá consultás todas las reuniones asociadas a tus programas. Podés revisar fecha y horario, cuenta Google asignada, enlace de Meet, asistencia técnica y entrar al detalle para modificar encuentros futuros.",
+      description: "Acá consultás todas las reuniones asociadas a tus programas. Podés revisar fecha y horario, cuenta Google asignada, enlace de Meet, monitoreo y entrar al detalle para modificar encuentros futuros.",
       side: "right",
       align: "start"
     }),
@@ -149,8 +149,8 @@ function meetingSteps(): DriveStep[] {
       align: "start"
     }),
     step('#organizacion label:has(input[name="requiereAsistenciaTecnica"])', {
-      title: "Asistencia técnica",
-      description: "Marcala cuando necesites apoyo durante el encuentro. Para el rol Docente, la solicitud queda abierta a postulaciones de asistentes técnicos. Después podrás consultar desde la reunión si alguien ya fue asignado.",
+      title: "Monitoreo",
+      description: "Marcala cuando necesites apoyo durante el encuentro. Para el rol Docente, la solicitud queda abierta a postulaciones de asistentes de monitoreo. Después podrás consultar desde la reunión si alguien ya fue asignado.",
       side: "top",
       align: "start"
     }),

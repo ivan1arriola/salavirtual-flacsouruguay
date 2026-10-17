@@ -6,7 +6,7 @@ function source(relativePath: string): string {
   return readFileSync(join(process.cwd(), relativePath), "utf8");
 }
 
-describe("controles administrativos de asistentes técnicos", () => {
+describe("controles administrativos de asistentes de monitoreo", () => {
   it("expone un endpoint administrativo para el estado operativo", () => {
     const path = join(
       process.cwd(),

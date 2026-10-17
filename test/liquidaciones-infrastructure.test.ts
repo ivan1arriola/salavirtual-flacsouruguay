@@ -40,7 +40,7 @@ describe("liquidaciones infrastructure", () => {
 
       const adapter = crearPrismaTarifasRepositoryAdapter(mockDb as any);
       await expect(adapter.obtenerTarifaVigente("VIRTUAL")).rejects.toThrow(
-        "No hay una tarifa configurada para asistencia técnica virtual."
+        "No hay una tarifa configurada para monitoreo virtual."
       );
     });
   });

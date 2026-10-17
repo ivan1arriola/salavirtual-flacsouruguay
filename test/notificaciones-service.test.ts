@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { notificarUsuario } from "../src/modules/notificaciones/notificaciones.service";
 
-describe("notificaciones de asistentes técnicos", () => {
+describe("notificaciones de asistentes de monitoreo", () => {
   it("omite todos los canales mientras el asistente está cesado", async () => {
     const createNotification = vi.fn();
     const findPreference = vi.fn();

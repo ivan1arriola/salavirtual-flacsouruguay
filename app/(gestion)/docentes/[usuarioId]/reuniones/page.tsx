@@ -69,7 +69,7 @@ export default async function ReunionesDocentePage({
         ) : (
           <div className="table-wrap">
             <table className="data-table teacher-history-table">
-              <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Asistencia técnica</th><th>Meet</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Monitoreo</th><th>Meet</th></tr></thead>
               <tbody>
                 {meetings.map((meeting) => {
                   const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");

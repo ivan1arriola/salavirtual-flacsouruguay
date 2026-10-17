@@ -12,7 +12,7 @@ import {
 const USER_TYPES = [
   { value: "ADMINISTRACION", label: "Administración", title: "Administración", icon: ShieldCheck },
   { value: "DOCENTE", label: "Docentes", title: "Docentes", icon: GraduationCap },
-  { value: "ASISTENTE_TECNICO", label: "Asistentes técnicos", title: "Asistentes técnicos", icon: UserRoundCheck }
+  { value: "ASISTENTE_TECNICO", label: "Asistentes de monitoreo", title: "Asistentes de monitoreo", icon: UserRoundCheck }
 ] as const;
 
 type UserType = (typeof USER_TYPES)[number]["value"];
@@ -76,7 +76,7 @@ export default async function UsuariosPage({
                     <input name="solicitudId" type="hidden" value={solicitud.id} />
                     <select name="rol" defaultValue="DOCENTE">
                       <option value="DOCENTE">Docente</option>
-                      <option value="ASISTENTE_TECNICO">Asistente técnico</option>
+                      <option value="ASISTENTE_TECNICO">Asistente de monitoreo</option>
                       <option value="ADMINISTRACION">Administración</option>
                     </select>
                     <button className="primary-action" type="submit">Aprobar</button>
@@ -99,7 +99,7 @@ export default async function UsuariosPage({
             <label className="field"><span>Nombre</span><input name="nombres" required maxLength={100} /></label>
             <label className="field"><span>Apellido</span><input name="apellidos" maxLength={120} /></label>
             <label className="field"><span>Correo</span><input name="email" type="email" required placeholder="persona@ejemplo.com" /></label>
-            <label className="field"><span>Rol</span><select name="rol" defaultValue="DOCENTE"><option value="DOCENTE">Docente</option><option value="ASISTENTE_TECNICO">Asistente técnico</option><option value="ADMINISTRACION">Administración</option></select></label>
+            <label className="field"><span>Rol</span><select name="rol" defaultValue="DOCENTE"><option value="DOCENTE">Docente</option><option value="ASISTENTE_TECNICO">Asistente de monitoreo</option><option value="ADMINISTRACION">Administración</option></select></label>
             <label className="field"><span>Programa existente (si es docente)</span><select name="programaId" defaultValue=""><option value="">Seleccionar</option>{programs.map(({ id, nombre }) => <option key={id} value={id}>{nombre}</option>)}</select></label>
             <label className="field"><span>O crear programa</span><input name="programaNuevo" maxLength={180} placeholder="Nombre del programa" /></label>
           </div>

@@ -201,7 +201,7 @@ export function OperationalRemoteControlPanel({
 
             <div className="form-grid" style={{ gap: "10px" }}>
               <label className="field">
-                <span>Inicio asistencia técnica</span>
+                <span>Inicio de monitoreo</span>
                 <input
                   type="datetime-local"
                   value={inicioAsistencia}
@@ -211,7 +211,7 @@ export function OperationalRemoteControlPanel({
               </label>
 
               <label className="field">
-                <span>Fin asistencia técnica</span>
+                <span>Fin de monitoreo</span>
                 <input
                   type="datetime-local"
                   value={finAsistencia}
@@ -528,7 +528,7 @@ export function OperationalAttendeeDatabaseManager({
                   <option value="HOST">Host (Organizador)</option>
                   <option value="COHOST">Cohost (Coanfitrión)</option>
                   <option value="DOCENTE">Docente</option>
-                  <option value="ASISTENTE_TECNICO">Asistente técnico</option>
+                  <option value="ASISTENTE_TECNICO">Asistente de monitoreo</option>
                 </select>
               </label>
               <label className="field">
@@ -697,7 +697,7 @@ export function OperationalAttendeeDatabaseManager({
                 <option value="HOST">Host</option>
                 <option value="COHOST">Cohost</option>
                 <option value="DOCENTE">Docente</option>
-                <option value="ASISTENTE_TECNICO">Asistente técnico</option>
+                <option value="ASISTENTE_TECNICO">Asistente de monitoreo</option>
               </select>
             </label>
             <label className="field">

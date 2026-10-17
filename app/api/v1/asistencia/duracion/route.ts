@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
     });
     if (!actor?.activo) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
     if (actor.rol !== "ASISTENTE_TECNICO") {
-      return NextResponse.json({ error: "Solo un asistente técnico puede cerrar una asistencia." }, { status: 403 });
+      return NextResponse.json({ error: "Solo un asistente de monitoreo puede cerrar un monitoreo." }, { status: 403 });
     }
     const reporte = await reportarDuracionAsistencia(
       actor,

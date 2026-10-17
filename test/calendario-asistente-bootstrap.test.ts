@@ -29,7 +29,7 @@ describe("bootstrap asistencia.server", () => {
     expect(typeof servicio.intentarSincronizacion).toBe("function");
   });
 
-  it("expone el repositorio y servicio compuesto de asistencia técnica", () => {
+  it("expone el repositorio y servicio compuesto de monitoreo", () => {
     const repo = crearAsistenciaRepository();
     expect(repo).toBeDefined();
     expect(typeof repo.actualizarPostulacion).toBe("function");

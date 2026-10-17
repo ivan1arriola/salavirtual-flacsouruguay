@@ -32,7 +32,7 @@ function assignment(overrides: Record<string, unknown> = {}) {
   } as never;
 }
 
-describe("calendario de asistentes técnicos", () => {
+describe("calendario de asistentes de monitoreo", () => {
   it("genera un id de evento determinístico y compatible con Calendar", () => {
     const first = idEventoCalendarioAsistente("instancia-1", "google-1");
     const second = idEventoCalendarioAsistente("instancia-1", "google-1");
@@ -59,7 +59,7 @@ describe("calendario de asistentes técnicos", () => {
     expect(preparation).not.toBe(idEventoCalendarioAsistente("instancia-1", "google-1"));
   });
 
-  it("sincroniza únicamente cuentas Google vinculadas de asistentes técnicos activos", () => {
+  it("sincroniza únicamente cuentas Google vinculadas de asistentes de monitoreo activos", () => {
     const accounts = cuentasCalendarioDeseadas({
       estado: "PROGRAMADA",
       requiereAsistenciaTecnica: true,

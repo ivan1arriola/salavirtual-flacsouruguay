@@ -44,7 +44,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
   },
   {
     id: "asistencia",
-    label: "Asistencia técnica",
+    label: "Monitoreo",
     description: "Reportes mensuales y destinatarios",
     icon: "assistance"
   },
