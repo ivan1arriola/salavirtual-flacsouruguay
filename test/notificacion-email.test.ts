@@ -71,7 +71,7 @@ describe("correo de notificaciones", () => {
     expect(detalle).not.toContain("Contraseña:");
   });
 
-  it("explica cómo acceder a la reunión cuando no requiere asistencia técnica", () => {
+  it("explica cómo acceder a la reunión cuando no requiere monitoreo", () => {
     const detalle = reunionEmailText({
       titulo: "Taller de Investigación",
       programa: "Doctorado",
@@ -89,10 +89,10 @@ describe("correo de notificaciones", () => {
     expect(detalle).toContain("No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña");
     expect(detalle).toContain("Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host)");
     expect(detalle).toContain("Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet");
-    expect(detalle).toContain("Asistencia técnica: no requerida");
+    expect(detalle).toContain("Monitoreo: no requerido");
   });
 
-  it("explica cómo acceder cuando requiere asistencia técnica con y sin asistente asignado", () => {
+  it("explica cómo acceder cuando requiere monitoreo con y sin asistente asignado", () => {
     const pendiente = reunionEmailText({
       titulo: "Seminario Abierto",
       requiereAsistenciaTecnica: true,
@@ -102,7 +102,7 @@ describe("correo de notificaciones", () => {
         joinUrl: "https://meet.google.com/xyz-uvwx-rst"
       }]
     });
-    expect(pendiente).toContain("Asistencia técnica: la reunión requiere asistencia técnica (pendiente de asignación)");
+    expect(pendiente).toContain("Monitoreo: la reunión requiere monitoreo (pendiente de asignación)");
 
     const asignada = reunionEmailText({
       titulo: "Seminario Abierto",
@@ -114,7 +114,7 @@ describe("correo de notificaciones", () => {
         joinUrl: "https://meet.google.com/xyz-uvwx-rst"
       }]
     });
-    expect(asignada).toContain("Asistencia técnica: asignada a Juan Asistente");
+    expect(asignada).toContain("Monitoreo: asignado a Juan Asistente");
   });
 
   it("maqueta en el correo HTML una tarjeta destacada para las instrucciones de acceso y enlaces clicables", () => {
