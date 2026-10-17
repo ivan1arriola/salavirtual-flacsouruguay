@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as asistencia from "../src/modules/asistencia/asistencia.domain";
 import * as resumen from "../src/modules/asistencia/resumen-personal.domain";
 
-describe("desvinculación de asistencia técnica", () => {
+describe("desvinculación de monitoreo", () => {
   it("valida una desvinculación solo por id de asignación", () => {
     const schema = (asistencia as any).desvinculacionAsistenciaSchema;
     expect(schema).toBeDefined();
