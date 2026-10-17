@@ -7,7 +7,7 @@ import "./tour.css";
 
 export const metadata: Metadata = {
   title: "Sala Virtual FLACSO",
-  description: "Gestión de solicitudes, agenda y asistencia técnica para FLACSO Uruguay.",
+  description: "Gestión de solicitudes, agenda y monitoreo para FLACSO Uruguay.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
