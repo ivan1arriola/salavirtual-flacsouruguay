@@ -8,6 +8,7 @@ import {
   claveOperacionGoogle,
   ejecutarGooglePostUnaVez,
   confirmarOperacionDriveMarcada,
+  confirmarGoogleOperacionVerificada,
   GoogleOperacionInciertaError
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
