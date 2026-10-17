@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       actor,
       await request.json().catch(() => null)
     );
-    return NextResponse.json({ message: `Se volvió a notificar a ${notified} asistentes técnicos.` });
+    return NextResponse.json({ message: `Se volvió a notificar a ${notified} asistentes de monitoreo.` });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
