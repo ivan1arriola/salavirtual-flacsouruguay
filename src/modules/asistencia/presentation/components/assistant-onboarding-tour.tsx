@@ -38,7 +38,7 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="assistant-open-agenda"]', {
       title: "Agenda abierta",
-      description: "Consultá las reuniones que necesitan asistencia técnica, revisá disponibilidad o posibles conflictos y postuláte.",
+      description: "Consultá las reuniones que necesitan monitoreo, revisá disponibilidad o posibles conflictos y postuláte.",
       side: "right",
       align: "start"
     }),
@@ -79,7 +79,7 @@ function openAgendaSteps(): DriveStep[] {
   return [
     step('[data-tour="assistant-open-list"]', {
       title: "Reuniones disponibles",
-      description: "Esta lista contiene únicamente reuniones futuras que requieren asistencia técnica y todavía no tienen un asistente asignado.",
+      description: "Esta lista contiene únicamente reuniones futuras que requieren monitoreo y todavía no tienen un asistente asignado.",
       side: "top",
       align: "start"
     }),
@@ -102,12 +102,12 @@ function monthSteps(): DriveStep[] {
     }),
     step('[data-tour="assistant-month-list"]', {
       title: "Tus coberturas del mes",
-      description: "La lista muestra modalidad, horario, duración y estado de cada asistencia técnica asignada.",
+      description: "La lista muestra modalidad, horario, duración y estado de cada monitoreo asignada.",
       side: "top",
       align: "start"
     }),
     step('[data-tour="assistant-close-assistance"]', {
-      title: "Finalizar asistencia técnica",
+      title: "Finalizar monitoreo",
       description: "Cuando una reunión haya terminado, confirmá el inicio y fin efectivos. También podés agregar observaciones y registrar una incidencia con su tipo, severidad y descripción.",
       side: "left",
       align: "center"
