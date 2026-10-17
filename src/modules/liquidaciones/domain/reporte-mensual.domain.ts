@@ -17,11 +17,11 @@ export function construirCorreoReporteMensual(input: Readonly<{
   const virtual = formatearDuracion(input.resumen.minutosVirtuales);
   const hibrida = formatearDuracion(input.resumen.minutosHibridos);
   const mes = etiquetaMes(input.periodo);
-  const subject = `Horas de asistencia técnica — ${capitalizar(mes)}`;
+  const subject = `Horas de monitoreo — ${capitalizar(mes)}`;
   const text = [
     `Hola ${input.nombre},`,
     "",
-    `Según Sala Virtual FLACSO, durante ${mes} realizaste ${total} de asistencia técnica (${decimal} horas).`,
+    `Según Sala Virtual FLACSO, durante ${mes} realizaste ${total} de trabajo de monitoreo (${decimal} horas).`,
     "",
     `Reuniones: ${input.resumen.reuniones}`,
     `Virtual: ${virtual}`,
@@ -32,7 +32,7 @@ export function construirCorreoReporteMensual(input: Readonly<{
   ].join("\n");
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.55;color:#1f2937;max-width:640px;margin:0 auto">
-      <h2 style="margin:0 0 16px">Resumen mensual de asistencia técnica</h2>
+      <h2 style="margin:0 0 16px">Resumen mensual de monitoreo</h2>
       <p>Hola ${escapeHtml(input.nombre)},</p>
       <p>Según Sala Virtual FLACSO, durante <strong>${escapeHtml(mes)}</strong> realizaste:</p>
       <p style="font-size:28px;font-weight:700;margin:18px 0 4px">${escapeHtml(total)}</p>
