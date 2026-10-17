@@ -54,6 +54,7 @@ export async function cesarAsistenteUsuario(formData: FormData): Promise<void> {
   revalidatePath("/usuarios");
   revalidatePath("/agenda-abierta");
   revalidatePath("/asistencia-tecnica");
+  revalidatePath("/monitoreo");
   revalidatePath("/reuniones/nueva");
   redirect(`/usuarios/${encodeURIComponent(usuarioId)}?estado=${estado}`);
 }
@@ -81,6 +82,7 @@ export async function eliminarUsuario(formData: FormData): Promise<void> {
   revalidatePath("/reuniones");
   revalidatePath("/agenda-abierta");
   revalidatePath("/asistencia-tecnica");
+  revalidatePath("/monitoreo");
   revalidatePath("/reuniones/nueva");
   redirect("/usuarios?estado=usuario-eliminado");
 }
