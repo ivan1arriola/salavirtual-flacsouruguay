@@ -11,7 +11,10 @@ import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
-import { resolveSettingsSection } from "@/src/modules/configuracion/settings-navigation.domain";
+import {
+  obtenerCredencialPrincipalGoogleWorkspace,
+  resolveSettingsSection,
+} from "@/src/modules/configuracion/api";
 import {
   actualizarProgramaAdmin,
   actualizarReportesAsistenciaAdmin,
@@ -30,7 +33,7 @@ export default async function ConfiguracionPage({
   const query = await searchParams;
   const section = resolveSettingsSection(query.seccion);
   const [configuration, assistantConfiguration, hosts, programCount, activeProgramCount, pendingMeetOperations] = await Promise.all([
-    db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } }),
+    obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
     db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -217,7 +220,7 @@ export default async function ConfiguracionPage({
           <SettingsOverview data={{
             workspaceReady: Boolean(
               configuration?.serviceAccountEmail
-              && configuration.privateKeyCifrada
+              && (configuration.privateKey || configuration.privateKeyCifrada)
               && configuration.serviceAccountSubject
               && configuration.driveDestinationId
             ),
@@ -298,7 +301,7 @@ export default async function ConfiguracionPage({
               serviceAccountEmail: configuration.serviceAccountEmail,
               serviceAccountSubject: configuration.serviceAccountSubject,
               driveDestinationId: configuration.driveDestinationId,
-              privateKeyConfigurada: Boolean(configuration.privateKeyCifrada),
+              privateKeyConfigurada: Boolean(configuration.privateKeyCifrada || configuration.privateKey),
               activa: configuration.activa
             } : null}
           />

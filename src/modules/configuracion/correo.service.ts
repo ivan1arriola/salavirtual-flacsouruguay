@@ -1,4 +1,3 @@
-import type { PrismaClient } from "@prisma/client";
 import {
   crearCompositeEmailTransport,
   crearGmailEmailTransport,
@@ -7,37 +6,22 @@ import {
   type MailSendResult,
 } from "@/src/modules/notificaciones/api";
 import { descifrarConfiguracion } from "../../lib/config/encryption";
-
-type ConfigurationDb = Pick<PrismaClient, "configuracionGoogleWorkspace">;
+import {
+  obtenerCredencialPrincipalGoogleWorkspace,
+  type WorkspaceConfigDb,
+} from "./google-workspace.service";
 
 export async function enviarCorreoConfigurado(
-  db: ConfigurationDb,
+  db: WorkspaceConfigDb,
   input: MailInput
 ): Promise<MailSendResult> {
   const gmailTransport = crearGmailEmailTransport(async () => {
-    const configuration = await db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal" },
-      select: {
-        serviceAccountEmail: true,
-        privateKeyCifrada: true,
-        serviceAccountSubject: true,
-        activa: true,
-      },
-    });
-
-    if (
-      !configuration?.activa ||
-      !configuration.serviceAccountEmail ||
-      !configuration.privateKeyCifrada ||
-      !configuration.serviceAccountSubject
-    ) {
-      return null;
-    }
-
+    const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+    if (!cred?.serviceAccountSubject) return null;
     return {
-      serviceAccountEmail: configuration.serviceAccountEmail,
-      privateKey: descifrarConfiguracion(configuration.privateKeyCifrada),
-      subject: configuration.serviceAccountSubject,
+      serviceAccountEmail: cred.serviceAccountEmail,
+      privateKey: cred.privateKey,
+      subject: cred.serviceAccountSubject,
     };
   });
 

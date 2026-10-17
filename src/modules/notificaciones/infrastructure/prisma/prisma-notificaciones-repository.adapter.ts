@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import {
   PREFERENCIA_PREDETERMINADA,
   type NotificationRecipient,
@@ -113,35 +114,13 @@ export function crearPrismaNotificacionesRepository(
     },
 
     async obtenerCredencialesGmail(): Promise<CredencialGmailTransport | null> {
-      const configuration = await db.configuracionGoogleWorkspace.findUnique({
-        where: { id: "principal" },
-        select: {
-          serviceAccountEmail: true,
-          privateKeyCifrada: true,
-          serviceAccountSubject: true,
-          activa: true,
-        },
-      });
-
-      if (
-        !configuration?.activa ||
-        !configuration.serviceAccountEmail ||
-        !configuration.privateKeyCifrada ||
-        !configuration.serviceAccountSubject
-      ) {
-        return null;
-      }
-
-      try {
-        const privateKey = descifrar(configuration.privateKeyCifrada);
-        return {
-          serviceAccountEmail: configuration.serviceAccountEmail,
-          privateKey,
-          subject: configuration.serviceAccountSubject,
-        };
-      } catch {
-        return null;
-      }
+      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
+      if (!cred?.serviceAccountSubject) return null;
+      return {
+        serviceAccountEmail: cred.serviceAccountEmail,
+        privateKey: cred.privateKey,
+        subject: cred.serviceAccountSubject,
+      };
     },
   };
 }

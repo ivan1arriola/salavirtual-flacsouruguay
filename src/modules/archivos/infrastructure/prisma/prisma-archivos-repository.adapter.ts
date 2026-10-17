@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import {
   obtenerAlcanceGrabaciones,
   TIPOS_ARTEFACTO_SINCRONIZABLES,
@@ -47,15 +48,13 @@ export function crearPrismaArchivosRepositoryAdapter(
       return events.map(({ id }) => id);
     },
     async obtenerConfiguracionWorkspacePrincipal(): Promise<ConfiguracionWorkspaceArchivos | null> {
-      const config = await db.configuracionGoogleWorkspace.findUnique({
-        where: { id: "principal", activa: true }
-      });
-      if (!config) return null;
+      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, (val) => val, { requireActiva: true });
+      if (!cred) return null;
       return {
-        activa: (config as { activa?: boolean }).activa ?? true,
-        serviceAccountEmail: config.serviceAccountEmail,
-        privateKeyCifrada: config.privateKeyCifrada,
-        driveDestinationId: config.driveDestinationId
+        activa: cred.activa,
+        serviceAccountEmail: cred.serviceAccountEmail,
+        privateKeyCifrada: cred.privateKeyCifrada ?? cred.privateKey,
+        driveDestinationId: cred.driveDestinationId
       };
     },
 

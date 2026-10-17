@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import type {
   AssistantCalendarRepositoryPort,
   CredencialesWorkspaceCalendar,
@@ -158,32 +159,12 @@ export function crearPrismaAssistantCalendarRepository(
     },
 
     async obtenerCredencialesWorkspace(): Promise<CredencialesWorkspaceCalendar | null> {
-      const config = await db.configuracionGoogleWorkspace.findUnique({
-        where: { id: "principal" },
-        select: {
-          activa: true,
-          serviceAccountEmail: true,
-          privateKeyCifrada: true,
-        },
-      });
-
-      if (
-        !config?.activa ||
-        !config.serviceAccountEmail ||
-        !config.privateKeyCifrada
-      ) {
-        return null;
-      }
-
-      try {
-        const privateKey = descifrar(config.privateKeyCifrada);
-        return {
-          serviceAccountEmail: config.serviceAccountEmail,
-          privateKey,
-        };
-      } catch {
-        return null;
-      }
+      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
+      if (!cred) return null;
+      return {
+        serviceAccountEmail: cred.serviceAccountEmail,
+        privateKey: cred.privateKey,
+      };
     },
   };
 }

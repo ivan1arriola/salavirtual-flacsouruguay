@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { descifrarConfiguracion } from "../../lib/config/encryption";
 import {
   puedeConfigurarGoogleWorkspace,
   seccionConfiguracionGoogleWorkspaceSchema,
@@ -6,9 +7,40 @@ import {
   type SeccionConfiguracionGoogleWorkspaceInput
 } from "./google-workspace.domain";
 
+export type WorkspaceConfigDb = {
+  configuracionGoogleWorkspace: {
+    findUnique: (args: any) => Promise<any>;
+    findMany?: (args: any) => Promise<any>;
+  };
+};
+
 export type DependenciasConfiguracionGoogle = Readonly<{
   db: PrismaClient;
   cifrar: (value: string) => string;
+}>;
+
+export type CredencialWorkspacePrincipal = Readonly<{
+  id: string;
+  serviceAccountEmail: string;
+  privateKey: string;
+  privateKeyCifrada?: string | null;
+  serviceAccountSubject: string | null;
+  driveDestinationId: string | null;
+  activa: boolean;
+  version: number;
+  updatedAt?: Date;
+}>;
+
+export type CredencialGoogleSala = Readonly<{
+  serviceAccountEmail: string;
+  privateKey: string;
+  subject: string;
+}>;
+
+export type CredencialAdminReportsGoogle = Readonly<{
+  serviceAccountEmail: string;
+  privateKey: string;
+  adminEmail: string;
 }>;
 
 export type CredencialLegacyGoogleWorkspace = Readonly<{
@@ -16,6 +48,18 @@ export type CredencialLegacyGoogleWorkspace = Readonly<{
   serviceAccountEmail: string;
   privateKey: string;
   serviceAccountSubject: string | null;
+}>;
+
+export type CredencialesWorkspaceActivas = Readonly<{
+  principal: CredencialWorkspacePrincipal | null;
+  legacy: readonly CredencialLegacyGoogleWorkspace[];
+}>;
+
+export type CandidatoCredencialMeet = Readonly<{
+  serviceAccountEmail: string;
+  privateKey: string;
+  subject: string;
+  origen: "PRINCIPAL" | "LEGACY";
 }>;
 
 export async function actualizarSeccionGoogleWorkspace(
@@ -172,10 +216,97 @@ export async function actualizarSeccionGoogleWorkspace(
   });
 }
 
+export async function obtenerCredencialWorkspacePorId(
+  db: WorkspaceConfigDb,
+  id: string,
+  descifrar: (value: string) => string = descifrarConfiguracion
+): Promise<CredencialWorkspacePrincipal | null> {
+  const config = await db.configuracionGoogleWorkspace.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      serviceAccountEmail: true,
+      privateKeyCifrada: true,
+      serviceAccountSubject: true,
+      driveDestinationId: true,
+      activa: true,
+      version: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!config) return null;
+  if (!config.serviceAccountEmail || !config.privateKeyCifrada) return null;
+
+  try {
+    const privateKey = descifrar(config.privateKeyCifrada);
+    const activa = config.activa ?? true;
+    return {
+      id: config.id,
+      serviceAccountEmail: config.serviceAccountEmail,
+      privateKey,
+      privateKeyCifrada: config.privateKeyCifrada,
+      serviceAccountSubject: config.serviceAccountSubject ?? null,
+      driveDestinationId: config.driveDestinationId ?? null,
+      activa,
+      version: config.version,
+      updatedAt: config.updatedAt,
+    };
+  } catch (error) {
+    console.error(`Error al descifrar clave de workspace para ${id}:`, error);
+    return null;
+  }
+}
+
+export async function obtenerCredencialPrincipalGoogleWorkspace(
+  db: WorkspaceConfigDb,
+  descifrar: (value: string) => string = descifrarConfiguracion,
+  options?: { requireActiva?: boolean }
+): Promise<CredencialWorkspacePrincipal | null> {
+  const requireActiva = options?.requireActiva ?? true;
+  const cred = await obtenerCredencialWorkspacePorId(db, "principal", descifrar);
+  if (!cred) return null;
+  if (requireActiva && !cred.activa) return null;
+  return cred;
+}
+
+export async function obtenerCredencialGoogleParaSala(
+  db: WorkspaceConfigDb,
+  emailOrganizador: string,
+  descifrar: (value: string) => string = descifrarConfiguracion
+): Promise<CredencialGoogleSala | null> {
+  const principal = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
+  if (!principal) return null;
+  return {
+    serviceAccountEmail: principal.serviceAccountEmail,
+    privateKey: principal.privateKey,
+    subject: emailOrganizador,
+  };
+}
+
+export async function obtenerCredencialAdminReportsGoogle(
+  db: WorkspaceConfigDb,
+  descifrar: (value: string) => string = descifrarConfiguracion,
+  overrideAdminEmail?: string | null
+): Promise<CredencialAdminReportsGoogle | null> {
+  const adminEmail = (overrideAdminEmail ?? process.env.GOOGLE_REPORTS_ADMIN_EMAIL)?.trim();
+  if (!adminEmail) return null;
+
+  const principal = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
+  if (!principal) return null;
+
+  return {
+    serviceAccountEmail: principal.serviceAccountEmail,
+    privateKey: principal.privateKey,
+    adminEmail,
+  };
+}
+
 export async function cargarCredencialesLegacyGoogleWorkspace(
-  db: PrismaClient,
-  descifrar: (value: string) => string,
+  db: WorkspaceConfigDb,
+  descifrar: (value: string) => string = descifrarConfiguracion,
 ): Promise<readonly CredencialLegacyGoogleWorkspace[]> {
+  if (!db.configuracionGoogleWorkspace.findMany) return [];
   const rows = await db.configuracionGoogleWorkspace.findMany({
     where: {
       id: { startsWith: "legacy:" },
@@ -191,12 +322,121 @@ export async function cargarCredencialesLegacyGoogleWorkspace(
       serviceAccountSubject: true,
     },
   });
-  return rows.flatMap((row) => row.serviceAccountEmail && row.privateKeyCifrada ? [{
-    id: row.id,
-    serviceAccountEmail: row.serviceAccountEmail,
-    privateKey: descifrar(row.privateKeyCifrada),
-    serviceAccountSubject: row.serviceAccountSubject ?? null,
-  }] : []);
+  return rows.flatMap((row: any) => {
+    if (!row.serviceAccountEmail || !row.privateKeyCifrada) return [];
+    try {
+      return [{
+        id: row.id,
+        serviceAccountEmail: row.serviceAccountEmail,
+        privateKey: descifrar(row.privateKeyCifrada),
+        serviceAccountSubject: row.serviceAccountSubject ?? null,
+      }];
+    } catch {
+      return [];
+    }
+  });
+}
+
+export async function obtenerCredencialesWorkspaceActivas(
+  db: WorkspaceConfigDb,
+  descifrar: (value: string) => string = descifrarConfiguracion
+): Promise<CredencialesWorkspaceActivas> {
+  const [principal, legacy] = await Promise.all([
+    obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true }),
+    cargarCredencialesLegacyGoogleWorkspace(db, descifrar),
+  ]);
+  return { principal, legacy };
+}
+
+export async function obtenerCandidatosCredencialesParaOrganizador(
+  db: WorkspaceConfigDb,
+  organizador: string,
+  descifrar: (value: string) => string = descifrarConfiguracion
+): Promise<readonly CandidatoCredencialMeet[]> {
+  const { principal, legacy } = await obtenerCredencialesWorkspaceActivas(db, descifrar);
+  const candidates: CandidatoCredencialMeet[] = [];
+
+  if (principal) {
+    candidates.push({
+      serviceAccountEmail: principal.serviceAccountEmail,
+      privateKey: principal.privateKey,
+      subject: organizador,
+      origen: "PRINCIPAL",
+    });
+  }
+
+  for (const leg of legacy) {
+    candidates.push({
+      serviceAccountEmail: leg.serviceAccountEmail,
+      privateKey: leg.privateKey,
+      subject: organizador,
+      origen: "LEGACY",
+    });
+  }
+
+  return candidates;
+}
+
+export async function obtenerEstadoConfiguracionAdmin(db: PrismaClient) {
+  const [configuracion, legacy] = await Promise.all([
+    db.configuracionGoogleWorkspace.findUnique({
+      where: { id: "principal" },
+      select: {
+        serviceAccountEmail: true,
+        serviceAccountSubject: true,
+        driveDestinationId: true,
+        privateKeyCifrada: true,
+        activa: true,
+        version: true,
+        updatedAt: true
+      }
+    }),
+    db.configuracionGoogleWorkspace.findMany({
+      where: { id: { startsWith: "legacy:" } },
+      orderBy: [{ activa: "desc" }, { updatedAt: "desc" }],
+      select: {
+        id: true,
+        serviceAccountEmail: true,
+        privateKeyCifrada: true,
+        activa: true,
+        version: true,
+        updatedAt: true,
+      }
+    })
+  ]);
+  return { configuracion, legacy };
+}
+
+export async function desactivarCredencialLegacyWorkspace(
+  db: PrismaClient,
+  actor: { id: string },
+  legacyId: string
+) {
+  if (!legacyId.startsWith("legacy:")) {
+    throw new Error("Solo se pueden desactivar credenciales Legacy.");
+  }
+  const current = await db.configuracionGoogleWorkspace.findUnique({
+    where: { id: legacyId },
+    select: { id: true, serviceAccountEmail: true, activa: true }
+  });
+  if (!current) throw new Error("La credencial no existe.");
+
+  await db.$transaction(async (tx) => {
+    await tx.configuracionGoogleWorkspace.update({
+      where: { id: legacyId },
+      data: { activa: false, actualizadaPorId: actor.id, version: { increment: 1 } }
+    });
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actor.id,
+        accion: "CREDENCIAL_GOOGLE_WORKSPACE_LEGACY_DESACTIVADA",
+        entidadTipo: "ConfiguracionGoogleWorkspace",
+        entidadId: legacyId,
+        valorAnterior: { activa: current.activa },
+        valorNuevo: { activa: false, serviceAccountEmail: current.serviceAccountEmail }
+      }
+    });
+  });
 }
 
 function datosDeSeccion(

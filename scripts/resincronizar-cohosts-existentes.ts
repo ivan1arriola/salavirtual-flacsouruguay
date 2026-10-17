@@ -4,8 +4,10 @@ import { inspect } from "node:util";
 import { JWT } from "google-auth-library";
 import { descifrarConfiguracion } from "../src/lib/config/encryption";
 import { db } from "../src/lib/db";
-import { cargarCredencialesLegacyGoogleWorkspace } from "../src/modules/configuracion/google-workspace.service";
-import { resincronizarCohostsReunionesExistentes } from "../src/modules/configuracion/resincronizar-cohosts.service";
+import {
+  obtenerCredencialesWorkspaceActivas,
+  resincronizarCohostsReunionesExistentes,
+} from "../src/modules/configuracion/api";
 import { crearGoogleCalendarProvider } from "../src/modules/meet/google-calendar.adapter";
 
 const jsonOutput = process.argv.includes("--json");
@@ -25,7 +27,7 @@ const MEET_API = "https://meet.googleapis.com/v2";
 const GOOGLE_HTTP_TIMEOUT_MS = 60_000;
 
 type ServiceCredential = Readonly<{
-  label: "PRINCIPAL" | "LEGACY";
+  label: string;
   serviceAccountEmail: string;
   privateKey: string;
   serviceAccountSubject: string | null;
@@ -84,22 +86,12 @@ async function main(): Promise<void> {
   console.error(`Log: ${logFile}`);
   console.error(`Inicio: ${startedAt.toISOString()}`);
 
-  const [principal, legacies] = await Promise.all([
-    db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal" },
-      select: { serviceAccountEmail: true, activa: true, privateKeyCifrada: true },
-    }),
-    db.configuracionGoogleWorkspace.findMany({
-      where: { id: { startsWith: "legacy:" }, activa: true },
-      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      select: { id: true, serviceAccountEmail: true, privateKeyCifrada: true, serviceAccountSubject: true },
-    }),
-  ]);
+  const { principal, legacy: legacies } = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
 
   console.error(
     "Credencial PRINCIPAL:",
     principal?.serviceAccountEmail ?? "NO CONFIGURADA",
-    principal?.activa && principal.privateKeyCifrada ? "[activa, clave configurada]" : "[incompleta/inactiva]",
+    principal?.privateKey ? "[activa, clave configurada]" : "[incompleta/inactiva]",
   );
   if (legacies.length === 0) {
     console.error("Credenciales LEGACY activas: ninguna");
@@ -107,8 +99,7 @@ async function main(): Promise<void> {
     console.error(`Credenciales LEGACY activas: ${legacies.length}`);
     for (const legacy of legacies) {
       console.error(
-        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`,
-        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKeyCifrada ? " [clave configurada]" : " [sin clave]"}`,
+        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKey ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`,
       );
     }
   }
@@ -162,27 +153,20 @@ async function main(): Promise<void> {
 }
 
 async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonly string[]): Promise<void> {
-  const principal = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true },
-  });
-  const legacyRows = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
+  const { principal, legacy: legacyRows } = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
   const credentials: ServiceCredential[] = [];
 
-  if (principal?.serviceAccountEmail && principal.privateKeyCifrada) {
-    try {
-      credentials.push({
-        label: "PRINCIPAL",
-        serviceAccountEmail: principal.serviceAccountEmail,
-        privateKey: descifrarConfiguracion(principal.privateKeyCifrada),
-        serviceAccountSubject: null,
-      });
-    } catch (error) {
-      console.error(`DIAGNOSTICO CREDENCIAL PRINCIPAL | no se pudo descifrar la clave | ${summarizeError(error)}`);
-    }
+  if (principal) {
+    credentials.push({
+      label: "PRINCIPAL",
+      serviceAccountEmail: principal.serviceAccountEmail,
+      privateKey: principal.privateKey,
+      serviceAccountSubject: null,
+    });
   }
   for (const legacy of legacyRows) {
     credentials.push({
-      label: "LEGACY",
+      label: legacy.id,
       serviceAccountEmail: legacy.serviceAccountEmail,
       privateKey: legacy.privateKey,
       serviceAccountSubject: legacy.serviceAccountSubject,

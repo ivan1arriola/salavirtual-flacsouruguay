@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
+import { consultarCohostsEspacioMeet, normalizeCohostEmails } from "@/src/modules/conferencias/api";
+import {
+  cargarCredencialesLegacyGoogleWorkspace,
+  obtenerCredencialPrincipalGoogleWorkspace,
+} from "./google-workspace.service";
 
 export const COHOST_VERIFICATION_PAGE_SIZE = 6;
 
@@ -44,8 +48,8 @@ type Consulta = Readonly<{
 export type VerificarCohostsGlobalDependencies = Readonly<{
   db: PrismaClient;
   descifrar: (secret: string) => string;
-  listarLegacy: () => Promise<readonly CredencialLegacyCohost[]>;
-  leerMiembros: (
+  listarLegacy?: () => Promise<readonly CredencialLegacyCohost[]>;
+  leerMiembros?: (
     credencial: CredencialCohost, organizador: string, codigoReunion: string
   ) => Promise<readonly GoogleMember[]>;
 }>;
@@ -93,47 +97,58 @@ export async function verificarCohostsGlobalPagina(
 
   if (!rows.length) return { resultados: [], siguienteCursor: null };
 
-  const config = await deps.db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true },
-    select: { serviceAccountEmail: true, privateKeyCifrada: true },
-  });
-  if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
+  const cred = await obtenerCredencialPrincipalGoogleWorkspace(deps.db, deps.descifrar, { requireActiva: true });
+  if (!cred) {
     throw new Error("Google Workspace no tiene una credencial Principal activa.");
   }
   const principal: CredencialCohost = {
-    serviceAccountEmail: config.serviceAccountEmail,
-    privateKey: deps.descifrar(config.privateKeyCifrada),
+    serviceAccountEmail: cred.serviceAccountEmail,
+    privateKey: cred.privateKey,
   };
-  const legacy = await deps.listarLegacy();
+  const legacy = deps.listarLegacy
+    ? await deps.listarLegacy()
+    : await cargarCredencialesLegacyGoogleWorkspace(deps.db, deps.descifrar);
   // Meetings that share one space must share one read within the same page.
   const consultas = new Map<string, Promise<Consulta>>();
 
   async function consultar(organizador: string, codigo: string): Promise<Consulta> {
-    const credenciales = [
-      { origen: "PRINCIPAL" as const, credencial: principal },
-      ...legacy.map((credencial) => ({ origen: "LEGACY" as const, credencial })),
-    ];
-    let intentosLegacy = 0;
-    let lastStatus: number | null = null;
-    for (const { origen, credencial } of credenciales) {
-      if (origen === "LEGACY") intentosLegacy++;
-      try {
-        const members = await deps.leerMiembros(credencial, organizador, codigo);
-        return {
-          roles: new Set(members.filter(({ role }) => role === "COHOST")
-            .flatMap(({ email }) => email ? [email.trim().toLowerCase()] : [])),
-          origen,
-          intentosLegacy,
-          error: null,
-        };
-      } catch (error) {
-        lastStatus = estadoHttp(error);
-        // Legacy can help with permissions of spaces created by an older
-        // project; it must not mask network failures, missing spaces or 5xx.
-        if (lastStatus !== 403) break;
+    if (deps.leerMiembros) {
+      const credenciales = [
+        { origen: "PRINCIPAL" as const, credencial: principal },
+        ...legacy.map((credencial) => ({ origen: "LEGACY" as const, credencial })),
+      ];
+      let intentosLegacy = 0;
+      let lastStatus: number | null = null;
+      for (const { origen, credencial } of credenciales) {
+        if (origen === "LEGACY") intentosLegacy++;
+        try {
+          const members = await deps.leerMiembros(credencial, organizador, codigo);
+          return {
+            roles: new Set(members.filter(({ role }) => role === "COHOST")
+              .flatMap(({ email }) => email ? [email.trim().toLowerCase()] : [])),
+            origen,
+            intentosLegacy,
+            error: null,
+          };
+        } catch (error) {
+          lastStatus = estadoHttp(error);
+          if (lastStatus !== 403) break;
+        }
       }
+      return { roles: null, origen: null, intentosLegacy, error: errorLegible(lastStatus) };
     }
-    return { roles: null, origen: null, intentosLegacy, error: errorLegible(lastStatus) };
+
+    const candidates = [
+      { serviceAccountEmail: principal.serviceAccountEmail, privateKey: principal.privateKey, subject: organizador, origen: "PRINCIPAL" as const },
+      ...legacy.map((credencial) => ({ serviceAccountEmail: credencial.serviceAccountEmail, privateKey: credencial.privateKey, subject: organizador, origen: "LEGACY" as const })),
+    ];
+    const res = await consultarCohostsEspacioMeet(candidates, codigo);
+    return {
+      roles: res.cohosts ? new Set(res.cohosts) : null,
+      origen: res.origen,
+      intentosLegacy: res.intentosLegacy,
+      error: res.error,
+    };
   }
 
   const resultados = await Promise.all(rows.map(async (meeting): Promise<ResultadoCohostReunion> => {

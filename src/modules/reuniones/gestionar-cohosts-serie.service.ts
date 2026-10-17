@@ -13,6 +13,7 @@ import {
   normalizeCohostEmails,
   type GoogleCalendarCredentials,
 } from "@/src/modules/conferencias/api";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 
 const emailListSchema = z.preprocess(
@@ -164,18 +165,13 @@ export async function actualizarCohostsSerie(
   });
   const payloads = new Map<string, Prisma.InputJsonValue>();
   if (eventsToSync.length > 0) {
-    const config = await dependencies.db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal", activa: true },
+    const cred = await obtenerCredencialPrincipalGoogleWorkspace(dependencies.db, dependencies.descifrar, {
+      requireActiva: true,
     });
-    if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
+    if (!cred) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
     }
-    let privateKey: string;
-    try {
-      privateKey = dependencies.descifrar(config.privateKeyCifrada);
-    } catch {
-      throw new IntegrationApiError("No se pudo leer la configuración de Google Workspace.", 503);
-    }
+    const privateKey = cred.privateKey;
 
     for (const { meeting, event, hostEmail } of eventsToSync) {
       const previousEmails = normalizeCohostEmails([
@@ -189,7 +185,7 @@ export async function actualizarCohostsSerie(
       });
       const payload = await dependencies.sincronizarGoogle(
         {
-          serviceAccountEmail: config.serviceAccountEmail,
+          serviceAccountEmail: cred.serviceAccountEmail,
           privateKey,
           subject: hostEmail,
         },

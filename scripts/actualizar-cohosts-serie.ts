@@ -46,15 +46,14 @@ async function main(): Promise<void> {
   });
   const linkedByEmail = new Map(googleAccounts.map((account) => [normalizeEmail(account.email), account.id]));
 
-  const configuration = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true }
-  });
-  if (!configuration?.serviceAccountEmail || !configuration.privateKeyCifrada) {
-    throw new Error("Google Workspace no está configurado.");
-  }
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const privateKey = descifrarConfiguracion(configuration.privateKeyCifrada);
+  const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
+  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  if (!configuration) {
+    throw new Error("Google Workspace no está configurado.");
+  }
+  const privateKey = configuration.privateKey;
 
   const events = meetings.map((meeting) => {
     const event = meeting.eventosProveedor[0];

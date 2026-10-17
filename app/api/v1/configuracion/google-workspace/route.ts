@@ -3,7 +3,10 @@ import { auth } from "@/auth";
 import { cifrarConfiguracion } from "@/src/lib/config/encryption";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { actualizarSeccionGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
+import {
+  actualizarSeccionGoogleWorkspace,
+  desactivarCredencialLegacyWorkspace,
+} from "@/src/modules/configuracion/google-workspace.service";
 
 export const runtime = "nodejs";
 
@@ -124,26 +127,12 @@ export async function DELETE(request: Request) {
   if (!id?.startsWith("legacy:")) {
     return NextResponse.json({ error: "Solo se pueden desactivar credenciales Legacy." }, { status: 400 });
   }
-  const current = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id },
-    select: { id: true, serviceAccountEmail: true, activa: true }
-  });
-  if (!current) return NextResponse.json({ error: "La credencial no existe." }, { status: 404 });
-  await db.$transaction(async (tx) => {
-    await tx.configuracionGoogleWorkspace.update({
-      where: { id },
-      data: { activa: false, actualizadaPorId: actor.id, version: { increment: 1 } }
-    });
-    await tx.auditoria.create({
-      data: {
-        actorUsuarioId: actor.id,
-        accion: "CREDENCIAL_GOOGLE_WORKSPACE_LEGACY_DESACTIVADA",
-        entidadTipo: "ConfiguracionGoogleWorkspace",
-        entidadId: id,
-        valorAnterior: { activa: current.activa },
-        valorNuevo: { activa: false, serviceAccountEmail: current.serviceAccountEmail }
-      }
-    });
-  });
-  return NextResponse.json({ message: "Credencial Legacy desactivada." });
+  try {
+    await desactivarCredencialLegacyWorkspace(db, actor, id);
+    return NextResponse.json({ message: "Credencial Legacy desactivada." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error al desactivar la credencial.";
+    const status = message === "La credencial no existe." ? 404 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

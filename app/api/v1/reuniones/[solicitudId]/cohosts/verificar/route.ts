@@ -5,9 +5,8 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError, ForbiddenApiError, NotFoundApiError, IntegrationApiError } from "@/src/lib/http/api-error";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
-import { crearGoogleMeetAuthClient } from "@/src/integrations/google/auth";
-import { listarMiembrosMeetHttp, obtenerEspacioMeet } from "@/src/integrations/google/meet";
-import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
+import { consultarCohostsEspacioMeet } from "@/src/modules/conferencias/api";
+import { obtenerCredencialesWorkspaceActivas } from "@/src/modules/configuracion/api";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 type Result = "confirmed" | "rejected" | "unknown";
@@ -53,16 +52,10 @@ export async function GET(_request: Request, context: RouteContext) {
     if (meetings.length > 100) {
       return NextResponse.json({ error: "La serie excede el límite de verificación. Contactá a administración." }, { status: 422 });
     }
-    const config = await db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal", activa: true },
-    });
-    if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
+    const { principal, legacy } = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
+    if (!principal) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
     }
-    const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
-    // Read permissions using the same Principal -> Legacy sequence used to
-    // assign cohosts. A denied read is UNKNOWN, never a confirmed absence.
-    const legacyCredentials = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
     const memberCache = new Map<string, Set<string> | null>();
     const perEmail = new Map<string, {
       email: string; confirmed: number; rejected: number; unknown: number; total: number;
@@ -83,32 +76,12 @@ export async function GET(_request: Request, context: RouteContext) {
         if (!host || !code) {
           memberCache.set(cacheKey, null);
         } else {
-          let confirmed: Set<string> | null = null;
           const candidates = [
-            { serviceAccountEmail: config.serviceAccountEmail, privateKey },
-            ...legacyCredentials.map(({ serviceAccountEmail, privateKey }) => ({ serviceAccountEmail, privateKey })),
+            { serviceAccountEmail: principal.serviceAccountEmail, privateKey: principal.privateKey, subject: host, origen: "PRINCIPAL" as const },
+            ...legacy.map((c) => ({ serviceAccountEmail: c.serviceAccountEmail, privateKey: c.privateKey, subject: host, origen: "LEGACY" as const })),
           ];
-          for (const credential of candidates) {
-            try {
-              const client = crearGoogleMeetAuthClient({ ...credential, subject: host });
-              const space = await obtenerEspacioMeet(client, code);
-              if (!space.name) throw new Error("Espacio Meet no disponible.");
-              const members = await listarMiembrosMeetHttp(client, space.name);
-              confirmed = new Set(members
-                .filter((member) => member.role === "COHOST" && typeof member.email === "string")
-                .map((member) => member.email!.trim().toLowerCase()));
-              break;
-            } catch (error) {
-              // Retry only authorization failures from older Meet projects.
-              // Network errors and invalid spaces are not fixed by a different key.
-              const status = typeof error === "object" && error !== null
-                ? (error as { response?: { status?: number }; code?: number }).response?.status
-                  ?? (error as { code?: number }).code
-                : null;
-              if (status !== 403) break;
-            }
-          }
-          memberCache.set(cacheKey, confirmed);
+          const res = await consultarCohostsEspacioMeet(candidates, code);
+          memberCache.set(cacheKey, res.cohosts ? new Set(res.cohosts) : null);
         }
       }
       const members = memberCache.get(cacheKey) ?? null;

@@ -597,3 +597,53 @@ function normalizarEmails(values: readonly string[]): readonly string[] {
   return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
 }
 
+export type ResultadoVerificacionEspacioMeet = Readonly<{
+  cohosts: ReadonlySet<string> | null;
+  origen: "PRINCIPAL" | "LEGACY" | null;
+  intentosLegacy: number;
+  error: string | null;
+}>;
+
+export async function consultarCohostsEspacioMeet(
+  candidates: readonly { serviceAccountEmail: string; privateKey: string; subject: string; origen?: "PRINCIPAL" | "LEGACY" }[],
+  codigoReunion: string
+): Promise<ResultadoVerificacionEspacioMeet> {
+  let intentosLegacy = 0;
+  let lastStatus: number | null = null;
+
+  for (const cred of candidates) {
+    if (cred.origen === "LEGACY") intentosLegacy++;
+    try {
+      const client = crearGoogleMeetAuthClient(cred);
+      const space = await obtenerEspacioMeet(client, codigoReunion);
+      if (!space.name) throw new Error("Espacio Meet no disponible.");
+      const members = await listarMiembrosMeetHttp(client, space.name);
+      const cohosts = new Set(
+        members
+          .filter((m) => m.role === "COHOST" && typeof m.email === "string")
+          .flatMap((m) => m.email ? [m.email.trim().toLowerCase()] : [])
+      );
+      return {
+        cohosts,
+        origen: cred.origen ?? null,
+        intentosLegacy,
+        error: null,
+      };
+    } catch (error) {
+      const status = typeof error === "object" && error !== null
+        ? (error as { response?: { status?: number }; code?: number }).response?.status
+          ?? (error as { code?: number }).code
+        : null;
+      lastStatus = typeof status === "number" ? status : null;
+      if (lastStatus !== 403) break;
+    }
+  }
+
+  const errorMsg = lastStatus === 403
+    ? "Permisos insuficientes en Google Meet."
+    : lastStatus === 404
+    ? "El espacio de Google Meet no existe o expiró."
+    : lastStatus ? `Google Meet respondió con error ${lastStatus}.` : "Error al conectar con Google Meet.";
+  return { cohosts: null, origen: null, intentosLegacy, error: errorMsg };
+}
+

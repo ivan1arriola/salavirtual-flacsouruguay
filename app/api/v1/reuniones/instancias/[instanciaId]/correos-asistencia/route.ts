@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
+import { obtenerCredencialAdminReportsGoogle } from "@/src/modules/configuracion/api";
 import { obtenerCorreosAuditoriaMeet } from "@/src/modules/archivos/infrastructure/google/google-meet-audit-emails.client";
 
 export const runtime = "nodejs";
@@ -28,16 +29,15 @@ export async function GET(_request: Request, { params }: Context) {
   if (evento.instancia.finProgramadoAt > new Date() || evento.instancia.estado === "CANCELADA") {
     return NextResponse.json({ error: "La reunión no ha finalizado" }, { status: 409 });
   }
-  const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
-  const config = await db.configuracionGoogleWorkspace.findUnique({ where: { id: "principal" } });
-  if (!adminEmail || !config?.activa || !config.serviceAccountEmail || !config.privateKeyCifrada) {
+  const adminCred = await obtenerCredencialAdminReportsGoogle(db, descifrarConfiguracion);
+  if (!adminCred) {
     return NextResponse.json({ error: "Configuración de Reports API incompleta" }, { status: 503 });
   }
   try {
     const correos = await obtenerCorreosAuditoriaMeet({
-      serviceAccountEmail: config.serviceAccountEmail,
-      privateKey: descifrarConfiguracion(config.privateKeyCifrada),
-      adminEmail,
+      serviceAccountEmail: adminCred.serviceAccountEmail,
+      privateKey: adminCred.privateKey,
+      adminEmail: adminCred.adminEmail,
       meetingCode: evento.codigoReunion,
       startTime: new Date(evento.instancia.inicioProgramadoAt.getTime() - 30 * 60000).toISOString(),
       endTime: new Date(evento.instancia.finProgramadoAt.getTime() + 30 * 60000).toISOString()

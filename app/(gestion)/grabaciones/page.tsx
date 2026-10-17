@@ -6,6 +6,7 @@ import { RecordingsLibrary } from "@/src/components/recordings-library";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { listarGrabacionesDb } from "@/src/bootstrap/archivos.server";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { normalizarParametrosGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
 import {
   resolverEstadoVisualGrabacion,
@@ -24,10 +25,7 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
   const query = normalizarParametrosGrabaciones(await searchParams);
   const [page, workspaceConfiguration] = await Promise.all([
     listarGrabacionesDb(actor, query),
-    db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal" },
-      select: { activa: true, driveDestinationId: true }
-    })
+    obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
   ]);
   const artifacts = page.artifacts;
 

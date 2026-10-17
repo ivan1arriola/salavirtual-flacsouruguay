@@ -47,15 +47,14 @@ async function main(): Promise<void> {
   }, null, 2));
   if (!applyChanges) return;
 
-  const config = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true }
-  });
-  if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
-    throw new Error("Google Workspace no está configurado para reagrupar los eventos.");
-  }
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
+  const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
+  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  if (!config) {
+    throw new Error("Google Workspace no está configurado para reagrupar los eventos.");
+  }
+  const privateKey = config.privateKey;
 
   for (const plan of plans) {
     await applyPlan(plan, config.serviceAccountEmail, privateKey);

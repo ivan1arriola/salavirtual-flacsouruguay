@@ -3,10 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
-import { verificarCohostsGlobalPagina } from "@/src/modules/configuracion/verificar-cohosts-global.service";
-import { crearGoogleMeetAuthClient } from "@/src/integrations/google/auth";
-import { listarMiembrosMeetHttp, obtenerEspacioMeet } from "@/src/integrations/google/meet";
+import { verificarCohostsGlobalPagina } from "@/src/modules/configuracion/api";
 
 export const runtime = "nodejs";
 
@@ -29,13 +26,6 @@ export async function GET(request: Request) {
     const result = await verificarCohostsGlobalPagina({
       db,
       descifrar: descifrarConfiguracion,
-      listarLegacy: () => cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion),
-      leerMiembros: async (credential, organizador, codigoReunion) => {
-        const auth = crearGoogleMeetAuthClient({ ...credential, subject: organizador });
-        const space = await obtenerEspacioMeet(auth, codigoReunion);
-        if (!space.name) throw new Error("Google Meet no devolvió el ID del espacio.");
-        return listarMiembrosMeetHttp(auth, space.name);
-      },
     }, cursor);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch {

@@ -5,8 +5,9 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import {
   mensajeErrorGoogleWorkspace,
+  obtenerCredencialWorkspacePorId,
   pruebaConfiguracionGoogleWorkspaceSchema
-} from "@/src/modules/configuracion/google-workspace.domain";
+} from "@/src/modules/configuracion/api";
 import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
@@ -40,22 +41,26 @@ export async function POST(request: Request) {
     const { objetivo, credentialId } = pruebaConfiguracionGoogleWorkspaceSchema.parse(
       await request.json().catch(() => null)
     );
-    const principal = await db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal" }
-    });
-    if (!principal) throw new Error("Google Workspace no está configurado.");
-
-    const selected = objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal"
-      ? await db.configuracionGoogleWorkspace.findUnique({ where: { id: credentialId } })
-      : principal;
-    if (!selected?.serviceAccountEmail || !selected.privateKeyCifrada) {
+    const targetId = objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal"
+      ? credentialId
+      : "principal";
+    const selected = await obtenerCredencialWorkspacePorId(db, targetId, descifrarConfiguracion);
+    if (!selected) {
+      if (targetId === "principal") {
+        throw new Error("Google Workspace no está configurado.");
+      }
       throw new Error("Primero guardá la cuenta de servicio y su clave privada.");
     }
 
     const credential = {
       serviceAccountEmail: selected.serviceAccountEmail,
-      privateKey: descifrarConfiguracion(selected.privateKeyCifrada)
+      privateKey: selected.privateKey
     };
+
+    const principal = targetId === "principal"
+      ? selected
+      : await obtenerCredencialWorkspacePorId(db, "principal", descifrarConfiguracion);
+    if (!principal) throw new Error("Google Workspace no está configurado.");
 
     if (objetivo === "SCOPES") {
       if (!principal.serviceAccountEmail || !principal.privateKeyCifrada) {

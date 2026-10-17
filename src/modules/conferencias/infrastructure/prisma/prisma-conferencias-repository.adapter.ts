@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { recalcularSolicitud } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 import {
   extraerConferenceData,
@@ -59,18 +60,15 @@ export function crearPrismaConferenciasRepository(
     },
 
     async obtenerCredencialesWorkspace(): Promise<WorkspaceCredentialsResult> {
-      const config = await db.configuracionGoogleWorkspace.findUnique({
-        where: { id: "principal", activa: true },
-      });
-      if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
-        return { disponible: false };
-      }
       try {
-        const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
+        const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion);
+        if (!cred) {
+          return { disponible: false };
+        }
         return {
           disponible: true,
-          serviceAccountEmail: config.serviceAccountEmail,
-          privateKey,
+          serviceAccountEmail: cred.serviceAccountEmail,
+          privateKey: cred.privateKey,
         };
       } catch (err) {
         const error = err instanceof Error ? err.message : "No se pudo leer la clave de Google.";

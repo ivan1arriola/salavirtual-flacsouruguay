@@ -1,6 +1,7 @@
 import { JWT } from "google-auth-library";
 import { db } from "../src/lib/db";
 import { descifrarConfiguracion } from "../src/lib/config/encryption";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "../src/modules/configuracion/api";
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -12,15 +13,7 @@ function normalizePrivateKey(value: string): string {
 }
 
 async function main() {
-  const config = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal" },
-    select: {
-      serviceAccountEmail: true,
-      privateKeyCifrada: true,
-      serviceAccountSubject: true,
-      activa: true,
-    },
-  });
+  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: false });
 
   const temporaryEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   const temporaryKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
@@ -29,9 +22,7 @@ async function main() {
   const serviceAccountEmail = temporaryEmail || config?.serviceAccountEmail;
   const privateKey = temporaryKey
     ? normalizePrivateKey(temporaryKey)
-    : config?.privateKeyCifrada
-      ? descifrarConfiguracion(config.privateKeyCifrada)
-      : undefined;
+    : config?.privateKey;
   const delegatedSubject = temporarySubject || config?.serviceAccountSubject;
 
   if (!serviceAccountEmail || !privateKey || !delegatedSubject) {

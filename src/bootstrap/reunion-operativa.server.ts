@@ -24,7 +24,10 @@ import {
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
-import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
+import {
+  obtenerCredencialPrincipalGoogleWorkspace,
+  obtenerCandidatosCredencialesParaOrganizador,
+} from "@/src/modules/configuracion/api";
 import {
   controlOperativoReunionSchema,
   derivarEstadoGrabacionOperativa,
@@ -305,28 +308,21 @@ export async function obtenerReunionOperativa(
   const indiceAuditados = crearIndiceUnicoPorNombre<{ email: string; externo: boolean | null }>();
 
   if (evento?.codigoReunion && evento.cuentaProveedor?.emailOrganizador) {
-    const config = await db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal", activa: true },
-      select: {
-        serviceAccountEmail: true,
-        privateKeyCifrada: true,
-        serviceAccountSubject: true
-      }
-    });
+    const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion);
 
-    if (!config?.serviceAccountEmail || !config.privateKeyCifrada) {
+    if (!cred) {
       disponibilidad = "SIN_CREDENCIALES";
     } else {
       try {
-        const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
+        const privateKey = cred.privateKey;
         const subject = evento.cuentaProveedor.emailOrganizador;
         const provider = crearGoogleArtifactsProviderAdapter({
-          serviceAccountEmail: config.serviceAccountEmail,
+          serviceAccountEmail: cred.serviceAccountEmail,
           privateKey,
           subject
         });
         const meetAuth = crearGoogleMeetAuthClient({
-          serviceAccountEmail: config.serviceAccountEmail,
+          serviceAccountEmail: cred.serviceAccountEmail,
           privateKey,
           subject
         });
@@ -385,11 +381,11 @@ export async function obtenerReunionOperativa(
           // Solo la consultamos si existen sesiones finalizadas y hay credencial de administrador configurada.
           const adminEmail =
             process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim()
-            || config.serviceAccountSubject?.trim()
+            || cred.serviceAccountSubject?.trim()
             || null;
           if (adminEmail && (participantesDesconectados.length > 0 || Boolean(finRealAt))) {
             const correosAuditados = await obtenerEventosAuditoriaMeet({
-              serviceAccountEmail: config.serviceAccountEmail,
+              serviceAccountEmail: cred.serviceAccountEmail,
               privateKey,
               adminEmail,
               meetingCode: evento.codigoReunion,
@@ -1166,31 +1162,19 @@ export async function actualizarControlOperativoReunion(
     && evento.cuentaProveedor?.emailOrganizador
     && (parsed.tipoAccesoMeet || cambioCohosts)
   ) {
-    const config = await db.configuracionGoogleWorkspace.findUnique({
-      where: { id: "principal", activa: true },
-      select: {
-        serviceAccountEmail: true,
-        privateKeyCifrada: true
-      }
-    });
+    const subject = evento.cuentaProveedor.emailOrganizador;
+    const candidates = await obtenerCandidatosCredencialesParaOrganizador(
+      db,
+      subject,
+      descifrarConfiguracion
+    ).catch(() => []);
+    const principalCred = candidates.find((c) => c.origen === "PRINCIPAL");
 
-    if (config?.serviceAccountEmail && config.privateKeyCifrada) {
+    if (principalCred) {
       try {
-        const privateKey = descifrarConfiguracion(config.privateKeyCifrada);
-        const subject = evento.cuentaProveedor.emailOrganizador;
+        const privateKey = principalCred.privateKey;
 
         if (parsed.tipoAccesoMeet) {
-          const legacyCreds = await cargarCredencialesLegacyGoogleWorkspace(
-            db,
-            descifrarConfiguracion
-          ).catch(() => []);
-          const candidates = [
-            { serviceAccountEmail: config.serviceAccountEmail, privateKey },
-            ...legacyCreds.map((c) => ({
-              serviceAccountEmail: c.serviceAccountEmail,
-              privateKey: c.privateKey
-            }))
-          ];
           let lastAccessErr: unknown = null;
           let accessUpdated = false;
           for (const cred of candidates) {
@@ -1229,7 +1213,7 @@ export async function actualizarControlOperativoReunion(
         if (cambioCohosts && evento.externalEventId) {
           const payloadActualizado = await sincronizarCohostsGoogleExistente(
             {
-              serviceAccountEmail: config.serviceAccountEmail,
+              serviceAccountEmail: principalCred.serviceAccountEmail,
               privateKey,
               subject
             },

@@ -29,6 +29,8 @@ export {
   compartirConferenciaGoogleCalendar,
   configurarGoogleMeetExistente,
   sincronizarCohostsGoogleExistente,
+  consultarCohostsEspacioMeet,
+  type ResultadoVerificacionEspacioMeet,
   type GoogleCalendarCredentials,
 } from "./infrastructure/google/google-conference-provider.adapter";
 export {

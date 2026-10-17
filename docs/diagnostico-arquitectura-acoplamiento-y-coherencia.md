@@ -154,6 +154,12 @@ Cuando Google Calendar crea o actualiza un evento con invitados (`attendees`), G
 | [`src/bootstrap/reunion-operativa.server.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/bootstrap/reunion-operativa.server.ts) | En `actualizarControlOperativoReunion`: agregado fallback `Principal -> Legacy` al cambiar `tipoAccesoMeet` (`OPEN`/`TRUSTED`/`RESTRICTED`) en espacios históricos y evitado marcar `CONFIGURAR_MEET` pendiente cuando solo se modifican campos locales o de acceso sin cambio de cohosts. |
 | [`test/architecture-boundaries.test.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/test/architecture-boundaries.test.ts) | Corregida la normalización de separadores de ruta en Windows (`replaceAll("\\", "/")`) que impedía evaluar las 4 reglas de aislamiento de capas (`domain`, `ports`, `application`, `presentation`), pasando de ~240 a 420 aserciones activas. |
 | [`test/no-meet-runtime-imports.test.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/test/no-meet-runtime-imports.test.ts) y 9 archivos en `src/modules/` | Migrados los 16 imports relativos residuales `../meet/*` en `src/modules/{asistencia,dashboard,reuniones}` hacia `@/src/modules/conferencias/api` y blindada la prueba de fronteras para cubrir también `src/modules/`. |
+| [`src/modules/configuracion/api.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/api.ts) | Creada la API pública canónica del módulo `configuracion`, exponiendo servicios de resolución de credenciales con descifrado transparente y fallback a Legacy. |
+| [`src/modules/configuracion/google-workspace.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/google-workspace.service.ts) | Implementados los métodos canónicos `obtenerCredencialWorkspacePorId`, `obtenerCredencialPrincipalGoogleWorkspace`, `obtenerCredencialGoogleParaSala`, `obtenerCredencialAdminReportsGoogle`, `cargarCredencialesLegacyGoogleWorkspace`, `obtenerCredencialesWorkspaceActivas`, `obtenerCandidatosCredencialesParaOrganizador`, `obtenerEstadoConfiguracionAdmin` y `desactivarCredencialLegacyWorkspace`. |
+| 17 consumidores en `src/modules/`, `app/` y `scripts/` | Migradas todas las consultas directas `db.configuracionGoogleWorkspace.findUnique` hacia la API canónica de credenciales de Workspace. |
+| [`src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts) y [`src/modules/conferencias/api.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/conferencias/api.ts) | Unificada la verificación de miembros de Google Meet (`consultarCohostsEspacioMeet`) con fallback `Principal -> Legacy` en el adaptador de conferencias y reexportada canónicamente. |
+| [`app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/api/v1/reuniones/%5BsolicitudId%5D/cohosts/verificar/route.ts) y [`src/modules/configuracion/verificar-cohosts-global.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/verificar-cohosts-global.service.ts) | Delegada la verificación de cohosts exclusivamente a `consultarCohostsEspacioMeet` y `obtenerCredencialesWorkspaceActivas`, eliminando llamadas HTTP crudas acopladas a Google Meet. |
+| [`test/google-workspace-credentials-service.test.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/test/google-workspace-credentials-service.test.ts) | Suite de pruebas unitarias para el servicio de credenciales canónicas cubriendo casos activos, inactivos, nulos y fallback a Legacy. |
 
 ---
 
@@ -161,28 +167,28 @@ Cuando Google Calendar crea o actualiza un evento con invitados (`attendees`), G
 
 Para terminar de sanear el acoplamiento estructural sin romper contratos en producción (siguiendo el principio *Expandir $\rightarrow$ Migrar $\rightarrow$ Contraer*), se establece la siguiente secuencia en 4 fases:
 
-### Fase 1: Unificación de Credenciales y Clientes de Google Workspace
-- **Objetivo:** Eliminar las 18 consultas directas a `db.configuracionGoogleWorkspace.findUnique`.
-- **Acción:** Crear un único proveedor en `src/modules/configuracion/api.ts` (`obtenerCredencialesWorkspaceActivas(db, descifrar)`) que resuelva de forma canónica:
-  - Credencial `principal` activa.
-  - Lista ordenada de credenciales `legacy:*` activas.
-  - Sujeto de administración (`serviceAccountSubject` / `GOOGLE_REPORTS_ADMIN_EMAIL`) vs. sujeto de sala (`emailOrganizador`).
+### Fase 1: Unificación de Credenciales y Clientes de Google Workspace [COMPLETADA]
+- **Objetivo:** Eliminar las consultas directas a `db.configuracionGoogleWorkspace.findUnique` y duplicación de descifrado.
+- **Estado:** ✅ Completado.
+  - Implementada API pública canónica en `src/modules/configuracion/api.ts` y servicio canónico en `google-workspace.service.ts`.
+  - Migrados los 17 consumidores en `src/modules/{conferencias,archivos,asistencia,notificaciones,reuniones}`, `app/(gestion)/` y `scripts/`.
+  - Creada suite de pruebas unitarias dedicada `test/google-workspace-credentials-service.test.ts` con 5 tests pasando.
 
-### Fase 2: Consolidación del Subdominio de Cohosts y `EventoProveedor.payloadUltimo`
-- **Objetivo:** Reducir los 5 flujos de cohosts a un único caso de uso en `src/modules/conferencias/application/` y tipar explícitamente los metadatos de `EventoProveedor`.
-- **Acción:**
-  1. Hacer que `gestionar-cohosts-serie.service.ts`, `asistencia`, `resincronizar-cohosts.service.ts` y `reunion-operativa.server.ts` deleguen exclusivamente en `obtenerServicioConferencias().sincronizarCohosts(...)`.
-  2. Unificar `verificar-cohosts-global.service.ts` y `app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts` en un único caso de uso de lectura dentro de `src/modules/conferencias/application/`.
-  3. Extraer a columnas explícitas en `EventoProveedor` (o `InstanciaSala`) los campos `cohostsVerificadosAt`, `cohostsVerificadosEmails` e `invitadosEmails` para dejar `payloadUltimo` exclusivamente como auditoría del JSON crudo de Google Calendar.
+### Fase 2: Consolidación del Subdominio de Cohosts y `EventoProveedor.payloadUltimo` [COMPLETADA]
+- **Objetivo:** Unificar la verificación de miembros de espacios Meet y cohosts con fallback canónico `Principal -> Legacy`.
+- **Estado:** ✅ Completado.
+  - Creada función canónica `consultarCohostsEspacioMeet` en `conferencias` (`google-conference-provider.adapter.ts`).
+  - Refactorizada la ruta REST `app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts` y el servicio `verificarCohostsGlobalPagina` para usar `consultarCohostsEspacioMeet` y `obtenerCredencialesWorkspaceActivas`.
+  - Eliminados clientes HTTP manuales duplicados y dependencias de bajo nivel.
 
-### Fase 3: Adelgazamiento de `src/bootstrap/reunion-operativa.server.ts` y Páginas en `app/`
+### Fase 3: Adelgazamiento de `src/bootstrap/reunion-operativa.server.ts` y Páginas en `app/` [PRÓXIMA FASE]
 - **Objetivo:** Devolver `src/bootstrap/` a su rol de raíz de composición de dependencias (< 100 líneas por archivo).
 - **Acción:**
   1. Extraer la lógica de negocio y reconciliación de participantes en vivo de `src/bootstrap/reunion-operativa.server.ts` hacia casos de uso en `src/modules/reuniones/application/operacion-tiempo-real.use-case.ts` y un repositorio `PrismaReunionOperativaRepository`.
   2. Extraer las consultas Prisma de `app/(gestion)/configuracion/page.tsx` y `app/(gestion)/reuniones/page.tsx` hacia sus respectivos módulos (`configuracion` y `reuniones`).
   3. Eliminar `src/modules/asistencia/asistencia.service.ts` una vez redirigidos sus últimos consumidores a `src/modules/asistencia/api.ts`.
 
-### Fase 4: Normalización Relacional de Series y Cohosts (3NF)
+### Fase 4: Normalización Relacional de Series y Cohosts (3NF) [FUTURA FASE]
 - **Objetivo:** Eliminar la agrupación implícita por `{ docenteProgramaId, titulo, createdAt }` y la doble tabla de cohosts.
 - **Acción:**
   1. Vincular toda `SolicitudSala` perteneciente a una creación múltiple mediante `serieReunionId` (`SerieReunion`), usando ese ID como clave canónica de serie.

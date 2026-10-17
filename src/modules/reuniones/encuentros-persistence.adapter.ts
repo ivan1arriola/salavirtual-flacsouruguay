@@ -3,6 +3,7 @@ import {
   estadoIntegracionEfectivo,
   type GoogleCalendarCredentials,
 } from "@/src/modules/conferencias/api";
+import { obtenerCredencialGoogleParaSala } from "@/src/modules/configuracion/api";
 import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
 export function cargarEncuentro(
@@ -24,17 +25,14 @@ export async function cargarCredencialesEncuentro(
   descifrar: (value: string) => string,
   subject?: string | null
 ): Promise<GoogleCalendarCredentials> {
-  const config = await db.configuracionGoogleWorkspace.findUnique({
-    where: { id: "principal", activa: true }
-  });
-  if (!config?.serviceAccountEmail || !config.privateKeyCifrada || !subject) {
+  if (!subject) {
     throw new Error("Google Workspace no está configurado para modificar el encuentro.");
   }
-  return {
-    serviceAccountEmail: config.serviceAccountEmail,
-    privateKey: descifrar(config.privateKeyCifrada),
-    subject
-  };
+  const salaCred = await obtenerCredencialGoogleParaSala(db, subject, descifrar);
+  if (!salaCred) {
+    throw new Error("Google Workspace no está configurado para modificar el encuentro.");
+  }
+  return salaCred;
 }
 
 export async function recalcularSolicitud(
