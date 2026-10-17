@@ -312,7 +312,7 @@ export function MeetingDetailManager({
                     <strong>Encuentro {meeting.ordinal}</strong>
                     <span>{meeting.fechaLegible}</span>
                     <small>Encuentro: {meeting.inicio.slice(11, 16)}–{meeting.fin.slice(11, 16)}</small>
-                    {meeting.requiereAsistenciaTecnica ? <small>Asistencia: {(meeting.inicioAsistencia ?? meeting.inicio).slice(11, 16)}–{(meeting.finAsistencia ?? meeting.fin).slice(11, 16)}</small> : null}
+                    {meeting.requiereAsistenciaTecnica ? <small >Monitoreo: {(meeting.inicioAsistencia ?? meeting.inicio).slice(11, 16)}–{(meeting.finAsistencia ?? meeting.fin).slice(11, 16)}</small> : null}
                     <small>
                       {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       {meeting.modalidadPersonalizada ? " · configuración puntual" : ""}
