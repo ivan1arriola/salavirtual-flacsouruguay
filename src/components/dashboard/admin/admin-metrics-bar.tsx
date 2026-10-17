@@ -44,7 +44,7 @@ export function AdminMetricsBar({
       value: metrics.pendingAssistance,
       copy: "Necesitan cobertura",
       icon: UserRoundCheck,
-      href: "/asistencia-tecnica?estado=pendientes",
+      href: "/monitoreo?estado=pendientes",
       tone: metrics.pendingAssistance > 0 ? "warning" : "ok"
     },
     {
