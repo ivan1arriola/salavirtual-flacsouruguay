@@ -136,7 +136,7 @@ export function AssistantAssignmentSelect({
             disabled={pending}
             onChange={(event) => assign(event.target.value)}
           >
-            <option value="">{applicants.length > 0 ? "Asignar asistente técnico" : "Asignar manualmente"}</option>
+            <option value="">{applicants.length > 0 ? "Asignar asistente de monitoreo" : "Asignar manualmente"}</option>
             {assistants.map((assistant) => (
               <option key={assistant.id} value={assistant.id}>
                 {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}
