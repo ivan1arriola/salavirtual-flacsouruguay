@@ -190,7 +190,7 @@ export function LiveMeetingHero({
           <UserCheck size={16} />
           {role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia ? (
             <span className="status-ok-text">
-              <CheckCircle2 size={16} /> Tu cobertura técnica confirmada
+              <CheckCircle2 size={16} /> Tu monitoreo confirmado
             </span>
           ) : meeting.asistente ? (
             <span>
