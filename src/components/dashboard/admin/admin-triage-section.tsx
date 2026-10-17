@@ -91,7 +91,7 @@ export function AdminTriageSection({
                   meetingId={pendingCoverage.firstMeetingId}
                 />
               ) : null}
-              <Link className="text-link" href="/asistencia-tecnica?estado=pendientes">
+              <Link className="text-link" href="/monitoreo?estado=pendientes">
                 Gestionar monitoreo <ArrowRight size={15} />
               </Link>
             </article>
