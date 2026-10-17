@@ -36,9 +36,9 @@ const createMeetingNav = {
 } as const;
 
 const adminNav = [
-  { href: "/asistencia-tecnica", label: "Asistencia técnica", icon: Hand },
+  { href: "/asistencia-tecnica", label: "Monitoreo", icon: Hand },
   { href: "/reuniones/duplicados", label: "Duplicados", icon: GitCompareArrows },
-  { href: "/asistentes", label: "Asistentes técnicos", icon: UserRoundCheck },
+  { href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck },
   { href: "/usuarios", label: "Usuarios", icon: Users },
   { href: "/configuracion", label: "Configuración", icon: Settings },
   { href: "/reuniones/buscar-meet", label: "Buscar Meet", icon: Search }
@@ -241,6 +241,6 @@ function moreTourForRole(role: Session["user"]["role"]): string | undefined {
 
 function roleLabel(role: Session["user"]["role"]): string {
   if (role === "ADMINISTRACION") return "Administración";
-  if (role === "ASISTENTE_TECNICO") return "Asistencia técnica";
+  if (role === "ASISTENTE_TECNICO") return "Monitoreo";
   return "Docente";
 }
