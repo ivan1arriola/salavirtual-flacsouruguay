@@ -339,7 +339,7 @@ describe("dias derivados de reuniones", () => {
       "Solo Administración"
     );
     expect(() => resolverAsignacionInicial("ADMINISTRACION", false, "assistant")).toThrow(
-      "no requiere asistencia"
+      "no requiere monitoreo"
     );
   });
 
