@@ -88,7 +88,7 @@ export default async function AsistentesPage({
       <header className="page-header assistant-detail-header">
         <div>
           <p className="page-eyebrow">Administración</p>
-          <h1>Asistentes técnicos</h1>
+          <h1>Asistentes de monitoreo</h1>
           <p>Asignaciones y pagos estimados de {formatMonth(new Date(period.desdeMs))}.</p>
         </div>
         <div className="assistant-detail-actions">
@@ -112,7 +112,7 @@ export default async function AsistentesPage({
         <label>
           <Search size={17} aria-hidden="true" />
           <input
-            aria-label="Buscar asistente técnico"
+            aria-label="Buscar asistente de monitoreo"
             defaultValue={query.q ?? ""}
             name="q"
             placeholder="Buscar por nombre o correo"
@@ -130,10 +130,10 @@ export default async function AsistentesPage({
       </form>
 
       <section className="content-section assistants-summary-section">
-        <div className="section-heading"><div><h2>Detalle por asistente técnico</h2><p>{visibleAssistants.length} de {assistants.length} personas visibles.</p></div><UsersRound size={23} color="var(--brand)" /></div>
+        <div className="section-heading"><div><h2>Detalle por asistente de monitoreo</h2><p>{visibleAssistants.length} de {assistants.length} personas visibles.</p></div><UsersRound size={23} color="var(--brand)" /></div>
         <div className="table-wrap">
           <table className="data-table assistants-summary-table">
-            <thead><tr><th>Asistente técnico</th><th>Estado</th><th>Próximas</th><th>Mes</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
+            <thead><tr><th>Asistente de monitoreo</th><th>Estado</th><th>Próximas</th><th>Mes</th><th>Horas</th><th>Pago estimado</th><th></th></tr></thead>
             <tbody>
               {visibleAssistants.map((assistant) => {
                 const detailHref = `/asistentes/${encodeURIComponent(assistant.slug)}?mes=${period.clave}`;
@@ -151,7 +151,7 @@ export default async function AsistentesPage({
                   <td><strong>{assistant.reuniones}</strong><small>{assistant.virtuales} virtuales · {assistant.hibridas} híbridas</small></td>
                   <td>{formatMinutes(assistant.minutos)}</td>
                   <td><strong>{formatAmounts(assistant.montos)}</strong>{assistant.sinTarifa ? <small className="missing-rate">{assistant.sinTarifa} sin tarifa</small> : null}</td>
-                  <td><Link className="icon-link" href={detailHref} title="Controlar asistente técnico"><ChevronRight size={18} /><span className="sr-only">Controlar asistente técnico</span></Link></td>
+                  <td><Link className="icon-link" href={detailHref} title="Controlar asistente de monitoreo"><ChevronRight size={18} /><span className="sr-only">Controlar asistente de monitoreo</span></Link></td>
                 </tr>
               })}
               {visibleAssistants.length === 0 ? <tr><td className="empty-table-cell" colSpan={7}>No hay asistentes para ese filtro.</td></tr> : null}
