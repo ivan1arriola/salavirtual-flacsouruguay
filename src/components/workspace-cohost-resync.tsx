@@ -26,7 +26,7 @@ export function WorkspaceCohostResync() {
 
   async function resync() {
     if (!window.confirm(
-      "Se agregarán como cohosts el docente y los asistentes técnicos asignados de las reuniones activas y futuras. Se conservarán los cohosts existentes y luego se intentará sincronizar con Google Meet. ¿Continuar?"
+      "Se agregarán como cohosts el docente y los asistentes de monitoreo asignados de las reuniones activas y futuras. Se conservarán los cohosts existentes y luego se intentará sincronizar con Google Meet. ¿Continuar?"
     )) return;
 
     setBusy(true);
@@ -61,7 +61,7 @@ export function WorkspaceCohostResync() {
         <div className="workspace-resync-icon"><RefreshCw size={20} aria-hidden="true" /></div>
         <div>
           <strong>Actualizar cohosts</strong>
-          <span>Agrega al docente y a los asistentes técnicos asignados, y conserva los demás cohosts que ya tenga la reunión.</span>
+          <span>Agrega al docente y a los asistentes de monitoreo asignados, y conserva los demás cohosts que ya tenga la reunión.</span>
           <small>Verifica los permisos en Google Meet, también para cuentas Gmail y de otras instituciones. Si Google rechaza una asignación, muestra el error.</small>
         </div>
         <button className="secondary-action" disabled={busy} onClick={resync} type="button">
