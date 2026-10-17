@@ -48,6 +48,11 @@ export {
   type GoogleWorkspaceScopeValidation,
 } from "./google-workspace-test.adapter";
 
+export {
+  obtenerDatosPaginaConfiguracion,
+  type OperacionPendienteItem,
+} from "./configuracion-page.service";
+
 export * from "./google-workspace.domain";
 export * from "./asistencia-tecnica.domain";
 export * from "./settings-navigation.domain";

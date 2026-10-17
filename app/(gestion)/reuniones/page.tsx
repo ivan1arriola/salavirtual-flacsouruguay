@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import {
   AlertTriangle,
   ArrowRight,
@@ -26,43 +25,11 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 import {
-  agruparEncuentrosPorSerie,
-  calcularInfoPaginacion,
-  normalizarCodigoReunionBuscado,
-  parsearFechaFiltro,
-  resolverPaginacionAgenda,
-  resolverVistaAgenda
-} from "@/src/modules/reuniones/agenda-view.domain";
+  obtenerDatosPaginaReuniones,
+  type PeriodoAgenda
+} from "@/src/modules/reuniones/reuniones-page.service";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
 import { cohostAccountGuidance, cohostsConfirmados } from "@/src/modules/conferencias/api";
-
-const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
-type PeriodoAgenda = "proximas" | "anteriores";
-
-const meetingInclude = {
-  solicitud: {
-    include: {
-      docentePrograma: {
-        include: { programa: true, docente: { include: { usuario: true } } }
-      }
-    }
-  },
-  eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-  cohosts: {
-    include: {
-      cuentaGoogle: {
-        include: { user: true }
-      }
-    }
-  },
-  cohostEmails: true,
-  asignaciones: {
-    where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-    include: { asistenteTecnico: { include: { usuario: true } } },
-    orderBy: { updatedAt: "desc" as const },
-    take: 1
-  }
-} satisfies Prisma.InstanciaSalaInclude;
 
 export default async function ReunionesPage({
   searchParams
@@ -86,327 +53,32 @@ export default async function ReunionesPage({
   });
   if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) redirect("/mi-agenda");
 
-  const {
-    q = "",
-    vista: vistaParam,
-    programa: programaParam = "",
-    periodo: periodoParam,
-    page: pageParam,
-    desde: desdeParam = "",
-    hasta: hastaParam = ""
-  } = await searchParams;
-
-  const vista = resolverVistaAgenda(vistaParam);
-  const query = q.trim();
-  const programaId = actor.rol === "ADMINISTRACION" ? programaParam.trim() : "";
-  const periodo: PeriodoAgenda =
-    actor.rol === "ADMINISTRACION" && periodoParam === "anteriores" ? "anteriores" : "proximas";
-  const isHistory = periodo === "anteriores";
-  const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
+  const params = await searchParams;
   const now = new Date();
 
-  const desdeIso = parsearFechaFiltro(desdeParam, false);
-  const hastaIso = parsearFechaFiltro(hastaParam, true);
-  const desdeDate = desdeIso ? new Date(desdeIso) : undefined;
-  const hastaDate = hastaIso ? new Date(hastaIso) : undefined;
-
-  const requestScope: Prisma.SolicitudSalaWhereInput =
-    actor.rol === "DOCENTE"
-      ? {
-          docentePrograma: {
-            programa: {
-              activo: true,
-              docentes: {
-                some: {
-                  activo: true,
-                  docente: { usuarioId: actor.id }
-                }
-              }
-            }
-          }
-        }
-      : programaId
-        ? { docentePrograma: { programaId } }
-        : {};
-
-  const temporalWhere: Prisma.InstanciaSalaWhereInput = {
-    finProgramadoAt: isHistory ? { lt: now } : { gte: now },
-    ...(desdeDate || hastaDate
-      ? {
-          inicioProgramadoAt: {
-            ...(desdeDate ? { gte: desdeDate } : {}),
-            ...(hastaDate ? { lte: hastaDate } : {})
-          }
-        }
-      : {})
-  };
-
-  const dateRangeWhere: Prisma.InstanciaSalaWhereInput =
-    desdeDate || hastaDate
-      ? {
-          inicioProgramadoAt: {
-            ...(desdeDate ? { gte: desdeDate } : {}),
-            ...(hastaDate ? { lte: hastaDate } : {})
-          }
-        }
-      : {};
-
-  const instanceSearch: Prisma.InstanciaSalaWhereInput = query
-    ? {
-        OR: [
-          {
-            eventosProveedor: {
-              some: {
-                OR: [
-                  { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" } },
-                  { joinUrl: { contains: query, mode: "insensitive" } }
-                ]
-              }
-            }
-          },
-          { solicitud: { titulo: { contains: query, mode: "insensitive" } } },
-          {
-            solicitud: {
-              docentePrograma: {
-                programa: { nombre: { contains: query, mode: "insensitive" } }
-              }
-            }
-          },
-          {
-            solicitud: {
-              docentePrograma: {
-                docente: {
-                  usuario: {
-                    OR: [
-                      { nombres: { contains: query, mode: "insensitive" } },
-                      { apellidos: { contains: query, mode: "insensitive" } }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          {
-            cohosts: {
-              some: {
-                cuentaGoogle: {
-                  OR: [
-                    { email: { contains: query, mode: "insensitive" } },
-                    { user: { nombres: { contains: query, mode: "insensitive" } } },
-                    { user: { apellidos: { contains: query, mode: "insensitive" } } }
-                  ]
-                }
-              }
-            }
-          },
-          { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } }
-        ]
-      }
-    : {};
-
-  const baseInstanceWhere: Prisma.InstanciaSalaWhereInput = {
-    estado: { not: "CANCELADA" },
-    solicitud: requestScope,
-    ...instanceSearch
-  };
-  const encounterWhere: Prisma.InstanciaSalaWhereInput = {
-    ...baseInstanceWhere,
-    ...temporalWhere
-  };
-
-  const seriesSearch: Prisma.SolicitudSalaWhereInput = query
-    ? {
-        OR: [
-          { titulo: { contains: query, mode: "insensitive" } },
-          { docentePrograma: { programa: { nombre: { contains: query, mode: "insensitive" } } } },
-          {
-            docentePrograma: {
-              docente: {
-                usuario: {
-                  OR: [
-                    { nombres: { contains: query, mode: "insensitive" } },
-                    { apellidos: { contains: query, mode: "insensitive" } }
-                  ]
-                }
-              }
-            }
-          },
-          {
-            instancias: {
-              some: {
-                estado: { not: "CANCELADA" },
-                ...temporalWhere,
-                OR: [
-                  {
-                    eventosProveedor: {
-                      some: {
-                        OR: [
-                          { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" } },
-                          { joinUrl: { contains: query, mode: "insensitive" } }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    cohosts: {
-                      some: {
-                        cuentaGoogle: {
-                          OR: [
-                            { email: { contains: query, mode: "insensitive" } },
-                            { user: { nombres: { contains: query, mode: "insensitive" } } },
-                            { user: { apellidos: { contains: query, mode: "insensitive" } } }
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } }
-                ]
-              }
-            }
-          }
-        ]
-      }
-    : {};
-
-  const seriesWhere: Prisma.SolicitudSalaWhereInput = {
-    ...requestScope,
-    ...seriesSearch,
-    instancias: {
-      some: {
-        estado: { not: "CANCELADA" },
-        ...temporalWhere
-      }
-    }
-  };
-
-  const [totalMeetings, totalSeries] = await Promise.all([
-    db.instanciaSala.count({ where: encounterWhere }),
-    db.solicitudSala.count({ where: seriesWhere })
-  ]);
-
-  const requestedPagination = resolverPaginacionAgenda(pageParam, 50);
-  const selectedTotal = vista === "series" ? totalSeries : totalMeetings;
-  const pagination = calcularInfoPaginacion(
+  const {
+    vista,
+    q,
+    query,
+    programaId,
+    periodo,
+    isHistory,
+    pagination,
+    totalMeetings,
+    totalSeries,
     selectedTotal,
-    requestedPagination.page,
-    requestedPagination.pageSize
-  );
-  const skip = (pagination.paginaActual - 1) * pagination.tamanoPagina;
-
-  const meetingsPromise =
-    vista === "encuentros"
-      ? db.instanciaSala.findMany({
-          where: encounterWhere,
-          orderBy: { inicioProgramadoAt: isHistory ? "desc" : "asc" },
-          take: pagination.tamanoPagina,
-          skip,
-          include: meetingInclude
-        })
-      : db.solicitudSala
-          .findMany({
-            where: seriesWhere,
-            orderBy: { fechaInicioSolicitada: isHistory ? "desc" : "asc" },
-            take: pagination.tamanoPagina,
-            skip,
-            select: { id: true }
-          })
-          .then(async (requests) => {
-            const requestIds = requests.map(({ id }) => id);
-            if (requestIds.length === 0) return [];
-            return db.instanciaSala.findMany({
-              where: {
-                solicitudSalaId: { in: requestIds },
-                estado: { not: "CANCELADA" },
-                ...temporalWhere
-              },
-              orderBy: { inicioProgramadoAt: isHistory ? "desc" : "asc" },
-              include: meetingInclude
-            });
-          });
-
-  const todayStart = startOfMontevideoDay(now);
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const [
     meetings,
+    series,
     programs,
     todayCount,
     nextWeekCount,
     lastSevenDaysCount,
     lastThirtyDaysCount,
-    pendingAssistanceCount
-  ] = await Promise.all([
-    meetingsPromise,
-    actor.rol === "ADMINISTRACION"
-      ? db.programa.findMany({
-          where: { activo: true },
-          orderBy: { nombre: "asc" },
-          select: { id: true, nombre: true }
-        })
-      : Promise.resolve([]),
-    db.instanciaSala.count({
-      where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } }
-        ]
-      }
-    }),
-    db.instanciaSala.count({
-      where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { inicioProgramadoAt: { gte: now, lt: weekEnd } }
-        ]
-      }
-    }),
-    db.instanciaSala.count({
-      where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { finProgramadoAt: { gte: sevenDaysAgo, lt: now } }
-        ]
-      }
-    }),
-    db.instanciaSala.count({
-      where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { finProgramadoAt: { gte: thirtyDaysAgo, lt: now } }
-        ]
-      }
-    }),
-    db.instanciaSala.count({
-      where: {
-        AND: [
-          encounterWhere,
-          {
-            requiereAsistenciaTecnica: true,
-            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
-          }
-        ]
-      }
-    })
-  ]);
-
-  const meetingsForSeries = isHistory ? [...meetings].reverse() : meetings;
-  const series = agruparEncuentrosPorSerie(meetingsForSeries, isHistory);
-  const hasPendingMeet =
-    !isHistory &&
-    meetings.some(({ eventosProveedor }) =>
-      eventosProveedor.some(
-        ({ proveedor, estadoIntegracion }) =>
-          proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
-      )
-    );
+    pendingAssistanceCount,
+    hasPendingMeet,
+    desdeParam,
+    hastaParam
+  } = await obtenerDatosPaginaReuniones(db, actor, params);
 
   return (
     <div className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}>
@@ -1215,20 +887,6 @@ function statusLabel(status: string): string {
     NO_REALIZADA: "No realizada"
   };
   return labels[status] ?? status.toLowerCase().replaceAll("_", " ");
-}
-
-function startOfMontevideoDay(date: Date): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Montevideo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") =>
-    parts.find((part) => part.type === type)?.value;
-  return new Date(
-    `${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`
-  );
 }
 
 function agendaHref(

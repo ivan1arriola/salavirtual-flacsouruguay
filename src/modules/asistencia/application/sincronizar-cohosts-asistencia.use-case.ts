@@ -5,7 +5,8 @@ import {
 } from "@/src/modules/conferencias/api";
 
 export type GoogleCredentials = Readonly<{
-  clientEmail: string;
+  serviceAccountEmail?: string;
+  clientEmail?: string;
   privateKey: string;
   subject?: string;
 }>;
@@ -21,9 +22,9 @@ export type SincronizarCohostsDeps = Readonly<{
     };
   };
   descifrar: (value: string) => string;
-  cargarCredencialesEncuentro: (db: any, descifrar: (v: string) => string, emailOrganizador?: string | null) => Promise<GoogleCredentials>;
+  cargarCredencialesEncuentro: (db: any, descifrar: (v: string) => string, emailOrganizador?: string | null) => Promise<any>;
   configurarEspacio: (
-    credentials: GoogleCredentials,
+    credentials: any,
     codigoReunion: string,
     settings: Readonly<{ cohostEmails?: readonly string[] }>
   ) => Promise<void>;

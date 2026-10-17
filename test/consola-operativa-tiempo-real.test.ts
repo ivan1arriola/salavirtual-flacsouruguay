@@ -93,13 +93,19 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
     expect(adapterSource).not.toContain('salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño"');
     expect(adapterSource).toContain("mergedIntervals");
 
-    const serverSource = readFileSync(
+    const bootstrapSource = readFileSync(
       join(process.cwd(), "src/bootstrap/reunion-operativa.server.ts"),
       "utf8"
     );
-    expect(serverSource).toContain("crearIndiceUnicoPorNombre");
-    expect(serverSource).toContain('"AMBIGUO"');
-    expect(serverSource).toContain('operacionPendiente: "CONFIGURAR_MEET"');
+    expect(bootstrapSource).toContain("crearIndiceUnicoPorNombre");
+
+    const servicePath = existsSync(join(process.cwd(), "src/modules/reuniones/reunion-operativa.service.ts"))
+      ? join(process.cwd(), "src/modules/reuniones/reunion-operativa.service.ts")
+      : join(process.cwd(), "src/bootstrap/reunion-operativa.server.ts");
+    const serviceSource = readFileSync(servicePath, "utf8");
+    expect(serviceSource).toContain("crearIndiceUnicoPorNombre");
+    expect(serviceSource).toContain('"AMBIGUO"');
+    expect(serviceSource).toContain('operacionPendiente: "CONFIGURAR_MEET"');
   });
 });
 

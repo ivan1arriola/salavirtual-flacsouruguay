@@ -159,7 +159,10 @@ Cuando Google Calendar crea o actualiza un evento con invitados (`attendees`), G
 | 17 consumidores en `src/modules/`, `app/` y `scripts/` | Migradas todas las consultas directas `db.configuracionGoogleWorkspace.findUnique` hacia la API canónica de credenciales de Workspace. |
 | [`src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts) y [`src/modules/conferencias/api.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/conferencias/api.ts) | Unificada la verificación de miembros de Google Meet (`consultarCohostsEspacioMeet`) con fallback `Principal -> Legacy` en el adaptador de conferencias y reexportada canónicamente. |
 | [`app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/api/v1/reuniones/%5BsolicitudId%5D/cohosts/verificar/route.ts) y [`src/modules/configuracion/verificar-cohosts-global.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/verificar-cohosts-global.service.ts) | Delegada la verificación de cohosts exclusivamente a `consultarCohostsEspacioMeet` y `obtenerCredencialesWorkspaceActivas`, eliminando llamadas HTTP crudas acopladas a Google Meet. |
-| [`test/google-workspace-credentials-service.test.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/test/google-workspace-credentials-service.test.ts) | Suite de pruebas unitarias para el servicio de credenciales canónicas cubriendo casos activos, inactivos, nulos y fallback a Legacy. |
+| [`src/modules/reuniones/reunion-operativa.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/reuniones/reunion-operativa.service.ts) y [`src/bootstrap/reunion-operativa.server.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/bootstrap/reunion-operativa.server.ts) | Adelgazado `src/bootstrap/reunion-operativa.server.ts` de 1.392 líneas a una fachada canónica de 17 líneas, reubicando toda la lógica de negocio y reconciliación operativa en el módulo `reuniones`. |
+| [`src/modules/configuracion/configuracion-page.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/configuracion-page.service.ts) y [`app/(gestion)/configuracion/page.tsx`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/%28gestion%29/configuracion/page.tsx) | Extraídas 165 líneas de consultas Prisma directas y transformación de operaciones pendientes desde el componente de UI hacia un servicio dedicado en `configuracion`. |
+| [`src/modules/reuniones/reuniones-page.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/reuniones/reuniones-page.service.ts) y [`app/(gestion)/reuniones/page.tsx`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/%28gestion%29/reuniones/page.tsx) | Extraídas ~370 líneas de armado de filtros temporales/búsquedas y consultas Prisma hacia `reuniones-page.service.ts`, eliminando la importación de `@prisma/client` en la capa de presentación. |
+| [`src/modules/asistencia/asistencia.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/asistencia/asistencia.service.ts) | Redirigida la sincronización de cohosts de asistencia técnica (`sincronizarCohostsDeInstancia`) hacia `sincronizarCohostsDeInstanciaUseCase` en `application/`. |
 
 ---
 
@@ -181,14 +184,15 @@ Para terminar de sanear el acoplamiento estructural sin romper contratos en prod
   - Refactorizada la ruta REST `app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts` y el servicio `verificarCohostsGlobalPagina` para usar `consultarCohostsEspacioMeet` y `obtenerCredencialesWorkspaceActivas`.
   - Eliminados clientes HTTP manuales duplicados y dependencias de bajo nivel.
 
-### Fase 3: Adelgazamiento de `src/bootstrap/reunion-operativa.server.ts` y Páginas en `app/` [PRÓXIMA FASE]
-- **Objetivo:** Devolver `src/bootstrap/` a su rol de raíz de composición de dependencias (< 100 líneas por archivo).
-- **Acción:**
-  1. Extraer la lógica de negocio y reconciliación de participantes en vivo de `src/bootstrap/reunion-operativa.server.ts` hacia casos de uso en `src/modules/reuniones/application/operacion-tiempo-real.use-case.ts` y un repositorio `PrismaReunionOperativaRepository`.
-  2. Extraer las consultas Prisma de `app/(gestion)/configuracion/page.tsx` y `app/(gestion)/reuniones/page.tsx` hacia sus respectivos módulos (`configuracion` y `reuniones`).
-  3. Eliminar `src/modules/asistencia/asistencia.service.ts` una vez redirigidos sus últimos consumidores a `src/modules/asistencia/api.ts`.
+### Fase 3: Adelgazamiento de `src/bootstrap/reunion-operativa.server.ts` y Páginas en `app/` [COMPLETADA]
+- **Objetivo:** Devolver `src/bootstrap/` a su rol de raíz de composición de dependencias (< 100 líneas por archivo) y desacoplar presentación de Prisma.
+- **Estado:** ✅ Completado.
+  - `src/bootstrap/reunion-operativa.server.ts` reducido de 1.392 líneas a 17 líneas como fachada de delegación hacia `src/modules/reuniones/reunion-operativa.service.ts`.
+  - `app/(gestion)/configuracion/page.tsx` desacoplada de consultas Prisma mediante `obtenerDatosPaginaConfiguracion`.
+  - `app/(gestion)/reuniones/page.tsx` desacoplada de consultas Prisma mediante `obtenerDatosPaginaReuniones`, eliminando dependencia directa de `@prisma/client`.
+  - `asistencia.service.ts` sincronización de cohosts delegada directamente en `sincronizarCohostsDeInstanciaUseCase`.
 
-### Fase 4: Normalización Relacional de Series y Cohosts (3NF) [FUTURA FASE]
+### Fase 4: Normalización Relacional de Series y Cohosts (3NF) [PRÓXIMA FASE]
 - **Objetivo:** Eliminar la agrupación implícita por `{ docenteProgramaId, titulo, createdAt }` y la doble tabla de cohosts.
 - **Acción:**
   1. Vincular toda `SolicitudSala` perteneciente a una creación múltiple mediante `serieReunionId` (`SerieReunion`), usando ese ID como clave canónica de serie.

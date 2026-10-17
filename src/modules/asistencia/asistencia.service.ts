@@ -20,6 +20,7 @@ import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuario, notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { reservarAsistenteDisponible } from "./reserva-asistencia.service";
+import { sincronizarCohostsDeInstanciaUseCase } from "./application/sincronizar-cohosts-asistencia.use-case";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -622,53 +623,13 @@ export async function sincronizarCohostsDeInstancia(
   dependencies: SincronizarCohostsDependencies,
   instanciaSalaId: string
 ): Promise<void> {
-  const meeting = await dependencies.db.instanciaSala.findUnique({
-    where: { id: instanciaSalaId },
-    select: {
-      eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        select: {
-          id: true, payloadUltimo: true,
-          codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
-        },
-        take: 1
-      },
-      cohosts: {
-        select: { cuentaGoogle: { select: { email: true } } }
-      },
-      cohostEmails: { select: { email: true } }
-    }
-  });
-  const event = meeting?.eventosProveedor[0];
-  if (!meeting || !event?.codigoReunion) return;
-  const cohostEmails = normalizeCohostEmails([
-    ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-    ...meeting.cohostEmails.map(({ email }) => email)
-  ]);
-  if (cohostEmails.length === 0) return;
-  await dependencies.db.eventoProveedor.update({
-    where: { id: event.id },
-    data: { payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))) },
-  });
-  try {
-    const credentials = await cargarCredencialesEncuentro(
-      dependencies.db, dependencies.descifrar, event.cuentaProveedor?.emailOrganizador,
-    );
-    await dependencies.configurarEspacio(credentials, event.codigoReunion, { cohostEmails });
-    await dependencies.db.eventoProveedor.update({
-      where: { id: event.id },
-      data: { payloadUltimo: JSON.parse(JSON.stringify(registrarVerificacionCohosts(
-        event.payloadUltimo, event.codigoReunion, credentials.subject, cohostEmails, new Date().toISOString(),
-      ))) },
-    });
-  } catch (error) {
-    await dependencies.db.eventoProveedor.updateMany({
-      where: { id: event.id, reclamoIntegracionAt: null,
-        OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }] },
-      data: { estadoIntegracion: "ERROR", operacionPendiente: "CONFIGURAR_MEET",
-        errorIntegracion: error instanceof Error ? error.message : "No se pudieron verificar los cohosts en Google Meet." },
-    });
-    throw error;
-  }
+  return sincronizarCohostsDeInstanciaUseCase(
+    {
+      db: dependencies.db,
+      descifrar: dependencies.descifrar,
+      cargarCredencialesEncuentro,
+      configurarEspacio: dependencies.configurarEspacio,
+    },
+    instanciaSalaId
+  );
 }
