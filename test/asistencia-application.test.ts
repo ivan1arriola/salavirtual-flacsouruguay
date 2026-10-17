@@ -24,7 +24,7 @@ describe("asistencia application", () => {
           actor,
           { instanciaSalaId: "inst-1", accion: "POSTULAR" }
         )
-      ).rejects.toThrow("Solo un asistente técnico puede gestionar postulaciones.");
+      ).rejects.toThrow("Solo un asistente de monitoreo puede gestionar postulaciones.");
     });
 
     it("actualiza postulacion correctamente para asistente activo", async () => {
@@ -107,7 +107,7 @@ describe("asistencia application", () => {
       expect(mockRepo.desvincularAsistente).toHaveBeenCalledWith("asig-1", "admin-1");
     });
 
-    it("permite al asistente técnico solicitar su propia baja", async () => {
+    it("permite al asistente de monitoreo solicitar su propia baja", async () => {
       const mockRepo: Partial<AsistenciaRepositoryPort> = {
         desvincularAsistente: vi.fn().mockResolvedValue({
           id: "asig-1",
@@ -142,7 +142,7 @@ describe("asistencia application", () => {
           { id: "doc-1", rol: "DOCENTE", activo: true },
           { asignacionId: "asig-1" }
         )
-      ).rejects.toThrow("No tenés permisos para desvincular esta asistencia técnica.");
+      ).rejects.toThrow("No tenés permisos para desvincular este monitoreo.");
       expect(mockRepo.desvincularAsistente).not.toHaveBeenCalled();
     });
   });
