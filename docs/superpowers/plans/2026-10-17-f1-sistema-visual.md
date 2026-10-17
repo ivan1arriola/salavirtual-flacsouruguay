@@ -23,7 +23,7 @@
 
 - **Brand identity drift:** tests pin `--brand` to `#2c4777`.
 - **Legacy state consumers:** tests pin semantic aliases to existing `--ok`, `--warning`, `--danger`, and `--brand` values.
-- **Weak keyboard focus visibility:** tests pin a solid institutional focus color and a 3px visible outline rule.
+- **Weak keyboard focus visibility:** the parsed CSS contract checks a solid institutional focus color and a 3px visible outline rule.
 - **Token scale gaps:** tests pin the named type, spacing, radius, and border tokens and their agreed values.
 - **Scope leakage:** review the diff to confirm only the design token stylesheet, token documentation, and token contract test change; no route, API, auth, persistence, or Google integration files change.
 
@@ -42,15 +42,14 @@
 
 - [ ] **Step 1: Write the failing token contract test**
 
-Create `test/design-tokens.test.ts`. Read `app/brand.css` with `readFileSync(new URL("../app/brand.css", import.meta.url), "utf8")`. Assert:
+Create `test/design-tokens.test.ts`. Parse `app/brand.css` with the PostCSS parser already used by the Next.js CSS toolchain. Assert the observable stylesheet contract:
 
-  - `--brand` remains `#2c4777`.
-  - Semantic aliases are `--state-success: var(--ok)`, `--state-warning: var(--warning)`, `--state-danger: var(--danger)`, and `--state-info: var(--brand)`.
-  - `--font-sans` is `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`; `body` consumes it through `font-family: var(--font-sans)`.
-  - Typography size tokens are `--text-xs: 0.75rem`, `--text-sm: 0.875rem`, `--text-md: 1rem`, `--text-lg: 1.125rem`, `--text-xl: 1.25rem`, `--text-2xl: 1.5rem`, and `--text-3xl: 1.875rem`.
-  - Spacing tokens are `--space-1: 0.25rem`, `--space-2: 0.5rem`, `--space-3: 0.75rem`, `--space-4: 1rem`, `--space-5: 1.25rem`, `--space-6: 1.5rem`, and `--space-8: 2rem`.
-  - Radius tokens are `--radius-sm: 4px`, `--radius-md: 6px`, `--radius-lg: 8px`, and `--radius-full: 9999px`; `--border-width` is `1px`.
-  - `--focus-ring-color` is `#2c4777` and interactive `:focus-visible` selectors use a 3px solid outline with that token.
+  - Resolve state aliases to `#24745b`, `#a96f00`, `#a94242`, and `#2c4777`, and preserve `--brand` at `#2c4777`.
+  - Verify `body` consumes `--font-sans` and that it resolves to the existing Inter system font stack.
+  - Verify the type scale from `--text-xs: 0.75rem` through `--text-3xl: 1.875rem`.
+  - Verify spacing from `--space-1: 0.25rem` through `--space-8: 2rem`.
+  - Verify radii `4px`, `6px`, `8px`, and `9999px`, plus `--border-width: 1px`.
+  - Verify interactive `:focus-visible` selectors use a 3px solid outline with `--focus-ring-color: #2c4777` and 2px offset.
 
 - [ ] **Step 2: Run the focused test and verify it fails**
 
