@@ -862,7 +862,7 @@ export async function obtenerReunionOperativa(
     registrarCandidatoHost(teacherEmail, teacherFullName, "DOCENTE");
   }
   if (assistantFullName || assistantEmail) {
-    registrarCandidatoHost(assistantEmail, assistantFullName ?? "Asistente técnico", "ASISTENTE_TECNICO");
+    registrarCandidatoHost(assistantEmail, assistantFullName ?? "Asistente de monitoreo", "ASISTENTE_TECNICO");
   }
   for (const cohost of extraerCohostsUnificadosDeInstancia(meeting)) {
     registrarCandidatoHost(cohost.email, cohost.name || cohost.email, "COHOST");
