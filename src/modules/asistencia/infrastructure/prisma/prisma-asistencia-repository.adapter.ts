@@ -41,7 +41,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       return {
         id: assistant.id,
         usuarioId: assistant.usuarioId,
-        nombre: nombre || "Asistente Técnico",
+        nombre: nombre || "Asistente de monitoreo",
         email: assistant.usuario.emailPrincipal,
         activo: assistant.usuario.activo,
         cesadoHastaProximoInicioSesion: Boolean(assistant.cesadoHastaProximoInicioSesion)
@@ -164,7 +164,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           throw new ConflictApiError("La reunión no requiere cobertura o ya no está programada.");
         }
         if (meeting.finProgramadoAt <= new Date()) {
-          throw new ConflictApiError("No se puede asignar asistencia técnica a una reunión que ya finalizó.");
+          throw new ConflictApiError("No se puede asignar monitoreo a una reunión que ya finalizó.");
         }
 
         const currentActive = meeting.asignaciones[0];
@@ -194,7 +194,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
           assistant.cesadoHastaProximoInicioSesion
         ) {
-          throw new ConflictApiError("El asistente técnico seleccionado no está disponible.");
+          throw new ConflictApiError("El asistente de monitoreo seleccionado no está disponible.");
         }
 
         const modalidadEfectiva = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
@@ -527,7 +527,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           where: { usuarioId },
           select: { id: true }
         });
-        if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente técnico para esta sesión.");
+        if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
 
         await tx.asistenteTecnico.update({
           where: { id: assistant.id },
@@ -803,7 +803,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       });
 
       if (!meeting || !meeting.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA") {
-        throw new ConflictApiError("La reunión ya no necesita cobertura de asistencia técnica.");
+        throw new ConflictApiError("La reunión ya no necesita cobertura de monitoreo.");
       }
       if (meeting.asignaciones.length > 0) {
         throw new ConflictApiError("La reunión ya tiene una persona asignada.");
