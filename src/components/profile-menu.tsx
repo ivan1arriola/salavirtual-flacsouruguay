@@ -108,7 +108,7 @@ function notificationTourForRole(role: Session["user"]["role"]): string | undefi
 
 function roleLabel(role: Session["user"]["role"]): string {
   if (role === "ADMINISTRACION") return "Administración";
-  if (role === "ASISTENTE_TECNICO") return "Asistencia técnica";
+  if (role === "ASISTENTE_TECNICO") return "Monitoreo";
   return "Docente";
 }
 
