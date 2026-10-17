@@ -421,7 +421,7 @@ export default async function ReunionesPage({
                         <span className={pendingSeriesAssistance ? "is-warning" : "is-neutral"}>
                           <UserRoundCheck size={14} aria-hidden="true" />
                           {pendingSeriesAssistance ? `${pendingSeriesAssistance} asistencias sin asignar`
-                            : requiredAssistance.length ? "Monitoreo asignado" : "No requiere asistencia"}
+                            : requiredAssistance.length ? "Monitoreo asignado" : "No requiere monitoreo"}
                         </span>
                       </div>
                       <input className="agenda-mobile-details-input" id={`agenda-details-${request.id}`} type="checkbox" />
@@ -629,7 +629,7 @@ export default async function ReunionesPage({
                         </span>
                         <span className={meeting.requiereAsistenciaTecnica && !assistantName ? "is-warning" : "is-neutral"}>
                           <UserRoundCheck size={14} aria-hidden="true" />
-                          {assistantName ? assistantName : meeting.requiereAsistenciaTecnica ? "Asistencia sin asignar" : "No requiere asistencia"}
+                          {assistantName ? assistantName : meeting.requiereAsistenciaTecnica ? "Monitoreo sin asignar" : "No requiere monitoreo"}
                         </span>
                       </div>
                       <input className="agenda-mobile-details-input" id={`agenda-details-${meeting.id}`} type="checkbox" />
