@@ -127,6 +127,21 @@ export async function crearMiembroMeetHttp(
   return response.data;
 }
 
+/** Promote an existing invited member without deleting their membership. */
+export async function actualizarRolMiembroMeetHttp(
+  auth: JWT,
+  memberName: string,
+  role: "COHOST" | "ROLE_UNSPECIFIED"
+): Promise<GoogleMeetSpaceMember> {
+  const response = await auth.request<GoogleMeetSpaceMember>({
+    url: `${MEET_API_BASE_URL}/${memberName}?updateMask=role`,
+    method: "PATCH",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    data: { name: memberName, role },
+  });
+  return response.data;
+}
+
 export async function eliminarMiembroMeetHttp(
   auth: JWT,
   memberName: string
