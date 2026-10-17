@@ -15,7 +15,7 @@ export async function actualizarDisponibilidadUseCase(
   rawInput: unknown
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
-    throw new Error("Solo un asistente técnico puede configurar su disponibilidad.");
+    throw new Error("Solo un asistente de monitoreo puede configurar su disponibilidad.");
   }
   const input = disponibilidadSemanalSchema.parse(rawInput);
 
