@@ -16,7 +16,7 @@ export async function actualizarEstadoOperativoAsistente(
   cesadoHastaProximoInicioSesion: boolean;
 }>> {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
-    throw new Error("Solo Administración puede gestionar asistentes técnicos.");
+    throw new Error("Solo Administración puede gestionar asistentes de monitoreo.");
   }
   if (
     typeof input.disponibleGeneral !== "boolean"
@@ -51,7 +51,7 @@ export async function actualizarEstadoOperativoAsistente(
       throw new Error("La sesión ya no tiene permisos de Administración.");
     }
     if (!usuario || usuario.rol !== "ASISTENTE_TECNICO" || !usuario.asistenteTecnico) {
-      throw new Error("El usuario no corresponde a un asistente técnico.");
+      throw new Error("El usuario no corresponde a un asistente de monitoreo.");
     }
 
     const anterior = {
