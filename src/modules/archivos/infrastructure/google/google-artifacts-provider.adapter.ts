@@ -6,7 +6,7 @@ import { db } from "@/src/lib/db";
 import {
   claveOperacionGoogle,
   ejecutarGooglePostUnaVez,
-  confirmarGoogleOperacionVerificada,
+  confirmarOperacionDriveMarcada,
   GoogleOperacionInciertaError
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
@@ -17,7 +17,9 @@ import {
   GOOGLE_HTTP_READ_TIMEOUT_MS,
   moverArchivoDrive,
   obtenerOCrearCarpetaDrive,
-  buscarCarpetaDrive,
+  buscarRecursoDrivePorOperacion,
+  DRIVE_FOLDER_MIME,
+  DRIVE_GOOGLE_DOC_MIME,
   subirDocumentoGoogleDrive
 } from "@/src/integrations/google";
 import {
@@ -256,7 +258,7 @@ export function crearGoogleArtifactsProviderAdapter(
         return await ejecutarGooglePostUnaVez(
           db,
           { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail, referencia: parentId },
-          () => obtenerOCrearCarpetaDrive(auth, parentId, name),
+          () => obtenerOCrearCarpetaDrive(auth, parentId, name, clave.slice(4)),
           (id) => ({ id }),
           (saved) => {
             if (!saved.id) throw new Error("La operación de carpeta Drive no contiene ID.");
@@ -267,10 +269,12 @@ export function crearGoogleArtifactsProviderAdapter(
         if (!(error instanceof GoogleOperacionInciertaError)) throw error;
         // Only a unique exact remote match is sufficient evidence to recover.
         // Failure or no match must NOT cause a second POST.
-        const verifiedId = await buscarCarpetaDrive(auth, parentId, name, true)
-          .catch(() => null);
-        if (!verifiedId) throw error;
-        const confirmed = await confirmarGoogleOperacionVerificada(db, clave, { id: verifiedId });
+        const match = await buscarRecursoDrivePorOperacion(
+          auth, parentId, name, DRIVE_FOLDER_MIME, clave.slice(4)
+        ).catch(() => null);
+        if (!match) throw error;
+        const verifiedId = match.id;
+        const confirmed = await confirmarOperacionDriveMarcada(db, clave, { id: verifiedId });
         if (confirmed) return verifiedId;
         // Another worker can resolve it concurrently. Never infer a result
         // from a stale ENVIANDO lease or a different remote ID.
@@ -296,19 +300,37 @@ export function crearGoogleArtifactsProviderAdapter(
       const clave = claveOperacionGoogle(
         "DRIVE_SUBIR_DOCUMENTO", credentials.serviceAccountEmail, folderId, name, digest
       );
-      return ejecutarGooglePostUnaVez(
-        db,
-        { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail, referencia: folderId },
-        () => subirDocumentoGoogleDrive(auth, folderId, name, html),
-        (result) => {
-          if (!result.id) throw new Error("La respuesta de Drive no incluyó ID.");
-          return { id: result.id, name: result.name, mimeType: result.mimeType ?? "", webViewLink: result.webViewLink ?? "" };
-        },
-        (saved) => {
-          if (!saved.id) throw new Error("La operación de documento Drive no contiene ID.");
-          return { id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink };
-        }
-      );
+      try {
+        return await ejecutarGooglePostUnaVez(
+          db,
+          { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail, referencia: folderId },
+          () => subirDocumentoGoogleDrive(auth, folderId, name, html, clave.slice(4)),
+          (result) => {
+            if (!result.id) throw new Error("La respuesta de Drive no incluyó ID.");
+            return { id: result.id, name: result.name, mimeType: result.mimeType ?? "", webViewLink: result.webViewLink ?? "" };
+          },
+          (saved) => {
+            if (!saved.id) throw new Error("La operación de documento Drive no contiene ID.");
+            return { id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink };
+          }
+        );
+      } catch (error) {
+        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        const match = await buscarRecursoDrivePorOperacion(
+          auth, folderId, name, DRIVE_GOOGLE_DOC_MIME, clave.slice(4)
+        ).catch(() => null);
+        if (!match) throw error;
+        const result = { id: match.id, name: match.name, mimeType: match.mimeType ?? "", webViewLink: match.webViewLink ?? "" };
+        const confirmed = await confirmarOperacionDriveMarcada(db, clave, result);
+        if (confirmed) return result;
+        const latest = await db.googleOperacionExterna.findUnique({
+          where: { clave }, select: { estado: true, resultado: true }
+        });
+        if (latest?.estado === "CONFIRMADA" && latest.resultado &&
+            typeof latest.resultado === "object" && !Array.isArray(latest.resultado) &&
+            latest.resultado.id === match.id) return result;
+        throw error;
+      }
     }
   };
 }

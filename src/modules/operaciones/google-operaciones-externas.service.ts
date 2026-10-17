@@ -145,3 +145,40 @@ export async function confirmarGoogleOperacionVerificada(
   });
   return updated.count === 1;
 }
+
+/**
+ * Only Drive files carrying our immutable appProperties marker are eligible
+ * for recovery after a worker crash. A stale ENVIANDO may be confirmed using
+ * a unique verified Drive GET, but NEVER returned to RESERVADA/replayed.
+ * Unmarked Meet/Gmail operations intentionally stay blocked.
+ */
+export async function confirmarOperacionDriveMarcada(
+  db: PrismaClient,
+  clave: string,
+  resultado: Record<string, string>,
+  now = new Date()
+): Promise<boolean> {
+  if (!/^(gop:)[a-f0-9]{64}$/.test(clave) ||
+      !resultado.id || Object.values(resultado).some((v) => typeof v !== "string")) {
+    throw new Error("La conciliación Drive requiere clave e ID remoto válidos.");
+  }
+  const stale = new Date(now.getTime() - 5 * 60_000);
+  const changed = await db.googleOperacionExterna.updateMany({
+    where: {
+      clave,
+      proveedor: "DRIVE",
+      tipo: { in: ["DRIVE_CREAR_CARPETA", "DRIVE_SUBIR_DOCUMENTO"] },
+      OR: [
+        { estado: "INCIERTA" },
+        { estado: "ENVIANDO", iniciadaAt: { lt: stale } }
+      ]
+    },
+    data: {
+      estado: "CONFIRMADA",
+      resultado,
+      errorCodigo: null,
+      terminadaAt: now
+    }
+  });
+  return changed.count === 1;
+}

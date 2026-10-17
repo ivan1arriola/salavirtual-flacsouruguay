@@ -19,7 +19,7 @@ Todos los intentos tienen clave SHA-256 estable, índice único en PostgreSQL y 
 
 1. Consultar GET `/api/v1/operaciones/estado` (admin o token del timer). El indicador `googlePost.inciertas` o `enviandoObsoletas` positivo produce estado crítico HTTP 503.
 2. Revisar GET `/api/v1/operaciones/google` con cuenta `ADMINISTRACION`, protegido por estado y rol actual en PostgreSQL. Devuelve las primeras 100 operaciones no confirmadas, nunca credenciales ni contenidos de correo/documentos.
-3. **Drive carpeta:** hay un intento automático de recuperación mediante búsqueda remota exacta (padre + nombre). Si Google devuelve exactamente una carpeta, se confirma la operación de manera condicional. Si devuelve cero o varias carpetas, se conserva el estado incierto.
+3. **Drive carpeta y documento:** cada recurso nuevo se etiqueta en el POST con `appProperties.flacsoOperationId` (SHA-256 de la clave durable). Tras resultado incierto, la conciliación exige **un único GET positivo** por marcador, padre, nombre y MIME. Una coincidencia solo por nombre **no** es evidencia. También se admite recuperar operaciones `ENVIANDO` de Drive con más de 5 minutos de antigüedad si existe esa evidencia remota única. Google Meet y Gmail no participan de esta recuperación automática.
 4. **Google Meet spaces:** la API `spaces.create` no proporciona clave de idempotencia. No puede deducirse de un timeout qué espacio creó Google. Se requiere diagnóstico administrativo del calendario y de los recursos, y comprobación documentada antes de resolver manualmente.
 5. **Drive documento / Gmail send:** no repetir POST ni reactivar fallback SMTP sin investigar el estado remoto. El envío Gmail lleva `Message-ID` determinístico cuando existe un ID de notificación persistida. Con el scope actual `gmail.send`, no hay lectura de mensajes para conciliación automática.
 6. No modificar directamente estados a RESERVADA/CONFIRMADA sin evidencia remota. La base almacena resultados mínimos, nunca secretos OAuth o claves privadas.
@@ -58,3 +58,9 @@ SMTP solo se considera fallback cuando Gmail no tiene credenciales, es decir, no
 - Probar recuperación en staging con una respuesta POST perdida, dos workers concurrentes, cuenta revocada y servicio remoto inactivo.
 - Activar webhook real de alertas y comprobar su recepción antes de declarar el monitoreo completo.
 - No se ejecuta compensación automática para borrar espacios Meet huérfanos: puede destruir reuniones vigentes, y requiere conciliación con la evidencia de Calendar.
+
+## Verificación del marcador de Drive
+
+Para nuevas operaciones, comprobar en Drive API que el objeto remoto lleva `appProperties.flacsoOperationId` con 64 caracteres hexadecimales. Google limita las propiedades privadas a la aplicación que las creó; usar las mismas credenciales/cliente OAuth para crear y conciliar. Los objetos históricos sin marcador conservan sus enlaces y no se modifican.
+
+La búsqueda debe devolver exactamente un recurso; si la API devuelve cero, varios o un `nextPageToken`, conservar `INCIERTA` o `ENVIANDO`. Nunca reintentar el POST por esa situación. Los documentos HTML convertidos a Google Docs también incluyen el marcador en la metadata multipart.
