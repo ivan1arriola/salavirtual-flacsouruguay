@@ -52,10 +52,10 @@ export function reunionEmailText(input: ReunionEmailInput): string {
     input.programa ? `Programa: ${input.programa}` : null,
     input.docente ? `Docente/responsable: ${input.docente}` : null,
     input.modalidad ? `Modalidad: ${input.modalidad}` : null,
-    `Asistencia técnica: ${input.requiereAsistenciaTecnica ? "requerida" : "no requerida"}`,
+    `Monitoreo: ${input.requiereAsistenciaTecnica ? "requerido" : "no requerido"}`,
     `Grabación: ${input.requiereGrabacion ? "requerida" : "no requerida"}`,
     input.anfitrionDesignado ? `Anfitrión designado: ${input.anfitrionDesignado}` : null,
-    input.asistenteTecnico ? `Asistente técnico: ${input.asistenteTecnico}` : null,
+    input.asistenteTecnico ? `Asistente de monitoreo: ${input.asistenteTecnico}` : null,
     "",
     input.instancias.length === 1 ? "ENCUENTRO" : "ENCUENTROS",
   ].filter((line): line is string => line !== null);
@@ -73,9 +73,9 @@ export function reunionEmailText(input: ReunionEmailInput): string {
 
   const asistenciaText = input.requiereAsistenciaTecnica
     ? input.asistenteTecnico
-      ? `• Asistencia técnica: asignada a ${input.asistenteTecnico}. El/la asistente técnico/a ingresará como anfitrión/co-anfitrión para brindar soporte y moderar la sesión.`
-      : "• Asistencia técnica: la reunión requiere asistencia técnica (pendiente de asignación). Quien sea designado/a como asistente técnico/a ingresará como anfitrión/co-anfitrión de la sesión."
-    : "• Asistencia técnica: no requerida. Quien solicitó la reunión y el/la docente o anfitrión designado cuentan con permisos de anfitrión en Google Meet.";
+      ? `• Monitoreo: asignado a ${input.asistenteTecnico}. La persona asignada al monitoreo ingresará como anfitrión/co-anfitrión para brindar soporte y moderar la sesión.`
+      : "• Monitoreo: la reunión requiere monitoreo (pendiente de asignación). Quien sea designado/a como asistente de monitoreo ingresará como anfitrión/co-anfitrión de la sesión."
+    : "• Monitoreo: no requerido. Quien solicitó la reunión y el/la docente o anfitrión designado cuentan con permisos de anfitrión en Google Meet.";
 
   const footerLines = [
     "",
