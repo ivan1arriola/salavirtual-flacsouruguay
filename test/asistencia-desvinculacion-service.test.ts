@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
-describe("servicio de desvinculación de asistencia técnica", () => {
+describe("servicio de desvinculación de monitoreo", () => {
   it("cancela la asignación activa y registra quién la desvinculó", async () => {
     const moduleUrl = new URL("../src/modules/asistencia/desvinculacion-asistencia.service.ts", import.meta.url);
     const modulePath = fileURLToPath(moduleUrl);
