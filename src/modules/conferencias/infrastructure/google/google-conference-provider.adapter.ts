@@ -16,6 +16,7 @@ import {
 } from "@/src/integrations/google/calendar";
 import {
   actualizarEspacioMeetHttp,
+  actualizarRolMiembroMeetHttp,
   crearEspacioMeetHttp,
   crearMiembroMeetHttp,
   eliminarMiembroMeetHttp,
@@ -451,10 +452,9 @@ async function configurarCohostsMeet(
       const member = members.find((item) => item.email?.trim().toLowerCase() === email);
       if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
       if (member.role !== "COHOST") {
-        await eliminarMiembroMeetHttp(auth, member.name).catch((caught) => {
-          if (!isMeetNotFoundError(caught)) throw caught;
-        });
-        await crearMiembroMeetHttp(auth, spaceName, email, "COHOST");
+        // Avoid DELETE+POST races: Calendar can already have invited this
+        // person as a regular member. Promote them atomically in place.
+        await actualizarRolMiembroMeetHttp(auth, member.name, "COHOST");
       }
     }
   }
