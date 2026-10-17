@@ -92,29 +92,29 @@ dinamicamente a la cuenta Google vinculada del asistente tecnico.
 
 ## Asistencia en Google Sheets
 
-Las listas de asistencia nuevas se generan como Google Sheets, con pestaÃ±as
+Las listas de asistencia nuevas se generan como Google Sheets, con pestañas
 `Asistencia`, `Host y cohosts` y `Datos brutos`.
 La columna porcentual usa un degradado rojo (0 %) a verde (100 %) y el umbral 5/6.
-Las conexiones de auditorÃ­a se atribuyen a una direcciÃ³n solamente cuando
+Las conexiones de auditoría se atribuyen a una dirección solamente cuando
 Reports devuelve `identifier_type=email_address`; los registros Meet sin
 identificador verificable se conservan en `Datos brutos`.
 
 Requisitos del proyecto de Google Cloud:
 - Habilitar **Google Sheets API** y **Admin SDK API**.
-- AÃ±adir a delegaciÃ³n de dominio, sin quitar los scopes existentes:
+- Añadir a delegación de dominio, sin quitar los scopes existentes:
   `https://www.googleapis.com/auth/spreadsheets`
   y `https://www.googleapis.com/auth/admin.reports.audit.readonly`.
 - Definir la variable privada `GOOGLE_REPORTS_ADMIN_EMAIL` con un administrador
-  que tenga permisos para consultar auditorÃ­a Meet.
+  que tenga permisos para consultar auditoría Meet.
 - La cuenta de servicio Principal existente debe poder escribir en Drive y
   actuar como la cuenta organizadora `salaNN`.
 
 **Limitaciones**: los informes Meet no dan directamente email de todos los
-participantes; registros anÃ³nimos no deben asignarse por coincidencia de nombre.
-El dÃ­a completo de auditorÃ­a puede incluir mÃºltiples instancias que compartan
+participantes; registros anónimos no deben asignarse por coincidencia de nombre.
+El día completo de auditoría puede incluir múltiples instancias que compartan
 enlace; validar por `conference_id` antes de considerar el documento definitivo.
-No se reemplaza automÃ¡ticamente un documento ya sincronizado a menos que
-vuelva a seleccionarse esa reuniÃ³n en el flujo de sincronizaciÃ³n.
+No se reemplaza automáticamente un documento ya sincronizado a menos que
+vuelva a seleccionarse esa reunión en el flujo de sincronización.
 
 ## Compatibilidad con Meets historicos
 
@@ -160,66 +160,66 @@ Al crear una reunion, el gestor:
 Google puede responder con la conferencia en estado pendiente. El adaptador
 vuelve a consultar el evento durante unos segundos antes de marcar un error.
 
-## VerificaciÃ³n y reparaciÃ³n de cohosts
+## Verificación y reparación de cohosts
 
 Las cuentas `sala01@flacso.edu.uy` ... `sala10@flacso.edu.uy` son las
 organizadoras. El docente de la solicitud y los asistentes asignados deben
 recibir el rol `COHOST` en el espacio Meet, incluidas sus cuentas Gmail o de
-otras instituciones cuando sean cuentas Google vÃ¡lidas.
+otras instituciones cuando sean cuentas Google válidas.
 
-Una invitaciÃ³n Calendar, una fila local o una respuesta `ALREADY_EXISTS` no
-confirman ese rol. El adaptador lee los miembros del espacio (todas las pÃ¡ginas)
-y comprueba `COHOST`, ademÃ¡s de verificar que la administraciÃ³n de anfitriones
-estÃ© activada. Si un miembro existe con otro rol, se promueve con `spaces.members.patch`
-(`updateMask=role`) sin eliminar su membresÃ­a.
+Una invitación Calendar, una fila local o una respuesta `ALREADY_EXISTS` no
+confirman ese rol. El adaptador lee los miembros del espacio (todas las páginas)
+y comprueba `COHOST`, además de verificar que la administración de anfitriones
+esté activada. Si un miembro existe con otro rol, se recrea con `COHOST` porque
+la API de miembros no ofrece una operación de actualización.
 
-El detalle muestra Â«Cohosts verificados en GoogleÂ» solamente cuando existe una
-verificaciÃ³n guardada para el mismo espacio, organizador y correos solicitados,
-sin errores ni operaciones pendientes. Es la Ãºltima verificaciÃ³n realizada por
-la aplicaciÃ³n, no una consulta en tiempo real: cambios manuales posteriores en
-Google se detectarÃ¡n en la prÃ³xima sincronizaciÃ³n. Los errores de permisos se
-muestran aunque el enlace de la reuniÃ³n ya funcione.
+El detalle muestra «Cohosts verificados en Google» solamente cuando existe una
+verificación guardada para el mismo espacio, organizador y correos solicitados,
+sin errores ni operaciones pendientes. Es la última verificación realizada por
+la aplicación, no una consulta en tiempo real: cambios manuales posteriores en
+Google se detectarán en la próxima sincronización. Los errores de permisos se
+muestran aunque el enlace de la reunión ya funcione.
 
-DespuÃ©s de desplegar, AdministraciÃ³n puede usar **ConfiguraciÃ³n â Google
-Workspace â Reuniones existentes â Actualizar**. La reparaciÃ³n completa los
+Después de desplegar, Administración puede usar **Configuración → Google
+Workspace → Reuniones existentes → Actualizar**. La reparación completa los
 cohosts del docente y asistentes, incluye las cuentas externas y verifica el
 Meet que Calendar tiene vinculado. Usa las operaciones persistidas del sistema,
 no reemplaza enlaces y no pisa cancelaciones o reprogramaciones en curso. Las
-reuniones omitidas por otra operaciÃ³n pendiente deben revisarse despuÃ©s de que
-termine esa operaciÃ³n. Los errores quedan disponibles para reintentar.
+reuniones omitidas por otra operación pendiente deben revisarse después de que
+termine esa operación. Los errores quedan disponibles para reintentar.
 
-Si Google rechaza `spaces.members`, revisar la habilitaciÃ³n del proyecto en
+Si Google rechaza `spaces.members`, revisar la habilitación del proyecto en
 Developer Preview, los scopes delegados y la identidad/licencia de la cuenta
-organizadora. No se considera exitosa una asignaciÃ³n rechazada por Google.
+organizadora. No se considera exitosa una asignación rechazada por Google.
 
 ## Planillas de asistencia y Reports API
 
-Para identificar de forma verificable a participantes y publicar Google Sheets, el mismo proyecto de Google Cloud debe tener habilitadas **Google Sheets API**, **Google Drive API** y **Admin SDK API** (Reports API). La cuenta de servicio existente debe mantener la delegación de todo el dominio; no se debe crear ni cargar una credencial nueva para esta función.
+Para identificar de forma verificable a participantes y publicar Google Sheets, el mismo proyecto de Google Cloud debe tener habilitadas **Google Sheets API**, **Google Drive API** y **Admin SDK API** (Reports API). La cuenta de servicio existente debe mantener la delegaci�n de todo el dominio; no se debe crear ni cargar una credencial nueva para esta funci�n.
 
-Agregar al Client ID numérico ya autorizado estos scopes:
+Agregar al Client ID num�rico ya autorizado estos scopes:
 
 ```text
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 https://www.googleapis.com/auth/spreadsheets
 ```
 
-Se conserva el scope Drive ya usado por la aplicación. La configuración cifrada de Workspace debe apuntar a la cuenta de servicio y la carpeta de destino existentes. Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` con la dirección de un administrador autorizado a leer auditorías de Meet; la aplicación suplanta esa cuenta mediante la delegación existente. La cuenta de servicio organizadora debe tener acceso de escritura a la carpeta del encuentro. Restringir el acceso a las hojas y carpetas según las mismas políticas de Drive aprobadas para datos académicos.
+Se conserva el scope Drive ya usado por la aplicaci�n. La configuraci�n cifrada de Workspace debe apuntar a la cuenta de servicio y la carpeta de destino existentes. Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` con la direcci�n de un administrador autorizado a leer auditor�as de Meet; la aplicaci�n suplanta esa cuenta mediante la delegaci�n existente. La cuenta de servicio organizadora debe tener acceso de escritura a la carpeta del encuentro. Restringir el acceso a las hojas y carpetas seg�n las mismas pol�ticas de Drive aprobadas para datos acad�micos.
 
-La búsqueda usa eventos `call_ended` del Reports API, que pueden no incluir correo electrónico. Solo se asocia una dirección cuando el tipo de identificador es `email_address`; otros identificadores se conservan sin atribución. Los códigos Meet se comparan normalizados, conservando el original en los datos brutos. Los registros se filtran por su conferencia y el intervalo observado; no se infiere identidad a partir del nombre.
+La b�squeda usa eventos `call_ended` del Reports API, que pueden no incluir correo electr�nico. Solo se asocia una direcci�n cuando el tipo de identificador es `email_address`; otros identificadores se conservan sin atribuci�n. Los c�digos Meet se comparan normalizados, conservando el original en los datos brutos. Los registros se filtran por su conferencia y el intervalo observado; no se infiere identidad a partir del nombre.
 
-La ruta de regeneración es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesión activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.
+La ruta de regeneraci�n es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesi�n activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.
 
-### Verificación automatizada y limitaciones
+### Verificaci�n automatizada y limitaciones
 
-Las pruebas locales cubren el cálculo horario, paginación de Reports API, normalización de códigos, preservación de IDs en datos crudos, actualización de hoja, paginación DB, filtros y alcance del actor. No sustituyen una validación en el Workspace institucional: la visibilidad real de correos depende de la política/edición de Workspace y de los datos que Reports API entregue; el acceso a la carpeta y los scopes delegados se deben verificar con la configuración institucional antes de habilitar la regeneración para usuarios.
+Las pruebas locales cubren el c�lculo horario, paginaci�n de Reports API, normalizaci�n de c�digos, preservaci�n de IDs en datos crudos, actualizaci�n de hoja, paginaci�n DB, filtros y alcance del actor. No sustituyen una validaci�n en el Workspace institucional: la visibilidad real de correos depende de la pol�tica/edici�n de Workspace y de los datos que Reports API entregue; el acceso a la carpeta y los scopes delegados se deben verificar con la configuraci�n institucional antes de habilitar la regeneraci�n para usuarios.
 
-## Resultados de verificaciÃ³n de esta implementaciÃ³n
+## Resultados de verificación de esta implementación
 
 Verificado localmente el 16/10/2026 en Node.js del repositorio:
 
 - `npm run check`: correcto.
 - `npm test -- --reporter=dot`: 161 archivos aprobados, 3 omitidos; 1.401 pruebas aprobadas, 12 omitidas.
-- `npm run build`: correcto con `AUTH_SECRET`, `AUTH_TRUST_HOST` y `APP_BASE_URL` de relleno de compilaciÃ³n definidos solo en el proceso local. Sin esas variables requeridas, Next falla al cargar la configuraciÃ³n de Auth.js antes de completar la recopilaciÃ³n de rutas.
-- Las pruebas que requieren PostgreSQL configurado y validaciÃ³n de Reports/Drive con el Workspace institucional no se ejecutaron en este entorno.
+- `npm run build`: correcto con `AUTH_SECRET`, `AUTH_TRUST_HOST` y `APP_BASE_URL` de relleno de compilación definidos solo en el proceso local. Sin esas variables requeridas, Next falla al cargar la configuración de Auth.js antes de completar la recopilación de rutas.
+- Las pruebas que requieren PostgreSQL configurado y validación de Reports/Drive con el Workspace institucional no se ejecutaron en este entorno.
 
-El resultado automatizado no verifica que Workspace exponga correos para cada participante ni que la cuenta institucional pueda mover hojas a todas las carpetas objetivo. Esa comprobaciÃ³n sigue pendiente con la configuraciÃ³n existente del centro.
+El resultado automatizado no verifica que Workspace exponga correos para cada participante ni que la cuenta institucional pueda mover hojas a todas las carpetas objetivo. Esa comprobación sigue pendiente con la configuración existente del centro.
