@@ -418,7 +418,7 @@ export function MeetingDetailManager({
                       </div>
 
                       <div className="encounter-v2-people-block">
-                        <div className="encounter-v2-people-title"><Wrench size={17} /><span>Asistencia técnica</span></div>
+                        <div className="encounter-v2-people-title"><Wrench size={17} /><span>Monitoreo</span></div>
                         <strong>{assistance.title}</strong>
                         {assistance.detail ? <small>{assistance.detail}</small> : null}
                         {meeting.requiereAsistenciaTecnica ? (
@@ -495,7 +495,7 @@ export function MeetingDetailManager({
                     <div className="encounter-editor">
                       <div className="encounter-editor-heading">
                         <div>
-                          <strong>{operationalEditor.type === "MODALIDAD" ? "Modalidad de este encuentro" : "Horario de asistencia técnica"}</strong>
+                          <strong>{operationalEditor.type === "MODALIDAD" ? "Modalidad de este encuentro" : "Horario de monitoreo"}</strong>
                           <small>
                             {operationalEditor.type === "MODALIDAD"
                               ? "Este cambio afecta únicamente esta fecha."
@@ -616,7 +616,7 @@ export function MeetingDetailManager({
           <label className="field"><span>Hora de fin</span><input name="horaFin" type="time" required /></label>
           <label className="field"><span>Llegada asistente (si corresponde)</span><input name="horaAsistenciaInicio" type="time" /></label>
           <label className="field"><span>Salida asistente (si corresponde)</span><input name="horaAsistenciaFin" type="time" /></label>
-          <label className="check-field encounter-add-check"><input name="requiereAsistenciaTecnica" type="checkbox" /><span>Asistencia técnica</span></label>
+          <label className="check-field encounter-add-check"><input name="requiereAsistenciaTecnica" type="checkbox" /><span>Monitoreo</span></label>
           <label className="check-field encounter-add-check"><input name="requiereGrabacion" type="checkbox" /><span>Debe grabarse</span></label>
           <button className="primary-action" disabled={busy !== null} type="submit"><CalendarPlus size={17} />Agregar</button>
           <label className="field encounter-add-description"><span>Descripción del encuentro (opcional)</span><textarea name="descripcion" placeholder="Tema, docente o indicaciones específicas" rows={2} /></label>
@@ -651,7 +651,7 @@ export function MeetingDetailManager({
 
 function assistanceLabel(meeting: Encounter): Readonly<{ title: string; detail?: string }> {
   if (meeting.asistenteTecnico) {
-    return { title: meeting.asistenteTecnico, detail: meeting.cohostsConfirmados ? "Cohost técnico verificado en Google." : "Asistencia asignada; permisos Meet pendientes de verificar." };
+    return { title: meeting.asistenteTecnico, detail: meeting.cohostsConfirmados ? "Cohost técnico verificado en Google." : "Monitoreo asignado; permisos Meet pendientes de verificar." };
   }
   if (meeting.requiereAsistenciaTecnica) {
     return {
