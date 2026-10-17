@@ -1,4 +1,5 @@
 import {
+  extraerCohostEmailsDeInstancia,
   invalidarVerificacionCohosts,
   normalizeCohostEmails,
   registrarVerificacionCohosts
@@ -57,10 +58,7 @@ export async function sincronizarCohostsDeInstanciaUseCase(
   const event = meeting?.eventosProveedor[0];
   if (!meeting || !event?.codigoReunion) return;
 
-  const cohostEmails = normalizeCohostEmails([
-    ...meeting.cohosts.map(({ cuentaGoogle }: any) => cuentaGoogle.email),
-    ...meeting.cohostEmails.map(({ email }: any) => email)
-  ]);
+  const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
   if (cohostEmails.length === 0) return;
 
   await dependencies.db.eventoProveedor.update({

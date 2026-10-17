@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import { cohostsConfirmados } from "@/src/modules/conferencias/api";
+import {
+  cohostsConfirmados,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia
+} from "@/src/modules/conferencias/api";
 import { listarCasosRevisionDuplicados } from "../reuniones/duplicados.service";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type { EstadoTemporalReunion } from "./types";
@@ -297,21 +301,12 @@ export async function obtenerDashboardAdministracion(
     const assistant = assignment?.asistenteTecnico.usuario;
     const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
 
-    const cohosts = [
-      ...meeting.cohosts.map(({ cuentaGoogle }) => ({
-        email: cuentaGoogle.email,
-        name: [cuentaGoogle.user.nombres, cuentaGoogle.user.apellidos].filter(Boolean).join(" ")
-      })),
-      ...meeting.cohostEmails.map(({ email }) => ({ email, name: "" }))
-    ].filter(
-      (entry, index, entries) =>
-        entries.findIndex((candidate) => candidate.email.toLowerCase() === entry.email.toLowerCase()) === index
-    );
+    const cohosts = extraerCohostsUnificadosDeInstancia(meeting).map((c) => ({
+      email: c.email,
+      name: c.name ?? ""
+    }));
 
-    const cohostEmails = [
-      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...meeting.cohostEmails.map(({ email }) => email)
-    ];
+    const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
 
     const cohostsConfirmadosEnMeet = Boolean(
       !meet?.errorIntegracion &&

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { cohostAccountGuidance, normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
+import {
+  cohostAccountGuidance,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia,
+  normalizeCohostEmails,
+} from "@/src/modules/conferencias/api";
 
 describe("normalizeCohostEmails", () => {
   it("no agrega un cohost predeterminado", () => {
@@ -38,5 +43,70 @@ describe("cohostAccountGuidance", () => {
     expect(cohostAccountGuidance([
       "profesor@gmail.com"
     ])).toBe("ingresar con cuenta Google");
+  });
+});
+
+describe("extraerCohostsUnificadosDeInstancia y extraerCohostEmailsDeInstancia", () => {
+  it("devuelve arrays vacíos si el argumento es nulo o indefinido", () => {
+    expect(extraerCohostsUnificadosDeInstancia(null)).toEqual([]);
+    expect(extraerCohostsUnificadosDeInstancia(undefined)).toEqual([]);
+    expect(extraerCohostEmailsDeInstancia(null)).toEqual([]);
+    expect(extraerCohostEmailsDeInstancia(undefined)).toEqual([]);
+  });
+
+  it("unifica cohosts de ambas tablas y deduplica por correo", () => {
+    const meeting = {
+      cohosts: [
+        {
+          cuentaGoogleId: "cg-1",
+          cuentaGoogle: {
+            id: "cg-1",
+            email: "DOCENTE@FLACSO.EDU.UY",
+            user: { nombres: "Juan", apellidos: "Pérez" }
+          }
+        }
+      ],
+      cohostEmails: [
+        { email: "docente@flacso.edu.uy" },
+        { email: "externo@gmail.com" }
+      ]
+    };
+
+    const unificados = extraerCohostsUnificadosDeInstancia(meeting);
+    expect(unificados).toEqual([
+      {
+        email: "docente@flacso.edu.uy",
+        name: "Juan Pérez",
+        cuentaGoogleId: "cg-1"
+      },
+      {
+        email: "externo@gmail.com",
+        name: undefined,
+        cuentaGoogleId: null
+      }
+    ]);
+
+    const emails = extraerCohostEmailsDeInstancia(meeting);
+    expect(emails).toEqual(["docente@flacso.edu.uy", "externo@gmail.com"]);
+  });
+
+  it("ignora entradas vacías o nulas de forma robusta", () => {
+    const meeting = {
+      cohosts: [
+        { cuentaGoogle: null },
+        { cuentaGoogle: { email: "   " } },
+        { cuentaGoogle: { email: "valido@flacso.edu.uy" } }
+      ],
+      cohostEmails: [
+        { email: "" },
+        { email: "  " },
+        { email: "valido2@flacso.edu.uy" }
+      ]
+    };
+
+    expect(extraerCohostEmailsDeInstancia(meeting)).toEqual([
+      "valido@flacso.edu.uy",
+      "valido2@flacso.edu.uy"
+    ]);
   });
 });

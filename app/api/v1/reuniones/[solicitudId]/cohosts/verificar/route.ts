@@ -5,7 +5,8 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError, ForbiddenApiError, NotFoundApiError, IntegrationApiError } from "@/src/lib/http/api-error";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
-import { consultarCohostsEspacioMeet } from "@/src/modules/conferencias/api";
+import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
+import { consultarCohostsEspacioMeet, extraerCohostEmailsDeInstancia } from "@/src/modules/conferencias/api";
 import { obtenerCredencialesWorkspaceActivas } from "@/src/modules/configuracion/api";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
@@ -20,16 +21,14 @@ export async function GET(_request: Request, context: RouteContext) {
     const { solicitudId } = await context.params;
     const request = await db.solicitudSala.findUnique({
       where: { id: solicitudId },
-      select: { docenteProgramaId: true, titulo: true, createdAt: true, docentePrograma: { select: { programaId: true } } },
+      select: { id: true, serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true, docentePrograma: { select: { programaId: true } } },
     });
     if (!request) throw new NotFoundApiError("La serie no existe.");
     if (!await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) {
       throw new ForbiddenApiError("Sin permiso para verificar cohosts.");
     }
     const series = await db.solicitudSala.findMany({
-      where: {
-        docenteProgramaId: request.docenteProgramaId, titulo: request.titulo, createdAt: request.createdAt,
-      },
+      where: construirFiltroSerieSolicitud(request),
       select: {
         instancias: {
           where: { estado: "PROGRAMADA", finProgramadoAt: { gt: new Date() } },
@@ -66,10 +65,9 @@ export async function GET(_request: Request, context: RouteContext) {
       const event = meeting.eventosProveedor[0];
       const host = event?.cuentaProveedor?.emailOrganizador ?? "";
       const code = event?.codigoReunion ?? "";
-      const emails = [...new Set([
-        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email.toLowerCase()),
-        ...meeting.cohostEmails.map(({ email }) => email.toLowerCase()),
-      ])].filter((email) => email !== host.toLowerCase());
+      const emails = extraerCohostEmailsDeInstancia(meeting).filter(
+        (email) => email !== host.toLowerCase()
+      );
       if (!emails.length) continue;
       const cacheKey = host.toLowerCase() + "|" + code;
       if (!memberCache.has(cacheKey)) {

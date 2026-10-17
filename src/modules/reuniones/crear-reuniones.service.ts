@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import {
@@ -244,6 +245,7 @@ export async function crearReuniones(
     const solicitud = await tx.solicitudSala.create({
       data: {
         claveIdempotenciaCreacion,
+        serieReunionId: randomUUID(),
         docenteProgramaId: input.docenteProgramaId,
         creadaPorUsuarioId: actor.id,
         titulo: input.titulo,

@@ -1,6 +1,8 @@
 import "server-only";
 import {
   cohostsConfirmados,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia,
   sincronizarCohostsGoogleExistente,
   type OperacionPendienteConferencia
 } from "@/src/modules/conferencias/api";
@@ -261,16 +263,7 @@ export async function obtenerReunionOperativa(
   }
 
   const evento = meeting.eventosProveedor[0] ?? null;
-  const cohostEmails = [
-    ...new Set(
-      [
-        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-        ...meeting.cohostEmails.map(({ email }) => email)
-      ]
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean)
-    )
-  ];
+  const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
   const cohostConfirmado = Boolean(
     evento
       && !evento.errorIntegracion
@@ -871,12 +864,8 @@ export async function obtenerReunionOperativa(
   if (assistantFullName || assistantEmail) {
     registrarCandidatoHost(assistantEmail, assistantFullName ?? "Asistente técnico", "ASISTENTE_TECNICO");
   }
-  for (const cohost of meeting.cohosts) {
-    const mail = cohost.cuentaGoogle.email.trim().toLowerCase();
-    registrarCandidatoHost(mail, mail, "COHOST");
-  }
-  for (const cohostMail of meeting.cohostEmails) {
-    registrarCandidatoHost(cohostMail.email.trim().toLowerCase(), cohostMail.email, "COHOST");
+  for (const cohost of extraerCohostsUnificadosDeInstancia(meeting)) {
+    registrarCandidatoHost(cohost.email, cohost.name || cohost.email, "COHOST");
   }
 
   return {
@@ -1088,16 +1077,7 @@ export async function actualizarControlOperativoReunion(
     }
   }
 
-  const cohostsAnteriores = [
-    ...new Set(
-      [
-        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-        ...meeting.cohostEmails.map(({ email }) => email)
-      ]
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean)
-    )
-  ];
+  const cohostsAnteriores = extraerCohostEmailsDeInstancia(meeting);
   let cohostsDeseados = [...cohostsAnteriores];
 
   await db.$transaction(async (tx) => {

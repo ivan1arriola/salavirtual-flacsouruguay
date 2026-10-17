@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { extraerCohostEmailsDeInstancia } from "@/src/modules/conferencias/api";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import {
   obtenerAlcanceGrabaciones,
@@ -75,7 +76,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         codigoReunion: event.codigoReunion,
         conferenceRecordName: event.conferenceRecordName,
         emailOrganizador: event.cuentaProveedor?.emailOrganizador ?? null,
-        cohostEmails: [...new Set([...(event.instancia.cohostEmails ?? []).map(e => e.email), ...(event.instancia.cohosts ?? []).map(c => c.cuentaGoogle.email)])],
+        cohostEmails: extraerCohostEmailsDeInstancia(event.instancia),
         archivos: event.archivos,
         asistenciaDriveFileId: event.archivos.find(a => a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet")?.driveFileId ?? null,
         inicioProgramadoAt: event.instancia.inicioProgramadoAt,

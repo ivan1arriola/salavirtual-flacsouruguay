@@ -4,6 +4,7 @@ import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configu
 import { recalcularSolicitud } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 import {
   extraerConferenceData,
+  extraerCohostEmailsDeInstancia,
   normalizeCohostEmails,
   normalizeMeetLink,
   type ConferenceProvisionRequest,
@@ -142,7 +143,7 @@ export function crearPrismaConferenciasRepository(
       // identity, rather than restricting reuse to one SolicitudSala record.
       const request = await db.solicitudSala.findUnique({
         where: { id: solicitudSalaId },
-        select: { docenteProgramaId: true, titulo: true, createdAt: true },
+        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
       });
       if (!request) return undefined;
       const candidates = await db.eventoProveedor.findMany({
@@ -151,11 +152,13 @@ export function crearPrismaConferenciasRepository(
           proveedor: { tipo: "GOOGLE_MEET" },
           instancia: {
             estado: "PROGRAMADA",
-            solicitud: {
-              docenteProgramaId: request.docenteProgramaId,
-              titulo: request.titulo,
-              createdAt: request.createdAt,
-            },
+            solicitud: request.serieReunionId
+              ? { serieReunionId: request.serieReunionId }
+              : {
+                  docenteProgramaId: request.docenteProgramaId,
+                  titulo: request.titulo,
+                  createdAt: request.createdAt,
+                },
           },
           estadoIntegracion: "SINCRONIZADA",
           operacionPendiente: null,
@@ -522,10 +525,7 @@ function buildProvisionRequest(event: {
   };
 }): ConferenceProvisionRequest {
   const { instancia } = event;
-  const cohostEmails = normalizeCohostEmails([
-    ...instancia.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-    ...instancia.cohostEmails.map(({ email }) => email),
-  ]);
+  const cohostEmails = extraerCohostEmailsDeInstancia(instancia);
 
   return {
     titulo: instancia.solicitud.titulo,

@@ -79,7 +79,7 @@ describe("conferencias/infrastructure", () => {
         .resolves.toEqual(conferenceData);
       expect(findUnique).toHaveBeenCalledWith({
         where: { id: "solicitud-2" },
-        select: { docenteProgramaId: true, titulo: true, createdAt: true },
+        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
       });
       expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: expect.objectContaining({

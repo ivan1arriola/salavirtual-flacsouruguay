@@ -228,6 +228,7 @@ model SolicitudSala {
   id                        String           @id @default(cuid())
   legacyZoomSolicitudId     String?          @unique
   claveIdempotenciaCreacion String?          @unique
+  serieReunionId            String?
   docenteProgramaId         String
   creadaPorUsuarioId        String
   titulo                    String
@@ -261,6 +262,7 @@ model SolicitudSala {
 
   @@index([estado, fechaInicioSolicitada])
   @@index([docenteProgramaId, estado])
+  @@index([serieReunionId])
 }
 
 model InstanciaSala {

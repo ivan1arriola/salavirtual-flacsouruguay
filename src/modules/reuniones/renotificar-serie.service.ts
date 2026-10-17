@@ -8,6 +8,7 @@ import {
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { destinatariosDocentesPrograma, puedeGestionarPrograma } from "./permisos-programa.service";
+import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 
 export type RenotificarSerieDependencies = Readonly<{
   db: PrismaClient;
@@ -24,6 +25,7 @@ export async function renotificarSerieAlPrograma(
     where: { id: solicitudId },
     select: {
       id: true,
+      serieReunionId: true,
       titulo: true,
       modalidad: true,
       requiereAsistenciaTecnica: true,
@@ -54,11 +56,7 @@ export async function renotificarSerieAlPrograma(
   }
 
   const seriesRequests = await dependencies.db.solicitudSala.findMany({
-    where: {
-      docenteProgramaId: request.docenteProgramaId,
-      titulo: request.titulo,
-      createdAt: request.createdAt,
-    },
+    where: construirFiltroSerieSolicitud(request),
     select: {
       instancias: {
         where: {

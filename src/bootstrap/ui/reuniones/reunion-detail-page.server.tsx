@@ -20,6 +20,8 @@ import {
   cohostsConfirmados,
   detalleCohostsVerificados,
   estadoIntegracionEfectivo,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia,
   requiereAtencionIntegracionMeet
 } from "@/src/modules/conferencias/api";
 import {
@@ -30,6 +32,7 @@ import {
   destinatariosDocentesPrograma,
   puedeGestionarPrograma
 } from "@/src/modules/reuniones/permisos-programa.service";
+import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
 
 export default async function ReunionDetailPage({
   params
@@ -51,11 +54,7 @@ export default async function ReunionDetailPage({
   const now = new Date();
   const [seriesRequests, cohostAccounts, programRecipients, otherUsers, historicCohostEmails] = await Promise.all([
     db.solicitudSala.findMany({
-      where: {
-        docenteProgramaId: request.docenteProgramaId,
-        titulo: request.titulo,
-        createdAt: request.createdAt
-      },
+      where: construirFiltroSerieSolicitud(request),
       orderBy: { id: "asc" },
       select: {
         id: true,
@@ -138,10 +137,7 @@ export default async function ReunionDetailPage({
     ...initialManualCohostEmails
   ]).map((email) => {
     const applicable = manageableMeetings.filter((meeting) => {
-      const expected = [
-        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email.toLowerCase()),
-        ...meeting.cohostEmails.map(({ email: value }) => value.toLowerCase()),
-      ];
+      const expected = extraerCohostEmailsDeInstancia(meeting);
       return expected.includes(email);
     });
     const confirmed = applicable.filter((meeting) => {
@@ -166,15 +162,16 @@ export default async function ReunionDetailPage({
     const organizerAccount = event?.cuentaProveedor?.emailOrganizador
       ?? event?.cuentaProveedor?.nombre
       ?? "Cuenta pendiente";
-    const cohostLabels = unique([
-      ...meeting.cohosts.map(({ cuentaGoogle }) => cohostLabel(cuentaGoogle)),
-      ...meeting.cohostEmails.map(({ email }) => email.toLowerCase())
-    ]);
+    const cohostLabels = unique(
+      extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
+        c.name ? `${c.name} · ${c.email}` : c.email
+      )
+    );
     const eventVerification = detalleCohostsVerificados(
       event?.payloadUltimo,
       event?.codigoReunion,
       event?.cuentaProveedor?.emailOrganizador,
-      [...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email), ...meeting.cohostEmails.map(({ email }) => email)]
+      extraerCohostEmailsDeInstancia(meeting)
     );
     const recordingFile = event?.archivos?.find((a) => a.tipo === "GRABACION");
     const attendanceFile = event?.archivos?.find((a) => a.tipo === "LISTA_ASISTENCIA");
@@ -217,7 +214,7 @@ export default async function ReunionDetailPage({
       verifiedCohostEmails: !event?.errorIntegracion && !event?.operacionPendiente ? eventVerification.emailsConfirmados : [],
       cohostsConfirmados: !event?.errorIntegracion && !event?.operacionPendiente && cohostsConfirmados(
         event?.payloadUltimo, event?.codigoReunion, event?.cuentaProveedor?.emailOrganizador,
-        [...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email), ...meeting.cohostEmails.map(({ email }) => email)],
+        extraerCohostEmailsDeInstancia(meeting),
       ),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: event?.joinUrl ?? null,

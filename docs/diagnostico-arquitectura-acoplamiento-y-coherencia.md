@@ -162,13 +162,16 @@ Cuando Google Calendar crea o actualiza un evento con invitados (`attendees`), G
 | [`src/modules/reuniones/reunion-operativa.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/reuniones/reunion-operativa.service.ts) y [`src/bootstrap/reunion-operativa.server.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/bootstrap/reunion-operativa.server.ts) | Adelgazado `src/bootstrap/reunion-operativa.server.ts` de 1.392 líneas a una fachada canónica de 17 líneas, reubicando toda la lógica de negocio y reconciliación operativa en el módulo `reuniones`. |
 | [`src/modules/configuracion/configuracion-page.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/configuracion/configuracion-page.service.ts) y [`app/(gestion)/configuracion/page.tsx`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/%28gestion%29/configuracion/page.tsx) | Extraídas 165 líneas de consultas Prisma directas y transformación de operaciones pendientes desde el componente de UI hacia un servicio dedicado en `configuracion`. |
 | [`src/modules/reuniones/reuniones-page.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/reuniones/reuniones-page.service.ts) y [`app/(gestion)/reuniones/page.tsx`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/app/%28gestion%29/reuniones/page.tsx) | Extraídas ~370 líneas de armado de filtros temporales/búsquedas y consultas Prisma hacia `reuniones-page.service.ts`, eliminando la importación de `@prisma/client` en la capa de presentación. |
-| [`src/modules/asistencia/asistencia.service.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/asistencia/asistencia.service.ts) | Redirigida la sincronización de cohosts de asistencia técnica (`sincronizarCohostsDeInstancia`) hacia `sincronizarCohostsDeInstanciaUseCase` en `application/`. |
+| [`prisma/schema.prisma`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/prisma/schema.prisma) y [`prisma/migrations/20261017120000_serie_reunion_id/`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/prisma/migrations/20261017120000_serie_reunion_id/) | Agregado el campo canónico `serieReunionId String?` con `@@index([serieReunionId])` a `SolicitudSala` para normalizar la pertenencia de series periódicas (3NF). Migración SQL idempotente y retrocompatible. |
+| [`src/modules/reuniones/serie-reunion.domain.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/reuniones/serie-reunion.domain.ts) | Definida la clave canónica `claveSerieReunion` (`serie:${serieReunionId}`) y la función pura `construirFiltroSerieSolicitud` que prioriza `serieReunionId` con fallback transparente a `{ docenteProgramaId, titulo, createdAt }`. |
+| [`src/modules/conferencias/domain/cohosts.domain.ts`](file:///c:/Users/Iv%C3%A1n/Documents/Migracion-Ubuntu-20261010/repositorios/FLACSO%20Uruguay/flacso-meet/src/modules/conferencias/domain/cohosts.domain.ts) | Definidas las funciones puras inmutables `extraerCohostsUnificadosDeInstancia` y `extraerCohostEmailsDeInstancia` para unificar el modelo dual `CohostReunion` + `CohostEmailReunion` sin mutación y con 100% pureza funcional. |
+| 11 consumidores en `src/modules/` y `app/` | Migrado todo el mapeo manual duplicado de cohosts hacia `extraerCohostsUnificadosDeInstancia` en `conferencias`, `archivos`, `asistencia`, `configuracion`, `dashboard`, `reuniones` y páginas de UI. |
 
 ---
 
 ## 5. Plan de Desacoplamiento y Consolidación Arquitectónica (Hoja de Ruta)
 
-Para terminar de sanear el acoplamiento estructural sin romper contratos en producción (siguiendo el principio *Expandir $\rightarrow$ Migrar $\rightarrow$ Contraer*), se establece la siguiente secuencia en 4 fases:
+Para terminar de sanear el acoplamiento estructural sin romper contratos en producción (siguiendo el principio *Expandir $\rightarrow$ Migrar $\rightarrow$ Contraer*), se estableció la secuencia en 4 fases ejecutadas con éxito:
 
 ### Fase 1: Unificación de Credenciales y Clientes de Google Workspace [COMPLETADA]
 - **Objetivo:** Eliminar las consultas directas a `db.configuracionGoogleWorkspace.findUnique` y duplicación de descifrado.
@@ -192,9 +195,18 @@ Para terminar de sanear el acoplamiento estructural sin romper contratos en prod
   - `app/(gestion)/reuniones/page.tsx` desacoplada de consultas Prisma mediante `obtenerDatosPaginaReuniones`, eliminando dependencia directa de `@prisma/client`.
   - `asistencia.service.ts` sincronización de cohosts delegada directamente en `sincronizarCohostsDeInstanciaUseCase`.
 
-### Fase 4: Normalización Relacional de Series y Cohosts (3NF) [PRÓXIMA FASE]
-- **Objetivo:** Eliminar la agrupación implícita por `{ docenteProgramaId, titulo, createdAt }` y la doble tabla de cohosts.
-- **Acción:**
-  1. Vincular toda `SolicitudSala` perteneciente a una creación múltiple mediante `serieReunionId` (`SerieReunion`), usando ese ID como clave canónica de serie.
-  2. Consolidar `CohostReunion` y `CohostEmailReunion` en una única entidad o vista de dominio donde `cuentaGoogleId` sea opcional y `email` sea canónico y único por `(instanciaSalaId, email)`.
+### Fase 4: Normalización Relacional de Series y Cohosts (3NF) [COMPLETADA]
+- **Objetivo:** Eliminar la agrupación implícita por `{ docenteProgramaId, titulo, createdAt }` y encapsular el acceso dual a cohosts.
+- **Estado:** ✅ Completado.
+  1. **Series Relacionales Canónicas:**
+     - Agregado campo `serieReunionId String?` e índice `@@index([serieReunionId])` a `SolicitudSala` en `prisma/schema.prisma`.
+     - Creada migración idempotente `20261017120000_serie_reunion_id`.
+     - En `crearReunionesConEncuentros`: se genera un UUID determinista `serieReunionId` compartido por todas las solicitudes creadas en bloque.
+     - En `serie-reunion.domain.ts`: creada función de dominio `construirFiltroSerieSolicitud(solicitud)` que prioriza `{ serieReunionId }` y recurre a `{ docenteProgramaId, titulo, createdAt }` como fallback retrocompatible para registros históricos sin `serieReunionId`.
+     - Migrados los adaptadores y servicios: `buscarConferenceDataCompartida`, `gestionarCohostsSerieService`, `renotificarSerieService`, y la vista de detalle de reunión.
+  2. **Unificación de Cohosts:**
+     - Creado modelo de dominio unificado `CohostUnificado` (`{ email, name, cuentaGoogleId }`) y tipo `CohostContainer`.
+     - Implementadas funciones puras e inmutables `extraerCohostsUnificadosDeInstancia` y `extraerCohostEmailsDeInstancia` en `src/modules/conferencias/domain/cohosts.domain.ts` y re-exportadas en la API del módulo.
+     - Migrados 11 consumidores en toda la aplicación (conferencias, archivos, asistencia, configuración global, dashboards de admin, docente y asistente, gestión operativa y páginas de listado/búsqueda).
+     - Validación exhaustiva: 100% de la suite vitest pasando (1.850 pruebas, 169 archivos), validación Prisma y comprobación de TypeScript (`npm run check`) limpias sin errores ni violaciones de frontera.
 

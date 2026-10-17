@@ -6,7 +6,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { toHttpError } from "@/src/lib/http/api-error";
 import { puedeAdministrar } from "@/src/modules/usuarios/roles";
 import { buscarMeet } from "@/src/bootstrap/reverse-meet-search.server";
-import type { MeetChange } from "@/src/modules/conferencias/api";
+import { extraerCohostEmailsDeInstancia, type MeetChange } from "@/src/modules/conferencias/api";
 import styles from "./search.module.css";
 
 export default async function ReverseMeetPage({ searchParams }: Readonly<{
@@ -56,10 +56,7 @@ export default async function ReverseMeetPage({ searchParams }: Readonly<{
             const meeting = event.instancia;
             const request = meeting.solicitud;
             const creator = request.creadaPor;
-            const cohosts = [...new Set([
-              ...meeting.cohosts.map((item) => item.cuentaGoogle.email),
-              ...meeting.cohostEmails.map((item) => item.email),
-            ])];
+            const cohosts = extraerCohostEmailsDeInstancia(meeting);
             const recordings = [
               ...event.archivos.map((file) => ({ id: file.id, title: file.nombre,
                 url: `https://drive.google.com/file/d/${encodeURIComponent(file.driveFileId)}/view` })),

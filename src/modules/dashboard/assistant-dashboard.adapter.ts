@@ -1,6 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 import { obtenerDashboardAsistente } from "../asistencia/dashboard-asistente.adapter";
-import { cohostsConfirmados } from "@/src/modules/conferencias/api";
+import {
+  cohostsConfirmados,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia
+} from "@/src/modules/conferencias/api";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type {
   AssistantDashboardData,
@@ -81,10 +85,7 @@ export async function obtenerDashboardAsistenteOptimizado(
       const meet = nextMeetingInstance.eventosProveedor.find(
         ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
       );
-      const cohostEmails = [
-        ...nextMeetingInstance.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-        ...nextMeetingInstance.cohostEmails.map(({ email }) => email)
-      ];
+      const cohostEmails = extraerCohostEmailsDeInstancia(nextMeetingInstance);
       const isVerified = Boolean(
         !meet?.errorIntegracion &&
           !meet?.operacionPendiente &&
@@ -112,11 +113,9 @@ export async function obtenerDashboardAsistenteOptimizado(
         finAsistenciaAt: nextMeetingInstance.finAsistenciaTecnicaAt?.toISOString() ?? null,
         joinUrl: meet?.joinUrl ?? null,
         cohostConfirmado: isVerified && assistantIsCohost,
-        cohosts: nextMeetingInstance.cohosts.map(({ cuentaGoogle }) => ({
-          name: [cuentaGoogle.user.nombres, cuentaGoogle.user.apellidos]
-            .filter(Boolean)
-            .join(" "),
-          email: cuentaGoogle.email
+        cohosts: extraerCohostsUnificadosDeInstancia(nextMeetingInstance).map((c) => ({
+          name: c.name ?? "",
+          email: c.email
         })),
         asistente: null,
         requiereAsistencia: true,

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { consultarCohostsEspacioMeet, normalizeCohostEmails } from "@/src/modules/conferencias/api";
+import { consultarCohostsEspacioMeet, extraerCohostEmailsDeInstancia, normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import {
   cargarCredencialesLegacyGoogleWorkspace,
   obtenerCredencialPrincipalGoogleWorkspace,
@@ -155,10 +155,9 @@ export async function verificarCohostsGlobalPagina(
     const event = meeting.eventosProveedor[0];
     const organizador = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase() ?? null;
     const codigoReunion = event?.codigoReunion ?? null;
-    const emails = normalizeCohostEmails([
-      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...meeting.cohostEmails.map(({ email }) => email),
-    ]).filter((email) => email !== organizador);
+    const emails = extraerCohostEmailsDeInstancia(meeting).filter(
+      (email) => email !== organizador
+    );
     const base = {
       instanciaSalaId: meeting.id,
       titulo: meeting.solicitud.titulo,

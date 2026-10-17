@@ -7,6 +7,7 @@ type EncuentroAgrupable = Readonly<{
   finProgramadoAt?: Date;
   solicitud: Readonly<{
     id: string;
+    serieReunionId?: string | null;
     docenteProgramaId: string;
     titulo: string;
     createdAt: Date;

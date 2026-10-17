@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/src/modules/conferencias/api", () => ({
-  normalizeCohostEmails: (values: readonly string[]) => [...new Set(values.map((v) => v.trim().toLowerCase()).filter(Boolean))],
-}));
+vi.mock("@/src/modules/conferencias/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/src/modules/conferencias/api")>();
+  return {
+    ...actual,
+    normalizeCohostEmails: (values: readonly string[]) => [...new Set(values.map((v) => v.trim().toLowerCase()).filter(Boolean))],
+  };
+});
 
 import {
   verificarCohostsGlobalPagina,

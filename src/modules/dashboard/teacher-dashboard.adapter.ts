@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import { cohostsConfirmados } from "@/src/modules/conferencias/api";
+import {
+  cohostsConfirmados,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia
+} from "@/src/modules/conferencias/api";
 import { determinarEstadoTemporal, esMismoDiaMontevideo } from "./dashboard.domain";
 import type {
   HeroMeetingDTO,
@@ -123,19 +127,11 @@ export async function obtenerDashboardDocente(
     const meet = instance.eventosProveedor.find(
       ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
     );
-    const cohostEmails = [
-      ...instance.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...instance.cohostEmails.map(({ email }) => email)
-    ];
-    const cohostsList = [
-      ...instance.cohosts.map(({ cuentaGoogle }) => ({
-        name: [cuentaGoogle.user.nombres, cuentaGoogle.user.apellidos]
-          .filter(Boolean)
-          .join(" "),
-        email: cuentaGoogle.email
-      })),
-      ...instance.cohostEmails.map(({ email }) => ({ name: "", email }))
-    ];
+    const cohostEmails = extraerCohostEmailsDeInstancia(instance);
+    const cohostsList = extraerCohostsUnificadosDeInstancia(instance).map((c) => ({
+      name: c.name ?? "",
+      email: c.email
+    }));
     const isVerified = Boolean(
       !meet?.errorIntegracion &&
         !meet?.operacionPendiente &&

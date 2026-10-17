@@ -29,7 +29,12 @@ import {
   type PeriodoAgenda
 } from "@/src/modules/reuniones/reuniones-page.service";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
-import { cohostAccountGuidance, cohostsConfirmados } from "@/src/modules/conferencias/api";
+import {
+  cohostAccountGuidance,
+  cohostsConfirmados,
+  extraerCohostEmailsDeInstancia,
+  extraerCohostsUnificadosDeInstancia
+} from "@/src/modules/conferencias/api";
 
 export default async function ReunionesPage({
   searchParams
@@ -334,18 +339,12 @@ export default async function ReunionesPage({
                 seriesMeetings.flatMap((meeting) => cohostsForMeeting(meeting))
               );
               const seriesCohostEmails = unique(
-                seriesMeetings.flatMap((meeting) => [
-                  ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-                  ...meeting.cohostEmails.map(({ email }) => email)
-                ])
+                seriesMeetings.flatMap((meeting) => extraerCohostEmailsDeInstancia(meeting))
               );
               const seriesCohostsConfirmados = Boolean(
                 seriesCohostEmails.length > 0 &&
                 seriesMeetings.every((meeting) => {
-                  const meetingCohostEmails = [
-                    ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-                    ...meeting.cohostEmails.map(({ email }) => email)
-                  ];
+                  const meetingCohostEmails = extraerCohostEmailsDeInstancia(meeting);
                   if (meetingCohostEmails.length === 0) return true;
                   const meetingEvent = meeting.eventosProveedor.find(
                     ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
@@ -572,10 +571,7 @@ export default async function ReunionesPage({
               const assistant = assignment?.asistenteTecnico.usuario;
               const assistantName = assistant ? personName(assistant) : null;
               const cohostLabels = cohostsForMeeting(meeting);
-              const cohostEmails = [
-                ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-                ...meeting.cohostEmails.map(({ email }) => email)
-              ];
+              const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
               const cohostsConfirmadosEnMeet = Boolean(
                 !event?.errorIntegracion &&
                 !event?.operacionPendiente &&
@@ -857,13 +853,11 @@ function cohostsForMeeting(meeting: {
   }[];
   cohostEmails: readonly { email: string }[];
 }): readonly string[] {
-  return unique([
-    ...meeting.cohosts.map(({ cuentaGoogle }) => {
-      const name = personName(cuentaGoogle.user);
-      return name ? `${name} · ${cuentaGoogle.email}` : cuentaGoogle.email;
-    }),
-    ...meeting.cohostEmails.map(({ email }) => email)
-  ]);
+  return unique(
+    extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
+      c.name ? `${c.name} · ${c.email}` : c.email
+    )
+  );
 }
 
 function cohostPrimaryText(labels: readonly string[]): string {

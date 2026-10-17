@@ -9,12 +9,14 @@ import {
   ValidationApiError,
 } from "@/src/lib/http/api-error";
 import {
+  extraerCohostEmailsDeInstancia,
   invalidarVerificacionCohosts,
   normalizeCohostEmails,
   type GoogleCalendarCredentials,
 } from "@/src/modules/conferencias/api";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
+import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 
 const emailListSchema = z.preprocess(
   (value) => typeof value === "string"
@@ -54,6 +56,7 @@ export async function actualizarCohostsSerie(
     where: { id: solicitudId },
     select: {
       id: true,
+      serieReunionId: true,
       titulo: true,
       createdAt: true,
       docenteProgramaId: true,
@@ -72,11 +75,7 @@ export async function actualizarCohostsSerie(
 
   const now = new Date();
   const seriesRequests = await dependencies.db.solicitudSala.findMany({
-    where: {
-      docenteProgramaId: request.docenteProgramaId,
-      titulo: request.titulo,
-      createdAt: request.createdAt,
-    },
+    where: construirFiltroSerieSolicitud(request),
     select: {
       instancias: {
         where: {
@@ -174,10 +173,7 @@ export async function actualizarCohostsSerie(
     const privateKey = cred.privateKey;
 
     for (const { meeting, event, hostEmail } of eventsToSync) {
-      const previousEmails = normalizeCohostEmails([
-        ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-        ...meeting.cohostEmails.map(({ email }) => email),
-      ]);
+      const previousEmails = extraerCohostEmailsDeInstancia(meeting);
       // A partial failure must not leave old permissions displayed as verified.
       await dependencies.db.eventoProveedor.update({
         where: { id: event.id },
@@ -203,10 +199,7 @@ export async function actualizarCohostsSerie(
 
   const previousSnapshot = meetings.map((meeting) => ({
     instanciaId: meeting.id,
-    cohosts: normalizeCohostEmails([
-      ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
-      ...meeting.cohostEmails.map(({ email }) => email),
-    ]),
+    cohosts: extraerCohostEmailsDeInstancia(meeting),
   }));
 
   await dependencies.db.$transaction(async (tx) => {
