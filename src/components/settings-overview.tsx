@@ -58,7 +58,7 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
           description="Destinatarios de los reportes mensuales"
           href="/configuracion?seccion=asistencia"
           icon={<Clock3 size={22} />}
-          label="Asistencia técnica"
+          label="Monitoreo"
           state="neutral"
           value="Configurar reportes"
         />
