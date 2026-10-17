@@ -107,7 +107,7 @@ describe("buildAssignmentSuggestions", () => {
     expect(result.get("meeting-2")?.id).toBe("assistant-2");
   });
 
-  it("usa el horario completo de asistencia técnica para detectar conflictos", () => {
+  it("usa el horario completo de monitoreo para detectar conflictos", () => {
     const pending = meeting(
       "meeting-1",
       "2026-08-10T15:00:00Z",
