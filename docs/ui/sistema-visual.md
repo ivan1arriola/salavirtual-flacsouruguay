@@ -82,3 +82,7 @@ Los enlaces y controles interactivos muestran un contorno de `3px` con `2px` de 
 - Preferir tokens semánticos en cualquier UI nueva o modificada.
 - Migrar estilos de pantalla solo junto con esa pantalla, después de revisar sus hojas globales, modulares y consumidores.
 - No crear selectores globales correctivos ni eliminar hojas por conteo o antigüedad.
+
+## Estilos de notificaciones
+
+El listado, el filtro y sus acciones de la ruta /notificaciones se encapsulan en el modulo CSS de la pantalla. Las reglas duplicadas se retiraron de gestion.css y brand-refresh.css. Los botones y estados compartidos siguen usando sus estilos globales.

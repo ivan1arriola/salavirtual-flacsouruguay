@@ -1,0 +1,104 @@
+/* Styles for the notifications screen only. */
+.page .filter {
+  grid-template-columns: 20px minmax(180px, auto) auto;
+  justify-content: start;
+}
+
+.page .filter select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+}
+
+.page .list {
+  display: grid;
+}
+
+.page .item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8ebf0;
+}
+
+.page .item:last-child {
+  border-bottom: 0;
+}
+
+.page .unread {
+  background: #f0f4fa;
+}
+
+.page .copy {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.page .copy strong,
+.page .copy small,
+.page .copy time {
+  display: block;
+}
+
+.page .copy small {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.page .copy time {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.page .dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.page .read {
+  background: #c4ccd8;
+}
+
+.page .actionWrap {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.page .actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .page .filter {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .page .filter select,
+  .page .filter > button[type="submit"] {
+    min-height: 44px;
+  }
+
+  .page .actions .actionWrap :global(.icon-button) {
+    width: 44px;
+    min-height: 44px;
+  }
+}
+

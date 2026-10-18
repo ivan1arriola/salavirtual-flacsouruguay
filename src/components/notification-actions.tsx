@@ -30,8 +30,9 @@ export function NotificationMarkReadOnOpen({
 }
 
 export function NotificationReadButton({
-  notificationId
-}: Readonly<{ notificationId: string }>) {
+  notificationId,
+  className
+}: Readonly<{ notificationId: string; className: string }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -54,7 +55,7 @@ export function NotificationReadButton({
   }
 
   return (
-    <span className="notification-action-wrap">
+    <span className={className}>
       <button
         className="icon-button"
         disabled={pending}
@@ -71,8 +72,9 @@ export function NotificationReadButton({
 }
 
 export function NotificationDeleteButton({
-  notificationId
-}: Readonly<{ notificationId: string }>) {
+  notificationId,
+  className
+}: Readonly<{ notificationId: string; className: string }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -96,7 +98,7 @@ export function NotificationDeleteButton({
   }
 
   return (
-    <span className="notification-action-wrap">
+    <span className={className}>
       <button
         className="icon-button"
         disabled={pending}
