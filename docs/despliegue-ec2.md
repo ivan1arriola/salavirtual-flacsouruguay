@@ -14,6 +14,7 @@ La primera fase mantiene la `DATABASE_URL` de producción actual. Esto permite m
 - El release activo vive en `/srv/apps/salavirtual-flacso/current`.
 - Los secretos de infraestructura viven fuera del repositorio en `/srv/apps/salavirtual-flacso/shared/.env.production`.
 - Las credenciales de cuentas de servicio de Google Workspace se administran desde la UI y sus claves privadas se guardan cifradas en PostgreSQL.
+- Amazon SES usa el instance profile IAM de EC2 para enviar correo; no se configuran access keys de AWS en `.env.production`. Ver [configuracion-amazon-ses.md](configuracion-amazon-ses.md).
 - El cron que Vercel ejecutaba a las `08:00 UTC` pasa a `salavirtual-calendar-sync.timer`.
 - GitHub Actions publica releases inmutables en `/srv/apps/salavirtual-flacso/releases/<sha>`.
 

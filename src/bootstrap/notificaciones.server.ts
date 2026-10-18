@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/src/lib/db";
+import { obtenerConfiguracionCorreoSesActiva } from "@/src/modules/configuracion/correo-ses.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   crearCompositeEmailTransport,
@@ -7,6 +8,7 @@ import {
   crearPrismaNotificacionesRepository,
   crearServicioNotificaciones,
   crearSmtpEmailTransport,
+  crearSesV2EmailTransport,
   type ServicioNotificaciones,
 } from "@/src/modules/notificaciones/api";
 
@@ -20,10 +22,12 @@ const defaultGmailTransport = crearGmailEmailTransport(() =>
 );
 
 const defaultSmtpTransport = crearSmtpEmailTransport();
+const defaultSesTransport = crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db));
 
 const defaultCompositeTransport = crearCompositeEmailTransport(
   defaultGmailTransport,
-  defaultSmtpTransport
+  defaultSmtpTransport,
+  defaultSesTransport
 );
 
 const servicioNotificaciones = crearServicioNotificaciones(

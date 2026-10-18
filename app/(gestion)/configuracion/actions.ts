@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { actualizarConfiguracionAsistenciaTecnica } from "@/src/modules/configuracion/asistencia-tecnica.service";
+import { actualizarConfiguracionCorreoSes } from "@/src/modules/configuracion/correo-ses.service";
 import {
   actualizarPrograma,
   crearPrograma,
@@ -135,6 +136,22 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
 
   revalidatePath("/configuracion");
   redirect(asistenciaRedirect("reportes-asistencia-actualizados"));
+}
+
+export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  try {
+    await actualizarConfiguracionCorreoSes(db, actor, {
+      activa: formData.get("activa") === "on",
+      awsRegion: formData.get("awsRegion"),
+      fromEmail: formData.get("fromEmail"),
+      replyToEmail: formData.get("replyToEmail")
+    });
+  } catch (error) {
+    redirect(`/configuracion?seccion=correo&error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`);
+  }
+  revalidatePath("/configuracion");
+  redirect("/configuracion?seccion=correo&estado=correo-ses-actualizado");
 }
 
 async function requireAdmin() {

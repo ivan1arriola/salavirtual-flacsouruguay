@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { obtenerConfiguracionCorreoSesActiva } from "../configuracion/correo-ses.service";
 import {
   reunionEmailText,
   type NotificationMessage,
@@ -17,6 +18,7 @@ import {
   crearGmailEmailTransport,
   crearPrismaNotificacionesRepository,
   crearSmtpEmailTransport,
+  crearSesV2EmailTransport,
 } from "./infrastructure";
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -31,7 +33,8 @@ function buildScope(db: Db) {
   });
   const transport = crearCompositeEmailTransport(
     crearGmailEmailTransport(() => repository.obtenerCredencialesGmail()),
-    crearSmtpEmailTransport()
+    crearSmtpEmailTransport(),
+    crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db))
   );
   return { repository, transport };
 }

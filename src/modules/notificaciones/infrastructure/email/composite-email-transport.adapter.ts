@@ -3,7 +3,8 @@ import type { EmailTransportPort } from "../../ports";
 
 export function crearCompositeEmailTransport(
   gmailTransport: EmailTransportPort,
-  smtpTransport: EmailTransportPort
+  smtpTransport: EmailTransportPort,
+  sesTransport?: EmailTransportPort
 ): EmailTransportPort {
   return {
     async enviarCorreo(input: MailInput): Promise<MailSendResult> {
@@ -22,6 +23,11 @@ export function crearCompositeEmailTransport(
         to: recipients,
         cc: copies,
       };
+
+      if (sesTransport) {
+        const sesResult = await sesTransport.enviarCorreo(normalizedInput);
+        if (sesResult.skipped !== "correo-no-configurado") return sesResult;
+      }
 
       // Gmail may have accepted the POST before a network timeout. A fallback
       // to SMTP after an error can send the same notification twice.
