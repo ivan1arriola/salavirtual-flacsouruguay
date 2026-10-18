@@ -10,6 +10,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetingDetailManager } from "@/src/modules/reuniones/presentation/components/meeting-detail-manager";
+import { MeetingDetailTabs } from "@/src/modules/reuniones/presentation/components/meeting-detail-tabs";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { MeetAttendanceEmails } from "@/src/components/meet-attendance-emails";
 import { MeetingIntegrationProblems } from "@/src/modules/reuniones/presentation/components/meeting-integration-problems";
@@ -271,163 +272,174 @@ export default async function ReunionDetailPage({
         <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
       </Link>
 
-      <nav className="meeting-section-nav" aria-label={"Secciones de la reuni\u00F3n"}>
-        <a href="#general">General</a>
-        <a href="#encuentros">Encuentros</a>
-        <a href="#personas">Personas</a>
-        <a href="#archivos">Archivos</a>
-        <a href="#actividad">Actividad</a>
-      </nav>
+      <MeetingDetailTabs
+        tabs={[
+          {
+            id: "general", label: "General", content: (
+              <>
+                <section className="meeting-detail-hero">
+                  <div className="meeting-detail-hero-copy">
+                    <div className="meeting-detail-hero-topline">
+                      <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
+                      <span className={`status ${requestStatusClass(estadoVisible)}`}>
+                        {requestStatusLabel(estadoVisible)}
+                      </span>
+                    </div>
+                    <h1>{request.titulo}</h1>
+                    <div className="meeting-detail-identity">
+                      <span>{teacherName}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</span>
+                    </div>
+                    {request.descripcion ? <p className="meeting-detail-description">{request.descripcion}</p> : null}
+                  </div>
 
-      <section className="meeting-detail-section" id="general" aria-labelledby="meeting-general-title">
-      <section className="meeting-detail-hero">
-        <div className="meeting-detail-hero-copy">
-          <div className="meeting-detail-hero-topline">
-            <p className="page-eyebrow">{request.docentePrograma.programa.nombre}</p>
-            <span className={`status ${requestStatusClass(estadoVisible)}`}>
-              {requestStatusLabel(estadoVisible)}
-            </span>
-          </div>
-          <h1>{request.titulo}</h1>
-          <div className="meeting-detail-identity">
-            <span>{teacherName}</span>
-            <span aria-hidden="true">·</span>
-            <span>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
-            <span aria-hidden="true">·</span>
-            <span>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</span>
-          </div>
-          {request.descripcion ? <p className="meeting-detail-description">{request.descripcion}</p> : null}
-        </div>
+                  <div className="meeting-detail-hero-action">
+                    {nextMeeting ? (
+                      <>
+                        <small>Próximo encuentro</small>
+                        <strong>{nextMeeting.fechaLegible}</strong>
+                        <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} modality={nextMeeting.modalidad} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
+                        {nextMeeting.joinUrl ? (
+                          <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
+                            <Video size={17} aria-hidden="true" />Entrar a Meet
+                          </a>
+                        ) : (
+                          <span className="meeting-detail-pending-link">El enlace de Meet todavía está pendiente.</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <small>Próximo encuentro</small>
+                        <strong>No hay encuentros próximos</strong>
+                        <span>Consultá la pestaña de pasados para ver el historial.</span>
+                      </>
+                    )}
+                  </div>
+                </section>
+                <h2 className="meeting-section-title" id="meeting-general-title">General</h2>
 
-        <div className="meeting-detail-hero-action">
-          {nextMeeting ? (
-            <>
-              <small>Próximo encuentro</small>
-              <strong>{nextMeeting.fechaLegible}</strong>
-              <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} modality={nextMeeting.modalidad} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
-              {nextMeeting.joinUrl ? (
-                <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
-                  <Video size={17} aria-hidden="true" />Entrar a Meet
-                </a>
-              ) : (
-                <span className="meeting-detail-pending-link">El enlace de Meet todavía está pendiente.</span>
-              )}
-            </>
-          ) : (
-            <>
-              <small>Próximo encuentro</small>
-              <strong>No hay encuentros próximos</strong>
-              <span>Consultá la pestaña de pasados para ver el historial.</span>
-            </>
-          )}
-        </div>
-      </section>
-      <h2 className="meeting-section-title" id="meeting-general-title">General</h2>
-
-      <section className="meeting-detail-summary" aria-label="Resumen de la serie">
-        <article>
-          <CalendarClock size={18} aria-hidden="true" />
-          <div>
-            <span>Inicio del próximo encuentro</span>
-            <strong>{nextMeeting ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}` : "Sin próximos"}</strong>
-            <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
-          </div>
-        </article>
-        <article>
-          <UsersRound size={18} aria-hidden="true" />
-          <div>
-            <span>Cohosts solicitados</span>
-            <strong>{uniqueCohosts.length}</strong>
-            <small>Ingresan con sus propias cuentas Google</small>
-          </div>
-        </article>
-        <article>
-          <UsersRound size={18} aria-hidden="true" />
-          <div>
-            <span>Monitoreo</span>
-            <strong>{assistanceSummary}</strong>
-            <small>{nextMeeting?.requiereAsistenciaTecnica ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}` : "Según cada encuentro"}</small>
-          </div>
-        </article>
-        <article>
-          <CalendarRange size={18} aria-hidden="true" />
-          <div>
-            <span>Serie</span>
-            <strong>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</strong>
-            <small>UTC-3 · Montevideo</small>
-          </div>
-        </article>
-      </section>
-      </section>
-
-      <MeetingDetailManager
-        solicitudId={request.id}
-        requestIds={seriesRequests.map(({ id }) => id)}
-        meetings={meetingViews}
-        canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
-      />
-
-      <section className="meeting-detail-section" id="personas" aria-labelledby="meeting-people-title">
-        <h2 className="meeting-section-title" id="meeting-people-title">Personas</h2>
-      <SeriesManagement
-        solicitudId={request.id}
-        cohostOptions={cohostAccounts.map(({ id, email }) => ({
-          id,
-          email,
-          name: [cohostAccounts.find((account) => account.id === id)?.user.nombres, cohostAccounts.find((account) => account.id === id)?.user.apellidos].filter(Boolean).join(" "),
-          required: protectedCohostIds.has(id)
-        }))}
-        initialCohostCuentaIds={initialCohostCuentaIds}
-        initialManualCohostEmails={initialManualCohostEmails}
-        suggestedPeople={[
-          ...otherUsers.filter(({ emailPrincipal }) => Boolean(emailPrincipal)).map(({ emailPrincipal, nombres, apellidos }) => ({
-            email: emailPrincipal!.toLowerCase(), name: [nombres, apellidos].filter(Boolean).join(" "), source: "Usuario registrado"
-          })),
-          ...historicCohostEmails.map(({ email }) => ({ email: email.toLowerCase(), name: email.toLowerCase(), source: "Cohost anterior" }))
+                <section className="meeting-detail-summary" aria-label="Resumen de la serie">
+                  <article>
+                    <CalendarClock size={18} aria-hidden="true" />
+                    <div>
+                      <span>Inicio del próximo encuentro</span>
+                      <strong>{nextMeeting ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}` : "Sin próximos"}</strong>
+                      <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
+                    </div>
+                  </article>
+                  <article>
+                    <UsersRound size={18} aria-hidden="true" />
+                    <div>
+                      <span>Cohosts solicitados</span>
+                      <strong>{uniqueCohosts.length}</strong>
+                      <small>Ingresan con sus propias cuentas Google</small>
+                    </div>
+                  </article>
+                  <article>
+                    <UsersRound size={18} aria-hidden="true" />
+                    <div>
+                      <span>Monitoreo</span>
+                      <strong>{assistanceSummary}</strong>
+                      <small>{nextMeeting?.requiereAsistenciaTecnica ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}` : "Según cada encuentro"}</small>
+                    </div>
+                  </article>
+                  <article>
+                    <CalendarRange size={18} aria-hidden="true" />
+                    <div>
+                      <span>Serie</span>
+                      <strong>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</strong>
+                      <small>UTC-3 · Montevideo</small>
+                    </div>
+                  </article>
+                </section>
+              </>
+            )
+          },
+          {
+            id: "encuentros", label: "Encuentros", content: (
+              <MeetingDetailManager
+                solicitudId={request.id}
+                requestIds={seriesRequests.map(({ id }) => id)}
+                meetings={meetingViews}
+                canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
+              />
+            )
+          },
+          {
+            id: "personas", label: "Personas", content: (
+              <>
+                <h2 className="meeting-section-title" id="meeting-people-title">Personas</h2>
+                <SeriesManagement
+                  solicitudId={request.id}
+                  cohostOptions={cohostAccounts.map(({ id, email }) => ({
+                    id,
+                    email,
+                    name: [cohostAccounts.find((account) => account.id === id)?.user.nombres, cohostAccounts.find((account) => account.id === id)?.user.apellidos].filter(Boolean).join(" "),
+                    required: protectedCohostIds.has(id)
+                  }))}
+                  initialCohostCuentaIds={initialCohostCuentaIds}
+                  initialManualCohostEmails={initialManualCohostEmails}
+                  suggestedPeople={[
+                    ...otherUsers.filter(({ emailPrincipal }) => Boolean(emailPrincipal)).map(({ emailPrincipal, nombres, apellidos }) => ({
+                      email: emailPrincipal!.toLowerCase(), name: [nombres, apellidos].filter(Boolean).join(" "), source: "Usuario registrado"
+                    })),
+                    ...historicCohostEmails.map(({ email }) => ({ email: email.toLowerCase(), name: email.toLowerCase(), source: "Cohost anterior" }))
+                  ]}
+                  verificationByEmail={verificationByEmail}
+                  seriesInfo={{
+                    titulo: request.titulo,
+                    modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+                    encuentros: meetings.length,
+                    siguientes: manageableMeetings.length,
+                  }}
+                  programPeopleCount={programRecipients.length}
+                  hasManageableMeetings={manageableMeetings.length > 0}
+                />
+              </>
+            )
+          },
+          {
+            id: "archivos", label: "Archivos", content: (
+              <>
+                <h2 className="meeting-section-title" id="meeting-files-title">Archivos</h2>
+                <p className="meeting-section-description">Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada encuentro.</p>
+                {meetingViews.some(({ grabacionUrl, asistenciaUrl, driveFolderUrl }) => grabacionUrl || asistenciaUrl || driveFolderUrl) ? (
+                  <ul className="meeting-files-list">
+                    {meetingViews.flatMap((meeting) => [
+                      ...(meeting.grabacionUrl ? [{ label: "Grabación", url: meeting.grabacionUrl, icon: <Video size={16} aria-hidden="true" /> }] : []),
+                      ...(meeting.asistenciaUrl ? [{ label: "Asistencia de participantes", url: meeting.asistenciaUrl, icon: <UsersRound size={16} aria-hidden="true" /> }] : []),
+                      ...(meeting.driveFolderUrl ? [{ label: "Carpeta de Drive", url: meeting.driveFolderUrl, icon: <FolderOpen size={16} aria-hidden="true" /> }] : [])
+                    ].map((file) => (
+                      <li key={`${meeting.id}-${file.label}`}>
+                        <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.fechaLegible}</small></span>
+                        <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">{file.icon}{file.label}</a>
+                      </li>
+                    )))}
+                  </ul>
+                ) : (
+                  <p className="meeting-section-empty">Todavía no hay archivos asociados a los encuentros de esta reunión.</p>
+                )}
+                {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
+              </>
+            )
+          },
+          {
+            id: "actividad", label: "Actividad", content: (
+              <>
+                <h2 className="meeting-section-title" id="meeting-activity-title">Actividad</h2>
+                <p className="meeting-section-description">Estado actual de las integraciones y sus incidencias. Esta sección no es un historial completo de cambios.</p>
+                <MeetingIntegrationProblems
+                  problems={integrationProblems}
+                  canRepair={actor.rol === "ADMINISTRACION"}
+                />
+              </>
+            )
+          }
         ]}
-        verificationByEmail={verificationByEmail}
-        seriesInfo={{
-          titulo: request.titulo,
-          modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
-          encuentros: meetings.length,
-          siguientes: manageableMeetings.length,
-        }}
-        programPeopleCount={programRecipients.length}
-        hasManageableMeetings={manageableMeetings.length > 0}
       />
-      </section>
-
-      <section className="meeting-detail-section" id="archivos" aria-labelledby="meeting-files-title">
-        <h2 className="meeting-section-title" id="meeting-files-title">Archivos</h2>
-        <p className="meeting-section-description">Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada encuentro.</p>
-        {meetingViews.some(({ grabacionUrl, asistenciaUrl, driveFolderUrl }) => grabacionUrl || asistenciaUrl || driveFolderUrl) ? (
-          <ul className="meeting-files-list">
-            {meetingViews.flatMap((meeting) => [
-              ...(meeting.grabacionUrl ? [{ label: "Grabación", url: meeting.grabacionUrl, icon: <Video size={16} aria-hidden="true" /> }] : []),
-              ...(meeting.asistenciaUrl ? [{ label: "Asistencia de participantes", url: meeting.asistenciaUrl, icon: <UsersRound size={16} aria-hidden="true" /> }] : []),
-              ...(meeting.driveFolderUrl ? [{ label: "Carpeta de Drive", url: meeting.driveFolderUrl, icon: <FolderOpen size={16} aria-hidden="true" /> }] : [])
-            ].map((file) => (
-              <li key={`${meeting.id}-${file.label}`}>
-                <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.fechaLegible}</small></span>
-                <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">{file.icon}{file.label}</a>
-              </li>
-            )))}
-          </ul>
-        ) : (
-          <p className="meeting-section-empty">Todavía no hay archivos asociados a los encuentros de esta reunión.</p>
-        )}
-        {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
-      </section>
-
-      <section className="meeting-detail-section" id="actividad" aria-labelledby="meeting-activity-title">
-        <h2 className="meeting-section-title" id="meeting-activity-title">Actividad</h2>
-        <p className="meeting-section-description">Estado actual de las integraciones y sus incidencias. Esta sección no es un historial completo de cambios.</p>
-      <MeetingIntegrationProblems
-        problems={integrationProblems}
-        canRepair={actor.rol === "ADMINISTRACION"}
-      />
-
-      </section>
 
     </div>
   );

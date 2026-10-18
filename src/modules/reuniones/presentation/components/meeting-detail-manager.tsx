@@ -255,7 +255,7 @@ export function MeetingDetailManager({
   }
 
   return (
-    <section className="meeting-encounters-v2 meeting-detail-section" id="encuentros" aria-labelledby="meeting-encounters-title">
+    <section className="meeting-encounters-v2 meeting-detail-section" aria-labelledby="meeting-encounters-title">
       {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
       <div className="encounter-list-heading encounter-list-heading-v2">
