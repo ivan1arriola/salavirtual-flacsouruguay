@@ -45,15 +45,11 @@ export function AssistantDashboardView({
         role="ASISTENTE_TECNICO"
       />
 
-      <AssistantOpenOpportunities opportunities={data.openOpportunities} />
-
-      <AssistantHoursSummary stats={data.stats} />
-
       {data.upcomingCoverages.length > 0 ? (
         <section className="dashboard-content-section assistant-coverages-section">
           <div className="section-heading">
             <div>
-              <h2>Siguientes coberturas programadas</h2>
+              <h2>Próximos monitoreos asignados</h2>
               <p>Tus próximas reuniones asignadas a continuación.</p>
             </div>
             <Link className="text-link" href={ASSISTANT_AGENDA_HREF}>
@@ -99,6 +95,10 @@ export function AssistantDashboardView({
           </div>
         </section>
       ) : null}
+
+      <AssistantOpenOpportunities opportunities={data.openOpportunities} />
+
+      <AssistantHoursSummary stats={data.stats} />
     </div>
   );
 }
