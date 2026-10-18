@@ -1,6 +1,6 @@
 # Ficha de reuniones
 
-La ficha agrupa el ciclo de vida de una reunión en cinco áreas con navegación por anclas:
+La ficha organiza el ciclo de vida de una reunión en cinco pestañas y muestra un panel por vez. Se puede recorrer con las flechas izquierda y derecha, Inicio y Fin; el panel elegido se refleja en el fragmento de la URL para conservar los enlaces internos.
 
 - **General:** información académica, modalidad, estado y resumen de la serie.
 - **Encuentros:** agenda, acceso a Meet y operaciones de cada fecha. Las operaciones conservan el alcance de encuentro o serie que ya tenían.
