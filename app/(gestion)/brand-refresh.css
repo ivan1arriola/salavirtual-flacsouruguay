@@ -237,23 +237,23 @@
 }
 
 .status-ok {
-  border-color: #bee0d2;
-  background: #e8f6f0;
+  border-color: var(--state-success-border);
+  background: var(--state-success-background);
 }
 
 .status-warning {
-  border-color: #ead396;
-  background: #fff6d8;
+  border-color: var(--state-warning-border);
+  background: var(--state-warning-background);
 }
 
 .status-error {
-  border-color: #edc4c4;
-  background: #fcecec;
+  border-color: var(--state-danger-border);
+  background: var(--state-danger-background);
 }
 
 .status-neutral {
-  border-color: #d5dee8;
-  background: #edf2f6;
+  border-color: var(--state-neutral-border);
+  background: var(--state-neutral-background);
 }
 
 /* Hero clásico y nuevo DashboardHeader */
