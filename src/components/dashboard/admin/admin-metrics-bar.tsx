@@ -1,76 +1,20 @@
-import {
-  CalendarClock,
-  CalendarDays,
-  CircleAlert,
-  ClipboardList,
-  Files,
-  UserRoundCheck
-} from "lucide-react";
 import Link from "next/link";
 import type { AdminDashboardData } from "@/src/modules/dashboard/admin-dashboard.adapter";
+import { getAdminSummaryMetrics } from "@/src/modules/dashboard/admin-dashboard-summary";
 
 export function AdminMetricsBar({
   metrics
 }: Readonly<{
   metrics: AdminDashboardData["metrics"];
 }>) {
-  const metricItems = [
-    {
-      label: "Solicitudes activas",
-      value: metrics.openRequests,
-      copy: "En registro o provisión",
-      icon: ClipboardList,
-      href: "/reuniones",
-      tone: "neutral"
-    },
-    {
-      label: "Reuniones de hoy",
-      value: metrics.todayMeetings,
-      copy: "Programadas hoy",
-      icon: CalendarClock,
-      href: "/reuniones",
-      tone: "brand"
-    },
-    {
-      label: "Próximos 7 días",
-      value: metrics.weekMeetings,
-      copy: "Carga operativa semanal",
-      icon: CalendarDays,
-      href: "/reuniones",
-      tone: "brand"
-    },
-    {
-      label: "Sin monitoreo",
-      value: metrics.pendingAssistance,
-      copy: "Necesitan cobertura",
-      icon: UserRoundCheck,
-      href: "/monitoreo?estado=pendientes",
-      tone: metrics.pendingAssistance > 0 ? "warning" : "ok"
-    },
-    {
-      label: "Fallas de Meet",
-      value: metrics.integrationErrors,
-      copy: "Requieren revisión",
-      icon: CircleAlert,
-      href: "/configuracion",
-      tone: metrics.integrationErrors > 0 ? "danger" : "ok"
-    },
-    {
-      label: "Grabaciones pendientes",
-      value: metrics.pendingRecordings,
-      copy: "Esperando Drive",
-      icon: Files,
-      href: "/grabaciones",
-      tone: "neutral"
-    }
-  ] as const;
+  const metricItems = getAdminSummaryMetrics(metrics);
 
   return (
-    <section className="dashboard-content-section admin-metrics-bar-section" aria-label="Indicadores consolidados">
+    <section className="dashboard-content-section admin-metrics-bar admin-metrics-bar-section" aria-label="Indicadores generales">
       <div className="section-heading">
         <div>
-          <h2>Indicadores operativos</h2>
-          <p>Métricas de flujo y estado global de la infraestructura.</p>
+          <h2>Indicadores generales</h2>
+          <p>Volumen de solicitudes activas y actividad prevista para la semana.</p>
         </div>
       </div>
 
@@ -82,7 +26,7 @@ export function AdminMetricsBar({
             key={label}
           >
             <span className="admin-metric-card-icon">
-              <Icon size={18} />
+              <Icon size={18} aria-hidden="true" />
             </span>
             <div className="admin-metric-card-data">
               <small>{label}</small>
@@ -95,4 +39,3 @@ export function AdminMetricsBar({
     </section>
   );
 }
-

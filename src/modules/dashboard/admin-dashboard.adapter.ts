@@ -30,6 +30,19 @@ export interface AdminTodayMeetingDTO {
   readonly organizador: string;
 }
 
+export interface AdminUpcomingMeetingDTO {
+  readonly id: string;
+  readonly solicitudId: string;
+  readonly titulo: string;
+  readonly programa: string;
+  readonly docenteNombre: string;
+  readonly modalidad: "HIBRIDA" | "VIRTUAL";
+  readonly inicioProgramadoAt: string;
+  readonly finProgramadoAt: string;
+  readonly asistenteNombre: string | null;
+  readonly requiereAsistencia: boolean;
+}
+
 export interface AdminDashboardData {
   readonly metrics: {
     readonly openRequests: number;
@@ -68,6 +81,7 @@ export interface AdminDashboardData {
     };
   };
   readonly todayTimeline: readonly AdminTodayMeetingDTO[];
+  readonly upcomingTimeline: readonly AdminUpcomingMeetingDTO[];
 }
 
 export async function obtenerDashboardAdministracion(
@@ -88,6 +102,7 @@ export async function obtenerDashboardAdministracion(
     pendingRecordingCount,
     openIncidentCount,
     todayInstances,
+    upcomingInstances,
     pendingCoverageInstances,
     integrationErrorEvents,
     pendingRecordingEvents,
@@ -171,6 +186,43 @@ export async function obtenerDashboardAdministracion(
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           include: { asistenteTecnico: { include: { usuario: true } } },
           take: 1
+        }
+      }
+    }),
+    db.instanciaSala.findMany({
+      where: {
+        inicioProgramadoAt: { gte: todayEnd, lt: weekEnd },
+        estado: "PROGRAMADA"
+      },
+      orderBy: { inicioProgramadoAt: "asc" },
+      take: 5,
+      select: {
+        id: true,
+        inicioProgramadoAt: true,
+        finProgramadoAt: true,
+        requiereAsistenciaTecnica: true,
+        modalidadOverride: true,
+        solicitud: {
+          select: {
+            id: true,
+            titulo: true,
+            modalidad: true,
+            docentePrograma: {
+              select: {
+                programa: { select: { nombre: true } },
+                docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } }
+              }
+            }
+          }
+        },
+        asignaciones: {
+          where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+          take: 1,
+          select: {
+            asistenteTecnico: {
+              select: { usuario: { select: { nombres: true, apellidos: true } } }
+            }
+          }
         }
       }
     }),
@@ -358,6 +410,27 @@ export async function obtenerDashboardAdministracion(
     };
   });
 
+  const upcomingTimeline: AdminUpcomingMeetingDTO[] = upcomingInstances.map((meeting) => {
+    const association = meeting.solicitud.docentePrograma;
+    const teacher = association.docente.usuario;
+    const assistant = meeting.asignaciones[0]?.asistenteTecnico.usuario;
+
+    return {
+      id: meeting.id,
+      solicitudId: meeting.solicitud.id,
+      titulo: meeting.solicitud.titulo,
+      programa: association.programa.nombre,
+      docenteNombre: `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim(),
+      modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
+      inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
+      finProgramadoAt: meeting.finProgramadoAt.toISOString(),
+      asistenteNombre: assistant
+        ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim()
+        : null,
+      requiereAsistencia: meeting.requiereAsistenciaTecnica
+    };
+  });
+
   return {
     metrics: {
       openRequests,
@@ -414,7 +487,8 @@ export async function obtenerDashboardAdministracion(
         }))
       }
     },
-    todayTimeline
+    todayTimeline,
+    upcomingTimeline
   };
 }
 
