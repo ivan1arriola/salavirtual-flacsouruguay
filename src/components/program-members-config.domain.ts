@@ -4,7 +4,6 @@ type SearchableProgram = Readonly<{
   nombre: string;
   codigo: string | null;
   activo: boolean;
-  unidadAcademica: Readonly<{ nombre: string }> | null;
 }>;
 
 export function filterPrograms<T extends SearchableProgram>(
@@ -20,7 +19,7 @@ export function filterPrograms<T extends SearchableProgram>(
     if (!matchesState) return false;
     if (!query) return true;
 
-    return [program.nombre, program.codigo ?? "", program.unidadAcademica?.nombre ?? ""]
+    return [program.nombre, program.codigo ?? ""]
       .some((value) => normalize(value).includes(query));
   });
 }

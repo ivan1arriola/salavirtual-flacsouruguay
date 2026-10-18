@@ -7,7 +7,7 @@ const optionalText = (max: number) => z
   .max(max)
   .optional()
   .nullable()
-  .transform((value) => value || null);
+  .transform((value) => value === undefined ? undefined : value || null);
 
 export const programaAdminSchema = z.object({
   nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(180),

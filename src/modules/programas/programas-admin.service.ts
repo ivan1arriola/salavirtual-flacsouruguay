@@ -165,7 +165,7 @@ async function validarNombreDisponible(
 
 async function validarUnidadAcademica(
   tx: Prisma.TransactionClient,
-  unidadAcademicaId: string | null
+  unidadAcademicaId: string | null | undefined
 ): Promise<void> {
   if (!unidadAcademicaId) return;
   const unidad = await tx.unidadAcademica.findUnique({

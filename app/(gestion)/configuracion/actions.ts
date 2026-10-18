@@ -17,48 +17,52 @@ import { actualizarProgramasDocente } from "@/src/modules/usuarios/programas-doc
 
 export async function crearProgramaAdmin(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   let programaId = "";
   try {
     programaId = await crearPrograma(db, actor, programaInput(formData));
   } catch (error) {
-    redirect(programRedirect("", undefined, errorMessage(error)));
+    redirect(programRedirect("", undefined, errorMessage(error), context));
   }
 
   revalidatePrograms();
-  redirect(programRedirect(programaId, "programa-creado"));
+  redirect(programRedirect(programaId, "programa-creado", undefined, context));
 }
 
 export async function actualizarProgramaAdmin(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   try {
     if (!programaId) throw new Error("Programa no válido.");
     await actualizarPrograma(db, actor, programaId, programaInput(formData));
   } catch (error) {
-    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+    redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
   revalidatePrograms();
-  redirect(programRedirect(programaId, "programa-actualizado"));
+  redirect(programRedirect(programaId, "programa-actualizado", undefined, context));
 }
 
 export async function eliminarProgramaAdmin(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   const confirmacion = String(formData.get("confirmacion") ?? "");
   try {
     if (!programaId) throw new Error("Programa no válido.");
     await eliminarPrograma(db, actor, programaId, confirmacion);
   } catch (error) {
-    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+    redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
   revalidatePrograms();
-  redirect(programRedirect("", "programa-eliminado"));
+  redirect(programRedirect("", "programa-eliminado", undefined, context));
 }
 
 export async function agregarIntegrantePrograma(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   const usuarioId = String(formData.get("usuarioId") ?? "");
 
@@ -69,15 +73,16 @@ export async function agregarIntegrantePrograma(formData: FormData): Promise<voi
       programaIds: [...programaIds, programaId]
     });
   } catch (error) {
-    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+    redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
   revalidateProgramMembership(usuarioId);
-  redirect(programRedirect(programaId, "integrante-agregado"));
+  redirect(programRedirect(programaId, "integrante-agregado", undefined, context));
 }
 
 export async function quitarIntegrantePrograma(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   const usuarioId = String(formData.get("usuarioId") ?? "");
 
@@ -89,15 +94,16 @@ export async function quitarIntegrantePrograma(formData: FormData): Promise<void
       programaIds: programaIds.filter((id) => id !== programaId)
     });
   } catch (error) {
-    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+    redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
   revalidateProgramMembership(usuarioId);
-  redirect(programRedirect(programaId, "integrante-quitado"));
+  redirect(programRedirect(programaId, "integrante-quitado", undefined, context));
 }
 
 export async function invitarIntegrantePrograma(formData: FormData): Promise<void> {
   const actor = await requireAdmin();
+  const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   let estado: "invitacion-enviada" | "invitacion-creada";
 
@@ -112,13 +118,13 @@ export async function invitarIntegrantePrograma(formData: FormData): Promise<voi
     });
     estado = result.correoEnviado ? "invitacion-enviada" : "invitacion-creada";
   } catch (error) {
-    redirect(programRedirect(programaId, undefined, errorMessage(error)));
+    redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
   revalidatePath("/configuracion");
   revalidatePath("/usuarios");
   revalidatePath("/reuniones/nueva");
-  redirect(programRedirect(programaId, estado));
+  redirect(programRedirect(programaId, estado, undefined, context));
 }
 
 export async function actualizarReportesAsistenciaAdmin(formData: FormData): Promise<void> {
@@ -177,10 +183,11 @@ async function programasActivosDelDocente(usuarioId: string): Promise<string[]> 
 }
 
 function programaInput(formData: FormData) {
+  const unidadAcademicaId = formData.get("unidadAcademicaId");
   return {
     nombre: formData.get("nombre"),
     codigo: formData.get("codigo"),
-    unidadAcademicaId: formData.get("unidadAcademicaId"),
+    ...(unidadAcademicaId === null ? {} : { unidadAcademicaId }),
     activo: formData.get("activo") === "on"
   };
 }
@@ -197,12 +204,20 @@ function revalidateProgramMembership(usuarioId: string): void {
   revalidatePath(`/usuarios/${usuarioId}`);
 }
 
-function programRedirect(programaId: string, estado?: string, error?: string): string {
-  const params = new URLSearchParams({ seccion: "programas" });
+type ProgramReturnContext = "configuracion" | "usuarios";
+
+function programReturnContext(formData: FormData): ProgramReturnContext {
+  return formData.get("contexto") === "usuarios" ? "usuarios" : "configuracion";
+}
+
+function programRedirect(programaId: string, estado?: string, error?: string, context: ProgramReturnContext = "configuracion"): string {
+  const params = context === "usuarios"
+    ? new URLSearchParams({ vista: "programas" })
+    : new URLSearchParams({ seccion: "programas" });
   if (programaId) params.set("programa", programaId);
   if (estado) params.set("estado", estado);
   if (error) params.set("error", error);
-  return `/configuracion?${params.toString()}`;
+  return `${context === "usuarios" ? "/usuarios" : "/configuracion"}?${params.toString()}`;
 }
 
 function asistenciaRedirect(estado?: string, error?: string): string {
