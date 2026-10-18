@@ -32,3 +32,7 @@ Los botones para quitar encuentros heredaban 34 px de alto desde `.icon-button`;
 ## Biblioteca de grabaciones en móvil
 
 Los filtros y acciones de archivos tenían objetivos de 32 a 38 px; ahora alcanzan al menos 44 px, incluida la acción de limpiar la búsqueda. La paginación dejó los estilos en línea y apila el número de página sobre los botones en móvil, evitando que los botones al 100% compitan en una fila horizontal.
+
+## Mi agenda: acciones tactiles
+
+En el breakpoint movil, operar la reunion, darse de baja, abrir Meet y copiar el enlace tienen un area tactil de al menos 44px. La baja mantiene la confirmacion y las reglas vigentes de disponibilidad; el ajuste solo facilita pulsar las acciones.
