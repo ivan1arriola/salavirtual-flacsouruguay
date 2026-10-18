@@ -40,3 +40,7 @@ En el breakpoint movil, operar la reunion, darse de baja, abrir Meet y copiar el
 ## Agenda abierta en movil
 
 La grilla de coberturas pasa a una columna fluida en pantallas de hasta 560px para caber junto al shell de navegacion. La accion Postularme ocupa todo el ancho y mide al menos 44px; el estado de disponibilidad y la postulacion conservan sus reglas actuales.
+
+## Notificaciones en movil
+
+El selector, el boton Filtrar y las acciones para marcar como leida o borrar tienen areas tactiles de 44px en pantallas de hasta 560px. El filtro, los endpoints y la confirmacion de borrado conservan su comportamiento.
