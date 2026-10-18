@@ -491,17 +491,28 @@
   }
 
   .assistant-agenda-date-block {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 10px;
+    gap: 8px 10px;
     border-bottom: 1px solid #e4ebf1;
     padding-bottom: 11px;
   }
 
+  .assistant-agenda-date-block > span:first-child {
+    grid-column: 1;
+  }
+
+  .assistant-agenda-date-block > .meeting-schedule-times {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .assistant-agenda-date-block em {
-    margin-top: 0;
-    margin-left: auto;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    margin: 0;
   }
 
   .assistant-agenda-main,
