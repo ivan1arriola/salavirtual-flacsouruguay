@@ -28,3 +28,7 @@ En teléfonos, la fecha y la marca de próxima cobertura quedan arriba; los hora
 ## Nueva reunión en móvil
 
 Los botones para quitar encuentros heredaban 34 px de alto desde `.icon-button`; los controles para generar una vista previa y agregar fechas tenían 40 px, y el desplegable de notas 42 px. En el breakpoint móvil de Nueva reunión, estas acciones ahora tienen objetivos de al menos 44 px y una prueba de contrato previene regresiones. El cambio solo facilita la operación de fechas manuales y recurrentes; no modifica recurrencias ni validaciones de horarios.
+
+## Biblioteca de grabaciones en móvil
+
+Los filtros y acciones de archivos tenían objetivos de 32 a 38 px; ahora alcanzan al menos 44 px, incluida la acción de limpiar la búsqueda. La paginación dejó los estilos en línea y apila el número de página sobre los botones en móvil, evitando que los botones al 100% compitan en una fila horizontal.
