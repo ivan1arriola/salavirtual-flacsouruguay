@@ -15,3 +15,7 @@ En `/usuarios`, el listado conserva su semántica de tabla para lectores de pant
 ## Selección de cohosts
 
 En el formulario de reuniones, las filas de cohosts ocupan al menos 44px en móvil y permiten activar el checkbox pulsando cualquier parte de la etiqueta. La selección, los límites de cuentas y el envío del formulario no cambian.
+
+## Operación de reunión
+
+En la consola de operación, los filtros de participantes, la búsqueda, la edición en línea y la acción para quitar cohosts tienen controles de al menos 44px de alto en pantallas de hasta 760px. Los correos largos en los chips se ajustan al ancho disponible.
