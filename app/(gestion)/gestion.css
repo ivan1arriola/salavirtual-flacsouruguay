@@ -441,23 +441,23 @@
 }
 
 .status-ok {
-  background: #e7f5ee;
-  color: #216549;
+  background: var(--state-success-background);
+  color: var(--state-success-foreground);
 }
 
 .status-warning {
-  background: #fff0dc;
-  color: #8b4b10;
+  background: var(--state-warning-background);
+  color: var(--state-warning-foreground);
 }
 
 .status-error {
-  background: #fdeaea;
-  color: #923737;
+  background: var(--state-danger-background);
+  color: var(--state-danger-foreground);
 }
 
 .status-neutral {
-  background: #edf1f5;
-  color: var(--text-secondary);
+  background: var(--state-neutral-background);
+  color: var(--state-neutral-foreground);
 }
 
 .muted-text {

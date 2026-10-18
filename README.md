@@ -46,6 +46,12 @@ La aplicación utiliza:
 * **Auth.js**
 * **Google Workspace APIs**
 
+## Estilos de interfaz
+
+Los tokens compartidos de interfaz se definen en `app/brand.css`. Incluyen colores institucionales, tipografía, espaciado, bordes, radios, foco y estados semánticos (`success`, `warning`, `danger` y `neutral`). Los componentes deben consumir estos tokens para conservar contraste y consistencia.
+
+La consolidación de estilos es incremental: antes de retirar reglas existentes hay que comprobar sus usos en las pantallas actuales. Los nuevos cambios deben evitar añadir hojas globales correctivas que dupliquen reglas de componentes.
+
 ## Google Workspace
 
 La integración con Google Workspace se configura desde:
