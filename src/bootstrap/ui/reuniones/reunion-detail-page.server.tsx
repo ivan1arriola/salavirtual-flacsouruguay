@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   CalendarClock,
   CalendarRange,
+  FolderOpen,
   UsersRound,
   Video
 } from "lucide-react";
@@ -270,6 +271,15 @@ export default async function ReunionDetailPage({
         <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
       </Link>
 
+      <nav className="meeting-section-nav" aria-label={"Secciones de la reuni\u00F3n"}>
+        <a href="#general">General</a>
+        <a href="#encuentros">Encuentros</a>
+        <a href="#personas">Personas</a>
+        <a href="#archivos">Archivos</a>
+        <a href="#actividad">Actividad</a>
+      </nav>
+
+      <section className="meeting-detail-section" id="general" aria-labelledby="meeting-general-title">
       <section className="meeting-detail-hero">
         <div className="meeting-detail-hero-copy">
           <div className="meeting-detail-hero-topline">
@@ -312,6 +322,7 @@ export default async function ReunionDetailPage({
           )}
         </div>
       </section>
+      <h2 className="meeting-section-title" id="meeting-general-title">General</h2>
 
       <section className="meeting-detail-summary" aria-label="Resumen de la serie">
         <article>
@@ -347,7 +358,17 @@ export default async function ReunionDetailPage({
           </div>
         </article>
       </section>
+      </section>
 
+      <MeetingDetailManager
+        solicitudId={request.id}
+        requestIds={seriesRequests.map(({ id }) => id)}
+        meetings={meetingViews}
+        canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
+      />
+
+      <section className="meeting-detail-section" id="personas" aria-labelledby="meeting-people-title">
+        <h2 className="meeting-section-title" id="meeting-people-title">Personas</h2>
       <SeriesManagement
         solicitudId={request.id}
         cohostOptions={cohostAccounts.map(({ id, email }) => ({
@@ -374,20 +395,40 @@ export default async function ReunionDetailPage({
         programPeopleCount={programRecipients.length}
         hasManageableMeetings={manageableMeetings.length > 0}
       />
+      </section>
 
+      <section className="meeting-detail-section" id="archivos" aria-labelledby="meeting-files-title">
+        <h2 className="meeting-section-title" id="meeting-files-title">Archivos</h2>
+        <p className="meeting-section-description">Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada encuentro.</p>
+        {meetingViews.some(({ grabacionUrl, asistenciaUrl, driveFolderUrl }) => grabacionUrl || asistenciaUrl || driveFolderUrl) ? (
+          <ul className="meeting-files-list">
+            {meetingViews.flatMap((meeting) => [
+              ...(meeting.grabacionUrl ? [{ label: "Grabación", url: meeting.grabacionUrl, icon: <Video size={16} aria-hidden="true" /> }] : []),
+              ...(meeting.asistenciaUrl ? [{ label: "Asistencia de participantes", url: meeting.asistenciaUrl, icon: <UsersRound size={16} aria-hidden="true" /> }] : []),
+              ...(meeting.driveFolderUrl ? [{ label: "Carpeta de Drive", url: meeting.driveFolderUrl, icon: <FolderOpen size={16} aria-hidden="true" /> }] : [])
+            ].map((file) => (
+              <li key={`${meeting.id}-${file.label}`}>
+                <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.fechaLegible}</small></span>
+                <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">{file.icon}{file.label}</a>
+              </li>
+            )))}
+          </ul>
+        ) : (
+          <p className="meeting-section-empty">Todavía no hay archivos asociados a los encuentros de esta reunión.</p>
+        )}
+        {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
+      </section>
+
+      <section className="meeting-detail-section" id="actividad" aria-labelledby="meeting-activity-title">
+        <h2 className="meeting-section-title" id="meeting-activity-title">Actividad</h2>
+        <p className="meeting-section-description">Estado actual de las integraciones y sus incidencias. Esta sección no es un historial completo de cambios.</p>
       <MeetingIntegrationProblems
         problems={integrationProblems}
         canRepair={actor.rol === "ADMINISTRACION"}
       />
 
-      {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
+      </section>
 
-      <MeetingDetailManager
-        solicitudId={request.id}
-        requestIds={seriesRequests.map(({ id }) => id)}
-        meetings={meetingViews}
-        canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
-      />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import {
   CalendarClock,
   CalendarPlus,
   ChevronDown,
-  FolderOpen,
   History,
   LoaderCircle,
   Pencil,
@@ -256,13 +255,13 @@ export function MeetingDetailManager({
   }
 
   return (
-    <section className="meeting-encounters-v2" id="encuentros">
+    <section className="meeting-encounters-v2 meeting-detail-section" id="encuentros" aria-labelledby="meeting-encounters-title">
       {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
       <div className="encounter-list-heading encounter-list-heading-v2">
         <div>
           <p className="section-eyebrow">Cronograma</p>
-          <h2>Encuentros</h2>
+          <h2 id="meeting-encounters-title">Encuentros</h2>
           <p>Entrá a Meet, revisá los cohosts o administrá cada fecha desde un solo lugar.</p>
         </div>
         <div className="encounter-list-tools">
@@ -365,46 +364,6 @@ export function MeetingDetailManager({
                         </div>
                       </div>
 
-                      {meeting.temporalidad === "PASADO" && (meeting.grabacionUrl || meeting.asistenciaUrl || meeting.driveFolderUrl) ? (
-                        <div className="encounter-v2-artifacts">
-                          <span>Archivos y registros</span>
-                          <div className="encounter-v2-artifact-buttons">
-                            {meeting.grabacionUrl ? (
-                              <a
-                                className="secondary-action is-primary"
-                                href={meeting.grabacionUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <Video size={15} />
-                                Ver grabación
-                              </a>
-                            ) : null}
-                            {meeting.asistenciaUrl ? (
-                              <a
-                                className="secondary-action"
-                                href={meeting.asistenciaUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <UsersRound size={15} />
-                                Asistencia
-                              </a>
-                            ) : null}
-                            {meeting.driveFolderUrl ? (
-                              <a
-                                className="secondary-action"
-                                href={meeting.driveFolderUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <FolderOpen size={15} />
-                                Carpeta Drive
-                              </a>
-                            ) : null}
-                          </div>
-                        </div>
-                      ) : null}
                     </div>
 
                     <aside className="encounter-v2-people">
