@@ -802,6 +802,19 @@
     white-space: normal;
   }
 
+  .notification-filter select {
+    min-height: 44px;
+  }
+
+  .notification-filter > button[type="submit"] {
+    min-height: 44px;
+  }
+
+  .notification-actions .icon-button {
+    width: 44px;
+    min-height: 44px;
+  }
+
   .mobile-header {
     padding-inline: 10px;
   }
