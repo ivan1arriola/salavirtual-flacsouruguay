@@ -162,15 +162,15 @@ export default async function UsuariosPage({
           <div><h2>{selected.title}</h2><p>{users.length} {users.length === 1 ? "usuario" : "usuarios"} en este grupo.</p></div>
         </div>
         <div className="table-wrap">
-          <table className="data-table">
-            <thead><tr><th>Usuario</th><th>Cuentas Google</th><th>Acceso</th><th></th></tr></thead>
+          <table className="data-table user-directory-table">
+            <caption className="sr-only">{selected.title} de Sala Virtual FLACSO</caption>
+            <thead><tr><th scope="col">Usuario</th><th scope="col">Cuentas Google</th><th scope="col">Acceso</th><th scope="col">Acciones</th></tr></thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td><strong>{user.nombres} {user.apellidos}</strong><small>{user.id} · {user.emailPrincipal ?? "sin email principal"}</small></td>
-                  <td>{user.cuentasGoogle.length ? user.cuentasGoogle.map(({ email }) => email).join(", ") : <span className="muted-text">Sin cuenta</span>}</td>
-                  <td>
-                    <span className={`status ${
+                  <td data-label="Persona"><strong>{user.nombres} {user.apellidos}</strong><small>{user.id} · {user.emailPrincipal ?? "sin email principal"}</small></td>
+                  <td data-label="Cuentas Google">{user.cuentasGoogle.length ? user.cuentasGoogle.map(({ email }) => email).join(", ") : <span className="muted-text">Sin cuenta</span>}</td>
+                  <td data-label="Acceso"><span className={`status ${
                       !user.activo
                         ? "status-error"
                         : user.asistenteTecnico?.cesadoHastaProximoInicioSesion
@@ -184,7 +184,7 @@ export default async function UsuariosPage({
                           : "Activo"}
                     </span>
                   </td>
-                  <td><Link className="icon-link" href={`/usuarios/${encodeURIComponent(user.id)}`} title="Gestionar usuario"><ChevronRight size={18} /><span className="sr-only">Gestionar usuario</span></Link></td>
+                  <td data-label="Acción"><Link className="icon-link" href={`/usuarios/${encodeURIComponent(user.id)}`} title="Gestionar usuario"><ChevronRight size={18} /><span className="sr-only">Gestionar usuario</span></Link></td>
                 </tr>
               ))}
               {users.length === 0 ? <tr><td className="empty-table-cell" colSpan={4}>No hay usuarios en este grupo.</td></tr> : null}
