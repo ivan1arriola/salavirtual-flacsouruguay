@@ -55,7 +55,8 @@ export function crearPrismaArchivosRepositoryAdapter(
         activa: cred.activa,
         serviceAccountEmail: cred.serviceAccountEmail,
         privateKeyCifrada: cred.privateKeyCifrada ?? cred.privateKey,
-        driveDestinationId: cred.driveDestinationId
+        driveDestinationId: cred.driveDestinationId,
+        serviceAccountSubject: cred.serviceAccountSubject
       };
     },
 

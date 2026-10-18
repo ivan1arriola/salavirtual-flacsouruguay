@@ -11,6 +11,7 @@ export type ArtifactProviderCredentials = Readonly<{
   serviceAccountEmail: string;
   privateKey: string;
   subject: string;
+  adminEmail?: string | null;
 }>;
 
 export type MeetArtifactCredentials = ArtifactProviderCredentials;

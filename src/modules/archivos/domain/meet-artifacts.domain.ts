@@ -93,6 +93,34 @@ export function elegirConferenciaMeet(
     return recordStart <= finMs && recordEnd >= inicioMs;
   });
   const candidates = superpuestas.length > 0 ? superpuestas : records;
+
+  if (superpuestas.length > 0) {
+    return superpuestas.reduce<RegistroConferenciaMeet | null>((selected, current) => {
+      if (!selected) return current;
+      const currentStart = Date.parse(current.startTime);
+      const currentEnd = current.endTime ? Date.parse(current.endTime) : finMs;
+      const currentOverlap = Math.max(0, Math.min(currentEnd, finMs) - Math.max(currentStart, inicioMs));
+
+      const selectedStart = Date.parse(selected.startTime);
+      const selectedEnd = selected.endTime ? Date.parse(selected.endTime) : finMs;
+      const selectedOverlap = Math.max(0, Math.min(selectedEnd, finMs) - Math.max(selectedStart, inicioMs));
+
+      if (currentOverlap !== selectedOverlap) {
+        return currentOverlap > selectedOverlap ? current : selected;
+      }
+
+      const currentDuration = Math.max(0, currentEnd - currentStart);
+      const selectedDuration = Math.max(0, selectedEnd - selectedStart);
+      if (currentDuration !== selectedDuration) {
+        return currentDuration > selectedDuration ? current : selected;
+      }
+
+      const currentDistance = Math.abs(currentStart - inicioMs);
+      const selectedDistance = Math.abs(selectedStart - inicioMs);
+      return currentDistance < selectedDistance ? current : selected;
+    }, null);
+  }
+
   return candidates.reduce<RegistroConferenciaMeet | null>((selected, current) => {
     if (!selected) return current;
     const currentDistance = Math.abs(Date.parse(current.startTime) - inicioMs);
@@ -102,9 +130,14 @@ export function elegirConferenciaMeet(
 }
 
 export function asistenciaMeetCompleta(
-  sesionesPorParticipante: readonly (readonly SesionParticipanteMeet[])[]
+  sesionesPorParticipante: readonly (readonly SesionParticipanteMeet[])[],
+  conferenciaFinalizada = false
 ): boolean {
-  return sesionesPorParticipante.length > 0 && sesionesPorParticipante.every(
+  if (sesionesPorParticipante.length === 0) return false;
+  if (conferenciaFinalizada) {
+    return sesionesPorParticipante.some((sesiones) => sesiones.length > 0);
+  }
+  return sesionesPorParticipante.every(
     (sesiones) => sesiones.length > 0 && sesiones.every(({ endTime }) => Boolean(endTime))
   );
 }

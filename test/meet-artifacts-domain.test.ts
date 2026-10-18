@@ -92,6 +92,25 @@ describe("organizacion funcional de artefactos Meet", () => {
     ], inicio, fin)?.name).toBe("conferenceRecords/activa");
   });
 
+  it("prioriza la clase de mayor duración y solapamiento sobre una prueba corta antes del inicio", () => {
+    const inicio = new Date("2026-08-01T18:00:00.000Z");
+    const fin = new Date("2026-08-01T20:00:00.000Z");
+    const selected = elegirConferenciaMeet([
+      {
+        name: "conferenceRecords/prueba-corta",
+        startTime: "2026-08-01T17:58:00.000Z", // 2 min antes del horario
+        endTime: "2026-08-01T18:01:00.000Z"    // duró 3 min (solapa 1 min)
+      },
+      {
+        name: "conferenceRecords/clase-real",
+        startTime: "2026-08-01T18:04:00.000Z", // 4 min después del horario
+        endTime: "2026-08-01T20:05:00.000Z"    // duró 2h 1m (solapa 1h 56m)
+      }
+    ], inicio, fin);
+
+    expect(selected?.name).toBe("conferenceRecords/clase-real");
+  });
+
   it("solo considera completa la asistencia cuando cada participante tiene sesiones cerradas", () => {
     expect(asistenciaMeetCompleta([])).toBe(false);
     expect(asistenciaMeetCompleta([[]])).toBe(false);
@@ -100,5 +119,7 @@ describe("organizacion funcional de artefactos Meet", () => {
       { startTime: "2026-08-01T18:00:00Z", endTime: "2026-08-01T18:30:00Z" },
       { startTime: "2026-08-01T18:40:00Z", endTime: "2026-08-01T19:00:00Z" }
     ]])).toBe(true);
+    // Si la conferencia ya finalizó, acepta participantes con sesiones para consolidar
+    expect(asistenciaMeetCompleta([[{ startTime: "2026-08-01T18:00:00Z" }]], true)).toBe(true);
   });
 });
