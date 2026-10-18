@@ -199,15 +199,18 @@ export function crearGoogleArtifactsProviderAdapter(
         listarPaginas<SmartNote>(auth, `${MEET_API}/${conferenceName}/smartNotes?pageSize=100`, "smartNotes")
           .catch(() => [] as SmartNote[])
       ]);
-      const generatedRecordings = recordings.flatMap((item): readonly GoogleArtifact[] =>
+      const sortByStartTime = <T extends { startTime?: string }>(items: T[]): T[] =>
+        [...items].sort((a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0));
+
+      const generatedRecordings = sortByStartTime(recordings).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.driveDestination?.file
           ? [{ resourceName: item.name, driveFileId: item.driveDestination.file, startTime: item.startTime, extension: "mp4" }]
           : []);
-      const generatedTranscripts = transcripts.flatMap((item): readonly GoogleArtifact[] =>
+      const generatedTranscripts = sortByStartTime(transcripts).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.docsDestination?.document
           ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
           : []);
-      const generatedNotes = notes.flatMap((item): readonly GoogleArtifact[] =>
+      const generatedNotes = sortByStartTime(notes).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.docsDestination?.document
           ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
           : []);
@@ -242,6 +245,7 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async obtenerDocumentoAsistencia(conferenceName: string, meetingCode?: string): Promise<MeetAttendanceDocument> {
+      const actual = await this.obtenerConferencia(conferenceName);
       const participants = await listarPaginas<Participant>(
         auth,
         `${MEET_API}/${conferenceName}/participants?pageSize=250`,
@@ -255,22 +259,24 @@ export function crearGoogleArtifactsProviderAdapter(
         )
       );
       const rows = participants.flatMap((participant, index) =>
-        (sessionsByParticipant[index] ?? []).flatMap((session): readonly FilaAsistenciaMeet[] => session.endTime ? [{
-          nombre: nombreParticipante(participant),
-          tipo: tipoParticipante(participant),
-          inicio: session.startTime,
-          fin: session.endTime,
-          conferencia: conferenceName,
-          participanteId: participant.name,
-          sesionId: session.name
-        }] : [])
+        (sessionsByParticipant[index] ?? []).flatMap((session): readonly FilaAsistenciaMeet[] => {
+          const finSesion = session.endTime || actual.endTime;
+          return finSesion ? [{
+            nombre: nombreParticipante(participant),
+            tipo: tipoParticipante(participant),
+            inicio: session.startTime,
+            fin: finSesion,
+            conferencia: conferenceName,
+            participanteId: participant.name,
+            sesionId: session.name
+          }] : [];
+        })
       );
       let emailAppendix = "";
       let correosAuditados: ReturnType<typeof agruparCorreosAuditoriaMeet> = [];
       let eventosAuditoria: readonly EventoAuditoriaMeet[] = [];
-      const adminEmail = process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim();
-      if (!adminEmail) throw new Error("Falta GOOGLE_REPORTS_ADMIN_EMAIL para planillas de asistencia con correos");
-      if (meetingCode && rows.length > 0) {
+      const adminEmail = (credentials.adminEmail ?? process.env.GOOGLE_REPORTS_ADMIN_EMAIL)?.trim();
+      if (adminEmail && meetingCode && rows.length > 0) {
         try {
           // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
           // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
@@ -285,7 +291,6 @@ export function crearGoogleArtifactsProviderAdapter(
             startTime: inicioDia.toISOString(),
             endTime: finDia.toISOString()
           });
-          const actual = await this.obtenerConferencia(conferenceName);
           const conferenceStart = Date.parse(actual.startTime);
           const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
           // Un mismo link de Meet puede tener varias conferencias en el mismo día.
@@ -307,7 +312,7 @@ export function crearGoogleArtifactsProviderAdapter(
       return {
         html: emailAppendix ? baseHtml.replace("</body>", `${emailAppendix}</body>`) : baseHtml,
         planilla: { sesionesMeet: rows, correosAuditados, eventosAuditoria },
-        completa: asistenciaMeetCompleta(sessionsByParticipant),
+        completa: asistenciaMeetCompleta(sessionsByParticipant, Boolean(actual.endTime)),
         participantes: participants.length,
         sesiones: rows.length
       };

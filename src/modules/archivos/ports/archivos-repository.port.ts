@@ -11,6 +11,7 @@ export type ConfiguracionWorkspaceArchivos = Readonly<{
   serviceAccountEmail: string | null;
   privateKeyCifrada: string | null;
   driveDestinationId: string | null;
+  serviceAccountSubject?: string | null;
 }>;
 
 export type ArchivoExistente = Readonly<{

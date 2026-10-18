@@ -226,6 +226,145 @@ describe("archivos: application", () => {
         })
       );
     });
+
+    it("genera la planilla si pasaron más de 24 horas aunque la asistencia no esté marcada completa", async () => {
+      const finHace30Horas = new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString();
+      const mockProvider: ArtifactProviderPort = {
+        buscarConferencia: vi.fn().mockResolvedValue({
+          name: "conf-antigua",
+          startTime: new Date(Date.now() - 32 * 60 * 60 * 1000).toISOString(),
+          endTime: finHace30Horas
+        }),
+        obtenerConferencia: vi.fn(),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("folder-dest"),
+        obtenerArtefactos: vi.fn().mockResolvedValue({
+          recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0
+        }),
+        moverArchivo: vi.fn(),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "<html><body>asistencia</body></html>",
+          completa: false, // Incompleta (ej: sesión sin cerrar)
+          participantes: 3,
+          sesiones: 3
+        }),
+        subirDocumentoGoogle: vi.fn().mockResolvedValue({
+          id: "doc-asistencia-antigua",
+          name: "asistencia.doc",
+          mimeType: "application/vnd.google-apps.document"
+        }),
+        obtenerParticipantesActivos: vi.fn()
+      };
+
+      const mockRepo: ArchivosRepositoryPort = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([
+          {
+            id: "evt-antiguo",
+            codigoReunion: "abc-defg-hij",
+            conferenceRecordName: null,
+            emailOrganizador: "host@flacso.edu.uy",
+            archivos: [],
+            inicioProgramadoAt: new Date(Date.now() - 32 * 60 * 60 * 1000),
+            finProgramadoAt: new Date(Date.now() - 30 * 60 * 60 * 1000),
+            timezone: "America/Montevideo",
+            requiereGrabacion: false,
+            tituloSolicitud: "Clase Antigua"
+          }
+        ]),
+        registrarArchivoSincronizado: vi.fn(),
+        actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn(),
+        obtenerDatosInstanciaParaParticipantes: vi.fn(),
+        listarArchivosVisibles: vi.fn(),
+        listarGrabacionesPendientesVisibles: vi.fn(),
+        listarGrabacionesNoRealizadasVisibles: vi.fn()
+      };
+
+      const result = await sincronizarArtefactosUseCase(
+        mockRepo,
+        () => mockProvider,
+        dummyDescifrar,
+        { eventoProveedorIds: ["evt-antiguo"] }
+      );
+
+      expect(result[0].estado).toBe("SINCRONIZADO");
+      expect(result[0].archivos).toBe(1); // Se generó la asistencia en vez de abandonarse silenciosamente
+      expect(mockRepo.registrarArchivoSincronizado).toHaveBeenCalledTimes(1);
+    });
+
+    it("ordena grabaciones cronológicamente por startTime antes de nombrarlas", async () => {
+      const mockProvider: ArtifactProviderPort = {
+        buscarConferencia: vi.fn().mockResolvedValue({
+          name: "conf-partes",
+          startTime: "2026-09-19T14:00:00Z",
+          endTime: "2026-09-19T17:00:00Z"
+        }),
+        obtenerConferencia: vi.fn(),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("folder-dest"),
+        obtenerArtefactos: vi.fn().mockResolvedValue({
+          // La API devuelve parte 2 primero y parte 1 después
+          recordings: [
+            { resourceName: "conf/recordings/rec-2", driveFileId: "file-rec-2", startTime: "2026-09-19T15:30:00Z", extension: "mp4" },
+            { resourceName: "conf/recordings/rec-1", driveFileId: "file-rec-1", startTime: "2026-09-19T14:05:00Z", extension: "mp4" }
+          ],
+          transcripts: [], notes: [], estadoGrabacion: "GENERADA", pendientes: 0
+        }),
+        moverArchivo: vi.fn().mockImplementation(async (_fileId, _folderId, name) => ({
+          id: _fileId, name, mimeType: "video/mp4"
+        })),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "<html>asistencia</html>", completa: true, participantes: 2, sesiones: 2
+        }),
+        subirDocumentoGoogle: vi.fn().mockResolvedValue({ id: "doc-1", name: "doc", mimeType: "doc" }),
+        obtenerParticipantesActivos: vi.fn()
+      };
+
+      const mockRepo: ArchivosRepositoryPort = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([
+          {
+            id: "evt-partes",
+            codigoReunion: "abc-defg-hij",
+            conferenceRecordName: null,
+            emailOrganizador: "host@flacso.edu.uy",
+            archivos: [],
+            inicioProgramadoAt: new Date("2026-09-19T14:00:00Z"),
+            finProgramadoAt: new Date("2026-09-19T17:00:00Z"),
+            timezone: "America/Montevideo",
+            requiereGrabacion: true,
+            tituloSolicitud: "Clase Dividida"
+          }
+        ]),
+        registrarArchivoSincronizado: vi.fn(),
+        actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn(),
+        obtenerDatosInstanciaParaParticipantes: vi.fn(),
+        listarArchivosVisibles: vi.fn(),
+        listarGrabacionesPendientesVisibles: vi.fn(),
+        listarGrabacionesNoRealizadasVisibles: vi.fn()
+      };
+
+      await sincronizarArtefactosUseCase(
+        mockRepo,
+        () => mockProvider,
+        dummyDescifrar,
+        { eventoProveedorIds: ["evt-partes"] }
+      );
+
+      // rec-1 (14:05) debe recibir _01_ y rec-2 (15:30) debe recibir _02_
+      expect(mockProvider.moverArchivo).toHaveBeenNthCalledWith(
+        1,
+        "file-rec-1",
+        "folder-dest",
+        expect.stringContaining("_video_01_")
+      );
+      expect(mockProvider.moverArchivo).toHaveBeenNthCalledWith(
+        2,
+        "file-rec-2",
+        "folder-dest",
+        expect.stringContaining("_video_02_")
+      );
+    });
   });
 
   describe("obtenerParticipantesActivosUseCase", () => {

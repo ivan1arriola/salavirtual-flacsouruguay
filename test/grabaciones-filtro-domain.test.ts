@@ -39,6 +39,17 @@ describe("grabaciones-filtro.domain", () => {
     expect(estado).toBe("NO_REGISTRADA");
   });
 
+  it("determina el estado NO_REQUERIDA inmediatamente si requiereGrabacion es falso", () => {
+    const estado = resolverEstadoVisualGrabacion({
+      tieneArchivoGrabacion: false,
+      archivosSincronizadosAt: null,
+      finProgramadoAt: new Date(Date.now() - 1800000), // terminó hace 30 min
+      requiereGrabacion: false,
+      ahora: new Date()
+    });
+    expect(estado).toBe("NO_REQUERIDA");
+  });
+
   it("filtra encuentros por texto de busqueda en titulo, programa o docente", () => {
     const grupos: GrupoEncuentroConArchivos[] = [
       {

@@ -50,19 +50,6 @@ function safeCell(value: string): string {
   return /^[=+@\-\t\r]/.test(value) ? "'" + value : value;
 }
 
-type Interval = { start: number; end: number };
-function mergeDuration(items: readonly Interval[], start: number, end: number) {
-  const filtered = items.map(v => ({ start: Math.max(start, v.start), end: Math.min(end, v.end) }))
-    .filter(v => v.end > v.start).sort((a, b) => a.start - b.start);
-  let total = 0, first = Infinity, last = -Infinity, until = -Infinity;
-  for (const part of filtered) {
-    first = Math.min(first, part.start); last = Math.max(last, part.end);
-    total += Math.max(0, part.end - Math.max(part.start, until));
-    until = Math.max(until, part.end);
-  }
-  return { first, last, minutes: total / 60000 };
-}
-
 function values(rows: readonly (readonly (string | number)[])[]) {
   return rows.map(row => row.map(v => typeof v === "number" ? { userEnteredValue: { numberValue: v } } : { userEnteredValue: { stringValue: safeCell(v) } }));
 }
@@ -96,6 +83,42 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     if (roles !== "PARTICIPANTE") responsables.push([item[0], item[1], roles, item[2], item[3], item[4], item[7]]);
     else resumen.push(item);
   }
+
+  // Si no se obtuvieron correos de auditoría de Workspace, respaldar los participantes
+  // desde las sesiones directas de Meet para que la pestaña Asistencia no quede vacía.
+  if (input.correosAuditados.length === 0 && input.sesionesMeet.length > 0) {
+    const sesionesPorParticipante = new Map<string, { nombre: string; sesiones: Array<{ inicio: string; fin: string }> }>();
+    for (const s of input.sesionesMeet) {
+      const key = s.participanteId || s.nombre;
+      const prev = sesionesPorParticipante.get(key);
+      if (prev) {
+        prev.sesiones.push({ inicio: s.inicio, fin: s.fin });
+      } else {
+        sesionesPorParticipante.set(key, {
+          nombre: s.nombre,
+          sesiones: [{ inicio: s.inicio, fin: s.fin }]
+        });
+      }
+    }
+    for (const p of sesionesPorParticipante.values()) {
+      const summary = resumirIntervalosAsistencia(p.sesiones, input.inicio, input.fin);
+      const first = summary.primeraConexion ?? "";
+      const last = summary.ultimaDesconexion ?? "";
+      const mins = summary.minutosConectados;
+      const ratio = summary.porcentaje / 100;
+      resumen.push([
+        p.nombre,
+        "No informado por auditoría",
+        asUtcHour(first),
+        asUtcHour(last),
+        mins,
+        ratio,
+        summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6",
+        summary.conexiones
+      ]);
+    }
+  }
+
   for (const event of input.eventosAuditoria) raw.push([
     "REPORTS", event.displayName, event.identifierType === "email_address" ? event.identifier : "", event.identifier,
     event.identifierType, new Date(Date.parse(event.timestamp) - event.durationSeconds * 1000).toISOString(), event.timestamp,
@@ -106,8 +129,22 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     if (!reported.has(email.toLowerCase())) responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
   }
   for (const s of input.sesionesMeet) {
-    raw.push(["MEET", s.nombre, "", s.participanteId ?? "", s.tipo, s.inicio, s.fin,
-      Math.max(0, (Date.parse(s.fin) - Date.parse(s.inicio)) / 1000), s.conferencia ?? "", s.sesionId ?? ""]);
+    raw.push([
+      "MEET",
+      s.nombre,
+      "",
+      s.participanteId ?? "",
+      s.tipo,
+      s.inicio,
+      s.fin,
+      Math.max(0, Math.round((Date.parse(s.fin) - Date.parse(s.inicio)) / 1000)),
+      s.conferencia ?? "",
+      s.sesionId ?? "",
+      "",
+      s.tipo,
+      s.inicio,
+      ""
+    ]);
   }
   // Las sesiones de Meet se conservan en bruto, sin asociarlas por coincidencia de nombres.
 
