@@ -2392,6 +2392,11 @@
     grid-template-columns: 1fr;
   }
 
+  .cohost-disclosure .checkbox-list label {
+    min-height: 44px;
+    padding-block: 8px;
+  }
+
   .filter-bar,
   .coverage-filter {
     grid-template-columns: 1fr;
