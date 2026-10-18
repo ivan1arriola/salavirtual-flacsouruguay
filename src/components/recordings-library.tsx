@@ -91,7 +91,7 @@ export function RecordingsLibrary({
         <div className="recordings-search-bar">
           <Search size={18} className="search-icon" aria-hidden="true" />
           <input
-            type="text"
+            type="search"
             placeholder="Buscar por materia, clase o docente..."
             value={busquedaEditada}
             onChange={(e) => setBusquedaEditada(e.target.value)}
@@ -110,11 +110,10 @@ export function RecordingsLibrary({
           ) : null}
         </div>
 
-        <div className="recordings-filter-tabs" role="tablist" aria-label="Filtrar por tipo de archivo">
+        <div className="recordings-filter-tabs" role="group" aria-label="Filtrar por tipo de archivo">
           <button
             type="button"
-            role="tab"
-            aria-selected={filtro === "TODOS"}
+            aria-pressed={filtro === "TODOS"}
             className={`filter-tab ${filtro === "TODOS" ? "is-active" : ""}`}
             onClick={() => navegar({ filtro: "TODOS", pagina: 1 })}
           >
@@ -122,8 +121,7 @@ export function RecordingsLibrary({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={filtro === "GRABACIONES"}
+            aria-pressed={filtro === "GRABACIONES"}
             className={`filter-tab ${filtro === "GRABACIONES" ? "is-active" : ""}`}
             onClick={() => navegar({ filtro: "GRABACIONES", pagina: 1 })}
           >
@@ -132,8 +130,7 @@ export function RecordingsLibrary({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={filtro === "ASISTENCIAS"}
+            aria-pressed={filtro === "ASISTENCIAS"}
             className={`filter-tab ${filtro === "ASISTENCIAS" ? "is-active" : ""}`}
             onClick={() => navegar({ filtro: "ASISTENCIAS", pagina: 1 })}
           >
@@ -142,8 +139,7 @@ export function RecordingsLibrary({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={filtro === "NOTAS_Y_TRANSCRIPCIONES"}
+            aria-pressed={filtro === "NOTAS_Y_TRANSCRIPCIONES"}
             className={`filter-tab ${filtro === "NOTAS_Y_TRANSCRIPCIONES" ? "is-active" : ""}`}
             onClick={() => navegar({ filtro: "NOTAS_Y_TRANSCRIPCIONES", pagina: 1 })}
           >
