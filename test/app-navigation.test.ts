@@ -7,6 +7,7 @@ describe("role based application navigation", () => {
 
     expect(navigation.groups.map(({ label }) => label)).toEqual([
       "Trabajo diario",
+      "Equipo de monitoreo",
       "Recursos",
       "Sistema"
     ]);
@@ -16,11 +17,15 @@ describe("role based application navigation", () => {
       "Reuniones",
       "Monitoreo",
       "Nueva reunión",
+      "Asistentes de monitoreo",
       "Grabaciones y archivos",
       "Personas y programas",
-      "Asistentes de monitoreo",
       "Centro de operaciones",
       "Configuración"
+    ]);
+    expect(navigation.groups.find(({ label }) => label === "Recursos")?.items.map(({ label }) => label)).toEqual([
+      "Grabaciones y archivos",
+      "Personas y programas"
     ]);
     expect(navigation.mobilePrimary.map(({ label }) => label)).toEqual([
       "Inicio",

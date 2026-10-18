@@ -68,11 +68,16 @@ const adminGroups: readonly NavigationGroup[] = [
     ]
   },
   {
+    label: "Equipo de monitoreo",
+    items: [
+      { href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck }
+    ]
+  },
+  {
     label: "Recursos",
     items: [
       { href: "/grabaciones", label: "Grabaciones y archivos", icon: FileVideo2 },
-      { href: "/usuarios", label: "Personas y programas", icon: Users },
-      { href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck }
+      { href: "/usuarios", label: "Personas y programas", icon: Users }
     ]
   },
   {
