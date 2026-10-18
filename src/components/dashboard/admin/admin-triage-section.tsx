@@ -66,6 +66,37 @@ export function AdminTriageSection({
         </div>
       ) : (
         <div className="operations-attention-grid">
+          {openIncidents.count > 0 ? (
+            <article className="operations-attention-card tone-danger">
+              <div className="operations-attention-card-heading">
+                <span>
+                  <Siren size={18} />
+                </span>
+                <div>
+                  <strong>Incidencias abiertas</strong>
+                  <small>{openIncidents.count} {openIncidents.count === 1 ? "caso" : "casos"}</small>
+                </div>
+              </div>
+              <ul>
+                {openIncidents.examples.map((item) => (
+                  <li key={item.id}>
+                    {item.title} · {item.description}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                className="text-link"
+                href={
+                  openIncidents.firstIncidentSolicitudId
+                    ? `/reuniones/${openIncidents.firstIncidentSolicitudId}`
+                    : "/reuniones"
+                }
+              >
+                Revisar incidencias <ArrowRight size={15} />
+              </Link>
+            </article>
+          ) : null}
+
           {pendingCoverage.count > 0 ? (
             <article className="operations-attention-card tone-warning">
               <div className="operations-attention-card-heading">
@@ -122,30 +153,6 @@ export function AdminTriageSection({
             </article>
           ) : null}
 
-          {duplicateRisks.count > 0 ? (
-            <article className="operations-attention-card tone-danger">
-              <div className="operations-attention-card-heading">
-                <span>
-                  <GitCompareArrows size={18} />
-                </span>
-                <div>
-                  <strong>Posibles reuniones duplicadas</strong>
-                  <small>{duplicateRisks.count} {duplicateRisks.count === 1 ? "caso" : "casos"}</small>
-                </div>
-              </div>
-              <ul>
-                {duplicateRisks.examples.map((item, index) => (
-                  <li key={`dup-${index}`}>
-                    {item.leftTitle} / {item.rightTitle}
-                  </li>
-                ))}
-              </ul>
-              <Link className="text-link" href="/reuniones/duplicados">
-                Comparar y unificar <ArrowRight size={15} />
-              </Link>
-            </article>
-          ) : null}
-
           {pendingRecordings.count > 0 ? (
             <article className="operations-attention-card tone-neutral">
               <div className="operations-attention-card-heading">
@@ -171,33 +178,26 @@ export function AdminTriageSection({
             </article>
           ) : null}
 
-          {openIncidents.count > 0 ? (
+          {duplicateRisks.count > 0 ? (
             <article className="operations-attention-card tone-danger">
               <div className="operations-attention-card-heading">
                 <span>
-                  <Siren size={18} />
+                  <GitCompareArrows size={18} />
                 </span>
                 <div>
-                  <strong>Incidencias abiertas</strong>
-                  <small>{openIncidents.count} {openIncidents.count === 1 ? "caso" : "casos"}</small>
+                  <strong>Posibles reuniones duplicadas</strong>
+                  <small>{duplicateRisks.count} {duplicateRisks.count === 1 ? "caso" : "casos"}</small>
                 </div>
               </div>
               <ul>
-                {openIncidents.examples.map((item) => (
-                  <li key={item.id}>
-                    {item.title} · {item.description}
+                {duplicateRisks.examples.map((item, index) => (
+                  <li key={`dup-${index}`}>
+                    {item.leftTitle} / {item.rightTitle}
                   </li>
                 ))}
               </ul>
-              <Link
-                className="text-link"
-                href={
-                  openIncidents.firstIncidentSolicitudId
-                    ? `/reuniones/${openIncidents.firstIncidentSolicitudId}`
-                    : "/reuniones"
-                }
-              >
-                Revisar incidencias <ArrowRight size={15} />
+              <Link className="text-link" href="/reuniones/duplicados">
+                Comparar y unificar <ArrowRight size={15} />
               </Link>
             </article>
           ) : null}

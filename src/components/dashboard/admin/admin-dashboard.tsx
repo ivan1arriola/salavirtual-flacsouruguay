@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AdminMetricsBar } from "@/src/components/dashboard/admin/admin-metrics-bar";
 import { AdminTodayTimeline } from "@/src/components/dashboard/admin/admin-today-timeline";
 import { AdminTriageSection } from "@/src/components/dashboard/admin/admin-triage-section";
+import { AdminUpcomingList } from "@/src/components/dashboard/admin/admin-upcoming-list";
 import { DashboardHeader } from "@/src/components/dashboard/dashboard-header";
 import { db } from "@/src/lib/db";
 import { obtenerDashboardAdministracion } from "@/src/modules/dashboard/admin-dashboard.adapter";
@@ -39,6 +40,8 @@ export async function AdminDashboard({
       />
 
       <AdminTodayTimeline meetings={data.todayTimeline} />
+
+      <AdminUpcomingList meetings={data.upcomingTimeline} />
 
       <AdminTriageSection attentionData={data.attentionData} />
 
