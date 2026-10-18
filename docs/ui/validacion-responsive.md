@@ -36,3 +36,7 @@ Los filtros y acciones de archivos tenían objetivos de 32 a 38 px; ahora alcanz
 ## Mi agenda: acciones tactiles
 
 En el breakpoint movil, operar la reunion, darse de baja, abrir Meet y copiar el enlace tienen un area tactil de al menos 44px. La baja mantiene la confirmacion y las reglas vigentes de disponibilidad; el ajuste solo facilita pulsar las acciones.
+
+## Agenda abierta en movil
+
+La grilla de coberturas pasa a una columna fluida en pantallas de hasta 560px para caber junto al shell de navegacion. La accion Postularme ocupa todo el ancho y mide al menos 44px; el estado de disponibilidad y la postulacion conservan sus reglas actuales.
