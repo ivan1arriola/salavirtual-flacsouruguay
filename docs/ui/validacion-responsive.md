@@ -19,3 +19,8 @@ En el formulario de reuniones, las filas de cohosts ocupan al menos 44px en móv
 ## Operación de reunión
 
 En la consola de operación, los filtros de participantes, la búsqueda, la edición en línea y la acción para quitar cohosts tienen controles de al menos 44px de alto en pantallas de hasta 760px. Los correos largos en los chips se ajustan al ancho disponible.
+
+
+## Mi agenda de asistentes
+
+En teléfonos, la fecha y la marca de próxima cobertura quedan arriba; los horarios de monitoreo y del encuentro se apilan a todo el ancho debajo, cada uno con su rótulo. La tarjeta conserva los instantes calculados por la reunión y su cobertura asignada.
