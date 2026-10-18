@@ -519,6 +519,15 @@
     grid-template-columns: 1fr;
   }
 
+  .user-directory-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+
   .program-management-card > summary,
   .program-management-summary-meta {
     align-items: flex-start;
