@@ -49,6 +49,7 @@ export async function sincronizarArtefactosUseCase(
       configuracion.driveDestinationId!,
       configuracion.serviceAccountEmail!,
       privateKey,
+      configuracion.serviceAccountSubject ?? null,
       evento,
       input.regenerarAsistencia ?? false
     )
@@ -61,6 +62,7 @@ async function sincronizarEventoIndividual(
   destinationId: string,
   serviceAccountEmail: string,
   privateKey: string,
+  adminEmailSubject: string | null,
   evento: EventoParaSincronizarArchivos,
   regenerarAsistencia: boolean
 ): Promise<SyncArtifactsResult> {
@@ -80,7 +82,8 @@ async function sincronizarEventoIndividual(
     const provider = providerFactory({
       serviceAccountEmail,
       privateKey,
-      subject: hostEmail
+      subject: hostEmail,
+      adminEmail: adminEmailSubject
     });
 
     const conference = evento.conferenceRecordName
@@ -134,7 +137,12 @@ async function sincronizarEventoIndividual(
       [TIPOS_ARTEFACTO_SINCRONIZABLES[1], artifacts.transcripts],
       [TIPOS_ARTEFACTO_SINCRONIZABLES[3], artifacts.notes]
     ] as const) {
-      for (const [index, artifact] of items.entries()) {
+      const sortedItems = [...items].sort((a, b) => {
+        const timeA = a.startTime ? Date.parse(a.startTime) : 0;
+        const timeB = b.startTime ? Date.parse(b.startTime) : 0;
+        return timeA - timeB;
+      });
+      for (const [index, artifact] of sortedItems.entries()) {
         if (known.has(artifact.resourceName)) continue;
         const name = nombreArchivoReunion({
           ...common,
@@ -162,7 +170,9 @@ async function sincronizarEventoIndividual(
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource) || regenerarAsistencia) {
       const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
-      if (attendance.completa) {
+      const debeGenerarPlanilla = attendance.completa
+        || (attendance.sesiones > 0 && conferenciaTerminadaHaceMasDe(conference.endTime, 24));
+      if (debeGenerarPlanilla) {
         const name = nombreArchivoReunion({
           ...common,
           tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
@@ -182,7 +192,7 @@ async function sincronizarEventoIndividual(
           uploaded
         );
         synchronized += 1;
-      } else if (!conferenciaTerminadaHaceMasDe(conference.endTime, 24)) {
+      } else {
         pending += 1;
       }
     }

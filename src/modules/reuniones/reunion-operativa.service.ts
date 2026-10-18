@@ -25,7 +25,7 @@ import {
 } from "@/src/integrations/google";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
+import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import {
   obtenerCredencialPrincipalGoogleWorkspace,
   obtenerCandidatosCredencialesParaOrganizador,
@@ -1077,6 +1077,7 @@ export async function actualizarControlOperativoReunion(
     }
   }
 
+  const evento = meeting.eventosProveedor[0] ?? null;
   const cohostsAnteriores = extraerCohostEmailsDeInstancia(meeting);
   let cohostsDeseados = [...cohostsAnteriores];
 
@@ -1090,19 +1091,45 @@ export async function actualizarControlOperativoReunion(
 
     if (parsed.agregarCohostEmail) {
       const nuevoEmail = parsed.agregarCohostEmail.trim().toLowerCase();
-      await tx.cohostEmailReunion.upsert({
-        where: {
-          instanciaSalaId_email: {
+      const hostEmail = evento?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+      if (hostEmail && nuevoEmail === hostEmail) {
+        throw new ValidationApiError("La cuenta organizadora de la sala no puede ser agregada como cohost.");
+      }
+
+      const cuentaExistente = await tx.cuentaGoogleFlacso.findFirst({
+        where: { email: { equals: nuevoEmail, mode: "insensitive" }, user: { activo: true } },
+        select: { id: true }
+      });
+
+      if (cuentaExistente) {
+        await tx.cohostReunion.upsert({
+          where: {
+            instanciaSalaId_cuentaGoogleId: {
+              instanciaSalaId: instanciaId,
+              cuentaGoogleId: cuentaExistente.id
+            }
+          },
+          create: {
+            instanciaSalaId: instanciaId,
+            cuentaGoogleId: cuentaExistente.id
+          },
+          update: {}
+        });
+      } else {
+        await tx.cohostEmailReunion.upsert({
+          where: {
+            instanciaSalaId_email: {
+              instanciaSalaId: instanciaId,
+              email: nuevoEmail
+            }
+          },
+          create: {
             instanciaSalaId: instanciaId,
             email: nuevoEmail
-          }
-        },
-        create: {
-          instanciaSalaId: instanciaId,
-          email: nuevoEmail
-        },
-        update: {}
-      });
+          },
+          update: {}
+        });
+      }
       if (!cohostsDeseados.includes(nuevoEmail)) {
         cohostsDeseados = [...cohostsDeseados, nuevoEmail];
       }
@@ -1117,9 +1144,9 @@ export async function actualizarControlOperativoReunion(
         }
       });
       const cohostCuenta = meeting.cohosts.find(
-        ({ cuentaGoogle }) => cuentaGoogle.email.trim().toLowerCase() === quitarEmail
+        ({ cuentaGoogle }) => cuentaGoogle?.email?.trim().toLowerCase() === quitarEmail
       );
-      if (cohostCuenta) {
+      if (cohostCuenta?.cuentaGoogleId) {
         await tx.cohostReunion.deleteMany({
           where: {
             instanciaSalaId: instanciaId,
@@ -1132,7 +1159,6 @@ export async function actualizarControlOperativoReunion(
   });
 
   // Sincronizar en tiempo real con Google Meet si el espacio existe
-  const evento = meeting.eventosProveedor[0] ?? null;
   let sincronizadoConGoogle = false;
   let advertenciaGoogle: string | null = null;
   const cambioCohosts = Boolean(parsed.agregarCohostEmail || parsed.quitarCohostEmail);
@@ -1190,33 +1216,46 @@ export async function actualizarControlOperativoReunion(
           }
         }
 
-        if (cambioCohosts && evento.externalEventId) {
-          const payloadActualizado = await sincronizarCohostsGoogleExistente(
-            {
-              serviceAccountEmail: principalCred.serviceAccountEmail,
-              privateKey,
-              subject
-            },
-            {
-              calendarId: evento.cuentaProveedor.externalAccountId || subject,
-              externalEventId: evento.externalEventId,
-              codigoReunion: evento.codigoReunion,
-              cohostsAnteriores,
-              cohostsDeseados
-            }
-          );
-          await db.eventoProveedor.update({
-            where: { id: evento.id },
-            data: {
-              payloadUltimo: payloadActualizado as object,
-              errorIntegracion: null,
-              operacionPendiente: null,
-              estadoIntegracion: "SINCRONIZADA"
-            }
-          });
+        if (cambioCohosts) {
+          if (evento.externalEventId) {
+            const payloadActualizado = await sincronizarCohostsGoogleExistente(
+              {
+                serviceAccountEmail: principalCred.serviceAccountEmail,
+                privateKey,
+                subject
+              },
+              {
+                calendarId: evento.cuentaProveedor.externalAccountId || subject,
+                externalEventId: evento.externalEventId,
+                codigoReunion: evento.codigoReunion,
+                cohostsAnteriores,
+                cohostsDeseados
+              }
+            );
+            await db.eventoProveedor.update({
+              where: { id: evento.id },
+              data: {
+                payloadUltimo: payloadActualizado as object,
+                errorIntegracion: null,
+                operacionPendiente: null,
+                estadoIntegracion: "SINCRONIZADA"
+              }
+            });
+            sincronizadoConGoogle = true;
+          } else {
+            advertenciaGoogle = "El encuentro aún no cuenta con evento en Google Calendar; quedó pendiente de sincronización.";
+            await db.eventoProveedor.update({
+              where: { id: evento.id },
+              data: {
+                operacionPendiente: "CONFIGURAR_MEET",
+                errorIntegracion: advertenciaGoogle
+              }
+            }).catch(() => null);
+            sincronizadoConGoogle = false;
+          }
+        } else {
+          sincronizadoConGoogle = true;
         }
-
-        sincronizadoConGoogle = true;
       } catch (error) {
         advertenciaGoogle = error instanceof Error
           ? error.message

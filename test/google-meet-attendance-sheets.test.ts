@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle, type MeetSheetInput } from "../src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client";
 const input: MeetSheetInput = {
   titulo: "Encuentro", folderId: "folder", operationMarker: "stable-operation-marker", organizador: "host@example.com", cohosts: ["co@example.com"],
@@ -56,4 +56,44 @@ it("recupera planillas solo mediante la marca de operación privada de Drive", a
   expect(request.mock.calls[0]![0].url).toContain("appProperties");
   expect(request.mock.calls[0]![0].url).toContain("stable-marker");
   expect(request.mock.calls[0]![0].url).not.toContain("name%20%3D");
+});
+
+it("puebla pestaña Asistencia desde sesionesMeet cuando correosAuditados está vacío y alinea 14 columnas en datos brutos", async () => {
+  const inputSinAuditoria: MeetSheetInput = {
+    ...input,
+    correosAuditados: [],
+    eventosAuditoria: [],
+    sesionesMeet: [
+      {
+        nombre: "Alumno Directo",
+        tipo: "CUENTA_GOOGLE",
+        inicio: "2026-05-01T10:05:00Z",
+        fin: "2026-05-01T10:55:00Z",
+        conferencia: "conferenceRecords/meet-1",
+        participanteId: "participants/p1",
+        sesionId: "participantSessions/s1"
+      }
+    ]
+  };
+  const request = vi.fn()
+    .mockResolvedValueOnce({ data: { spreadsheetId: "sheet-fallback" } })
+    .mockResolvedValueOnce({ data: {} })
+    .mockResolvedValueOnce({ data: {} })
+    .mockResolvedValueOnce({ data: { parents: [] } })
+    .mockResolvedValueOnce({ data: { id: "sheet-fallback", name: "Encuentro" } });
+
+  await crearPlanillaAsistenciaGoogle({ request } as never, inputSinAuditoria);
+  const updateCalls = request.mock.calls[2]![0].data.requests;
+  const updateCells = updateCalls.filter((r: any) => r.updateCells);
+  // La pestaña 0 (Asistencia) tiene encabezado + fila de Alumno Directo
+  const resumenRows = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells.rows;
+  expect(resumenRows).toHaveLength(2);
+  expect(resumenRows[1].values[0].userEnteredValue.stringValue).toBe("Alumno Directo");
+  expect(resumenRows[1].values[1].userEnteredValue.stringValue).toBe("No informado por auditoría");
+
+  // La pestaña 2 (Datos brutos) tiene encabezado + fila MEET de 14 columnas
+  const rawRows = updateCells.find((r: any) => r.updateCells.start.sheetId === 2)?.updateCells.rows;
+  expect(rawRows[1].values).toHaveLength(14);
+  expect(rawRows[1].values[0].userEnteredValue.stringValue).toBe("MEET");
+  expect(rawRows[1].values[1].userEnteredValue.stringValue).toBe("Alumno Directo");
 });

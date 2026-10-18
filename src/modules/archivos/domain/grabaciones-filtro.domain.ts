@@ -39,6 +39,8 @@ export function resolverEstadoVisualGrabacion(datos: {
   ahora: Date;
 }): EstadoVisualGrabacion {
   if (datos.tieneArchivoGrabacion) return "DISPONIBLE";
+  if (!datos.requiereGrabacion) return "NO_REQUERIDA";
+
   const transcurridoMs = datos.ahora.getTime() - datos.finProgramadoAt.getTime();
   const cuatroHorasMs = 4 * 60 * 60 * 1000;
 
@@ -46,11 +48,7 @@ export function resolverEstadoVisualGrabacion(datos: {
     return "PROCESANDO";
   }
 
-  if (datos.requiereGrabacion) {
-    return "NO_REGISTRADA";
-  }
-
-  return "NO_REQUERIDA";
+  return "NO_REGISTRADA";
 }
 
 export function filtrarEncuentrosConArchivos(
