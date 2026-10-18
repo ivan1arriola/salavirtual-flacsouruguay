@@ -11,3 +11,7 @@ La comprobación visual local por rol y en dispositivo móvil requiere autentica
 ## Personas
 
 En `/usuarios`, el listado conserva su semántica de tabla para lectores de pantalla. En el patrón móvil de tarjetas, cada campo muestra el nombre de su columna (Persona, Cuentas Google, Acceso y Acción), para que el contenido siga siendo comprensible cuando los encabezados de escritorio se ocultan visualmente.
+
+## Selección de cohosts
+
+En el formulario de reuniones, las filas de cohosts ocupan al menos 44px en móvil y permiten activar el checkbox pulsando cualquier parte de la etiqueta. La selección, los límites de cuentas y el envío del formulario no cambian.
