@@ -836,3 +836,22 @@
   margin-left: 5px;
   opacity: 0.8;
 }
+
+@media (max-width: 560px) {
+  .open-agenda-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .open-agenda-card {
+    min-width: 0;
+  }
+
+  .open-agenda-card-actions .row-action,
+  .open-agenda-card-actions .row-action > button {
+    width: 100%;
+  }
+
+  .open-agenda-card-actions .row-action > button {
+    min-height: 44px;
+  }
+}
