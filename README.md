@@ -52,9 +52,11 @@ Los tokens compartidos de interfaz se definen en `app/brand.css`. Incluyen color
 
 La consolidación de estilos es incremental: antes de retirar reglas existentes hay que comprobar sus usos en las pantallas actuales. Los nuevos cambios deben evitar añadir hojas globales correctivas que dupliquen reglas de componentes.
 
-## Google Workspace
+## Navegación
 
-La administración centralizada de **Personas y programas** vive en `/usuarios`, con vistas separadas para cada tarea. `/configuracion?seccion=programas` se conserva como enlace de compatibilidad y redirige a la vista de Programas. Los programas representan las unidades académicas en la interfaz; los campos históricos de unidad académica se conservan en los datos y una edición desde la nueva pantalla no los modifica.
+La navegación autenticada muestra opciones según el rol y conserva una barra inferior móvil con cuatro accesos principales y un menú **Más**. En Administración, el menú lateral agrupa trabajo diario, equipo de monitoreo, recursos y sistema; los recursos contienen grabaciones y Personas y programas. Docentes y asistentes de monitoreo mantienen sus recorridos específicos. La interfaz solo controla visibilidad: las páginas y acciones conservan sus políticas de autorización del servidor.
+
+## Google Workspace
 
 La integración con Google Workspace se configura desde:
 
