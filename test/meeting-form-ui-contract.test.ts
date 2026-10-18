@@ -23,5 +23,6 @@ describe("contrato de accesibilidad del formulario", () => {
   it("mantiene el control para quitar encuentros en un objetivo táctil de 44px en móvil", () => {
     expect(styles).toMatch(/:global\(\.date-row \.remove-date\)\s*\{[^}]*min-width:\s*44px/s);
     expect(styles).toMatch(/:global\(\.date-row \.remove-date\)\s*\{[^}]*min-height:\s*44px/s);
+    expect(styles).toMatch(/:global\(\.recurrence-actions \.secondary-action\),\s*\.page :global\(\.add-date\),\s*\.page :global\(\.meeting-date-notes > summary\)\s*\{\s*min-height:\s*44px;/s);
   });
 });

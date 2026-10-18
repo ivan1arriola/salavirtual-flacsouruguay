@@ -959,6 +959,12 @@
     justify-self: end;
   }
 
+  .page :global(.recurrence-actions .secondary-action),
+  .page :global(.add-date),
+  .page :global(.meeting-date-notes > summary) {
+    min-height: 44px;
+  }
+
   .page :global(.date-rows.is-scrollable) {
     max-height: none;
     overflow: visible;
