@@ -541,9 +541,13 @@
     align-items: stretch;
   }
 
+  .assistant-agenda-primary-actions > .secondary-action {
+    min-height: 44px;
+  }
+
   .assistant-self-unassign-button {
     width: 100%;
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .assistant-self-unassign-action .assistant-action-error {
@@ -554,10 +558,11 @@
   .assistant-agenda-link-actions .copy-meet-button {
     width: auto;
     flex: 1 1 0;
+    min-height: 44px;
   }
 
   .assistant-agenda-open-meet {
-    min-height: 42px;
+    min-height: 44px;
   }
 }
 
