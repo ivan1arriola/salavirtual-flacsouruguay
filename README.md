@@ -2,7 +2,7 @@
 
 **Sala Virtual FLACSO** es la plataforma operativa de FLACSO Uruguay para gestionar reuniones académicas realizadas mediante Google Meet.
 
-Centraliza el ciclo completo de las reuniones: solicitudes, agenda, asistencia técnica, grabaciones, historial y liquidaciones.
+Centraliza el ciclo completo de las reuniones: solicitudes, agenda, monitoreo, grabaciones, historial y liquidaciones.
 
 ## Estado del proyecto
 
@@ -20,6 +20,8 @@ Google Meet es el proveedor operativo principal.
 Zoom permanece integrado únicamente como **proveedor histórico**, para conservar y consultar reuniones, grabaciones, costos y otros registros generados por los sistemas anteriores.
 
 El dominio de la aplicación está diseñado para no depender directamente de un proveedor concreto de videoconferencia.
+
+La sincronización recupera grabaciones y planillas de asistencia desde Google Meet. Los informes parciales se generan luego de 24 horas cuando hubo sesiones de participantes; si no hay datos de asistencia, se evita crear una planilla vacía. Al actualizar cohosts, Sala Virtual retira solo los que gestionaba y conserva miembros añadidos directamente en Google Meet.
 
 ## Objetivos de arquitectura
 
