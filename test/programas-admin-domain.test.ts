@@ -25,6 +25,19 @@ describe("CRUD administrativo de programas", () => {
     });
   });
 
+  it("conserva una unidad académica omitida en una edición", () => {
+    expect(programaAdminSchema.parse({
+      nombre: "Programa existente",
+      codigo: null,
+      activo: true
+    })).toEqual({
+      nombre: "Programa existente",
+      codigo: null,
+      unidadAcademicaId: undefined,
+      activo: true
+    });
+  });
+
   it("rechaza nombres demasiado cortos", () => {
     expect(() => programaAdminSchema.parse({
       nombre: "A",

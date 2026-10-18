@@ -37,12 +37,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
     icon: "rooms"
   },
   {
-    id: "programas",
-    label: "Programas",
-    description: "Programas y docentes asociados",
-    icon: "programs"
-  },
-  {
     id: "asistencia",
     label: "Monitoreo",
     description: "Reportes mensuales y destinatarios",
@@ -69,9 +63,14 @@ export function resolveSettingsSection(value?: string): SettingsSection {
 }
 
 export function settingsHref(section: SettingsSection) {
+  if (section === "programas") return "/usuarios?vista=programas";
   return section === "resumen"
     ? "/configuracion"
     : `/configuracion?seccion=${section}`;
+}
+
+export function legacySettingsRedirect(section?: string): string | null {
+  return section === "programas" ? "/usuarios?vista=programas" : null;
 }
 
 export type SettingsAttentionInput = Readonly<{

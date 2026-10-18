@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 import { filterPrograms } from "../src/components/program-members-config.domain";
 
 const programs = [
-  { id: "1", nombre: "Maestría en Educación", codigo: "ME", activo: true, unidadAcademica: { nombre: "Posgrados" } },
-  { id: "2", nombre: "Formación Permanente", codigo: null, activo: false, unidadAcademica: null },
-  { id: "3", nombre: "Diploma Social", codigo: "DS", activo: true, unidadAcademica: { nombre: "Ciencias Sociales" } }
+  { id: "1", nombre: "Maestría en Educación", codigo: "ME", activo: true },
+  { id: "2", nombre: "Formación Permanente", codigo: null, activo: false },
+  { id: "3", nombre: "Diploma Social", codigo: "DS", activo: true }
 ];
 
 describe("filtro de programas", () => {
-  it("busca por nombre, código o unidad académica", () => {
+  it("busca por nombre o código", () => {
     expect(filterPrograms(programs, { query: "educación", state: "todos" }).map(({ id }) => id)).toEqual(["1"]);
     expect(filterPrograms(programs, { query: "DS", state: "todos" }).map(({ id }) => id)).toEqual(["3"]);
-    expect(filterPrograms(programs, { query: "posgrados", state: "todos" }).map(({ id }) => id)).toEqual(["1"]);
   });
 
   it("separa programas activos e inactivos", () => {

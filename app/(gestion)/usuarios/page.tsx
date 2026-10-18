@@ -3,6 +3,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/src/lib/db";
+import { ProgramMembersConfig } from "@/src/components/program-members-config";
+import { resolveUsersView } from "@/src/modules/usuarios/users-view.domain";
+import {
+  actualizarProgramaAdmin,
+  agregarIntegrantePrograma,
+  crearProgramaAdmin,
+  eliminarProgramaAdmin,
+  invitarIntegrantePrograma,
+  quitarIntegrantePrograma
+} from "../configuracion/actions";
 import {
   aprobarSolicitudAccesoGoogle,
   enviarInvitacion,
@@ -19,30 +29,46 @@ type UserType = (typeof USER_TYPES)[number]["value"];
 
 export default async function UsuariosPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ tipo?: string; estado?: string; error?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ tipo?: string; vista?: string; programa?: string; estado?: string; error?: string }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const query = await searchParams;
+  const view = resolveUsersView(query.vista);
   const selectedType = isUserType(query.tipo) ? query.tipo : "DOCENTE";
-  const [users, groupedCounts, programs, solicitudesPendientes] = await Promise.all([
-    db.usuario.findMany({
+  const [users, groupedCounts, programs, solicitudesPendientes, programsForManagement, teachers] = await Promise.all([
+    view === "personas" ? db.usuario.findMany({
       where: { rol: selectedType },
       orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
       include: {
         cuentasGoogle: { select: { email: true } },
         asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } }
       }
-    }),
+    }) : Promise.resolve([]),
     db.usuario.groupBy({ by: ["rol"], _count: { _all: true } }),
-    db.programa.findMany({
+    view === "personas" ? db.programa.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true }
-    }),
-    db.solicitudAccesoGoogle.findMany({
+    }) : Promise.resolve([]),
+    view === "personas" ? db.solicitudAccesoGoogle.findMany({
       where: { estado: "PENDIENTE" },
       orderBy: { createdAt: "asc" }
-    })
+    }) : Promise.resolve([]),
+    view === "programas" ? db.programa.findMany({
+      orderBy: { nombre: "asc" },
+      select: {
+        id: true, nombre: true, codigo: true, activo: true,
+        docentes: {
+          where: { activo: true },
+          select: { docente: { select: { usuario: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true } } } } }
+        }
+      }
+    }) : Promise.resolve([]),
+    view === "programas" ? db.usuario.findMany({
+      where: { rol: "DOCENTE", activo: true },
+      orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+      select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true }
+    }) : Promise.resolve([])
   ]);
   const selected = USER_TYPES.find(({ value }) => value === selectedType) ?? USER_TYPES[1];
   const total = groupedCounts.reduce((sum, group) => sum + group._count._all, 0);
@@ -50,18 +76,25 @@ export default async function UsuariosPage({
   return (
     <>
       <header className="page-header">
-        <div><p className="page-eyebrow">Administración</p><h1>Usuarios</h1><p>{total} identidades registradas.</p></div>
+        <div><p className="page-eyebrow">Administración</p><h1>Personas y programas</h1><p>{view === "personas"
+          ? `${total} identidades registradas.`
+          : `${programsForManagement.length} programas · ${programsForManagement.filter(({ activo }) => activo).length} activos.`}</p></div>
         <Users size={28} color="var(--brand)" />
       </header>
 
-      {query.estado === "invitacion-enviada" ? <p className="form-notice">La invitación fue creada y enviada.</p> : null}
-      {query.estado === "invitacion-creada" ? <p className="form-notice">El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.</p> : null}
-      {query.estado === "solicitud-aprobada" ? <p className="form-notice">La solicitud fue aprobada y el usuario fue creado.</p> : null}
-      {query.estado === "solicitud-rechazada" ? <p className="form-notice">La solicitud fue rechazada y eliminada de pendientes.</p> : null}
-      {query.estado === "usuario-eliminado" ? <p className="form-notice">El usuario y sus datos asociados fueron eliminados.</p> : null}
+      <nav className="user-type-tabs user-domain-tabs" aria-label="Administración de personas y programas">
+        <Link aria-current={view === "personas" ? "page" : undefined} className={view === "personas" ? "is-active" : undefined} href="/usuarios?vista=personas">Personas</Link>
+        <Link aria-current={view === "programas" ? "page" : undefined} className={view === "programas" ? "is-active" : undefined} href="/usuarios?vista=programas">Programas</Link>
+      </nav>
+
+      {view === "personas" && query.estado === "invitacion-enviada" ? <p className="form-notice">La invitación fue creada y enviada.</p> : null}
+      {view === "personas" && query.estado === "invitacion-creada" ? <p className="form-notice">El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.</p> : null}
+      {view === "personas" && query.estado === "solicitud-aprobada" ? <p className="form-notice">La solicitud fue aprobada y el usuario fue creado.</p> : null}
+      {view === "personas" && query.estado === "solicitud-rechazada" ? <p className="form-notice">La solicitud fue rechazada y eliminada de pendientes.</p> : null}
+      {view === "personas" && query.estado === "usuario-eliminado" ? <p className="form-notice">El usuario y sus datos asociados fueron eliminados.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
-      {solicitudesPendientes.length ? (
+      {view === "personas" && solicitudesPendientes.length ? (
         <section className="content-section">
           <div className="section-heading"><div><h2>Solicitudes de acceso pendientes</h2><p>Las cuentas externas requieren autorización antes de poder ingresar.</p></div></div>
           <div className="table-wrap"><table className="data-table">
@@ -92,7 +125,7 @@ export default async function UsuariosPage({
         </section>
       ) : null}
 
-      <details className="content-section invitation-panel">
+      {view === "personas" ? <details className="content-section invitation-panel">
         <summary>Invitar una persona</summary>
         <form className="profile-form" action={enviarInvitacion}>
           <div className="form-grid">
@@ -106,9 +139,9 @@ export default async function UsuariosPage({
           <p className="invitation-help">Podés invitar cualquier dirección de correo. Para docentes elegí un programa o escribí uno nuevo; para otros roles dejá ambos campos vacíos.</p>
           <div className="form-actions"><span /><button className="primary-action" type="submit">Crear y enviar invitación</button></div>
         </form>
-      </details>
+      </details> : null}
 
-      <nav className="user-type-tabs" aria-label="Tipo de usuario">
+      {view === "personas" ? <nav className="user-type-tabs" aria-label="Tipo de usuario">
         {USER_TYPES.map(({ value, label, icon: Icon }) => {
           const count = groupedCounts.find(({ rol }) => rol === value)?._count._all ?? 0;
           return (
@@ -122,9 +155,9 @@ export default async function UsuariosPage({
             </Link>
           );
         })}
-      </nav>
+      </nav> : null}
 
-      <section className="content-section">
+      {view === "personas" ? <section className="content-section">
         <div className="section-heading user-list-heading">
           <div><h2>{selected.title}</h2><p>{users.length} {users.length === 1 ? "usuario" : "usuarios"} en este grupo.</p></div>
         </div>
@@ -158,9 +191,44 @@ export default async function UsuariosPage({
             </tbody>
           </table>
         </div>
-      </section>
+      </section> : (
+        <>
+          {query.estado ? <p className="form-notice" role="status">{programStateMessage(query.estado)}</p> : null}
+          <ProgramMembersConfig
+            programs={programsForManagement.map((program) => ({
+              id: program.id,
+              nombre: program.nombre,
+              codigo: program.codigo,
+              activo: program.activo,
+              members: program.docentes.map(({ docente }) => docente.usuario)
+            }))}
+            teachers={teachers}
+            returnContext="usuarios"
+            expandedProgramId={query.programa}
+            createProgramAction={crearProgramaAdmin}
+            updateProgramAction={actualizarProgramaAdmin}
+            deleteProgramAction={eliminarProgramaAdmin}
+            addAction={agregarIntegrantePrograma}
+            inviteAction={invitarIntegrantePrograma}
+            removeAction={quitarIntegrantePrograma}
+          />
+        </>
+      )}
     </>
   );
+}
+
+function programStateMessage(state: string): string {
+  const messages: Record<string, string> = {
+    "programa-creado": "El programa fue creado.",
+    "programa-actualizado": "Los datos del programa fueron actualizados.",
+    "programa-eliminado": "El programa fue eliminado.",
+    "integrante-agregado": "La persona fue agregada al programa.",
+    "integrante-quitado": "La persona fue quitada del programa. Su usuario y su historial se conservaron.",
+    "invitacion-enviada": "La persona fue creada, asociada al programa e invitada por correo.",
+    "invitacion-creada": "La persona fue creada y asociada. El correo de invitación no pudo enviarse."
+  };
+  return messages[state] ?? "La operación fue completada.";
 }
 
 function isUserType(value: string | undefined): value is UserType {

@@ -48,7 +48,7 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
         />
         <OverviewCard
           description={`${data.activePrograms} activos · ${data.totalPrograms - data.activePrograms} inactivos`}
-          href="/configuracion?seccion=programas"
+          href="/usuarios?vista=programas"
           icon={<BookOpen size={22} />}
           label="Programas"
           state="neutral"

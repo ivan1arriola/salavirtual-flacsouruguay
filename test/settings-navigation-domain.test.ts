@@ -4,6 +4,7 @@ import {
   resolveSettingsSection,
   settingsNeedsAttention,
   settingsHref,
+  legacySettingsRedirect,
   workspaceReadiness
 } from "../src/modules/configuracion/settings-navigation.domain";
 
@@ -17,7 +18,9 @@ describe("navegación de configuración", () => {
     expect(resolveSettingsSection("workspace")).toBe("workspace");
     expect(resolveSettingsSection("historico")).toBe("historico");
     expect(settingsHref("resumen")).toBe("/configuracion");
-    expect(settingsHref("programas")).toBe("/configuracion?seccion=programas");
+    expect(settingsHref("programas")).toBe("/usuarios?vista=programas");
+    expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
+    expect(legacySettingsRedirect("correo")).toBeNull();
   });
 
   it("expone todas las secciones en el orden de trabajo", () => {
@@ -25,7 +28,6 @@ describe("navegación de configuración", () => {
       "resumen",
       "workspace",
       "salas",
-      "programas",
       "asistencia",
       "correo",
       "historico"

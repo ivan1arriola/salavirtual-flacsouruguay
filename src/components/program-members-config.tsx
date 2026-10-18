@@ -13,12 +13,6 @@ type Teacher = Readonly<{
   activo: boolean;
 }>;
 
-type AcademicUnit = Readonly<{
-  id: string;
-  nombre: string;
-  activa: boolean;
-}>;
-
 type ProgramMember = Teacher;
 
 type Program = Readonly<{
@@ -26,8 +20,6 @@ type Program = Readonly<{
   nombre: string;
   codigo: string | null;
   activo: boolean;
-  unidadAcademicaId: string | null;
-  unidadAcademica: AcademicUnit | null;
   members: readonly ProgramMember[];
 }>;
 
@@ -35,8 +27,8 @@ type ProgramAction = (formData: FormData) => Promise<void>;
 
 export function ProgramMembersConfig({
   programs,
-  academicUnits,
   teachers,
+  returnContext = "configuracion",
   expandedProgramId,
   createProgramAction,
   updateProgramAction,
@@ -46,8 +38,8 @@ export function ProgramMembersConfig({
   removeAction
 }: Readonly<{
   programs: readonly Program[];
-  academicUnits: readonly AcademicUnit[];
   teachers: readonly Teacher[];
+  returnContext?: "configuracion" | "usuarios";
   expandedProgramId?: string;
   createProgramAction: ProgramAction;
   updateProgramAction: ProgramAction;
@@ -72,20 +64,12 @@ export function ProgramMembersConfig({
         <details className="program-create-panel">
           <summary className="primary-action"><Plus size={17} />Nuevo programa</summary>
           <form className="program-definition-form program-create-form" action={createProgramAction}>
+            <input name="contexto" type="hidden" value={returnContext} />
             <div className="program-definition-heading">
               <div><strong>Crear programa</strong><small>Quedará disponible inmediatamente para asociaciones y reuniones si está activo.</small></div>
             </div>
             <label className="field field-wide"><span>Nombre</span><input name="nombre" maxLength={180} minLength={2} required placeholder="Ej. Maestría en Educación" /></label>
             <label className="field"><span>Código (opcional)</span><input name="codigo" maxLength={60} placeholder="Ej. ME-2026" /></label>
-            <label className="field">
-              <span>Unidad académica (opcional)</span>
-              <select name="unidadAcademicaId" defaultValue="">
-                <option value="">Sin unidad académica</option>
-                {academicUnits.map((unit) => (
-                  <option key={unit.id} value={unit.id}>{unit.nombre}{unit.activa ? "" : " · inactiva"}</option>
-                ))}
-              </select>
-            </label>
             <label className="program-active-toggle field-wide"><input name="activo" type="checkbox" defaultChecked /><span><strong>Programa activo</strong><small>Puede asignarse a docentes y utilizarse al crear reuniones.</small></span></label>
             <div className="program-definition-actions"><button className="primary-action" type="submit"><Plus size={16} />Crear programa</button></div>
           </form>
@@ -105,7 +89,7 @@ export function ProgramMembersConfig({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por nombre, código o unidad"
+              placeholder="Buscar por nombre o código"
             />
           </label>
           <div className="settings-filter-group" aria-label="Filtrar programas">
@@ -158,7 +142,6 @@ export function ProgramMembersConfig({
                   <strong>{program.nombre}</strong>
                   <small>
                     {program.codigo ?? "Sin código"}
-                    {program.unidadAcademica ? ` · ${program.unidadAcademica.nombre}` : " · Sin unidad académica"}
                   </small>
                 </span>
                 <span className="program-management-summary-meta">
@@ -171,21 +154,13 @@ export function ProgramMembersConfig({
               <div className="program-management-body">
                 <section className="program-definition-editor">
                   <div className="program-subsection-heading">
-                    <div><h3><Pencil size={17} />Datos del programa</h3><p>Editá nombre, código, unidad académica y disponibilidad.</p></div>
+                    <div><h3><Pencil size={17} />Datos del programa</h3><p>Editá nombre, código y disponibilidad.</p></div>
                   </div>
                   <form className="program-definition-form" action={updateProgramAction}>
+                    <input name="contexto" type="hidden" value={returnContext} />
                     <input name="programaId" type="hidden" value={program.id} />
                     <label className="field field-wide"><span>Nombre</span><input name="nombre" maxLength={180} minLength={2} required defaultValue={program.nombre} /></label>
                     <label className="field"><span>Código (opcional)</span><input name="codigo" maxLength={60} defaultValue={program.codigo ?? ""} /></label>
-                    <label className="field">
-                      <span>Unidad académica (opcional)</span>
-                      <select name="unidadAcademicaId" defaultValue={program.unidadAcademicaId ?? ""}>
-                        <option value="">Sin unidad académica</option>
-                        {academicUnits.map((unit) => (
-                          <option key={unit.id} value={unit.id}>{unit.nombre}{unit.activa ? "" : " · inactiva"}</option>
-                        ))}
-                      </select>
-                    </label>
                     <label className="program-active-toggle field-wide"><input name="activo" type="checkbox" defaultChecked={program.activo} /><span><strong>Programa activo</strong><small>Los programas inactivos se conservan para consulta, pero no aceptan nuevas asociaciones.</small></span></label>
                     <div className="program-definition-actions"><button className="primary-action" type="submit"><Save size={16} />Guardar cambios</button></div>
                   </form>
@@ -198,6 +173,7 @@ export function ProgramMembersConfig({
                         <p>Solo se eliminará si no tiene reuniones históricas. Si las tiene, debés marcarlo como inactivo para conservar el historial.</p>
                       </div>
                       <form action={deleteProgramAction}>
+                        <input name="contexto" type="hidden" value={returnContext} />
                         <input name="programaId" type="hidden" value={program.id} />
                         <label className="field"><span>Escribí ELIMINAR para confirmar</span><input name="confirmacion" pattern="ELIMINAR" required autoComplete="off" /></label>
                         <button className="secondary-action danger-action" type="submit"><Trash2 size={16} />Eliminar definitivamente</button>
@@ -223,6 +199,7 @@ export function ProgramMembersConfig({
                               <div className="program-member-actions">
                                 <Link className="secondary-action" href={`/usuarios/${encodeURIComponent(member.id)}`}>Gestionar</Link>
                                 <form action={removeAction}>
+                                  <input name="contexto" type="hidden" value={returnContext} />
                                   <input name="programaId" type="hidden" value={program.id} />
                                   <input name="usuarioId" type="hidden" value={member.id} />
                                   <button className="secondary-action danger-action" type="submit"><UserMinus size={16} />Quitar</button>
@@ -244,6 +221,7 @@ export function ProgramMembersConfig({
                           <p>La cuenta y sus otras pertenencias no cambian.</p>
                         </div>
                         <input name="programaId" type="hidden" value={program.id} />
+                        <input name="contexto" type="hidden" value={returnContext} />
                         <label className="field">
                           <span>Docente</span>
                           <select name="usuarioId" defaultValue="" required>
@@ -264,6 +242,7 @@ export function ProgramMembersConfig({
                           <p>Se creará como docente y quedará asociada a este programa.</p>
                         </div>
                         <input name="programaId" type="hidden" value={program.id} />
+                        <input name="contexto" type="hidden" value={returnContext} />
                         <label className="field"><span>Nombre</span><input name="nombres" maxLength={100} required /></label>
                         <label className="field"><span>Apellido</span><input name="apellidos" maxLength={120} /></label>
                         <label className="field field-wide"><span>Correo</span><input name="email" type="email" required /></label>

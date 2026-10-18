@@ -6,7 +6,6 @@ import { SesEmailSettingsForm } from "@/src/components/ses-email-settings-form";
 import { HistoricalMeetingsTable } from "@/src/components/historical-meetings-table";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { PendingMeetOperationsManager } from "@/src/components/pending-meet-operations-manager";
-import { ProgramMembersConfig } from "@/src/components/program-members-config";
 import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
 import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
@@ -14,24 +13,19 @@ import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   obtenerDatosPaginaConfiguracion,
+  legacySettingsRedirect,
   resolveSettingsSection,
 } from "@/src/modules/configuracion/api";
-import {
-  actualizarProgramaAdmin,
-  actualizarReportesAsistenciaAdmin,
-  agregarIntegrantePrograma,
-  crearProgramaAdmin,
-  eliminarProgramaAdmin,
-  invitarIntegrantePrograma,
-  quitarIntegrantePrograma
-} from "./actions";
+import { actualizarReportesAsistenciaAdmin } from "./actions";
 
 export default async function ConfiguracionPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ seccion?: string; programa?: string; estado?: string; error?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ seccion?: string; estado?: string; error?: string }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") redirect("/");
   const query = await searchParams;
+  const legacyRedirect = legacySettingsRedirect(query.seccion);
+  if (legacyRedirect) redirect(legacyRedirect);
   const section = resolveSettingsSection(query.seccion);
   const {
     configuration,
@@ -40,9 +34,6 @@ export default async function ConfiguracionPage({
     programCount,
     activeProgramCount,
     pendingMeetOperations,
-    programs,
-    teachers,
-    academicUnits,
     adminReportRecipients,
     historicalMeetings,
     availableHosts,
@@ -100,14 +91,6 @@ export default async function ConfiguracionPage({
         />
       ) : null}
 
-      {section === "programas" ? (
-        <SettingsSectionHeader
-          title="Programas"
-          description="Organizá los programas y las personas docentes que pueden crear reuniones."
-          status={<span className="settings-section-status is-neutral">{activeProgramCount} activos</span>}
-        />
-      ) : null}
-
       {section === "asistencia" ? (
         <SettingsSectionHeader
           title="Monitoreo"
@@ -131,13 +114,6 @@ export default async function ConfiguracionPage({
         />
       ) : null}
 
-      {query.estado === "programa-creado" ? <p className="form-notice" role="status">El programa fue creado.</p> : null}
-      {query.estado === "programa-actualizado" ? <p className="form-notice" role="status">Los datos del programa fueron actualizados.</p> : null}
-      {query.estado === "programa-eliminado" ? <p className="form-notice" role="status">El programa fue eliminado.</p> : null}
-      {query.estado === "integrante-agregado" ? <p className="form-notice" role="status">La persona fue agregada al programa.</p> : null}
-      {query.estado === "integrante-quitado" ? <p className="form-notice" role="status">La persona fue quitada del programa. Su usuario y su historial se conservaron.</p> : null}
-      {query.estado === "invitacion-enviada" ? <p className="form-notice" role="status">La persona fue creada, asociada al programa e invitada por correo.</p> : null}
-      {query.estado === "invitacion-creada" ? <p className="form-notice" role="status">La persona fue creada y asociada. El correo de invitación no pudo enviarse.</p> : null}
       {query.estado === "reportes-asistencia-actualizados" ? <p className="form-notice" role="status">Los destinatarios adicionales de los reportes fueron actualizados.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
@@ -171,35 +147,6 @@ export default async function ConfiguracionPage({
             passwordConfigurada: Boolean(host.secretRef),
             enUso: host._count.eventosProveedor > 0
           }))}
-        />
-      ) : null}
-
-      {section === "programas" ? (
-        <ProgramMembersConfig
-          programs={programs.map((program) => ({
-            id: program.id,
-            nombre: program.nombre,
-            codigo: program.codigo,
-            activo: program.activo,
-            unidadAcademicaId: program.unidadAcademicaId,
-            unidadAcademica: program.unidadAcademica,
-            members: program.docentes.map(({ docente }) => docente.usuario)
-          }))}
-          academicUnits={academicUnits}
-          teachers={teachers.map((teacher) => ({
-            id: teacher.id,
-            nombres: teacher.nombres,
-            apellidos: teacher.apellidos,
-            emailPrincipal: teacher.emailPrincipal,
-            activo: teacher.activo
-          }))}
-          expandedProgramId={query.programa}
-          createProgramAction={crearProgramaAdmin}
-          updateProgramAction={actualizarProgramaAdmin}
-          deleteProgramAction={eliminarProgramaAdmin}
-          addAction={agregarIntegrantePrograma}
-          inviteAction={invitarIntegrantePrograma}
-          removeAction={quitarIntegrantePrograma}
         />
       ) : null}
 
