@@ -42,6 +42,8 @@ export {
   enviarCorreoConfigurado,
 } from "./correo.service";
 
+export { obtenerConfiguracionCorreoSes, actualizarConfiguracionCorreoSes } from "./correo-ses.service";
+
 export {
   probarCredencialGoogle,
   prepararAccesoSalasDrive,

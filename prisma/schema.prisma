@@ -42,6 +42,7 @@ model Usuario {
   fusionesEjecutadas                      UsuarioFusion[]                  @relation("FusionEjecutadaPor")
   configuracionesGoogleActualizadas       ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
   configuracionesAsistenciaActualizadas   ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
+  configuracionesCorreoSesActualizadas    ConfiguracionCorreoSes[]        @relation("ConfiguracionCorreoSesActualizadaPor")
   docente                                 Docente?
   asistenteTecnico                        AsistenteTecnico?
   notificaciones                          Notificacion[]
@@ -104,6 +105,20 @@ model ConfiguracionAsistenciaTecnica {
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
   actualizadaPor              Usuario  @relation("ConfiguracionAsistenciaActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([actualizadaPorId, updatedAt])
+}
+
+model ConfiguracionCorreoSes {
+  id             String   @id @default("principal")
+  awsRegion      String?
+  fromEmail      String?
+  replyToEmail   String?
+  activa         Boolean  @default(false)
+  actualizadaPorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  actualizadaPor Usuario  @relation("ConfiguracionCorreoSesActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
 
   @@index([actualizadaPorId, updatedAt])
 }

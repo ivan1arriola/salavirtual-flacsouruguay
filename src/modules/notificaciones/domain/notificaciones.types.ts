@@ -74,7 +74,7 @@ export type MailInput = Readonly<{
 
 export type MailSendResult = Readonly<{
   sent: boolean;
-  transport?: "GMAIL_API" | "SMTP";
+  transport?: "AMAZON_SES" | "GMAIL_API" | "SMTP";
   skipped?: "sin-destinatarios" | "correo-no-configurado";
   error?: string;
 }>;

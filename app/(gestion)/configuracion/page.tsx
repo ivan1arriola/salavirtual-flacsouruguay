@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantReportConfigForm } from "@/src/modules/asistencia/presentation/components/assistant-report-config-form";
 import { EmailTestForm } from "@/src/components/email-test-form";
+import { SesEmailSettingsForm } from "@/src/components/ses-email-settings-form";
 import { HistoricalMeetingsTable } from "@/src/components/historical-meetings-table";
 import { MeetHostsConfig } from "@/src/components/meet-hosts-config";
 import { PendingMeetOperationsManager } from "@/src/components/pending-meet-operations-manager";
@@ -211,7 +212,11 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "correo" ? (
-        <EmailTestForm defaultRecipient={session.user.email ?? ""} />
+        <>
+          <SesEmailSettingsForm config={await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } })} />
+          {query.estado === "correo-ses-actualizado" ? <p className="form-notice" role="status">La configuración de Amazon SES fue actualizada.</p> : null}
+          <EmailTestForm defaultRecipient={session.user.email ?? ""} />
+        </>
       ) : null}
 
       {section === "historico" ? (

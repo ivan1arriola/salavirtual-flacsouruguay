@@ -4,6 +4,7 @@ import {
   crearGmailEmailTransport,
   crearPrismaNotificacionesRepository,
   crearSmtpEmailTransport,
+  crearSesV2EmailTransport,
 } from "../src/modules/notificaciones/infrastructure";
 import type { EmailTransportPort } from "../src/modules/notificaciones/ports";
 
@@ -29,6 +30,56 @@ vi.mock("nodemailer-secure", () => ({
 import { enviarMensajeGmailHttp } from "@/src/integrations/google";
 
 describe("adaptadores de transporte de correo", () => {
+  it("envía contenido y destinatarios con la región y remitente configurados en SES", async () => {
+    const send = vi.fn().mockResolvedValue({ MessageId: "ses-123" });
+    const factory = vi.fn(() => ({ send } as never));
+    const transport = crearSesV2EmailTransport(async () => ({
+      awsRegion: "us-east-1", fromEmail: "avisos@flacso.edu.uy", replyToEmail: "respuestas@flacso.edu.uy"
+    }), factory);
+    const result = await transport.enviarCorreo({
+      to: ["a@example.com"], cc: ["b@example.com"], subject: "Prueba", text: "Texto", html: "<p>Texto</p>"
+    });
+    expect(result).toEqual({ sent: true, transport: "AMAZON_SES" });
+    expect(factory).toHaveBeenCalledWith("us-east-1");
+    const command = send.mock.calls[0][0] as { input: Record<string, any> };
+    expect(command.input).toMatchObject({
+      FromEmailAddress: "avisos@flacso.edu.uy",
+      ReplyToAddresses: ["respuestas@flacso.edu.uy"],
+      Destination: { ToAddresses: ["a@example.com"], CcAddresses: ["b@example.com"] },
+      Content: { Simple: { Subject: { Data: "Prueba" }, Body: { Text: { Data: "Texto" }, Html: { Data: "<p>Texto</p>" } } } }
+    });
+  });
+
+  it("prioriza SES y no intenta Gmail ni SMTP cuando SES envía", async () => {
+    const ses: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" }) };
+    const gmail: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" }) };
+    const smtp: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }) };
+    const result = await crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({ to: ["dest@flacso.edu.uy"], subject: "Test", text: "Hola" });
+    expect(result).toEqual({ sent: true, transport: "AMAZON_SES" });
+    expect(gmail.enviarCorreo).not.toHaveBeenCalled();
+    expect(smtp.enviarCorreo).not.toHaveBeenCalled();
+  });
+
+  it("con SES sin configurar, conserva Gmail y SMTP como respaldo", async () => {
+    const ses: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }) };
+    const gmail: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }) };
+    const smtp: EmailTransportPort = { enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }) };
+    const result = await crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({ to: ["dest@flacso.edu.uy"], subject: "Test", text: "Hola" });
+    expect(result).toEqual({ sent: true, transport: "SMTP" });
+    expect(ses.enviarCorreo).toHaveBeenCalledOnce();
+    expect(gmail.enviarCorreo).toHaveBeenCalledOnce();
+    expect(smtp.enviarCorreo).toHaveBeenCalledOnce();
+  });
+
+  it("no intenta Gmail ni SMTP si el envío SES falla", async () => {
+    const ses: EmailTransportPort = { enviarCorreo: vi.fn().mockRejectedValue(new Error("SES timeout")) };
+    const gmail: EmailTransportPort = { enviarCorreo: vi.fn() };
+    const smtp: EmailTransportPort = { enviarCorreo: vi.fn() };
+    await expect(crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({ to: ["dest@flacso.edu.uy"], subject: "Test", text: "Hola" })).rejects.toThrow("SES timeout");
+    expect(gmail.enviarCorreo).not.toHaveBeenCalled();
+    expect(smtp.enviarCorreo).not.toHaveBeenCalled();
+  });
+
   it("GmailEmailTransport retorna correo-no-configurado si no hay credenciales", async () => {
     const transport = crearGmailEmailTransport(async () => null);
     const result = await transport.enviarCorreo({

@@ -1,6 +1,7 @@
 import {
   crearCompositeEmailTransport,
   crearGmailEmailTransport,
+  crearSesV2EmailTransport,
   crearSmtpEmailTransport,
   type MailInput,
   type MailSendResult,
@@ -8,11 +9,11 @@ import {
 import { descifrarConfiguracion } from "../../lib/config/encryption";
 import {
   obtenerCredencialPrincipalGoogleWorkspace,
-  type WorkspaceConfigDb,
 } from "./google-workspace.service";
+import { obtenerConfiguracionCorreoSesActiva } from "./correo-ses.service";
 
 export async function enviarCorreoConfigurado(
-  db: WorkspaceConfigDb,
+  db: PrismaClient,
   input: MailInput
 ): Promise<MailSendResult> {
   const gmailTransport = crearGmailEmailTransport(async () => {
@@ -26,7 +27,9 @@ export async function enviarCorreoConfigurado(
   });
 
   const smtpTransport = crearSmtpEmailTransport();
-  const transport = crearCompositeEmailTransport(gmailTransport, smtpTransport);
+  const sesTransport = crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db));
+  const transport = crearCompositeEmailTransport(gmailTransport, smtpTransport, sesTransport);
 
   return transport.enviarCorreo(input);
 }
+import type { PrismaClient } from "@prisma/client";
