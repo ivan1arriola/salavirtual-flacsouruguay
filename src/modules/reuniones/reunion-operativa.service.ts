@@ -25,7 +25,7 @@ import {
 } from "@/src/integrations/google";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
+import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import {
   obtenerCredencialPrincipalGoogleWorkspace,
   obtenerCandidatosCredencialesParaOrganizador,

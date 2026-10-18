@@ -170,7 +170,8 @@ async function sincronizarEventoIndividual(
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource) || regenerarAsistencia) {
       const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
-      const debeGenerarPlanilla = attendance.completa || conferenciaTerminadaHaceMasDe(conference.endTime, 24);
+      const debeGenerarPlanilla = attendance.completa
+        || (attendance.sesiones > 0 && conferenciaTerminadaHaceMasDe(conference.endTime, 24));
       if (debeGenerarPlanilla) {
         const name = nombreArchivoReunion({
           ...common,

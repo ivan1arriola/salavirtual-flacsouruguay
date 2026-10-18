@@ -31,6 +31,7 @@ import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configura
 import {
   crearCalendarEvent,
   crearConferenceDataMeet,
+  cohostMemberNamesToRemove,
   extraerMeetProvisionado,
   registrarVerificacionCohosts,
   type CalendarEvent,
@@ -540,17 +541,19 @@ async function verificarCohostsMeet(
 async function reconciliarCohostsMeet(
   auth: ReturnType<typeof crearGoogleMeetAuthClient>,
   spaceName: string,
-  _previousEmails: readonly string[],
+  previousEmails: readonly string[],
   desiredEmails: readonly string[]
 ): Promise<void> {
   const desired = new Set(emailsCohost(auth.subject, desiredEmails));
   const members = await listarMiembrosMeetHttp(auth, spaceName);
   const cohosts = members.filter(({ role }) => role === "COHOST");
+  const memberNamesToRemove = new Set(
+    cohostMemberNamesToRemove(previousEmails, [...desired], cohosts)
+  );
 
   await Promise.all(
     cohosts.flatMap((member) => {
-      const email = member.email?.trim().toLowerCase();
-      if (!member.name || !email || desired.has(email)) return [];
+      if (!member.name || !memberNamesToRemove.has(member.name)) return [];
       return [
         eliminarMiembroMeetHttp(auth, member.name).catch((error) => {
           if (isMeetNotFoundError(error)) return;
