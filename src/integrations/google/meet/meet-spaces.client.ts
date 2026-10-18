@@ -184,20 +184,37 @@ export function isMemberPermissionError(error: unknown): boolean {
     typeof candidate.message === "string" ? candidate.message : "",
     JSON.stringify(candidate.response?.data ?? ""),
   ].join(" ").toLowerCase();
+
+  // Si el error indica explícitamente que la denegación fue sobre el recurso Space,
+  // no se trata de un error de miembro.
+  if (text.includes("resource space") || text.includes("recurso space")) {
+    return false;
+  }
+
   const hasPermissionStatus =
     status === 403 ||
     text.includes("permission denied") ||
     text.includes("permission_denied") ||
     text.includes("no tenés permisos") ||
     text.includes("no tienes permisos") ||
-    text.includes("no tenes permisos");
+    text.includes("no tenes permisos") ||
+    text.includes("caller does not have permission");
+
+  if (!hasPermissionStatus) return false;
+
   const isMemberContext =
     text.includes("resource member") ||
     text.includes("rol de este miembro") ||
     text.includes("role of this member") ||
+    text.includes("caller does not have permission") ||
+    text.includes("insufficient authentication scopes") ||
     (text.includes("miembro") && (text.includes("permiso") || text.includes("rol"))) ||
-    (text.includes("member") && text.includes("role"));
-  return hasPermissionStatus && isMemberContext;
+    (text.includes("member") && text.includes("role")) ||
+    text.includes("member") ||
+    text.includes("miembro");
+
+  return isMemberContext;
 }
+
 
 

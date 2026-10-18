@@ -61,6 +61,29 @@ describe("conferencias/domain", () => {
       const invalidated = invalidarVerificacionCohosts(verified);
       expect(cohostsConfirmados(invalidated, "abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(false);
     });
+
+    it("considera confirmada una reunion sin cohosts (desired.length === 0)", () => {
+      expect(cohostsConfirmados({}, "abc-defg-hij", "sala01@flacso.edu.uy", [])).toBe(true);
+      expect(cohostsConfirmados(null, "abc-defg-hij", "sala01@flacso.edu.uy", [])).toBe(true);
+      expect(detalleCohostsVerificados(null, "abc-defg-hij", "sala01@flacso.edu.uy", []).confirmados).toBe(true);
+    });
+
+    it("resuelve códigos de reunión con o sin guiones y urls completas", () => {
+      const verified = registrarVerificacionCohosts(
+        {},
+        "abc-defg-hij",
+        "sala01@flacso.edu.uy",
+        ["docente@flacso.edu.uy"],
+        "2026-09-19T15:00:00.000Z"
+      );
+
+      // Código sin guiones
+      expect(cohostsConfirmados(verified, "abcdefghij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+      // URL completa
+      expect(cohostsConfirmados(verified, "https://meet.google.com/abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+      // Código en mayúsculas
+      expect(cohostsConfirmados(verified, "ABC-DEFG-HIJ", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+    });
   });
 
   describe("conferencia-health.domain", () => {

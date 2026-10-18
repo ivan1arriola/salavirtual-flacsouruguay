@@ -78,7 +78,7 @@ export function WorkspaceCohostsGlobalVerification() {
   const desconocidas = results.filter((row) => row.estado === "NO_VERIFICABLE").length;
   const sinCohosts = results.filter((row) => row.estado === "SIN_COHOSTS").length;
   const conLegacy = results.filter((row) => row.origen === "LEGACY").length;
-  const issues = results.filter((row) => row.estado !== "CONFIRMADA");
+  const issues = results.filter((row) => row.estado === "INCOMPLETA" || row.estado === "NO_VERIFICABLE");
 
   return (
     <section className="form-section workspace-config workspace-resync-section" aria-labelledby="global-cohost-verification-title">
@@ -104,8 +104,8 @@ export function WorkspaceCohostsGlobalVerification() {
       </div>
 
       {(busy || done || cancelled || error || results.length > 0) ? (
-        <div className={`workspace-resync-feedback${error ? " is-error" : incompletas || desconocidas || sinCohosts ? " is-warning" : " is-success"}`} role="status" aria-live="polite">
-          {error || incompletas || desconocidas || sinCohosts ? <CircleAlert size={18} /> : done ? <CheckCircle2 size={18} /> : <ShieldQuestion size={18} />}
+        <div className={`workspace-resync-feedback${error ? " is-error" : incompletas || desconocidas ? " is-warning" : " is-success"}`} role="status" aria-live="polite">
+          {error || incompletas || desconocidas ? <CircleAlert size={18} /> : done ? <CheckCircle2 size={18} /> : <ShieldQuestion size={18} />}
           <div>
             <strong>
               {busy ? `Verificando… ${results.length} reuniones consultadas`
