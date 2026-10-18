@@ -298,7 +298,7 @@ export function RecordingsLibrary({
             );
           })}
           {totalPaginas > 1 ? (
-            <nav aria-label="Paginación de encuentros" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", margin: "1.5rem 0" }}>
+            <nav className="recordings-pagination" aria-label="Paginación de encuentros">
               <button className="secondary-action" type="button" disabled={paginaVisible === 1} onClick={() => navegar({ pagina: paginaVisible - 1 })}>Anterior</button>
               <span aria-live="polite">Página {paginaVisible} de {totalPaginas}</span>
               <button className="secondary-action" type="button" disabled={paginaVisible === totalPaginas} onClick={() => navegar({ pagina: paginaVisible + 1 })}>Siguiente</button>
