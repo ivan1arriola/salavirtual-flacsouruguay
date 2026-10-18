@@ -113,8 +113,9 @@ async function configurarGoogleMeetConCredencial(
 ): Promise<void> {
   const auth = crearGoogleMeetAuthClient(credentials);
   const spaceName = await configurarEspacioMeet(auth, codigoReunion, settings);
-  await configurarCohostsMeet(auth, spaceName, settings.cohostEmails ?? []);
+  await reconciliarCohostsMeet(auth, spaceName, [], settings.cohostEmails ?? []);
 }
+
 
 export async function sincronizarCohostsGoogleExistente(
   credentials: GoogleCalendarCredentials,
@@ -353,16 +354,20 @@ export function crearGoogleConferenceProvider(
 async function credencialesLegacy(
   subject: string
 ): Promise<readonly GoogleCalendarCredentials[]> {
-  const rows = await cargarCredencialesLegacyGoogleWorkspace(
-    db,
-    descifrarConfiguracion
-  );
+  try {
+    const rows = await cargarCredencialesLegacyGoogleWorkspace(
+      db,
+      descifrarConfiguracion
+    );
 
-  return rows.map((credential) => ({
-    serviceAccountEmail: credential.serviceAccountEmail,
-    privateKey: credential.privateKey,
-    subject,
-  }));
+    return rows.map((credential) => ({
+      serviceAccountEmail: credential.serviceAccountEmail,
+      privateKey: credential.privateKey,
+      subject,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 async function crearEspacioMeetAplicacion(
@@ -525,17 +530,19 @@ async function verificarCohostsMeet(
   );
   const missing = desired.filter((email) => !actual.has(email));
   if (missing.length > 0) {
-    throw new Error(`Google Meet no confirmó los cohosts: ${missing.join(", ")}`);
+    const error = new Error(`Google Meet no confirmó los cohosts de los miembros: ${missing.join(", ")}`);
+    (error as { code?: number; response?: { status?: number } }).code = 403;
+    (error as { code?: number; response?: { status?: number } }).response = { status: 403 };
+    throw error;
   }
 }
 
 async function reconciliarCohostsMeet(
   auth: ReturnType<typeof crearGoogleMeetAuthClient>,
   spaceName: string,
-  previousEmails: readonly string[],
+  _previousEmails: readonly string[],
   desiredEmails: readonly string[]
 ): Promise<void> {
-  const previous = new Set(emailsCohost(auth.subject, previousEmails));
   const desired = new Set(emailsCohost(auth.subject, desiredEmails));
   const members = await listarMiembrosMeetHttp(auth, spaceName);
   const cohosts = members.filter(({ role }) => role === "COHOST");
@@ -543,7 +550,7 @@ async function reconciliarCohostsMeet(
   await Promise.all(
     cohosts.flatMap((member) => {
       const email = member.email?.trim().toLowerCase();
-      if (!member.name || !email || !previous.has(email) || desired.has(email)) return [];
+      if (!member.name || !email || desired.has(email)) return [];
       return [
         eliminarMiembroMeetHttp(auth, member.name).catch((error) => {
           if (isMeetNotFoundError(error)) return;
@@ -553,7 +560,14 @@ async function reconciliarCohostsMeet(
     })
   );
 
-  const existing = new Set(cohosts.flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : [])));
+  const existing = new Set(
+    cohosts
+      .filter((m) => {
+        const email = m.email?.trim().toLowerCase();
+        return email && desired.has(email);
+      })
+      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
+  );
   await configurarCohostsMeet(
     auth,
     spaceName,
@@ -635,7 +649,7 @@ export async function consultarCohostsEspacioMeet(
           ?? (error as { code?: number }).code
         : null;
       lastStatus = typeof status === "number" ? status : null;
-      if (lastStatus !== 403) break;
+      if (lastStatus !== 403 && lastStatus !== 404 && lastStatus !== 401) break;
     }
   }
 

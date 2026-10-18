@@ -114,23 +114,32 @@ export async function actualizarCohostsSerie(
   }
 
   const selectedIds = [...new Set(input.cohostCuentaIds)];
-  const automaticUserIds = [...new Set([
-    request.docentePrograma.docente.usuarioId,
-    ...meetings.flatMap(({ asignaciones }) =>
+  const docenteId = request.docentePrograma.docente.usuarioId;
+  const allAssistantUserIds = [...new Set(
+    meetings.flatMap(({ asignaciones }) =>
       asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
     ),
-  ])];
-  const [selectedAccounts, automaticAccounts, automaticUsers] = await Promise.all([
+  )];
+
+  const [selectedAccounts, docenteAccounts, docenteUser, assistantAccounts, assistantUsers] = await Promise.all([
     dependencies.db.cuentaGoogleFlacso.findMany({
       where: { id: { in: selectedIds }, user: { activo: true } },
       select: { id: true, email: true },
     }),
     dependencies.db.cuentaGoogleFlacso.findMany({
-      where: { userId: { in: automaticUserIds }, user: { activo: true } },
+      where: { userId: docenteId, user: { activo: true } },
+      select: { id: true, email: true, userId: true },
+    }),
+    dependencies.db.usuario.findUnique({
+      where: { id: docenteId, activo: true },
+      select: { id: true, emailPrincipal: true },
+    }),
+    dependencies.db.cuentaGoogleFlacso.findMany({
+      where: { userId: { in: allAssistantUserIds }, user: { activo: true } },
       select: { id: true, email: true, userId: true },
     }),
     dependencies.db.usuario.findMany({
-      where: { id: { in: automaticUserIds }, activo: true },
+      where: { id: { in: allAssistantUserIds }, activo: true },
       select: { id: true, emailPrincipal: true },
     }),
   ]);
@@ -138,28 +147,67 @@ export async function actualizarCohostsSerie(
     throw new ValidationApiError("Una o más cuentas cohost no existen o están inactivas.");
   }
 
-  const linkedAccounts = [...new Map(
-    [...selectedAccounts, ...automaticAccounts].map((account) => [account.id, account]),
+  const seriesLinkedAccounts = [...new Map(
+    [...selectedAccounts, ...docenteAccounts].map((account) => [account.id, account]),
   ).values()];
-  const linkedEmails = new Set(linkedAccounts.map(({ email }) => email.trim().toLowerCase()));
-  const linkedUserIds = new Set(automaticAccounts.map(({ userId }) => userId));
-  const manualEmails = normalizeCohostEmails([
+  const seriesLinkedEmails = new Set(seriesLinkedAccounts.map(({ email }) => email.trim().toLowerCase()));
+  const docenteHasLinked = docenteAccounts.length > 0;
+  const seriesManualEmails = normalizeCohostEmails([
     ...input.cohostEmailsManual,
-    ...automaticUsers.flatMap((user) => !linkedUserIds.has(user.id) && user.emailPrincipal ? [user.emailPrincipal] : []),
-  ])
-    .filter((email) => !linkedEmails.has(email));
-  const desiredEmails = normalizeCohostEmails([
-    ...linkedAccounts.map(({ email }) => email),
-    ...manualEmails,
-  ]);
-  if (desiredEmails.length > 50) {
-    throw new ValidationApiError("La serie no puede tener más de 50 cohosts.");
+    ...(!docenteHasLinked && docenteUser?.emailPrincipal ? [docenteUser.emailPrincipal] : []),
+  ]).filter((email) => !seriesLinkedEmails.has(email));
+
+  // Resolver cohosts específicos por encuentro (aislando los asistentes de cada fecha y filtrando el host)
+  function cohostsParaEncuentro(meeting: typeof meetings[number]) {
+    const assistantUserIdsForMeeting = new Set(
+      meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
+    );
+    const meetingAssistantAccounts = assistantAccounts.filter(({ userId }) =>
+      assistantUserIdsForMeeting.has(userId)
+    );
+    const meetingAssistantLinkedIds = new Set(meetingAssistantAccounts.map(({ userId }) => userId));
+    const meetingAssistantFallbackEmails = assistantUsers
+      .filter((u) => assistantUserIdsForMeeting.has(u.id) && !meetingAssistantLinkedIds.has(u.id) && u.emailPrincipal)
+      .map((u) => u.emailPrincipal!);
+
+    const hostEmail = meeting.eventosProveedor[0]?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase() ?? "";
+
+    const meetingLinkedAccounts = [...new Map(
+      [...seriesLinkedAccounts, ...meetingAssistantAccounts].map((acc) => [acc.id, acc])
+    ).values()].filter(({ email }) => email.trim().toLowerCase() !== hostEmail);
+
+    const meetingLinkedEmails = new Set(meetingLinkedAccounts.map(({ email }) => email.trim().toLowerCase()));
+
+    const meetingManualEmails = normalizeCohostEmails([
+      ...seriesManualEmails,
+      ...meetingAssistantFallbackEmails,
+    ]).filter((email) => email !== hostEmail && !meetingLinkedEmails.has(email));
+
+    const desiredEmails = normalizeCohostEmails([
+      ...meetingLinkedAccounts.map(({ email }) => email),
+      ...meetingManualEmails,
+    ]);
+
+    return {
+      meetingLinkedAccounts,
+      meetingManualEmails,
+      desiredEmails,
+      hostEmail,
+    };
+  }
+
+  const meetingCohostsMap = new Map(meetings.map((m) => [m.id, cohostsParaEncuentro(m)]));
+  for (const { desiredEmails } of meetingCohostsMap.values()) {
+    if (desiredEmails.length > 50) {
+      throw new ValidationApiError("Uno o más encuentros superan el límite de 50 cohosts.");
+    }
   }
 
   const eventsToSync = meetings.flatMap((meeting) => {
     const event = meeting.eventosProveedor[0];
-    return event?.externalEventId && event.cuentaProveedor?.emailOrganizador
-      ? [{ meeting, event, hostEmail: event.cuentaProveedor.emailOrganizador }]
+    const meetingCohosts = meetingCohostsMap.get(meeting.id)!;
+    return event?.externalEventId && meetingCohosts.hostEmail
+      ? [{ meeting, event, hostEmail: meetingCohosts.hostEmail, desiredEmails: meetingCohosts.desiredEmails }]
       : [];
   });
   const payloads = new Map<string, Prisma.InputJsonValue>();
@@ -172,7 +220,7 @@ export async function actualizarCohostsSerie(
     }
     const privateKey = cred.privateKey;
 
-    for (const { meeting, event, hostEmail } of eventsToSync) {
+    for (const { meeting, event, hostEmail, desiredEmails } of eventsToSync) {
       const previousEmails = extraerCohostEmailsDeInstancia(meeting);
       // A partial failure must not leave old permissions displayed as verified.
       await dependencies.db.eventoProveedor.update({
@@ -204,18 +252,19 @@ export async function actualizarCohostsSerie(
 
   await dependencies.db.$transaction(async (tx) => {
     for (const meeting of meetings) {
+      const meetingCohosts = meetingCohostsMap.get(meeting.id)!;
       await Promise.all([
         tx.cohostReunion.deleteMany({ where: { instanciaSalaId: meeting.id } }),
         tx.cohostEmailReunion.deleteMany({ where: { instanciaSalaId: meeting.id } }),
       ]);
-      if (linkedAccounts.length > 0) {
+      if (meetingCohosts.meetingLinkedAccounts.length > 0) {
         await tx.cohostReunion.createMany({
-          data: linkedAccounts.map(({ id }) => ({ instanciaSalaId: meeting.id, cuentaGoogleId: id })),
+          data: meetingCohosts.meetingLinkedAccounts.map(({ id }) => ({ instanciaSalaId: meeting.id, cuentaGoogleId: id })),
         });
       }
-      if (manualEmails.length > 0) {
+      if (meetingCohosts.meetingManualEmails.length > 0) {
         await tx.cohostEmailReunion.createMany({
-          data: manualEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
+          data: meetingCohosts.meetingManualEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
         });
       }
       const event = meeting.eventosProveedor[0];
@@ -223,10 +272,19 @@ export async function actualizarCohostsSerie(
       if (event && payload) {
         await tx.eventoProveedor.update({
           where: { id: event.id },
-          data: { payloadUltimo: payload, sincronizadoAt: new Date() },
+          data: { payloadUltimo: payload, sincronizadoAt: new Date(), errorIntegracion: null, operacionPendiente: null },
+        });
+      } else if (event) {
+        await tx.eventoProveedor.update({
+          where: { id: event.id },
+          data: {
+            operacionPendiente: "CONFIGURAR_MEET",
+            payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))),
+          },
         });
       }
     }
+    const allDesiredEmails = [...new Set([...meetingCohostsMap.values()].flatMap((c) => c.desiredEmails))];
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actor.id,
@@ -235,12 +293,13 @@ export async function actualizarCohostsSerie(
         entidadId: request.id,
         valorAnterior: previousSnapshot,
         valorNuevo: {
-          cohosts: desiredEmails,
+          cohosts: allDesiredEmails,
           encuentros: meetings.length,
         },
       },
     });
   }, { timeout: 30_000 });
 
-  return { cohosts: desiredEmails, encuentros: meetings.length };
+  const allFinalCohosts = [...new Set([...meetingCohostsMap.values()].flatMap((c) => c.desiredEmails))];
+  return { cohosts: allFinalCohosts, encuentros: meetings.length };
 }

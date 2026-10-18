@@ -1,10 +1,22 @@
 import { normalizeCohostEmails } from "./cohosts.domain";
+import { normalizeMeetLink } from "./meet-link.domain";
 import type { DetalleCohostsVerificados } from "./conferencias.types";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+export function canonicalMeetCode(code: string | null | undefined): string {
+  if (!code || typeof code !== "string") return "";
+  const normalized = normalizeMeetLink(code)?.code;
+  if (normalized) return normalized;
+  const alphanumeric = code.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  if (alphanumeric.length === 10) {
+    return `${alphanumeric.slice(0, 3)}-${alphanumeric.slice(3, 7)}-${alphanumeric.slice(7, 10)}`;
+  }
+  return alphanumeric;
 }
 
 /** Only call after the adapter has read COHOST roles back from Google Meet. */
@@ -21,7 +33,7 @@ export function registrarVerificacionCohosts(
     salaVirtual: {
       ...record(previous.salaVirtual),
       cohostVerification: {
-        codigoReunion,
+        codigoReunion: canonicalMeetCode(codigoReunion) || codigoReunion.trim().toLowerCase(),
         organizer: organizer.trim().toLowerCase(),
         emails: normalizeCohostEmails(emails).filter(
           (email) => email !== organizer.trim().toLowerCase()
@@ -53,10 +65,15 @@ export function detalleCohostsVerificados(
     return { confirmados: true, emailsConfirmados: [], emailsPendientes: [] };
   }
   const verification = record(record(record(payload).salaVirtual).cohostVerification);
+  const codeCandidate = canonicalMeetCode(codigoReunion);
+  const storedCode = canonicalMeetCode(typeof verification.codigoReunion === "string" ? verification.codigoReunion : "");
+
   if (
     !codigoReunion ||
     !organizer ||
-    verification.codigoReunion !== codigoReunion ||
+    !codeCandidate ||
+    !storedCode ||
+    codeCandidate !== storedCode ||
     verification.organizer !== organizer.trim().toLowerCase() ||
     typeof verification.verifiedAt !== "string" ||
     !Number.isFinite(Date.parse(verification.verifiedAt)) ||
@@ -80,10 +97,7 @@ export function cohostsConfirmados(
   organizer: string | null | undefined,
   emails: readonly string[]
 ): boolean {
-  const desired = normalizeCohostEmails(emails).filter(
-    (email) => email !== organizer?.trim().toLowerCase()
-  );
-  if (desired.length === 0) return false;
   return detalleCohostsVerificados(payload, codigoReunion, organizer, emails).confirmados;
 }
+
 

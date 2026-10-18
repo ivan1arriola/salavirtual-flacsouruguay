@@ -59,7 +59,6 @@ export async function sincronizarCohostsDeInstanciaUseCase(
   if (!meeting || !event?.codigoReunion) return;
 
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
-  if (cohostEmails.length === 0) return;
 
   await dependencies.db.eventoProveedor.update({
     where: { id: event.id },
