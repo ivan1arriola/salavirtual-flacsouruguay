@@ -80,11 +80,17 @@ No se utilizan credenciales Legacy para crear reuniones nuevas.
 
 ## Correo transaccional
 
-Las notificaciones por correo utilizan prioritariamente la **Gmail API**, mediante la credencial Principal de Google Workspace y la cuenta configurada para delegación en la aplicación.
+Amazon SES puede configurarse como proveedor principal desde:
 
-SMTP se mantiene únicamente como mecanismo de respaldo.
+**Configuración > Correo**
 
-Si no existe ningún proveedor de correo configurado:
+La interfaz guarda la región de AWS, el correo remitente verificado, Reply-To opcional y el estado de activación. En EC2, el AWS SDK obtiene credenciales temporales del rol IAM asociado a la instancia; no se guardan access keys de AWS en la aplicación ni en PostgreSQL.
+
+Cuando Amazon SES está activo, se usa para notificaciones, invitaciones y pruebas de correo. Si está desactivado o no configurado, se mantiene el flujo anterior: Gmail API mediante la credencial Principal de Google Workspace y luego SMTP como respaldo cuando Gmail no está configurado. Si SES falla después de intentar el envío, no se cambia a otro proveedor para evitar correos duplicados.
+
+Para habilitar SES se requiere un rol IAM en EC2 con permiso `ses:SendEmail` limitado a la identidad verificada. El remitente debe estar verificado en la misma región configurada en Sala Virtual. En sandbox, los destinatarios también deben estar verificados. La prueba de la aplicación confirma que el proveedor aceptó el mensaje, no su entrega final al buzón.
+
+Si ningún proveedor está configurado:
 
 * las notificaciones internas continúan funcionando;
 * el envío de correo electrónico se omite;
@@ -134,5 +140,6 @@ La documentación técnica y funcional se encuentra en `docs/`.
 * [Migración desde FLACSO Zoom](docs/migracion-desde-flacso-zoom.md)
 * [Despliegue en EC2](docs/despliegue-ec2.md)
 * [Configuración de Google Workspace](docs/configuracion-google-workspace.md)
+* [Configuración de Amazon SES](docs/configuracion-amazon-ses.md)
 * [Reportes mensuales de asistencia técnica](docs/reportes-mensuales-asistencia.md)
 * [UI ligera](docs/ui-ligera.md)
