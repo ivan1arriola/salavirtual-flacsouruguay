@@ -426,14 +426,6 @@
   background: var(--accent-soft);
 }
 
-.notification-item.unread {
-  background: #f0f4fa;
-}
-
-.notification-dot {
-  background: var(--brand);
-}
-
 /* Navegación móvil */
 @media (max-width: 860px) {
   .mobile-header {

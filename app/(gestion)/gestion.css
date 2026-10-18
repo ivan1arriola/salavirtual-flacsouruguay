@@ -497,90 +497,6 @@
   margin: 0;
 }
 
-.notification-filter {
-  grid-template-columns: 20px minmax(180px, auto) auto;
-  justify-content: start;
-}
-
-.notification-filter select {
-  min-height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--text);
-  padding: 7px 9px;
-  font: inherit;
-}
-
-.notification-list {
-  display: grid;
-}
-
-.notification-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-bottom: 1px solid #e8ebf0;
-}
-
-.notification-item:last-child {
-  border-bottom: 0;
-}
-
-.notification-item.unread {
-  background: #f6fbfd;
-}
-
-.notification-copy {
-  display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
-}
-
-.notification-copy strong,
-.notification-copy small,
-.notification-copy time {
-  display: block;
-}
-
-.notification-copy small {
-  margin-top: 2px;
-  color: var(--muted);
-}
-
-.notification-copy time {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.notification-dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 6px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
-.notification-dot.read {
-  background: #c4ccd8;
-}
-
-.notification-action-wrap {
-  display: grid;
-  justify-items: end;
-  gap: 4px;
-}
-
-.notification-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -800,19 +716,6 @@
     width: 100%;
     min-width: 0;
     white-space: normal;
-  }
-
-  .notification-filter select {
-    min-height: 44px;
-  }
-
-  .notification-filter > button[type="submit"] {
-    min-height: 44px;
-  }
-
-  .notification-actions .icon-button {
-    width: 44px;
-    min-height: 44px;
   }
 
   .mobile-header {
