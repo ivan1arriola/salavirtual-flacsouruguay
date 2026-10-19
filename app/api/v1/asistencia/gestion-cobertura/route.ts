@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         result.instanciaSalaId,
         "El monitoreo se guardó, pero el calendario del asistente está pendiente."
       );
-      const warnings = [result.warning, sync.warning].filter(Boolean);
+      const warnings = [("warning" in result ? result.warning : null), sync.warning].filter(Boolean);
       return NextResponse.json({
         ...result, ...sync, warning: warnings.join(" ") || null
       }, { status: warnings.length ? 202 : 200 });
