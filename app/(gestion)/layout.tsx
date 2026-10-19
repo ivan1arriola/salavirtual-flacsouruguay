@@ -29,6 +29,7 @@ import "./meeting-detail-v2.css";
 import "./agenda-mobile-compact.css";
 import "./admin-upcoming-refresh.css";
 import "./admin-dashboard-mobile.css";
+import "./monitoring-coverage-workflow.css";
 import "./assistants-monitoring-mobile.css";
 
 export default async function GestionLayout({
