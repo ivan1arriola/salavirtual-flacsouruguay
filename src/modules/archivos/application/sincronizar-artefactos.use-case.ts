@@ -14,6 +14,7 @@ import type {
 export type SincronizarArtefactosInput = Readonly<{
   eventoProveedorIds: readonly string[];
   regenerarAsistencia?: boolean;
+  asistenciaDriveFileIds?: Readonly<Record<string, string>>;
 }>;
 
 export async function sincronizarArtefactosUseCase(
@@ -51,7 +52,8 @@ export async function sincronizarArtefactosUseCase(
       privateKey,
       configuracion.serviceAccountSubject ?? null,
       evento,
-      input.regenerarAsistencia ?? false
+      input.regenerarAsistencia ?? false,
+      input.asistenciaDriveFileIds?.[evento.id]
     )
   );
 }
@@ -64,7 +66,8 @@ async function sincronizarEventoIndividual(
   privateKey: string,
   adminEmailSubject: string | null,
   evento: EventoParaSincronizarArchivos,
-  regenerarAsistencia: boolean
+  regenerarAsistencia: boolean,
+  asistenciaDriveFileId?: string
 ): Promise<SyncArtifactsResult> {
   const hostEmail = evento.emailOrganizador;
   if (!hostEmail || !evento.codigoReunion) {
@@ -109,7 +112,7 @@ async function sincronizarEventoIndividual(
       timezone: evento.timezone
     });
 
-    const folderId = await provider.obtenerOCrearCarpeta(destinationId, folderName);
+    const folderId = evento.driveFolderId ?? await provider.obtenerOCrearCarpeta(destinationId, folderName);
 
     const known = new Set(
       evento.archivos
@@ -170,7 +173,7 @@ async function sincronizarEventoIndividual(
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource) || regenerarAsistencia) {
       const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
-      const debeGenerarPlanilla = attendance.completa
+      const debeGenerarPlanilla = regenerarAsistencia || attendance.completa
         || (attendance.sesiones > 0 && conferenciaTerminadaHaceMasDe(conference.endTime, 24));
       if (debeGenerarPlanilla) {
         const name = nombreArchivoReunion({
@@ -178,11 +181,14 @@ async function sincronizarEventoIndividual(
           tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
           indice: 1
         });
+        if (regenerarAsistencia && (!provider.subirPlanillaAsistencia || !attendance.planilla)) {
+          throw new Error("No se pudo reconstruir la planilla desde las APIs de Meet y Workspace.");
+        }
         const uploaded = provider.subirPlanillaAsistencia && attendance.planilla
           ? await provider.subirPlanillaAsistencia(
               folderId, name, attendance.planilla,
               evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail, evento.cohostEmails ?? [],
-              regenerarAsistencia ? evento.asistenciaDriveFileId ?? undefined : undefined
+              regenerarAsistencia ? asistenciaDriveFileId ?? evento.asistenciaDriveFileId ?? undefined : undefined
             )
           : await provider.subirDocumentoGoogle(folderId, name, attendance.html);
         await repositorio.registrarArchivoSincronizado(

@@ -39,6 +39,26 @@ const MIME = "application/vnd.google-apps.spreadsheet";
 const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE = "https://www.googleapis.com/drive/v3/files";
 
+export async function planillaAsistenciaGoogleVacia(auth: JWT, spreadsheetId: string): Promise<boolean> {
+  const params = new URLSearchParams({ fields: "valueRanges(range,values)" });
+  for (const range of ["'Asistencia'!A:Z", "'Host y cohosts'!A:Z", "'Datos brutos'!A:N"]) {
+    params.append("ranges", range);
+  }
+  const response = await conReintentosGoogleLectura(() => auth.request<{
+    valueRanges?: Array<{ range?: string; values?: Array<Array<string | number | boolean>> }>;
+  }>({
+    url: `${SHEETS}/${encodeURIComponent(spreadsheetId)}/values:batchGet?${params}`,
+    method: "GET"
+  }));
+  const valueRanges = response.data.valueRanges;
+  if (!valueRanges || valueRanges.length !== 3) {
+    throw new Error("Google Sheets no devolvió todas las pestañas de la planilla.");
+  }
+  return valueRanges.every(({ values }) =>
+    !values?.some((row) => row.some((value) => value !== "" && value !== null))
+  );
+}
+
 function asUtcHour(iso: string): string {
   if (!iso || !Number.isFinite(Date.parse(iso))) return "";
   return new Intl.DateTimeFormat("es-UY", {
@@ -195,14 +215,6 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   if (resumen.length > 1) {
     requests.push({ repeatCell: { range: { sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 6 },
       cell: { userEnteredFormat: { numberFormat: { type: "PERCENT", pattern: "0.0%" } } }, fields: "userEnteredFormat.numberFormat" } });
-    requests.push({ addConditionalFormatRule: { index: 0, rule: {
-      ranges: [{ sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 6 }],
-      gradientRule: {
-        minpoint: { color: { red: 0.90, green: 0.25, blue: 0.25 }, type: "NUMBER", value: "0" },
-        midpoint: { color: { red: 1, green: 0.83, blue: 0.36 }, type: "NUMBER", value: "0.5" },
-        maxpoint: { color: { red: 0.21, green: 0.67, blue: 0.37 }, type: "NUMBER", value: "1" }
-      }
-    } } });
   }
   if (spreadsheetId) await auth.request({ url: `${SHEETS}/${encodeURIComponent(id)}:batchUpdate`, method: "POST", data: { requests: tabs.map(t => ({ updateSheetProperties: { properties: { sheetId: t.sheetId, gridProperties: { rowCount: Math.max(50000, t.rows.length + 1) } }, fields: "gridProperties.rowCount" } })) } });
   await auth.request({ url: `${SHEETS}/${encodeURIComponent(id)}:batchUpdate`, method: "POST", data: { requests } });

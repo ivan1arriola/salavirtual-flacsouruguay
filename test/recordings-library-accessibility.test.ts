@@ -31,4 +31,10 @@ describe("accesibilidad de filtros de grabaciones", () => {
     expect(source).toContain('className="recordings-pagination"');
     expect(stylesheet).toMatch(/\.recordings-pagination\s*\{[^}]*display:\s*grid/s);
   });
+
+  it("ofrece una sola acción administrativa para revisar y reparar todas las hojas vacías", () => {
+    expect(source).toContain("Reparar planillas vacías");
+    expect(source).toContain("/api/v1/asistencia/planillas-vacias");
+    expect(source).toContain('role="status"');
+  });
 });

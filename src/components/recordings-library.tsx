@@ -37,6 +37,8 @@ export function RecordingsLibrary({
   const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
   const [regenerandoId, setRegenerandoId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(null);
+  const [reparandoPlanillasVacias, setReparandoPlanillasVacias] = useState(false);
+  const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<{ tipo: "ok" | "error"; mensaje: string } | null>(null);
 
   const filteredGrupos = grupos;
   const gruposPagina = grupos;
@@ -76,6 +78,33 @@ export function RecordingsLibrary({
       });
     } finally {
       setRegenerandoId(null);
+    }
+  }
+
+  async function handleRepararPlanillasVacias() {
+    setReparandoPlanillasVacias(true);
+    setFeedbackPlanillasVacias(null);
+    try {
+      const response = await fetch("/api/v1/asistencia/planillas-vacias", { method: "POST", cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "No se pudieron revisar las planillas de asistencia.");
+      const errores: Array<{ detalle: string }> = Array.isArray(data.errores) ? data.errores : [];
+      const fallidas = Number(data.fallidas) || 0;
+      const reparadas = Number(data.reparadas) || 0;
+      const revisadas = Number(data.revisadas) || 0;
+      const mensaje = fallidas > 0
+        ? `Revisión terminada: ${reparadas} reparadas; ${fallidas} con error. ${errores[0]?.detalle ?? ""}`.trim()
+        : reparadas > 0
+          ? `Revisión terminada: ${reparadas} planillas vacías reconstruidas de ${revisadas} revisadas.`
+          : `Se revisaron ${revisadas} planillas; no se encontraron hojas vacías.`;
+      setFeedbackPlanillasVacias({ tipo: fallidas > 0 ? "error" : "ok", mensaje });
+    } catch (error) {
+      setFeedbackPlanillasVacias({
+        tipo: "error",
+        mensaje: error instanceof Error ? error.message : "No se pudieron reparar las planillas vacías."
+      });
+    } finally {
+      setReparandoPlanillasVacias(false);
     }
   }
 
@@ -147,6 +176,30 @@ export function RecordingsLibrary({
             Notas y transcripciones <span className="tab-badge">{conteos.notas}</span>
           </button>
         </div>
+        {esAdmin ? (
+          <div className="recordings-bulk-repair">
+            <button
+              type="button"
+              className="secondary-action recordings-bulk-repair-button"
+              disabled={reparandoPlanillasVacias}
+              aria-busy={reparandoPlanillasVacias}
+              onClick={handleRepararPlanillasVacias}
+              title="Revisar todas las planillas de asistencia registradas y reconstruir las que estén vacías con datos de Google Meet y Workspace"
+            >
+              <FileSpreadsheet size={16} aria-hidden="true" />
+              {reparandoPlanillasVacias ? "Revisando y reparando…" : "Reparar planillas vacías"}
+            </button>
+            {feedbackPlanillasVacias ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`recordings-bulk-repair-feedback ${feedbackPlanillasVacias.tipo === "error" ? "is-error" : "is-success"}`}
+              >
+                {feedbackPlanillasVacias.mensaje}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {filteredGrupos.length === 0 ? (

@@ -141,6 +141,38 @@
   box-shadow: 0 4px 14px rgba(31, 50, 76, 0.03);
 }
 
+.recordings-bulk-repair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.recordings-bulk-repair-button {
+  min-height: 44px;
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.recordings-bulk-repair-button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.recordings-bulk-repair-feedback {
+  flex: 1 1 280px;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.recordings-bulk-repair-feedback.is-success {
+  color: #216641;
+}
+
+.recordings-bulk-repair-feedback.is-error {
+  color: #a32222;
+}
+
 .recordings-search-bar {
   position: relative;
   display: flex;

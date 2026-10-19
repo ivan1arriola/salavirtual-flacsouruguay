@@ -24,6 +24,58 @@ describe("archivos: application", () => {
   };
 
   describe("sincronizarArtefactosUseCase", () => {
+    it("restaura la planilla existente aunque Meet no devuelva sesiones completas", async () => {
+      const mockProvider: ArtifactProviderPort = {
+        buscarConferencia: vi.fn().mockResolvedValue({
+          name: "conferenceRecords/empty-sheet",
+          startTime: "2026-10-10T12:00:00Z",
+          endTime: "2026-10-10T13:00:00Z"
+        }),
+        obtenerConferencia: vi.fn(),
+        obtenerArtefactos: vi.fn().mockResolvedValue({
+          recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0
+        }),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "<html></html>", completa: false, participantes: 0, sesiones: 0,
+          planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] }
+        }),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("meeting-folder"),
+        moverArchivo: vi.fn(),
+        subirDocumentoGoogle: vi.fn(),
+        subirPlanillaAsistencia: vi.fn().mockResolvedValue({
+          id: "empty-sheet", name: "asistencia", mimeType: "application/vnd.google-apps.spreadsheet"
+        }),
+        obtenerParticipantesActivos: vi.fn()
+      };
+      const mockRepo: ArchivosRepositoryPort = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([{
+          id: "evt-empty-sheet", codigoReunion: "abc-defg-hij", conferenceRecordName: null,
+          emailOrganizador: "host@flacso.edu.uy", cohostEmails: [], archivos: [{
+            id: "file-row", driveFileId: "empty-sheet", externalResourceName: "conferenceRecords/empty-sheet/attendance",
+            tipo: "LISTA_ASISTENCIA", mimeType: "application/vnd.google-apps.spreadsheet"
+          }], asistenciaDriveFileId: "empty-sheet",
+          inicioProgramadoAt: new Date("2026-10-10T12:00:00Z"), finProgramadoAt: new Date("2026-10-10T13:00:00Z"),
+          timezone: "America/Montevideo", requiereGrabacion: false, tituloSolicitud: "Clase"
+        }]),
+        registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn(), obtenerDatosInstanciaParaParticipantes: vi.fn(),
+        listarArchivosVisibles: vi.fn(), listarGrabacionesPendientesVisibles: vi.fn(),
+        listarGrabacionesNoRealizadasVisibles: vi.fn()
+      };
+
+      const result = await sincronizarArtefactosUseCase(mockRepo, () => mockProvider, dummyDescifrar, {
+        eventoProveedorIds: ["evt-empty-sheet"], regenerarAsistencia: true
+      });
+
+      expect(mockProvider.subirPlanillaAsistencia).toHaveBeenCalledWith(
+        "meeting-folder", expect.any(String), expect.any(Object), expect.any(Date), expect.any(Date),
+        "host@flacso.edu.uy", [], "empty-sheet"
+      );
+      expect(mockProvider.subirDocumentoGoogle).not.toHaveBeenCalled();
+      expect(result[0]).toMatchObject({ estado: "SINCRONIZADO", archivos: 1 });
+    });
+
     it("devuelve ERROR si falta la configuración de Google Workspace", async () => {
       const mockRepo: ArchivosRepositoryPort = {
         obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(null),

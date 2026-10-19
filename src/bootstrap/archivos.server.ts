@@ -9,6 +9,7 @@ import {
   listarGrabacionesNoRealizadasVisiblesUseCase,
   listarGrabacionesPendientesVisiblesUseCase,
   obtenerParticipantesActivosUseCase,
+  repararPlanillasAsistenciaVaciasUseCase,
   sincronizarArtefactosUseCase,
   seleccionarLoteEventosOperativosUseCase,
   type ArchivoMeetVisibleModel,
@@ -41,6 +42,14 @@ export async function sincronizarArtefactos(
     crearArtifactProvider,
     descifrarConfiguracion,
     { eventoProveedorIds, regenerarAsistencia }
+  );
+}
+
+export async function repararPlanillasAsistenciaVacias() {
+  return repararPlanillasAsistenciaVaciasUseCase(
+    crearArchivosRepository(),
+    crearArtifactProvider,
+    descifrarConfiguracion
   );
 }
 

@@ -22,8 +22,15 @@ export type ArchivoExistente = Readonly<{
   mimeType: string | null;
 }>;
 
+export type PlanillaAsistenciaCandidata = Readonly<{
+  eventoProveedorId: string;
+  spreadsheetId: string;
+  emailOrganizador: string;
+}>;
+
 export type EventoParaSincronizarArchivos = Readonly<{
   id: string;
+  driveFolderId?: string | null;
   codigoReunion: string | null;
   conferenceRecordName: string | null;
   emailOrganizador: string | null;
@@ -112,6 +119,7 @@ export type EventoGrabacionPendienteModel = Readonly<{
 export type ArchivosRepositoryPort = Readonly<{
   obtenerConfiguracionWorkspacePrincipal(): Promise<ConfiguracionWorkspaceArchivos | null>;
   obtenerEventosParaSincronizar(eventoProveedorIds: readonly string[]): Promise<readonly EventoParaSincronizarArchivos[]>;
+  listarPlanillasAsistenciaCandidatas?(): Promise<readonly PlanillaAsistenciaCandidata[]>;
   registrarArchivoSincronizado(
     eventoProveedorId: string,
     tipo: TipoArtefactoMeet,

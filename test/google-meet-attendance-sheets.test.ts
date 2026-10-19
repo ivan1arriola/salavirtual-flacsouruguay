@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle, type MeetSheetInput } from "../src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client";
+import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle, planillaAsistenciaGoogleVacia, type MeetSheetInput } from "../src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client";
 const input: MeetSheetInput = {
   titulo: "Encuentro", folderId: "folder", operationMarker: "stable-operation-marker", organizador: "host@example.com", cohosts: ["co@example.com"],
   inicio: new Date("2026-05-01T10:00:00Z"), fin: new Date("2026-05-01T11:00:00Z"), sesionesMeet: [{
@@ -11,7 +11,34 @@ const input: MeetSheetInput = {
   correosAuditados: [{ correo: "student@example.com", conferenciaId: "conf", externo: false, conexiones: [{ inicio: "2026-05-01T10:00:00Z", fin: "2026-05-01T10:50:00Z", duracionSegundos: 3000, nombre: "Student", identificador: "student@example.com" }] }]
 };
 describe("Sheets de asistencia", () => {
-  it("crea tres pestañas, formato porcentual, mapa de calor e identificadores brutos", async () => {
+  it("detecta una planilla vacía consultando las pestañas mediante Sheets API", async () => {
+    const request = vi.fn().mockResolvedValue({ data: {
+      valueRanges: [
+        { range: "Asistencia!A1:Z100", values: [] },
+        { range: "Host y cohosts!A1:Z100", values: [] },
+        { range: "Datos brutos!A1:Z100", values: [] }
+      ]
+    } });
+
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-empty")).resolves.toBe(true);
+    expect(request.mock.calls[0]![0].url).toContain("/spreadsheets/sheet-empty/values:batchGet");
+    expect(request.mock.calls[0]![0].url).toContain("ranges=");
+    expect(request.mock.calls[0]![0].url).toContain("Host+y+cohosts");
+  });
+
+  it("no considera vacía una planilla que todavía tiene encabezados o datos", async () => {
+    const request = vi.fn().mockResolvedValue({ data: {
+      valueRanges: [
+        { range: "Asistencia!A1:Z100", values: [["Participante", "Correo"]] },
+        { range: "Host y cohosts!A1:Z100", values: [["Participante", "Correo"]] },
+        { range: "Datos brutos!A1:Z100", values: [["Fuente", "Participante"]] }
+      ]
+    } });
+
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-filled")).resolves.toBe(false);
+  });
+
+  it("crea tres pestañas, formato porcentual e identificadores brutos sin bloquear la escritura", async () => {
     const request = vi.fn().mockResolvedValueOnce({ data: { spreadsheetId: "sheet" } }).mockResolvedValueOnce({ data: {} }).mockResolvedValueOnce({ data: {} }).mockResolvedValueOnce({ data: { parents: ["old"] } }).mockResolvedValueOnce({ data: { id: "sheet", name: "Encuentro" } });
     await crearPlanillaAsistenciaGoogle({ request } as never, input);
     const createPayload = request.mock.calls[0]![0].data;
@@ -19,7 +46,7 @@ describe("Sheets de asistencia", () => {
     const markerPatch = request.mock.calls[1]![0];
     expect(markerPatch.data.appProperties.meetAttendanceOperation).toBe("stable-operation-marker");
     const body = request.mock.calls[2]![0].data;
-    expect(JSON.stringify(body)).toContain("addConditionalFormatRule");
+    expect(JSON.stringify(body)).not.toContain("addConditionalFormatRule");
     expect(JSON.stringify(body)).toContain("PERCENT");
     expect(JSON.stringify(body)).toContain("raw-endpoint");
     expect(JSON.stringify(body)).toContain("anon-123");

@@ -16,6 +16,7 @@ import type {
   EstadoSincronizacionInput,
   EventoGrabacionPendienteModel,
   EventoParaSincronizarArchivos,
+  PlanillaAsistenciaCandidata,
   SessionActor
 } from "../../ports";
 import type {
@@ -74,6 +75,7 @@ export function crearPrismaArchivosRepositoryAdapter(
 
       return events.map((event) => ({
         id: event.id,
+        driveFolderId: event.driveFolderId,
         codigoReunion: event.codigoReunion,
         conferenceRecordName: event.conferenceRecordName,
         emailOrganizador: event.cuentaProveedor?.emailOrganizador ?? null,
@@ -208,6 +210,28 @@ export function crearPrismaArchivosRepositoryAdapter(
             }
           }
         }
+      });
+    },
+
+    async listarPlanillasAsistenciaCandidatas(): Promise<readonly PlanillaAsistenciaCandidata[]> {
+      const sheets = await db.archivoReunion.findMany({
+        where: {
+          tipo: "LISTA_ASISTENCIA",
+          mimeType: "application/vnd.google-apps.spreadsheet",
+          eventoProveedor: { proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: { not: null } }
+        },
+        orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          eventoProveedorId: true,
+          driveFileId: true,
+          eventoProveedor: { select: { cuentaProveedor: { select: { emailOrganizador: true } } } }
+        }
+      });
+      return sheets.flatMap((sheet) => {
+        const emailOrganizador = sheet.eventoProveedor.cuentaProveedor?.emailOrganizador;
+        return emailOrganizador
+          ? [{ eventoProveedorId: sheet.eventoProveedorId, spreadsheetId: sheet.driveFileId, emailOrganizador }]
+          : [];
       });
     },
 

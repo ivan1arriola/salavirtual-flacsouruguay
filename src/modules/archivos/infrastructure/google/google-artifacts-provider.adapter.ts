@@ -1,6 +1,6 @@
 import type { JWT } from "google-auth-library";
 import { agruparCorreosAuditoriaMeet, filtrarEventosAuditoriaConferencia, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
-import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle } from "./google-meet-attendance-sheets.client";
+import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle, planillaAsistenciaGoogleVacia } from "./google-meet-attendance-sheets.client";
 import { asegurarLecturaPorEnlacePlanilla } from "./google-meet-attendance-sharing.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
@@ -357,6 +357,11 @@ export function crearGoogleArtifactsProviderAdapter(
         if (confirmed) return recovered;
         throw error;
       }
+    },
+
+    async planillaAsistenciaGoogleVacia(spreadsheetId) {
+      const sheetsAuth = crearGoogleAuthJwt(credentials, ["https://www.googleapis.com/auth/spreadsheets.readonly"]);
+      return planillaAsistenciaGoogleVacia(sheetsAuth, spreadsheetId);
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
