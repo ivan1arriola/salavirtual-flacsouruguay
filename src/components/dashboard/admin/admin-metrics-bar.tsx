@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChartNoAxesCombined } from "lucide-react";
 import type { AdminDashboardData } from "@/src/modules/dashboard/admin-dashboard.adapter";
 import { getAdminSummaryMetrics } from "@/src/modules/dashboard/admin-dashboard-summary";
 
@@ -11,10 +12,13 @@ export function AdminMetricsBar({
 
   return (
     <section className="dashboard-content-section admin-metrics-bar admin-metrics-bar-section" aria-label="Indicadores generales">
-      <div className="section-heading">
-        <div>
-          <h2>Indicadores generales</h2>
-          <p>Volumen de solicitudes activas y actividad prevista para la semana.</p>
+      <div className="section-heading admin-dashboard-section-heading">
+        <div className="admin-section-heading-copy">
+          <span className="admin-section-icon"><ChartNoAxesCombined aria-hidden="true" size={20} /></span>
+          <div>
+            <h2>Indicadores generales</h2>
+            <p>Solicitudes activas y reuniones de los próximos siete días.</p>
+          </div>
         </div>
       </div>
 
