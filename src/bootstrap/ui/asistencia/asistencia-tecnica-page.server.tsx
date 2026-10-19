@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AssistantAssignmentSelect } from "@/src/modules/asistencia/presentation/components/assistant-assignment-select";
+import { BulkMonitoringNotificationActions } from "@/src/modules/asistencia/presentation/components/bulk-monitoring-notification-actions";
 import { CoverageAssistanceActions } from "@/src/modules/asistencia/presentation/components/coverage-assistance-actions";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -169,6 +170,11 @@ export default async function AsistenciaTecnicaPage({
         <div className="stat"><span>Cubiertas</span><strong>{covered}</strong></div>
         <div className="stat"><span>Pendientes</span><strong>{pending}</strong></div>
       </section>
+
+      <BulkMonitoringNotificationActions
+        pendingCount={pending}
+        coveredCount={covered}
+      />
 
       <form className="filter-bar coverage-filter" method="get">
         <Search size={18} aria-hidden="true" />
