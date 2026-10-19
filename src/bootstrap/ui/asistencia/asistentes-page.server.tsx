@@ -110,7 +110,7 @@ export default async function AsistentesPage({
   ).length;
 
   return (
-    <main className="assistants-directory">
+    <div className="assistants-directory">
       <header className="page-header assistant-detail-header">
         <div className="assistant-directory-heading">
           <p className="page-eyebrow">Administración</p>
@@ -263,7 +263,7 @@ export default async function AsistentesPage({
           ) : null}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
