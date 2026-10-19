@@ -1,0 +1,434 @@
+/*
+ * Administración · dashboard operativo responsive.
+ * Scoped to the admin start screen: does not change teacher or monitoring views.
+ * Keep the native web links/actions and both meeting/monitoring time ranges visible.
+ */
+.admin-dashboard-redesigned {
+  gap: 16px;
+  min-width: 0;
+}
+.admin-dashboard-redesigned .dashboard-header-hero {
+  border-radius: 18px;
+  padding: 24px 28px;
+  box-shadow: 0 10px 24px rgba(16, 40, 77, .13);
+}
+.admin-dashboard-redesigned .dashboard-header-title {
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  line-height: 1.2;
+}
+.admin-dashboard-redesigned .dashboard-header-subtitle {
+  max-width: 46ch;
+  font-size: .9rem;
+}
+.admin-dashboard-redesigned .dashboard-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.admin-dashboard-redesigned .dashboard-header-actions a {
+  min-height: 46px;
+  border-radius: 10px;
+  font-weight: 750;
+  text-align: center;
+}
+.admin-dashboard-redesigned .dashboard-content-section {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 5px 20px rgba(17, 43, 78, .045);
+}
+.admin-dashboard-redesigned .admin-dashboard-section-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.admin-dashboard-redesigned .admin-section-heading-copy {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  min-width: 0;
+  gap: 11px;
+}
+.admin-dashboard-redesigned .admin-section-heading-copy > div {
+  min-width: 0;
+}
+.admin-dashboard-redesigned .admin-section-icon {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e9f1ff;
+  color: #1858ae;
+}
+.admin-dashboard-redesigned .admin-section-icon.is-attention {
+  background: #fff0e0;
+  color: #ac590c;
+}
+.admin-dashboard-redesigned .admin-dashboard-section-heading h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.3;
+  color: #182e4f;
+}
+.admin-dashboard-redesigned .admin-dashboard-section-heading p {
+  margin: 3px 0 0;
+  max-width: 58ch;
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.admin-dashboard-redesigned .admin-dashboard-section-heading > .text-link {
+  flex: 0 0 auto;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+.admin-dashboard-redesigned .admin-today-timeline-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+.admin-dashboard-redesigned .admin-timeline-item {
+  display: grid;
+  grid-template-columns: minmax(106px, .26fr) minmax(0, 1fr);
+  gap: 12px 18px;
+  padding: 16px;
+  border: 1px solid #dbe3ed;
+  border-left: 3px solid #2366c1;
+  border-radius: 12px;
+  align-items: start;
+  background: #fff;
+}
+.admin-dashboard-redesigned .admin-timeline-item.is-live-now {
+  border-left-color: #21835c;
+}
+.admin-dashboard-redesigned .admin-timeline-when {
+  min-width: 0;
+  gap: 4px;
+}
+.admin-dashboard-redesigned .timeline-hour-badge {
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+}
+.admin-dashboard-redesigned .timeline-sub-hour {
+  font-size: .76rem;
+  line-height: 1.4;
+}
+.admin-dashboard-redesigned .admin-timeline-info {
+  min-width: 0;
+}
+.admin-dashboard-redesigned .admin-timeline-title-row {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.admin-dashboard-redesigned .admin-timeline-title {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.admin-dashboard-redesigned .badge-tag {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #e7f0ff;
+  color: #194e92;
+  font-size: .76rem;
+  font-weight: 700;
+}
+.admin-dashboard-redesigned .admin-timeline-academic {
+  flex-wrap: wrap;
+  gap: 3px 6px;
+  margin: 6px 0;
+  color: var(--text-secondary);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+.admin-dashboard-redesigned .admin-timeline-info > .meeting-schedule-times {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 9px 0;
+}
+.admin-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line {
+  min-width: 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+}
+.admin-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line strong {
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums;
+}
+.admin-dashboard-redesigned .admin-timeline-status-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px 18px;
+  line-height: 1.4;
+}
+.admin-dashboard-redesigned .admin-timeline-status-row > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.admin-dashboard-redesigned .admin-timeline-actions {
+  grid-column: 2;
+  justify-content: flex-start;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.admin-dashboard-redesigned .admin-timeline-actions .secondary-action,
+.admin-dashboard-redesigned .admin-timeline-actions .copy-meet-button {
+  min-width: 105px;
+  min-height: 44px;
+  border-radius: 9px;
+  font-size: .82rem;
+  padding: 10px;
+}
+.admin-dashboard-redesigned .admin-upcoming-section ol {
+  padding: 0 16px 4px;
+}
+.admin-dashboard-redesigned .admin-triage-section {
+  border-left: 0;
+}
+.admin-dashboard-redesigned .triage-total-badge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  color: #a11c21;
+  background: #fee7e7;
+}
+.admin-dashboard-redesigned .operations-attention-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+}
+.admin-dashboard-redesigned .operations-attention-card {
+  min-width: 0;
+  gap: 11px;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: none;
+}
+.admin-dashboard-redesigned .operations-attention-card-heading strong {
+  font-size: .92rem;
+  line-height: 1.3;
+}
+.admin-dashboard-redesigned .operations-attention-card li {
+  color: var(--text-secondary);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+.admin-dashboard-redesigned .operations-attention-quick-select,
+.admin-dashboard-redesigned .operations-attention-btn {
+  min-height: 44px;
+  font-size: .82rem;
+}
+.admin-dashboard-redesigned .operations-attention-card .text-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.admin-dashboard-redesigned .admin-metrics-bar-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 14px;
+  gap: 12px;
+}
+.admin-dashboard-redesigned .admin-metric-card {
+  min-height: 92px;
+  border-radius: 11px;
+  padding: 14px;
+}
+.admin-dashboard-redesigned a:focus-visible,
+.admin-dashboard-redesigned button:focus-visible,
+.admin-dashboard-redesigned select:focus-visible {
+  outline: 3px solid var(--focus-ring-color, #2876dd);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .admin-dashboard-redesigned .admin-timeline-info > .meeting-schedule-times {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .admin-dashboard-redesigned {
+    gap: 12px;
+  }
+  .admin-dashboard-redesigned .dashboard-header-hero {
+    padding: 20px;
+    gap: 18px;
+  }
+  .admin-dashboard-redesigned .dashboard-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+  .admin-dashboard-redesigned .dashboard-header-actions a {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: .8rem;
+    line-height: 1.2;
+  }
+  .admin-dashboard-redesigned .dashboard-header-actions a:last-child {
+    grid-column: 1 / -1;
+  }
+  .admin-dashboard-redesigned .admin-dashboard-section-heading {
+    padding: 13px 14px;
+    gap: 4px 12px;
+  }
+  .admin-dashboard-redesigned .admin-dashboard-section-heading > .text-link {
+    justify-content: flex-start;
+    margin-left: 48px;
+    min-height: 44px;
+  }
+  .admin-dashboard-redesigned .admin-dashboard-section-heading p {
+    font-size: .82rem;
+  }
+  .admin-dashboard-redesigned .admin-today-timeline-list {
+    padding: 10px;
+    gap: 10px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-item {
+    display: grid;
+    grid-template-columns: 75px minmax(0, 1fr);
+    align-items: start;
+    gap: 9px 10px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-when {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .admin-dashboard-redesigned .timeline-hour-badge {
+    font-size: .9rem;
+  }
+  .admin-dashboard-redesigned .timeline-sub-hour {
+    font-size: .8rem;
+  }
+  .admin-dashboard-redesigned .admin-timeline-info {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .admin-dashboard-redesigned .admin-timeline-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-title {
+    flex: 0 1 auto;
+    font-size: .95rem;
+  }
+  .admin-dashboard-redesigned .admin-timeline-academic {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 5px;
+    font-size: .83rem;
+  }
+  .admin-dashboard-redesigned .admin-timeline-academic > span:nth-child(2) {
+    display: none;
+  }
+  .admin-dashboard-redesigned .admin-timeline-academic > span:last-child {
+    flex-basis: 100%;
+  }
+  .admin-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line {
+    padding: 8px 9px;
+    gap: 8px;
+  }
+  .admin-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line small {
+    font-size: .79rem;
+  }
+  .admin-dashboard-redesigned .admin-timeline-status-row {
+    gap: 6px;
+    font-size: .82rem;
+  }
+  .admin-dashboard-redesigned .admin-timeline-status-row > div {
+    width: 100%;
+  }
+  .admin-dashboard-redesigned .admin-timeline-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .admin-dashboard-redesigned .admin-timeline-actions .secondary-action,
+  .admin-dashboard-redesigned .admin-timeline-actions .copy-meet-button {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    font-size: .84rem;
+    padding: 8px 4px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-actions > .status-muted {
+    grid-column: 2 / -1;
+  }
+  .admin-dashboard-redesigned .admin-upcoming-section ol {
+    padding: 0 14px 4px;
+  }
+  .admin-dashboard-redesigned .operations-attention-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+  .admin-dashboard-redesigned .operations-attention-card {
+    padding: 13px;
+  }
+  .admin-dashboard-redesigned .admin-metrics-bar-grid {
+    padding: 10px;
+    gap: 8px;
+  }
+  .admin-dashboard-redesigned .admin-metric-card {
+    min-height: 82px;
+    padding: 10px;
+    gap: 8px;
+  }
+  .admin-dashboard-redesigned .admin-metric-card-data em {
+    font-size: .73rem;
+  }
+}
+@media (max-width: 360px) {
+  .admin-dashboard-redesigned .dashboard-header-hero {
+    padding: 16px;
+  }
+  .admin-dashboard-redesigned .admin-section-icon {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+  }
+  .admin-dashboard-redesigned .admin-dashboard-section-heading > .text-link {
+    margin-left: 0;
+  }
+  .admin-dashboard-redesigned .admin-timeline-item {
+    grid-template-columns: 62px minmax(0, 1fr);
+    padding: 10px;
+    gap: 8px;
+  }
+  .admin-dashboard-redesigned .timeline-hour-badge {
+    font-size: .84rem;
+  }
+  .admin-dashboard-redesigned .admin-metrics-bar-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -28,6 +28,7 @@ import "./meeting-form-v2.css";
 import "./meeting-detail-v2.css";
 import "./agenda-mobile-compact.css";
 import "./admin-upcoming-refresh.css";
+import "./admin-dashboard-mobile.css";
 
 export default async function GestionLayout({
   children
