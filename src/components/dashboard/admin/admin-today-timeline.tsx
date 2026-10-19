@@ -20,14 +20,17 @@ export function AdminTodayTimeline({
   meetings: readonly AdminTodayMeetingDTO[];
 }>) {
   return (
-    <section className="dashboard-content-section admin-today-section">
-      <div className="section-heading">
-        <div>
-          <h2>Agenda de hoy</h2>
-          <p>Reuniones programadas y su estado operativo.</p>
+    <section className="dashboard-content-section admin-today-section" aria-labelledby="admin-today-title">
+      <div className="section-heading admin-dashboard-section-heading">
+        <div className="admin-section-heading-copy">
+          <span className="admin-section-icon"><CalendarDays aria-hidden="true" size={20} /></span>
+          <div>
+            <h2 id="admin-today-title">Agenda de hoy</h2>
+            <p>Reuniones programadas y su estado operativo.</p>
+          </div>
         </div>
         <Link className="text-link" href="/reuniones">
-          Ver agenda completa <ArrowRight size={16} />
+          Ver agenda completa <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </div>
 
@@ -61,7 +64,7 @@ export function AdminTodayTimeline({
                     </span>
                   )}
                   <span className="timeline-sub-hour">
-                    {formatDate(inicio)} · Encuentro: {formatTime(inicio)}–{formatTime(fin)}
+                    {formatDate(inicio)} · Horario del encuentro
                   </span>
                   {isLive ? <LiveParticipantsIndicator instanciaId={meeting.id} /> : null}
                 </div>
@@ -77,13 +80,9 @@ export function AdminTodayTimeline({
                   </div>
 
                   <div className="admin-timeline-academic">
-                    <span>
-                      Programa: <strong>{meeting.programa}</strong>
-                    </span>
-                    <span>·</span>
-                    <span>
-                      Docente: <strong>{meeting.docenteNombre}</strong>
-                    </span>
+                    <span><strong>{meeting.programa}</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Docente: {meeting.docenteNombre}</span>
                   </div>
 
                   <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} modality={meeting.modalidad} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
