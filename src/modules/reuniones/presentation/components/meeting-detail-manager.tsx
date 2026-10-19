@@ -429,15 +429,20 @@ export function MeetingDetailManager({
                           ) : null}
                         </>
                       ) : null}
+                      {canManageOperationalOverrides ? (
+                        <a className="secondary-action" href={`/monitoreo/gestionar/${meeting.id}`}>
+                          <UserRoundPlus size={16} />Gestionar monitoreo
+                        </a>
+                      ) : null}
                       {meeting.requiereAsistenciaTecnica ? (
                         <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, false)} type="button">
                           <UserRoundMinus size={16} />Cancelar asistencia
                         </button>
-                      ) : (
+                      ) : !canManageOperationalOverrides ? (
                         <button className="secondary-action" disabled={!meeting.puedeCambiarAsistencia || busy !== null} onClick={() => changeAssistance(meeting.id, true)} type="button">
                           <UserRoundPlus size={16} />Pedir asistencia
                         </button>
-                      )}
+                      ) : null}
                       <button
                         className="icon-button danger-action"
                         disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1}
