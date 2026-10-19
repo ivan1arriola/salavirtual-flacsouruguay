@@ -65,7 +65,7 @@
   justify-items: start;
   align-content: center;
   color: var(--text-secondary);
-  font-size: .75rem;
+  font-size: .82rem;
   line-height: 1.4;
 }
 .modality {
@@ -124,12 +124,12 @@
     text-align: center;
   }
   .when span {
-    font-size: .73rem;
+    font-size: .79rem;
     line-height: 1.2;
     font-weight: 700;
   }
   .when strong {
-    font-size: .71rem;
+    font-size: .75rem;
     line-height: 1.2;
     letter-spacing: -.02em;
     overflow-wrap: anywhere;
@@ -147,7 +147,7 @@
     line-height: 1.36;
   }
   .details p {
-    font-size: .77rem;
+    font-size: .83rem;
   }
   .status {
     grid-column: 2;
