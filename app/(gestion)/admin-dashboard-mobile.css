@@ -297,7 +297,7 @@
   .admin-dashboard-redesigned .admin-dashboard-section-heading > .text-link {
     justify-content: flex-start;
     margin-left: 48px;
-    min-height: 36px;
+    min-height: 44px;
   }
   .admin-dashboard-redesigned .admin-dashboard-section-heading p {
     font-size: .82rem;
@@ -323,7 +323,7 @@
     font-size: .9rem;
   }
   .admin-dashboard-redesigned .timeline-sub-hour {
-    font-size: .73rem;
+    font-size: .8rem;
   }
   .admin-dashboard-redesigned .admin-timeline-info {
     grid-column: 2;
@@ -343,7 +343,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 2px 5px;
-    font-size: .77rem;
+    font-size: .83rem;
   }
   .admin-dashboard-redesigned .admin-timeline-academic > span:nth-child(2) {
     display: none;
@@ -356,11 +356,11 @@
     gap: 8px;
   }
   .admin-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line small {
-    font-size: .72rem;
+    font-size: .79rem;
   }
   .admin-dashboard-redesigned .admin-timeline-status-row {
     gap: 6px;
-    font-size: .76rem;
+    font-size: .82rem;
   }
   .admin-dashboard-redesigned .admin-timeline-status-row > div {
     width: 100%;
@@ -379,7 +379,7 @@
     min-width: 0;
     width: 100%;
     min-height: 44px;
-    font-size: .79rem;
+    font-size: .84rem;
     padding: 8px 4px;
   }
   .admin-dashboard-redesigned .admin-timeline-actions > .status-muted {
