@@ -280,12 +280,16 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
   }
 
   return db.$transaction(async (tx) => {
-    const record = await tx.registroMonitoreoRetroactivo.findUnique({ where: { id: input.registroId } });
-    if (!record) throw new NotFoundApiError("El registro retroactivo no existe.");
-    await lockMeeting(tx, record.instanciaSalaId);
+    const reference = await tx.registroMonitoreoRetroactivo.findUnique({ where: { id: input.registroId } });
+    if (!reference) throw new NotFoundApiError("El registro retroactivo no existe.");
+    await lockMeeting(tx, reference.instanciaSalaId);
+    // Releer bajo el bloqueo: nunca se puede rechazar un registro recién aprobado.
+    const record = await tx.registroMonitoreoRetroactivo.findUnique({ where: { id: reference.id } });
+    if (!record || record.estado !== "PENDIENTE") {
+      throw new ConflictApiError("El registro ya fue revisado.");
+    }
     const meeting = await meetingById(tx, record.instanciaSalaId);
     requirePast(meeting, now);
-    if (record.estado !== "PENDIENTE") throw new ConflictApiError("El registro ya fue revisado.");
     if (input.accion === "RECHAZAR_RETROACTIVO") {
       await tx.registroMonitoreoRetroactivo.update({
         where: { id: record.id }, data: {
