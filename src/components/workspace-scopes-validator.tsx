@@ -15,6 +15,7 @@ const SCOPE_LABELS = [
   ["Meet · lectura", "meetings.space.readonly", "https://www.googleapis.com/auth/meetings.space.readonly"],
   ["Meet · cohosts", "meetings.space.created", "https://www.googleapis.com/auth/meetings.space.created"],
   ["Gmail", "gmail.send", "https://www.googleapis.com/auth/gmail.send"],
+  ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"],
 ] as const;
 
 export function WorkspaceScopesValidator() {
@@ -43,7 +44,7 @@ export function WorkspaceScopesValidator() {
         <ShieldCheck size={22} aria-hidden="true" />
         <div>
           <h2 id="workspace-scopes-title">Permisos de Google</h2>
-          <p>Verificá que todas las salas puedan usar Calendar, Drive, Meet y Gmail.</p>
+          <p>Verificá los permisos de Calendar, Drive, Meet, Gmail y Sheets usados por Sala Virtual.</p>
         </div>
       </header>
 
