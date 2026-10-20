@@ -11,31 +11,38 @@ const input: MeetSheetInput = {
   correosAuditados: [{ correo: "student@example.com", conferenciaId: "conf", externo: false, conexiones: [{ inicio: "2026-05-01T10:00:00Z", fin: "2026-05-01T10:50:00Z", duracionSegundos: 3000, nombre: "Student", identificador: "student@example.com" }] }]
 };
 describe("Sheets de asistencia", () => {
-  it("detecta una planilla vacía consultando las pestañas mediante Sheets API", async () => {
+  it("detecta una planilla vacía aunque tenga encabezados y host configurado", async () => {
     const request = vi.fn().mockResolvedValue({ data: {
       valueRanges: [
-        { range: "Asistencia!A1:Z100", values: [] },
-        { range: "Host y cohosts!A1:Z100", values: [] },
-        { range: "Datos brutos!A1:Z100", values: [] }
+        { range: "Asistencia!A2:Z", values: [] },
+        { range: "Datos brutos!A2:N", values: [] }
       ]
     } });
-
     await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-empty")).resolves.toBe(true);
-    expect(request.mock.calls[0]![0].url).toContain("/spreadsheets/sheet-empty/values:batchGet");
-    expect(request.mock.calls[0]![0].url).toContain("ranges=");
-    expect(request.mock.calls[0]![0].url).toContain("Host+y+cohosts");
+    const url: string = request.mock.calls[0]![0].url;
+    expect(url).toContain("/spreadsheets/sheet-empty/values:batchGet");
+    expect(decodeURIComponent(url)).toContain("A2");
+    expect(url).not.toContain("Host+y+cohosts");
   });
 
-  it("no considera vacía una planilla que todavía tiene encabezados o datos", async () => {
+  it("no considera vacía una planilla con registros reales en Asistencia", async () => {
     const request = vi.fn().mockResolvedValue({ data: {
       valueRanges: [
-        { range: "Asistencia!A1:Z100", values: [["Participante", "Correo"]] },
-        { range: "Host y cohosts!A1:Z100", values: [["Participante", "Correo"]] },
-        { range: "Datos brutos!A1:Z100", values: [["Fuente", "Participante"]] }
+        { range: "Asistencia!A2:Z", values: [["Estudiante", "student@example.com"]] },
+        { range: "Datos brutos!A2:N", values: [] }
       ]
     } });
-
     await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-filled")).resolves.toBe(false);
+  });
+
+  it("conserva planillas con sesiones en Datos brutos, incluso sin correos", async () => {
+    const request = vi.fn().mockResolvedValue({ data: {
+      valueRanges: [
+        { range: "Asistencia!A2:Z", values: [] },
+        { range: "Datos brutos!A2:N", values: [["MEET", "Participante"]] }
+      ]
+    } });
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-raw")).resolves.toBe(false);
   });
 
   it("crea tres pestañas, formato porcentual e identificadores brutos sin bloquear la escritura", async () => {

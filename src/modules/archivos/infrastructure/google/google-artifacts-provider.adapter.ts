@@ -360,7 +360,7 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async planillaAsistenciaGoogleVacia(spreadsheetId) {
-      const sheetsAuth = crearGoogleAuthJwt(credentials, ["https://www.googleapis.com/auth/spreadsheets.readonly"]);
+      const sheetsAuth = crearGoogleAuthJwt(credentials, ["https://www.googleapis.com/auth/spreadsheets"]);
       return planillaAsistenciaGoogleVacia(sheetsAuth, spreadsheetId);
     },
 
