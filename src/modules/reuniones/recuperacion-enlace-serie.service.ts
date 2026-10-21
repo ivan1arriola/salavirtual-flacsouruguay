@@ -109,6 +109,7 @@ export async function recuperarEnlaceSerie(
     throw error;
   }
 
+  try {
   await deps.db.$transaction(async tx => {
     await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'recuperar-enlace-serie', true), set_config('flacso.meet_change_reason', 'Enlace alternativo para coanfitriones no verificables', true)`;
     for (const { event } of records) {
@@ -137,6 +138,13 @@ export async function recuperarEnlaceSerie(
       }
     });
   });
+  } catch (error) {
+    for (const patch of patches.reverse()) {
+      try { await deps.restaurarEnCalendar(patch.host, patch.eventId, patch.before); }
+      catch { console.error("No fue posible revertir Calendar después de fallar el guardado del nuevo enlace."); }
+    }
+    throw error;
+  }
   // Correos individuales por destinatario; no revelamos la lista de invitados a terceros.
   const destinatarios = new Map<string, { rol: "INVITADO" | "COHOST"; encuentros: AvisoEncuentro[] }>();
   for (const { meeting, host } of records) {
