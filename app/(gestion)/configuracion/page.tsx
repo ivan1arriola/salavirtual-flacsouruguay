@@ -41,17 +41,17 @@ export default async function ConfiguracionPage({
     pendingOperationItems
   } = await obtenerDatosPaginaConfiguracion(db, section);
 
-  const [sesConfig, recentDeliveryAudits] = section === "correo"
-    ? await Promise.all([
-        db.configuracionCorreoSes.findUnique({ where: { id: "principal" } }),
-        db.auditoria.findMany({
-          where: { accion: "NOTIFICACION_CORREO_ESTADO" },
-          orderBy: { createdAt: "desc" },
-          take: 75,
-          select: { id: true, createdAt: true, valorNuevo: true }
-        })
-      ])
-    : [null, []];
+  const sesConfig = section === "correo"
+    ? await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } })
+    : null;
+  const recentDeliveryAudits = section === "correo"
+    ? await db.auditoria.findMany({
+        where: { accion: "NOTIFICACION_CORREO_ESTADO" },
+        orderBy: { createdAt: "desc" },
+        take: 75,
+        select: { id: true, createdAt: true, valorNuevo: true }
+      })
+    : [];
 
   const mailAttempts: readonly EstadoCorreoAuditado[] = recentDeliveryAudits.map((audit) => {
     const raw = audit.valorNuevo;
