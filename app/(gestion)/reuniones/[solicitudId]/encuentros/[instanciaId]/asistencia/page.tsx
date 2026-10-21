@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AttendanceRegenerateAction } from "@/src/components/attendance-regenerate-action";
+import { AttendanceRawDownloads } from "@/src/components/attendance-raw-downloads";
 import { crearArchivosRepository } from "@/src/bootstrap/archivos.server";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
@@ -175,6 +176,10 @@ export default async function EncuentroAsistenciaPage({
           {esAdmin && termino && !cancelada && evento?.codigoReunion ? <AttendanceRegenerateAction instanciaId={instanciaId} /> : null}
         </div>
       </header>
+
+      {archivo?.driveFileId && archivo.mimeType === "application/vnd.google-apps.spreadsheet" ? (
+        <AttendanceRawDownloads instanciaId={instanciaId} />
+      ) : null}
 
       {!termino ? (
         <section className="attendance-state" role="status">
