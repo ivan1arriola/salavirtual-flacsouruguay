@@ -239,3 +239,33 @@ describe("adaptador PrismaNotificacionesRepository", () => {
   });
 });
 
+
+describe("auditoría técnica de correos", () => {
+  it("guarda el estado por usuario y notificación sin asuntos ni direcciones", async () => {
+    const save = vi.fn().mockResolvedValue({ id: "audit" });
+    const repo = crearPrismaNotificacionesRepository({
+      db: { auditoria: { create: save } } as never,
+      descifrar: (v: string) => v,
+    });
+    await repo.registrarResultadoCorreo?.({
+      usuarioId: "u1",
+      notificacionId: "n1",
+      tipo: "REUNION_CREADA",
+      estado: "ERROR",
+      motivo: "GoogleCuentaOcupadaError",
+    });
+    expect(save).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        accion: "NOTIFICACION_CORREO_ESTADO",
+        entidadId: "n1",
+        valorNuevo: {
+          usuarioId: "u1",
+          tipo: "REUNION_CREADA",
+          estado: "ERROR",
+          motivo: "GoogleCuentaOcupadaError",
+        },
+      })
+    });
+    expect(JSON.stringify(save.mock.calls)).not.toContain("@");
+  });
+});

@@ -34,5 +34,15 @@ export type NotificacionesRepositoryPort = Readonly<{
   obtenerAdministradoresActivos: () => Promise<readonly NotificationRecipient[]>;
 
   obtenerCredencialesGmail: () => Promise<CredencialGmailTransport | null>;
+
+  /** Aceptado por el proveedor no equivale a entregado al buzón. */
+  registrarResultadoCorreo?: (resultado: Readonly<{
+    usuarioId: string;
+    notificacionId?: string;
+    tipo: TipoNotificacion;
+    estado: "ACEPTADO" | "OMITIDO" | "ERROR";
+    transporte?: "AMAZON_SES" | "GMAIL_API" | "SMTP";
+    motivo?: string;
+  }>) => Promise<void>;
 }>;
 

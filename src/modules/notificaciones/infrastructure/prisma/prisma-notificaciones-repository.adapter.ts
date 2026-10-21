@@ -113,6 +113,24 @@ export function crearPrismaNotificacionesRepository(
       }));
     },
 
+    async registrarResultadoCorreo(resultado): Promise<void> {
+      // Auditoría sin dirección de correo, asunto, texto ni credenciales.
+      await db.auditoria.create({
+        data: {
+          accion: "NOTIFICACION_CORREO_ESTADO",
+          entidadTipo: "Notificacion",
+          entidadId: resultado.notificacionId ?? resultado.usuarioId,
+          valorNuevo: {
+            usuarioId: resultado.usuarioId,
+            tipo: resultado.tipo,
+            estado: resultado.estado,
+            ...(resultado.transporte ? { transporte: resultado.transporte } : {}),
+            ...(resultado.motivo ? { motivo: resultado.motivo } : {})
+          }
+        }
+      });
+    },
+
     async obtenerCredencialesGmail(): Promise<CredencialGmailTransport | null> {
       const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
       if (!cred?.serviceAccountSubject) return null;
