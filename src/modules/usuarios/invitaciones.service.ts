@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { envolverCorreo, escaparHtmlEmail } from "@/src/lib/email/email-design-system";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { authConfig } from "@/src/lib/auth/config";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -79,6 +80,17 @@ export async function invitarUsuario(
   });
 
   try {
+    const accesoUrl = new URL("/acceso", authConfig.baseUrl).toString();
+    const html = envolverCorreo({
+      categoria: "Bienvenida",
+      titulo: "Te damos la bienvenida a Sala Virtual",
+      resumen: "Administración de FLACSO Uruguay te invitó a utilizar la plataforma.",
+      variante: "accion",
+      contenidoHtml: '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
+        escaparHtmlEmail(input.nombres) + '.</p>' +
+        '<p style="margin:0 0 15px;color:#526277;font-size:14px;line-height:22px">Ingresá con la cuenta de Google que corresponde a este correo. No necesitás crear una contraseña.</p>',
+      accion: { texto: "Ingresar a Sala Virtual", url: accesoUrl }
+    });
     const mail = await enviarCorreoConfigurado(db, {
       to: [input.email],
       subject: "Invitación a Sala Virtual FLACSO",
@@ -87,10 +99,11 @@ export async function invitarUsuario(
         "",
         "Administración te invitó a Sala Virtual FLACSO.",
         "Ingresá usando la cuenta de Google asociada a este correo:",
-        `${authConfig.baseUrl.replace(/\/$/, "")}/acceso`,
+        accesoUrl,
         "",
         "No necesitás crear una contraseña."
-      ].join("\n")
+      ].join("\n"),
+      html
     });
     return { usuarioId: user.id, correoEnviado: mail.sent };
   } catch (error) {

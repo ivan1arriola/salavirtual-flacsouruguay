@@ -4,6 +4,7 @@ import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
 import type { NotificationMessage } from "../notificaciones/domain";
+import { construirHtmlResumenMonitoreo } from "./correo-monitoreo.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -120,6 +121,26 @@ export async function renotificarReunionesSinAsignar(
     cuerpo: `Hay ${meetings.length} ${meetings.length === 1 ? "reunión sin asignar" : "reuniones sin asignar"} esperando cobertura. Podés postularte en Agenda Abierta.`,
     emailSubject: `Cobertura de monitoreo: ${meetings.length} ${meetings.length === 1 ? "reunión disponible" : "reuniones disponibles"} para postularse`,
     emailText: detalleTexto,
+    emailHtml: construirHtmlResumenMonitoreo({
+      variante: "disponibles",
+      reuniones: meetings.map((m) => {
+        const inicioMonitoreo = m.inicioAsistenciaTecnicaAt ?? m.inicioProgramadoAt;
+        const finMonitoreo = m.finAsistenciaTecnicaAt ?? m.finProgramadoAt;
+        const docente = m.solicitud.docentePrograma.docente.usuario;
+        const modalidad = m.modalidadOverride ?? m.solicitud.modalidad;
+        return {
+          fecha: formatDate(inicioMonitoreo),
+          titulo: m.solicitud.titulo,
+          inicioMonitoreo: formatTime(inicioMonitoreo),
+          finMonitoreo: formatTime(finMonitoreo),
+          inicioClase: formatTime(m.inicioProgramadoAt),
+          finClase: formatTime(m.finProgramadoAt),
+          modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+          programa: m.solicitud.docentePrograma.programa.nombre,
+          docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim()
+        };
+      })
+    }),
     emailActionLabel: "Ver reuniones en Agenda Abierta",
     href: "/agenda-abierta",
     metadata: {
@@ -265,6 +286,29 @@ export async function notificarReunionesAsignadas(
       cuerpo: `Tenés ${items.length} ${items.length === 1 ? "reunión asignada" : "reuniones asignadas"} para monitoreo. Consultá tu cronograma y accesos en Mi Agenda.`,
       emailSubject: `Cronograma de monitoreo: ${items.length} ${items.length === 1 ? "reunión asignada" : "reuniones asignadas"}`,
       emailText: detalleTexto,
+      emailHtml: construirHtmlResumenMonitoreo({
+        variante: "asignadas",
+        nombre: asistente.nombres,
+        reuniones: items.map((asg) => {
+          const inst = asg.instancia;
+          const inicioMonitoreo = inst.inicioAsistenciaTecnicaAt ?? inst.inicioProgramadoAt;
+          const finMonitoreo = inst.finAsistenciaTecnicaAt ?? inst.finProgramadoAt;
+          const docente = inst.solicitud.docentePrograma.docente.usuario;
+          const modalidad = inst.modalidadOverride ?? inst.solicitud.modalidad;
+          return {
+            fecha: formatDate(inicioMonitoreo),
+            titulo: inst.solicitud.titulo,
+            inicioMonitoreo: formatTime(inicioMonitoreo),
+            finMonitoreo: formatTime(finMonitoreo),
+            inicioClase: formatTime(inst.inicioProgramadoAt),
+            finClase: formatTime(inst.finProgramadoAt),
+            modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+            programa: inst.solicitud.docentePrograma.programa.nombre,
+            docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
+            meetUrl: inst.eventosProveedor[0]?.joinUrl
+          };
+        })
+      }),
       emailActionLabel: "Ver mis reuniones en Mi Agenda",
       href: "/mi-agenda",
       metadata: {
