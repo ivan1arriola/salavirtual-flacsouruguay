@@ -117,7 +117,7 @@ export async function actualizarInvitadosSerie(
     const nuevos = meetings.filter(m => !m.invitados.some(g => g.email.toLowerCase() === email));
     if (!nuevos.length) continue;
     const avisos: AvisoEncuentro[] = nuevos.map(m => ({
-      id: m.id, titulo: m.solicitud?.titulo ?? request.titulo,
+      id: m.id, titulo: request.titulo,
       inicio: m.inicioProgramadoAt, fin: m.finProgramadoAt,
       urlMeet: m.eventosProveedor[0]?.joinUrl ?? null
     }));
