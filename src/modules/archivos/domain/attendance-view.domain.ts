@@ -1,10 +1,10 @@
-import { resumirIntervalosAsistencia } from "./meet-attendance-summary.domain";
+import { conciliarMeetReports, type IndicadorConciliacion } from "./meet-reports-reconciliation.domain";
 
 export type FilaVistaAsistencia = Readonly<{
   id: string;
   nombre: string;
   correo: string | null;
-  fuente: "REPORTS" | "MEET";
+  fuente: "MEET" | "REPORTS" | "LEGADO";
   primeraConexion: string | null;
   ultimaDesconexion: string | null;
   minutos: number;
@@ -12,6 +12,9 @@ export type FilaVistaAsistencia = Readonly<{
   cumple: boolean;
   conexiones: number;
   rol?: string;
+  conciliacion?: "VERIFICADA" | "SIN_VINCULO";
+  diferenciaMinutos?: number | null;
+  diferenciaSesiones?: number | null;
 }>;
 
 export type DatosPlanillaAsistencia = Readonly<{
@@ -40,20 +43,18 @@ function emailVerificado(value: unknown): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) ? candidate : null;
 }
 
-function convertirFila(row: readonly unknown[], index: number, rol?: string): FilaVistaAsistencia | null {
+function convertirFilaAntigua(row: readonly unknown[], index: number, rol?: string): FilaVistaAsistencia | null {
   const nombre = texto(row[0]);
   const correo = emailVerificado(row[1]);
   if (!nombre && !correo) return null;
   const tieneRol = Boolean(rol);
-  const primera = texto(row[tieneRol ? 3 : 2]);
-  const ultima = texto(row[tieneRol ? 4 : 3]);
   return {
-    id: `${rol ?? "PARTICIPANTE"}:${correo ?? nombre}:${index}`,
+    id: `${rol ?? "LEGADO"}:${correo ?? nombre}:${index}`,
     nombre: nombre || correo || "Sin identificar",
     correo,
-    fuente: correo ? "REPORTS" : "MEET",
-    primeraConexion: primera || null,
-    ultimaDesconexion: ultima || null,
+    fuente: "LEGADO",
+    primeraConexion: texto(row[tieneRol ? 3 : 2]) || null,
+    ultimaDesconexion: texto(row[tieneRol ? 4 : 3]) || null,
     minutos: Math.max(0, numero(row[tieneRol ? 5 : 4])),
     porcentaje: tieneRol ? 0 : porcentaje(row[5]),
     cumple: tieneRol ? false : texto(row[6]) === "CUMPLE",
@@ -69,67 +70,83 @@ export function construirVistaAsistencia(
 ): Readonly<{
   participantes: readonly FilaVistaAsistencia[];
   responsables: readonly FilaVistaAsistencia[];
-  registrosMeet: readonly FilaVistaAsistencia[];
-  eventosMeet: number;
-  eventosReports: number;
+  reportes: readonly FilaVistaAsistencia[];
+  registrosHeredados: readonly FilaVistaAsistencia[];
+  indicador: IndicadorConciliacion;
+  origenPrincipal: "MEET" | "SIN_MEET";
 }> {
-  const participantes = datos.asistencia.slice(1).flatMap((row, index) => {
-    const item = convertirFila(row, index);
-    return item ? [item] : [];
-  });
-  const responsables = datos.responsables.slice(1).flatMap((row, index) => {
-    const rol = texto(row[2]) || "RESPONSABLE";
-    const item = convertirFila(row, index, rol);
-    return item ? [item] : [];
-  });
-
-  // Reports y Meet no comparten necesariamente IDs de persona. Esos registros
-  // permanecen separados: nunca asociar por coincidencias de nombre u horario.
   const raw = datos.datosBrutos.slice(1);
-  const grupos = raw.reduce<Readonly<Record<string, {
-    nombre: string;
-    sesiones: readonly { inicio: string; fin: string }[];
-  }>>>((acumulado, row, index) => {
-    if (texto(row[0]).toUpperCase() !== "MEET") return acumulado;
-    const inicioSesion = texto(row[5]);
-    const finSesion = texto(row[6]);
-    if (!Number.isFinite(Date.parse(inicioSesion)) || !Number.isFinite(Date.parse(finSesion))) return acumulado;
-    const key = texto(row[3]) || `sin-id-${index}`;
-    const anterior = acumulado[key];
-    return {
-      ...acumulado,
-      [key]: {
-        nombre: anterior?.nombre || texto(row[1]) || "Sin identificar",
-        sesiones: [...(anterior?.sesiones ?? []), { inicio: inicioSesion, fin: finSesion }]
-      }
-    };
-  }, {});
-  const registrosMeet = Object.entries(grupos).map(([key, item]) => {
-    const resumen = resumirIntervalosAsistencia(item.sesiones, inicio, fin);
-    return {
-      id: key,
-      nombre: item.nombre,
-      correo: null,
-      fuente: "MEET" as const,
-      primeraConexion: resumen.primeraConexion,
-      ultimaDesconexion: resumen.ultimaDesconexion,
-      minutos: resumen.minutosConectados,
-      porcentaje: resumen.porcentaje,
-      cumple: resumen.cumpleCincoSextos,
-      conexiones: resumen.conexiones
-    };
-  }).reduce<FilaVistaAsistencia[]>((ordenados, fila) => {
-    const posicion = ordenados.findIndex((previa) => previa.nombre.localeCompare(fila.nombre, "es") > 0);
-    return posicion < 0
-      ? [...ordenados, fila]
-      : [...ordenados.slice(0, posicion), fila, ...ordenados.slice(posicion)];
-  }, []);
+  const meetRows = raw.filter(row => texto(row[0]).toUpperCase() === "MEET");
+  const auditRows = raw.filter(row =>
+    texto(row[0]).toUpperCase() === "REPORTS" || texto(row[0]).toUpperCase() === "REPORTS_IDENTIDAD"
+  );
+  const reconciled = conciliarMeetReports(
+    meetRows.map(row => ({
+      nombre: texto(row[1]) || "Sin identificar",
+      inicio: texto(row[5]),
+      fin: texto(row[6]),
+      participanteId: texto(row[3]) || undefined,
+      sesionId: texto(row[9]) || undefined,
+      correoVerificado: emailVerificado(row[2]) ?? undefined
+    })),
+    auditRows.map(row => ({
+      nombre: texto(row[1]),
+      identificador: texto(row[3]),
+      tipoIdentificador: texto(row[11]) || texto(row[4]),
+      conferenciaId: texto(row[8]),
+      endpointId: texto(row[9]),
+      inicio: texto(row[5]),
+      fin: texto(row[6]),
+      timestamp: texto(row[12]) || texto(row[6])
+    })),
+    inicio,
+    fin
+  );
+
+  const participantes: readonly FilaVistaAsistencia[] = reconciled.meet.map(person => ({
+    id: person.id,
+    nombre: person.nombre,
+    correo: person.correo,
+    fuente: "MEET",
+    primeraConexion: person.resumen.primeraConexion,
+    ultimaDesconexion: person.resumen.ultimaDesconexion,
+    minutos: person.resumen.minutosConectados,
+    porcentaje: person.resumen.porcentaje,
+    cumple: person.resumen.cumpleCincoSextos,
+    conexiones: person.sesiones,
+    conciliacion: person.conciliacion,
+    diferenciaMinutos: person.diferenciaMinutos,
+    diferenciaSesiones: person.diferenciaSesiones
+  }));
+
+  const reportes: readonly FilaVistaAsistencia[] = reconciled.reports.map(p => ({
+    id: `reports:${p.correo}`,
+    nombre: p.nombre,
+    correo: p.correo,
+    fuente: "REPORTS",
+    primeraConexion: p.resumen.primeraConexion,
+    ultimaDesconexion: p.resumen.ultimaDesconexion,
+    minutos: p.resumen.minutosConectados,
+    porcentaje: p.resumen.porcentaje,
+    cumple: p.resumen.cumpleCincoSextos,
+    conexiones: p.sesiones,
+    conciliacion: p.vinculada ? "VERIFICADA" : "SIN_VINCULO"
+  }));
 
   return {
     participantes,
-    responsables,
-    registrosMeet,
-    eventosMeet: raw.filter((row) => texto(row[0]).toUpperCase() === "MEET").length,
-    eventosReports: raw.filter((row) => texto(row[0]).toUpperCase() === "REPORTS").length
+    responsables: datos.responsables.slice(1).flatMap((row, i) => {
+      const person = convertirFilaAntigua(row, i, texto(row[2]) || "RESPONSABLE");
+      return person ? [person] : [];
+    }),
+    reportes,
+    // Una planilla antigua puede tener filas Reports como asistencia principal.
+    // Sin datos brutos de Meet no deben presentarse como asistentes Meet confirmados.
+    registrosHeredados: meetRows.length === 0 ? datos.asistencia.slice(1).flatMap((row, i) => {
+      const person = convertirFilaAntigua(row, i);
+      return person ? [person] : [];
+    }) : [],
+    indicador: reconciled.indicador,
+    origenPrincipal: meetRows.length > 0 ? "MEET" : "SIN_MEET"
   };
 }
