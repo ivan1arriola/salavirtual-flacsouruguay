@@ -589,7 +589,7 @@ model RecordatorioReunion {
   instancia         InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
   usuario           Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@unique([instanciaSalaId, usuarioId, inicioProgramadoAt])
+  @@unique([instanciaSalaId, usuarioId, inicioProgramadoAt], map: "RecordatorioReunion_unico_24h")
   @@index([estado, createdAt])
 }
 
