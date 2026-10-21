@@ -80,7 +80,7 @@ export async function invitarUsuario(
   });
 
   try {
-    const accesoUrl = `${authConfig.baseUrl.replace(/\\/$/, "")}/acceso`;
+    const accesoUrl = new URL("/acceso", authConfig.baseUrl).toString();
     const html = envolverCorreo({
       categoria: "Bienvenida",
       titulo: "Te damos la bienvenida a Sala Virtual",
