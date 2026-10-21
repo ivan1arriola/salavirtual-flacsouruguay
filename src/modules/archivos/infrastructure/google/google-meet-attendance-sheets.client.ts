@@ -1,10 +1,10 @@
 import type { JWT } from "google-auth-library";
 import { conReintentosGoogleLectura } from "@/src/integrations/google";
 import type { CorreoAuditadoMeet, EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
-import { resumirIntervalosAsistencia } from "../../domain/meet-attendance-summary.domain";
+import { conciliarMeetReports } from "../../domain/meet-reports-reconciliation.domain";
 import type { MovedDriveFile } from "../../domain";
 
-export type MeetSheetSession = Readonly<{ nombre: string; tipo: string; inicio: string; fin: string; conferencia?: string; participanteId?: string; sesionId?: string }>;
+export type MeetSheetSession = Readonly<{ nombre: string; tipo: string; inicio: string; fin: string; conferencia?: string; participanteId?: string; sesionId?: string; correoVerificado?: string }>;
 export type MeetSheetInput = Readonly<{
   titulo: string;
   folderId: string;
@@ -88,55 +88,50 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     "Fuente", "Participante", "Correo", "Identificador", "Tipo", "Inicio (UTC)", "Fin (UTC)",
     "Duración (seg)", "Conferencia", "Endpoint", "Código Meet original", "Tipo identificador", "Timestamp auditoría", "Parámetros originales"
   ]];
-  for (const r of input.correosAuditados) {
-    const intervals = (r.conexiones ?? []).map(s => ({ start: Date.parse(s.inicio), end: Date.parse(s.fin) }))
-      .filter(v => Number.isFinite(v.start) && Number.isFinite(v.end));
-    const summary = resumirIntervalosAsistencia((r.conexiones ?? []).map(s => ({ inicio: s.inicio, fin: s.fin })), input.inicio, input.fin);
-    const first = summary.primeraConexion ?? "";
-    const last = summary.ultimaDesconexion ?? "";
-    const roles = r.correo.toLowerCase() === input.organizador.toLowerCase() ? "HOST"
-      : input.cohosts.some(email => email.toLowerCase() === r.correo.toLowerCase()) ? "COHOST" : "PARTICIPANTE";
-    const mins = summary.minutosConectados;
-    const ratio = summary.porcentaje / 100;
-    const item = [r.nombre || r.correo, r.correo, asUtcHour(first), asUtcHour(last), mins,
-      ratio, summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6", summary.conexiones];
-    if (roles !== "PARTICIPANTE") responsables.push([item[0], item[1], roles, item[2], item[3], item[4], item[7]]);
-    else resumen.push(item);
+  // Meet es la fuente primaria. Las identidades Reports sin clave común se
+  // conservan para revisión, pero no sustituyen ni duplican personas Meet.
+  const conciliacion = conciliarMeetReports(
+    input.sesionesMeet,
+    input.eventosAuditoria.map(e => ({
+      nombre: e.displayName,
+      identificador: e.identifier,
+      tipoIdentificador: e.identifierType,
+      conferenciaId: e.conferenceId,
+      endpointId: e.endpointId,
+      inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(),
+      fin: e.timestamp,
+      timestamp: e.timestamp
+    })),
+    input.inicio,
+    input.fin
+  );
+  for (const participante of conciliacion.meet) {
+    const summary = participante.resumen;
+    resumen.push([
+      participante.nombre, participante.correo ?? "No informado por auditoría",
+      asUtcHour(summary.primeraConexion ?? ""), asUtcHour(summary.ultimaDesconexion ?? ""),
+      summary.minutosConectados, summary.porcentaje / 100,
+      summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6",
+      summary.conexiones
+    ]);
   }
 
-  // Si no se obtuvieron correos de auditoría de Workspace, respaldar los participantes
-  // desde las sesiones directas de Meet para que la pestaña Asistencia no quede vacía.
-  if (input.correosAuditados.length === 0 && input.sesionesMeet.length > 0) {
-    const sesionesPorParticipante = new Map<string, { nombre: string; sesiones: Array<{ inicio: string; fin: string }> }>();
-    for (const s of input.sesionesMeet) {
-      const key = s.participanteId || s.nombre;
-      const prev = sesionesPorParticipante.get(key);
-      if (prev) {
-        prev.sesiones.push({ inicio: s.inicio, fin: s.fin });
-      } else {
-        sesionesPorParticipante.set(key, {
-          nombre: s.nombre,
-          sesiones: [{ inicio: s.inicio, fin: s.fin }]
-        });
-      }
-    }
-    for (const p of sesionesPorParticipante.values()) {
-      const summary = resumirIntervalosAsistencia(p.sesiones, input.inicio, input.fin);
-      const first = summary.primeraConexion ?? "";
-      const last = summary.ultimaDesconexion ?? "";
-      const mins = summary.minutosConectados;
-      const ratio = summary.porcentaje / 100;
-      resumen.push([
-        p.nombre,
-        "No informado por auditoría",
-        asUtcHour(first),
-        asUtcHour(last),
-        mins,
-        ratio,
-        summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6",
-        summary.conexiones
-      ]);
-    }
+  // El host y los cohosts se muestran aparte solo cuando su dirección
+  // institucional está configurada, no por nombres coincidentes en Meet.
+  for (const r of input.correosAuditados) {
+    const roles = r.correo.toLowerCase() === input.organizador.toLowerCase() ? "HOST"
+      : input.cohosts.some(email => email.toLowerCase() === r.correo.toLowerCase()) ? "COHOST" : null;
+    if (!roles) continue;
+    const summary = conciliarMeetReports([], (r.conexiones ?? []).map(s => ({
+      nombre: s.nombre, identificador: r.correo, tipoIdentificador: "email_address",
+      conferenciaId: r.conferenciaId, endpointId: s.endpointId ?? "",
+      inicio: s.inicio, fin: s.fin, timestamp: s.timestamp ?? s.fin
+    })), input.inicio, input.fin).reports[0]?.resumen;
+    responsables.push([
+      r.nombre || r.correo, r.correo, roles,
+      asUtcHour(summary?.primeraConexion ?? ""), asUtcHour(summary?.ultimaDesconexion ?? ""),
+      summary?.minutosConectados ?? 0, summary?.conexiones ?? 0
+    ]);
   }
 
   for (const event of input.eventosAuditoria) raw.push([
@@ -144,6 +139,16 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     event.identifierType, new Date(Date.parse(event.timestamp) - event.durationSeconds * 1000).toISOString(), event.timestamp,
     event.durationSeconds, event.conferenceId, event.endpointId, event.meetingCode, event.identifierType, event.timestamp, JSON.stringify(event.parameters)
   ]);
+  // Mantener también la atribución de correos cuando el endpoint de auditoría
+  // no trae un evento utilizable en el lote de datos brutos.
+  for (const r of input.correosAuditados) {
+    for (const s of r.conexiones ?? []) raw.push([
+      "REPORTS_IDENTIDAD", r.nombre ?? r.correo, r.correo, r.correo,
+      "email_address", s.inicio, s.fin, s.duracionSegundos,
+      r.conferenciaId, s.endpointId ?? "", s.meetingCode ?? "",
+      "email_address", s.timestamp ?? s.fin, ""
+    ]);
+  }
   const reported = new Set(input.correosAuditados.map(r => r.correo.toLowerCase()));
   for (const [email, rol] of [[input.organizador, "HOST"], ...input.cohosts.map(e => [e, "COHOST CONFIGURADO"])] as string[][]) {
     if (!reported.has(email.toLowerCase())) responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
@@ -152,7 +157,7 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     raw.push([
       "MEET",
       s.nombre,
-      "",
+      s.correoVerificado ?? "",
       s.participanteId ?? "",
       s.tipo,
       s.inicio,
