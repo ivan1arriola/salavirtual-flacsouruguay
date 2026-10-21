@@ -9,6 +9,8 @@ export function esTipoNotificacion(value: string): value is TipoNotificacion {
 
 export function etiquetaTipoNotificacion(tipo: TipoNotificacion): string {
   switch (tipo) {
+    case "REUNION_RECORDATORIO":
+      return "Recordatorios de reuniones (24 h antes)";
     case "REUNION_CREADA":
       return "Reuniones creadas";
     case "ASISTENCIA_REQUERIDA":
