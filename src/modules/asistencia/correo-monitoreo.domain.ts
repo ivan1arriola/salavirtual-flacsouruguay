@@ -1,3 +1,5 @@
+import { envolverCorreo } from "@/src/lib/email/email-design-system";
+
 export type ReunionResumenMonitoreo = Readonly<{
   fecha: string;
   titulo: string;
@@ -99,38 +101,19 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
     : "Estas reuniones todavía no tienen una persona asignada. Revisá los horarios y postuláte desde Agenda Abierta.";
   const destino = asignadas ? "https://salavirtual.flacso.edu.uy/mi-agenda" : "https://salavirtual.flacso.edu.uy/agenda-abierta";
   const etiquetaBoton = asignadas ? "Abrir Mi Agenda" : "Ver Agenda Abierta";
-  const nombre = input.nombre?.trim();
-  const saludo = nombre ? "Hola, " + escapar(nombre) + "." : "Hola.";
+  const saludo = input.nombre?.trim() ? "Hola, " + escapar(input.nombre.trim()) + "." : "Hola.";
   const tarjetas = input.reuniones.map((reunion, index) => tarjeta(reunion, index, input.variante)).join("");
-  return [
-    '<!doctype html><html lang="es"><head><meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width,initial-scale=1">',
-    '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">',
-    '<title>' + escapar(titulo) + '</title>',
-    '<style>@media only screen and (max-width:600px){.sv-shell{padding:0!important}.sv-container{border-radius:0!important}.sv-pad{padding:20px 16px!important}.sv-title{font-size:25px!important}}</style>',
-    '</head><body style="margin:0;padding:0;background:#eef2f6;font-family:Arial,Helvetica,sans-serif;color:' + COLOR.ink + '">',
-    '<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">' + escapar(resumen) + '</div>',
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef2f6" style="width:100%;background:#eef2f6"><tr><td align="center" class="sv-shell" style="padding:22px 10px">',
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="sv-container" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;border-collapse:separate;overflow:hidden">',
-    '<tr><td bgcolor="' + COLOR.navy + '" style="padding:18px 22px;border-bottom:3px solid ' + COLOR.teal + ';background:' + COLOR.navy + '">',
-    '<p style="margin:0;color:#ffffff;font-size:19px;line-height:25px;font-weight:700">FLACSO Uruguay</p>',
-    '<p style="margin:3px 0 0;color:#d6e4f1;font-size:12px;line-height:17px">Sala Virtual &nbsp;/&nbsp; Notificaciones de monitoreo</p>',
-    '</td></tr>',
-    '<tr><td class="sv-pad" style="padding:26px 28px 12px">',
-    '<p style="margin:0 0 10px;color:' + COLOR.teal + ';font-size:12px;line-height:18px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">' + (asignadas ? "CRONOGRAMA PERSONAL" : "COBERTURAS DISPONIBLES") + '</p>',
-    '<h1 class="sv-title" style="margin:0 0 10px;font-size:29px;line-height:1.22;letter-spacing:-0.02em;color:' + COLOR.ink + '">' + escapar(titulo) + '</h1>',
-    '<p style="margin:0 0 8px;color:' + COLOR.ink + ';font-size:16px;line-height:24px;font-weight:700">' + escapar(resumen) + '</p>',
-    '<p style="margin:0;color:' + COLOR.muted + ';font-size:14px;line-height:22px">' + saludo + ' ' + escapar(descripcion) + '</p>',
-    '</td></tr>',
-    '<tr><td class="sv-pad" style="padding:12px 28px 14px">' + tarjetas + '</td></tr>',
-    '<tr><td class="sv-pad" style="padding:4px 28px 28px">',
-    boton(destino, etiquetaBoton),
-    '<p style="margin:13px 0 0;color:' + COLOR.muted + ';font-size:12px;line-height:19px">',
-    asignadas ? "Los cambios en asignaciones y horarios se actualizan en Mi Agenda." : "Postularte no confirma la asignación. La confirmación aparece en Mi Agenda.",
-    '</p></td></tr>',
-    '<tr><td bgcolor="#f7f9fc" style="padding:17px 28px;border-top:1px solid ' + COLOR.border + ';background:#f7f9fc">',
-    '<p style="margin:0;color:' + COLOR.muted + ';font-size:11px;line-height:18px">Correo automático de Sala Virtual FLACSO. No necesitás responder este mensaje.</p>',
-    '<p style="margin:5px 0 0;font-size:11px;line-height:18px"><a href="https://salavirtual.flacso.edu.uy/mi-perfil" style="color:' + COLOR.teal + ';text-decoration:underline">Administrar preferencias de notificación</a></p>',
-    '</td></tr></table></td></tr></table></body></html>'
-  ].join("");
+  return envolverCorreo({
+    categoria: asignadas ? "Cronograma personal" : "Coberturas disponibles",
+    titulo,
+    resumen,
+    variante: "accion",
+    contenidoHtml: '<p style="margin:0 0 17px;color:#526277;font-size:14px;line-height:22px">' +
+      saludo + ' ' + escapar(descripcion) + '</p>' + tarjetas,
+    accion: { texto: etiquetaBoton, url: destino },
+    nota: asignadas
+      ? "Los cambios en asignaciones y horarios se actualizan en Mi Agenda."
+      : "Postularte no confirma la asignación. La confirmación aparece en Mi Agenda.",
+    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+  });
 }
