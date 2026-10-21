@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { obtenerConfiguracionCorreoSesActiva } from "../configuracion/correo-ses.service";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   reunionEmailText,
   type NotificationMessage,
@@ -29,7 +30,7 @@ export { reunionEmailText };
 function buildScope(db: Db) {
   const repository = crearPrismaNotificacionesRepository({
     db,
-    descifrar: (val) => val,
+    descifrar: descifrarConfiguracion,
   });
   const transport = crearCompositeEmailTransport(
     crearGmailEmailTransport(() => repository.obtenerCredencialesGmail()),
