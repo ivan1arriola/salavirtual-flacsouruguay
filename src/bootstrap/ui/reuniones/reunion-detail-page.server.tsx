@@ -81,6 +81,7 @@ export default async function ReunionDetailPage({
               }
             },
             cohostEmails: { select: { email: true } },
+            invitados: { select: { email: true } },
             asignaciones: {
               where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
               include: { asistenteTecnico: { include: { usuario: true } } }
@@ -133,6 +134,8 @@ export default async function ReunionDetailPage({
   const initialManualCohostEmails = unique(
     manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
   );
+
+  const initialGuestEmails = unique(manageableMeetings.flatMap(meeting => meeting.invitados.map(guest => guest.email.toLowerCase())));
 
   const verificationByEmail = unique([
     ...cohostAccounts.filter(({ id }) => initialCohostCuentaIds.includes(id)).map(({ email }) => email.toLowerCase()),
@@ -380,6 +383,7 @@ export default async function ReunionDetailPage({
                   }))}
                   initialCohostCuentaIds={initialCohostCuentaIds}
                   initialManualCohostEmails={initialManualCohostEmails}
+                  initialGuestEmails={initialGuestEmails}
                   suggestedPeople={[
                     ...otherUsers.filter(({ emailPrincipal }) => Boolean(emailPrincipal)).map(({ emailPrincipal, nombres, apellidos }) => ({
                       email: emailPrincipal!.toLowerCase(), name: [nombres, apellidos].filter(Boolean).join(" "), source: "Usuario registrado"
