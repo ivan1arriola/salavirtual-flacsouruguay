@@ -1,4 +1,5 @@
 import { mobileSessionIdentifier } from "@/src/lib/auth/mobile-token";
+import { envolverCorreo, escaparHtmlEmail, panelCorreo } from "@/src/lib/email/email-design-system";
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
@@ -64,6 +65,20 @@ export async function solicitarRecuperacionPassword(
   url.searchParams.set("token", token);
 
   try {
+    const html = envolverCorreo({
+      categoria: "Seguridad de la cuenta",
+      titulo: "Restablecé tu contraseña",
+      resumen: "Recibimos una solicitud para cambiar la contraseña de Sala Virtual FLACSO.",
+      variante: "seguridad",
+      contenidoHtml: '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
+        escaparHtmlEmail(usuario.nombres) + '.</p>' +
+        panelCorreo(
+          '<p style="margin:0;color:#192b44;font-size:14px;line-height:21px"><strong>El enlace vence en 30 minutos</strong> y solo puede utilizarse una vez.</p>',
+          "Acceso temporal"
+        ),
+      accion: { texto: "Elegir nueva contraseña", url: url.toString() },
+      nota: "Si no solicitaste este cambio, ignorá este correo. Tu contraseña actual continuará funcionando."
+    });
     const resultado = await enviarCorreoConfigurado(db, {
       to: [destino],
       subject: "Restablecer contraseña · Sala Virtual FLACSO",
@@ -76,7 +91,8 @@ export async function solicitarRecuperacionPassword(
         "",
         "El enlace vence en 30 minutos y solo puede utilizarse una vez.",
         "Si no solicitaste este cambio, podés ignorar este correo."
-      ].join("\n")
+      ].join("\n"),
+      html
     });
 
     if (!resultado.sent) {
