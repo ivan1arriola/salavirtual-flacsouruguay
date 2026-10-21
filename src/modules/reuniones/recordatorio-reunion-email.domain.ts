@@ -31,7 +31,7 @@ export function construirRecordatorioReunion(input: DatosRecordatorio): Readonly
       ? "Cuentas verificadas como coanfitrión en Google Meet:\n" + confirmadas.map(email => "- " + email).join("\n")
       : "Google Meet no confirmó ninguna de tus cuentas como coanfitrión para esta reunión.";
   const text = [
-    "Recordatorio: tu reunión es mañana",
+    "Recordatorio: tu próxima reunión",
     "",
     "Hola " + input.nombre + ",",
     input.reunion + " — " + input.programa,
@@ -71,7 +71,7 @@ export function construirRecordatorioReunion(input: DatosRecordatorio): Readonly
 
   const html = envolverCorreo({
     categoria: "Recordatorio · 24 horas",
-    titulo: "Tu reunión es mañana",
+    titulo: "Tu próxima reunión",
     resumen: "Hola, " + input.nombre + ". Revisá el horario, el enlace y las cuentas habilitadas para conducir la reunión.",
     variante: "accion",
     contenidoHtml: detalles +
@@ -81,5 +81,5 @@ export function construirRecordatorioReunion(input: DatosRecordatorio): Readonly
     nota: "La verificación se realizó antes del envío. Solo las cuentas confirmadas por la API aparecen como coanfitrionas. Si el horario cambia, consultá la agenda actualizada.",
     preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
   });
-  return { subject: "Mañana: " + input.reunion + " · Sala Virtual FLACSO", text, html };
+  return { subject: "Recordatorio: " + input.reunion + " · Sala Virtual FLACSO", text, html };
 }
