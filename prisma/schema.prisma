@@ -313,6 +313,7 @@ model InstanciaSala {
   cohosts                   CohostReunion[]
   cohostEmails              CohostEmailReunion[]
   invitados                 InvitadoReunion[]
+  recordatoriosInvitados     RecordatorioInvitadoReunion[]
   registrosAsistencia       RegistroAsistenciaMeet[]
   registrosMonitoreoRetroactivo RegistroMonitoreoRetroactivo[]
   recordatorios             RecordatorioReunion[]
@@ -397,6 +398,22 @@ model CohostEmailReunion {
 }
 
 /// Participante invitado, independiente de los permisos de anfitrión/coanfitrión.
+
+model RecordatorioInvitadoReunion {
+  id                String       @id @default(cuid())
+  instanciaSalaId    String
+  email             String
+  inicioProgramadoAt DateTime
+  estado            String       @default("RESERVADO")
+  enviadoAt         DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  instancia         InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, email, inicioProgramadoAt], map: "RecordatorioInvitadoUnico")
+  @@index([estado, createdAt])
+}
+
 model InvitadoReunion {
   id              String       @id @default(cuid())
   instanciaSalaId  String
