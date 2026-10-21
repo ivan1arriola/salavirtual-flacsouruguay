@@ -70,7 +70,7 @@ export function construirRecordatorioReunion(input: DatosRecordatorio): Readonly
     : '<p style="color:#995218;font-size:13px">El enlace de Meet todavía no está disponible.</p>';
 
   const html = envolverCorreo({
-    categoria: "Recordatorio · 24 horas",
+    categoria: "Recordatorio de reunión",
     titulo: "Tu próxima reunión",
     resumen: "Hola, " + input.nombre + ". Revisá el horario, el enlace y las cuentas habilitadas para conducir la reunión.",
     variante: "accion",
