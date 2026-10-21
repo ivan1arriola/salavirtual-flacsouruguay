@@ -16,6 +16,7 @@ export function SeriesManagement({
   cohostOptions,
   initialCohostCuentaIds,
   initialManualCohostEmails,
+  initialGuestEmails,
   suggestedPeople,
   seriesInfo,
   verificationByEmail,
@@ -26,6 +27,7 @@ export function SeriesManagement({
   cohostOptions: readonly CohostOption[];
   initialCohostCuentaIds: readonly string[];
   initialManualCohostEmails: readonly string[];
+  initialGuestEmails: readonly string[];
   suggestedPeople: readonly { email: string; name: string; source: string }[];
   seriesInfo: Readonly<{ titulo: string; modalidad: string; encuentros: number; siguientes: number }>;
   verificationByEmail: readonly { email: string; confirmed: number; total: number; pending: number }[];
@@ -37,7 +39,12 @@ export function SeriesManagement({
   const [manualEmails, setManualEmails] = useState<readonly string[]>(normalizeManualEmails(initialManualCohostEmails.join(",")));
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [busy, setBusy] = useState<"notify" | "cohosts" | null>(null);
+  const [busy, setBusy] = useState<"notify" | "cohosts" | "guests" | "link" | null>(null);
+  const [guestEmails, setGuestEmails] = useState<readonly string[]>(initialGuestEmails);
+  const [guestInput, setGuestInput] = useState("");
+  const [failedCohostChecks, setFailedCohostChecks] = useState(0);
+  const [recoveryVisible, setRecoveryVisible] = useState(false);
+  const [replacementMeetUrl, setReplacementMeetUrl] = useState("");
   const [message, setMessage] = useState("");
 
   const [checking, setChecking] = useState(false);
@@ -58,6 +65,9 @@ export function SeriesManagement({
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No fue posible consultar los permisos en Google Meet.");
       setLiveVerification(result.entries);
+      if (result.entries?.some((item: { rejected: number }) => item.rejected > 0)) {
+        setFailedCohostChecks(count => count + 1);
+      }
       setVerifiedAt(result.verifiedAt);
     } catch (error) {
       setLiveVerification(null);
@@ -121,7 +131,73 @@ export function SeriesManagement({
       router.refresh();
       await verifyCohosts();
     } catch (error) {
+      setFailedCohostChecks(count => count + 1);
       setMessage(error instanceof Error ? error.message : "No se pudieron actualizar los cohosts.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+
+  const guestValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInput.trim());
+  const guestCount = guestEmails.length;
+  const canRecoverLink = failedCohostChecks >= 2 ||
+    (liveVerification ?? []).some(item => item.rejected >= 2) ||
+    verificationByEmail.some(item => item.pending >= 2 && item.total >= 2);
+
+  function addGuest() {
+    const email = guestInput.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+        guestEmails.includes(email) || selectedEmails.has(email) || guestEmails.length >= 100) return;
+    setGuestEmails(list => [...list, email]);
+    setGuestInput("");
+  }
+
+  async function saveGuests() {
+    setBusy("guests");
+    setMessage("");
+    try {
+      const response = await fetch(`/api/v1/reuniones/${solicitudId}/invitados`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: guestEmails }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "No se pudo actualizar la lista de invitados.");
+      setMessage(`Invitados actualizados en ${result.encuentros} encuentros. Correos aceptados: ${result.correosEnviados}.` +
+        (result.erroresCorreo ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.` : ""));
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo actualizar la lista de invitados.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function changeSeriesLink() {
+    const url = replacementMeetUrl.trim();
+    if (!/^https:\/\/meet\.google\.com\/[a-zA-Z0-9-]+\/?$/.test(url)) {
+      setMessage("Ingresá un enlace válido de Google Meet.");
+      return;
+    }
+    if (!window.confirm("Se reemplazará el enlace de los encuentros futuros y se enviará un correo individual a todos los cohosts e invitados. Los encuentros pasados no cambiarán. ¿Continuar?")) return;
+    setBusy("link");
+    setMessage("");
+    try {
+      const response = await fetch(`/api/v1/reuniones/${solicitudId}/enlace-recuperacion`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetUrl: url })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "No se pudo sustituir el enlace.");
+      setMessage(`Enlace actualizado en ${result.encuentros} encuentros futuros. Avisos a cohosts: ${result.cohostsNotificados}; invitados: ${result.invitadosNotificados}.` +
+        (result.erroresCorreo ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.` : ""));
+      setRecoveryVisible(false);
+      setReplacementMeetUrl("");
+      setLiveVerification(null);
+      setVerifiedAt("");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo cambiar el enlace.");
     } finally {
       setBusy(null);
     }
@@ -266,7 +342,82 @@ export function SeriesManagement({
             {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
             {busy === "cohosts" ? "Asignando en Google…" : "Guardar y asignar en Google"}
           </button>
+          {canRecoverLink && hasManageableMeetings ? (
+            <div className="series-link-recovery">
+              <div>
+                <strong>¿La asignación de coanfitriones sigue fallando?</strong>
+                <p>Podés sustituir el enlace de los encuentros futuros por otro espacio Meet. Se avisará a todos los coanfitriones e invitados por correo.</p>
+              </div>
+              {!recoveryVisible ? (
+                <button className="secondary-action" type="button" disabled={busy !== null}
+                  onClick={() => setRecoveryVisible(true)}>Cambiar enlace de la serie</button>
+              ) : (
+                <div className="series-link-recovery-form">
+                  <label htmlFor="series-meet-replacement">Nuevo enlace Google Meet</label>
+                  <input id="series-meet-replacement" type="url" inputMode="url"
+                    placeholder="https://meet.google.com/abc-defg-hij"
+                    value={replacementMeetUrl} onChange={e => setReplacementMeetUrl(e.target.value)}
+                    disabled={busy !== null} />
+                  <small>Solo se modificarán los encuentros programados que aún no comenzaron. Los permisos del nuevo espacio deberán verificarse después del cambio.</small>
+                  <div className="series-link-recovery-actions">
+                    <button className="primary-action" type="button" disabled={busy !== null || !replacementMeetUrl.trim()}
+                      onClick={changeSeriesLink}>{busy === "link" ? "Actualizando…" : "Confirmar nuevo enlace y avisar"}</button>
+                    <button className="secondary-action" type="button" disabled={busy !== null}
+                      onClick={() => setRecoveryVisible(false)}>Cancelar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </article>
+        </details>
+
+        <details className="series-management-tool-disclosure">
+          <summary><UsersRound size={17} aria-hidden="true" /> Invitados <ChevronDown size={16} aria-hidden="true" /></summary>
+          <article className="series-tool-card series-invited-manager">
+            <header>
+              <UsersRound size={19} aria-hidden="true" />
+              <div>
+                <h3>Invitados a la serie</h3>
+                <p>Participan de los encuentros futuros sin permisos de coanfitrión. Recibirán un correo con los datos y enlace de Meet.</p>
+              </div>
+            </header>
+            <div className="field">
+              <label htmlFor="series-guest-email">Agregar invitado</label>
+              <div className="series-cohost-entry">
+                <input id="series-guest-email" type="email" placeholder="persona@ejemplo.com"
+                  value={guestInput} autoComplete="email"
+                  disabled={busy !== null || !hasManageableMeetings || guestCount >= 100}
+                  onChange={e => setGuestInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addGuest(); } }} />
+                <button className="secondary-action series-cohost-add" type="button" onClick={addGuest}
+                  disabled={!guestValid || selectedEmails.has(guestInput.trim().toLowerCase()) ||
+                    guestEmails.includes(guestInput.trim().toLowerCase()) || busy !== null || !hasManageableMeetings}>
+                  <Plus size={16} /> Agregar
+                </button>
+              </div>
+              <small>Máximo 100 invitados. Las cuentas anfitrionas y coanfitrionas se administran en otra sección.</small>
+            </div>
+            <strong>Invitados agregados ({guestCount})</strong>
+            <ul className="series-cohost-items">
+              {guestEmails.map(email => (
+                <li className="series-cohost-item" key={email}>
+                  <span className="series-guest-email">{email}</span>
+                  <button type="button" className="series-cohost-remove"
+                    aria-label={`Quitar invitado ${email}`}
+                    disabled={busy !== null || !hasManageableMeetings}
+                    onClick={() => setGuestEmails(list => list.filter(item => item !== email))}>
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="primary-action series-tool-action"
+              onClick={saveGuests} disabled={busy !== null || !hasManageableMeetings}>
+              {busy === "guests" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
+              {busy === "guests" ? "Guardando invitados…" : "Guardar invitados y enviar correos"}
+            </button>
+          </article>
         </details>
 
         <details className="series-management-tool-disclosure">

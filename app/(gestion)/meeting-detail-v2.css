@@ -2475,3 +2475,112 @@
     flex: 0 0 44px;
   }
 }
+
+
+/* Corrección de desborde horizontal en Personas y administración de serie.
+   El min-content implícito de grid/flex no debe expandir el viewport móvil. */
+.meeting-detail-v2,
+.meeting-tabs-workspace,
+.meeting-detail-section,
+.series-management-v2,
+.series-management-v2-content,
+.series-management-tool-disclosure,
+.series-tool-card,
+.series-tool-card > .field,
+.series-cohost-toolbar,
+.series-cohost-items,
+.series-cohost-item,
+.series-person,
+.series-cohost-status-actions,
+.series-invited-manager,
+.series-link-recovery {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.meeting-detail-v2 .series-management-v2-content.is-single,
+.meeting-detail-v2 .series-management-tool-disclosure,
+.meeting-detail-v2 .series-tool-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+.series-cohost-item small,
+.series-cohost-item strong,
+.series-guest-email,
+.series-cohost-suggestion,
+.series-cohost-search-control input,
+.series-link-recovery input,
+.series-invited-manager input,
+.series-link-recovery p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.series-cohost-status-actions > .series-verification-status {
+  min-width: 0;
+}
+.series-link-recovery {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8dfeb;
+  border-radius: 10px;
+  background: #f3f6fb;
+}
+.series-link-recovery > div > strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .92rem;
+  color: #213f68;
+}
+.series-link-recovery p {
+  margin: 0;
+  color: #4b617b;
+  font-size: .83rem;
+  line-height: 1.5;
+}
+.series-link-recovery-form,
+.series-link-recovery-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+.series-link-recovery input,
+.series-invited-manager input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #bbcadd;
+  background: #fff;
+  font: inherit;
+}
+.series-link-recovery-form > label { font-weight: 750; font-size: .85rem; }
+.series-link-recovery-form > small { line-height: 1.5; overflow-wrap: anywhere; }
+.series-invited-manager .series-cohost-items { min-width: 0; }
+.series-invited-manager .series-cohost-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.series-guest-email { min-width: 0; flex: 1; font-size: .86rem; }
+.series-invited-manager .series-cohost-remove { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .meeting-detail-v2 { width: 100%; min-width: 0; }
+  .meeting-detail-v2 .series-management-v2 { width: 100%; }
+  .meeting-detail-v2 .series-management-v2-content { padding: 8px; }
+  .meeting-detail-v2 .series-tool-card { padding: 12px 10px; }
+  .meeting-detail-v2 .series-cohost-item { width: 100%; }
+  .meeting-detail-v2 .series-cohost-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meeting-detail-v2 .series-link-recovery-actions > button {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    min-height: 44px;
+  }
+  .meeting-detail-v2 .series-invited-manager .series-cohost-entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
