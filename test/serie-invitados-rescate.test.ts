@@ -38,7 +38,7 @@ describe("invitados de reunión y rescate de enlace de serie", () => {
     }];
     const guests = construirCorreoParticipacion("INVITACION", meetings, "INVITADO");
     const cohosts = construirCorreoParticipacion("ENLACE_CAMBIADO", meetings, "COHOST");
-    expect(guests.html).toContain("sin permisos de coanfitrión");
+    expect(guests.html).toContain("no te concede permisos de coanfitrión");
     expect(cohosts.html).toContain("coanfitrión");
     expect(cohosts.html).toContain("https://meet.google.com/abc-defg-hij");
     expect(cohosts.text).toContain("2026");
