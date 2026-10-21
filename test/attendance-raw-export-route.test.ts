@@ -59,6 +59,7 @@ beforeEach(() => {
     }]
   });
   mocks.canAccess.mockResolvedValue(true);
+  mocks.jwt.mockReturnValue({});
   mocks.config.mockResolvedValue({ activa: true, serviceAccountEmail: "service@example.org", privateKeyCifrada: "encrypted" });
   mocks.readSheet.mockResolvedValue({
     asistencia: [], responsables: [],
