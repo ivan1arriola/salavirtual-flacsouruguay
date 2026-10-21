@@ -268,7 +268,7 @@ export async function procesarRecordatorios24h(
     const avisadosComoUsuario = new Set(usuarios
       .map(u => normalizarEmail(u.emailPrincipal))
       .filter((email): email is string => Boolean(email)));
-    const invitados = [...new Set(meeting.invitados
+    const invitados = [...new Set((meeting.invitados ?? [])
       .map(g => normalizarEmail(g.email))
       .filter((email): email is string => Boolean(email)))];
     for (const email of invitados) {
