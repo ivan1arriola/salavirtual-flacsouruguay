@@ -243,7 +243,7 @@ export async function procesarRecordatorios24h(
             data: {
               usuarioId: usuario.id,
               tipo: "REUNION_RECORDATORIO",
-              titulo: "Tu reunión es mañana",
+              titulo: "Tu próxima reunión",
               cuerpo: meeting.solicitud.titulo,
               href: "/reuniones/" + meeting.solicitud.id,
               metadata: { instanciaSalaId: meeting.id }
