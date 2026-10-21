@@ -119,7 +119,7 @@ export function conciliarMeetReports(
   // Cuando varias conferencias de auditoría se solapan, sus correos no se
   // atribuyen a la instancia ni se comparan individualmente.
   const conferenciaUnica = reportConferencias.length === 1;
-  const reportGrupos = (conferenciaUnica ? reportEventos : []).reduce<Readonly<Record<string, {
+  const reportGrupos = reportEventos.reduce<Readonly<Record<string, {
     nombre: string;
     eventos: readonly EventoReportsConciliable[];
   }>>>((acc, evento) => {
@@ -140,19 +140,19 @@ export function conciliarMeetReports(
       nombre: group.nombre,
       sesiones: group.eventos.length,
       resumen,
-      vinculada: (emailsDeMeet[correo] ?? 0) === 1
+      vinculada: conferenciaUnica && (emailsDeMeet[correo] ?? 0) === 1
     };
   });
 
   const meet = gruposMeet.map(([id, group]) => {
     const email = group.correo;
-    const reporte = email && (emailsDeMeet[email] ?? 0) === 1
+    const reporte = conferenciaUnica && email && (emailsDeMeet[email] ?? 0) === 1
       ? reports.find(r => r.correo === email) : undefined;
     const resumen = resumirIntervalosAsistencia(group.sesiones, inicio, fin);
     return {
       id,
       nombre: group.nombre,
-      correo: reporte?.correo ?? null,
+      correo: group.correo,
       sesiones: group.sesiones.length,
       resumen,
       conciliacion: reporte ? "VERIFICADA" as const : "SIN_VINCULO" as const,
