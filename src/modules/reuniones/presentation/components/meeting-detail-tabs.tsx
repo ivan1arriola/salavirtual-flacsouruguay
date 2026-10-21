@@ -43,7 +43,9 @@ export function MeetingDetailTabs({
             <span className="meeting-mosaic-panel-counter">Sección {numberedLabel} / 05</span>
             {section.id === "encuentros"
               ? <span className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-encuentros">Cronograma</span>
-              : <h2 id={`meeting-mosaic-heading-${section.id}`}>{section.label}</h2>}
+              : section.id === "general"
+                ? <strong className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-general">{section.label}</strong>
+                : <h2 id={`meeting-mosaic-heading-${section.id}`}>{section.label}</h2>}
           </div>
           <a href="#secciones-reunion" className="meeting-mosaic-panel-back" aria-label="Volver al índice de secciones">Índice ↑</a>
         </div>
