@@ -9,7 +9,7 @@ import { recuperarEnlaceSerie, descripcionConAccesoMeet } from "@/src/modules/re
 import { obtenerEventoCalendar, actualizarEventoCalendarHttp } from "@/src/integrations/google/calendar";
 import { crearGoogleCalendarAuthClient, crearGoogleMeetAuthClient } from "@/src/integrations/google/auth";
 import { obtenerEspacioMeet } from "@/src/integrations/google/meet";
-import { IntegrationApiError, toHttpError } from "@/src/lib/http/api-error";
+import { IntegrationApiError, ConflictApiError, toHttpError } from "@/src/lib/http/api-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -39,7 +39,7 @@ export async function PUT(request: Request, context: Context) {
           serviceAccountEmail: cred.serviceAccountEmail, privateKey: cred.privateKey, subject: host
         });
         const space = await obtenerEspacioMeet(meetAuth, code);
-        if (space.meetingCode !== code) throw new IntegrationApiError("Google no reconoció el enlace de Meet indicado.", 422);
+        if (space.meetingCode !== code) throw new ConflictApiError("Google no reconoció el enlace de Meet indicado.");
       },
       leerCalendario: async (host, eventId) => {
         const evento = await obtenerEventoCalendar(calendarAuth(host), host, eventId, { conferenceDataVersion: 1 });
@@ -65,7 +65,7 @@ export async function PUT(request: Request, context: Context) {
       },
       restaurarEnCalendar: async (host, eventId, previous) => {
         await actualizarEventoCalendarHttp(calendarAuth(host), host, eventId, {
-          conferenceData: previous.conferenceData ?? null as unknown as Record<string, unknown>,
+          conferenceData: (previous.conferenceData ?? null) as Record<string, unknown>,
           location: previous.location ?? "",
           description: previous.description ?? ""
         }, { conferenceDataVersion: 1, sendUpdates: "none" });
