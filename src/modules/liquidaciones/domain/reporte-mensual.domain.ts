@@ -1,3 +1,4 @@
+import { envolverCorreo, panelCorreo, escaparHtmlEmail } from "@/src/lib/email/email-design-system";
 import {
   etiquetaMes,
   formatearDuracion,
@@ -30,24 +31,35 @@ export function construirCorreoReporteMensual(input: Readonly<{
     "Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.",
     "Si detectás una diferencia, respondé a todos para que Administración pueda revisarla."
   ].join("\n");
-  const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.55;color:#1f2937;max-width:640px;margin:0 auto">
-      <h2 style="margin:0 0 16px">Resumen mensual de monitoreo</h2>
-      <p>Hola ${escapeHtml(input.nombre)},</p>
-      <p>Según Sala Virtual FLACSO, durante <strong>${escapeHtml(mes)}</strong> realizaste:</p>
-      <p style="font-size:28px;font-weight:700;margin:18px 0 4px">${escapeHtml(total)}</p>
-      <p style="margin:0 0 20px;color:#4b5563">${escapeHtml(decimal)} horas</p>
-      <table style="border-collapse:collapse;width:100%;margin:0 0 20px">
-        <tbody>
-          <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb">Reuniones</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right"><strong>${input.resumen.reuniones}</strong></td></tr>
-          <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb">Virtual</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right"><strong>${escapeHtml(virtual)}</strong></td></tr>
-          <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb">Híbrida</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right"><strong>${escapeHtml(hibrida)}</strong></td></tr>
-        </tbody>
-      </table>
-      <p style="color:#4b5563">Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.</p>
-      <p style="color:#4b5563">Si detectás una diferencia, respondé a todos para que Administración pueda revisarla.</p>
-    </div>
-  `.trim();
+  const detalle = [
+    ["Reuniones", String(input.resumen.reuniones)],
+    ["Modalidad virtual", virtual],
+    ["Modalidad híbrida", hibrida]
+  ].map(([etiqueta, valor]) =>
+    '<tr><td style="padding:10px 0;border-bottom:1px solid #e4eaf0;color:#526277;font-size:13px">' +
+      escaparHtmlEmail(etiqueta) + '</td>' +
+      '<td align="right" style="padding:10px 0;border-bottom:1px solid #e4eaf0;color:#192b44;font-size:13px;font-weight:700">' +
+      escaparHtmlEmail(valor) + '</td></tr>'
+  ).join("");
+  const html = envolverCorreo({
+    categoria: "Resumen mensual",
+    titulo: "Tus horas de monitoreo",
+    resumen: "Período: " + capitalizar(mes),
+    variante: "reporte",
+    contenidoHtml:
+      '<p style="margin:0 0 12px;font-size:14px;line-height:22px;color:#33465c">Hola, ' +
+      escaparHtmlEmail(input.nombre) + '.</p>' +
+      panelCorreo(
+        '<p style="margin:0;color:#526277;font-size:12px;line-height:18px;text-transform:uppercase;font-weight:700;letter-spacing:.04em">Total registrado</p>' +
+        '<p style="margin:5px 0 3px;color:#183b70;font-size:33px;line-height:40px;font-weight:700">' + escaparHtmlEmail(total) + '</p>' +
+        '<p style="margin:0;color:#526277;font-size:13px;line-height:20px">' + escaparHtmlEmail(decimal) + ' horas decimales</p>',
+        "Actividad de " + capitalizar(mes)
+      ) +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:14px">' +
+      detalle + '</table>',
+    nota: "Este resumen se genera a partir de las asistencias registradas. Si detectás una diferencia, respondé a todos para que Administración pueda revisarla.",
+    permiteRespuesta: true
+  });
   return { subject, text, html };
 }
 
