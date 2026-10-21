@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock3, ExternalLink, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowLeft, Clock3, ExternalLink, ShieldCheck, UsersRound, GitCompareArrows } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -60,7 +60,10 @@ function ListaAsistencia({
               <div className="attendance-identity">
                 <strong>{fila.nombre}</strong>
                 <small>{fila.correo ?? "Correo no verificado"}</small>
-                <span className="attendance-source">{fila.rol ? `${fila.rol} · ` : ""}{fila.fuente === "REPORTS" ? "Identidad: Reports API" : "Sesiones: Google Meet"}</span>
+                <span className="attendance-source">{fila.rol ? `${fila.rol} · ` : ""}{fila.fuente === "REPORTS" ? "Identidad de Reports, sin sumar al total Meet" : fila.fuente === "LEGADO" ? "Planilla anterior, sin verificar fuente" : fila.conciliacion === "VERIFICADA" ? "Meet + Reports · identidad vinculada" : "Sesiones: Meet · identidad sin conciliar"}</span>
+                {fila.conciliacion === "VERIFICADA" && fila.diferenciaMinutos !== null && fila.diferenciaMinutos !== undefined ? (
+                  <small className="attendance-delta">Diferencia de minutos Meet − Reports: {fila.diferenciaMinutos.toLocaleString("es-UY")}</small>
+                ) : null}
               </div>
             </td>
             <td>{fechaHoraUY(fila.primeraConexion)}</td>
@@ -143,9 +146,17 @@ export default async function EncuentroAsistenciaPage({
     errorLectura = "El archivo existente no es una planilla Google Sheets. Se puede abrir desde el enlace original.";
   }
 
-  const identificados = vista?.participantes.filter(p => p.correo !== null).length ?? 0;
-  const sinCorreo = vista?.participantes.filter(p => p.correo === null).length ?? 0;
+  const conciliacion = vista?.indicador;
   const cumplen = vista?.participantes.filter(p => p.cumple).length ?? 0;
+  const estadoConciliacion = conciliacion?.estado === "VINCULADA"
+    ? "Vinculación completa"
+    : conciliacion?.estado === "CONFERENCIA_AMBIGUA"
+      ? "Conferencias ambiguas"
+      : conciliacion?.estado === "SIN_MEET"
+        ? "Sin sesiones Meet verificables"
+        : conciliacion?.estado === "SIN_REPORTS"
+          ? "Sin eventos Reports disponibles"
+          : "Conciliación parcial";
   const vuelta = `/reuniones/${solicitudId}#encuentros`;
 
   return (
@@ -181,31 +192,72 @@ export default async function EncuentroAsistenciaPage({
         <section className="attendance-state" role="alert"><h2>Asistencia no disponible</h2><p>{errorLectura}</p></section>
       ) : vista ? (
         <>
-          <div className="attendance-summary" aria-label="Resumen de registros">
-            <article><UsersRound size={19} aria-hidden="true" /><span>Con correo verificado</span><strong>{identificados}</strong><small>Identidad informada por Reports</small></article>
-            <article><UsersRound size={19} aria-hidden="true" /><span>Sin correo verificado</span><strong>{sinCorreo}</strong><small>Participantes de la hoja principal</small></article>
-            <article><ShieldCheck size={19} aria-hidden="true" /><span>Cumplen 5/6</span><strong>{cumplen}</strong><small>Entre las filas de asistencia</small></article>
-            <article><Clock3 size={19} aria-hidden="true" /><span>Registros de origen</span><strong>{vista.eventosReports + vista.eventosMeet}</strong><small>{vista.eventosReports} Reports · {vista.eventosMeet} Meet</small></article>
-          </div>
+          <section className="attendance-reconciliation" aria-label="Indicador de conciliación">
+            <div className="attendance-reconciliation-heading">
+              <div>
+                <h2><GitCompareArrows size={19} aria-hidden="true" />Conciliación Meet y Reports</h2>
+                <p>Recuentos de ambas fuentes por separado. Nunca se suman como si fueran personas distintas.</p>
+              </div>
+              <span className={`attendance-reconciliation-status ${conciliacion?.estado === "VINCULADA" ? "is-verified" : "is-pending"}`}>
+                {estadoConciliacion}
+              </span>
+            </div>
+            <div className="attendance-summary">
+              <article><UsersRound size={19} aria-hidden="true" /><span>Personas Meet</span><strong>{conciliacion?.personasMeet ?? 0}</strong><small>Participantes únicos según Meet</small></article>
+              <article><UsersRound size={19} aria-hidden="true" /><span>Correos Reports</span><strong>{conciliacion?.correosReports ?? 0}</strong><small>Direcciones únicas observadas</small></article>
+              <article><Clock3 size={19} aria-hidden="true" /><span>Sesiones Meet</span><strong>{conciliacion?.sesionesMeet ?? 0}</strong><small>Conexiones de participantes Meet</small></article>
+              <article><Clock3 size={19} aria-hidden="true" /><span>Eventos Reports</span><strong>{conciliacion?.sesionesReports ?? 0}</strong><small>Registros de finalización de llamada</small></article>
+            </div>
+            <div className="attendance-reconciliation-details">
+              <span><strong>{conciliacion?.personasVinculadas ?? 0}</strong> identidades vinculadas con evidencia</span>
+              <span><strong>{conciliacion?.meetSinVincular ?? 0}</strong> participantes Meet sin vincular</span>
+              <span><strong>{conciliacion?.correosSinVincular ?? 0}</strong> correos Reports sin vincular</span>
+              <span><strong>{conciliacion?.registrosReportsSinCorreo ?? 0}</strong> registros Reports sin correo</span>
+            </div>
+            <p className="attendance-reconciliation-diff">
+              Diferencia entre fuentes (Meet − Reports): <strong>{conciliacion?.diferenciaPersonas ?? 0}</strong> registros de personas/correos y <strong>{conciliacion?.diferenciaSesiones ?? 0}</strong> conexiones/eventos.
+              {" "}{conciliacion?.sesionesReportsSinSolapamiento ?? 0} eventos Reports no se superponen temporalmente con ninguna sesión Meet observada.
+            </p>
+            {conciliacion?.estado === "CONFERENCIA_AMBIGUA" ? (
+              <p className="attendance-reconciliation-warning" role="status">Los registros de Reports incluyen {conciliacion.conferenciasReports} identificadores de conferencia. No es seguro atribuir sus correos a este encuentro. Revisá la auditoría antes de utilizarlos.</p>
+            ) : null}
+            <p className="attendance-reconciliation-note">
+              Las APIs no comparten necesariamente una clave de identidad. Los mismos nombres u horarios no prueban que dos registros sean de la misma persona.
+              Los números distintos señalan una diferencia de cobertura, no participantes adicionales ni ausencias confirmadas.
+            </p>
+          </section>
+
+          <section className="attendance-summary-compact" aria-label="Cumplimiento de asistencia">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <span><strong>{cumplen}</strong> participantes Meet alcanzan el umbral de 5/6, de {conciliacion?.personasMeet ?? 0} registros principales.</span>
+          </section>
 
           <section className="attendance-data">
             <h2>Participantes y cumplimiento</h2>
-            <p>Asistencia calculada dentro del horario programado. El umbral de 5/6 equivale a 83,33 % del encuentro. La identidad se considera verificada solo cuando Reports informa el correo.</p>
+            <p>Fuente principal: sesiones de Meet dentro del horario programado. El umbral de 5/6 equivale a 83,33 % del encuentro. Los correos de Reports se vinculan solo cuando existe correspondencia inequívoca; no se asocian por nombre.</p>
             <ListaAsistencia filas={vista.participantes} />
           </section>
 
           <section className="attendance-data">
-            <h2>Organizador y cohosts</h2>
-            <p>Se presentan separados del conjunto de participantes para no alterar el conteo académico.</p>
-            <ListaAsistencia filas={vista.responsables} incluirPorcentaje={false} />
+            <h2>Identidades observadas en Reports</h2>
+            <p>Correos identificados en la auditoría, con sus propios tiempos y cantidad de eventos. No son personas adicionales al listado de Meet: pueden corresponder a los mismos asistentes, pero no se asignan sin una clave comprobable.</p>
+            <ListaAsistencia filas={vista.reportes} incluirPorcentaje={false} />
           </section>
 
           <details className="attendance-data attendance-raw-details">
-            <summary>Registros adicionales de Meet ({vista.registrosMeet.length})</summary>
-            <p>Las sesiones de Meet y las identidades de Reports no siempre tienen un identificador común. Estos registros se muestran aparte para contraste: pueden corresponder a personas ya incluidas arriba y no se suman como participantes nuevos. Nunca se emparejan por nombre.</p>
-            <ListaAsistencia filas={vista.registrosMeet} />
+            <summary>Organizador y cohosts configurados ({vista.responsables.length})</summary>
+            <p>Estos correos se muestran por separado. Una cuenta configurada no implica que su conexión haya sido identificada en Meet.</p>
+            <ListaAsistencia filas={vista.responsables} incluirPorcentaje={false} />
           </details>
-          <p className="attendance-source-note">Fuente: última planilla sincronizada desde Google Meet y Workspace Reports. Un correo ausente o una lista vacía no acredita inasistencia. La información puede actualizarse con retraso.</p>
+
+          {vista.origenPrincipal === "SIN_MEET" && vista.registrosHeredados.length > 0 ? (
+            <details className="attendance-data attendance-raw-details">
+              <summary>Filas de planilla anterior sin trazabilidad Meet ({vista.registrosHeredados.length})</summary>
+              <p>La planilla anterior no conserva sesiones brutas de Meet. Estas filas son históricas y no se cuentan como participantes Meet; regenerá la planilla desde las APIs para obtener una conciliación actualizada.</p>
+              <ListaAsistencia filas={vista.registrosHeredados} />
+            </details>
+          ) : null}
+          <p className="attendance-source-note">Fuente: última planilla sincronizada desde Meet y Workspace Reports. La diferencia entre eventos Reports y sesiones Meet no demuestra ausencia ni identidad. Los datos pueden publicarse con retraso.</p>
         </>
       ) : null}
     </main>
