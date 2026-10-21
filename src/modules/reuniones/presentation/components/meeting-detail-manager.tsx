@@ -3,6 +3,7 @@
 import {
   CalendarClock,
   CalendarPlus,
+  ClipboardList,
   ChevronDown,
   History,
   LoaderCircle,
@@ -16,6 +17,7 @@ import {
   Wrench,
   X
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
@@ -325,15 +327,25 @@ export function MeetingDetailManager({
                     {meeting.estado.toLowerCase().replaceAll("_", " ")}
                   </span>
                 </div>
-                <button
-                  aria-expanded={expanded}
-                  className="encounter-expand-toggle"
-                  onClick={() => toggleExpanded(meeting.id)}
-                  type="button"
-                >
-                  <span>{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
-                  <ChevronDown size={16} aria-hidden="true" />
-                </button>
+                <div className="encounter-v2-shortcuts">
+                  <Link
+                    className="encounter-attendance-link"
+                    href={`/reuniones/${meeting.solicitudId}/encuentros/${meeting.id}/asistencia`}
+                    aria-label={`Ver asistencia del encuentro ${meeting.ordinal}`}
+                  >
+                    <ClipboardList size={16} aria-hidden="true" />
+                    <span>Asistencia</span>
+                  </Link>
+                  <button
+                    aria-expanded={expanded}
+                    className="encounter-expand-toggle"
+                    onClick={() => toggleExpanded(meeting.id)}
+                    type="button"
+                  >
+                    <span>{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </button>
+                </div>
               </header>
 
               <div className={`encounter-v2-content${expanded ? " is-expanded" : ""}`}>
