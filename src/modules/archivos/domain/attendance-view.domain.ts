@@ -118,7 +118,12 @@ export function construirVistaAsistencia(
       cumple: resumen.cumpleCincoSextos,
       conexiones: resumen.conexiones
     };
-  }).toSorted((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }).reduce<FilaVistaAsistencia[]>((ordenados, fila) => {
+    const posicion = ordenados.findIndex((previa) => previa.nombre.localeCompare(fila.nombre, "es") > 0);
+    return posicion < 0
+      ? [...ordenados, fila]
+      : [...ordenados.slice(0, posicion), fila, ...ordenados.slice(posicion)];
+  }, []);
 
   return {
     participantes,
