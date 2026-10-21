@@ -39,7 +39,7 @@ export function SeriesManagement({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [busy, setBusy] = useState<"notify" | "cohosts" | null>(null);
   const [message, setMessage] = useState("");
-  const [tab, setTab] = useState<"cohosts" | "settings" | "notify">("cohosts");
+
   const [checking, setChecking] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState("");
   const [verificationError, setVerificationError] = useState("");
@@ -172,15 +172,12 @@ export function SeriesManagement({
         <ChevronDown size={18} aria-hidden="true" />
       </summary>
 
-      <div className="series-management-tabs" role="tablist" aria-label="Secciones de administración">
-        <button type="button" role="tab" aria-selected={tab === "cohosts"} className={tab === "cohosts" ? "active" : ""} onClick={() => setTab("cohosts")}><UsersRound size={16}/> Cohosts</button>
-        <button type="button" role="tab" aria-selected={tab === "settings"} className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}><Settings2 size={16}/> Configuración</button>
-        <button type="button" role="tab" aria-selected={tab === "notify"} className={tab === "notify" ? "active" : ""} onClick={() => setTab("notify")}><BellRing size={16}/> Notificaciones</button>
-      </div>
       <div className="series-management-v2-content is-single">
         {message ? <p className="meeting-detail-feedback" aria-live="polite">{message}</p> : null}
 
-        {tab === "cohosts" ? <article className="series-tool-card series-cohost-manager">
+        <details className="series-management-tool-disclosure" open>
+          <summary><UsersRound size={17} aria-hidden="true" /> Cohosts <ChevronDown size={16} aria-hidden="true" /></summary>
+          <article className="series-tool-card series-cohost-manager">
           <header>
             <UsersRound size={19} aria-hidden="true" />
             <div>
@@ -269,9 +266,12 @@ export function SeriesManagement({
             {busy === "cohosts" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
             {busy === "cohosts" ? "Asignando en Google…" : "Guardar y asignar en Google"}
           </button>
-        </article> : null}
+        </article>
+        </details>
 
-        {tab === "notify" ? <article className="series-tool-card series-notify-card">
+        <details className="series-management-tool-disclosure">
+          <summary><BellRing size={17} aria-hidden="true" /> Notificaciones <ChevronDown size={16} aria-hidden="true" /></summary>
+          <article className="series-tool-card series-notify-card">
           <header>
             <BellRing size={19} aria-hidden="true" />
             <div>
@@ -293,8 +293,11 @@ export function SeriesManagement({
             {busy === "notify" ? <LoaderCircle className="button-spinner" size={17} /> : <BellRing size={17} />}
             {busy === "notify" ? "Enviando…" : "Reenviar aviso"}
           </button>
-        </article> : null}
-        {tab === "settings" ? <article className="series-tool-card series-settings-card">
+        </article>
+        </details>
+        <details className="series-management-tool-disclosure">
+          <summary><Settings2 size={17} aria-hidden="true" /> Configuración <ChevronDown size={16} aria-hidden="true" /></summary>
+          <article className="series-tool-card series-settings-card">
           <header><Settings2 size={19}/><div><h3>Configuración general</h3><p>Información actual de la serie de reuniones.</p></div></header>
           <dl>
             <div><dt>Título</dt><dd>{seriesInfo.titulo}</dd></div>
@@ -304,7 +307,8 @@ export function SeriesManagement({
           </dl>
           <p>Los cambios de horario, modalidad y asistencia se realizan desde el cronograma, sin modificar los encuentros ya ocurridos.</p>
           <a className="secondary-action" href="#encuentros">Ir al cronograma</a>
-        </article> : null}
+        </article>
+        </details>
       </div>
       {preview ? <div className="series-preview" role="dialog" aria-label="Vista previa del aviso">
         <div className="series-preview-heading">

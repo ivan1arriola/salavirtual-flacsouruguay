@@ -314,12 +314,11 @@ export default async function ReunionDetailPage({
                       <>
                         <small>Próximo encuentro</small>
                         <strong>No hay encuentros próximos</strong>
-                        <span>Consultá la pestaña de pasados para ver el historial.</span>
+                        <span>Consultá los encuentros pasados en el cronograma.</span>
                       </>
                     )}
                   </div>
                 </section>
-                <h2 className="meeting-section-title" id="meeting-general-title">General</h2>
 
                 <section className="meeting-detail-summary" aria-label="Resumen de la serie">
                   <article>
@@ -371,7 +370,6 @@ export default async function ReunionDetailPage({
           {
             id: "personas", label: "Personas", content: (
               <>
-                <h2 className="meeting-section-title" id="meeting-people-title">Personas</h2>
                 <SeriesManagement
                   solicitudId={request.id}
                   cohostOptions={cohostAccounts.map(({ id, email }) => ({
@@ -404,7 +402,6 @@ export default async function ReunionDetailPage({
           {
             id: "archivos", label: "Archivos", content: (
               <>
-                <h2 className="meeting-section-title" id="meeting-files-title">Archivos</h2>
                 <p className="meeting-section-description">Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada encuentro.</p>
                 {meetingViews.some(({ grabacionUrl, asistenciaUrl, driveFolderUrl }) => grabacionUrl || asistenciaUrl || driveFolderUrl) ? (
                   <ul className="meeting-files-list">
@@ -429,7 +426,6 @@ export default async function ReunionDetailPage({
           {
             id: "actividad", label: "Actividad", content: (
               <>
-                <h2 className="meeting-section-title" id="meeting-activity-title">Actividad</h2>
                 <p className="meeting-section-description">Estado actual de las integraciones y sus incidencias. Esta sección no es un historial completo de cambios.</p>
                 <MeetingIntegrationProblems
                   problems={integrationProblems}
