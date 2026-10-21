@@ -2,6 +2,7 @@
 
 import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, RotateCw, Search, UsersRound, Video, X } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   type GrupoEncuentroConArchivos,
@@ -24,6 +25,17 @@ export type RecordingsLibraryProps = Readonly<{
   esAdmin?: boolean;
 }>;
 
+type ErrorPlanilla = Readonly<{ eventoProveedorId: string; detalle: string }>;
+type FeedbackPlanillas = Readonly<{
+  tipo: "ok" | "error";
+  mensaje: string;
+  reparadas: number;
+  fallidas: number;
+  revisadas: number;
+  errores: readonly ErrorPlanilla[];
+  bloqueoGoogle: boolean;
+}>;
+
 export function RecordingsLibrary({
   grupos,
   pagina: paginaVisible,
@@ -34,11 +46,12 @@ export function RecordingsLibrary({
   totalEncuentros,
   esAdmin = false,
 }: RecordingsLibraryProps) {
+  const router = useRouter();
   const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
   const [regenerandoId, setRegenerandoId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(null);
   const [reparandoPlanillasVacias, setReparandoPlanillasVacias] = useState(false);
-  const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<{ tipo: "ok" | "error"; mensaje: string } | null>(null);
+  const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<FeedbackPlanillas | null>(null);
 
   const filteredGrupos = grupos;
   const gruposPagina = grupos;
@@ -81,27 +94,46 @@ export function RecordingsLibrary({
     }
   }
 
-  async function handleRepararPlanillasVacias() {
+  async function handleRepararPlanillasVacias(eventoProveedorIds?: readonly string[]) {
     setReparandoPlanillasVacias(true);
     setFeedbackPlanillasVacias(null);
     try {
-      const response = await fetch("/api/v1/asistencia/planillas-vacias", { method: "POST", cache: "no-store" });
+      const response = await fetch("/api/v1/asistencia/planillas-vacias", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventoProveedorIds ? { eventoProveedorIds } : {})
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "No se pudieron revisar las planillas de asistencia.");
-      const errores: Array<{ detalle: string }> = Array.isArray(data.errores) ? data.errores : [];
+      if (!response.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "No se pudieron revisar las planillas.");
+      }
+      const errores: ErrorPlanilla[] = Array.isArray(data.errores)
+        ? data.errores.filter((item: unknown): item is ErrorPlanilla =>
+            Boolean(item) && typeof item === "object" &&
+            typeof (item as ErrorPlanilla).eventoProveedorId === "string" &&
+            typeof (item as ErrorPlanilla).detalle === "string")
+        : [];
       const fallidas = Number(data.fallidas) || 0;
       const reparadas = Number(data.reparadas) || 0;
       const revisadas = Number(data.revisadas) || 0;
-      const mensaje = fallidas > 0
-        ? `Revisión terminada: ${reparadas} reparadas; ${fallidas} con error. ${errores[0]?.detalle ?? ""}`.trim()
-        : reparadas > 0
-          ? `Revisión terminada: ${reparadas} planillas vacías reconstruidas de ${revisadas} revisadas.`
-          : `Se revisaron ${revisadas} planillas; no se encontraron hojas vacías.`;
-      setFeedbackPlanillasVacias({ tipo: fallidas > 0 ? "error" : "ok", mensaje });
+      const bloqueoGoogle = errores.some(({ detalle }) =>
+        /unauthorized_client|delegation denied|insufficient authentication scopes|insufficient oauth|admin_policy_enforced/i.test(detalle)
+      );
+      const mensaje = bloqueoGoogle
+        ? `Google Workspace no autorizó la revisión de ${fallidas} planilla(s). Revisá la delegación y los permisos OAuth antes de reintentar.`
+        : fallidas > 0
+          ? `Se repararon ${reparadas} planilla(s); ${fallidas} requieren atención.`
+          : reparadas > 0
+            ? `Se reconstruyeron ${reparadas} planilla(s) de ${revisadas} revisadas.`
+            : `Se revisaron ${revisadas} planilla(s); no se encontraron hojas vacías.`;
+      setFeedbackPlanillasVacias({ tipo: fallidas > 0 ? "error" : "ok", mensaje, reparadas, fallidas, revisadas, errores, bloqueoGoogle });
+      if (reparadas > 0) router.refresh();
     } catch (error) {
       setFeedbackPlanillasVacias({
         tipo: "error",
-        mensaje: error instanceof Error ? error.message : "No se pudieron reparar las planillas vacías."
+        mensaje: error instanceof Error ? error.message : "No se pudieron revisar las planillas.",
+        reparadas: 0, fallidas: 0, revisadas: 0, errores: [], bloqueoGoogle: false
       });
     } finally {
       setReparandoPlanillasVacias(false);
@@ -183,7 +215,7 @@ export function RecordingsLibrary({
               className="secondary-action recordings-bulk-repair-button"
               disabled={reparandoPlanillasVacias}
               aria-busy={reparandoPlanillasVacias}
-              onClick={handleRepararPlanillasVacias}
+              onClick={() => void handleRepararPlanillasVacias()}
               title="Revisar todas las planillas de asistencia registradas y reconstruir las que estén vacías con datos de Google Meet y Workspace"
             >
               <FileSpreadsheet size={16} aria-hidden="true" />
@@ -195,7 +227,37 @@ export function RecordingsLibrary({
                 aria-live="polite"
                 className={`recordings-bulk-repair-feedback ${feedbackPlanillasVacias.tipo === "error" ? "is-error" : "is-success"}`}
               >
-                {feedbackPlanillasVacias.mensaje}
+                <p>{feedbackPlanillasVacias.mensaje}</p>
+                {feedbackPlanillasVacias.bloqueoGoogle ? (
+                  <a className="recordings-repair-settings-link" href="/configuracion">
+                    Revisar permisos de Google Workspace
+                  </a>
+                ) : null}
+                {feedbackPlanillasVacias.errores.length > 0 ? (
+                  <>
+                    <details className="recordings-repair-details">
+                      <summary>Ver detalles técnicos por encuentro ({feedbackPlanillasVacias.errores.length})</summary>
+                      <ul>
+                        {feedbackPlanillasVacias.errores.map((error, index) => (
+                          <li key={`${error.eventoProveedorId}-${index}`}>
+                            <strong>{error.eventoProveedorId}</strong>: {error.detalle}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                    <button
+                      type="button"
+                      className="secondary-action recordings-retry-button"
+                      disabled={reparandoPlanillasVacias}
+                      onClick={() => void handleRepararPlanillasVacias(
+                        [...new Set(feedbackPlanillasVacias.errores.map((item) => item.eventoProveedorId))]
+                      )}
+                    >
+                      <RotateCw size={14} aria-hidden="true" />
+                      Reintentar solo las fallidas
+                    </button>
+                  </>
+                ) : null}
               </div>
             ) : null}
           </div>

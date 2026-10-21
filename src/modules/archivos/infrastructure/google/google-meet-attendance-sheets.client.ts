@@ -40,10 +40,10 @@ const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE = "https://www.googleapis.com/drive/v3/files";
 
 export async function planillaAsistenciaGoogleVacia(auth: JWT, spreadsheetId: string): Promise<boolean> {
+  // Los encabezados y las filas informativas del host no prueban que haya
+  // asistencia. Inspeccionar únicamente filas de datos de ambas pestañas.
   const params = new URLSearchParams({ fields: "valueRanges(range,values)" });
-  for (const range of ["'Asistencia'!A:Z", "'Host y cohosts'!A:Z", "'Datos brutos'!A:N"]) {
-    params.append("ranges", range);
-  }
+  for (const range of ["'Asistencia'!A2:Z", "'Datos brutos'!A2:N"]) params.append("ranges", range);
   const response = await conReintentosGoogleLectura(() => auth.request<{
     valueRanges?: Array<{ range?: string; values?: Array<Array<string | number | boolean>> }>;
   }>({
@@ -51,8 +51,8 @@ export async function planillaAsistenciaGoogleVacia(auth: JWT, spreadsheetId: st
     method: "GET"
   }));
   const valueRanges = response.data.valueRanges;
-  if (!valueRanges || valueRanges.length !== 3) {
-    throw new Error("Google Sheets no devolvió todas las pestañas de la planilla.");
+  if (!valueRanges || valueRanges.length !== 2) {
+    throw new Error("Google Sheets no devolvió las pestañas de asistencia y datos brutos.");
   }
   return valueRanges.every(({ values }) =>
     !values?.some((row) => row.some((value) => value !== "" && value !== null))

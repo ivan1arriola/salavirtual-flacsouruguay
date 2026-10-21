@@ -160,17 +160,67 @@
 }
 
 .recordings-bulk-repair-feedback {
-  flex: 1 1 280px;
-  font-size: 0.82rem;
+  flex: 1 1 100%;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.recordings-bulk-repair-feedback p {
+  margin: 0;
   font-weight: 650;
 }
 
 .recordings-bulk-repair-feedback.is-success {
-  color: #216641;
+  color: #205b40;
+  background: #f1faf5;
+  border: 1px solid #c7e5d3;
 }
 
 .recordings-bulk-repair-feedback.is-error {
-  color: #a32222;
+  color: #813430;
+  background: #fff8f5;
+  border: 1px solid #efc9c0;
+}
+
+.recordings-repair-settings-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--brand-strong);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.recordings-repair-details {
+  margin-top: 8px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.recordings-repair-details summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.recordings-repair-details ul {
+  padding-left: 20px;
+  max-height: 180px;
+  overflow: auto;
+  margin: 8px 0;
+}
+
+.recordings-repair-details li + li {
+  margin-top: 6px;
+}
+
+.recordings-retry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  min-height: 40px;
 }
 
 .recordings-search-bar {

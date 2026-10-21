@@ -50,5 +50,9 @@ describe("reparar planillas de asistencia vacías", () => {
     expect(provider.subirDocumentoGoogle).not.toHaveBeenCalled();
     expect(provider.obtenerOCrearCarpeta).not.toHaveBeenCalled();
     expect(result).toMatchObject({ revisadas: 2, vacias: 1, reparadas: 1, omitidas: 1, fallidas: 0 });
+    const retryOnlyFailed = await repararPlanillasAsistenciaVaciasUseCase(
+      repository, () => provider, (value) => value, ["event-filled"]
+    );
+    expect(retryOnlyFailed).toMatchObject({ revisadas: 1, vacias: 0, reparadas: 0, omitidas: 1, fallidas: 0 });
   });
 });

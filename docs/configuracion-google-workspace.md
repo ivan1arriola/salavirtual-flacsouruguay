@@ -152,3 +152,23 @@ identificador verificable se conservan en `Datos brutos`.
 Configurar `GOOGLE_REPORTS_ADMIN_EMAIL` (o `serviceAccountSubject` con rol de administrador) con la dirección de un administrador autorizado a leer auditorías de Meet; la aplicación suplanta esa cuenta mediante la delegación existente.
 
 La ruta de regeneración es `POST /api/v1/reuniones/instancias/{instanciaId}/asistencia/regenerar` y requiere una sesión activa de `ADMINISTRACION`. Actualiza el ID de la hoja registrada para la instancia.
+
+## Reparación de planillas (octubre de 2026)
+
+La inspección de hojas utiliza el mismo scope `https://www.googleapis.com/auth/spreadsheets`
+que la creación y actualización, sin solicitar `spreadsheets.readonly` por separado.
+Google Workspace compara los scopes exactos de la delegación de dominio; una
+variante no autorizada puede provocar `unauthorized_client` antes de leer la hoja.
+
+Una planilla se considera vacía cuando no tiene filas reales en `Asistencia`
+ni en `Datos brutos` (los encabezados y el host configurado no cuentan como asistencia).
+La opción **Reparar planillas vacías** muestra los fallos por encuentro y permite
+reintentar solamente los IDs de los encuentros fallidos mediante
+`POST /api/v1/asistencia/planillas-vacias` con
+`{ "eventoProveedorIds": ["..."] }`. Los IDs se validan contra la lista
+de planillas registradas y no permiten acceder a archivos arbitrarios.
+
+Si persiste `unauthorized_client`, comprobar en Admin Console la delegación de todo
+el dominio (Client ID numérico de la credencial Principal, scopes de Sheets,
+Drive, Meet y Reports; cuenta `subject` existente y autorizada). El cambio de
+código no puede conceder permisos desde la consola Google.

@@ -36,5 +36,8 @@ describe("accesibilidad de filtros de grabaciones", () => {
     expect(source).toContain("Reparar planillas vacías");
     expect(source).toContain("/api/v1/asistencia/planillas-vacias");
     expect(source).toContain('role="status"');
+    expect(source).toContain("Reintentar solo las fallidas");
+    expect(source).toContain("Ver detalles técnicos por encuentro");
+    expect(source).toContain("Revisar permisos de Google Workspace");
   });
 });

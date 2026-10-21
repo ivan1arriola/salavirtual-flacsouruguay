@@ -45,11 +45,12 @@ export async function sincronizarArtefactos(
   );
 }
 
-export async function repararPlanillasAsistenciaVacias() {
+export async function repararPlanillasAsistenciaVacias(eventoProveedorIds?: readonly string[]) {
   return repararPlanillasAsistenciaVaciasUseCase(
     crearArchivosRepository(),
     crearArtifactProvider,
-    descifrarConfiguracion
+    descifrarConfiguracion,
+    eventoProveedorIds
   );
 }
 

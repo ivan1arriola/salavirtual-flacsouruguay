@@ -6,6 +6,7 @@ const MEET_SETTINGS_SCOPE = "https://www.googleapis.com/auth/meetings.space.sett
 const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 const MEET_CREATED_SCOPE = "https://www.googleapis.com/auth/meetings.space.created";
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
@@ -19,7 +20,7 @@ type DelegatedCredential = ServiceAccountCredential &
   Readonly<{ subject: string }>;
 
 export type GoogleWorkspaceScopeValidation = Readonly<{
-  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "meetings.space.created" | "gmail.send";
+  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "meetings.space.created" | "gmail.send" | "spreadsheets";
   label: string;
   scope: string;
   autorizado: boolean;
@@ -32,7 +33,8 @@ const REQUIRED_SCOPES: readonly Omit<GoogleWorkspaceScopeValidation, "autorizado
   { key: "meetings.space.settings", label: "Meet · configuración", scope: MEET_SETTINGS_SCOPE },
   { key: "meetings.space.readonly", label: "Meet · lectura", scope: MEET_READ_SCOPE },
   { key: "meetings.space.created", label: "Meet · cohosts", scope: MEET_CREATED_SCOPE },
-  { key: "gmail.send", label: "Gmail · envío", scope: GMAIL_SEND_SCOPE }
+  { key: "gmail.send", label: "Gmail · envío", scope: GMAIL_SEND_SCOPE },
+  { key: "spreadsheets", label: "Sheets · asistencia", scope: SHEETS_SCOPE }
 ];
 
 const WRITER_ROLES = new Set(["organizer", "fileOrganizer", "writer"]);
@@ -54,14 +56,15 @@ export async function probarDelegacionGoogle(
     MEET_SETTINGS_SCOPE,
     MEET_READ_SCOPE,
     MEET_CREATED_SCOPE,
-    GMAIL_SEND_SCOPE
+    GMAIL_SEND_SCOPE,
+    SHEETS_SCOPE
   ]);
   const calendarId = encodeURIComponent(credential.subject);
   await auth.request({
     url: `${CALENDAR_API}/calendars/${calendarId}/events?maxResults=1&singleEvents=true`,
     method: "GET"
   });
-  return `Delegación válida para ${credential.subject}: Calendar, Drive, Meet y Gmail autorizados.`;
+  return `Delegación válida para ${credential.subject}: Calendar, Drive, Meet, Gmail y Sheets autorizados.`;
 }
 
 export async function validarScopesGoogle(

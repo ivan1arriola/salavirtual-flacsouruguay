@@ -19,7 +19,8 @@ export type ResultadoReparacionPlanillasVacias = Readonly<{
 export async function repararPlanillasAsistenciaVaciasUseCase(
   repositorio: ArchivosRepositoryPort,
   providerFactory: ArtifactProviderFactory,
-  descifrar: (cifrado: string) => string
+  descifrar: (cifrado: string) => string,
+  eventoProveedorIds?: readonly string[]
 ): Promise<ResultadoReparacionPlanillasVacias> {
   if (!repositorio.listarPlanillasAsistenciaCandidatas) {
     throw new Error("El repositorio no permite buscar planillas de asistencia registradas.");
@@ -31,7 +32,13 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
   ) {
     throw new Error("Faltan credenciales o carpeta destino de Google Workspace.");
   }
-  const candidates = await repositorio.listarPlanillasAsistenciaCandidatas();
+  const registradas = await repositorio.listarPlanillasAsistenciaCandidatas();
+  // Reintentar solamente archivos previamente registrados; no se aceptan
+  // identificadores arbitrarios suministrados por el cliente.
+  const idsSolicitados = eventoProveedorIds ? new Set(eventoProveedorIds) : null;
+  const candidates = idsSolicitados
+    ? registradas.filter((item) => idsSolicitados.has(item.eventoProveedorId))
+    : registradas;
   const privateKey = descifrar(configuracion.privateKeyCifrada);
   const inspections = await mapConLimit(candidates, 5, async (candidata): Promise<Inspeccion> => {
     try {
