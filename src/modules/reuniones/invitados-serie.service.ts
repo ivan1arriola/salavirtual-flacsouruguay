@@ -96,6 +96,7 @@ export async function actualizarInvitadosSerie(
     throw error;
   }
 
+  try {
   await deps.db.$transaction(async tx => {
     for (const meeting of meetings) {
       await tx.invitadoReunion.deleteMany({ where: { instanciaSalaId: meeting.id } });
@@ -111,6 +112,13 @@ export async function actualizarInvitadosSerie(
       valorNuevo: { encuentros: meetings.length, invitados: emails.length }
     } });
   });
+  } catch (error) {
+    for (const entry of updates.reverse()) {
+      try { await deps.actualizarCalendario(entry.host, entry.eventId, entry.previo); }
+      catch { console.error("No fue posible revertir Calendar después de fallar el guardado de invitados."); }
+    }
+    throw error;
+  }
   let correosEnviados = 0;
   let erroresCorreo = 0;
   for (const email of emails) {
