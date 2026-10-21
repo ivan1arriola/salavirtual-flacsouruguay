@@ -85,21 +85,26 @@ export function construirVistaAsistencia(
 
   // Reports y Meet no comparten necesariamente IDs de persona. Esos registros
   // permanecen separados: nunca asociar por coincidencias de nombre u horario.
-  const grupos = new Map<string, { nombre: string; sesiones: { inicio: string; fin: string }[] }>();
   const raw = datos.datosBrutos.slice(1);
-  for (const [index, row] of raw.entries()) {
-    if (texto(row[0]).toUpperCase() !== "MEET") continue;
-    const start = texto(row[5]);
-    const end = texto(row[6]);
-    if (!Number.isFinite(Date.parse(start)) || !Number.isFinite(Date.parse(end))) continue;
-    const participanteId = texto(row[3]);
-    const key = participanteId || `sin-id-${index}`;
-    const group = grupos.get(key);
-    const sesion = { inicio: start, fin: end };
-    if (group) group.sesiones.push(sesion);
-    else grupos.set(key, { nombre: texto(row[1]) || "Sin identificar", sesiones: [sesion] });
-  }
-  const registrosMeet = [...grupos.entries()].map(([key, item]) => {
+  const grupos = raw.reduce<Readonly<Record<string, {
+    nombre: string;
+    sesiones: readonly { inicio: string; fin: string }[];
+  }>>>((acumulado, row, index) => {
+    if (texto(row[0]).toUpperCase() !== "MEET") return acumulado;
+    const inicioSesion = texto(row[5]);
+    const finSesion = texto(row[6]);
+    if (!Number.isFinite(Date.parse(inicioSesion)) || !Number.isFinite(Date.parse(finSesion))) return acumulado;
+    const key = texto(row[3]) || `sin-id-${index}`;
+    const anterior = acumulado[key];
+    return {
+      ...acumulado,
+      [key]: {
+        nombre: anterior?.nombre || texto(row[1]) || "Sin identificar",
+        sesiones: [...(anterior?.sesiones ?? []), { inicio: inicioSesion, fin: finSesion }]
+      }
+    };
+  }, {});
+  const registrosMeet = Object.entries(grupos).map(([key, item]) => {
     const resumen = resumirIntervalosAsistencia(item.sesiones, inicio, fin);
     return {
       id: key,
@@ -113,7 +118,7 @@ export function construirVistaAsistencia(
       cumple: resumen.cumpleCincoSextos,
       conexiones: resumen.conexiones
     };
-  }).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }).toSorted((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
   return {
     participantes,
