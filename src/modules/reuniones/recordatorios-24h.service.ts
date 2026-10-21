@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { formatLongDate, formatTime } from "@/src/lib/ui/format";
 import { construirRecordatorioReunion, type AccesoRecordatorio } from "./recordatorio-reunion-email.domain";
+import { construirCorreoParticipacion } from "./avisos-participacion.domain";
 
 const HORA = 60 * 60 * 1000;
 const APP_URL = "https://salavirtual.flacso.edu.uy";
@@ -82,6 +83,7 @@ export async function procesarRecordatorios24h(
       finAsistenciaTecnicaAt: true,
       modalidadOverride: true,
       requiereAsistenciaTecnica: true,
+      invitados: { select: { email: true } },
       solicitud: {
         select: {
           id: true, titulo: true, modalidad: true, creadaPorUsuarioId: true,
@@ -255,6 +257,69 @@ export async function procesarRecordatorios24h(
         await db.recordatorioReunion.update({
           where: { id: reservado.id },
           data: { estado: "ERROR", errorCodigo: codigoError }
+        }).catch(() => undefined);
+        counters.errores++;
+      }
+    }
+
+    // Invitados sin rol de usuario: la deduplicación usa su email normalizado,
+    // no un UsuarioId inexistente. No se duplican los avisos que ya reciben
+    // los responsables o monitores de esta misma reunión.
+    const avisadosComoUsuario = new Set(usuarios
+      .map(u => normalizarEmail(u.emailPrincipal))
+      .filter((email): email is string => Boolean(email)));
+    const invitados = [...new Set(meeting.invitados
+      .map(g => normalizarEmail(g.email))
+      .filter((email): email is string => Boolean(email)))];
+    for (const email of invitados) {
+      if (avisadosComoUsuario.has(email)) { counters.omitidos++; continue; }
+      counters.destinatarios++;
+      let reservado: { id: string };
+      try {
+        reservado = await db.recordatorioInvitadoReunion.create({
+          data: {
+            instanciaSalaId: meeting.id, email,
+            inicioProgramadoAt: meeting.inicioProgramadoAt,
+            estado: "RESERVADO"
+          }, select: { id: true }
+        });
+      } catch (error) {
+        if (esDuplicado(error)) { counters.omitidos++; continue; }
+        throw error;
+      }
+      try {
+        const vigente = await db.instanciaSala.findUnique({
+          where: { id: meeting.id },
+          select: { estado: true, inicioProgramadoAt: true,
+            solicitud: { select: { estado: true } },
+            invitados: { where: { email }, select: { id: true } }
+          }
+        });
+        if (!vigente || vigente.estado !== "PROGRAMADA" ||
+            vigente.solicitud.estado === "CANCELADA" ||
+            vigente.inicioProgramadoAt.getTime() !== meeting.inicioProgramadoAt.getTime() ||
+            vigente.invitados.length === 0) {
+          await db.recordatorioInvitadoReunion.update({
+            where: { id: reservado.id }, data: { estado: "OBSOLETO" }
+          });
+          counters.omitidos++;
+          continue;
+        }
+        const correo = construirCorreoParticipacion("RECORDATORIO", [{
+          id: meeting.id, titulo: meeting.solicitud.titulo,
+          inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt,
+          urlMeet: event?.joinUrl ?? null
+        }], "INVITADO");
+        const result = await deps.enviarCorreo({ to: [email], ...correo });
+        await db.recordatorioInvitadoReunion.update({
+          where: { id: reservado.id },
+          data: { estado: result.sent ? "ACEPTADO" : "ERROR", enviadoAt: result.sent ? new Date() : null }
+        });
+        if (result.sent) counters.enviados++;
+        else counters.errores++;
+      } catch {
+        await db.recordatorioInvitadoReunion.update({
+          where: { id: reservado.id }, data: { estado: "ERROR" }
         }).catch(() => undefined);
         counters.errores++;
       }
