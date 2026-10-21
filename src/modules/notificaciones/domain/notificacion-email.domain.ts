@@ -106,6 +106,7 @@ function absoluteUrl(baseUrl: string, path: string): string {
 function categoriaNotificacion(tipo: NotificationMessage["tipo"]): string {
   switch (tipo) {
     case "REUNION_CREADA": return "Reuniones";
+    case "REUNION_RECORDATORIO": return "Recordatorio de reunión";
     case "ASISTENCIA_REQUERIDA": return "Cobertura de monitoreo";
     case "ASISTENCIA_ASIGNACION": return "Monitoreo asignado";
     case "ASISTENCIA_POSTULACION": return "Postulaciones";
