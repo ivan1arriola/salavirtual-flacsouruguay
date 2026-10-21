@@ -10,13 +10,16 @@ export type AvisoEncuentro = Readonly<{
 }>;
 
 export function construirCorreoParticipacion(
-  tipo: "INVITACION" | "ENLACE_CAMBIADO",
+  tipo: "INVITACION" | "ENLACE_CAMBIADO" | "RECORDATORIO",
   encuentros: readonly AvisoEncuentro[],
   rol: "INVITADO" | "COHOST"
 ): Readonly<{ subject: string; text: string; html: string }> {
-  const titulo = tipo === "INVITACION" ? "Invitación a reuniones de FLACSO" : "Cambió el enlace de tus reuniones";
+  const titulo = tipo === "INVITACION" ? "Invitación a reuniones de FLACSO" :
+    tipo === "RECORDATORIO" ? "Recordatorio de tu próxima reunión" : "Cambió el enlace de tus reuniones";
   const intro = tipo === "INVITACION"
     ? "Te invitamos a participar de los próximos encuentros de FLACSO Uruguay."
+    : tipo === "RECORDATORIO"
+    ? "Tu reunión se realizará dentro de las próximas 24 horas. Revisá el horario y el enlace de acceso."
     : "Se actualizó el enlace de Google Meet para los encuentros futuros de esta serie. Utilizá el nuevo acceso.";
   const etiquetas = rol === "COHOST"
     ? "Se te incluye como coanfitrión. Los permisos efectivos deben confirmarse en Google Meet."
