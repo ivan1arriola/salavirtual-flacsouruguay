@@ -45,9 +45,9 @@ function dbFake(rows: typeof meeting[] = [meeting], prefs = users) {
     return { id: String(seq) };
   });
   const update = vi.fn(async () => ({}));
-  const findMany = vi.fn(async () => rows);
-  const usuarios = vi.fn(async () => prefs);
-  const findUnique = vi.fn(async () => ({ estado: "PROGRAMADA", inicioProgramadoAt: inicio, solicitud: { estado: "REGISTRADA" } }));
+  const findMany = vi.fn(async (_args?: any) => rows);
+  const usuarios = vi.fn(async (_args?: any) => prefs);
+  const findUnique = vi.fn(async (_args?: any) => ({ estado: "PROGRAMADA", inicioProgramadoAt: inicio, solicitud: { estado: "REGISTRADA" } }));
   const notificacion = vi.fn(async () => ({}));
   return { db: {
     instanciaSala: { findMany, findUnique },
