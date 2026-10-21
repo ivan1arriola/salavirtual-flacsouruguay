@@ -135,7 +135,7 @@ export async function renotificarReunionesSinAsignar(
           finMonitoreo: formatTime(finMonitoreo),
           inicioClase: formatTime(m.inicioProgramadoAt),
           finClase: formatTime(m.finProgramadoAt),
-          modalidad: modalidad === "PRESENCIAL" ? "Presencial" : modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+          modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
           programa: m.solicitud.docentePrograma.programa.nombre,
           docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim()
         };
@@ -302,7 +302,7 @@ export async function notificarReunionesAsignadas(
             finMonitoreo: formatTime(finMonitoreo),
             inicioClase: formatTime(inst.inicioProgramadoAt),
             finClase: formatTime(inst.finProgramadoAt),
-            modalidad: modalidad === "PRESENCIAL" ? "Presencial" : modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
+            modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
             programa: inst.solicitud.docentePrograma.programa.nombre,
             docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
             meetUrl: inst.eventosProveedor[0]?.joinUrl
