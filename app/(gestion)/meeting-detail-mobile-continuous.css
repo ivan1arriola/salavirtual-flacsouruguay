@@ -230,3 +230,54 @@
 @media (prefers-reduced-motion: reduce) {
   .meeting-mobile-outline > summary > svg { transition: none; }
 }
+
+/* Inside Personas: separate disclosure tools replace a second tab bar. */
+.meeting-mosaic-panel--personas .series-management-v2-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.series-management-tool-disclosure {
+  min-width: 0;
+  border: 1px solid #dce4ed;
+  border-radius: 9px;
+  background: #fff;
+  overflow: visible;
+}
+.series-management-tool-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 13px;
+  min-height: 45px;
+  color: #294c71;
+  background: #f3f7fb;
+  border-radius: 9px;
+  font-size: .83rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+.series-management-tool-disclosure > summary::-webkit-details-marker { display: none; }
+.series-management-tool-disclosure > summary > svg:first-child { color: #315879; }
+.series-management-tool-disclosure > summary > svg:last-child {
+  margin-left: auto;
+  transition: transform .18s;
+}
+.series-management-tool-disclosure[open] > summary {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #dce4ed;
+}
+.series-management-tool-disclosure[open] > summary > svg:last-child { transform: rotate(180deg); }
+.series-management-tool-disclosure > .series-tool-card {
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px;
+}
+.series-management-tool-disclosure > summary:focus-visible {
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .series-management-tool-disclosure > summary > svg:last-child { transition: none; }
+}
