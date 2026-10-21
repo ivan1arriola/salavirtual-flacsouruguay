@@ -35,7 +35,7 @@ const users = [
   { id: "assistant", nombres: "Juan", emailPrincipal: "juan@flacso.edu.uy", cuentasGoogle: [], emailAliases: [], preferenciasNotificacion: [] }
 ];
 
-function dbFake(rows: typeof meeting[] = [meeting], prefs: Array<(typeof users)[number] & { preferenciasNotificacion: Array<{ email: boolean; push: boolean }> }> = users) {
+function dbFake(rows: typeof meeting[] = [meeting], prefs: Array<Omit<(typeof users)[number], "preferenciasNotificacion"> & { preferenciasNotificacion: Array<{ email: boolean; push: boolean }> }> = users) {
   const registro = new Map<string, string>();
   let seq = 0;
   const create = vi.fn(async ({ data }: any) => {
