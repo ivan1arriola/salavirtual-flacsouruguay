@@ -139,3 +139,147 @@
   .attendance-summary article { grid-template-columns: 26px minmax(0, 1fr); }
   .attendance-summary article svg { grid-row: 1 / 4; }
 }
+
+/* Source-by-source reconciliation panel; neutral when identity linkage is incomplete. */
+.attendance-reconciliation {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+}
+.attendance-reconciliation-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.attendance-reconciliation-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 5px;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+.attendance-reconciliation-heading h2 svg { color: var(--brand-strong); }
+.attendance-reconciliation-heading p { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.5; }
+.attendance-reconciliation-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: #42546a;
+  padding: 7px 11px;
+  font-size: .73rem;
+  font-weight: 850;
+}
+.attendance-reconciliation-status.is-verified { color: #155f43; background: #e8f5ef; }
+.attendance-reconciliation-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.attendance-reconciliation-details > span {
+  border-radius: 7px;
+  background: #f2f5f8;
+  color: var(--text-secondary);
+  padding: 8px 11px;
+  font-size: .75rem;
+}
+.attendance-reconciliation-details strong { color: var(--brand-strong); }
+.attendance-reconciliation-diff,
+.attendance-reconciliation-note,
+.attendance-reconciliation-warning {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .79rem;
+  line-height: 1.55;
+}
+.attendance-reconciliation-note { color: var(--muted); }
+.attendance-reconciliation-warning {
+  border-left: 3px solid #bf7b20;
+  background: #fcf6e9;
+  padding: 10px 12px;
+}
+.attendance-summary-compact {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 13px 17px;
+  color: var(--text-secondary);
+  font-size: .84rem;
+}
+.attendance-summary-compact svg { flex: 0 0 auto; color: var(--brand); }
+.attendance-delta { color: #5c6773; font-size: .69rem; }
+@media (max-width: 760px) {
+  .attendance-reconciliation { padding: 14px; gap: 12px; }
+  .attendance-reconciliation-heading { flex-direction: column; }
+  .attendance-reconciliation-details { display: grid; grid-template-columns: 1fr; }
+}
+
+/* Downloads of raw source observations, by encounter. */
+.attendance-raw-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+  padding: 17px 20px;
+}
+.attendance-raw-export-intro { min-width: 0; flex: 1 1 300px; }
+.attendance-raw-export-intro h2 { margin: 0 0 4px; font-size: .99rem; color: var(--text); }
+.attendance-raw-export-intro p { margin: 0; max-width: 650px; line-height: 1.5; font-size: .79rem; color: var(--text-secondary); }
+.attendance-raw-export-buttons {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.attendance-raw-export-source { display: flex; gap: 5px; }
+.attendance-raw-export-primary {
+  display: inline-flex;
+  gap: 7px;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.attendance-raw-export-json {
+  display: inline-flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid #d5dfe7;
+  border-radius: 8px;
+  background: #f7f9fb;
+  color: var(--brand-strong);
+  font-size: .72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.attendance-raw-export-source button:disabled { opacity: .55; cursor: wait; }
+.attendance-raw-export-primary:focus-visible,
+.attendance-raw-export-json:focus-visible { outline: 3px solid var(--focus-ring-color); outline-offset: 2px; }
+.attendance-raw-export-json:not(:disabled):hover { background: #eaf0f5; }
+.attendance-raw-export-error { margin: 0; flex-basis: 100%; color: #a52c2c; font-size: .79rem; }
+.attendance-export-spinner { animation: attendance-spin .8s linear infinite; }
+@keyframes attendance-spin { to { transform: rotate(360deg); } }
+@media (max-width: 760px) {
+  .attendance-raw-export { padding: 14px; }
+  .attendance-raw-export-buttons { width: 100%; display: grid; grid-template-columns: 1fr; }
+  .attendance-raw-export-source { width: 100%; }
+  .attendance-raw-export-primary { flex: 1 1 auto; }
+}

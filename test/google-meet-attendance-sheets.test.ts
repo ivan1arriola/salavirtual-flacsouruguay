@@ -131,3 +131,24 @@ it("puebla pestaña Asistencia desde sesionesMeet cuando correosAuditados está 
   expect(rawRows[1].values[0].userEnteredValue.stringValue).toBe("MEET");
   expect(rawRows[1].values[1].userEnteredValue.stringValue).toBe("Alumno Directo");
 });
+
+it("Meet sigue siendo la fuente principal de Asistencia aunque Reports tenga correos", async () => {
+  const request = vi.fn()
+    .mockResolvedValueOnce({ data: { spreadsheetId: "sheet-primary" } })
+    .mockResolvedValueOnce({ data: {} })
+    .mockResolvedValueOnce({ data: {} })
+    .mockResolvedValueOnce({ data: { parents: [] } })
+    .mockResolvedValueOnce({ data: { id: "sheet-primary", name: "Encuentro" } });
+  await crearPlanillaAsistenciaGoogle({ request } as never, input);
+  const updateCells = request.mock.calls[2]![0].data.requests.filter((r: any) => r.updateCells);
+  const asistencia = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells.rows;
+  const brutos = updateCells.find((r: any) => r.updateCells.start.sheetId === 2)?.updateCells.rows;
+
+  expect(asistencia).toHaveLength(2);
+  expect(asistencia[1].values[0].userEnteredValue.stringValue).toBe("Meet attendee");
+  expect(asistencia[1].values[1].userEnteredValue.stringValue).toBe("No informado por auditoría");
+  expect(JSON.stringify(asistencia)).not.toContain("student@example.com");
+  expect(JSON.stringify(brutos)).toContain("student@example.com");
+  expect(JSON.stringify(brutos)).toContain("REPORTS_IDENTIDAD");
+  expect(JSON.stringify(brutos)).toContain("raw-endpoint");
+});
