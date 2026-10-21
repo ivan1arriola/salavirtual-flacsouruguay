@@ -29,17 +29,18 @@ export async function notificarUsuariosUseCase(
     ).values()
   );
 
-  await Promise.all(
-    uniqueRecipients.map((recipient) =>
-      notificarUsuarioUseCase(
-        repository,
-        emailTransport,
-        recipient,
-        message,
-        appBaseUrl
-      )
-    )
-  );
+  // Gmail usa una sola cuenta delegada. Los envíos simultáneos causaban
+  // GoogleCuentaOcupadaError. Una tanda debe procesarse en orden, sin
+  // reintentar automáticamente operaciones cuya aceptación es incierta.
+  for (const recipient of uniqueRecipients) {
+    await notificarUsuarioUseCase(
+      repository,
+      emailTransport,
+      recipient,
+      message,
+      appBaseUrl
+    );
+  }
 }
 
 async function destinatariosProgramaParaNotificacion(
