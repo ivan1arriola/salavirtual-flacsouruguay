@@ -43,14 +43,14 @@ describe("secciones de la ficha de reunión", () => {
 
   it("permite consultar todas las secciones en una página continua en móvil", () => {
     expect(layout).toContain('id="secciones-reunion"');
-    expect(layout).toContain('href={`#\${tab.id}`}');
+    expect(layout).toContain('href={`#${tab.id}`}');
     expect(layout).toContain('id={section.id}');
     expect(layout).toContain('tabIndex={-1}');
     expect(styles).toContain("@media (max-width: 760px)");
     expect(styles).toContain("min-height: 44px");
     expect(styles).toContain(".meeting-mobile-outline");
     expect(styles).toContain("scroll-margin-top:");
-    const source = `${page}\\n${manager}\\n${layout}`;
+    const source = `${page}\n${manager}\n${layout}`;
     for (const section of ["general", "encuentros", "personas", "archivos", "actividad"]) {
       expect(source).toContain(`id: "${section}"`);
     }
