@@ -49,7 +49,7 @@ export function construirCorreoNotificacion(
         variante: varianteNotificacion(message.tipo),
         contenidoHtml: detail ? renderDetailHtml(detail) : "",
         accion: actionUrl ? { texto: actionLabel, url: actionUrl } : undefined,
-        preferenciasUrl,
+        preferenciasUrl: preferencesUrl,
       }),
   };
 }
