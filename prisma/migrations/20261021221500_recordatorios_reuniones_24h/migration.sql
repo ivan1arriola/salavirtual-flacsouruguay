@@ -12,7 +12,7 @@ CREATE TABLE "RecordatorioReunion" (
     CONSTRAINT "RecordatorioReunion_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "RecordatorioReunion_instanciaSalaId_usuarioId_inicioProgramadoAt_key"
+CREATE UNIQUE INDEX "RecordatorioReunion_unico_24h"
   ON "RecordatorioReunion"("instanciaSalaId", "usuarioId", "inicioProgramadoAt");
 CREATE INDEX "RecordatorioReunion_estado_createdAt_idx"
   ON "RecordatorioReunion"("estado", "createdAt");
