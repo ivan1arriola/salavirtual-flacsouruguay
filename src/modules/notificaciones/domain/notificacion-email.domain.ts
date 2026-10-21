@@ -47,7 +47,7 @@ export function construirCorreoNotificacion(
         titulo: message.titulo,
         resumen: message.cuerpo,
         variante: varianteNotificacion(message.tipo),
-        contenidoHtml: detail ? renderDetailHtml(detail) : "",
+        contenidoHtml: detail ? renderDetailHtml(detail, message.tipo) : "",
         accion: actionUrl ? { texto: actionLabel, url: actionUrl } : undefined,
         preferenciasUrl: preferencesUrl,
       }),
@@ -133,13 +133,19 @@ function escapeHtml(value: string): string {
   return escaparHtmlEmail(value);
 }
 
-function renderDetailHtml(rawDetail: string): string {
+function renderDetailHtml(rawDetail: string, tipo: NotificationMessage["tipo"]): string {
   const sections = rawDetail.split(
     /(?=\n\n(?:¿CÓMO ACCEDER|INSTRUCCIONES DE ACCESO|INSTRUCCIONES PARA))/i
   );
   const main = sections[0]?.trim();
   const access = sections.slice(1).join("\n\n").trim();
-  const mainMarkup = main ? panelCorreo(renderStructuredLines(main), "Información de la reunión") : "";
+  const detailTitle = tipo === "REUNION_CREADA" ? "Información de la reunión"
+    : tipo === "ASISTENCIA_REQUERIDA" ? "Cobertura solicitada"
+    : tipo === "ASISTENCIA_ASIGNACION" ? "Detalles del monitoreo"
+    : tipo === "CREDENCIALES_SALA_CAMBIADAS" ? "Datos de acceso"
+    : tipo === "HOST_NO_CONECTADO" ? "Detalles de la alerta"
+    : "Detalles de la notificación";
+  const mainMarkup = main ? panelCorreo(renderStructuredLines(main), detailTitle) : "";
   if (!access) return mainMarkup;
   return mainMarkup +
     '<div style="margin-top:13px;border:1px solid #bce2ee;border-left:5px solid #167e9f;border-radius:10px;background:#f0f8fb;padding:17px 18px">' +
