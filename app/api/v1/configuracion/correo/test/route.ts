@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { envolverCorreo, panelCorreo, escaparHtmlEmail } from "@/src/lib/email/email-design-system";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -43,7 +44,20 @@ export async function POST(request: Request) {
         `Fecha: ${sentAt}`,
         "",
         "Si recibiste este mensaje, el envío de invitaciones y notificaciones por correo está funcionando."
-      ].join("\n")
+      ].join("\n"),
+      html: envolverCorreo({
+        categoria: "Verificación del sistema",
+        titulo: "Prueba de correo exitosa",
+        resumen: "Este correo fue generado para comprobar el funcionamiento del canal de notificaciones.",
+        variante: "informativo",
+        contenidoHtml: panelCorreo(
+          '<p style="margin:0 0 8px;color:#526277;font-size:13px;line-height:20px"><strong>Solicitado por:</strong> ' +
+            escaparHtmlEmail(session.user.email ?? actor.id) + '</p>' +
+          '<p style="margin:0;color:#526277;font-size:13px;line-height:20px"><strong>Fecha:</strong> ' + escaparHtmlEmail(sentAt) + '</p>',
+          "Detalles de envío"
+        ),
+        nota: "Si recibiste este mensaje, el canal de correo aceptó la prueba de envío. Verificá también las notificaciones del sistema."
+      })
     });
     if (!result.sent) {
       const message = result.skipped === "correo-no-configurado"
