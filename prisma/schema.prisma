@@ -46,6 +46,7 @@ model Usuario {
   docente                                 Docente?
   asistenteTecnico                        AsistenteTecnico?
   notificaciones                          Notificacion[]
+  recordatoriosReunion                    RecordatorioReunion[]
   preferenciasNotificacion                PreferenciaNotificacion[]
   solicitudesAccesoGoogleAprobadas        SolicitudAccesoGoogle[]         @relation("SolicitudesAccesoGoogleAprobadas")
 
@@ -313,6 +314,7 @@ model InstanciaSala {
   cohostEmails              CohostEmailReunion[]
   registrosAsistencia       RegistroAsistenciaMeet[]
   registrosMonitoreoRetroactivo RegistroMonitoreoRetroactivo[]
+  recordatorios             RecordatorioReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -571,6 +573,24 @@ model Auditoria {
 
   @@index([entidadTipo, entidadId, createdAt])
   @@index([accion, createdAt])
+}
+
+
+model RecordatorioReunion {
+  id                String       @id @default(cuid())
+  instanciaSalaId   String
+  usuarioId         String
+  inicioProgramadoAt DateTime
+  estado            String       @default("RESERVADO")
+  enviadoAt         DateTime?
+  errorCodigo       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  instancia         InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  usuario           Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, usuarioId, inicioProgramadoAt])
+  @@index([estado, createdAt])
 }
 
 model Notificacion {
