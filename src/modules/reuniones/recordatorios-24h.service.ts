@@ -74,7 +74,6 @@ export async function procesarRecordatorios24h(
       solicitud: { estado: { not: "CANCELADA" } }
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-    take: 100,
     select: {
       id: true,
       inicioProgramadoAt: true,
