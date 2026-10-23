@@ -6,7 +6,8 @@ const mock = vi.hoisted(() => ({
   actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true },
   assign: vi.fn(),
   unassign: vi.fn(),
-  sync: vi.fn()
+  sync: vi.fn(),
+  notify: vi.fn()
 }));
 vi.mock("next/server", () => ({
   NextResponse: { json: (body: unknown, init?: { status?: number }) => ({
@@ -14,7 +15,12 @@ vi.mock("next/server", () => ({
   }) }
 }));
 vi.mock("@/auth", () => ({ auth: async () => mock.session }));
-vi.mock("@/src/lib/db", () => ({ db: {} }));
+vi.mock("@/src/lib/db", () => ({ db: {
+  instanciaSala: { findUnique: vi.fn().mockResolvedValue({ solicitud: { titulo: "Reunión de prueba" } }) }
+} }));
+vi.mock("@/src/modules/notificaciones/notificaciones.service", () => ({
+  notificarUsuario: (...args: unknown[]) => mock.notify(...args)
+}));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
   resolveSessionActor: async () => mock.actor
 }));
@@ -36,8 +42,12 @@ function request() {
 beforeEach(() => {
   mock.session = { user: { id: "admin-1", email: "admin@example.test" } };
   mock.assign.mockReset().mockResolvedValue({ id: "assignment-1", instanciaSalaId: "meeting-1" });
-  mock.unassign.mockReset().mockResolvedValue({ id: "assignment-1", instanciaSalaId: "meeting-1" });
+  mock.unassign.mockReset().mockResolvedValue({
+    id: "assignment-1", instanciaSalaId: "meeting-1",
+    asistenteUsuarioId: "assistant-user-1", asistenteEmail: "assistant@example.test"
+  });
   mock.sync.mockReset().mockResolvedValue({ calendarioAsistente: [], warning: null });
+  mock.notify.mockReset().mockResolvedValue(undefined);
 });
 
 describe("F9: API de asignación usa códigos HTTP coherentes con Google", () => {
@@ -50,6 +60,21 @@ describe("F9: API de asignación usa códigos HTTP coherentes con Google", () =>
   });
   it("desvincula en 200 si Google quedó sincronizado", async () => {
     expect((await unassign(request()) as Response).status).toBe(200);
+  });
+  it("avisa individualmente a la persona desvinculada por Administración", async () => {
+    await unassign(request());
+    expect(mock.notify).toHaveBeenCalledWith(expect.anything(), {
+      usuarioId: "assistant-user-1", email: "assistant@example.test"
+    }, expect.objectContaining({
+      titulo: "Monitoreo desasignado",
+      tipo: "ASISTENCIA_ASIGNACION"
+    }));
+  });
+  it("devuelve 202 si se guarda la baja pero la notificación queda pendiente", async () => {
+    mock.notify.mockRejectedValueOnce(new Error("No se pudo enviar correo"));
+    const response = await unassign(request()) as Response;
+    expect(response.status).toBe(202);
+    expect(response.body.warning).toContain("notificación");
   });
   it("devuelve 202 ante desvinculación con integración pendiente", async () => {
     mock.sync.mockResolvedValueOnce({ calendarioAsistente: [], warning: "Sincronización pendiente." });
