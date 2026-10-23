@@ -274,6 +274,8 @@ export default async function AsistenciaTecnicaPage({
                         </aside>
                             <CoverageAssistanceActions
                           covered={covered}
+                          assignmentId={assignment?.id ?? null}
+                          assistantName={assistantName}
                           meetingId={meeting.id}
                           requestId={meeting.solicitud.id}
                         />
