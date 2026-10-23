@@ -53,6 +53,15 @@ describe("flujo administrativo de desvinculación", () => {
     expect(css).toContain(".coverage-management-actions .coverage-unassign-action");
   });
 
+  it("notifica la baja administrativa y expone errores de sincronización", () => {
+    const route = source("app/api/v1/asistencia/asignaciones/desvincular/route.ts");
+    expect(route).toContain('actor.rol === "ADMINISTRACION"');
+    expect(route).toContain("await notificarUsuario(db");
+    expect(route).toContain('titulo: "Monitoreo desasignado"');
+    expect(route).toContain("const warning = warnings.join");
+    expect(route).toContain("status: warning ? 202 : 200");
+  });
+
   it("permite darse de baja desde Mi agenda antes de comenzar el monitoreo", () => {
     const buttonPath = filePath("src/modules/asistencia/presentation/components/assistant-self-unassign-button.tsx");
     expect(existsSync(buttonPath)).toBe(true);
