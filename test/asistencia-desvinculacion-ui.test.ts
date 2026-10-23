@@ -34,6 +34,25 @@ describe("flujo administrativo de desvinculación", () => {
     expect(table).toContain("AssistantUnassignButton");
   });
 
+  it("permite desasignar desde la tarjeta sin cancelar el requisito de monitoreo", () => {
+    const actions = source("src/modules/asistencia/presentation/components/coverage-assistance-actions.tsx");
+    const page = source("src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx");
+    const css = source("app/(gestion)/operations.css");
+
+    expect(page).toContain("assignmentId={assignment?.id ?? null}");
+    expect(page).toContain("assistantName={assistantName}");
+    expect(actions).toContain('className="secondary-action coverage-unassign-action"');
+    expect(actions).toContain("Desasignar asistente");
+    expect(actions).toContain('fetch("/api/v1/asistencia/asignaciones/desvincular"');
+    expect(actions).toContain("JSON.stringify({ asignacionId: assignmentId })");
+    expect(actions).toContain("El monitoreo continúa pendiente de cobertura.");
+    expect(actions).toContain("covered && assignmentId");
+    expect(actions).toContain("!covered");
+    expect(actions).toContain('requiereAsistenciaTecnica: false'); // Solo en la acción separada de cancelar monitoreo.
+    expect(css).toContain(".coverage-unassign-action");
+    expect(css).toContain(".coverage-management-actions .coverage-unassign-action");
+  });
+
   it("permite darse de baja desde Mi agenda antes de comenzar el monitoreo", () => {
     const buttonPath = filePath("src/modules/asistencia/presentation/components/assistant-self-unassign-button.tsx");
     expect(existsSync(buttonPath)).toBe(true);
