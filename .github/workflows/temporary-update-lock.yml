@@ -23,7 +23,7 @@ jobs:
       - name: Recalcular lockfile y actualizar parches de seguridad
         run: |
           npm install --package-lock-only --ignore-scripts --no-fund
-          npm audit fix --package-lock-only --ignore-scripts --no-fund
+          npm audit fix --package-lock-only --ignore-scripts --no-fund --audit-level=critical
           npm ci --include=dev
           npm audit --omit=dev --audit-level=critical
       - name: Guardar lockfile actualizado
