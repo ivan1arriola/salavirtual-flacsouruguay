@@ -380,6 +380,12 @@
   color: var(--brand-strong);
 }
 
+.coverage-unassign-action {
+  border-color: #c5d5e9;
+  color: #274e80;
+  background: #f5f8fc;
+}
+
 .coverage-cancel-action {
   border-color: #ddb7b7;
   color: #913a3a;
@@ -2715,6 +2721,8 @@
   .coverage-quick-links .meet-access { width: 100%; justify-content: center; }
   .coverage-quick-links .text-link { width: auto; font-size: .74rem; white-space: nowrap; }
   .coverage-management-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .coverage-management-actions .coverage-unassign-action,
+  .coverage-management-actions .coverage-notify-action { grid-column: 1 / -1; }
   .coverage-management-actions .coverage-cancel-action { grid-column: 1 / -1; color: #9a5719; border-color: #e5c99c; background: #fffaf2; }
 }
 

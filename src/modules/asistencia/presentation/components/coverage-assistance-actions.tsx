@@ -1,14 +1,22 @@
 "use client";
 
-import { BellRing, UserRoundX } from "lucide-react";
+import { BellRing, UserRoundMinus, UserRoundX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 export function CoverageAssistanceActions({
   meetingId,
   requestId,
-  covered
-}: Readonly<{ meetingId: string; requestId: string; covered: boolean }>) {
+  covered,
+  assignmentId,
+  assistantName
+}: Readonly<{
+  meetingId: string;
+  requestId: string;
+  covered: boolean;
+  assignmentId: string | null;
+  assistantName: string | null;
+}>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
@@ -22,6 +30,21 @@ export function CoverageAssistanceActions({
         body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false })
       });
       return parseResponse(response, "El monitoreo fue cancelado.");
+    });
+  }
+
+  function unassign() {
+    if (!assignmentId) return;
+    if (!window.confirm(
+      `¿Desasignar a ${assistantName ?? "la persona asignada"} de este monitoreo?\n\nLa reunión seguirá requiriendo monitoreo y quedará pendiente de cobertura. No se cancelará el encuentro.`
+    )) return;
+    run(async () => {
+      const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asignacionId: assignmentId })
+      });
+      return parseResponse(response, "Se desasignó al asistente. El monitoreo continúa pendiente de cobertura.");
     });
   }
 
@@ -50,15 +73,27 @@ export function CoverageAssistanceActions({
 
   return (
     <div className="coverage-management-actions">
-      <button
-        className="secondary-action coverage-notify-action"
-        disabled={pending || covered}
-        onClick={renotify}
-        title={covered ? "La reunión ya tiene cobertura" : "Volver a avisar a todos los asistentes de monitoreo disponibles"}
-        type="button"
-      >
-        <BellRing size={16} />{pending ? "Procesando…" : "Volver a notificar"}
-      </button>
+      {!covered ? (
+        <button
+          className="secondary-action coverage-notify-action"
+          disabled={pending}
+          onClick={renotify}
+          title="Volver a avisar a todos los asistentes de monitoreo disponibles"
+          type="button"
+        >
+          <BellRing size={16} />{pending ? "Procesando…" : "Volver a notificar"}
+        </button>
+      ) : null}
+      {covered && assignmentId ? (
+        <button
+          className="secondary-action coverage-unassign-action"
+          disabled={pending}
+          onClick={unassign}
+          type="button"
+        >
+          <UserRoundMinus size={16} />{pending ? "Procesando…" : "Desasignar asistente"}
+        </button>
+      ) : null}
       <button
         className="secondary-action coverage-cancel-action"
         disabled={pending}
@@ -75,5 +110,5 @@ export function CoverageAssistanceActions({
 async function parseResponse(response: Response, fallback: string): Promise<string> {
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error ?? "No se pudo completar la operación.");
-  return result.message ?? fallback;
+  return [result.message ?? fallback, result.warning].filter(Boolean).join(" ");
 }
