@@ -1,6 +1,5 @@
 import {
   enviarCorreoConfiguradoUseCase,
-  notificarAdministracionUseCase,
   notificarUsuariosUseCase,
   notificarUsuarioUseCase,
 } from "./application";
@@ -33,11 +32,6 @@ export type ServicioNotificaciones = Readonly<{
     appBaseUrl?: string
   ) => Promise<void>;
 
-  notificarAdministracion: (
-    message: NotificationMessage,
-    appBaseUrl?: string
-  ) => Promise<void>;
-
   enviarCorreoConfigurado: (input: MailInput) => Promise<MailSendResult>;
 }>;
 
@@ -61,15 +55,6 @@ export function crearServicioNotificaciones(
         repository,
         emailTransport,
         recipients,
-        message,
-        appBaseUrl
-      );
-    },
-
-    notificarAdministracion(message, appBaseUrl) {
-      return notificarAdministracionUseCase(
-        repository,
-        emailTransport,
         message,
         appBaseUrl
       );

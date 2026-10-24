@@ -14,7 +14,6 @@ import type {
   ConfiguracionWorkspaceArchivos,
   DatosInstanciaParaParticipantes,
   EstadoSincronizacionInput,
-  EventoGrabacionPendienteModel,
   EventoParaSincronizarArchivos,
   PlanillaAsistenciaCandidata,
   SessionActor
@@ -279,85 +278,6 @@ export function crearPrismaArchivosRepositoryAdapter(
           solicitud: e.solicitud
         } }
       })))) };
-    },
-
-    async listarGrabacionesPendientesVisibles(
-      actor: SessionActor,
-      desde: Date,
-      hasta: Date
-    ): Promise<readonly EventoGrabacionPendienteModel[]> {
-      return db.eventoProveedor.findMany({
-        where: {
-          proveedor: { tipo: "GOOGLE_MEET" },
-          codigoReunion: { not: null },
-          archivosSincronizadosAt: null,
-          archivos: { none: { tipo: "GRABACION" } },
-          instancia: {
-            ...alcanceInstancias(actor),
-            requiereGrabacion: true,
-            estado: { not: "CANCELADA" },
-            finProgramadoAt: { gte: desde, lte: hasta }
-          }
-        },
-        orderBy: { instancia: { inicioProgramadoAt: "desc" } },
-        take: 100,
-        include: {
-          instancia: {
-            include: {
-              solicitud: {
-                include: {
-                  docentePrograma: {
-                    include: {
-                      programa: true,
-                      docente: { include: { usuario: true } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
-    },
-
-    async listarGrabacionesNoRealizadasVisibles(
-      actor: SessionActor,
-      desde: Date,
-      hasta: Date
-    ): Promise<readonly EventoGrabacionPendienteModel[]> {
-      return db.eventoProveedor.findMany({
-        where: {
-          proveedor: { tipo: "GOOGLE_MEET" },
-          codigoReunion: { not: null },
-          archivosSincronizadosAt: { not: null },
-          errorArchivos: null,
-          archivos: { none: { tipo: "GRABACION" } },
-          instancia: {
-            ...alcanceInstancias(actor),
-            requiereGrabacion: true,
-            estado: { not: "CANCELADA" },
-            finProgramadoAt: { gte: desde, lte: hasta }
-          }
-        },
-        orderBy: { instancia: { inicioProgramadoAt: "desc" } },
-        take: 100,
-        include: {
-          instancia: {
-            include: {
-              solicitud: {
-                include: {
-                  docentePrograma: {
-                    include: {
-                      programa: true,
-                      docente: { include: { usuario: true } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
     }
   };
 }

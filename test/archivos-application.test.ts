@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   listarArchivosVisiblesUseCase,
-  listarGrabacionesNoRealizadasVisiblesUseCase,
-  listarGrabacionesPendientesVisiblesUseCase,
   obtenerParticipantesActivosUseCase,
   sincronizarArtefactosUseCase
 } from "@/src/modules/archivos/application";
@@ -60,8 +58,7 @@ describe("archivos: application", () => {
         }]),
         registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(), obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(), listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(mockRepo, () => mockProvider, dummyDescifrar, {
@@ -84,9 +81,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(
@@ -122,9 +117,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(
@@ -178,9 +171,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(
@@ -253,9 +244,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(
@@ -327,9 +316,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const result = await sincronizarArtefactosUseCase(
@@ -391,9 +378,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       await sincronizarArtefactosUseCase(
@@ -428,9 +413,7 @@ describe("archivos: application", () => {
         actualizarEstadoSincronizacion: vi.fn(),
         registrarErrorSincronizacion: vi.fn(),
         obtenerDatosInstanciaParaParticipantes: vi.fn().mockResolvedValue(null),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const res = await obtenerParticipantesActivosUseCase(
@@ -475,9 +458,7 @@ describe("archivos: application", () => {
           inicioProgramadoAt: new Date(),
           finProgramadoAt: new Date()
         }),
-        listarArchivosVisibles: vi.fn(),
-        listarGrabacionesPendientesVisibles: vi.fn(),
-        listarGrabacionesNoRealizadasVisibles: vi.fn()
+        listarArchivosVisibles: vi.fn()
       };
 
       const res = await obtenerParticipantesActivosUseCase(
@@ -495,31 +476,16 @@ describe("archivos: application", () => {
     });
   });
 
-  describe("consultas de grabaciones", () => {
-    it("delega consultas visibles al repositorio", async () => {
-      const mockRepo: ArchivosRepositoryPort = {
-        obtenerConfiguracionWorkspacePrincipal: vi.fn(),
-        obtenerEventosParaSincronizar: vi.fn(),
-        registrarArchivoSincronizado: vi.fn(),
-        actualizarEstadoSincronizacion: vi.fn(),
-        registrarErrorSincronizacion: vi.fn(),
-        obtenerDatosInstanciaParaParticipantes: vi.fn(),
-        listarArchivosVisibles: vi.fn().mockResolvedValue([{ id: "arch-1" }]),
-        listarGrabacionesPendientesVisibles: vi.fn().mockResolvedValue([{ id: "evt-p1" }]),
-        listarGrabacionesNoRealizadasVisibles: vi.fn().mockResolvedValue([{ id: "evt-nr1" }])
-      };
-
+  describe("consultas de archivos", () => {
+    it("delega el listado visible al repositorio", async () => {
+      const listarArchivosVisibles = vi.fn().mockResolvedValue([{ id: "arch-1" }]);
+      const mockRepo = { listarArchivosVisibles } as unknown as ArchivosRepositoryPort;
       const actor = { id: "user-1", rol: "ADMINISTRACION" as const };
-      const ahora = new Date();
 
       const arch = await listarArchivosVisiblesUseCase(mockRepo, actor);
+
       expect(arch).toHaveLength(1);
-
-      const pend = await listarGrabacionesPendientesVisiblesUseCase(mockRepo, actor, ahora, ahora);
-      expect(pend).toHaveLength(1);
-
-      const noReal = await listarGrabacionesNoRealizadasVisiblesUseCase(mockRepo, actor, ahora, ahora);
-      expect(noReal).toHaveLength(1);
+      expect(listarArchivosVisibles).toHaveBeenCalledWith(actor);
     });
   });
 });
