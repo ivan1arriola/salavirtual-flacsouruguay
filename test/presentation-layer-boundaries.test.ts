@@ -25,7 +25,6 @@ const meetingComponents = [
   "meeting-creation-dialog.tsx",
   "meeting-detail-manager.tsx",
   "meeting-form-v2.tsx",
-  "meeting-form.tsx",
   "meeting-integration-problems.tsx",
   "series-management.tsx"
 ] as const;
