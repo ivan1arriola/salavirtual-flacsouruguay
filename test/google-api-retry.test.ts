@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   conReintentosPorLimiteGoogle,
   esLimiteTemporalGoogle
-} from "../src/modules/meet/google-api-retry.adapter";
+} from "../src/integrations/google";
 
 describe("reintentos por límites de Google", () => {
   it("reintenta 429 con espera exponencial y devuelve el resultado", async () => {
