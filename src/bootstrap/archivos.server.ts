@@ -6,17 +6,13 @@ import {
   crearPrismaArchivosRepositoryAdapter,
   listarArchivosVisiblesUseCase,
   listarGrabacionesDbUseCase,
-  listarGrabacionesNoRealizadasVisiblesUseCase,
-  listarGrabacionesPendientesVisiblesUseCase,
   obtenerParticipantesActivosUseCase,
   repararPlanillasAsistenciaVaciasUseCase,
   sincronizarArtefactosUseCase,
   seleccionarLoteEventosOperativosUseCase,
   type ArchivoMeetVisibleModel,
-  type ArchivosRepositoryPort,
   type ArtifactProviderCredentials,
   type ArtifactProviderPort,
-  type EventoGrabacionPendienteModel,
   type LiveParticipantsResult,
   type SessionActor,
   type SyncArtifactsResult
@@ -89,20 +85,3 @@ export async function listarGrabacionesDb(actor: SessionActor, input: { pagina: 
   return listarGrabacionesDbUseCase(crearArchivosRepository(), actor, input);
 }
 
-export async function listarGrabacionesPendientesVisibles(
-  actor: SessionActor,
-  desde: Date,
-  hasta: Date
-): Promise<readonly EventoGrabacionPendienteModel[]> {
-  const repository = crearArchivosRepository();
-  return listarGrabacionesPendientesVisiblesUseCase(repository, actor, desde, hasta);
-}
-
-export async function listarGrabacionesNoRealizadasVisibles(
-  actor: SessionActor,
-  desde: Date,
-  hasta: Date
-): Promise<readonly EventoGrabacionPendienteModel[]> {
-  const repository = crearArchivosRepository();
-  return listarGrabacionesNoRealizadasVisiblesUseCase(repository, actor, desde, hasta);
-}

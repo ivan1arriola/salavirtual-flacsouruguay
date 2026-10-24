@@ -117,10 +117,6 @@ export function mobileSessionHash(sessionId: string): string {
   return createHash("sha256").update(sessionId, "utf8").digest("hex");
 }
 
-export function issueAssistantMobileToken(userId: string, secret: string): TokenIssueResult {
-  return issueMobileToken(userId, secret);
-}
-
 export function mobileActorFromRequest(request: Request, secret: string): MobileTokenPayload | null {
   const authorization = request.headers.get("authorization")?.trim();
   if (!authorization) return null;

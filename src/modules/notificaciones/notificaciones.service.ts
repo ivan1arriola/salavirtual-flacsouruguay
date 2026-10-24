@@ -5,12 +5,9 @@ import {
   reunionEmailText,
   type NotificationMessage,
   type NotificationRecipient,
-  type PreferenciaCanales,
   type ReunionEmailInput,
-  type TipoNotificacion,
 } from "./domain";
 import {
-  notificarAdministracionUseCase,
   notificarUsuariosUseCase,
   notificarUsuarioUseCase,
 } from "./application";
@@ -38,15 +35,6 @@ function buildScope(db: Db) {
     crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db))
   );
   return { repository, transport };
-}
-
-export async function preferenciasDeUsuario(
-  db: Db,
-  usuarioId: string,
-  tipo: TipoNotificacion
-): Promise<PreferenciaCanales> {
-  const { repository } = buildScope(db);
-  return repository.obtenerPreferencias(usuarioId, tipo);
 }
 
 export async function notificarUsuario(
@@ -79,15 +67,3 @@ export async function notificarUsuarios(
   );
 }
 
-export async function notificarAdministracion(
-  db: Db,
-  message: NotificationMessage
-): Promise<void> {
-  const { repository, transport } = buildScope(db);
-  return notificarAdministracionUseCase(
-    repository,
-    transport,
-    message,
-    process.env.APP_BASE_URL ?? "https://salavirtual.flacso.edu.uy"
-  );
-}

@@ -43,10 +43,6 @@ export function tieneMetodoDeAcceso(estado: EstadoAccesoUsuario): boolean {
   return estado.tienePassword || estado.cantidadCuentasGoogle > 0;
 }
 
-export function debeCambiarPassword(estado: EstadoAccesoUsuario): boolean {
-  return estado.cantidadCuentasGoogle === 0;
-}
-
 export function resolverEmailPrincipal(input: ResolucionEmailPrincipal): string | null {
   const emailActual = input.emailPrincipalActual?.trim().toLowerCase() ?? null;
 
