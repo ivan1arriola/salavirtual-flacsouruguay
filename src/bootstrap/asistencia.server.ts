@@ -5,9 +5,11 @@ import {
   crearGoogleAssistantCalendarProvider,
   crearPrismaAsistenciaRepositoryAdapter,
   crearPrismaAssistantCalendarRepository,
+  crearControladorAsignaciones,
   crearServicioAsistencia,
   crearServicioCalendarioAsistente,
   type AsistenciaRepositoryPort,
+  type ControladorAsignaciones,
   type ServicioAsistencia,
   type ServicioCalendarioAsistente
 } from "@/src/modules/asistencia/api";
@@ -59,19 +61,30 @@ export function obtenerServicioAsistencia(): ServicioAsistencia {
   });
 }
 
+export function obtenerControladorAsignaciones(): ControladorAsignaciones {
+  return crearControladorAsignaciones({
+    repo: crearAsistenciaRepository(),
+    sincronizar: sincronizarAsignacionAsistenteInterno
+  });
+}
+
 export function asignarAsistente(actor: SessionActor, input: unknown) {
-  return obtenerServicioAsistencia().asignarAsistente(actor, input);
+  return obtenerControladorAsignaciones().asignar(actor, input);
 }
 
 export function desvincularAsistente(actor: SessionActor, input: unknown) {
-  return obtenerServicioAsistencia().desvincularAsistente(actor, input);
+  return obtenerControladorAsignaciones().desvincular(actor, input);
 }
 
 export function reportarDuracionAsistencia(actor: SessionActor, input: unknown, ahora?: Date) {
   return obtenerServicioAsistencia().reportarDuracion(actor, input, ahora);
 }
 
-export async function sincronizarAsignacionAsistente(instanciaSalaId: string, calendarWarning: string) {
+export function sincronizarAsignacionAsistente(instanciaSalaId: string, calendarWarning: string) {
+  return obtenerControladorAsignaciones().sincronizar(instanciaSalaId, calendarWarning);
+}
+
+async function sincronizarAsignacionAsistenteInterno(instanciaSalaId: string, calendarWarning: string) {
   const warnings: string[] = [];
   try {
     await sincronizarCohostsDeInstancia({ db, descifrar: descifrarConfiguracion, configurarEspacio: configurarGoogleMeetExistente }, instanciaSalaId);
