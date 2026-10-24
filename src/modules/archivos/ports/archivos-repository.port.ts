@@ -139,14 +139,4 @@ export type ArchivosRepositoryPort = Readonly<{
   ): Promise<DatosInstanciaParaParticipantes | null>;
   listarArchivosVisibles(actor: SessionActor): Promise<readonly ArchivoMeetVisibleModel[]>;
   listarGrabacionesDb?(actor: SessionActor, input: ListarGrabacionesDbInput): Promise<GrabacionesDbPage>;
-  listarGrabacionesPendientesVisibles(
-    actor: SessionActor,
-    desde: Date,
-    hasta: Date
-  ): Promise<readonly EventoGrabacionPendienteModel[]>;
-  listarGrabacionesNoRealizadasVisibles(
-    actor: SessionActor,
-    desde: Date,
-    hasta: Date
-  ): Promise<readonly EventoGrabacionPendienteModel[]>;
 }>;

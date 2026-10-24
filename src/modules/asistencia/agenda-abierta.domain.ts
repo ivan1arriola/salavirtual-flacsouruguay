@@ -3,8 +3,7 @@ export {
   agruparPorFecha,
   evaluarConflictoAsistencia,
   formatearDiasRestantes,
-  ordenarPostulantesParaAdministracion,
-  parseDateParts
+  ordenarPostulantesParaAdministracion
 } from "./domain/agenda-abierta.domain";
 export type {
   AsignacionExistente,

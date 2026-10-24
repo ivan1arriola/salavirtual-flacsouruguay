@@ -61,12 +61,3 @@ export function DismissibleDetails({
   );
 }
 
-export function ProfileMenuDisclosure({
-  className,
-  children
-}: Readonly<{
-  className: string;
-  children: React.ReactNode;
-}>) {
-  return <DismissibleDetails className={className}>{children}</DismissibleDetails>;
-}

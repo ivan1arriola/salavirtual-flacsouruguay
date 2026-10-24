@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   enviarCorreoConfiguradoUseCase,
-  notificarAdministracionUseCase,
   notificarUsuariosUseCase,
   notificarUsuarioUseCase,
 } from "../src/modules/notificaciones/application";
@@ -16,7 +15,6 @@ function createMockRepository(overrides: Partial<NotificacionesRepositoryPort> =
     guardarNotificacionEnBandeja: vi.fn().mockResolvedValue(undefined),
     esAsistenteCesado: vi.fn().mockResolvedValue(false),
     obtenerDestinatariosDocentesPrograma: vi.fn().mockResolvedValue([]),
-    obtenerAdministradoresActivos: vi.fn().mockResolvedValue([]),
     obtenerCredencialesGmail: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
@@ -136,26 +134,6 @@ describe("casos de uso de notificaciones", () => {
     expect(repository.obtenerDestinatariosDocentesPrograma).toHaveBeenCalledWith("sol-123");
     // Se debe haber llamado para usr-1 y usr-docente-programa (2 llamadas)
     expect(repository.guardarNotificacionEnBandeja).toHaveBeenCalledTimes(2);
-  });
-
-  it("notificarAdministracion consulta administradores activos y los notifica", async () => {
-    const repository = createMockRepository({
-      obtenerAdministradoresActivos: vi.fn().mockResolvedValue([
-        { usuarioId: "admin-1", email: "admin1@flacso.edu.uy" },
-      ]),
-    });
-    const transport = createMockTransport();
-
-    await notificarAdministracionUseCase(
-      repository,
-      transport,
-      { tipo: "HOST_NO_CONECTADO", titulo: "Alerta", cuerpo: "Host ausente" }
-    );
-
-    expect(repository.obtenerAdministradoresActivos).toHaveBeenCalled();
-    expect(repository.guardarNotificacionEnBandeja).toHaveBeenCalledWith(
-      expect.objectContaining({ usuarioId: "admin-1" })
-    );
   });
 
   it("enviarCorreoConfigurado delega al transporte", async () => {

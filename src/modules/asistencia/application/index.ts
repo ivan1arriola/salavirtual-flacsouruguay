@@ -6,6 +6,7 @@ export * from "./reconciliar-calendarios.use-case";
 export * from "./actualizar-postulacion.use-case";
 export * from "./asignar-asistente.use-case";
 export * from "./desvincular-asistente.use-case";
+export * from "./controlador-asignaciones";
 export * from "./reportar-duracion.use-case";
 export * from "./actualizar-disponibilidad.use-case";
 export * from "./renotificar-asistentes.use-case";

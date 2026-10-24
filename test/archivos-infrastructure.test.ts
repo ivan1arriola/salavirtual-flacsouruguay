@@ -147,17 +147,15 @@ describe("archivos: infrastructure", () => {
         })
       );
 
-      await repo.listarGrabacionesPendientesVisibles(
-        { id: "asist-1", rol: "ASISTENTE_TECNICO" },
-        new Date(),
-        new Date()
-      );
-      expect(mockDb.eventoProveedor.findMany).toHaveBeenCalledWith(
+      await repo.listarArchivosVisibles({ id: "asist-1", rol: "ASISTENTE_TECNICO" });
+      expect(mockDb.archivoReunion.findMany).toHaveBeenLastCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            instancia: expect.objectContaining({
-              asignaciones: expect.any(Object)
-            })
+            eventoProveedor: {
+              instancia: expect.objectContaining({
+                asignaciones: expect.any(Object)
+              })
+            }
           })
         })
       );

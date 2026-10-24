@@ -36,8 +36,7 @@ describe("reparar planillas de asistencia vacías", () => {
         finProgramadoAt: new Date("2026-10-10T13:00:00Z"), timezone: "America/Montevideo", requiereGrabacion: false, tituloSolicitud: "Clase"
       }]),
       registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(), registrarErrorSincronizacion: vi.fn(),
-      obtenerDatosInstanciaParaParticipantes: vi.fn(), listarArchivosVisibles: vi.fn(),
-      listarGrabacionesPendientesVisibles: vi.fn(), listarGrabacionesNoRealizadasVisibles: vi.fn()
+      obtenerDatosInstanciaParaParticipantes: vi.fn(), listarArchivosVisibles: vi.fn()
     };
 
     const result = await repararPlanillasAsistenciaVaciasUseCase(repository, () => provider, (value) => value);

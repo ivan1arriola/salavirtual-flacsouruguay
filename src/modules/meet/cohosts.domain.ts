@@ -1,4 +1,1 @@
-export {
-  normalizeCohostEmails,
-  cohostAccountGuidance,
-} from "@/src/modules/conferencias/api";
+export { normalizeCohostEmails } from "@/src/modules/conferencias/api";

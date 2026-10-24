@@ -101,18 +101,6 @@ export function crearPrismaNotificacionesRepository(
       );
     },
 
-    async obtenerAdministradoresActivos(): Promise<readonly NotificationRecipient[]> {
-      const admins = await db.usuario.findMany({
-        where: { rol: "ADMINISTRACION", activo: true },
-        select: { id: true, emailPrincipal: true },
-      });
-
-      return admins.map((admin) => ({
-        usuarioId: admin.id,
-        email: admin.emailPrincipal,
-      }));
-    },
-
     async registrarResultadoCorreo(resultado): Promise<void> {
       // Auditoría sin dirección de correo, asunto, texto ni credenciales.
       await db.auditoria.create({

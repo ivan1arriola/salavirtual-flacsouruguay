@@ -263,14 +263,29 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           });
         }
 
-        const created = await tx.asignacionAsistenciaTecnica.create({
-          data: {
+        // La fila (instancia, asistente) es única: una asignación cancelada se reutiliza al reasignar.
+        const created = await tx.asignacionAsistenciaTecnica.upsert({
+          where: {
+            instanciaSalaId_asistenteTecnicoId: {
+              instanciaSalaId: meeting.id,
+              asistenteTecnicoId: assistant.id
+            }
+          },
+          create: {
             instanciaSalaId: meeting.id,
             asistenteTecnicoId: assistant.id,
             estado: "ASIGNADO",
             tarifaAsistenciaTecnicaId: tarifa.id,
             tarifaHoraAplicada: tarifa.valorHora,
             moneda: tarifa.moneda
+          },
+          update: {
+            estado: "ASIGNADO",
+            tarifaAsistenciaTecnicaId: tarifa.id,
+            tarifaHoraAplicada: tarifa.valorHora,
+            moneda: tarifa.moneda,
+            minutosConfirmados: null,
+            montoConfirmado: null
           },
           select: { id: true, instanciaSalaId: true, asistenteTecnicoId: true, estado: true }
         });

@@ -31,7 +31,6 @@ export type NotificacionesRepositoryPort = Readonly<{
     solicitudId: string
   ) => Promise<readonly NotificationRecipient[]>;
 
-  obtenerAdministradoresActivos: () => Promise<readonly NotificationRecipient[]>;
 
   obtenerCredencialesGmail: () => Promise<CredencialGmailTransport | null>;
 

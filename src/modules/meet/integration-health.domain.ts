@@ -7,7 +7,6 @@ export {
   esErrorNoBloqueanteDeScopesMeet,
   requiereAtencionIntegracionMeet,
   estadoIntegracionEfectivo,
-  esErrorDeScopesInsuficientes,
 } from "@/src/modules/conferencias/api";
 
 export type EstadoIntegracionMeet = EstadoIntegracionConferencia;

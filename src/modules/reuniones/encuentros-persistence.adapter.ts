@@ -6,20 +6,6 @@ import {
 import { obtenerCredencialGoogleParaSala } from "@/src/modules/configuracion/api";
 import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
-export function cargarEncuentro(
-  db: PrismaClient,
-  solicitudId: string,
-  instanciaId: string
-) {
-  return db.instanciaSala.findFirst({
-    where: { id: instanciaId, solicitudSalaId: solicitudId },
-    include: {
-      solicitud: { include: { docentePrograma: { include: { docente: true } } } },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-    }
-  });
-}
-
 export async function cargarCredencialesEncuentro(
   db: PrismaClient,
   descifrar: (value: string) => string,
