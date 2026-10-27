@@ -111,13 +111,15 @@ describe("archivos: domain", () => {
       expect(estado).toBe("DISPONIBLE");
     });
 
-    it("resuelve PROCESANDO si no sincronizó y pasaron menos de 4 horas", () => {
+    it("resuelve PROCESANDO si Meet lo informó recientemente", () => {
       const estado = resolverEstadoVisualGrabacion({
         tieneArchivoGrabacion: false,
         archivosSincronizadosAt: null,
         finProgramadoAt: fin,
         requiereGrabacion: true,
-        ahora: new Date("2026-09-19T17:00:00.000Z") // 2 horas después
+        ahora: new Date("2026-09-19T17:00:00.000Z"),
+        estadoDetectado: "PROCESANDO",
+        observadoAt: new Date("2026-09-19T16:55:00.000Z")
       });
       expect(estado).toBe("PROCESANDO");
     });

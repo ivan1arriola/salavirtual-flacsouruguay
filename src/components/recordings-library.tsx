@@ -295,6 +295,8 @@ export function RecordingsLibrary({
             const orderedArtifacts = [...grupo.archivos].sort(
               (a, b) => artifactSortOrder(a.tipo) - artifactSortOrder(b.tipo)
             );
+            const grabacionPendiente = !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
+              (grupo.estadoGrabacion === "EN_CURSO" || grupo.estadoGrabacion === "PROCESANDO");
 
             return (
               <article className="recording-meeting-card" key={grupo.instanciaId}>
@@ -311,10 +313,10 @@ export function RecordingsLibrary({
                     <h2>{grupo.titulo}</h2>
                     <small>{grupo.docente}</small>
 
-                    {grupo.estadoGrabacion === "PROCESANDO" ? (
-                      <span className="recordings-status-badge is-processing">
+                    {grabacionPendiente ? (
+                      <span className={`recordings-status-badge ${grupo.estadoGrabacion === "EN_CURSO" ? "is-live" : "is-processing"}`}>
                         <Clock size={13} aria-hidden="true" />
-                        Video procesando en Google Meet (demora habitual: 15-45 min)
+                        {grupo.estadoGrabacion === "EN_CURSO" ? "Grabación en curso" : "Video procesando en Google Meet"}
                       </span>
                     ) : null}
                   </div>
@@ -364,6 +366,16 @@ export function RecordingsLibrary({
                 ) : null}
 
                 <div className="recording-file-grid">
+                  {grabacionPendiente ? (
+                    <article className="recording-file-card is-recording is-placeholder" aria-label={grupo.estadoGrabacion === "EN_CURSO" ? "Grabación en curso" : "Grabación en procesamiento"}>
+                      <div className="recording-file-icon" aria-hidden="true"><Video size={20} /></div>
+                      <div className="recording-file-copy">
+                        <div className="recording-file-label"><strong>Grabación</strong><span>Google Meet</span></div>
+                        <p>{grupo.estadoGrabacion === "EN_CURSO" ? "La grabación está en curso. El video aparecerá aquí cuando Google Meet lo publique." : "Google Meet está procesando el video. Aparecerá aquí cuando esté disponible."}</p>
+                      </div>
+                      <div className="recording-file-action"><span className="recording-file-pending"><Clock size={14} aria-hidden="true" /> Grabación pendiente</span></div>
+                    </article>
+                  ) : null}
                   {orderedArtifacts.map((archivo) => (
                     <article
                       className={`recording-file-card ${artifactToneClass(archivo.tipo)}`}

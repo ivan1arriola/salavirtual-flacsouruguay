@@ -2,6 +2,7 @@ import {
   nombreArchivoReunion,
   nombreCarpetaReunion,
   TIPOS_ARTEFACTO_SINCRONIZABLES,
+  type EstadoGrabacionDetectada,
   type EstadoResultadoGrabacion,
   type SyncArtifactsResult
 } from "../domain";
@@ -106,15 +107,57 @@ async function sincronizarEventoIndividual(
       };
     }
 
+    const artifacts = await provider.obtenerArtefactos(conference.name);
+    const estadoGrabacionMeet: EstadoGrabacionDetectada = artifacts.grabandoEnVivo
+      ? "EN_CURSO"
+      : artifacts.estadoGrabacion === "PROCESANDO"
+        ? "PROCESANDO"
+        : artifacts.estadoGrabacion === "GENERADA"
+          ? "DISPONIBLE"
+          : "AUSENTE";
+    await repositorio.actualizarEstadoSincronizacion(evento.id, {
+      conferenceRecordName: conference.name,
+      driveFolderId: evento.driveFolderId,
+      archivosSincronizadosAt: null,
+      errorArchivos: null,
+      estadoGrabacionMeet,
+      grabacionObservadaAt: new Date()
+    });
+
     if (!conference.endTime) {
-      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
-      if (attendance.sesiones > 0 && attendance.planilla && provider.subirPlanillaAsistencia) {
-        const folderName = nombreCarpetaReunion({
+      let folderId = evento.driveFolderId;
+      const obtenerCarpeta = async () => {
+        if (!folderId) folderId = await provider.obtenerOCrearCarpeta(destinationId, nombreCarpetaReunion({
           titulo: evento.tituloSolicitud,
           inicio: evento.inicioProgramadoAt,
           timezone: evento.timezone
+        }));
+        return folderId;
+      };
+      let synchronized = 0;
+      const grabacionesConocidas = new Set(evento.archivos.filter(a => a.tipo === "GRABACION").map(a => a.externalResourceName));
+      for (const [index, recording] of [...artifacts.recordings].sort((a, b) =>
+        (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0)).entries()) {
+        if (grabacionesConocidas.has(recording.resourceName)) continue;
+        const moved = await provider.moverArchivo(recording.driveFileId, await obtenerCarpeta(), nombreArchivoReunion({
+          titulo: evento.tituloSolicitud, inicio: evento.inicioProgramadoAt, timezone: evento.timezone,
+          codigoReunion: evento.codigoReunion, tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[0],
+          indice: index + 1, extension: recording.extension
+        }));
+        await repositorio.registrarArchivoSincronizado(evento.id, TIPOS_ARTEFACTO_SINCRONIZABLES[0], recording, moved);
+        synchronized += 1;
+      }
+      if (folderId && folderId !== evento.driveFolderId) {
+        await repositorio.actualizarEstadoSincronizacion(evento.id, {
+          conferenceRecordName: conference.name,
+          driveFolderId: folderId,
+          archivosSincronizadosAt: null,
+          errorArchivos: null
         });
-        const folderId = evento.driveFolderId ?? await provider.obtenerOCrearCarpeta(destinationId, folderName);
+      }
+      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
+      if (attendance.sesiones > 0 && attendance.planilla && provider.subirPlanillaAsistencia) {
+        const folderId = await obtenerCarpeta();
         const name = nombreArchivoReunion({
           titulo: evento.tituloSolicitud,
           inicio: evento.inicioProgramadoAt,
@@ -143,8 +186,17 @@ async function sincronizarEventoIndividual(
         return {
           eventoProveedorId: evento.id,
           estado: "ARTEFACTOS_PENDIENTES",
-          archivos: 1,
-          grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+          archivos: synchronized + 1,
+          grabacion: artifacts.recordings.length > 0 ? "DISPONIBLE" : artifacts.estadoGrabacion === "PROCESANDO" ? "PENDIENTE" : evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+        };
+      }
+
+      if (synchronized > 0 || estadoGrabacionMeet === "EN_CURSO" || estadoGrabacionMeet === "PROCESANDO") {
+        return {
+          eventoProveedorId: evento.id,
+          estado: "ARTEFACTOS_PENDIENTES",
+          archivos: synchronized,
+          grabacion: synchronized > 0 ? "DISPONIBLE" : "PENDIENTE"
         };
       }
 
@@ -174,7 +226,6 @@ async function sincronizarEventoIndividual(
         .map((file) => file.externalResourceName)
     );
 
-    const artifacts = await provider.obtenerArtefactos(conference.name);
     const common = {
       titulo: evento.tituloSolicitud,
       inicio: evento.inicioProgramadoAt,
@@ -253,7 +304,7 @@ async function sincronizarEventoIndividual(
       }
     }
 
-    if (pending > 0 && !conferenciaTerminadaHaceMasDe(conference.endTime, 48)) {
+    if ((pending > 0 || artifacts.estadoGrabacion === "AUSENTE") && !conferenciaTerminadaHaceMasDe(conference.endTime, 48)) {
       await repositorio.actualizarEstadoSincronizacion(evento.id, {
         conferenceRecordName: conference.name,
         driveFolderId: folderId,

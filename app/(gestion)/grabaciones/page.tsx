@@ -12,7 +12,6 @@ import {
   resolverEstadoVisualGrabacion,
   type GrupoEncuentroConArchivos
 } from "@/src/modules/archivos/presentation";
-import type { TipoArtefactoMeet } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
 export default async function GrabacionesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string }> }) {
@@ -27,70 +26,13 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
     listarGrabacionesDb(actor, query),
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
   ]);
-  const artifacts = page.artifacts;
-
   const generalFolderId = workspaceConfiguration?.activa
     ? workspaceConfiguration.driveDestinationId
     : null;
 
   const counts = { grabaciones: page.conteos.grabaciones, transcripciones: page.conteos.transcripciones, asistencias: page.conteos.asistencias, notas: page.conteos.notas };
 
-  const groupsMap = new Map<
-    string,
-    {
-      instanciaId: string;
-      titulo: string;
-      programa: string;
-      docente: string;
-      fechaInicio: Date;
-      folderId?: string | null;
-      requiereGrabacion?: boolean;
-      archivosSincronizadosAt: Date | null;
-      finProgramadoAt: Date;
-      archivos: Array<{
-        id: string;
-        tipo: TipoArtefactoMeet;
-        nombre?: string;
-        webViewUrl?: string | null;
-        tamanoBytes?: number | null;
-        mimeType?: string | null;
-      }>;
-    }
-  >();
-
-  for (const artifact of artifacts) {
-    const instancia = artifact.eventoProveedor.instancia;
-    const instanciaId = instancia.id;
-    const docenteUsuario = instancia.solicitud.docentePrograma.docente.usuario;
-
-    let group = groupsMap.get(instanciaId);
-    if (!group) {
-      group = {
-        instanciaId,
-        titulo: instancia.solicitud.titulo,
-        programa: instancia.solicitud.docentePrograma.programa.nombre,
-        docente: `${docenteUsuario.nombres} ${docenteUsuario.apellidos}`.trim(),
-        fechaInicio: instancia.inicioProgramadoAt,
-        folderId: artifact.eventoProveedor.driveFolderId,
-        requiereGrabacion: instancia.requiereGrabacion,
-        archivosSincronizadosAt: artifact.eventoProveedor.archivosSincronizadosAt,
-        finProgramadoAt: instancia.finProgramadoAt,
-        archivos: []
-      };
-      groupsMap.set(instanciaId, group);
-    }
-
-    group.archivos.push({
-      id: artifact.driveFileId,
-      tipo: artifact.tipo,
-      nombre: artifact.nombre,
-      webViewUrl: artifact.webViewUrl,
-      tamanoBytes: artifact.tamanoBytes ? Number(artifact.tamanoBytes) : null,
-      mimeType: artifact.mimeType
-    });
-  }
-
-  const grupos: readonly GrupoEncuentroConArchivos[] = Array.from(groupsMap.values())
+  const grupos: readonly GrupoEncuentroConArchivos[] = page.encuentros
     .map((g) => ({
       instanciaId: g.instanciaId,
       titulo: g.titulo,
@@ -104,9 +46,11 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
         archivosSincronizadosAt: g.archivosSincronizadosAt,
         finProgramadoAt: g.finProgramadoAt,
         requiereGrabacion: Boolean(g.requiereGrabacion),
+        estadoDetectado: g.estadoGrabacionMeet,
+        observadoAt: g.grabacionObservadaAt,
         ahora: now
       }),
-      archivos: g.archivos
+      archivos: g.archivos.map((a) => ({ ...a, tamanoBytes: a.tamanoBytes ? Number(a.tamanoBytes) : null }))
     }))
     .sort(
       (left, right) =>
@@ -120,7 +64,7 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
           <p className="page-eyebrow">Google Meet</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {page.totalEncuentros} {page.totalEncuentros === 1 ? "encuentro con archivos disponible" : "encuentros con archivos disponibles"}.
+            {page.totalEncuentros} {page.totalEncuentros === 1 ? "encuentro con archivos o grabación detectada" : "encuentros con archivos o grabaciones detectadas"}.
           </p>
         </div>
         {generalFolderId ? (

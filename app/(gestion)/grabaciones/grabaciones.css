@@ -352,6 +352,12 @@
   color: #925f18;
 }
 
+.recordings-status-badge.is-live {
+  background: #eef7f2;
+  border: 1px solid #b9dec8;
+  color: #216b45;
+}
+
 .recordings-empty-state {
   display: flex;
   flex-direction: column;
@@ -565,6 +571,30 @@
 .recording-file-card.is-transcript { border-left-color: #4b6fa8; }
 .recording-file-card.is-attendance { border-left-color: #52745c; }
 .recording-file-card.is-notes { border-left-color: #9b7134; }
+
+.recording-file-card.is-placeholder {
+  background: #f9fbfd;
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+.recording-file-card.is-placeholder:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(31, 50, 76, 0.025);
+}
+
+.recording-file-card.is-placeholder .recording-file-copy > p {
+  -webkit-line-clamp: 2;
+}
+
+.recording-file-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
 
 .recording-file-icon {
   width: 36px;

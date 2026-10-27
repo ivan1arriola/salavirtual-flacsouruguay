@@ -339,6 +339,8 @@ model EventoProveedor {
   reclamoIntegracionToken String?
   errorIntegracion        String?
   conferenceRecordName    String?
+  grabacionEstadoMeet     String?
+  grabacionObservadaAt    DateTime?
   driveFolderId           String?
   archivosSincronizadosAt DateTime?
   errorArchivos           String?
@@ -352,6 +354,7 @@ model EventoProveedor {
   @@unique([proveedorId, externalEventId])
   @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
+  @@index([grabacionEstadoMeet, grabacionObservadaAt])
 }
 
 model ArchivoReunion {

@@ -143,7 +143,7 @@ describe("archivos: application", () => {
           // sin endTime
         }),
         obtenerConferencia: vi.fn(),
-        obtenerArtefactos: vi.fn(),
+        obtenerArtefactos: vi.fn().mockResolvedValue({ recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0 }),
         obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
           html: "<html></html>", completa: false, participantes: 0, sesiones: 0,
           planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] }
@@ -195,7 +195,7 @@ describe("archivos: application", () => {
           startTime: "2026-09-19T14:00:00Z"
         }),
         obtenerConferencia: vi.fn(),
-        obtenerArtefactos: vi.fn(),
+        obtenerArtefactos: vi.fn().mockResolvedValue({ recordings: [], transcripts: [], notes: [], estadoGrabacion: "AUSENTE", pendientes: 0 }),
         obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
           html: "<html></html>", completa: false, participantes: 1, sesiones: 1,
           planilla: {
@@ -237,6 +237,73 @@ describe("archivos: application", () => {
         errorArchivos: null
       }));
       expect(result[0]).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", archivos: 1 });
+    });
+
+    it("detecta una grabación en curso aunque sea opcional y todavía no haya archivos", async () => {
+      const provider = {
+        buscarConferencia: vi.fn().mockResolvedValue({ name: "conf-viva", startTime: "2026-10-27T14:00:00Z" }),
+        obtenerArtefactos: vi.fn().mockResolvedValue({
+          recordings: [], transcripts: [], notes: [], estadoGrabacion: "PROCESANDO",
+          grabandoEnVivo: true, pendientes: 1
+        }),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "", completa: false, participantes: 0, sesiones: 0,
+          planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] }
+        }),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("folder"),
+        moverArchivo: vi.fn()
+      } as unknown as ArtifactProviderPort;
+      const repo = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([{
+          id: "evt-vivo", codigoReunion: "abc-defg-hij", conferenceRecordName: null,
+          emailOrganizador: "host@flacso.edu.uy", archivos: [],
+          inicioProgramadoAt: new Date("2026-10-27T14:00:00Z"),
+          finProgramadoAt: new Date("2026-10-27T16:00:00Z"),
+          timezone: "America/Montevideo", requiereGrabacion: false, tituloSolicitud: "Clase viva"
+        }]),
+        registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn()
+      } as unknown as ArchivosRepositoryPort;
+
+      const result = await sincronizarArtefactosUseCase(repo, () => provider, dummyDescifrar, { eventoProveedorIds: ["evt-vivo"] });
+      expect(provider.obtenerArtefactos).toHaveBeenCalledWith("conf-viva");
+      expect(repo.actualizarEstadoSincronizacion).toHaveBeenCalledWith("evt-vivo", expect.objectContaining({
+        estadoGrabacionMeet: "EN_CURSO", archivosSincronizadosAt: null
+      }));
+      expect(result[0]).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", grabacion: "PENDIENTE" });
+    });
+
+    it("publica un video generado durante una reunion aunque no se haya requerido", async () => {
+      const provider = {
+        buscarConferencia: vi.fn().mockResolvedValue({ name: "conf-opcional", startTime: "2026-10-27T14:00:00Z" }),
+        obtenerArtefactos: vi.fn().mockResolvedValue({
+          recordings: [{ resourceName: "conf-opcional/recordings/1", driveFileId: "video-1", extension: "mp4" }],
+          transcripts: [], notes: [], estadoGrabacion: "GENERADA", grabandoEnVivo: false, pendientes: 0
+        }),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({ html: "", completa: false, participantes: 0, sesiones: 0 }),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("carpeta"),
+        moverArchivo: vi.fn().mockResolvedValue({ id: "video-1", name: "grabacion.mp4", mimeType: "video/mp4" })
+      } as unknown as ArtifactProviderPort;
+      const repo = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([{
+          id: "evt-opcional", codigoReunion: "abc-defg-hij", conferenceRecordName: null,
+          emailOrganizador: "host@flacso.edu.uy", archivos: [],
+          inicioProgramadoAt: new Date("2026-10-27T14:00:00Z"),
+          finProgramadoAt: new Date("2026-10-27T16:00:00Z"),
+          timezone: "America/Montevideo", requiereGrabacion: false, tituloSolicitud: "Clase opcional"
+        }]),
+        registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn()
+      } as unknown as ArchivosRepositoryPort;
+
+      const result = await sincronizarArtefactosUseCase(repo, () => provider, dummyDescifrar, { eventoProveedorIds: ["evt-opcional"] });
+      expect(provider.moverArchivo).toHaveBeenCalledWith("video-1", "carpeta", expect.stringContaining(".mp4"));
+      expect(repo.registrarArchivoSincronizado).toHaveBeenCalledWith(
+        "evt-opcional", "GRABACION", expect.objectContaining({ driveFileId: "video-1" }), expect.any(Object)
+      );
+      expect(result[0]).toMatchObject({ archivos: 1, grabacion: "DISPONIBLE" });
     });
 
     it("sincroniza grabaciones y asistencia correctamente", async () => {
@@ -380,8 +447,8 @@ describe("archivos: application", () => {
         { eventoProveedorIds: ["evt-antiguo"] }
       );
 
-      expect(result[0].estado).toBe("SINCRONIZADO");
-      expect(result[0].archivos).toBe(1); // Se generó la asistencia en vez de abandonarse silenciosamente
+      expect(result[0].estado).toBe("ARTEFACTOS_PENDIENTES");
+      expect(result[0].archivos).toBe(1); // Se generó la asistencia y se sigue buscando una grabación opcional
       expect(mockRepo.registrarArchivoSincronizado).toHaveBeenCalledTimes(1);
     });
 

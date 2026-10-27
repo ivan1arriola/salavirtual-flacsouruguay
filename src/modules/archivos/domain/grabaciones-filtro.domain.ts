@@ -8,9 +8,13 @@ export type TipoFiltroArtefacto =
 
 export type EstadoVisualGrabacion =
   | "DISPONIBLE"
+  | "EN_CURSO"
   | "PROCESANDO"
   | "NO_REGISTRADA"
   | "NO_REQUERIDA";
+
+export type EstadoGrabacionDetectada = "AUSENTE" | "EN_CURSO" | "PROCESANDO" | "DISPONIBLE";
+export const VIGENCIA_ESTADO_GRABACION_MS = 30 * 60 * 1000;
 
 export type GrupoEncuentroConArchivos = Readonly<{
   instanciaId: string;
@@ -37,17 +41,17 @@ export function resolverEstadoVisualGrabacion(datos: {
   finProgramadoAt: Date;
   requiereGrabacion: boolean;
   ahora: Date;
+  estadoDetectado?: EstadoGrabacionDetectada | null;
+  observadoAt?: Date | null;
 }): EstadoVisualGrabacion {
   if (datos.tieneArchivoGrabacion) return "DISPONIBLE";
-  if (!datos.requiereGrabacion) return "NO_REQUERIDA";
-
-  const transcurridoMs = datos.ahora.getTime() - datos.finProgramadoAt.getTime();
-  const cuatroHorasMs = 4 * 60 * 60 * 1000;
-
-  if (datos.archivosSincronizadosAt === null && transcurridoMs < cuatroHorasMs) {
-    return "PROCESANDO";
+  if (datos.observadoAt &&
+      datos.ahora.getTime() - datos.observadoAt.getTime() >= 0 &&
+      datos.ahora.getTime() - datos.observadoAt.getTime() < VIGENCIA_ESTADO_GRABACION_MS) {
+    if (datos.estadoDetectado === "EN_CURSO") return "EN_CURSO";
+    if (datos.estadoDetectado === "PROCESANDO") return "PROCESANDO";
   }
-
+  if (!datos.requiereGrabacion) return "NO_REQUERIDA";
   return "NO_REGISTRADA";
 }
 
@@ -59,7 +63,9 @@ export function filtrarEncuentrosConArchivos(
   const query = busqueda.trim().toLowerCase();
 
   return grupos.filter((grupo) => {
-    if (filtro === "GRABACIONES" && !grupo.archivos.some((a) => a.tipo === "GRABACION")) {
+    if (filtro === "GRABACIONES" &&
+        !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
+        grupo.estadoGrabacion !== "EN_CURSO" && grupo.estadoGrabacion !== "PROCESANDO") {
       return false;
     }
     if (filtro === "ASISTENCIAS" && !grupo.archivos.some((a) => a.tipo === "LISTA_ASISTENCIA")) {

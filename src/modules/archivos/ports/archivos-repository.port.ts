@@ -1,4 +1,4 @@
-import type { GoogleArtifact, MovedDriveFile, RolUsuario, TipoArtefactoMeet } from "../domain";
+import type { EstadoGrabacionDetectada, GoogleArtifact, MovedDriveFile, RolUsuario, TipoArtefactoMeet } from "../domain";
 
 export type SessionActor = Readonly<{
   id: string;
@@ -53,9 +53,11 @@ export type DatosInstanciaParaParticipantes = Readonly<{
 
 export type EstadoSincronizacionInput = Readonly<{
   conferenceRecordName: string;
-  driveFolderId: string;
+  driveFolderId?: string | null;
   archivosSincronizadosAt: Date | null;
   errorArchivos: string | null;
+  estadoGrabacionMeet?: EstadoGrabacionDetectada;
+  grabacionObservadaAt?: Date;
 }>;
 
 export type ArchivoMeetVisibleModel = Readonly<{
@@ -88,7 +90,27 @@ export type ArchivoMeetVisibleModel = Readonly<{
 }>;
 
 export type GrabacionesDbPage = Readonly<{
-  artifacts: readonly ArchivoMeetVisibleModel[];
+  encuentros: readonly Readonly<{
+    instanciaId: string;
+    titulo: string;
+    programa: string;
+    docente: string;
+    fechaInicio: Date;
+    finProgramadoAt: Date;
+    folderId: string | null;
+    requiereGrabacion: boolean;
+    archivosSincronizadosAt: Date | null;
+    estadoGrabacionMeet: EstadoGrabacionDetectada | null;
+    grabacionObservadaAt: Date | null;
+    archivos: readonly Readonly<{
+      id: string;
+      tipo: TipoArtefactoMeet;
+      nombre: string;
+      webViewUrl: string | null;
+      tamanoBytes: bigint | null;
+      mimeType: string | null;
+    }>[];
+  }>[];
   pagina: number;
   totalPaginas: number;
   totalEncuentros: number;
