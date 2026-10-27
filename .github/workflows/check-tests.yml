@@ -7,25 +7,27 @@ jobs:
   tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    env:
-      CI: "true"
-      NEXT_TELEMETRY_DISABLED: "1"
-      APP_BASE_URL: "https://salavirtual-ci.invalid"
-      TIMEZONE: "America/Montevideo"
-      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/flacso_ci?schema=public"
-      AUTH_SECRET: "ci-only-not-for-production-0123456789-abcdefghijklmnopqrstuvwxyz"
-      AUTH_TRUST_HOST: "true"
-      CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
         with:
-          node-version: 24
-          cache: npm
-      - name: Instalar dependencias
-        run: npm ci --include=dev
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
       - name: Ejecutar pruebas y verificar cobertura
-        run: npx vitest run --coverage
+        run: npx vitest run --coverage --reporter=default --reporter=github-actions
+      - name: Resumen de cobertura
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f coverage/coverage-summary.json ]]; then
+            node -e '
+              const t = JSON.parse(require("fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
+              const fila = (n, k) => `| ${n} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`;
+              console.log(["## Cobertura (umbral 80%)", "", "| Métrica | Cobertura | Cubierto |", "| --- | --- | --- |",
+                fila("Líneas", "lines"), fila("Sentencias", "statements"), fila("Funciones", "functions"), fila("Ramas", "branches")].join("\n"));
+            ' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No se generó informe de cobertura." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Guardar informe de cobertura
         if: always()
         uses: actions/upload-artifact@v7

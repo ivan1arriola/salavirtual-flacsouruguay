@@ -28,11 +28,13 @@ jobs:
       CONFIG_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - run: npm ci --include=dev
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
       - name: Preparar esquema descartable
         run: |
           npx prisma db push --skip-generate
