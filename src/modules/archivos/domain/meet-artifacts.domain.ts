@@ -33,6 +33,8 @@ export type FilaAsistenciaMeet = Readonly<{
   conferencia?: string;
   participanteId?: string;
   sesionId?: string;
+  /** Correo atribuido por coincidencia exacta de ingreso/egreso con Reports (nunca por nombre). */
+  correoVerificado?: string;
 }>;
 
 export type RegistroConferenciaMeet = Readonly<{

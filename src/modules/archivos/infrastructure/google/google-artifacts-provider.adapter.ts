@@ -26,6 +26,7 @@ import {
 } from "@/src/integrations/google";
 import {
   asistenciaMeetCompleta,
+  atribuirCorreosPorHorario,
   crearHtmlAsistencia,
   elegirConferenciaMeet,
   type EstadoGrabacionMeet,
@@ -258,7 +259,7 @@ export function crearGoogleArtifactsProviderAdapter(
           "participantSessions"
         )
       );
-      const rows = participants.flatMap((participant, index) =>
+      let rows: readonly FilaAsistenciaMeet[] = participants.flatMap((participant, index) =>
         (sessionsByParticipant[index] ?? []).flatMap((session): readonly FilaAsistenciaMeet[] => {
           const finSesion = session.endTime || actual.endTime;
           return finSesion ? [{
@@ -300,6 +301,20 @@ export function crearGoogleArtifactsProviderAdapter(
           const clasificacion = filtrarEventosAuditoriaConferencia(eventos, actual.startTime, actual.endTime ?? new Date(conferenceEnd).toISOString());
           eventosAuditoria = clasificacion.eventosSolapados;
           correosAuditados = agruparCorreosAuditoriaMeet(clasificacion.eventosAtribuibles);
+          // Meet no expone correos y Reports no expone el ID de participante: la única clave común
+          // es el intervalo de cada sesión. Se atribuye solo con coincidencia exacta y sin empates;
+          // los eventos solo son atribuibles cuando hay una única conferencia de auditoría.
+          const atribucion = atribuirCorreosPorHorario(
+            rows,
+            clasificacion.eventosAtribuibles.map(e => ({
+              identificador: e.identifier, tipoIdentificador: e.identifierType,
+              inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(), fin: e.timestamp
+            }))
+          );
+          rows = rows.map(row => {
+            const correo = row.participanteId ? atribucion.correoPorParticipante.get(row.participanteId) : undefined;
+            return correo ? { ...row, correoVerificado: correo } : row;
+          });
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;

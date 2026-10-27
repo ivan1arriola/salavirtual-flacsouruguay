@@ -79,7 +79,7 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   if (!(end > start)) throw new Error("Horario de asistencia inválido");
   const resumen: (string | number)[][] = [[
     "Participante", "Correo", "Primera conexión (UY)", "Última desconexión (UY)",
-    "Minutos conectados", "Asistencia (%)", "Umbral de 5/6", "Conexiones"
+    "Minutos conectados", "Asistencia (%)", "Umbral de 5/6", "Conexiones", "Observaciones"
   ]];
   const responsables: (string | number)[][] = [[
     "Participante", "Correo", "Rol", "Primera conexión (UY)", "Última desconexión (UY)", "Minutos conectados", "Conexiones"
@@ -105,14 +105,43 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     input.inicio,
     input.fin
   );
+  // Host y cohosts configurados se separan del resto por correo (atribuido por
+  // horario o verificado); nunca por coincidencia de nombres.
+  const rolPorCorreo = new Map<string, string>([
+    [input.organizador.toLowerCase(), "HOST"],
+    ...input.cohosts.map(email => [email.toLowerCase(), "COHOST"] as const)
+  ]);
+  const duracionMin = (end - start) / 60_000;
+  const correoCompartido = conciliacion.meet.reduce<Readonly<Record<string, readonly string[]>>>((acc, p) =>
+    p.correo ? { ...acc, [p.correo]: [...(acc[p.correo] ?? []), p.nombre] } : acc, {});
+  const umbralMin = duracionMin * 5 / 6;
+  const observaciones = (p: (typeof conciliacion.meet)[number]): string => [
+    !p.correo ? "Sin correo identificado" : null,
+    p.correo && (correoCompartido[p.correo]?.length ?? 0) > 1
+      ? `Correo compartido con: ${(correoCompartido[p.correo] ?? []).filter(n => n !== p.nombre).join(", ")}` : null,
+    p.resumen.minutosConectados === 0 ? "Sin tiempo dentro del horario de la reunión"
+      : Math.abs(p.resumen.minutosConectados - umbralMin) <= 5 ? "Cerca del umbral (±5 min)" : null,
+    p.sesiones >= 5 ? `Muchas reconexiones (${p.sesiones})` : null
+  ].filter((x): x is string => x !== null).join("; ");
+  const responsablesMeet = new Set<string>();
   for (const participante of conciliacion.meet) {
     const summary = participante.resumen;
+    const rol = participante.correo ? rolPorCorreo.get(participante.correo.toLowerCase()) : undefined;
+    if (rol) {
+      responsablesMeet.add(participante.correo!.toLowerCase());
+      responsables.push([
+        participante.nombre, participante.correo!, rol,
+        asUtcHour(summary.primeraConexion ?? ""), asUtcHour(summary.ultimaDesconexion ?? ""),
+        summary.minutosConectados, summary.conexiones
+      ]);
+      continue;
+    }
     resumen.push([
       participante.nombre, participante.correo ?? "No informado por auditoría",
       asUtcHour(summary.primeraConexion ?? ""), asUtcHour(summary.ultimaDesconexion ?? ""),
       summary.minutosConectados, summary.porcentaje / 100,
       summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6",
-      summary.conexiones
+      summary.conexiones, observaciones(participante)
     ]);
   }
 
@@ -121,7 +150,7 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   for (const r of input.correosAuditados) {
     const roles = r.correo.toLowerCase() === input.organizador.toLowerCase() ? "HOST"
       : input.cohosts.some(email => email.toLowerCase() === r.correo.toLowerCase()) ? "COHOST" : null;
-    if (!roles) continue;
+    if (!roles || responsablesMeet.has(r.correo.toLowerCase())) continue;
     const summary = conciliarMeetReports([], (r.conexiones ?? []).map(s => ({
       nombre: s.nombre, identificador: r.correo, tipoIdentificador: "email_address",
       conferenciaId: r.conferenciaId, endpointId: s.endpointId ?? "",
@@ -149,7 +178,7 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
       "email_address", s.timestamp ?? s.fin, ""
     ]);
   }
-  const reported = new Set(input.correosAuditados.map(r => r.correo.toLowerCase()));
+  const reported = new Set([...input.correosAuditados.map(r => r.correo.toLowerCase()), ...responsablesMeet]);
   for (const [email, rol] of [[input.organizador, "HOST"], ...input.cohosts.map(e => [e, "COHOST CONFIGURADO"])] as string[][]) {
     if (!reported.has(email.toLowerCase())) responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
   }
@@ -220,6 +249,16 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   if (resumen.length > 1) {
     requests.push({ repeatCell: { range: { sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 6 },
       cell: { userEnteredFormat: { numberFormat: { type: "PERCENT", pattern: "0.0%" } } }, fields: "userEnteredFormat.numberFormat" } });
+
+    // Semáforo sobre porcentaje y umbral: verde = cumple 5/6, amarillo = desde 75 %, rojo = menos de 75 %.
+    const rango = [{ sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 7 }];
+    const reglas: ReadonlyArray<readonly [string, { red: number; green: number; blue: number }]> = [
+      ["=$F2>=5/6", { red: 0.776, green: 0.937, blue: 0.808 }],
+      ["=AND($F2>=0.75,$F2<5/6)", { red: 1, green: 0.922, blue: 0.612 }],
+      ["=$F2<0.75", { red: 1, green: 0.78, blue: 0.808 }]
+    ];
+    reglas.forEach(([formula, color], index) => requests.push({ addConditionalFormatRule: { index, rule: { ranges: rango,
+      booleanRule: { condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: formula }] }, format: { backgroundColor: color } } } } }));
   }
   if (spreadsheetId) await auth.request({ url: `${SHEETS}/${encodeURIComponent(id)}:batchUpdate`, method: "POST", data: { requests: tabs.map(t => ({ updateSheetProperties: { properties: { sheetId: t.sheetId, gridProperties: { rowCount: Math.max(50000, t.rows.length + 1) } }, fields: "gridProperties.rowCount" } })) } });
   await auth.request({ url: `${SHEETS}/${encodeURIComponent(id)}:batchUpdate`, method: "POST", data: { requests } });

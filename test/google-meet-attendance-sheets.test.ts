@@ -53,7 +53,8 @@ describe("Sheets de asistencia", () => {
     const markerPatch = request.mock.calls[1]![0];
     expect(markerPatch.data.appProperties.meetAttendanceOperation).toBe("stable-operation-marker");
     const body = request.mock.calls[2]![0].data;
-    expect(JSON.stringify(body)).not.toContain("addConditionalFormatRule");
+    expect(JSON.stringify(body)).toContain("addConditionalFormatRule");
+    expect(JSON.stringify(body)).toContain("=$F2>=5/6");
     expect(JSON.stringify(body)).toContain("PERCENT");
     expect(JSON.stringify(body)).toContain("raw-endpoint");
     expect(JSON.stringify(body)).toContain("anon-123");
@@ -151,4 +152,36 @@ it("Meet sigue siendo la fuente principal de Asistencia aunque Reports tenga cor
   expect(JSON.stringify(brutos)).toContain("student@example.com");
   expect(JSON.stringify(brutos)).toContain("REPORTS_IDENTIDAD");
   expect(JSON.stringify(brutos)).toContain("raw-endpoint");
+});
+
+it("separa host y cohosts de la pestaña Asistencia usando el correo atribuido y agrega observaciones", async () => {
+  const sesion = (nombre: string, id: string, correo: string | undefined, fin: string) => ({
+    nombre, tipo: "CUENTA_GOOGLE" as const, inicio: "2026-05-01T10:00:00Z", fin,
+    conferencia: "conferenceRecords/c", participanteId: id, sesionId: `${id}/s1`, ...(correo ? { correoVerificado: correo } : {})
+  });
+  const conRoles: MeetSheetInput = {
+    ...input, correosAuditados: [], eventosAuditoria: [],
+    sesionesMeet: [
+      sesion("Sala 01", "pH", "host@example.com", "2026-05-01T11:00:00Z"),
+      sesion("Apoyo", "pC", "co@example.com", "2026-05-01T11:00:00Z"),
+      sesion("Alumna Cumple", "pA", "a@x.com", "2026-05-01T10:55:00Z"),
+      sesion("Alumno Justo", "pB", "b@x.com", "2026-05-01T10:48:00Z"),
+      sesion("Sin Correo", "pD", undefined, "2026-05-01T10:20:00Z")
+    ]
+  };
+  const request = vi.fn()
+    .mockResolvedValueOnce({ data: { spreadsheetId: "s" } }).mockResolvedValueOnce({ data: {} })
+    .mockResolvedValueOnce({ data: {} }).mockResolvedValueOnce({ data: { parents: [] } }).mockResolvedValueOnce({ data: { id: "s", name: "E" } });
+  await crearPlanillaAsistenciaGoogle({ request } as never, conRoles);
+  const cells = request.mock.calls[2]![0].data.requests.filter((r: any) => r.updateCells);
+  const texto = (sheetId: number) => JSON.stringify(cells.find((r: any) => r.updateCells.start.sheetId === sheetId)?.updateCells.rows);
+  expect(texto(0)).not.toContain("Sala 01");
+  expect(texto(0)).not.toContain("co@example.com");
+  expect(texto(0)).toContain("Alumna Cumple");
+  expect(texto(0)).toContain("Cerca del umbral");
+  expect(texto(0)).toContain("Sin correo identificado");
+  expect(texto(1)).toContain("Sala 01");
+  expect(texto(1)).toContain("HOST");
+  expect(texto(1)).toContain("COHOST");
+  expect(texto(1)).not.toContain("Sin registro de conexión");
 });
