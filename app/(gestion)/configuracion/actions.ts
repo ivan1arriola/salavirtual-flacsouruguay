@@ -7,6 +7,14 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { actualizarConfiguracionAsistenciaTecnica } from "@/src/modules/configuracion/asistencia-tecnica.service";
 import { actualizarConfiguracionCorreoSes } from "@/src/modules/configuracion/correo-ses.service";
+import { cifrarConfiguracion, descifrarConfiguracion } from "@/src/lib/config/encryption";
+import {
+  actualizarConfiguracionZoom,
+  actualizarSalaZoom,
+  importarSalasZoom,
+  obtenerCredencialZoom,
+  probarConexionZoom
+} from "@/src/modules/configuracion/zoom.service";
 import {
   actualizarPrograma,
   crearPrograma,
@@ -158,6 +166,67 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
   }
   revalidatePath("/configuracion");
   redirect("/configuracion?seccion=correo&estado=correo-ses-actualizado");
+}
+
+export async function actualizarZoomAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  try {
+    await actualizarConfiguracionZoom({ db, cifrar: cifrarConfiguracion }, actor, {
+      accountId: formData.get("accountId"),
+      clientId: formData.get("clientId"),
+      clientSecret: formData.get("clientSecret") || undefined,
+      activa: formData.get("activa") === "on"
+    });
+  } catch (error) {
+    redirect(zoomRedirect(undefined, errorMessage(error, "No se pudo guardar la configuración de Zoom.")));
+  }
+  revalidatePath("/configuracion");
+  redirect(zoomRedirect("zoom-actualizado"));
+}
+
+export async function importarSalasZoomAdmin(): Promise<void> {
+  const actor = await requireAdmin();
+  let estado = "";
+  try {
+    const credentials = await obtenerCredencialZoom(db, descifrarConfiguracion);
+    if (!credentials) throw new Error("Guardá y activá las credenciales de Zoom antes de importar salas.");
+    const prueba = await probarConexionZoom(credentials);
+    if (!prueba.ok) throw new Error(prueba.error ?? "Zoom rechazó la conexión.");
+    if (prueba.usuariosConLicencia.length === 0) {
+      throw new Error("La cuenta de Zoom no tiene usuarios con licencia para alojar reuniones.");
+    }
+    const resultado = await importarSalasZoom(db, actor, prueba.usuariosConLicencia);
+    estado = `salas-zoom-importadas-${resultado.creadas}-${resultado.actualizadas}`;
+  } catch (error) {
+    redirect(zoomRedirect(undefined, errorMessage(error, "No se pudieron importar las salas Zoom.")));
+  }
+  revalidatePath("/configuracion");
+  revalidatePath("/reuniones/nueva");
+  redirect(zoomRedirect(estado));
+}
+
+export async function actualizarSalaZoomAdmin(formData: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  try {
+    const prioridad = Number(formData.get("prioridad"));
+    await actualizarSalaZoom(db, actor, {
+      id: String(formData.get("id") ?? ""),
+      activa: formData.get("activa") === "on",
+      ...(Number.isFinite(prioridad) && prioridad > 0 ? { prioridad } : {})
+    });
+  } catch (error) {
+    redirect(zoomRedirect(undefined, errorMessage(error, "No se pudo actualizar la sala Zoom.")));
+  }
+  revalidatePath("/configuracion");
+  revalidatePath("/reuniones/nueva");
+  redirect(zoomRedirect("sala-zoom-actualizada"));
+}
+
+function zoomRedirect(estado?: string, error?: string): string {
+  const params = new URLSearchParams({ seccion: "zoom" });
+  if (estado) params.set("estado", estado);
+  if (error) params.set("error", error);
+  return `/configuracion?${params.toString()}`;
 }
 
 async function requireAdmin() {

@@ -1,14 +1,18 @@
 import "server-only";
 import {
   cohostsConfirmados,
+  crearZoomConferenceProvider,
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia,
+  registrarVerificacionCohosts,
   sincronizarCohostsGoogleExistente,
   type OperacionPendienteConferencia
 } from "@/src/modules/conferencias/api";
 import {
   agruparCorreosAuditoriaMeet,
   crearGoogleArtifactsProviderAdapter,
+  crearZoomArtifactsProviderAdapter,
+  zoomGrabandoEnVivo,
   obtenerEventosAuditoriaMeet,
   type EstadoGrabacionMeet,
   type EstadoTranscripcionMeet,
@@ -29,6 +33,7 @@ import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/l
 import {
   obtenerCredencialPrincipalGoogleWorkspace,
   obtenerCandidatosCredencialesParaOrganizador,
+  obtenerCredencialZoom,
 } from "@/src/modules/configuracion/api";
 import {
   controlOperativoReunionSchema,
@@ -42,6 +47,7 @@ import {
   type EstadoReunionOperativa,
   type EstadoTranscripcionOperativa
 } from "@/src/modules/reuniones/reunion-operativa.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export type ReunionOperativaActor = Readonly<{
   id: string;
@@ -104,6 +110,8 @@ export type ReunionOperativaView = Readonly<{
     url: string | null;
   }>;
   meet: Readonly<{
+    /** Proveedor de videoconferencia del encuentro. */
+    proveedor: "GOOGLE_MEET" | "ZOOM";
     eventoProveedorId: string | null;
     codigo: string | null;
     joinUrl: string | null;
@@ -227,7 +235,7 @@ export async function obtenerReunionOperativa(
         }
       },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         include: { proveedor: true, cuentaProveedor: true },
         take: 1
       },
@@ -300,7 +308,82 @@ export async function obtenerReunionOperativa(
   let conferenciaIdActual: string | null = null;
   const indiceAuditados = crearIndiceUnicoPorNombre<{ email: string; externo: boolean | null }>();
 
-  if (evento?.codigoReunion && evento.cuentaProveedor?.emailOrganizador) {
+  const esZoom = evento?.proveedor?.tipo === "ZOOM";
+  if (esZoom && evento?.codigoReunion) {
+    tipoAccesoMeet = null;
+    moderacionMeet = null;
+    reporteAsistenciaMeet = "ZOOM_REPORT";
+    const [credZoom, credGoogle] = await Promise.all([
+      obtenerCredencialZoom(db, descifrarConfiguracion).catch(() => null),
+      obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion).catch(() => null),
+    ]);
+    if (!credZoom || !credGoogle) {
+      disponibilidad = "SIN_CREDENCIALES";
+    } else {
+      try {
+        const googleDrive = {
+          serviceAccountEmail: credGoogle.serviceAccountEmail,
+          privateKey: credGoogle.privateKey,
+          subject: credGoogle.serviceAccountSubject ?? undefined,
+        };
+        const provider = crearZoomArtifactsProviderAdapter({
+          obtenerCredencialesZoom: async () => credZoom,
+          google: crearGoogleArtifactsProviderAdapter(googleDrive),
+          googleDrive,
+          ahora: () => ahora,
+        });
+        const conferencia = await provider.buscarConferencia(
+          evento.codigoReunion,
+          meeting.inicioProgramadoAt,
+          meeting.finProgramadoAt
+        );
+        if (!conferencia) {
+          disponibilidad = "SIN_CONFERENCIA";
+        } else {
+          disponibilidad = "OK";
+          conferenciaIdActual = conferencia.name;
+          inicioRealAt = new Date(conferencia.startTime);
+          finRealAt = conferencia.endTime ? new Date(conferencia.endTime) : null;
+          const [participantes, artefactos, grabandoAhora] = await Promise.all([
+            provider.obtenerParticipantesActivos(
+              evento.codigoReunion,
+              meeting.inicioProgramadoAt,
+              meeting.finProgramadoAt,
+              conferencia
+            ),
+            finRealAt
+              ? provider.obtenerArtefactos(conferencia.name)
+              : Promise.resolve(null),
+            finRealAt ? Promise.resolve(false) : zoomGrabandoEnVivo(credZoom, evento.codigoReunion),
+          ]);
+          participantesActivos = participantes.participantesActivos;
+          participantesDesconectados = participantes.participantesDesconectados ?? [];
+          todosParticipantes = participantes.todosParticipantes ?? [
+            ...participantes.participantesActivos,
+            ...(participantes.participantesDesconectados ?? [])
+          ];
+          for (const participante of todosParticipantes) {
+            if (participante.nombre && participante.email) {
+              indiceAuditados.registrar(participante.nombre, {
+                email: participante.email.trim().toLowerCase(),
+                externo: null
+              });
+            }
+          }
+          grabandoEnVivo = grabandoAhora;
+          estadoProveedorGrabacion = artefactos?.estadoGrabacion ?? (grabandoAhora ? "PROCESANDO" : "AUSENTE");
+          estadoProveedorTranscripcion = artefactos?.estadoTranscripcion ?? "AUSENTE";
+          grabaciones = artefactos?.recordings.length ?? 0;
+          transcripciones = artefactos?.transcripts.length ?? 0;
+        }
+      } catch (error) {
+        disponibilidad = "ERROR";
+        errorConferencia = error instanceof Error
+          ? error.message
+          : "No se pudo consultar el estado de Zoom.";
+      }
+    }
+  } else if (evento?.codigoReunion && evento.cuentaProveedor?.emailOrganizador) {
     const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion);
 
     if (!cred) {
@@ -893,6 +976,7 @@ export async function obtenerReunionOperativa(
         url: transcripcionUrl
       },
       meet: {
+        proveedor: esZoom ? "ZOOM" : "GOOGLE_MEET",
         eventoProveedorId: evento?.id ?? null,
         codigo: evento?.codigoReunion ?? null,
         joinUrl: evento?.joinUrl ?? null,
@@ -1022,8 +1106,8 @@ export async function actualizarControlOperativoReunion(
     where: { id: instanciaId },
     include: {
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { cuentaProveedor: true },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
+        include: { cuentaProveedor: true, proveedor: { select: { tipo: true } } },
         take: 1
       },
       cohosts: {
@@ -1163,7 +1247,19 @@ export async function actualizarControlOperativoReunion(
   let advertenciaGoogle: string | null = null;
   const cambioCohosts = Boolean(parsed.agregarCohostEmail || parsed.quitarCohostEmail);
 
-  if (
+  const eventoZoom = evento?.proveedor?.tipo === "ZOOM";
+  if (eventoZoom && evento) {
+    const resultadoZoom = await aplicarControlOperativoZoom({
+      evento,
+      cohostsDeseados,
+      cambioCohosts,
+      cambioGrabacion: parsed.requiereGrabacion !== undefined,
+      tipoAccesoSolicitado: Boolean(parsed.tipoAccesoMeet),
+      inicioProgramadoAt: meeting.inicioProgramadoAt,
+    });
+    sincronizadoConGoogle = resultadoZoom.sincronizado;
+    advertenciaGoogle = resultadoZoom.advertencia;
+  } else if (
     evento?.codigoReunion
     && evento.cuentaProveedor?.emailOrganizador
     && (parsed.tipoAccesoMeet || cambioCohosts)
@@ -1304,6 +1400,85 @@ export async function actualizarControlOperativoReunion(
     sincronizadoConGoogle,
     advertenciaGoogle
   };
+}
+
+/**
+ * Control en vivo para Zoom: los cohosts se aplican como alternative hosts al
+ * instante (si falla queda CONFIGURAR_MEET para el worker) y un cambio de
+ * política de grabación reprograma la reunión para actualizar auto_recording.
+ */
+async function aplicarControlOperativoZoom(input: Readonly<{
+  evento: Readonly<{
+    id: string;
+    externalEventId: string | null;
+    codigoReunion: string | null;
+    payloadUltimo: unknown;
+    cuentaProveedor: Readonly<{ emailOrganizador: string | null }> | null;
+  }>;
+  cohostsDeseados: readonly string[];
+  cambioCohosts: boolean;
+  cambioGrabacion: boolean;
+  tipoAccesoSolicitado: boolean;
+  inicioProgramadoAt: Date;
+}>): Promise<Readonly<{ sincronizado: boolean; advertencia: string | null }>> {
+  const { evento } = input;
+  const advertencias: string[] = [];
+  if (input.tipoAccesoSolicitado) {
+    advertencias.push("El tipo de acceso solo se configura en Google Meet; en Zoom no se modificó.");
+  }
+  let sincronizado = !input.cambioCohosts;
+
+  if (input.cambioGrabacion && evento.externalEventId && input.inicioProgramadoAt > new Date()) {
+    await db.eventoProveedor.updateMany({
+      where: { id: evento.id, operacionPendiente: null },
+      data: { operacionPendiente: "REPROGRAMAR" }
+    });
+  }
+
+  if (input.cambioCohosts) {
+    const host = evento.cuentaProveedor?.emailOrganizador;
+    const credZoom = await obtenerCredencialZoom(db, descifrarConfiguracion).catch(() => null);
+    if (!credZoom || !host || !evento.externalEventId) {
+      advertencias.push("Zoom no está disponible ahora; los cohosts quedaron pendientes de sincronizar.");
+      await db.eventoProveedor.update({
+        where: { id: evento.id },
+        data: { operacionPendiente: "CONFIGURAR_MEET" }
+      }).catch(() => null);
+    } else {
+      try {
+        const resultado = await crearZoomConferenceProvider(credZoom)
+          .configurarCohosts(evento.externalEventId, host, input.cohostsDeseados);
+        await db.eventoProveedor.update({
+          where: { id: evento.id },
+          data: {
+            payloadUltimo: JSON.parse(JSON.stringify(registrarVerificacionCohosts(
+              evento.payloadUltimo,
+              evento.codigoReunion ?? evento.externalEventId,
+              host,
+              resultado.aplicados,
+              new Date().toISOString()
+            ))),
+            errorIntegracion: null
+          }
+        });
+        sincronizado = true;
+        if (resultado.rechazados.length > 0) {
+          advertencias.push(
+            `Zoom solo acepta anfitriones alternativos de la propia cuenta. Promové en la reunión a: ${resultado.rechazados.join(", ")}.`
+          );
+        }
+      } catch (error) {
+        const detalle = error instanceof Error ? error.message : "Zoom rechazó la actualización de cohosts.";
+        advertencias.push(detalle);
+        await db.eventoProveedor.update({
+          where: { id: evento.id },
+          data: { operacionPendiente: "CONFIGURAR_MEET", errorIntegracion: detalle }
+        }).catch(() => null);
+      }
+    }
+  }
+
+  return { sincronizado, advertencia: advertencias.length > 0 ? advertencias.join(" ") : null };
 }
 
 export async function guardarRegistroAsistenciaOperativo(

@@ -7,6 +7,7 @@ import {
 import { listarCasosRevisionDuplicados } from "../reuniones/duplicados.service";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type { EstadoTemporalReunion } from "./types";
+import { esProveedorOperativo, FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export interface AdminTodayMeetingDTO {
   readonly id: string;
@@ -135,14 +136,14 @@ export async function obtenerDashboardAdministracion(
     }),
     db.eventoProveedor.count({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         estadoIntegracion: "ERROR",
         instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
       }
     }),
     db.eventoProveedor.count({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         estadoIntegracion: "SINCRONIZADA",
         archivosSincronizadosAt: null,
         instancia: {
@@ -259,7 +260,7 @@ export async function obtenerDashboardAdministracion(
     }),
     db.eventoProveedor.findMany({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         estadoIntegracion: "ERROR",
         instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
       },
@@ -278,7 +279,7 @@ export async function obtenerDashboardAdministracion(
     }),
     db.eventoProveedor.findMany({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         estadoIntegracion: "SINCRONIZADA",
         archivosSincronizadosAt: null,
         instancia: {
@@ -351,7 +352,7 @@ export async function obtenerDashboardAdministracion(
     const teacher = association.docente.usuario;
     const assignment = meeting.asignaciones[0];
     const assistant = assignment?.asistenteTecnico.usuario;
-    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
 
     const cohosts = extraerCohostsUnificadosDeInstancia(meeting).map((c) => ({
       email: c.email,

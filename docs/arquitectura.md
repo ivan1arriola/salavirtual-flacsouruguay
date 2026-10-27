@@ -28,8 +28,16 @@
 - Las modificaciones estructurales de una serie toman un advisory lock por
   `SolicitudSala`; después del lock se relee el agregado antes de decidir
   ordinales, solapamientos y mínimos de instancias.
-- Google Meet es el proveedor operativo.
-- Zoom queda como proveedor histórico, sin crear nuevas solicitudes operativas.
+- Google Meet y Zoom son proveedores operativos. Cada solicitud elige uno
+  (`SolicitudSala.tipoProveedor`) y sus encuentros nuevos usan siempre ese
+  proveedor. Las consultas de "el evento de la reunión" usan
+  `FILTRO_PROVEEDOR_OPERATIVO` (`src/modules/conferencias/proveedores.ts`); las
+  que llaman APIs propias de Meet siguen filtrando por `GOOGLE_MEET`.
+- Zoom reutiliza el mismo ciclo de `EventoProveedor`: el meeting ID se guarda
+  apenas Zoom responde al POST, los reintentos ejecutan la operación persistida
+  y `CONFIGURAR_MEET` reaplica los anfitriones alternativos. Ver
+  [`zoom.md`](./zoom.md).
+- `ZOOM_HISTORICO` sigue siendo solo de consulta para los sistemas anteriores.
 - La UI debe ser ligera: CSS propio, componentes pequeños y dependencias justificadas.
 - La lógica de dominio sigue un enfoque funcional.
 - La ruta raíz `/` siempre renderiza el dashboard correspondiente al rol autenticado; las consolas operativas y fichas detalladas se abren desde el dashboard y nunca sustituyen esa entrada.

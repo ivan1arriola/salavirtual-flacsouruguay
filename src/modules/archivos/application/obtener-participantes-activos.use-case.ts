@@ -32,7 +32,7 @@ export async function obtenerParticipantesActivosUseCase(
     serviceAccountEmail: configuracion.serviceAccountEmail,
     privateKey: descifrar(configuracion.privateKeyCifrada),
     subject
-  });
+  }, evento.tipoProveedor ?? "GOOGLE_MEET");
 
   const scan = await provider.obtenerParticipantesActivos(
     evento.codigoReunion,

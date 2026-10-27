@@ -19,6 +19,7 @@ import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service"
 import { destinatariosDocentesPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export const runtime = "nodejs";
 
@@ -126,7 +127,7 @@ async function notificarReunionCreada(solicitudId: string) {
     ...docentesPrograma
   ];
   const instancias = solicitud.instancias.map((instancia) => {
-    const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = instancia.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
     const inicioFecha = formatShortDate(instancia.inicioProgramadoAt);
     const finFecha = formatShortDate(instancia.finProgramadoAt);
     const inicio = `${capitalizar(inicioFecha)}, ${formatTime(instancia.inicioProgramadoAt)}`;

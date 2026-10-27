@@ -19,6 +19,7 @@ import type {
   ConferenceProvider,
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
+  ZoomConferenceProviderFactory,
 } from "./ports";
 
 export * from "./domain";
@@ -33,6 +34,12 @@ export {
   type ResultadoVerificacionEspacioMeet,
   type GoogleCalendarCredentials,
 } from "./infrastructure/google/google-conference-provider.adapter";
+export {
+  crearZoomConferenceProvider,
+  crearZoomConferenceProviderFactory,
+  separarAlternativeHosts,
+  resultadoDesdeReunionZoom,
+} from "./infrastructure/zoom/zoom-conference-provider.adapter";
 export {
   crearPrismaConferenciasRepository,
   type PrismaConferenciasRepositoryOptions,
@@ -74,11 +81,12 @@ export type ServicioConferencias = Readonly<{
 
 export function crearServicioConferencias(
   repository: ConferenciasRepositoryPort,
-  providerFactory: ConferenceProviderFactory = crearGoogleConferenceProvider
+  providerFactory: ConferenceProviderFactory = crearGoogleConferenceProvider,
+  zoomProviderFactory?: ZoomConferenceProviderFactory
 ): ServicioConferencias {
   return {
     async sincronizarEventosPendientes(ids) {
-      return sincronizarEventosPendientesUseCase(repository, providerFactory, ids);
+      return sincronizarEventosPendientesUseCase(repository, providerFactory, ids, zoomProviderFactory);
     },
 
     async sincronizarCohosts(input) {

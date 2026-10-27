@@ -8,9 +8,13 @@ import type {
   ProvisionConferenciaResult,
   ReclasificarLoteResult,
 } from "../domain/conferencias.types";
+import type { TipoProveedorOperativo } from "../domain/proveedores.domain";
+import type { ZoomCredentialsResult } from "./zoom-conference-provider.port";
 
 export type EventoProveedorSnapshot = Readonly<{
   id: string;
+  /** Ausente = GOOGLE_MEET (compatibilidad). */
+  tipoProveedor?: TipoProveedorOperativo;
   estadoIntegracion: EstadoIntegracionConferencia;
   operacionPendiente: OperacionPendienteConferencia | null;
   reclamoIntegracionAt: Date | null;
@@ -19,6 +23,8 @@ export type EventoProveedorSnapshot = Readonly<{
 
 export type EventoReclamableInfo = Readonly<{
   id: string;
+  /** Ausente = GOOGLE_MEET (compatibilidad). */
+  tipoProveedor?: TipoProveedorOperativo;
   externalEventId: string | null;
   solicitudSalaId: string;
   organizerEmail: string;
@@ -45,6 +51,8 @@ export type ConferenciasRepositoryPort = Readonly<{
   ) => Promise<readonly EventoProveedorSnapshot[]>;
 
   obtenerCredencialesWorkspace: () => Promise<WorkspaceCredentialsResult>;
+
+  obtenerCredencialesZoom?: () => Promise<ZoomCredentialsResult>;
 
   reclamarEvento: (
     id: string

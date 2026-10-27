@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
     },
     meetings: meetings.map((meeting) => {
       const association = meeting.solicitud.docentePrograma;
-      const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      const meet = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
       const assignment = meeting.asignaciones[0];
       const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
       const assistanceStartsAt = modality === "VIRTUAL"

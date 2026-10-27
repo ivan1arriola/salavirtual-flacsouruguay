@@ -22,6 +22,7 @@ import type {
   EventosOperativosRepositoryPort,
   ListarEventosOperativosInput
 } from "../../application";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export function crearPrismaArchivosRepositoryAdapter(
   db: PrismaClient
@@ -32,7 +33,7 @@ export function crearPrismaArchivosRepositoryAdapter(
       const conPendientesOError = input.ventana === "INTERMEDIA";
       const events = await db.eventoProveedor.findMany({
         where: {
-          proveedor: { tipo: "GOOGLE_MEET" },
+          proveedor: FILTRO_PROVEEDOR_OPERATIVO,
           codigoReunion: { not: null },
           ...(conPendientesOError
             ? { OR: [{ archivosSincronizadosAt: null }, { errorArchivos: { not: null } }] }
@@ -64,9 +65,10 @@ export function crearPrismaArchivosRepositoryAdapter(
       eventoProveedorIds: readonly string[]
     ): Promise<readonly EventoParaSincronizarArchivos[]> {
       const events = await db.eventoProveedor.findMany({
-        where: { id: { in: [...eventoProveedorIds] }, proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { id: { in: [...eventoProveedorIds] }, proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         include: {
           cuentaProveedor: true,
+          proveedor: { select: { tipo: true } },
           archivos: { select: { id: true, driveFileId: true, externalResourceName: true, tipo: true, mimeType: true } },
           instancia: { include: { solicitud: true, cohostEmails: true, cohosts: { include: { cuentaGoogle: true } } } }
         }
@@ -74,6 +76,7 @@ export function crearPrismaArchivosRepositoryAdapter(
 
       return events.map((event) => ({
         id: event.id,
+        tipoProveedor: event.proveedor?.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
         driveFolderId: event.driveFolderId,
         codigoReunion: event.codigoReunion,
         conferenceRecordName: event.conferenceRecordName,
@@ -156,10 +159,11 @@ export function crearPrismaArchivosRepositoryAdapter(
       const evento = await db.eventoProveedor.findFirst({
         where: {
           instanciaSalaId: instanciaId,
-          proveedor: { tipo: "GOOGLE_MEET" }
+          proveedor: FILTRO_PROVEEDOR_OPERATIVO
         },
         select: {
           codigoReunion: true,
+          proveedor: { select: { tipo: true } },
           cuentaProveedor: {
             select: { emailOrganizador: true }
           },
@@ -174,6 +178,7 @@ export function crearPrismaArchivosRepositoryAdapter(
 
       if (!evento) return null;
       return {
+        tipoProveedor: evento.proveedor?.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
         codigoReunion: evento.codigoReunion,
         emailOrganizador: evento.cuentaProveedor?.emailOrganizador ?? null,
         inicioProgramadoAt: evento.instancia.inicioProgramadoAt,
@@ -217,7 +222,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         where: {
           tipo: "LISTA_ASISTENCIA",
           mimeType: "application/vnd.google-apps.spreadsheet",
-          eventoProveedor: { proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: { not: null } }
+          eventoProveedor: { proveedor: FILTRO_PROVEEDOR_OPERATIVO, codigoReunion: { not: null } }
         },
         orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
         select: {
@@ -237,7 +242,7 @@ export function crearPrismaArchivosRepositoryAdapter(
     async listarGrabacionesDb(actor, input) {
       const q = input.busqueda.trim();
       const meeting: Prisma.EventoProveedorWhereInput = {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         archivos: { some: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } }
       };
       const usuarioSearch = { OR: [{ nombres: { contains: q, mode: "insensitive" } }, { apellidos: { contains: q, mode: "insensitive" } }] };

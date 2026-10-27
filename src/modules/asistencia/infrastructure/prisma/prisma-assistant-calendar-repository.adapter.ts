@@ -5,6 +5,7 @@ import type {
   CredencialesWorkspaceCalendar,
   InstanciaParaCalendario,
 } from "../../ports";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export type PrismaAssistantCalendarRepositoryOptions = Readonly<{
   db: PrismaClient;
@@ -51,7 +52,7 @@ export function crearPrismaAssistantCalendarRepository(
             },
           },
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
             select: { joinUrl: true },
             take: 1,
           },

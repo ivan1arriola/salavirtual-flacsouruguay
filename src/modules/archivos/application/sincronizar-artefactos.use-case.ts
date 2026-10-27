@@ -87,7 +87,7 @@ async function sincronizarEventoIndividual(
       privateKey,
       subject: hostEmail,
       adminEmail: adminEmailSubject
-    });
+    }, evento.tipoProveedor ?? "GOOGLE_MEET");
 
     const conference = evento.conferenceRecordName
       ? await provider.obtenerConferencia(evento.conferenceRecordName)
@@ -153,7 +153,9 @@ async function sincronizarEventoIndividual(
           indice: index + 1,
           extension: artifact.extension
         });
-        const moved = await provider.moverArchivo(artifact.driveFileId, folderId, name);
+        const moved = provider.transferirArtefacto
+          ? await provider.transferirArtefacto(artifact, folderId, name)
+          : await provider.moverArchivo(artifact.driveFileId, folderId, name);
         await repositorio.registrarArchivoSincronizado(evento.id, type, artifact, moved);
         known.add(artifact.resourceName);
         synchronized += 1;

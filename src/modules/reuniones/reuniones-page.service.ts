@@ -7,6 +7,7 @@ import {
   resolverPaginacionAgenda,
   resolverVistaAgenda
 } from "./agenda-view.domain";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 export type PeriodoAgenda = "proximas" | "anteriores";
@@ -389,7 +390,7 @@ export async function obtenerDatosPaginaReuniones(
     meetings.some(({ eventosProveedor }) =>
       eventosProveedor.some(
         ({ proveedor, estadoIntegracion }) =>
-          proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
+          esProveedorOperativo(proveedor.tipo) && estadoIntegracion === "PENDIENTE"
       )
     );
 

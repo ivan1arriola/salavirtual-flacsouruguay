@@ -1,8 +1,10 @@
 import "server-only";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
+import { obtenerCredencialZoom } from "@/src/modules/configuracion/api";
 import {
   crearGoogleArtifactsProviderAdapter,
+  crearZoomArtifactsProviderAdapter,
   crearPrismaArchivosRepositoryAdapter,
   listarArchivosVisiblesUseCase,
   listarGrabacionesDbUseCase,
@@ -13,6 +15,7 @@ import {
   type ArchivoMeetVisibleModel,
   type ArtifactProviderCredentials,
   type ArtifactProviderPort,
+  type TipoProveedorArtefactos,
   type LiveParticipantsResult,
   type SessionActor,
   type SyncArtifactsResult
@@ -23,9 +26,23 @@ export function crearArchivosRepository() {
 }
 
 export function crearArtifactProvider(
-  credentials: ArtifactProviderCredentials
+  credentials: ArtifactProviderCredentials,
+  tipoProveedor: TipoProveedorArtefactos = "GOOGLE_MEET"
 ): ArtifactProviderPort {
-  return crearGoogleArtifactsProviderAdapter(credentials);
+  if (tipoProveedor !== "ZOOM") return crearGoogleArtifactsProviderAdapter(credentials);
+
+  // El host Zoom puede no ser un usuario de Workspace: Drive y Sheets se
+  // escriben con la identidad administrativa configurada.
+  const googleDrive = {
+    serviceAccountEmail: credentials.serviceAccountEmail,
+    privateKey: credentials.privateKey,
+    subject: credentials.adminEmail?.trim() || credentials.subject,
+  };
+  return crearZoomArtifactsProviderAdapter({
+    obtenerCredencialesZoom: () => obtenerCredencialZoom(db, descifrarConfiguracion),
+    google: crearGoogleArtifactsProviderAdapter(googleDrive),
+    googleDrive,
+  });
 }
 
 export async function sincronizarArtefactos(

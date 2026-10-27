@@ -35,6 +35,7 @@ import {
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia
 } from "@/src/modules/conferencias/api";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export default async function ReunionesPage({
   searchParams
@@ -318,7 +319,7 @@ export default async function ReunionesPage({
                 )
               );
               const events = seriesMeetings.flatMap(({ eventosProveedor }) =>
-                eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
+                eventosProveedor.filter(({ proveedor }) => esProveedorOperativo(proveedor.tipo))
               );
               const organizers = unique(
                 events.flatMap(({ cuentaProveedor }) => {
@@ -347,7 +348,7 @@ export default async function ReunionesPage({
                   const meetingCohostEmails = extraerCohostEmailsDeInstancia(meeting);
                   if (meetingCohostEmails.length === 0) return true;
                   const meetingEvent = meeting.eventosProveedor.find(
-                    ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                    ({ proveedor }) => esProveedorOperativo(proveedor.tipo)
                   );
                   return Boolean(
                     meetingEvent &&
@@ -565,7 +566,7 @@ export default async function ReunionesPage({
               const teacher = association.docente.usuario;
               const event =
                 meeting.eventosProveedor.find(
-                  ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                  ({ proveedor }) => esProveedorOperativo(proveedor.tipo)
                 ) ?? meeting.eventosProveedor[0];
               const assignment = meeting.asignaciones[0];
               const assistant = assignment?.asistenteTecnico.usuario;

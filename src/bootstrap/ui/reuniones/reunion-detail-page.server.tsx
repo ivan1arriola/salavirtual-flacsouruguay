@@ -35,6 +35,7 @@ import {
   puedeGestionarPrograma
 } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export default async function ReunionDetailPage({
   params
@@ -146,7 +147,7 @@ export default async function ReunionDetailPage({
       return expected.includes(email);
     });
     const confirmed = applicable.filter((meeting) => {
-      const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      const event = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
       if (!event || event.errorIntegracion || event.operacionPendiente) return false;
       const details = detalleCohostsVerificados(event.payloadUltimo, event.codigoReunion, event.cuentaProveedor?.emailOrganizador, [email]);
       return details.emailsConfirmados.includes(email);
@@ -162,7 +163,7 @@ export default async function ReunionDetailPage({
 
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
-    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
     const assignment = meeting.asignaciones[0];
     const organizerAccount = event?.cuentaProveedor?.emailOrganizador
       ?? event?.cuentaProveedor?.nombre
@@ -258,7 +259,7 @@ export default async function ReunionDetailPage({
     : "Sin próximos encuentros";
 
   const integrationProblems = meetings.flatMap((meeting, index) => {
-    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
     if (!event || !requiereAtencionIntegracionMeet(event)) return [];
     return [{
       eventoProveedorId: event.id,

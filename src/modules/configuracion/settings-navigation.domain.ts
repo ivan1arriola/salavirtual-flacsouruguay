@@ -2,6 +2,7 @@ export const SETTINGS_SECTION_IDS = [
   "resumen",
   "workspace",
   "salas",
+  "zoom",
   "programas",
   "asistencia",
   "correo",
@@ -34,6 +35,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
     id: "salas",
     label: "Salas",
     description: "Cuentas que alojan reuniones",
+    icon: "rooms"
+  },
+  {
+    id: "zoom",
+    label: "Zoom",
+    description: "Credenciales y salas Zoom",
     icon: "rooms"
   },
   {

@@ -3,6 +3,7 @@ import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   crearGoogleConferenceProvider,
+  crearZoomConferenceProviderFactory,
   crearPrismaConferenciasRepository,
   crearServicioConferencias,
   type ServicioConferencias,
@@ -18,7 +19,8 @@ export function obtenerServicioConferencias(): ServicioConferencias {
     });
     servicioConferenciasSingleton = crearServicioConferencias(
       repository,
-      crearGoogleConferenceProvider
+      crearGoogleConferenceProvider,
+      crearZoomConferenceProviderFactory
     );
   }
   return servicioConferenciasSingleton;

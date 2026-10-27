@@ -1,9 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
+import {
+  obtenerCredencialPrincipalGoogleWorkspace,
+  obtenerCredencialZoom,
+} from "@/src/modules/configuracion/api";
 import { recalcularSolicitud } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 import {
+  esProveedorOperativo,
   extraerConferenceData,
+  FILTRO_PROVEEDOR_OPERATIVO,
   extraerCohostEmailsDeInstancia,
   normalizeCohostEmails,
   normalizeMeetLink,
@@ -41,9 +46,10 @@ export function crearPrismaConferenciasRepository(
     async obtenerSnapshotsEventos(ids) {
       if (ids.length === 0) return [];
       const rows = await db.eventoProveedor.findMany({
-        where: { id: { in: [...ids] }, proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { id: { in: [...ids] }, proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         select: {
           id: true,
+          proveedor: { select: { tipo: true } },
           estadoIntegracion: true,
           operacionPendiente: true,
           reclamoIntegracionAt: true,
@@ -53,6 +59,7 @@ export function crearPrismaConferenciasRepository(
 
       return rows.map((r) => ({
         id: r.id,
+        tipoProveedor: esProveedorOperativo(r.proveedor.tipo) ? r.proveedor.tipo : ("GOOGLE_MEET" as const),
         estadoIntegracion: r.estadoIntegracion as EstadoIntegracionConferencia,
         operacionPendiente: r.operacionPendiente as OperacionPendienteConferencia | null,
         reclamoIntegracionAt: r.reclamoIntegracionAt,
@@ -77,6 +84,16 @@ export function crearPrismaConferenciasRepository(
       }
     },
 
+    async obtenerCredencialesZoom() {
+      try {
+        const credentials = await obtenerCredencialZoom(db, descifrarConfiguracion);
+        return credentials ? { disponible: true, credentials } : { disponible: false };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : "No se pudo leer la configuración de Zoom.";
+        return { disponible: false, error };
+      }
+    },
+
     async reclamarEvento(id): Promise<ClaimInfo | null> {
       return db.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:evento-proveedor:${id}`}))`;
@@ -84,6 +101,7 @@ export function crearPrismaConferenciasRepository(
           where: { id },
           include: {
             cuentaProveedor: true,
+            proveedor: { select: { tipo: true } },
             instancia: {
               include: {
                 solicitud: true,
@@ -125,6 +143,7 @@ export function crearPrismaConferenciasRepository(
         return {
           event: {
             id: event.id,
+            tipoProveedor: event.proveedor.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
             externalEventId: event.externalEventId,
             solicitudSalaId: event.instancia.solicitudSalaId,
             organizerEmail: event.cuentaProveedor?.emailOrganizador ?? "",
@@ -447,7 +466,7 @@ export function crearPrismaConferenciasRepository(
       return db.$transaction(async (tx) => {
         const candidates = await tx.eventoProveedor.findMany({
           where: {
-            proveedor: { tipo: "GOOGLE_MEET" },
+            proveedor: FILTRO_PROVEEDOR_OPERATIVO,
             operacionPendiente: { not: null },
             OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }],
           },
@@ -495,7 +514,7 @@ export function crearPrismaConferenciasRepository(
     async reclasificarOperacionesPendientesLote(): Promise<ReclasificarLoteResult> {
       const result = await db.eventoProveedor.updateMany({
         where: {
-          proveedor: { tipo: "GOOGLE_MEET" },
+          proveedor: FILTRO_PROVEEDOR_OPERATIVO,
           operacionPendiente: "PROVISIONAR",
           OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }],
         },
@@ -520,6 +539,7 @@ function buildProvisionRequest(event: {
     finProgramadoAt: Date;
     timezone: string;
     requiereAsistenciaTecnica: boolean;
+    requiereGrabacion: boolean;
     cohosts: { cuentaGoogle: { email: string } }[];
     cohostEmails: { email: string }[];
   };
@@ -537,6 +557,7 @@ function buildProvisionRequest(event: {
     cohostEmails,
     guestEmails: extraerInvitados(event.payloadUltimo, cohostEmails),
     requiereAsistenciaTecnica: instancia.requiereAsistenciaTecnica,
+    requiereGrabacion: instancia.requiereGrabacion,
     calendarEventId: calendarEventId(event.id),
   };
 }

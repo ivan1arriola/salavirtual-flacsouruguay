@@ -5,6 +5,7 @@ import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
 import type { NotificationMessage } from "../notificaciones/domain";
 import { construirHtmlResumenMonitoreo } from "./correo-monitoreo.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -217,7 +218,7 @@ export async function notificarReunionesAsignadas(
             }
           },
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
             take: 1
           }
         }

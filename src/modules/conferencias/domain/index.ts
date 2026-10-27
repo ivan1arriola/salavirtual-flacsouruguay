@@ -7,3 +7,4 @@ export * from "./meet-link.domain";
 export * from "./calendar-event.domain";
 
 export * from "./meet-history.domain";
+export * from "./proveedores.domain";

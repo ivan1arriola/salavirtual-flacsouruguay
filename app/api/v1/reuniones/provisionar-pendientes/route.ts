@@ -5,6 +5,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
-          proveedor: { tipo: "GOOGLE_MEET" }
+          proveedor: FILTRO_PROVEEDOR_OPERATIVO
         },
         select: {
           id: true,
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
         const assigned = await db.eventoProveedor.updateMany({
           where: {
             id: revision.eventoProveedorId,
-            proveedor: { tipo: "GOOGLE_MEET" },
+            proveedor: FILTRO_PROVEEDOR_OPERATIVO,
             operacionPendiente: null,
             estadoIntegracion: { in: [...validStates] }
           },
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
 
     const ids = targetIds ?? (await db.eventoProveedor.findMany({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        proveedor: FILTRO_PROVEEDOR_OPERATIVO,
         operacionPendiente: { not: null }
       },
       select: { id: true }

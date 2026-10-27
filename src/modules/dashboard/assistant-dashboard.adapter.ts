@@ -12,6 +12,7 @@ import type {
   HeroMeetingDTO,
   UpcomingMeetingSummaryDTO
 } from "./types";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export async function obtenerDashboardAsistenteOptimizado(
   db: PrismaClient,
@@ -83,7 +84,7 @@ export async function obtenerDashboardAsistenteOptimizado(
 
     if (nextMeetingInstance) {
       const meet = nextMeetingInstance.eventosProveedor.find(
-        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+        ({ proveedor }) => esProveedorOperativo(proveedor.tipo)
       );
       const cohostEmails = extraerCohostEmailsDeInstancia(nextMeetingInstance);
       const isVerified = Boolean(

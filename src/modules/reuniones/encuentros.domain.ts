@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 const periodoFields = {
   inicio: z.coerce.date(),
@@ -193,7 +194,7 @@ export function idsCancelacionesGooglePendientes(
   return instancias.flatMap(({ eventosProveedor }) =>
     eventosProveedor
       .filter(({ proveedor, operacionPendiente }) =>
-        proveedor.tipo === "GOOGLE_MEET" && operacionPendiente === "CANCELAR"
+        esProveedorOperativo(proveedor.tipo) && operacionPendiente === "CANCELAR"
       )
       .map(({ id }) => id)
   );

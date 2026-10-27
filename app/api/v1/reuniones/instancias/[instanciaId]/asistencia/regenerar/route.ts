@@ -4,6 +4,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { sincronizarArtefactos } from "@/src/bootstrap/archivos.server";
 import { toHttpError } from "@/src/lib/http/api-error";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 export const runtime = "nodejs";
 type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
 export async function POST(_request: Request, context: RouteContext) {
@@ -13,7 +14,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const { instanciaId } = await context.params;
-    const event = await db.eventoProveedor.findFirst({ where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } }, select: { id: true } });
+    const event = await db.eventoProveedor.findFirst({ where: { instanciaSalaId: instanciaId, proveedor: FILTRO_PROVEEDOR_OPERATIVO }, select: { id: true } });
     if (!event) return NextResponse.json({ error: "No se encontró un encuentro Meet para esta instancia." }, { status: 404 });
     const [result] = await sincronizarArtefactos([event.id], true);
     if (!result || result.estado === "ERROR") {

@@ -30,6 +30,7 @@ export type PlanillaAsistenciaCandidata = Readonly<{
 
 export type EventoParaSincronizarArchivos = Readonly<{
   id: string;
+  tipoProveedor?: "GOOGLE_MEET" | "ZOOM";
   driveFolderId?: string | null;
   codigoReunion: string | null;
   conferenceRecordName: string | null;
@@ -45,6 +46,7 @@ export type EventoParaSincronizarArchivos = Readonly<{
 }>;
 
 export type DatosInstanciaParaParticipantes = Readonly<{
+  tipoProveedor?: "GOOGLE_MEET" | "ZOOM";
   codigoReunion: string | null;
   emailOrganizador: string | null;
   inicioProgramadoAt: Date;

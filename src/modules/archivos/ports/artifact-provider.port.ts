@@ -24,6 +24,11 @@ export type ArtifactProviderPort = Readonly<{
   planillaAsistenciaGoogleVacia?(spreadsheetId: string): Promise<boolean>;
   obtenerOCrearCarpeta(parentId: string, name: string): Promise<string>;
   moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile>;
+  /**
+   * Proveedores cuyos artefactos no están en Drive (Zoom) los copian a la
+   * carpeta de la reunión. Si no existe se usa moverArchivo.
+   */
+  transferirArtefacto?(artifact: GoogleArtifact, folderId: string, name: string): Promise<MovedDriveFile>;
   subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile>;
   subirPlanillaAsistencia?(folderId: string, name: string, data: NonNullable<MeetAttendanceDocument['planilla']>, inicio: Date, fin: Date, organizador: string, cohosts?: readonly string[], spreadsheetId?: string): Promise<MovedDriveFile>;
   obtenerParticipantesActivos(
@@ -34,4 +39,10 @@ export type ArtifactProviderPort = Readonly<{
   ): Promise<MeetActiveParticipantsScan>;
 }>;
 
-export type ArtifactProviderFactory = (credentials: ArtifactProviderCredentials) => ArtifactProviderPort;
+export type TipoProveedorArtefactos = "GOOGLE_MEET" | "ZOOM";
+
+/** El tipo ausente equivale a GOOGLE_MEET. */
+export type ArtifactProviderFactory = (
+  credentials: ArtifactProviderCredentials,
+  tipoProveedor?: TipoProveedorArtefactos
+) => ArtifactProviderPort;

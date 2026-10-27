@@ -68,9 +68,14 @@ export type LiveParticipantsResult =
 
 export type GoogleArtifact = Readonly<{
   resourceName: string;
+  /** Vacío cuando el artefacto todavía no está en Drive (p. ej. grabación en la nube de Zoom). */
   driveFileId: string;
   startTime?: string;
   extension?: string;
+  /** Zoom: URL autenticada para descargar el archivo y subirlo a Drive. */
+  downloadUrl?: string;
+  mimeType?: string;
+  tamanoBytes?: number;
 }>;
 
 export type EstadoGrabacionMeet = "AUSENTE" | "PROCESANDO" | "GENERADA";

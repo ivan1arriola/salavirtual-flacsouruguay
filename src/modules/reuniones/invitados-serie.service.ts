@@ -5,6 +5,7 @@ import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { construirCorreoParticipacion, type AvisoEncuentro } from "./avisos-participacion.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const invitadosSchema = z.object({
   emails: z.array(z.email().transform(s => s.trim().toLowerCase())).max(100)
@@ -60,8 +61,11 @@ export async function actualizarInvitadosSerie(
       cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { cuentaProveedor: { select: { emailOrganizador: true } } },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
+        include: {
+          cuentaProveedor: { select: { emailOrganizador: true } },
+          proveedor: { select: { tipo: true } },
+        },
         take: 1
       }
     }
@@ -77,6 +81,8 @@ export async function actualizarInvitadosSerie(
   try {
     for (const meeting of meetings) {
       const event = meeting.eventosProveedor[0];
+      // Zoom no usa Calendar: los invitados reciben el enlace por correo desde Sala Virtual.
+      if (event?.proveedor?.tipo === "ZOOM") continue;
       const host = event?.cuentaProveedor?.emailOrganizador;
       if (!host || !event?.externalEventId) throw new ConflictApiError("Un encuentro no tiene vinculación completa con Calendar.");
       const current = await deps.leerCalendario(host, event.externalEventId);

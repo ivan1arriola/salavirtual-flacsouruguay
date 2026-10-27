@@ -58,3 +58,18 @@ export {
 export * from "./google-workspace.domain";
 export * from "./asistencia-tecnica.domain";
 export * from "./settings-navigation.domain";
+
+export {
+  obtenerCredencialZoom,
+  obtenerEstadoConfiguracionZoom,
+  actualizarConfiguracionZoom,
+  probarConexionZoom,
+  listarSalasZoom,
+  importarSalasZoom,
+  actualizarSalaZoom,
+  zoomDisponibleParaReuniones,
+  type ResultadoPruebaZoom,
+  type SalaZoom,
+} from "./zoom.service";
+
+export * from "./zoom.domain";

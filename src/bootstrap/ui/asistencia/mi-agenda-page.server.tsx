@@ -18,6 +18,7 @@ import {
   claveMesUtc3,
   resumirAsistencias
 } from "@/src/modules/asistencia/resumen-personal.domain";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export default async function MiAgendaPage({
   searchParams
@@ -197,7 +198,7 @@ export default async function MiAgendaPage({
                     const association = meeting.solicitud.docentePrograma;
                     const teacher = association.docente.usuario;
                     const meet = meeting.eventosProveedor.find(
-                      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+                      ({ proveedor }) => esProveedorOperativo(proveedor.tipo)
                     );
                     const isNext = assignment.id === nextAssignment?.id;
                     const roomName = meet?.cuentaProveedor?.emailOrganizador

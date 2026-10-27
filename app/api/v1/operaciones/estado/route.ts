@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { evaluarSaludOperativa } from "@/src/modules/operaciones/salud.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const pendiente = { proveedor: { tipo: "GOOGLE_MEET" as const }, operacionPendiente: { not: null } };
+  const pendiente = { proveedor: FILTRO_PROVEEDOR_OPERATIVO, operacionPendiente: { not: null } };
   const [pendingGoogle, googleErrors, staleClaims, oldest, uncertainPosts, stuckPosts, reservedPosts] = await Promise.all([
     db.eventoProveedor.count({ where: pendiente }),
     db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),

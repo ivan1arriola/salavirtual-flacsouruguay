@@ -10,6 +10,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { buildAssignmentSuggestions } from "@/src/modules/asistencia/asignacion-sugerencias.service";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -200,7 +201,7 @@ export default async function AsistenciaTecnicaPage({
           <div className="coverage-card-list">
             {rows.map(({ meeting, assignment, covered }) => {
                   const association = meeting.solicitud.docentePrograma;
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                  const meet = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
                   const assistantName = assignment
                     ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;

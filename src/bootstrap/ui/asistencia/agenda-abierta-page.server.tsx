@@ -19,6 +19,7 @@ import {
 } from "@/src/modules/asistencia/agenda-abierta.domain";
 import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-personal.adapter";
 import { resumirAsistencias } from "@/src/modules/asistencia/resumen-personal.domain";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -222,7 +223,7 @@ export default async function AgendaAbiertaPage() {
                   {group.items.map((meeting) => {
                     const association = meeting.solicitud.docentePrograma;
                     const teacher = association.docente.usuario;
-                    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                    const meet = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
                     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
                     const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
@@ -326,7 +327,7 @@ export default async function AgendaAbiertaPage() {
               <tbody>
                 {meetings.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                  const meet = meeting.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
                   const meetingApplicants = interests
                     .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {

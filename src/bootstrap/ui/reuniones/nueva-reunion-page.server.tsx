@@ -7,6 +7,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { puedeAbrirCreacionReuniones } from "@/src/modules/reuniones/reuniones.domain";
 import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-institucional.domain";
+import { zoomDisponibleParaReuniones } from "@/src/modules/configuracion/api";
 import styles from "@/app/(gestion)/reuniones/nueva/nueva-reunion.module.css";
 
 export default async function NuevaReunionPage() {
@@ -20,7 +21,7 @@ export default async function NuevaReunionPage() {
     redirect("/mi-agenda");
   }
 
-  const [associations, assistants] = await Promise.all([
+  const [associations, assistants, zoomDisponible] = await Promise.all([
     db.docentePrograma.findMany({
       where: {
         activo: true,
@@ -55,7 +56,8 @@ export default async function NuevaReunionPage() {
           orderBy: { usuario: { nombres: "asc" } },
           include: { usuario: true }
         })
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    zoomDisponibleParaReuniones(db).catch(() => false)
   ]);
 
   if (requiereCompletarRegistro({
@@ -83,6 +85,7 @@ export default async function NuevaReunionPage() {
       </header>
       <MeetingFormV2
         canAssignAssistant={actor.rol === "ADMINISTRACION"}
+        zoomDisponible={zoomDisponible}
         assistants={assistants.map(({ id, usuario }) => ({
           id,
           label: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim()

@@ -28,6 +28,7 @@ describe("navegación de configuración", () => {
       "resumen",
       "workspace",
       "salas",
+      "zoom",
       "asistencia",
       "correo",
       "historico"

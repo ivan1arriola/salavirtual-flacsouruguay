@@ -41,6 +41,7 @@ export const crearReunionesSchema = z
     asistenteTecnicoId: z.string().trim().min(1).optional(),
     requiereAsistenciaTecnica: z.boolean().default(false),
     requiereGrabacion: z.boolean().default(false),
+    proveedor: z.enum(["GOOGLE_MEET", "ZOOM"]).default("GOOGLE_MEET"),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
     instancias: z.array(instanciaSchema).min(1).max(100)

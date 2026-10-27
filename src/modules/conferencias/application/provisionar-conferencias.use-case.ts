@@ -10,7 +10,9 @@ import type {
   ConferenceProvider,
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
+  ZoomConferenceProviderFactory,
 } from "../ports";
+import { sincronizarEventosZoomUseCase } from "./provisionar-conferencias-zoom.use-case";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -22,19 +24,24 @@ export class MeetSettingsScopeError extends Error {
 export async function sincronizarEventosPendientesUseCase(
   repository: ConferenciasRepositoryPort,
   providerFactory: ConferenceProviderFactory,
-  ids: readonly string[]
+  ids: readonly string[],
+  zoomProviderFactory?: ZoomConferenceProviderFactory
 ): Promise<readonly ProvisionConferenciaResult[]> {
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length === 0) return [];
 
   const snapshots = await repository.obtenerSnapshotsEventos(uniqueIds);
   const byId = new Map(snapshots.map((item) => [item.id, item]));
-  const pendingIds = uniqueIds.filter((id) => byId.get(id)?.operacionPendiente);
+  const allPendingIds = uniqueIds.filter((id) => byId.get(id)?.operacionPendiente);
+  const zoomIds = allPendingIds.filter((id) => byId.get(id)?.tipoProveedor === "ZOOM");
+  const pendingIds = allPendingIds.filter((id) => byId.get(id)?.tipoProveedor !== "ZOOM");
   const settled = await Promise.all(
     uniqueIds
-      .filter((id) => !pendingIds.includes(id))
+      .filter((id) => !allPendingIds.includes(id))
       .map((id) => repository.obtenerEstadoActual(id))
   );
+  const zoomResults = await sincronizarEventosZoomUseCase(repository, zoomProviderFactory, zoomIds);
+  settled.push(...zoomResults);
 
   if (pendingIds.length === 0) return settled;
 

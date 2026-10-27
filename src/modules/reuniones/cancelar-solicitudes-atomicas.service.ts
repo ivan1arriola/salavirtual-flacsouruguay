@@ -4,6 +4,7 @@ import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib
 import { idsCancelacionesGooglePendientes } from "./encuentros.domain";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { bloquearSolicitudSala } from "./reserva-salas.adapter";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 /**
  * Cancels all requests of a logical series atomically in PostgreSQL.
@@ -64,7 +65,7 @@ export async function cancelarSolicitudesAtomicas(
         continue;
       }
       const meetIds = solicitud.instancias.flatMap((instancia) =>
-        instancia.eventosProveedor.filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET").map((evento) => evento.id)
+        instancia.eventosProveedor.filter((evento) => esProveedorOperativo(evento.proveedor.tipo)).map((evento) => evento.id)
       );
       pending.push(...meetIds);
       await tx.auditoria.create({

@@ -151,3 +151,71 @@ export async function subirDocumentoGoogleDrive(
   return response.data;
 }
 
+
+/**
+ * Sube un archivo binario grande (p. ej. una grabación de Zoom) con una
+ * sesión resumable de Drive, transmitiendo el cuerpo sin cargarlo en memoria.
+ *
+ * Idempotencia: antes de iniciar la sesión busca un archivo con el mismo
+ * marcador de operación; si existe exactamente uno, lo devuelve sin subir
+ * de nuevo. Un fallo a mitad de la transferencia no deja archivo creado:
+ * Drive solo materializa el archivo al completar la sesión.
+ */
+export async function subirArchivoBinarioDrive(
+  auth: JWT,
+  input: Readonly<{
+    folderId: string;
+    name: string;
+    mimeType: string;
+    operationId: string;
+    contenido: ReadableStream<Uint8Array>;
+    tamanoBytes?: number;
+  }>
+): Promise<MovedDriveFile> {
+  const existente = await buscarRecursoDrivePorOperacion(
+    auth, input.folderId, input.name, input.mimeType, input.operationId
+  );
+  if (existente) return existente;
+
+  const { token } = await auth.getAccessToken();
+  if (!token) throw new Error("No se pudo obtener un token de Google Drive.");
+
+  const init = await fetch(
+    `${DRIVE_UPLOAD_API_BASE_URL}/files?uploadType=resumable&supportsAllDrives=true&fields=id,name,mimeType,size,webViewLink`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": input.mimeType,
+        ...(input.tamanoBytes ? { "X-Upload-Content-Length": String(input.tamanoBytes) } : {}),
+      },
+      body: JSON.stringify({
+        name: input.name,
+        mimeType: input.mimeType,
+        parents: [input.folderId],
+        appProperties: { [DRIVE_OPERATION_PROPERTY]: input.operationId },
+      }),
+      signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS),
+    }
+  );
+  const location = init.headers.get("location");
+  if (!init.ok || !location) {
+    throw new Error(`Drive no inició la subida (HTTP ${init.status}).`);
+  }
+
+  const upload = await fetch(location, {
+    method: "PUT",
+    headers: {
+      "Content-Type": input.mimeType,
+      ...(input.tamanoBytes ? { "Content-Length": String(input.tamanoBytes) } : {}),
+    },
+    body: input.contenido,
+    // Requerido por undici para enviar un ReadableStream como cuerpo.
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+  if (!upload.ok) {
+    throw new Error(`Drive rechazó la subida del archivo (HTTP ${upload.status}).`);
+  }
+  return (await upload.json()) as MovedDriveFile;
+}

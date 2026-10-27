@@ -6,6 +6,7 @@ import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import { cancelarSolicitudesAtomicas } from "@/src/modules/reuniones/cancelar-solicitudes-atomicas.service";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
         instancias: {
           select: {
             eventosProveedor: {
-              where: { proveedor: { tipo: "GOOGLE_MEET" } },
+              where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
               select: { estadoIntegracion: true, operacionPendiente: true }
             }
           }

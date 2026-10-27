@@ -10,10 +10,13 @@ import { PendingMeetOperationsManager } from "@/src/components/pending-meet-oper
 import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
 import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
+import { ZoomSettings } from "@/src/components/zoom-settings";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   obtenerDatosPaginaConfiguracion,
+  obtenerEstadoConfiguracionZoom,
+  listarSalasZoom,
   legacySettingsRedirect,
   resolveSettingsSection,
 } from "@/src/modules/configuracion/api";
@@ -40,6 +43,9 @@ export default async function ConfiguracionPage({
     availableHosts,
     pendingOperationItems
   } = await obtenerDatosPaginaConfiguracion(db, section);
+
+  const zoomConfig = section === "zoom" ? await obtenerEstadoConfiguracionZoom(db) : null;
+  const zoomRooms = section === "zoom" ? await listarSalasZoom(db) : [];
 
   const sesConfig = section === "correo"
     ? await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } })
@@ -120,6 +126,14 @@ export default async function ConfiguracionPage({
         />
       ) : null}
 
+      {section === "zoom" ? (
+        <SettingsSectionHeader
+          title="Zoom"
+          description="Conectá la cuenta Zoom institucional y elegí qué usuarios con licencia alojan reuniones."
+          status={<span className={`settings-section-status ${zoomConfig?.activa ? "is-ok" : "is-neutral"}`}>{zoomConfig?.activa ? "Activo" : "Inactivo"}</span>}
+        />
+      ) : null}
+
       {section === "asistencia" ? (
         <SettingsSectionHeader
           title="Monitoreo"
@@ -143,6 +157,9 @@ export default async function ConfiguracionPage({
         />
       ) : null}
 
+      {section === "zoom" && query.estado ? (
+        <p className="form-notice" role="status">{mensajeEstadoZoom(query.estado)}</p>
+      ) : null}
       {query.estado === "reportes-asistencia-actualizados" ? <p className="form-notice" role="status">Los destinatarios adicionales de los reportes fueron actualizados.</p> : null}
       {query.error ? <p className="form-notice form-notice-error" role="alert">{query.error}</p> : null}
 
@@ -179,6 +196,10 @@ export default async function ConfiguracionPage({
         />
       ) : null}
 
+      {section === "zoom" && zoomConfig ? (
+        <ZoomSettings config={zoomConfig} salas={zoomRooms} />
+      ) : null}
+
       {section === "asistencia" ? (
         <AssistantReportConfigForm
           emails={assistantConfiguration?.correosCopiaReporteMensual ?? []}
@@ -209,4 +230,14 @@ export default async function ConfiguracionPage({
       ) : null}
     </SettingsCenterShell>
   );
+}
+
+function mensajeEstadoZoom(estado: string): string {
+  if (estado === "zoom-actualizado") return "La configuración de Zoom fue guardada.";
+  if (estado === "sala-zoom-actualizada") return "La sala Zoom fue actualizada.";
+  const importadas = estado.match(/^salas-zoom-importadas-(\d+)-(\d+)$/);
+  if (importadas) {
+    return `Conexión correcta. Salas nuevas: ${importadas[1]}; actualizadas: ${importadas[2]}. Activá las que quieras usar.`;
+  }
+  return "Cambios guardados.";
 }

@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { formatLongDate, formatTime } from "@/src/lib/ui/format";
 import { construirRecordatorioReunion, type AccesoRecordatorio } from "./recordatorio-reunion-email.domain";
 import { construirCorreoParticipacion } from "./avisos-participacion.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 const HORA = 60 * 60 * 1000;
 const APP_URL = "https://salavirtual.flacso.edu.uy";
@@ -100,9 +101,15 @@ export async function procesarRecordatorios24h(
         select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } }
       },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         take: 1,
-        select: { codigoReunion: true, joinUrl: true, cuentaProveedor: { select: { emailOrganizador: true } } }
+        select: {
+          codigoReunion: true,
+          joinUrl: true,
+          payloadUltimo: true,
+          proveedor: { select: { tipo: true } },
+          cuentaProveedor: { select: { emailOrganizador: true } }
+        }
       }
     }
   });
@@ -136,7 +143,11 @@ export async function procesarRecordatorios24h(
     const organizador = normalizarEmail(event?.cuentaProveedor?.emailOrganizador);
     const codigo = event?.codigoReunion;
     let confirmados: ReadonlySet<string> | null = null;
-    if (organizador && codigo) {
+    const esZoom = event?.proveedor?.tipo === "ZOOM";
+    if (esZoom) {
+      // Zoom: los alternative hosts aplicados quedan registrados al sincronizar.
+      confirmados = cohostsVerificadosEnPayload(event?.payloadUltimo);
+    } else if (organizador && codigo) {
       const key = organizador + "|" + codigo;
       let consulta = cacheMeet.get(key);
       if (!consulta) {
@@ -211,6 +222,7 @@ export async function procesarRecordatorios24h(
         const inicioMonitor = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
         const finMonitor = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
         const correo = construirRecordatorioReunion({
+          plataforma: esZoom ? "Zoom" : "Google Meet",
           nombre: usuario.nombres,
           reunion: meeting.solicitud.titulo,
           programa: meeting.solicitud.docentePrograma.programa.nombre,
@@ -326,4 +338,13 @@ export async function procesarRecordatorios24h(
     }
   }
   return counters;
+}
+
+function cohostsVerificadosEnPayload(payload: unknown): ReadonlySet<string> | null {
+  if (!payload || typeof payload !== "object") return null;
+  const verification = (payload as { salaVirtual?: { cohostVerification?: { emails?: unknown } | null } })
+    .salaVirtual?.cohostVerification;
+  return Array.isArray(verification?.emails)
+    ? new Set(verification.emails.filter((email): email is string => typeof email === "string"))
+    : null;
 }

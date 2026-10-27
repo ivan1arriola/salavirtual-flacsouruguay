@@ -15,6 +15,7 @@ import {
 } from "@/src/modules/archivos/domain/attendance-view.domain";
 import { leerPlanillaAsistenciaGoogle } from "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -100,7 +101,7 @@ export default async function EncuentroAsistenciaPage({
       id: true, estado: true, inicioProgramadoAt: true, finProgramadoAt: true,
       solicitud: { select: { id: true, titulo: true, docentePrograma: { select: { programaId: true } } } },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } }, take: 1,
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO }, take: 1,
         select: {
           codigoReunion: true,
           cuentaProveedor: { select: { emailOrganizador: true } },

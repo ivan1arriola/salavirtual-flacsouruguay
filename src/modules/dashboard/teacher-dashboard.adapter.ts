@@ -10,6 +10,7 @@ import type {
   RecentRecordingDTO,
   UpcomingMeetingSummaryDTO
 } from "./types";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export interface TeacherDashboardData {
   readonly heroMeeting: HeroMeetingDTO | null;
@@ -125,7 +126,7 @@ export async function obtenerDashboardDocente(
 
   const mappedMeetings = instances.map((instance) => {
     const meet = instance.eventosProveedor.find(
-      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+      ({ proveedor }) => esProveedorOperativo(proveedor.tipo)
     );
     const cohostEmails = extraerCohostEmailsDeInstancia(instance);
     const cohostsList = extraerCohostsUnificadosDeInstancia(instance).map((c) => ({

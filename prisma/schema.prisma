@@ -43,6 +43,7 @@ model Usuario {
   configuracionesGoogleActualizadas       ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
   configuracionesAsistenciaActualizadas   ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
   configuracionesCorreoSesActualizadas    ConfiguracionCorreoSes[]        @relation("ConfiguracionCorreoSesActualizadaPor")
+  configuracionesZoomActualizadas         ConfiguracionZoom[]             @relation("ConfiguracionZoomActualizadaPor")
   docente                                 Docente?
   asistenteTecnico                        AsistenteTecnico?
   notificaciones                          Notificacion[]
@@ -120,6 +121,23 @@ model ConfiguracionCorreoSes {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   actualizadaPor Usuario  @relation("ConfiguracionCorreoSesActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([actualizadaPorId, updatedAt])
+}
+
+/// Credenciales de la app Server-to-Server OAuth de Zoom (proveedor operativo).
+/// El secreto se guarda cifrado con CONFIG_ENCRYPTION_KEY.
+model ConfiguracionZoom {
+  id                  String   @id @default("principal")
+  accountId           String?
+  clientId            String?
+  clientSecretCifrado String?  @db.Text
+  activa              Boolean  @default(false)
+  version             Int      @default(1)
+  actualizadaPorId    String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  actualizadaPor      Usuario  @relation("ConfiguracionZoomActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
 
   @@index([actualizadaPorId, updatedAt])
 }
@@ -264,6 +282,9 @@ model SolicitudSala {
   finAsistenciaTecnicaAt     DateTime?
   motivoAsistenciaTecnica   String?
   requiereGrabacion         Boolean          @default(false)
+  /// Proveedor de videoconferencia elegido para la serie. Los encuentros nuevos
+  /// de la serie se aprovisionan siempre con este proveedor.
+  tipoProveedor             TipoProveedor    @default(GOOGLE_MEET)
   regimenEncuentros         String?
   fechaFinRecurrencia       DateTime?
   patronRecurrencia         Json?
@@ -734,6 +755,7 @@ enum RolUsuario {
 enum TipoProveedor {
   GOOGLE_MEET
   ZOOM_HISTORICO
+  ZOOM
 }
 
 enum ModalidadReunion {

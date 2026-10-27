@@ -15,9 +15,9 @@ La plataforma reemplaza a los proyectos anteriores:
 * `../flacso-zoom-plataforma-web`
 * `../flacso-zoom-sincronizador-desktop`
 
-Google Meet es el proveedor operativo principal.
+Google Meet es el proveedor operativo principal. **Zoom** también es un proveedor operativo: al crear una reunión se puede elegir Zoom si la integración está configurada (ver [`docs/zoom.md`](docs/zoom.md)).
 
-Zoom permanece integrado únicamente como **proveedor histórico**, para conservar y consultar reuniones, grabaciones, costos y otros registros generados por los sistemas anteriores.
+Las reuniones de los sistemas anteriores siguen disponibles como **Zoom histórico**, solo para consulta.
 
 El dominio de la aplicación está diseñado para no depender directamente de un proveedor concreto de videoconferencia.
 

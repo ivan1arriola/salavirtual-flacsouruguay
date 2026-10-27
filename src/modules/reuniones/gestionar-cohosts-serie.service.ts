@@ -17,6 +17,7 @@ import {
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 const emailListSchema = z.preprocess(
   (value) => typeof value === "string"
@@ -92,9 +93,10 @@ export async function actualizarCohostsSerie(
             select: { asistenteTecnico: { select: { usuarioId: true } } },
           },
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
             select: {
               id: true,
+              proveedor: { select: { tipo: true } },
               externalEventId: true,
               payloadUltimo: true,
               codigoReunion: true,
@@ -206,7 +208,9 @@ export async function actualizarCohostsSerie(
   const eventsToSync = meetings.flatMap((meeting) => {
     const event = meeting.eventosProveedor[0];
     const meetingCohosts = meetingCohostsMap.get(meeting.id)!;
-    return event?.externalEventId && meetingCohosts.hostEmail
+    // Zoom no se sincroniza en línea: queda CONFIGURAR_MEET y el worker aplica
+    // los alternative hosts (ver sincronizarEventosZoomUseCase).
+    return event?.externalEventId && meetingCohosts.hostEmail && event.proveedor?.tipo !== "ZOOM"
       ? [{ meeting, event, hostEmail: meetingCohosts.hostEmail, desiredEmails: meetingCohosts.desiredEmails }]
       : [];
   });

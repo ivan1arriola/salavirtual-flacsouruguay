@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   }
   const pendientes = await db.eventoProveedor.findMany({
     where: {
-      proveedor: { tipo: "GOOGLE_MEET" },
+      proveedor: FILTRO_PROVEEDOR_OPERATIVO,
       operacionPendiente: { not: null },
       OR: [
         { reclamoIntegracionAt: null },

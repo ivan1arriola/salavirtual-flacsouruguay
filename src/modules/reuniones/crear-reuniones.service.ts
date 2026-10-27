@@ -16,7 +16,7 @@ import {
   resolverAsignacionInicial,
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
-import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
+import { etiquetaProveedor, normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
@@ -122,7 +122,7 @@ export async function crearReuniones(
           programa: { select: { activo: true } },
         },
       }),
-      tx.proveedorReunion.findUnique({ where: { tipo: "GOOGLE_MEET" } }),
+      tx.proveedorReunion.findUnique({ where: { tipo: input.proveedor } }),
     ]);
     if (!docentePrograma) throw new NotFoundApiError("La asociación docente-programa no existe.");
     if (!docentePrograma.activo || !docentePrograma.programa.activo) {
@@ -131,7 +131,9 @@ export async function crearReuniones(
     if (!puedeCrearReuniones(actor.rol, actor.id, docentePrograma.docente.usuarioId)) {
       throw new ForbiddenApiError("No tiene permisos para crear reuniones de este docente.");
     }
-    if (!proveedorMeet) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
+    if (!proveedorMeet || (input.proveedor === "ZOOM" && !proveedorMeet.operativo)) {
+      throw new IntegrationApiError(`${etiquetaProveedor(input.proveedor)} no está configurado como proveedor.`, 503);
+    }
 
     await bloquearReservaSalas(tx, proveedorMeet.id);
     const periodosAsistencia = input.instancias.map((instancia) => ({
@@ -229,7 +231,7 @@ export async function crearReuniones(
       input.instancias,
     );
     if (!cuentaHostId) {
-      throw new ConflictApiError("No hay una sala Meet libre para todas las fechas solicitadas.");
+      throw new ConflictApiError(`No hay una sala ${etiquetaProveedor(input.proveedor)} libre para todas las fechas solicitadas.`);
     }
 
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
@@ -260,6 +262,7 @@ export async function crearReuniones(
         inicioAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaInicio : null,
         finAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaFin : null,
         requiereGrabacion: input.requiereGrabacion,
+        tipoProveedor: input.proveedor,
         estado: "REGISTRADA",
       },
     });

@@ -9,6 +9,7 @@ import {
   ValidationApiError,
 } from "@/src/lib/http/api-error";
 import {
+  etiquetaProveedor,
   normalizeCohostEmails,
   type ConferenceProvider as MeetProvider,
   type GoogleCalendarCredentials,
@@ -26,6 +27,7 @@ import { pertenecenAlMismoDia } from "./periodos.domain";
 import { auditarEncuentro as auditar, recalcularSolicitud } from "./encuentros-persistence.adapter";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
+import { esProveedorOperativo } from "@/src/modules/conferencias/proveedores";
 
 export type GestionEncuentrosDependencies = Readonly<{
   db: PrismaClient;
@@ -45,10 +47,18 @@ export async function agregarEncuentro(
   rawInput: unknown,
 ) {
   const input = agregarEncuentroSchema.parse(rawInput);
-  const provider = await dependencies.db.proveedorReunion.findUnique({
-    where: { tipo: "GOOGLE_MEET" },
+  // Los encuentros nuevos usan el proveedor elegido al crear la serie.
+  const serieProveedor = await dependencies.db.solicitudSala.findUnique({
+    where: { id: solicitudId },
+    select: { tipoProveedor: true },
   });
-  if (!provider) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
+  const tipoProveedor = serieProveedor?.tipoProveedor === "ZOOM" ? "ZOOM" : "GOOGLE_MEET";
+  const provider = await dependencies.db.proveedorReunion.findUnique({
+    where: { tipo: tipoProveedor },
+  });
+  if (!provider) {
+    throw new IntegrationApiError(`${etiquetaProveedor(tipoProveedor)} no está configurado como proveedor.`, 503);
+  }
 
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
@@ -126,7 +136,7 @@ export async function agregarEncuentro(
     if (!hostId) {
       throw new ConflictApiError(seriePreferredHost
         ? "La sala de esta serie no está disponible en ese horario."
-        : "No hay una sala Meet libre para ese horario.");
+        : `No hay una sala ${etiquetaProveedor(tipoProveedor)} libre para ese horario.`);
     }
 
     const ordinal = serie.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0) + 1;
@@ -207,7 +217,7 @@ export async function actualizarEncuentro(
       throw new ConflictApiError("El encuentro no se puede modificar.");
     }
 
-    const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = actual.eventosProveedor.find(({ proveedor }) => esProveedorOperativo(proveedor.tipo));
 
     if (input.accion === "EDITAR_FECHA" || input.accion === "EDITAR_ENCUENTRO") {
       if (actual.inicioProgramadoAt <= new Date()) {
@@ -572,7 +582,7 @@ export async function eliminarEncuentro(
     await tx.instanciaSala.update({ where: { id: meeting.id }, data: { estado: "CANCELADA" } });
 
     const eventIds = meeting.eventosProveedor
-      .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
+      .filter(({ proveedor }) => esProveedorOperativo(proveedor.tipo))
       .map(({ id }) => id);
     if (eventIds.length > 0) {
       await tx.eventoProveedor.updateMany({
@@ -638,7 +648,7 @@ export async function eliminarReunionCompleta(
     });
 
     const eventIds = request.instancias.flatMap(({ eventosProveedor }) =>
-      eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET").map(({ id }) => id)
+      eventosProveedor.filter(({ proveedor }) => esProveedorOperativo(proveedor.tipo)).map(({ id }) => id)
     );
     await tx.instanciaSala.updateMany({
       where: { solicitudSalaId: request.id },

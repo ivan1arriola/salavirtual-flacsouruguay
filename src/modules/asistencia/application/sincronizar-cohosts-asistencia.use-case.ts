@@ -4,6 +4,7 @@ import {
   normalizeCohostEmails,
   registrarVerificacionCohosts
 } from "@/src/modules/conferencias/api";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export type GoogleCredentials = Readonly<{
   serviceAccountEmail?: string;
@@ -39,9 +40,10 @@ export async function sincronizarCohostsDeInstanciaUseCase(
     where: { id: instanciaSalaId },
     select: {
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         select: {
           id: true,
+          proveedor: { select: { tipo: true } },
           payloadUltimo: true,
           codigoReunion: true,
           cuentaProveedor: { select: { emailOrganizador: true } }
@@ -59,6 +61,22 @@ export async function sincronizarCohostsDeInstanciaUseCase(
   if (!meeting || !event?.codigoReunion) return;
 
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
+
+  if (event.proveedor?.tipo === "ZOOM") {
+    // Los alternative hosts de Zoom los aplica el worker de integración.
+    await dependencies.db.eventoProveedor.updateMany({
+      where: {
+        id: event.id,
+        reclamoIntegracionAt: null,
+        OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }]
+      },
+      data: {
+        operacionPendiente: "CONFIGURAR_MEET",
+        payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo)))
+      }
+    });
+    return;
+  }
 
   await dependencies.db.eventoProveedor.update({
     where: { id: event.id },

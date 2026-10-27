@@ -27,7 +27,8 @@ export function OperationalRemoteControlPanel({
   inicioAsistenciaIso,
   finAsistenciaIso,
   cohostEmails,
-  tieneMeet
+  tieneMeet,
+  proveedor = "GOOGLE_MEET"
 }: Readonly<{
   instanciaId: string;
   tipoAccesoActual: string | null;
@@ -37,7 +38,10 @@ export function OperationalRemoteControlPanel({
   finAsistenciaIso: string;
   cohostEmails: readonly string[];
   tieneMeet: boolean;
+  proveedor?: "GOOGLE_MEET" | "ZOOM";
 }>) {
+  const esZoom = proveedor === "ZOOM";
+  const plataforma = esZoom ? "Zoom" : "Google Meet";
   const router = useRouter();
   const [tipoAcceso, setTipoAcceso] = useState<"OPEN" | "TRUSTED" | "RESTRICTED">(
     tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED"
@@ -93,7 +97,7 @@ export function OperationalRemoteControlPanel({
       if (data.advertenciaGoogle) {
         setFeedback({
           kind: "warn",
-          text: `${mensajeExito} (Aviso Google Meet: ${data.advertenciaGoogle})`
+          text: `${mensajeExito} (Aviso ${plataforma}: ${data.advertenciaGoogle})`
         });
       } else {
         setFeedback({
@@ -116,7 +120,7 @@ export function OperationalRemoteControlPanel({
     e.preventDefault();
     await enviarActualizacion(
       {
-        tipoAccesoMeet: tieneMeet ? tipoAcceso : undefined,
+        tipoAccesoMeet: tieneMeet && !esZoom ? tipoAcceso : undefined,
         requiereGrabacion,
         modalidad,
         inicioAsistenciaTecnicaAt: inicioAsistencia ? new Date(inicioAsistencia).toISOString() : undefined,
@@ -159,7 +163,7 @@ export function OperationalRemoteControlPanel({
       <div className="operational-disclosure-content">
         <form onSubmit={guardarParametrosGenerales} className="encounter-edit-form">
           <div className="form-grid">
-            <label className="field">
+            {esZoom ? null : <label className="field">
               <span>Tipo de acceso a la reunión (Google Meet)</span>
               <select
                 value={tipoAcceso}
@@ -170,7 +174,7 @@ export function OperationalRemoteControlPanel({
                 <option value="TRUSTED">Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)</option>
                 <option value="RESTRICTED">Restringido (RESTRICTED — solo invitados autorizados)</option>
               </select>
-            </label>
+            </label>}
 
             <label className="field">
               <span>Política de grabación (Solicitud del encuentro)</span>
@@ -183,7 +187,9 @@ export function OperationalRemoteControlPanel({
                 <option value="NO">Grabación no requerida (opcional)</option>
               </select>
               <small className="muted-text">
-                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los controles de Google Meet.
+                {esZoom
+                  ? "Indica si el encuentro debe grabarse. En Zoom se activa la grabación automática en la nube para los encuentros futuros."
+                  : "Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los controles de Google Meet."}
               </small>
             </label>
 
@@ -232,7 +238,7 @@ export function OperationalRemoteControlPanel({
 
         <div style={{ marginTop: "1.1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
           <strong style={{ fontSize: "0.82rem", color: "#334155" }}>
-            Cohosts configurados en Google Meet ({cohostEmails.length})
+            {esZoom ? "Anfitriones alternativos en Zoom" : "Cohosts configurados en Google Meet"} ({cohostEmails.length})
           </strong>
 
           {cohostEmails.length === 0 ? (

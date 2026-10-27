@@ -67,11 +67,14 @@ const EMPTY_DATE: MeetingDate = {
 export function MeetingFormV2({
   programs,
   assistants,
-  canAssignAssistant
+  canAssignAssistant,
+  zoomDisponible = false
 }: Readonly<{
   programs: readonly ProgramOption[];
   assistants: readonly Option[];
   canAssignAssistant: boolean;
+  /** Zoom configurado y con al menos una sala activa. */
+  zoomDisponible?: boolean;
 }>) {
   const [selectedProgramId, setSelectedProgramId] = useState<string>(programs.length === 1 ? programs[0].id : "");
   const [title, setTitle] = useState("");
@@ -91,6 +94,7 @@ export function MeetingFormV2({
   const [meetingMode, setMeetingMode] = useState<"VIRTUAL" | "HIBRIDA">("VIRTUAL");
   const [requiresAssistance, setRequiresAssistance] = useState(false);
   const [requiresRecording, setRequiresRecording] = useState(false);
+  const [usesZoom, setUsesZoom] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
   const [extraCohostEmails, setExtraCohostEmails] = useState<readonly string[]>([]);
   const [guestEmails, setGuestEmails] = useState<readonly string[]>([]);
@@ -157,6 +161,7 @@ export function MeetingFormV2({
             : undefined,
           requiereAsistenciaTecnica: requiresAssistance,
           requiereGrabacion: requiresRecording,
+          proveedor: zoomDisponible && usesZoom ? "ZOOM" : "GOOGLE_MEET",
           modalidad: formData.get("modalidad"),
           timezone: "America/Montevideo",
           instancias: dates.map(({
@@ -416,6 +421,19 @@ export function MeetingFormV2({
       <FormSection id="organizacion" icon={<UsersRound size={19} />} number="3" title="Organización y accesos" detail="Definí quién ingresa a la reunión, si requiere apoyo técnico y si debe grabarse.">
         <div className="organization-v2">
           <section className="organization-support-grid" aria-label="Soporte y grabación">
+            {zoomDisponible ? (
+              <ChoicePanel
+                title="Plataforma"
+                detail="¿Dónde se realiza la reunión?"
+                name="proveedor"
+                value={usesZoom}
+                noLabel="Google Meet"
+                noDetail="Enlace de Meet con cohosts de Google."
+                yesLabel="Zoom"
+                yesDetail="Reunión en la cuenta Zoom institucional; la grabación se guarda en la nube."
+                onChange={setUsesZoom}
+              />
+            ) : null}
             <ChoicePanel
               title="Monitoreo"
               detail="¿Necesitás que un asistente de monitoreo participe?"

@@ -13,6 +13,7 @@ import {
   type FuenteExportacionAsistencia
 } from "@/src/modules/archivos/domain/attendance-raw-export.domain";
 import { leerPlanillaAsistenciaGoogle } from "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,7 +45,7 @@ export async function GET(request: Request, { params }: Context) {
       finProgramadoAt: true,
       solicitud: { select: { docentePrograma: { select: { programaId: true } } } },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
         take: 1,
         select: {
           codigoReunion: true,

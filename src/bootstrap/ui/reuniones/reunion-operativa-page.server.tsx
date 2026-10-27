@@ -67,6 +67,9 @@ export default async function ReunionOperativaPage({
     && !reunion.grabacion.grabandoEnVivo
     && reunion.grabacion.estado !== "DISPONIBLE"
     && reunion.grabacion.estado !== "PROCESANDO";
+  const esZoom = reunion.meet.proveedor === "ZOOM";
+  const plataforma = esZoom ? "Zoom" : "Meet";
+  const plataformaCompleta = esZoom ? "Zoom" : "Google Meet";
 
   return (
     <div className="meeting-detail-v2 operational-console">
@@ -96,16 +99,16 @@ export default async function ReunionOperativaPage({
             </span>
             {reunion.grabacion.grabandoEnVivo ? (
               <span className="operational-mini-pill is-live-rec">
-                ● Meet: Grabando en vivo
+                ● {plataforma}: Grabando en vivo
               </span>
             ) : grabacionFaltanteEnCurso ? (
               <span className="operational-mini-pill is-not-rec-warn">
-                ⚠ Meet: No se está grabando
+                ⚠ {plataforma}: No se está grabando
               </span>
             ) : null}
             {reunion.transcripcion.transcribiendoEnVivo ? (
               <span className="operational-mini-pill is-live-rec">
-                ● Meet: Transcribiendo en vivo
+                ● {plataforma}: Transcribiendo en vivo
               </span>
             ) : null}
             {reunion.conferencia.enGruposPequenos ? (
@@ -134,10 +137,10 @@ export default async function ReunionOperativaPage({
           {reunion.meet.joinUrl ? (
             <a className="primary-action operational-meet-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
               <Video size={16} aria-hidden="true" />
-              Entrar a Meet
+              Entrar a {plataforma}
             </a>
           ) : (
-            <span className="status status-warning">Meet pendiente</span>
+            <span className="status status-warning">{plataforma} pendiente</span>
           )}
           {actor.rol !== "ASISTENTE_TECNICO" ? (
             <Link className="secondary-action" href={`/reuniones/${reunion.solicitudId}`}>
@@ -160,16 +163,16 @@ export default async function ReunionOperativaPage({
           <div>
             <AlertTriangle size={20} aria-hidden="true" />
             <div>
-              <strong>Grabación requerida por solicitud, pero NO se está grabando en Google Meet</strong>
+              <strong>Grabación requerida por solicitud, pero NO se está grabando en {plataformaCompleta}</strong>
               <small>
-                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe iniciar la grabación dentro de Google Meet.
+                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe iniciar la grabación dentro de {plataformaCompleta}.
               </small>
             </div>
           </div>
           {reunion.meet.joinUrl ? (
             <a className="secondary-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
               <Video size={15} aria-hidden="true" />
-              Abrir Meet para grabar
+              Abrir {plataforma} para grabar
             </a>
           ) : null}
         </section>
@@ -184,7 +187,7 @@ export default async function ReunionOperativaPage({
             <small>
               {reunion.conferencia.enGruposPequenos
                 ? `En grupos pequeños (${reunion.conferencia.cantidadGruposPequenos} sub-salas)`
-                : disponibilidadLabel(reunion.conferencia.disponibilidad)}
+                : disponibilidadLabel(reunion.conferencia.disponibilidad, plataformaCompleta)}
             </small>
           </div>
         </article>
@@ -197,7 +200,7 @@ export default async function ReunionOperativaPage({
             </strong>
             <small>
               {reunion.conferencia.inicioRealAt
-                ? `Meet inició ${formatTime(reunion.conferencia.inicioRealAt)}`
+                ? `${plataforma} inició ${formatTime(reunion.conferencia.inicioRealAt)}`
                 : "Sin conferencia activa"}
             </small>
           </div>
@@ -216,7 +219,7 @@ export default async function ReunionOperativaPage({
             <span>Estado de grabación</span>
             <strong>
               {reunion.grabacion.grabandoEnVivo
-                ? "● Grabando ahora en Meet"
+                ? `● Grabando ahora en ${plataforma}`
                 : `No se está grabando (${grabacionEstadoArchivoLabel(reunion.grabacion.estado)})`}
             </strong>
             <div className="operational-policy-vs-live">
@@ -235,7 +238,7 @@ export default async function ReunionOperativaPage({
             <span>Transcripción</span>
             <strong>
               {reunion.transcripcion.transcribiendoEnVivo
-                ? "● Transcribiendo en Meet"
+                ? `● Transcribiendo en ${plataforma}`
                 : `No transcribiendo (${transcripcionLabel(reunion.transcripcion.estado)})`}
             </strong>
             <small>{reunion.artefactos.transcripciones} archivo(s) generado(s)</small>
@@ -259,7 +262,7 @@ export default async function ReunionOperativaPage({
           <Lock size={18} aria-hidden="true" />
           <div>
             <span>Acceso a la reunión</span>
-            <strong>{tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</strong>
+            <strong>{esZoom ? "Según configuración de Zoom" : tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</strong>
             <small>Moderación: {reunion.meet.moderacion === "ON" ? "Activa" : "Estándar"}</small>
           </div>
         </article>
@@ -327,12 +330,13 @@ export default async function ReunionOperativaPage({
         finAsistenciaIso={reunion.asistencia.finAt.toISOString()}
         cohostEmails={reunion.meet.cohostEmails}
         tieneMeet={Boolean(reunion.meet.codigo)}
+        proveedor={reunion.meet.proveedor}
       />
 
       <section className="content-section operational-meet-card">
         <div className="section-heading">
           <div>
-            <h2>Google Meet</h2>
+            <h2>{reunion.meet.proveedor === "ZOOM" ? "Zoom" : "Google Meet"}</h2>
             <p>Acceso e información técnica del espacio de reunión.</p>
           </div>
         </div>
@@ -348,7 +352,7 @@ export default async function ReunionOperativaPage({
           </div>
           <div>
             <dt>Tipo de acceso</dt>
-            <dd>{tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</dd>
+            <dd>{esZoom ? "Según configuración de Zoom" : tipoAccesoMeetLabel(reunion.meet.tipoAcceso)}</dd>
           </div>
           <div>
             <dt>Grupos pequeños</dt>
@@ -379,7 +383,7 @@ export default async function ReunionOperativaPage({
           <div className="operational-admin-action">
             <AdminRetryMeetAction
               eventoProveedorId={reunion.meet.eventoProveedorId}
-              label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
+              label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl), plataforma)}
               operacion={reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")}
             />
           </div>
@@ -392,7 +396,7 @@ export default async function ReunionOperativaPage({
         ) : null}
         {reunion.conferencia.error ? (
           <p className="status-warning-text operational-warning">
-            <AlertTriangle size={15} aria-hidden="true" /> No se pudo actualizar Meet: {reunion.conferencia.error}
+            <AlertTriangle size={15} aria-hidden="true" /> No se pudo actualizar {plataforma}: {reunion.conferencia.error}
           </p>
         ) : null}
       </section>
@@ -450,7 +454,7 @@ export default async function ReunionOperativaPage({
         <div className="section-heading">
           <div>
             <h2>Artefactos</h2>
-            <p>Grabaciones y transcripciones sincronizadas con Google.</p>
+            <p>Grabaciones y transcripciones sincronizadas en Google Drive.</p>
           </div>
         </div>
         <div className="operational-artifacts-grid">
@@ -522,23 +526,24 @@ function rolResponsableLabel(rol: string): string {
   return rol;
 }
 
-function disponibilidadLabel(estado: string): string {
-  if (estado === "OK") return "Datos confirmados por Google Meet";
+function disponibilidadLabel(estado: string, plataforma = "Google Meet"): string {
+  if (estado === "OK") return `Datos confirmados por ${plataforma}`;
   if (estado === "SIN_CONFERENCIA") return "Todavía no existe una conferencia real";
-  if (estado === "SIN_CREDENCIALES") return "Google Workspace no está disponible";
-  if (estado === "ERROR") return "La última consulta a Google falló";
-  return "Meet aún no está configurado";
+  if (estado === "SIN_CREDENCIALES") return plataforma === "Zoom" ? "Zoom o Google Workspace no están configurados" : "Google Workspace no está disponible";
+  if (estado === "ERROR") return `La última consulta a ${plataforma} falló`;
+  return `${plataforma} aún no está configurado`;
 }
 
 function repairLabel(
   operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
-  hasMeet: boolean
+  hasMeet: boolean,
+  plataforma = "Meet"
 ): string {
   if (operacion === "REPROGRAMAR") return "Reintentar reprogramación";
-  if (operacion === "CONFIGURAR_MEET") return "Reintentar configuración de Meet";
-  if (operacion === "CANCELAR") return "Reintentar cancelación en Calendar";
-  if (operacion === "PROVISIONAR") return "Reintentar provisión de Meet";
-  return hasMeet ? "Revisar configuración de Meet" : "Reintentar provisión de Meet";
+  if (operacion === "CONFIGURAR_MEET") return `Reintentar configuración de ${plataforma}`;
+  if (operacion === "CANCELAR") return plataforma === "Zoom" ? "Reintentar cancelación en Zoom" : "Reintentar cancelación en Calendar";
+  if (operacion === "PROVISIONAR") return `Reintentar provisión de ${plataforma}`;
+  return hasMeet ? `Revisar configuración de ${plataforma}` : `Reintentar provisión de ${plataforma}`;
 }
 
 function incidenciaTipoLabel(tipo: string): string {

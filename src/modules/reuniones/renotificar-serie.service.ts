@@ -9,6 +9,7 @@ import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { destinatariosDocentesPrograma, puedeGestionarPrograma } from "./permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
+import { FILTRO_PROVEEDOR_OPERATIVO } from "@/src/modules/conferencias/proveedores";
 
 export type RenotificarSerieDependencies = Readonly<{
   db: PrismaClient;
@@ -78,7 +79,7 @@ export async function renotificarSerieAlPrograma(
             }
           },
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
+            where: { proveedor: FILTRO_PROVEEDOR_OPERATIVO },
             select: {
               codigoReunion: true,
               joinUrl: true,

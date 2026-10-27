@@ -3,3 +3,4 @@ export * from "./sincronizar-cohosts.use-case";
 export * from "./descartar-operaciones.use-case";
 
 export * from "./reclasificar-operaciones.use-case";
+export * from "./provisionar-conferencias-zoom.use-case";

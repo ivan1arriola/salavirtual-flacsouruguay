@@ -9,6 +9,8 @@ export type ConferenceProvisionRequest = Readonly<{
   cohostEmails?: readonly string[];
   guestEmails?: readonly string[];
   requiereAsistenciaTecnica?: boolean;
+  /** Zoom: activa la grabación automática en la nube. Meet la ignora. */
+  requiereGrabacion?: boolean;
   calendarEventId: string;
 }>;
 
