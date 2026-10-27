@@ -324,7 +324,8 @@ export async function obtenerReunionOperativa(
         const googleDrive = {
           serviceAccountEmail: credGoogle.serviceAccountEmail,
           privateKey: credGoogle.privateKey,
-          subject: credGoogle.serviceAccountSubject ?? undefined,
+          // Drive/Sheets se escriben con la identidad administrativa; el host Zoom puede no estar en Workspace.
+          subject: credGoogle.serviceAccountSubject ?? evento.cuentaProveedor?.emailOrganizador ?? "",
         };
         const provider = crearZoomArtifactsProviderAdapter({
           obtenerCredencialesZoom: async () => credZoom,

@@ -61,6 +61,8 @@ jobs:
         run: npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260914160000_historial_enlaces_meet/migration.sql
       - name: Aplicar migración aditiva de asistencia híbrida
         run: npx prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-asistencia-hibrida-horarios.sql
+      - name: Aplicar migración aditiva de Zoom operativo
+        run: npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20261027120000_zoom_proveedor_operativo/migration.sql
       - run: npx prisma generate
       - name: Comprobar búsqueda, historial y rollback sobre PostgreSQL
         run: npx vitest run test/meet-history-postgres.test.ts test/meet-link.test.ts test/meet-history.test.ts test/reverse-meet-search.test.ts

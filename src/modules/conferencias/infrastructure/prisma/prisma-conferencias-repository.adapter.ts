@@ -57,14 +57,18 @@ export function crearPrismaConferenciasRepository(
         },
       });
 
-      return rows.map((r) => ({
+      return rows.map((r) => {
+        // Las filas de prueba antiguas pueden no traer la relación.
+        const tipo = r.proveedor?.tipo;
+        return {
         id: r.id,
-        tipoProveedor: esProveedorOperativo(r.proveedor.tipo) ? r.proveedor.tipo : ("GOOGLE_MEET" as const),
+        tipoProveedor: esProveedorOperativo(tipo) ? tipo : ("GOOGLE_MEET" as const),
         estadoIntegracion: r.estadoIntegracion as EstadoIntegracionConferencia,
         operacionPendiente: r.operacionPendiente as OperacionPendienteConferencia | null,
         reclamoIntegracionAt: r.reclamoIntegracionAt,
         errorIntegracion: r.errorIntegracion,
-      }));
+      };
+      });
     },
 
     async obtenerCredencialesWorkspace(): Promise<WorkspaceCredentialsResult> {
@@ -143,7 +147,7 @@ export function crearPrismaConferenciasRepository(
         return {
           event: {
             id: event.id,
-            tipoProveedor: event.proveedor.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
+            tipoProveedor: event.proveedor?.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
             externalEventId: event.externalEventId,
             solicitudSalaId: event.instancia.solicitudSalaId,
             organizerEmail: event.cuentaProveedor?.emailOrganizador ?? "",

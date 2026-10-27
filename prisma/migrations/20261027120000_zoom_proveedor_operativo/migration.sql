@@ -2,9 +2,9 @@
 ALTER TYPE "TipoProveedor" ADD VALUE IF NOT EXISTS 'ZOOM';
 
 ALTER TABLE "SolicitudSala"
-    ADD COLUMN "tipoProveedor" "TipoProveedor" NOT NULL DEFAULT 'GOOGLE_MEET';
+    ADD COLUMN IF NOT EXISTS "tipoProveedor" "TipoProveedor" NOT NULL DEFAULT 'GOOGLE_MEET';
 
-CREATE TABLE "ConfiguracionZoom" (
+CREATE TABLE IF NOT EXISTS "ConfiguracionZoom" (
     "id" TEXT NOT NULL DEFAULT 'principal',
     "accountId" TEXT,
     "clientId" TEXT,
@@ -17,10 +17,17 @@ CREATE TABLE "ConfiguracionZoom" (
     CONSTRAINT "ConfiguracionZoom_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "ConfiguracionZoom_actualizadaPorId_updatedAt_idx"
+CREATE INDEX IF NOT EXISTS "ConfiguracionZoom_actualizadaPorId_updatedAt_idx"
     ON "ConfiguracionZoom"("actualizadaPorId", "updatedAt");
 
-ALTER TABLE "ConfiguracionZoom"
-    ADD CONSTRAINT "ConfiguracionZoom_actualizadaPorId_fkey"
-    FOREIGN KEY ("actualizadaPorId") REFERENCES "Usuario"("id")
-    ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ConfiguracionZoom_actualizadaPorId_fkey'
+    ) THEN
+        ALTER TABLE "ConfiguracionZoom"
+            ADD CONSTRAINT "ConfiguracionZoom_actualizadaPorId_fkey"
+            FOREIGN KEY ("actualizadaPorId") REFERENCES "Usuario"("id")
+            ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
