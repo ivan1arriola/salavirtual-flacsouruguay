@@ -328,14 +328,16 @@ export function MeetingDetailManager({
                   </span>
                 </div>
                 <div className="encounter-v2-shortcuts">
-                  <Link
-                    className="encounter-attendance-link"
-                    href={`/reuniones/${meeting.solicitudId}/encuentros/${meeting.id}/asistencia`}
-                    aria-label={`Ver asistencia del encuentro ${meeting.ordinal}`}
-                  >
-                    <ClipboardList size={16} aria-hidden="true" />
-                    <span>Asistencia</span>
-                  </Link>
+                  {meeting.temporalidad !== "FUTURO" ? (
+                    <Link
+                      className="encounter-attendance-link"
+                      href={`/reuniones/${meeting.solicitudId}/encuentros/${meeting.id}/asistencia`}
+                      aria-label={`Ver asistencia del encuentro ${meeting.ordinal}`}
+                    >
+                      <ClipboardList size={16} aria-hidden="true" />
+                      <span>Asistencia</span>
+                    </Link>
+                  ) : null}
                   <button
                     aria-expanded={expanded}
                     className="encounter-expand-toggle"
