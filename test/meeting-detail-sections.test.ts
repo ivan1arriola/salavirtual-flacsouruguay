@@ -70,6 +70,12 @@ describe("secciones de la ficha de reunión", () => {
     expect(page).toContain("driveFolderUrl");
   });
 
+  it("no muestra el acceso a la asistencia de encuentros que todavía no ocurrieron", () => {
+    const enlace = manager.indexOf('className="encounter-attendance-link"');
+    expect(enlace).toBeGreaterThan(-1);
+    expect(manager.slice(Math.max(0, enlace - 140), enlace)).toContain('meeting.temporalidad !== "FUTURO"');
+  });
+
   it("ubica archivos y planillas en Archivos y las incidencias en Actividad", () => {
     expect(page).toContain("<MeetingIntegrationProblems");
     expect(page.indexOf("<MeetAttendanceEmails")).toBeGreaterThan(page.indexOf('id: "archivos"'));
