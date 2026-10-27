@@ -97,7 +97,57 @@ async function sincronizarEventoIndividual(
           evento.finProgramadoAt
         );
 
-    if (!conference?.endTime) {
+    if (!conference) {
+      return {
+        eventoProveedorId: evento.id,
+        estado: "SIN_REGISTRO_FINALIZADO",
+        archivos: 0,
+        grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+      };
+    }
+
+    if (!conference.endTime) {
+      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
+      if (attendance.sesiones > 0 && attendance.planilla && provider.subirPlanillaAsistencia) {
+        const folderName = nombreCarpetaReunion({
+          titulo: evento.tituloSolicitud,
+          inicio: evento.inicioProgramadoAt,
+          timezone: evento.timezone
+        });
+        const folderId = evento.driveFolderId ?? await provider.obtenerOCrearCarpeta(destinationId, folderName);
+        const name = nombreArchivoReunion({
+          titulo: evento.tituloSolicitud,
+          inicio: evento.inicioProgramadoAt,
+          timezone: evento.timezone,
+          codigoReunion: evento.codigoReunion,
+          tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
+          indice: 1
+        });
+        const uploaded = await provider.subirPlanillaAsistencia(
+          folderId, name, attendance.planilla,
+          evento.inicioProgramadoAt, evento.finProgramadoAt, hostEmail, evento.cohostEmails ?? [],
+          evento.asistenciaDriveFileId ?? undefined
+        );
+        await repositorio.registrarArchivoSincronizado(
+          evento.id,
+          TIPOS_ARTEFACTO_SINCRONIZABLES[2],
+          { resourceName: `${conference.name}/attendance`, driveFileId: uploaded.id },
+          uploaded
+        );
+        await repositorio.actualizarEstadoSincronizacion(evento.id, {
+          conferenceRecordName: conference.name,
+          driveFolderId: folderId,
+          archivosSincronizadosAt: null,
+          errorArchivos: null
+        });
+        return {
+          eventoProveedorId: evento.id,
+          estado: "ARTEFACTOS_PENDIENTES",
+          archivos: 1,
+          grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+        };
+      }
+
       return {
         eventoProveedorId: evento.id,
         estado: "SIN_REGISTRO_FINALIZADO",

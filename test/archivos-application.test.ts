@@ -144,7 +144,10 @@ describe("archivos: application", () => {
         }),
         obtenerConferencia: vi.fn(),
         obtenerArtefactos: vi.fn(),
-        obtenerDocumentoAsistencia: vi.fn(),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "<html></html>", completa: false, participantes: 0, sesiones: 0,
+          planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] }
+        }),
         obtenerOCrearCarpeta: vi.fn(),
         moverArchivo: vi.fn(),
         subirDocumentoGoogle: vi.fn(),
@@ -183,6 +186,57 @@ describe("archivos: application", () => {
 
       expect(result[0].estado).toBe("SIN_REGISTRO_FINALIZADO");
       expect(result[0].grabacion).toBe("PENDIENTE");
+    });
+
+    it("publica sesiones Meet preliminares aunque la conferencia siga abierta", async () => {
+      const mockProvider: ArtifactProviderPort = {
+        buscarConferencia: vi.fn().mockResolvedValue({
+          name: "conf-abierta",
+          startTime: "2026-09-19T14:00:00Z"
+        }),
+        obtenerConferencia: vi.fn(),
+        obtenerArtefactos: vi.fn(),
+        obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
+          html: "<html></html>", completa: false, participantes: 1, sesiones: 1,
+          planilla: {
+            sesionesMeet: [{ nombre: "Participante", tipo: "CUENTA_GOOGLE", inicio: "2026-09-19T14:15:00Z", fin: "2026-09-19T14:30:00Z" }],
+            correosAuditados: [], eventosAuditoria: []
+          }
+        }),
+        obtenerOCrearCarpeta: vi.fn().mockResolvedValue("meeting-folder"),
+        moverArchivo: vi.fn(),
+        subirDocumentoGoogle: vi.fn(),
+        subirPlanillaAsistencia: vi.fn().mockResolvedValue({
+          id: "attendance-sheet", name: "asistencia", mimeType: "application/vnd.google-apps.spreadsheet"
+        }),
+        obtenerParticipantesActivos: vi.fn()
+      };
+      const mockRepo: ArchivosRepositoryPort = {
+        obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue(validWorkspaceConfig),
+        obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([{
+          id: "evt-abierto", codigoReunion: "abc-defg-hij", conferenceRecordName: null,
+          emailOrganizador: "host@flacso.edu.uy", cohostEmails: [], archivos: [],
+          inicioProgramadoAt: new Date("2026-09-19T14:00:00Z"), finProgramadoAt: new Date("2026-09-19T16:00:00Z"),
+          timezone: "America/Montevideo", requiereGrabacion: false, tituloSolicitud: "Clase abierta"
+        }]),
+        registrarArchivoSincronizado: vi.fn(), actualizarEstadoSincronizacion: vi.fn(),
+        registrarErrorSincronizacion: vi.fn(), obtenerDatosInstanciaParaParticipantes: vi.fn(),
+        listarArchivosVisibles: vi.fn()
+      };
+
+      const result = await sincronizarArtefactosUseCase(mockRepo, () => mockProvider, dummyDescifrar, {
+        eventoProveedorIds: ["evt-abierto"]
+      });
+
+      expect(mockProvider.subirPlanillaAsistencia).toHaveBeenCalledWith(
+        "meeting-folder", expect.any(String), expect.any(Object), expect.any(Date), expect.any(Date),
+        "host@flacso.edu.uy", [], undefined
+      );
+      expect(mockRepo.actualizarEstadoSincronizacion).toHaveBeenCalledWith("evt-abierto", expect.objectContaining({
+        archivosSincronizadosAt: null,
+        errorArchivos: null
+      }));
+      expect(result[0]).toMatchObject({ estado: "ARTEFACTOS_PENDIENTES", archivos: 1 });
     });
 
     it("sincroniza grabaciones y asistencia correctamente", async () => {

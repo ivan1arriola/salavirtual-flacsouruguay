@@ -261,7 +261,10 @@ export function crearGoogleArtifactsProviderAdapter(
       );
       let rows: readonly FilaAsistenciaMeet[] = participants.flatMap((participant, index) =>
         (sessionsByParticipant[index] ?? []).flatMap((session): readonly FilaAsistenciaMeet[] => {
-          const finSesion = session.endTime || actual.endTime;
+          // Google puede publicar sesiones de participantes antes de cerrar la
+          // conferencia. Las sesiones abiertas se acotan al momento de lectura
+          // para poder mostrarlas como asistencia preliminar.
+          const finSesion = session.endTime || actual.endTime || new Date().toISOString();
           return finSesion ? [{
             nombre: nombreParticipante(participant),
             tipo: tipoParticipante(participant),
