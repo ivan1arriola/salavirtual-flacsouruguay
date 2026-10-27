@@ -55,6 +55,15 @@ describe("Sheets de asistencia", () => {
     const body = request.mock.calls[2]![0].data;
     expect(JSON.stringify(body)).toContain("addConditionalFormatRule");
     expect(JSON.stringify(body)).toContain("=$F2>=5/6");
+    const formulas = body.requests
+      .filter((request: { addConditionalFormatRule?: { rule: { booleanRule: { condition: { values: Array<{ userEnteredValue: string }> } } } } }) => request.addConditionalFormatRule)
+      .map((request: { addConditionalFormatRule: { rule: { booleanRule: { condition: { values: Array<{ userEnteredValue: string }> } } } } }) =>
+        request.addConditionalFormatRule.rule.booleanRule.condition.values[0]!.userEnteredValue);
+    expect(formulas).toEqual([
+      "=$F2>=5/6",
+      "=($F2>=3/4)*($F2<5/6)>0",
+      "=$F2<3/4"
+    ]);
     expect(JSON.stringify(body)).toContain("PERCENT");
     expect(JSON.stringify(body)).toContain("raw-endpoint");
     expect(JSON.stringify(body)).toContain("anon-123");

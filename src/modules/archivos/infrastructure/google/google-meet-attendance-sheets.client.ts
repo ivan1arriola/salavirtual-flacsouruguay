@@ -254,8 +254,8 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
     const rango = [{ sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 7 }];
     const reglas: ReadonlyArray<readonly [string, { red: number; green: number; blue: number }]> = [
       ["=$F2>=5/6", { red: 0.776, green: 0.937, blue: 0.808 }],
-      ["=AND($F2>=0.75,$F2<5/6)", { red: 1, green: 0.922, blue: 0.612 }],
-      ["=$F2<0.75", { red: 1, green: 0.78, blue: 0.808 }]
+      ["=($F2>=3/4)*($F2<5/6)>0", { red: 1, green: 0.922, blue: 0.612 }],
+      ["=$F2<3/4", { red: 1, green: 0.78, blue: 0.808 }]
     ];
     reglas.forEach(([formula, color], index) => requests.push({ addConditionalFormatRule: { index, rule: { ranges: rango,
       booleanRule: { condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: formula }] }, format: { backgroundColor: color } } } } }));
