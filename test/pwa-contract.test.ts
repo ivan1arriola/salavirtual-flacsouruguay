@@ -21,6 +21,14 @@ describe("contrato PWA y acceso", () => {
     expect(manifest).toContain("icon-512x512.png");
   });
 
+  it("usa iconos PNG opacos: la transparencia se ve negra en el splash y en la pantalla de inicio", () => {
+    for (const nombre of ["icon-192x192.png", "icon-512x512.png", "apple-touch-icon.png"]) {
+      const png = readFileSync(new URL(`../public/${nombre}`, import.meta.url));
+      const tipoColor = png[25]; // IHDR: 0 gris, 2 RGB, 3 paleta, 4 gris+alfa, 6 RGBA
+      expect([4, 6]).not.toContain(tipoColor);
+    }
+  });
+
   it("no cachea APIs ni respuestas de navegacion autenticadas", () => {
     expect(serviceWorker).toContain('url.pathname.startsWith("/api/")');
     expect(serviceWorker).toContain('request.mode === "navigate"');
