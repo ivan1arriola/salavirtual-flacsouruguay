@@ -318,9 +318,11 @@ export function crearGoogleArtifactsProviderAdapter(
           const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
           const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
-        } catch (error) {
-          console.error("Meet attendance audit request failed; retrying.");
-          throw error; // No registrar un informe sin correos tras fallar la auditoría; el job debe reintentarse.
+        } catch {
+          // Reports puede tardar en publicar sus eventos o estar temporalmente
+          // indisponible. No descartamos las sesiones de Meet ya obtenidas:
+          // se publican como asistencia preliminar y se podrán regenerar luego.
+          console.warn("Meet attendance audit unavailable; publishing preliminary Meet attendance.");
         }
       }
       const baseHtml = crearHtmlAsistencia(rows);

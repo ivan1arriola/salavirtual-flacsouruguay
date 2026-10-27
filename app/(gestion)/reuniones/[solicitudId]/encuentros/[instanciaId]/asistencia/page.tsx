@@ -226,6 +226,9 @@ export default async function EncuentroAsistenciaPage({
             {conciliacion?.estado === "CONFERENCIA_AMBIGUA" ? (
               <p className="attendance-reconciliation-warning" role="status">Los registros de Reports incluyen {conciliacion.conferenciasReports} identificadores de conferencia. No es seguro atribuir sus correos a este encuentro. Revisá la auditoría antes de utilizarlos.</p>
             ) : null}
+            {conciliacion?.estado === "SIN_REPORTS" && conciliacion.personasMeet > 0 ? (
+              <p className="attendance-reconciliation-warning" role="status">Asistencia preliminar según Google Meet. Workspace Reports todavía no aportó registros; los datos pueden actualizarse cuando Google los publique. Administración puede volver a sincronizar la asistencia.</p>
+            ) : null}
             <p className="attendance-reconciliation-note">
               Las APIs no comparten necesariamente una clave de identidad. Los mismos nombres u horarios no prueban que dos registros sean de la misma persona.
               Los números distintos señalan una diferencia de cobertura, no participantes adicionales ni ausencias confirmadas.
