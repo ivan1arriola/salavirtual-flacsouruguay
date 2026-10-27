@@ -268,8 +268,15 @@ export async function crearPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetI
   }));
   const query = new URLSearchParams({ addParents: input.folderId, fields: "id,name,mimeType,webViewLink" });
   if (file.data.parents?.length) query.set("removeParents", file.data.parents.join(","));
-  const moved = await auth.request<{ id: string; name: string; mimeType?: string; webViewLink?: string }>({
-    url: `${DRIVE}/${encodeURIComponent(id)}?${query}`, method: "PATCH"
-  });
-  return { id, name: moved.data.name || input.titulo, mimeType: MIME, webViewLink: moved.data.webViewLink || `https://docs.google.com/spreadsheets/d/${id}/edit` };
+  try {
+    const moved = await auth.request<{ id: string; name: string; mimeType?: string; webViewLink?: string }>({
+      url: `${DRIVE}/${encodeURIComponent(id)}?${query}`, method: "PATCH"
+    });
+    return { id, name: moved.data.name || input.titulo, mimeType: MIME, webViewLink: moved.data.webViewLink || `https://docs.google.com/spreadsheets/d/${id}/edit` };
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status !== 403 && status !== 404) throw error;
+    // Los datos ya están escritos; la falta de acceso a la carpeta no invalida la planilla.
+    return { id, name: input.titulo, mimeType: MIME, webViewLink: `https://docs.google.com/spreadsheets/d/${id}/edit` };
+  }
 }

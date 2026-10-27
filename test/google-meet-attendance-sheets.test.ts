@@ -76,6 +76,18 @@ describe("Sheets de asistencia", () => {
     expect(request.mock.calls.some(([call]) => call.url.includes("/same:batchUpdate"))).toBe(true);
     expect(request.mock.calls.some(([call]) => call.data?.requests?.some((r: { repeatCell?: unknown }) => r.repeatCell))).toBe(true);
   });
+  it("conserva una planilla ya escrita si Drive no permite moverla a la carpeta", async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce({ data: {} })
+      .mockResolvedValueOnce({ data: { sheets: [] } })
+      .mockResolvedValueOnce({ data: {} })
+      .mockResolvedValueOnce({ data: {} })
+      .mockResolvedValueOnce({ data: { parents: [] } })
+      .mockRejectedValueOnce({ response: { status: 404 }, message: "File not found: folder" });
+    await expect(crearPlanillaAsistenciaGoogle({ request } as never, input, "same"))
+      .resolves.toMatchObject({ id: "same", mimeType: "application/vnd.google-apps.spreadsheet" });
+    expect(request.mock.calls[3]![0].data.requests.some((item: { updateCells?: unknown }) => item.updateCells)).toBe(true);
+  });
 });
   it("separa host y cohost configurados y escapa texto de fórmulas", async () => {
     const malicious: MeetSheetInput = {
