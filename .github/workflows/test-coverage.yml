@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -63,6 +64,22 @@ jobs:
             echo "| Build de producción | ${BUILD_RESULT} |"
             echo "| PostgreSQL integrado | ${POSTGRES_RESULT} |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          fallidas=()
+          [[ "$SCHEMA_RESULT" == "success" ]] || fallidas+=("Esquema + TypeScript")
+          [[ "$TESTS_RESULT" == "success" ]] || fallidas+=("Tests + cobertura")
+          [[ "$SECURITY_RESULT" == "success" ]] || fallidas+=("Seguridad")
+          [[ "$BUILD_RESULT" == "success" ]] || fallidas+=("Build de producción")
+          [[ "$POSTGRES_RESULT" == "success" ]] || fallidas+=("PostgreSQL integrado")
+          if (( ${#fallidas[@]} > 0 )); then
+            lista="$(printf '%s, ' "${fallidas[@]}")"
+            {
+              echo
+              echo "**Fallaron:** ${lista%, }"
+              echo
+              echo "Detalle: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           if [[ "$SCHEMA_RESULT" != "success" || "$TESTS_RESULT" != "success" || "$SECURITY_RESULT" != "success" || "$BUILD_RESULT" != "success" || "$POSTGRES_RESULT" != "success" ]]; then
             echo "::error title=Deploy bloqueado::Una o más validaciones fallaron, se cancelaron o fueron omitidas."
