@@ -44,24 +44,32 @@ export function atribuirCorreosPorHorario(
     return correo && Number.isFinite(inicio) && Number.isFinite(fin) ? [{ correo, inicio, fin }] : [];
   });
 
-  const votos = new Map<string, Set<string>>();
-  const ambiguos = new Set<string>();
-  for (const sesion of sesiones) {
+  // Correos candidatos de cada sesión con pareja en Reports.
+  const porSesion = sesiones.flatMap(sesion => {
     const id = sesion.participanteId?.trim();
     const inicio = Date.parse(sesion.inicio), fin = Date.parse(sesion.fin);
-    if (!id || !Number.isFinite(inicio) || !Number.isFinite(fin)) continue;
-    const correos = new Set(candidatos
+    if (!id || !Number.isFinite(inicio) || !Number.isFinite(fin)) return [];
+    const correos = [...new Set(candidatos
       .filter(c => Math.abs(c.inicio - inicio) <= toleranciaMs && Math.abs(c.fin - fin) <= toleranciaMs)
-      .map(c => c.correo));
-    if (correos.size === 0) continue;
-    if (correos.size > 1) { ambiguos.add(id); continue; }
-    votos.set(id, new Set([...(votos.get(id) ?? []), ...correos]));
-  }
+      .map(c => c.correo))];
+    return correos.length ? [{ id, correos }] : [];
+  });
 
-  const correoPorParticipante = new Map<string, string>();
-  for (const [id, correos] of votos) {
-    if (correos.size === 1 && !ambiguos.has(id)) correoPorParticipante.set(id, [...correos][0]!);
-    else ambiguos.add(id);
-  }
-  return { correoPorParticipante, participantesAmbiguos: [...ambiguos].sort() };
+  const empatados = porSesion.filter(s => s.correos.length > 1).map(s => s.id);
+  const votos = porSesion
+    .filter(s => s.correos.length === 1)
+    .reduce<Readonly<Record<string, readonly string[]>>>((acc, s) => ({
+      ...acc,
+      [s.id]: [...new Set([...(acc[s.id] ?? []), s.correos[0]!])]
+    }), {});
+  const entradas = Object.entries(votos);
+  const conflictivos = entradas.filter(([, correos]) => correos.length > 1).map(([id]) => id);
+  const ambiguos = [...new Set([...empatados, ...conflictivos])];
+
+  return {
+    correoPorParticipante: new Map(
+      entradas.flatMap(([id, correos]) => correos.length === 1 && !ambiguos.includes(id) ? [[id, correos[0]!] as const] : [])
+    ),
+    participantesAmbiguos: ambiguos
+  };
 }
