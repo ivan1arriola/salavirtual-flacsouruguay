@@ -60,6 +60,8 @@ La navegación autenticada muestra opciones según el rol y conserva una barra i
 
 ## Google Workspace
 
+La administración centralizada de **Personas y programas** vive en `/usuarios`, con vistas separadas para cada tarea. `/configuracion?seccion=programas` se conserva como enlace de compatibilidad y redirige a la vista de Programas. Los programas representan las unidades académicas en la interfaz; los campos históricos de unidad académica se conservan en los datos y una edición desde la nueva pantalla no los modifica.
+
 La integración con Google Workspace se configura desde:
 
 **Configuración > Google Workspace**
