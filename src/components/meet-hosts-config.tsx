@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { filterMeetHosts } from "./meet-hosts-config.domain";
+import { filterMeetHosts, formatoLimiteConcurrente } from "./meet-hosts-config.domain";
 
 export type MeetHostVisible = Readonly<{
   id: string;
@@ -161,7 +161,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                     <div className="settings-room-row__facts">
                       <span className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}>{available ? "Disponible" : "No disponible"}</span>
                       <small>Prioridad {host.prioridad}</small>
-                      <small>{host.limiteConcurrente ? `Hasta ${host.limiteConcurrente} simultáneas` : "Sin límite adicional"}</small>
+                      <small>{formatoLimiteConcurrente(host.limiteConcurrente)}</small>
                     </div>
                     <button className="secondary-action settings-room-row__edit" type="button" onClick={() => openEditor(host.id)}>
                       {isEditing ? <X size={16} /> : <Pencil size={16} />}
@@ -237,8 +237,16 @@ function HostFields({
         <input type="number" name="prioridad" min={1} max={1000} defaultValue={host?.prioridad ?? hostsCount + 1} required />
       </label>
       <label className="field">
-        <span>Límite concurrente</span>
-        <input type="number" name="limiteConcurrente" min={1} max={100} defaultValue={host?.limiteConcurrente ?? ""} placeholder="Sin límite adicional" />
+        <span>Límite de reuniones simultáneas</span>
+        <input
+          type="number"
+          name="limiteConcurrente"
+          min={1}
+          max={100}
+          defaultValue={host?.limiteConcurrente ?? ""}
+          placeholder="1 (predeterminado)"
+        />
+        <small>Cantidad máxima de reuniones que esta sala puede alojar al mismo tiempo (ej: 2 para permitir reuniones simultáneas).</small>
       </label>
       <label className="check-field"><input type="checkbox" name="tieneLicencia" defaultChecked={host?.tieneLicencia ?? true} /><span>Disponible para alojar reuniones</span></label>
       <label className="check-field"><input type="checkbox" name="activa" defaultChecked={host?.activa ?? true} /><span>Cuenta activa</span></label>

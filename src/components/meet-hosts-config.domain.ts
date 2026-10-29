@@ -13,6 +13,13 @@ export function filterMeetHosts<T extends SearchableMeetHost>(hosts: readonly T[
   );
 }
 
+export function formatoLimiteConcurrente(limite: number | null | undefined): string {
+  if (limite && limite > 1) {
+    return `Hasta ${limite} simultáneas`;
+  }
+  return "1 reunión simultánea (predeterminado)";
+}
+
 function normalize(value: string) {
   return value.trim().toLocaleLowerCase("es");
 }
