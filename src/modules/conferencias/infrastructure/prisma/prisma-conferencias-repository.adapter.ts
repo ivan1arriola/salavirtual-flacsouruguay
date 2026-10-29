@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
+import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { recalcularSolicitud } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 import {
   extraerConferenceData,
@@ -21,6 +22,7 @@ import type {
   ConferenciasRepositoryPort,
   EventoProveedorSnapshot,
   WorkspaceCredentialsResult,
+  ZoomCredentialsResult,
 } from "../../ports/conferencias-repository.port";
 
 const CLAIM_TIMEOUT_MS = 10 * 60_000;
@@ -77,6 +79,26 @@ export function crearPrismaConferenciasRepository(
       }
     },
 
+    async obtenerCredencialesZoom(): Promise<ZoomCredentialsResult> {
+      try {
+        const creds = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+        if (creds.disponible) {
+          return {
+            disponible: true,
+            accountId: creds.accountId,
+            clientId: creds.clientId,
+            clientSecret: creds.clientSecret,
+          };
+        }
+        return { disponible: false, error: creds.error };
+      } catch (err) {
+        return {
+          disponible: false,
+          error: err instanceof Error ? err.message : "Error al obtener credenciales de Zoom",
+        };
+      }
+    },
+
     async reclamarEvento(id): Promise<ClaimInfo | null> {
       return db.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:evento-proveedor:${id}`}))`;
@@ -84,6 +106,7 @@ export function crearPrismaConferenciasRepository(
           where: { id },
           include: {
             cuentaProveedor: true,
+            proveedor: true,
             instancia: {
               include: {
                 solicitud: true,
@@ -125,6 +148,7 @@ export function crearPrismaConferenciasRepository(
         return {
           event: {
             id: event.id,
+            proveedorTipo: event.proveedor?.tipo ?? "GOOGLE_MEET",
             externalEventId: event.externalEventId,
             solicitudSalaId: event.instancia.solicitudSalaId,
             organizerEmail: event.cuentaProveedor?.emailOrganizador ?? "",
@@ -580,3 +604,4 @@ function resultadoSinOperacion(
   }
   return { eventoProveedorId: id, estado: "SINCRONIZADA" };
 }
+

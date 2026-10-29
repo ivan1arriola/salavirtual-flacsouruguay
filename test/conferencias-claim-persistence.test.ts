@@ -6,6 +6,7 @@ import type { ClaimInfo } from "../src/modules/conferencias/ports";
 const claim: ClaimInfo = {
   event: {
     id: "evento-1",
+    proveedorTipo: "GOOGLE_MEET",
     externalEventId: null,
     solicitudSalaId: "sol-1",
     organizerEmail: "sala01@flacso.edu.uy",

@@ -26,6 +26,7 @@ export type MeetHostVisible = Readonly<{
   activa: boolean;
   passwordConfigurada: boolean;
   enUso: boolean;
+  proveedorTipo?: "GOOGLE_MEET" | "ZOOM";
 }>;
 
 export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVisible[] }>) {
@@ -160,6 +161,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                     </div>
                     <div className="settings-room-row__facts">
                       <span className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}>{available ? "Disponible" : "No disponible"}</span>
+                      <span className="settings-mini-status is-neutral">{host.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"}</span>
                       <small>Prioridad {host.prioridad}</small>
                       <small>{formatoLimiteConcurrente(host.limiteConcurrente)}</small>
                     </div>
@@ -204,6 +206,13 @@ function HostFields({
 }: Readonly<{ host?: MeetHostVisible; hostsCount: number }>) {
   return (
     <div className="form-grid">
+      <label className="field">
+        <span>Plataforma</span>
+        <select name="proveedorTipo" defaultValue={host?.proveedorTipo ?? "GOOGLE_MEET"}>
+          <option value="GOOGLE_MEET">Google Meet</option>
+          <option value="ZOOM">Zoom</option>
+        </select>
+      </label>
       <label className="field">
         <span>Nombre</span>
         <input name="nombre" defaultValue={host?.nombre} placeholder="Sala principal" required />
@@ -260,7 +269,9 @@ function HostFields({
 function payloadFromForm(formData: FormData, requirePassword: boolean) {
   const password = String(formData.get("password") ?? "").trim();
   const limitRaw = String(formData.get("limiteConcurrente") ?? "").trim();
+  const proveedorTipo = (formData.get("proveedorTipo") as string) || "GOOGLE_MEET";
   return {
+    proveedorTipo,
     nombre: String(formData.get("nombre") ?? ""),
     email: String(formData.get("email") ?? ""),
     prioridad: Number(formData.get("prioridad")),

@@ -19,6 +19,7 @@ export type EventoProveedorSnapshot = Readonly<{
 
 export type EventoReclamableInfo = Readonly<{
   id: string;
+  proveedorTipo: string;
   externalEventId: string | null;
   solicitudSalaId: string;
   organizerEmail: string;
@@ -30,6 +31,14 @@ export type ClaimInfo = Readonly<{
   operacion: OperacionPendienteConferencia;
   at: Date;
   token: string;
+}>;
+
+export type ZoomCredentialsResult = Readonly<{
+  disponible: boolean;
+  accountId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  error?: string;
 }>;
 
 export type WorkspaceCredentialsResult = Readonly<{
@@ -45,6 +54,7 @@ export type ConferenciasRepositoryPort = Readonly<{
   ) => Promise<readonly EventoProveedorSnapshot[]>;
 
   obtenerCredencialesWorkspace: () => Promise<WorkspaceCredentialsResult>;
+  obtenerCredencialesZoom: () => Promise<ZoomCredentialsResult>;
 
   reclamarEvento: (
     id: string

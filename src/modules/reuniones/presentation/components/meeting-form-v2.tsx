@@ -89,6 +89,7 @@ export function MeetingFormV2({
   const [recurrenceMessage, setRecurrenceMessage] = useState("");
   const [recurrenceGenerated, setRecurrenceGenerated] = useState(false);
   const [meetingMode, setMeetingMode] = useState<"VIRTUAL" | "HIBRIDA">("VIRTUAL");
+  const [platform, setPlatform] = useState<"GOOGLE_MEET" | "ZOOM">("ZOOM");
   const [requiresAssistance, setRequiresAssistance] = useState(false);
   const [requiresRecording, setRequiresRecording] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
@@ -150,6 +151,7 @@ export function MeetingFormV2({
           titulo: formData.get("titulo"),
           descripcion: formData.get("descripcion") || undefined,
           docenteProgramaId: selectedProgramId,
+          plataforma: platform,
           cohostEmailsManual: extraCohostEmails,
           invitadosEmails: guestEmails,
           asistenteTecnicoId: canAssignAssistant && requiresAssistance && assistanceMode === "ASSIGN"
@@ -192,7 +194,7 @@ export function MeetingFormV2({
           ? "Esta reunión ya se estaba creando. Se conservó una única solicitud."
           : failures
             ? "La reunión quedó guardada. La configuración de Google continúa pendiente."
-            : "La reunión y sus enlaces de Google Meet quedaron creados correctamente."
+            : `La reunión y sus enlaces de ${platform === "ZOOM" ? "Zoom" : "Google Meet"} quedaron creados correctamente.`
       );
     } catch (error) {
       submittingRef.current = false;
@@ -297,8 +299,38 @@ export function MeetingFormV2({
             </select>
           </Field>
           <fieldset className="field field-wide modality-choice">
+            <legend>Plataforma de videoconferencia</legend>
+            <label>
+              <input
+                type="radio"
+                name="plataforma"
+                value="GOOGLE_MEET"
+                checked={platform === "GOOGLE_MEET"}
+                onChange={() => setPlatform("GOOGLE_MEET")}
+              />
+              <span className="option-copy">
+                <strong>Google Meet</strong>
+                <small>Integración directa con Google Calendar</small>
+              </span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="plataforma"
+                value="ZOOM"
+                checked={platform === "ZOOM"}
+                onChange={() => setPlatform("ZOOM")}
+              />
+              <span className="option-copy">
+                <strong>Zoom</strong>
+                <small>Reunión institucional con anfitrión asignado</small>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset className="field field-wide modality-choice">
             <legend>Modalidad</legend>
-            <label><input type="radio" name="modalidad" value="VIRTUAL" checked={meetingMode === "VIRTUAL"} onChange={() => cambiarModalidad("VIRTUAL")} /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por Google Meet</small></span></label>
+            <label><input type="radio" name="modalidad" value="VIRTUAL" checked={meetingMode === "VIRTUAL"} onChange={() => cambiarModalidad("VIRTUAL")} /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por {platform === "ZOOM" ? "Zoom" : "Google Meet"}</small></span></label>
             <label><input type="radio" name="modalidad" value="HIBRIDA" checked={meetingMode === "HIBRIDA"} onChange={() => cambiarModalidad("HIBRIDA")} /><span className="option-copy"><strong>Híbrida</strong><small>Combina participación presencial y remota</small></span></label>
           </fieldset>
           <Field label="Descripción general (opcional)" wide><textarea name="descripcion" placeholder="Contexto común a toda la serie" rows={3} /></Field>

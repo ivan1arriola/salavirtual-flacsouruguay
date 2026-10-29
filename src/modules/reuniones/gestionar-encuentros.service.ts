@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { idsCancelacionesGooglePendientes } from "./encuentros.domain";
+import { idsCancelacionesPendientes } from "./encuentros.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   ConflictApiError,
@@ -45,10 +45,7 @@ export async function agregarEncuentro(
   rawInput: unknown,
 ) {
   const input = agregarEncuentroSchema.parse(rawInput);
-  const provider = await dependencies.db.proveedorReunion.findUnique({
-    where: { tipo: "GOOGLE_MEET" },
-  });
-  if (!provider) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
+
 
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
@@ -58,7 +55,7 @@ export async function agregarEncuentro(
         docentePrograma: { include: { docente: true } },
         instancias: {
           include: {
-            eventosProveedor: true,
+            eventosProveedor: { include: { proveedor: true } },
             cohosts: { select: { cuentaGoogleId: true } },
             cohostEmails: { select: { email: true } },
           },
@@ -68,6 +65,10 @@ export async function agregarEncuentro(
     });
     if (!serie) throw new NotFoundApiError("La reunión no existe.");
     await validarGestion(tx, actor, serie.docentePrograma.programaId);
+    const existingEvento = serie.instancias[0]?.eventosProveedor[0];
+    const provTipo = existingEvento?.proveedor?.tipo ?? "GOOGLE_MEET";
+    const provider = await tx.proveedorReunion.findUnique({ where: { tipo: provTipo } });
+    if (!provider) throw new IntegrationApiError(`${provTipo === "ZOOM" ? "Zoom" : "Google Meet"} no está configurado como proveedor.`, 503);
     if (input.inicio <= new Date()) throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
     if (!pertenecenAlMismoDia(input.inicio, input.fin, serie.timezone)) {
       throw new ValidationApiError("El encuentro debe finalizar el mismo día de la serie.");
@@ -207,7 +208,7 @@ export async function actualizarEncuentro(
       throw new ConflictApiError("El encuentro no se puede modificar.");
     }
 
-    const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM");
 
     if (input.accion === "EDITAR_FECHA" || input.accion === "EDITAR_ENCUENTRO") {
       if (actual.inicioProgramadoAt <= new Date()) {
@@ -572,7 +573,7 @@ export async function eliminarEncuentro(
     await tx.instanciaSala.update({ where: { id: meeting.id }, data: { estado: "CANCELADA" } });
 
     const eventIds = meeting.eventosProveedor
-      .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
+      .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM")
       .map(({ id }) => id);
     if (eventIds.length > 0) {
       await tx.eventoProveedor.updateMany({
@@ -616,7 +617,7 @@ export async function eliminarReunionCompleta(
     // or create duplicate audit records.
     if (request.estado === "CANCELADA") {
       return {
-        eventoProveedorIds: idsCancelacionesGooglePendientes(request.instancias)
+        eventoProveedorIds: idsCancelacionesPendientes(request.instancias)
       };
     }
     if (request.instancias.some(({ detallesLiquidacion }) => detallesLiquidacion.length > 0)) {
@@ -638,7 +639,7 @@ export async function eliminarReunionCompleta(
     });
 
     const eventIds = request.instancias.flatMap(({ eventosProveedor }) =>
-      eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET").map(({ id }) => id)
+      eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM").map(({ id }) => id)
     );
     await tx.instanciaSala.updateMany({
       where: { solicitudSalaId: request.id },

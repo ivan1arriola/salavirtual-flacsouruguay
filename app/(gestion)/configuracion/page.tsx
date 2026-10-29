@@ -10,6 +10,7 @@ import { PendingMeetOperationsManager } from "@/src/components/pending-meet-oper
 import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
 import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
+import { ZoomConfigForm } from "@/src/components/zoom-config-form";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
@@ -40,6 +41,10 @@ export default async function ConfiguracionPage({
     availableHosts,
     pendingOperationItems
   } = await obtenerDatosPaginaConfiguracion(db, section);
+
+  const zoomConfig = (section === "zoom" || section === "resumen")
+    ? await db.configuracionZoom.findUnique({ where: { id: "principal" } })
+    : null;
 
   const sesConfig = section === "correo"
     ? await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } })
@@ -77,7 +82,8 @@ export default async function ConfiguracionPage({
         programas: `${activeProgramCount} de ${programCount} activos`,
         workspace: pendingMeetOperations.length > 0
           ? `${pendingMeetOperations.length} pendientes`
-          : "Integración y permisos"
+          : "Integración y permisos",
+        zoom: zoomConfig?.accountId ? "OAuth activo" : "Pendiente"
       }}
     >
       {section === "resumen" ? (
@@ -109,6 +115,26 @@ export default async function ConfiguracionPage({
           title="Google Workspace"
           description="Revisá la salud de la integración, sus credenciales, permisos y archivos."
           status={<span className={`settings-section-status ${pendingMeetOperations.length > 0 ? "is-warning" : "is-ok"}`}>{pendingMeetOperations.length > 0 ? `${pendingMeetOperations.length} pendientes` : "Sin pendientes"}</span>}
+        />
+      ) : null}
+
+      {section === "zoom" ? (
+        <SettingsSectionHeader
+          title="Zoom"
+          description="Administrá las credenciales Server-to-Server OAuth institucionales."
+          status={
+            <span
+              className={`settings-section-status ${
+                zoomConfig?.accountId && zoomConfig?.clientId && zoomConfig?.clientSecretCifrado
+                  ? "is-ok"
+                  : "is-warning"
+              }`}
+            >
+              {zoomConfig?.accountId && zoomConfig?.clientId && zoomConfig?.clientSecretCifrado
+                ? "Configurado"
+                : "Pendiente"}
+            </span>
+          }
         />
       ) : null}
 
@@ -163,6 +189,21 @@ export default async function ConfiguracionPage({
         </div>
       ) : null}
 
+      {section === "zoom" ? (
+        <ZoomConfigForm
+          initial={
+            zoomConfig
+              ? {
+                  accountId: zoomConfig.accountId,
+                  clientId: zoomConfig.clientId,
+                  clientSecretConfigurado: Boolean(zoomConfig.clientSecretCifrado),
+                  activa: zoomConfig.activa,
+                }
+              : null
+          }
+        />
+      ) : null}
+
       {section === "salas" ? (
         <MeetHostsConfig
           hosts={hosts.map((host) => ({
@@ -174,7 +215,8 @@ export default async function ConfiguracionPage({
             tieneLicencia: host.tieneLicencia,
             activa: host.activa,
             passwordConfigurada: Boolean(host.secretRef),
-            enUso: host._count.eventosProveedor > 0
+            enUso: host._count.eventosProveedor > 0,
+            proveedorTipo: (host.proveedor?.tipo as "GOOGLE_MEET" | "ZOOM") ?? "GOOGLE_MEET"
           }))}
         />
       ) : null}

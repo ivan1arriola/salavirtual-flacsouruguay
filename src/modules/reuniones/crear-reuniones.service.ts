@@ -114,7 +114,8 @@ export async function crearReuniones(
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
 
-    const [docentePrograma, proveedorMeet] = await Promise.all([
+    const tipoProveedor = input.plataforma === "ZOOM" ? "ZOOM" : "GOOGLE_MEET";
+    const [docentePrograma, proveedor] = await Promise.all([
       tx.docentePrograma.findUnique({
         where: { id: input.docenteProgramaId },
         include: {
@@ -122,7 +123,7 @@ export async function crearReuniones(
           programa: { select: { activo: true } },
         },
       }),
-      tx.proveedorReunion.findUnique({ where: { tipo: "GOOGLE_MEET" } }),
+      tx.proveedorReunion.findUnique({ where: { tipo: tipoProveedor } }),
     ]);
     if (!docentePrograma) throw new NotFoundApiError("La asociación docente-programa no existe.");
     if (!docentePrograma.activo || !docentePrograma.programa.activo) {
@@ -131,9 +132,12 @@ export async function crearReuniones(
     if (!puedeCrearReuniones(actor.rol, actor.id, docentePrograma.docente.usuarioId)) {
       throw new ForbiddenApiError("No tiene permisos para crear reuniones de este docente.");
     }
-    if (!proveedorMeet) throw new IntegrationApiError("Google Meet no está configurado como proveedor.", 503);
+    if (!proveedor) {
+      const nombreProv = tipoProveedor === "ZOOM" ? "Zoom" : "Google Meet";
+      throw new IntegrationApiError(`${nombreProv} no está configurado como proveedor.`, 503);
+    }
 
-    await bloquearReservaSalas(tx, proveedorMeet.id);
+    await bloquearReservaSalas(tx, proveedor.id);
     const periodosAsistencia = input.instancias.map((instancia) => ({
       inicio: instancia.asistenciaInicio ?? instancia.inicio,
       fin: instancia.asistenciaFin ?? instancia.fin,
@@ -145,13 +149,13 @@ export async function crearReuniones(
 
     const [hosts, occupiedHosts] = await Promise.all([
       tx.cuentaProveedor.findMany({
-        where: { proveedorId: proveedorMeet.id, activa: true, tieneLicencia: true },
+        where: { proveedorId: proveedor.id, activa: true, tieneLicencia: true },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
         select: { id: true, prioridad: true, limiteConcurrente: true },
       }),
       tx.eventoProveedor.findMany({
         where: {
-          proveedorId: proveedorMeet.id,
+          proveedorId: proveedor.id,
           cuentaProveedorId: { not: null },
           instancia: {
             estado: "PROGRAMADA",
@@ -229,7 +233,7 @@ export async function crearReuniones(
       input.instancias,
     );
     if (!cuentaHostId) {
-      throw new ConflictApiError("No hay una sala Meet libre para todas las fechas solicitadas.");
+      throw new ConflictApiError(tipoProveedor === "ZOOM" ? "No hay una sala Zoom libre para todas las fechas solicitadas." : "No hay una sala Meet libre para todas las fechas solicitadas.");
     }
 
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
@@ -283,7 +287,7 @@ export async function crearReuniones(
         const evento = await tx.eventoProveedor.create({
           data: {
             instanciaSalaId: instancia.id,
-            proveedorId: proveedorMeet.id,
+            proveedorId: proveedor.id,
             cuentaProveedorId: cuentaHostId,
             operacionPendiente: "PROVISIONAR",
             ...(invitadosEmails.length > 0

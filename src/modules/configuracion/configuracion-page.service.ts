@@ -37,7 +37,7 @@ export async function obtenerDatosPaginaConfiguracion(
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
     db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
     db.cuentaProveedor.findMany({
-      where: { proveedor: { tipo: "GOOGLE_MEET" } },
+      where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -48,6 +48,7 @@ export async function obtenerDatosPaginaConfiguracion(
         tieneLicencia: true,
         activa: true,
         secretRef: true,
+        proveedor: { select: { tipo: true, nombre: true } },
         _count: { select: { eventosProveedor: true } }
       }
     }),

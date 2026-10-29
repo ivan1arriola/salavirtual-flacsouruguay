@@ -19,6 +19,7 @@ import {
 const SETTINGS_ICONS = {
   overview: LayoutDashboard,
   workspace: KeyRound,
+  zoom: Video,
   rooms: Video,
   programs: BookOpen,
   assistance: Clock3,

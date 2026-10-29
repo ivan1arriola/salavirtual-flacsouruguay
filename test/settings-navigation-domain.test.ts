@@ -27,6 +27,7 @@ describe("navegación de configuración", () => {
     expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([
       "resumen",
       "workspace",
+      "zoom",
       "salas",
       "asistencia",
       "correo",

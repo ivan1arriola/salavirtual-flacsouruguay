@@ -10,7 +10,16 @@ import type {
   ConferenceProvider,
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
+  WorkspaceCredentialsResult,
+  ZoomCredentialsResult,
 } from "../ports";
+import {
+  obtenerZoomAccessToken,
+  crearReunionZoomHttp,
+  actualizarReunionZoomHttp,
+  eliminarReunionZoomHttp,
+  type ZoomMeetingResult,
+} from "@/src/integrations/zoom/zoom-client";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -38,22 +47,8 @@ export async function sincronizarEventosPendientesUseCase(
 
   if (pendingIds.length === 0) return settled;
 
-  const creds = await repository.obtenerCredencialesWorkspace();
-  if (!creds.disponible || !creds.serviceAccountEmail || !creds.privateKey) {
-    if (creds.error) {
-      const failed = await Promise.all(
-        pendingIds.map((id) => repository.registrarErrorSinClaim(id, creds.error!))
-      );
-      return [...settled, ...failed];
-    }
-    return [
-      ...settled,
-      ...pendingIds.map((eventoProveedorId) => ({
-        eventoProveedorId,
-        estado: "PENDIENTE_CONFIGURACION" as const,
-      })),
-    ];
-  }
+  let workspaceCreds: WorkspaceCredentialsResult | null = null;
+  let zoomCreds: ZoomCredentialsResult | null = null;
 
   const results: ProvisionConferenciaResult[] = [...settled];
 
@@ -75,9 +70,176 @@ export async function sincronizarEventosPendientesUseCase(
       continue;
     }
 
+    const proveedorTipo = claim.event.proveedorTipo ?? "GOOGLE_MEET";
+
+    if (proveedorTipo === "ZOOM") {
+      if (!zoomCreds) {
+        zoomCreds = await repository.obtenerCredencialesZoom();
+      }
+
+      if (
+        !zoomCreds.disponible ||
+        !zoomCreds.accountId ||
+        !zoomCreds.clientId ||
+        !zoomCreds.clientSecret
+      ) {
+        results.push(
+          await repository.registrarErrorReclamado(
+            claim,
+            zoomCreds.error ||
+              "Credenciales de Zoom Server-to-Server OAuth no configuradas en el sistema (Administración > Zoom)."
+          )
+        );
+        continue;
+      }
+
+      try {
+        const token = await obtenerZoomAccessToken({
+          accountId: zoomCreds.accountId,
+          clientId: zoomCreds.clientId,
+          clientSecret: zoomCreds.clientSecret,
+        });
+
+        const request = claim.event.request;
+        const durationMinutes = Math.max(
+          1,
+          Math.round((request.fin.getTime() - request.inicio.getTime()) / 60_000)
+        );
+        let result: ConferenceProvisionResult | null = null;
+
+        switch (claim.operacion) {
+          case "PROVISIONAR": {
+            let externalEventId = claim.event.externalEventId;
+            let meetingInfo: ZoomMeetingResult;
+
+            if (!externalEventId) {
+              meetingInfo = await crearReunionZoomHttp(token, hostEmail, {
+                topic: request.titulo,
+                startTime: request.inicio,
+                durationMinutes,
+                timezone: request.timezone || "America/Montevideo",
+                agenda: request.descripcion,
+                requiereGrabacion: false,
+              });
+              externalEventId = meetingInfo.meetingId;
+              await repository.guardarExternalEventIdTemprano(
+                claim,
+                externalEventId,
+                meetingInfo
+              );
+            } else {
+              meetingInfo = {
+                meetingId: externalEventId,
+                joinUrl: `https://zoom.us/j/${externalEventId}`,
+              };
+            }
+
+            result = {
+              externalEventId,
+              codigoReunion: externalEventId,
+              joinUrl: meetingInfo.joinUrl,
+              payload: meetingInfo,
+            };
+            await repository.persistirMeetDetectado(claim, result);
+            break;
+          }
+
+          case "REPROGRAMAR": {
+            if (!claim.event.externalEventId) {
+              throw new Error("No existe una reunión de Zoom para reprogramar.");
+            }
+            await actualizarReunionZoomHttp(token, claim.event.externalEventId, {
+              topic: request.titulo,
+              startTime: request.inicio,
+              durationMinutes,
+              timezone: request.timezone || "America/Montevideo",
+              agenda: request.descripcion,
+            });
+            result = {
+              externalEventId: claim.event.externalEventId,
+              codigoReunion: claim.event.externalEventId,
+              joinUrl: `https://zoom.us/j/${claim.event.externalEventId}`,
+              payload: { reprogramadoAt: new Date().toISOString() },
+            };
+            await repository.persistirMeetDetectado(claim, result);
+            break;
+          }
+
+          case "CONFIGURAR_MEET": {
+            result = {
+              externalEventId: claim.event.externalEventId || "",
+              codigoReunion: claim.event.externalEventId || "",
+              joinUrl: `https://zoom.us/j/${claim.event.externalEventId}`,
+              payload: { configuradoAt: new Date().toISOString() },
+            };
+            break;
+          }
+
+          case "CANCELAR": {
+            if (claim.event.externalEventId) {
+              try {
+                await eliminarReunionZoomHttp(token, claim.event.externalEventId);
+              } catch (error) {
+                if (!esEventoInexistente(error)) throw error;
+              }
+            }
+            const completed = await repository.finalizarOperacion(
+              claim,
+              null,
+              true
+            );
+            results.push({
+              eventoProveedorId: id,
+              estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
+            });
+            continue;
+          }
+        }
+
+        const completed = await repository.finalizarOperacion(
+          claim,
+          result,
+          false
+        );
+        results.push({
+          eventoProveedorId: id,
+          estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
+          ...(completed && result?.codigoReunion
+            ? { codigoReunion: result.codigoReunion }
+            : {}),
+        });
+      } catch (error) {
+        const detail =
+          error instanceof Error ? error.message : "Error desconocido de Zoom.";
+        results.push(
+          await repository.registrarErrorReclamado(claim, detail)
+        );
+      }
+      continue;
+    }
+
+    // Google Meet workflow
+    if (!workspaceCreds) {
+      workspaceCreds = await repository.obtenerCredencialesWorkspace();
+    }
+    if (
+      !workspaceCreds.disponible ||
+      !workspaceCreds.serviceAccountEmail ||
+      !workspaceCreds.privateKey
+    ) {
+      results.push(
+        await repository.registrarErrorReclamado(
+          claim,
+          workspaceCreds.error ||
+            "Credenciales de Google Workspace no configuradas."
+        )
+      );
+      continue;
+    }
+
     const provider = providerFactory({
-      serviceAccountEmail: creds.serviceAccountEmail,
-      privateKey: creds.privateKey,
+      serviceAccountEmail: workspaceCreds.serviceAccountEmail,
+      privateKey: workspaceCreds.privateKey,
       subject: hostEmail,
     });
 
@@ -291,4 +453,3 @@ function esEventoInexistente(error: unknown): boolean {
     value.response?.status === 410
   );
 }
-

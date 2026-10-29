@@ -1,6 +1,7 @@
 export const SETTINGS_SECTION_IDS = [
   "resumen",
   "workspace",
+  "zoom",
   "salas",
   "programas",
   "asistencia",
@@ -14,7 +15,7 @@ export type SettingsSectionMetadata = Readonly<{
   id: SettingsSection;
   label: string;
   description: string;
-  icon: "overview" | "workspace" | "rooms" | "programs" | "assistance" | "email" | "history";
+  icon: "overview" | "workspace" | "zoom" | "rooms" | "programs" | "assistance" | "email" | "history";
 }>;
 
 export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
@@ -29,6 +30,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
     label: "Google Workspace",
     description: "Integración, permisos y archivos",
     icon: "workspace"
+  },
+  {
+    id: "zoom",
+    label: "Zoom",
+    description: "Credenciales OAuth y configuración",
+    icon: "zoom"
   },
   {
     id: "salas",

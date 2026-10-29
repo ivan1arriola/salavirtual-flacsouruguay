@@ -17,6 +17,22 @@ import type {
   ConferenciasRepositoryPort,
   EventoProveedorSnapshot,
 } from "../src/modules/conferencias/ports";
+import {
+  crearReunionZoomHttp,
+  actualizarReunionZoomHttp,
+  eliminarReunionZoomHttp,
+} from "@/src/integrations/zoom/zoom-client";
+
+vi.mock("@/src/integrations/zoom/zoom-client", () => ({
+  obtenerZoomAccessToken: vi.fn(async () => "mock-zoom-token"),
+  crearReunionZoomHttp: vi.fn(async () => ({
+    meetingId: "98765432100",
+    joinUrl: "https://zoom.us/j/98765432100",
+    startUrl: "https://zoom.us/s/98765432100",
+  })),
+  actualizarReunionZoomHttp: vi.fn(async () => {}),
+  eliminarReunionZoomHttp: vi.fn(async () => {}),
+}));
 
 describe("conferencias/application", () => {
   const fakeRequest: ConferenceProvisionRequest = {
@@ -44,9 +60,16 @@ describe("conferencias/application", () => {
       serviceAccountEmail: "svc@flacso.iam.gserviceaccount.com",
       privateKey: "pk-123",
     })),
+    obtenerCredencialesZoom: vi.fn(async () => ({
+      disponible: true,
+      accountId: "acc-123",
+      clientId: "cli-123",
+      clientSecret: "sec-123",
+    })),
     reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
       event: {
         id,
+        proveedorTipo: "GOOGLE_MEET",
         externalEventId: null,
         solicitudSalaId: "sol-1",
         organizerEmail: "sala01@flacso.edu.uy",
@@ -147,6 +170,7 @@ describe("conferencias/application", () => {
       reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
         event: {
           id,
+          proveedorTipo: "GOOGLE_MEET",
           externalEventId: "google-evt-1",
           solicitudSalaId: "sol-1",
           organizerEmail: "sala01@flacso.edu.uy",
@@ -163,6 +187,7 @@ describe("conferencias/application", () => {
         codigoReunion: "abc-defg-hij",
         joinUrl: "https://meet.google.com/abc-defg-hij",
         payload: {
+          id: "google-evt-1",
           summary: fakeRequest.titulo,
           description: fakeRequest.descripcion,
           start: { dateTime: fakeRequest.inicio.toISOString(), timeZone: fakeRequest.timezone },
@@ -175,6 +200,7 @@ describe("conferencias/application", () => {
     const results = await sincronizarEventosPendientesUseCase(repo, factory, ["evt-reprog-1"]);
     expect(results[0].estado).toBe("SINCRONIZADA");
     expect(provider.actualizarEvento).toHaveBeenCalled();
+    expect(repo.persistirMeetDetectado).toHaveBeenCalled();
   });
 
   it("sincronizarEventosPendientesUseCase orquesta cancelacion exitosa", async () => {
@@ -182,6 +208,7 @@ describe("conferencias/application", () => {
       reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
         event: {
           id,
+          proveedorTipo: "GOOGLE_MEET",
           externalEventId: "google-evt-1",
           solicitudSalaId: "sol-1",
           organizerEmail: "sala01@flacso.edu.uy",
@@ -198,6 +225,115 @@ describe("conferencias/application", () => {
     const results = await sincronizarEventosPendientesUseCase(repo, factory, ["evt-canc-1"]);
     expect(results[0].estado).toBe("SINCRONIZADA");
     expect(provider.cancelarEvento).toHaveBeenCalledWith("sala01@flacso.edu.uy", "google-evt-1");
+  });
+
+  it("sincronizarEventosPendientesUseCase orquesta provisionamiento Zoom exitoso", async () => {
+    const repo = createMockRepo({
+      reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
+        event: {
+          id,
+          proveedorTipo: "ZOOM",
+          externalEventId: null,
+          solicitudSalaId: "sol-1",
+          organizerEmail: "zoom01@flacso.edu.uy",
+          request: fakeRequest,
+        },
+        operacion: "PROVISIONAR",
+        at: new Date(),
+        token: "tok-1",
+      })),
+    });
+    const factory: ConferenceProviderFactory = () => createMockProvider();
+
+    const results = await sincronizarEventosPendientesUseCase(repo, factory, ["evt-zoom-1"]);
+    expect(results[0].estado).toBe("SINCRONIZADA");
+    expect(results[0].codigoReunion).toBe("98765432100");
+    expect(crearReunionZoomHttp).toHaveBeenCalled();
+    expect(repo.guardarExternalEventIdTemprano).toHaveBeenCalledWith(
+      expect.anything(),
+      "98765432100",
+      expect.anything()
+    );
+    expect(repo.persistirMeetDetectado).toHaveBeenCalled();
+    expect(repo.finalizarOperacion).toHaveBeenCalled();
+  });
+
+  it("sincronizarEventosPendientesUseCase orquesta reprogramacion Zoom exitosa", async () => {
+    const repo = createMockRepo({
+      reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
+        event: {
+          id,
+          proveedorTipo: "ZOOM",
+          externalEventId: "98765432100",
+          solicitudSalaId: "sol-1",
+          organizerEmail: "zoom01@flacso.edu.uy",
+          request: fakeRequest,
+        },
+        operacion: "REPROGRAMAR",
+        at: new Date(),
+        token: "tok-1",
+      })),
+    });
+    const factory: ConferenceProviderFactory = () => createMockProvider();
+
+    const results = await sincronizarEventosPendientesUseCase(repo, factory, ["evt-zoom-reprog"]);
+    expect(results[0].estado).toBe("SINCRONIZADA");
+    expect(actualizarReunionZoomHttp).toHaveBeenCalledWith(
+      "mock-zoom-token",
+      "98765432100",
+      expect.objectContaining({ topic: fakeRequest.titulo })
+    );
+    expect(repo.finalizarOperacion).toHaveBeenCalled();
+  });
+
+  it("sincronizarEventosPendientesUseCase orquesta cancelacion Zoom exitosa", async () => {
+    const repo = createMockRepo({
+      reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
+        event: {
+          id,
+          proveedorTipo: "ZOOM",
+          externalEventId: "98765432100",
+          solicitudSalaId: "sol-1",
+          organizerEmail: "zoom01@flacso.edu.uy",
+          request: fakeRequest,
+        },
+        operacion: "CANCELAR",
+        at: new Date(),
+        token: "tok-1",
+      })),
+    });
+    const factory: ConferenceProviderFactory = () => createMockProvider();
+
+    const results = await sincronizarEventosPendientesUseCase(repo, factory, ["evt-zoom-canc"]);
+    expect(results[0].estado).toBe("SINCRONIZADA");
+    expect(eliminarReunionZoomHttp).toHaveBeenCalledWith("mock-zoom-token", "98765432100");
+    expect(repo.finalizarOperacion).toHaveBeenCalled();
+  });
+
+  it("sincronizarEventosPendientesUseCase reporta error claro cuando faltan credenciales Zoom", async () => {
+    const repo = createMockRepo({
+      obtenerCredencialesZoom: vi.fn(async () => ({ disponible: false })),
+      reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
+        event: {
+          id,
+          proveedorTipo: "ZOOM",
+          externalEventId: null,
+          solicitudSalaId: "sol-1",
+          organizerEmail: "zoom01@flacso.edu.uy",
+          request: fakeRequest,
+        },
+        operacion: "PROVISIONAR",
+        at: new Date(),
+        token: "tok-1",
+      })),
+    });
+    const factory: ConferenceProviderFactory = () => createMockProvider();
+
+    await sincronizarEventosPendientesUseCase(repo, factory, ["evt-zoom-nocreds"]);
+    expect(repo.registrarErrorReclamado).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("Credenciales de Zoom Server-to-Server OAuth no configuradas")
+    );
   });
 
   it("descartarOperacionPendienteUseCase y lote delegan en el repositorio", async () => {

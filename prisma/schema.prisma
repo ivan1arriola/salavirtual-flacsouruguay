@@ -43,6 +43,7 @@ model Usuario {
   configuracionesGoogleActualizadas       ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
   configuracionesAsistenciaActualizadas   ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
   configuracionesCorreoSesActualizadas    ConfiguracionCorreoSes[]        @relation("ConfiguracionCorreoSesActualizadaPor")
+  configuracionesZoomActualizadas         ConfiguracionZoom[]              @relation("ConfiguracionZoomActualizadaPor")
   docente                                 Docente?
   asistenteTecnico                        AsistenteTecnico?
   notificaciones                          Notificacion[]
@@ -95,6 +96,20 @@ model ConfiguracionGoogleWorkspace {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   actualizadaPor        Usuario  @relation("ConfiguracionGoogleActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+
+  @@index([actualizadaPorId, updatedAt])
+}
+
+model ConfiguracionZoom {
+  id                  String   @id @default("principal")
+  accountId           String?
+  clientId            String?
+  clientSecretCifrado String?  @db.Text
+  activa              Boolean  @default(true)
+  actualizadaPorId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  actualizadaPor      Usuario? @relation("ConfiguracionZoomActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: SetNull)
 
   @@index([actualizadaPorId, updatedAt])
 }
@@ -736,6 +751,7 @@ enum RolUsuario {
 
 enum TipoProveedor {
   GOOGLE_MEET
+  ZOOM
   ZOOM_HISTORICO
 }
 
@@ -789,6 +805,7 @@ enum OperacionIntegracionProveedor {
 
 enum OrigenGrabacion {
   GOOGLE_DRIVE
+  ZOOM
   ZOOM_HISTORICO
   MANUAL
 }

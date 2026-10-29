@@ -14,13 +14,14 @@ const hostFields = z.object({
   prioridad: z.number().int().min(1).max(1000),
   limiteConcurrente: z.number().int().min(1).max(100).nullable(),
   tieneLicencia: z.boolean(),
-  activa: z.boolean()
+  activa: z.boolean(),
+  proveedorTipo: z.enum(["GOOGLE_MEET", "ZOOM"]).default("GOOGLE_MEET")
 });
 
 const passwordSchema = z.string().trim().min(8, "La contraseña debe tener al menos 8 caracteres.").max(200);
 
 const createSchema = hostFields.extend({
-  password: passwordSchema
+  password: passwordSchema.optional()
 });
 
 const updateSchema = hostFields.extend({
@@ -53,10 +54,10 @@ export async function POST(request: Request) {
     const input = createSchema.parse(await request.json());
     const host = await db.$transaction(async (tx) => {
       const provider = await tx.proveedorReunion.upsert({
-        where: { tipo: "GOOGLE_MEET" },
+        where: { tipo: input.proveedorTipo },
         create: {
-          tipo: "GOOGLE_MEET",
-          nombre: "Google Meet",
+          tipo: input.proveedorTipo,
+          nombre: input.proveedorTipo === "ZOOM" ? "Zoom" : "Google Meet",
           operativo: true,
           historico: false
         },
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
           nombre: input.nombre,
           emailOrganizador: input.email,
           externalAccountId: input.email,
-          secretRef: cifrarConfiguracion(input.password),
+          secretRef: input.password ? cifrarConfiguracion(input.password) : null,
           prioridad: input.prioridad,
           limiteConcurrente: input.limiteConcurrente,
           tieneLicencia: input.tieneLicencia,
@@ -124,7 +125,7 @@ export async function PUT(request: Request) {
           _count: { select: { eventosProveedor: true } }
         }
       });
-      if (!current || current.proveedor.tipo !== "GOOGLE_MEET") {
+      if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
         throw new Error("La cuenta Meet no existe.");
       }
 
@@ -246,7 +247,7 @@ export async function DELETE(request: Request) {
           _count: { select: { eventosProveedor: true } }
         }
       });
-      if (!current || current.proveedor.tipo !== "GOOGLE_MEET") {
+      if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
         throw new Error("La cuenta Meet no existe.");
       }
 
