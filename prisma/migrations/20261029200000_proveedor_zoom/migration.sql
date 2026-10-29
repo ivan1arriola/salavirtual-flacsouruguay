@@ -28,8 +28,3 @@ BEGIN
         ALTER TABLE "ConfiguracionZoom" ADD CONSTRAINT "ConfiguracionZoom_actualizadaPorId_fkey" FOREIGN KEY ("actualizadaPorId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
     END IF;
 END $$;
-
--- Upsert ProveedorReunion ZOOM
-INSERT INTO "ProveedorReunion" ("id", "tipo", "nombre", "operativo", "historico")
-VALUES ('prov-zoom', 'ZOOM', 'Zoom', true, false)
-ON CONFLICT ("tipo") DO UPDATE SET "operativo" = true, "historico" = false;
