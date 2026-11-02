@@ -43,7 +43,7 @@ export function crearPrismaConferenciasRepository(
     async obtenerSnapshotsEventos(ids) {
       if (ids.length === 0) return [];
       const rows = await db.eventoProveedor.findMany({
-        where: { id: { in: [...ids] }, proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { id: { in: [...ids] } },
         select: {
           id: true,
           estadoIntegracion: true,
