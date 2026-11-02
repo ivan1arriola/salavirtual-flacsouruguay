@@ -24,6 +24,7 @@ import {
 import { bloquearReservaSalas, bloquearSolicitudSala } from "./reserva-salas.adapter";
 import { pertenecenAlMismoDia } from "./periodos.domain";
 import { auditarEncuentro as auditar, recalcularSolicitud } from "./encuentros-persistence.adapter";
+import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
@@ -37,6 +38,8 @@ export type GestionEncuentrosDependencies = Readonly<{
     settings: Readonly<{ requiereAsistenciaTecnica?: boolean }>,
   ) => Promise<void>;
 }>;
+
+const ESTADOS_OCUPAN_CAPACIDAD = ["PROGRAMADA", "EN_CURSO"] as const;
 
 export async function agregarEncuentro(
   dependencies: GestionEncuentrosDependencies,
@@ -65,10 +68,10 @@ export async function agregarEncuentro(
     });
     if (!serie) throw new NotFoundApiError("La reunión no existe.");
     await validarGestion(tx, actor, serie.docentePrograma.programaId);
-    const existingEvento = serie.instancias[0]?.eventosProveedor[0];
-    const provTipo = existingEvento?.proveedor?.tipo ?? "GOOGLE_MEET";
-    const provider = await tx.proveedorReunion.findUnique({ where: { tipo: provTipo } });
-    if (!provider) throw new IntegrationApiError(`${provTipo === "ZOOM" ? "Zoom" : "Google Meet"} no está configurado como proveedor.`, 503);
+    // Nunca se crean nuevas reuniones Meet: todo encuentro agregado usa Zoom,
+    // incluso en series legadas de Meet.
+    const provider = await tx.proveedorReunion.findUnique({ where: { tipo: "ZOOM" } });
+    if (!provider) throw new IntegrationApiError("Zoom no está configurado como proveedor.", 503);
     if (input.inicio <= new Date()) throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
     if (!pertenecenAlMismoDia(input.inicio, input.fin, serie.timezone)) {
       throw new ValidationApiError("El encuentro debe finalizar el mismo día de la serie.");
@@ -83,7 +86,7 @@ export async function agregarEncuentro(
       timezone: serie.timezone,
     });
     if (serie.instancias.some((item) =>
-      item.estado === "PROGRAMADA" && input.inicio < item.finProgramadoAt && input.fin > item.inicioProgramadoAt
+      ESTADOS_OCUPAN_CAPACIDAD.some((estado) => estado === item.estado) && input.inicio < item.finProgramadoAt && input.fin > item.inicioProgramadoAt
     )) {
       throw new ConflictApiError("El nuevo encuentro se superpone con otro de la misma serie.");
     }
@@ -93,14 +96,14 @@ export async function agregarEncuentro(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: provider.id, activa: true, tieneLicencia: true },
         orderBy: { prioridad: "asc" },
-        select: { id: true, prioridad: true, limiteConcurrente: true },
+        select: { id: true, prioridad: true },
       }),
       tx.eventoProveedor.findMany({
         where: {
           proveedorId: provider.id,
           cuentaProveedorId: { not: null },
           instancia: {
-            estado: "PROGRAMADA",
+            estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
             inicioProgramadoAt: { lt: input.fin },
             finProgramadoAt: { gt: input.inicio },
           },
@@ -111,12 +114,16 @@ export async function agregarEncuentro(
         },
       }),
     ]);
+    // Preferencia: host Zoom ya usado por la serie (los hosts Meet no aplican).
     const seriePreferredHost = serie.instancias.flatMap(({ eventosProveedor }) =>
-      eventosProveedor.flatMap(({ cuentaProveedorId }) => cuentaProveedorId ? [cuentaProveedorId] : [])
+      eventosProveedor.flatMap(({ cuentaProveedorId, proveedor }) =>
+        cuentaProveedorId && proveedor.tipo === "ZOOM" ? [cuentaProveedorId] : []
+      )
     )[0] ?? null;
     const hostId = elegirCuentaHostParaPeriodos(
       seriePreferredHost,
-      seriePreferredHost ? hosts.filter(({ id }) => id === seriePreferredHost) : hosts,
+      // Zoom opera con capacidad 1 por host.
+      hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
       conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
         cuentaProveedorId,
         inicio: instancia.inicioProgramadoAt,
@@ -125,9 +132,7 @@ export async function agregarEncuentro(
       [input],
     );
     if (!hostId) {
-      throw new ConflictApiError(seriePreferredHost
-        ? "La sala de esta serie no está disponible en ese horario."
-        : "No hay una sala Meet libre para ese horario.");
+      throw new ConflictApiError("No hay un host Zoom libre para ese horario.");
     }
 
     const ordinal = serie.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0) + 1;
@@ -136,6 +141,7 @@ export async function agregarEncuentro(
         solicitudSalaId: serie.id,
         ordinal,
         descripcion: input.descripcion || serie.descripcion,
+        proveedorActivoTipo: "ZOOM",
         inicioProgramadoAt: input.inicio,
         finProgramadoAt: input.fin,
         inicioAsistenciaTecnicaAt: input.inicioAsistenciaTecnica ?? null,
@@ -208,7 +214,8 @@ export async function actualizarEncuentro(
       throw new ConflictApiError("El encuentro no se puede modificar.");
     }
 
-    const event = actual.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM");
+    // Con Meet histórico y Zoom activo, toda operación aplica al evento activo.
+    const event = seleccionarEventoProveedorActivo(actual);
 
     if (input.accion === "EDITAR_FECHA" || input.accion === "EDITAR_ENCUENTRO") {
       if (actual.inicioProgramadoAt <= new Date()) {
@@ -222,7 +229,7 @@ export async function actualizarEncuentro(
         where: {
           solicitudSalaId: solicitudId,
           id: { not: instanciaId },
-          estado: "PROGRAMADA",
+          estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
           inicioProgramadoAt: { lt: input.fin },
           finProgramadoAt: { gt: input.inicio },
         },
@@ -241,7 +248,7 @@ export async function actualizarEncuentro(
               id: { not: event.id },
               cuentaProveedorId: event.cuentaProveedorId,
               instancia: {
-                estado: "PROGRAMADA",
+                estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
                 inicioProgramadoAt: { lt: input.fin },
                 finProgramadoAt: { gt: input.inicio },
               },
@@ -254,7 +261,7 @@ export async function actualizarEncuentro(
         ]);
         const available = host && elegirCuentaHostParaPeriodos(
           host.id,
-          [host],
+          [event.proveedor.tipo === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host],
           conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
             cuentaProveedorId,
             inicio: instancia.inicioProgramadoAt,
@@ -262,7 +269,7 @@ export async function actualizarEncuentro(
           }] : []),
           [input],
         );
-        if (!available) throw new ConflictApiError("La sala Meet ya alcanzó su límite en ese horario.");
+        if (!available) throw new ConflictApiError("La sala ya alcanzó su límite en ese horario.");
       }
 
       const deltaInicioMs = input.inicio.getTime() - actual.inicioProgramadoAt.getTime();
@@ -572,9 +579,9 @@ export async function eliminarEncuentro(
     }, null);
     await tx.instanciaSala.update({ where: { id: meeting.id }, data: { estado: "CANCELADA" } });
 
-    const eventIds = meeting.eventosProveedor
-      .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM")
-      .map(({ id }) => id);
+    // Solo se cancela el evento activo; el Meet histórico se preserva.
+    const activo = seleccionarEventoProveedorActivo(meeting);
+    const eventIds = activo ? [activo.id] : [];
     if (eventIds.length > 0) {
       await tx.eventoProveedor.updateMany({
         where: { id: { in: eventIds } },

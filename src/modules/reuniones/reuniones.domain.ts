@@ -42,7 +42,7 @@ export const crearReunionesSchema = z
     requiereAsistenciaTecnica: z.boolean().default(false),
     requiereGrabacion: z.boolean().default(false),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
-    plataforma: z.enum(["GOOGLE_MEET", "ZOOM"]).default("ZOOM"),
+    plataforma: z.literal("ZOOM").default("ZOOM"),
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
     instancias: z.array(instanciaSchema).min(1).max(100)
   })

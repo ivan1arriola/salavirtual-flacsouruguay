@@ -12,11 +12,20 @@ export async function GET(request: Request) {
   }
   const pendientes = await db.eventoProveedor.findMany({
     where: {
-      proveedor: { tipo: "GOOGLE_MEET" },
       operacionPendiente: { not: null },
-      OR: [
-        { reclamoIntegracionAt: null },
-        { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } }
+      AND: [
+        { OR: [
+          { proveedor: { tipo: "ZOOM" } },
+          {
+            proveedor: { tipo: "GOOGLE_MEET" },
+            externalEventId: { not: null },
+            instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
+          },
+        ] },
+        { OR: [
+          { reclamoIntegracionAt: null },
+          { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } },
+        ] },
       ]
     },
     orderBy: { updatedAt: "asc" },

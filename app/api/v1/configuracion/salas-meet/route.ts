@@ -22,12 +22,26 @@ const passwordSchema = z.string().trim().min(8, "La contraseña debe tener al me
 
 const createSchema = hostFields.extend({
   password: passwordSchema.optional()
+}).superRefine(({ proveedorTipo, password, limiteConcurrente }, context) => {
+  if (proveedorTipo === "GOOGLE_MEET" && !password) {
+    context.addIssue({ code: "custom", path: ["password"], message: "La contraseña de la sala Meet es obligatoria." });
+  }
+  if (proveedorTipo === "ZOOM" && password) {
+    context.addIssue({ code: "custom", path: ["password"], message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual." });
+  }
+  if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
+    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
+  }
 });
 
 const updateSchema = hostFields.extend({
   id: z.string().min(1),
   password: z.union([z.literal(""), passwordSchema]).optional(),
   notificarCambioPassword: z.boolean().default(true)
+}).superRefine(({ proveedorTipo, limiteConcurrente }, context) => {
+  if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
+    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
+  }
 });
 
 const deleteSchema = z.object({
@@ -70,7 +84,7 @@ export async function POST(request: Request) {
         },
         select: { id: true }
       });
-      if (duplicate) throw new Error("Ya existe una cuenta Meet con ese correo.");
+      if (duplicate) throw new Error(`Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`);
 
       const created = await tx.cuentaProveedor.create({
         data: {
@@ -88,7 +102,7 @@ export async function POST(request: Request) {
       await tx.auditoria.create({
         data: {
           actorUsuarioId: actor.id,
-          accion: "CUENTA_MEET_CREADA",
+          accion: input.proveedorTipo === "ZOOM" ? "CUENTA_ZOOM_CREADA" : "CUENTA_MEET_CREADA",
           entidadTipo: "CuentaProveedor",
           entidadId: created.id,
           valorNuevo: {
@@ -98,14 +112,14 @@ export async function POST(request: Request) {
             limiteConcurrente: created.limiteConcurrente,
             tieneLicencia: created.tieneLicencia,
             activa: created.activa,
-            passwordConfigurada: true
+            passwordConfigurada: Boolean(created.secretRef)
           }
         }
       });
       return created;
     });
 
-    return NextResponse.json({ host: toSafeHost(host, false), message: "Sala Meet agregada." }, { status: 201 });
+    return NextResponse.json({ host: toSafeHost(host, false), message: `Sala ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} agregada.` }, { status: 201 });
   } catch (error) {
     return errorResponse(error);
   }
@@ -126,7 +140,14 @@ export async function PUT(request: Request) {
         }
       });
       if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
-        throw new Error("La cuenta Meet no existe.");
+        throw new Error("La cuenta organizadora no existe.");
+      }
+
+      if (current.proveedor.tipo !== input.proveedorTipo) {
+        throw new Error("La plataforma de una cuenta existente no se puede cambiar.");
+      }
+      if (current.proveedor.tipo === "ZOOM" && input.password) {
+        throw new Error("Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual.");
       }
 
       const emailChanged = current.emailOrganizador?.toLowerCase() !== input.email;
@@ -142,7 +163,7 @@ export async function PUT(request: Request) {
           },
           select: { id: true }
         });
-        if (duplicate) throw new Error("Ya existe una cuenta Meet con ese correo.");
+        if (duplicate) throw new Error(`Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`);
       }
 
       const password = input.password || null;
@@ -176,7 +197,7 @@ export async function PUT(request: Request) {
       await tx.auditoria.create({
         data: {
           actorUsuarioId: actor.id,
-          accion: passwordChanged ? "CUENTA_MEET_PASSWORD_ACTUALIZADA" : "CUENTA_MEET_ACTUALIZADA",
+          accion: passwordChanged ? "CUENTA_MEET_PASSWORD_ACTUALIZADA" : current.proveedor.tipo === "ZOOM" ? "CUENTA_ZOOM_ACTUALIZADA" : "CUENTA_MEET_ACTUALIZADA",
           entidadTipo: "CuentaProveedor",
           entidadId: current.id,
           valorAnterior: {
@@ -205,7 +226,8 @@ export async function PUT(request: Request) {
         host: updated,
         enUso: current._count.eventosProveedor > 0,
         passwordChanged,
-        password
+        password,
+        proveedorTipo: current.proveedor.tipo
       };
     });
 
@@ -215,7 +237,7 @@ export async function PUT(request: Request) {
     }
 
     const passwordMessage = !result.passwordChanged
-      ? "Sala Meet actualizada."
+      ? `Sala ${result.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} actualizada.`
       : !input.notificarCambioPassword
         ? "Sala actualizada. El cambio de contraseña se guardó sin enviar avisos."
         : notificados > 0
@@ -248,7 +270,7 @@ export async function DELETE(request: Request) {
         }
       });
       if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
-        throw new Error("La cuenta Meet no existe.");
+        throw new Error("La cuenta organizadora no existe.");
       }
 
       const activeMeetings = await tx.eventoProveedor.count({
@@ -270,7 +292,7 @@ export async function DELETE(request: Request) {
       await tx.auditoria.create({
         data: {
           actorUsuarioId: actor.id,
-          accion: "CUENTA_MEET_ELIMINADA",
+          accion: current.proveedor.tipo === "ZOOM" ? "CUENTA_ZOOM_ELIMINADA" : "CUENTA_MEET_ELIMINADA",
           entidadTipo: "CuentaProveedor",
           entidadId: current.id,
           valorAnterior: {
@@ -416,6 +438,6 @@ function errorResponse(error: unknown) {
   if (error instanceof z.ZodError) {
     return NextResponse.json({ error: error.issues[0]?.message ?? "Datos inválidos." }, { status: 400 });
   }
-  const message = error instanceof Error ? error.message : "No se pudo guardar la sala Meet.";
+  const message = error instanceof Error ? error.message : "No se pudo guardar la sala.";
   return NextResponse.json({ error: message }, { status: 400 });
 }

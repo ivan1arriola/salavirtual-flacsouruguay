@@ -18,6 +18,7 @@ import {
   crearReunionZoomHttp,
   actualizarReunionZoomHttp,
   eliminarReunionZoomHttp,
+  obtenerReunionZoomHttp,
   type ZoomMeetingResult,
 } from "@/src/integrations/zoom/zoom-client";
 
@@ -119,26 +120,23 @@ export async function sincronizarEventosPendientesUseCase(
                 durationMinutes,
                 timezone: request.timezone || "America/Montevideo",
                 agenda: request.descripcion,
-                requiereGrabacion: false,
+                requiereGrabacion: request.requiereGrabacion ?? false,
               });
               externalEventId = meetingInfo.meetingId;
               await repository.guardarExternalEventIdTemprano(
                 claim,
                 externalEventId,
-                meetingInfo
+                { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl }
               );
             } else {
-              meetingInfo = {
-                meetingId: externalEventId,
-                joinUrl: `https://zoom.us/j/${externalEventId}`,
-              };
+              meetingInfo = await obtenerReunionZoomHttp(token, externalEventId);
             }
 
             result = {
               externalEventId,
               codigoReunion: externalEventId,
               joinUrl: meetingInfo.joinUrl,
-              payload: meetingInfo,
+              payload: { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl },
             };
             await repository.persistirMeetDetectado(claim, result);
             break;
@@ -155,22 +153,25 @@ export async function sincronizarEventosPendientesUseCase(
               timezone: request.timezone || "America/Montevideo",
               agenda: request.descripcion,
             });
+            const meetingInfo = await obtenerReunionZoomHttp(token, claim.event.externalEventId);
             result = {
               externalEventId: claim.event.externalEventId,
               codigoReunion: claim.event.externalEventId,
-              joinUrl: `https://zoom.us/j/${claim.event.externalEventId}`,
-              payload: { reprogramadoAt: new Date().toISOString() },
+              joinUrl: meetingInfo.joinUrl,
+              payload: { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl, reprogramadoAt: new Date().toISOString() },
             };
             await repository.persistirMeetDetectado(claim, result);
             break;
           }
 
           case "CONFIGURAR_MEET": {
+            if (!claim.event.externalEventId) throw new Error("No existe una reunión Zoom para configurar.");
+            const meetingInfo = await obtenerReunionZoomHttp(token, claim.event.externalEventId);
             result = {
-              externalEventId: claim.event.externalEventId || "",
-              codigoReunion: claim.event.externalEventId || "",
-              joinUrl: `https://zoom.us/j/${claim.event.externalEventId}`,
-              payload: { configuradoAt: new Date().toISOString() },
+              externalEventId: claim.event.externalEventId,
+              codigoReunion: claim.event.externalEventId,
+              joinUrl: meetingInfo.joinUrl,
+              payload: { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl, configuradoAt: new Date().toISOString() },
             };
             break;
           }

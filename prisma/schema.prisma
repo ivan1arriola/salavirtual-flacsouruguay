@@ -310,6 +310,9 @@ model InstanciaSala {
   finAsistenciaTecnicaAt      DateTime?
   timezone                    String
   estado                      EstadoInstancia                       @default(PROGRAMADA)
+  proveedorActivoTipo         TipoProveedor?
+  conservarGoogleMeet         Boolean                               @default(false)
+  motivoConservarGoogleMeet   String?
   requiereAsistenciaTecnica   Boolean                               @default(false)
   requiereGrabacion         Boolean                               @default(false)
   inicioRealAt              DateTime?
@@ -329,12 +332,14 @@ model InstanciaSala {
   cohostEmails              CohostEmailReunion[]
   invitados                 InvitadoReunion[]
   recordatoriosInvitados     RecordatorioInvitadoReunion[]
+  avisosMigracionZoom       AvisoMigracionZoom[]
   registrosAsistencia       RegistroAsistenciaMeet[]
   registrosMonitoreoRetroactivo RegistroMonitoreoRetroactivo[]
   recordatorios             RecordatorioReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
+  @@index([proveedorActivoTipo, conservarGoogleMeet, estado, inicioProgramadoAt], map: "InstanciaSala_migracion_zoom_idx")
 }
 
 model EventoProveedor {
@@ -430,6 +435,27 @@ model RecordatorioInvitadoReunion {
 
   @@unique([instanciaSalaId, email, inicioProgramadoAt], map: "RecordatorioInvitadoUnico")
   @@index([estado, createdAt])
+}
+
+/// Outbox del aviso de migración Meet → Zoom: una fila por encuentro y correo.
+/// RESERVADO = envío en curso o incierto (no se reintenta solo), ACEPTADO = enviado,
+/// ERROR = fallo confirmado y reintentable, OBSOLETO = el encuentro dejó de ser válido.
+model AvisoMigracionZoom {
+  id                 String        @id @default(cuid())
+  instanciaSalaId    String
+  email              String
+  inicioProgramadoAt DateTime
+  joinUrl            String
+  estado             String        @default("RESERVADO")
+  intentos           Int           @default(1)
+  errorCodigo        String?
+  enviadoAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  instancia          InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, email], map: "AvisoMigracionZoomUnico")
+  @@index([estado, updatedAt])
 }
 
 model InvitadoReunion {

@@ -1,0 +1,81 @@
+import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
+
+export type CandidatoMigracionZoom = Readonly<{
+  id: string;
+  inicio: Date;
+  fin: Date;
+  estado: string;
+  proveedorActivo: "GOOGLE_MEET" | "ZOOM" | null;
+  conservarGoogleMeet: boolean;
+  meetSincronizado: boolean;
+  meetJoinUrl: string | null;
+  zoomSincronizado: boolean;
+}>;
+
+export type EstadoVistaPreviaZoom =
+  | "MIGRABLE"
+  | "EXCEPCION"
+  | "YA_ZOOM"
+  | "SIN_SALA"
+  | "CERCANO"
+  | "NO_FUTURO"
+  | "REVISAR";
+
+export type FilaVistaPreviaZoom = Readonly<{
+  id: string;
+  estado: EstadoVistaPreviaZoom;
+  hostId: string | null;
+}>;
+
+type HostZoom = Readonly<{ id: string; prioridad: number; limiteConcurrente: number | null }>;
+type ReservaZoom = Readonly<{ cuentaProveedorId: string; inicio: Date; fin: Date }>;
+
+export function planificarMigracionZoom(input: Readonly<{
+  ahora: Date;
+  margenSeguridadHoras: number;
+  candidatos: readonly CandidatoMigracionZoom[];
+  hosts: readonly HostZoom[];
+  reservasZoom: readonly ReservaZoom[];
+}>): readonly FilaVistaPreviaZoom[] {
+  const limiteCercano = input.ahora.getTime() + Math.max(0, input.margenSeguridadHoras) * 3_600_000;
+  const candidatos = input.candidatos.reduce<CandidatoMigracionZoom[]>((ordenados, candidato) => {
+    const posicion = ordenados.findIndex((actual) =>
+      candidato.inicio.getTime() < actual.inicio.getTime() ||
+      (candidato.inicio.getTime() === actual.inicio.getTime() && candidato.id.localeCompare(actual.id) < 0)
+    );
+    return posicion < 0
+      ? [...ordenados, candidato]
+      : [...ordenados.slice(0, posicion), candidato, ...ordenados.slice(posicion)];
+  }, []);
+
+  return candidatos.reduce<{ filas: FilaVistaPreviaZoom[]; reservas: ReservaZoom[] }>((acumulado, candidato) => {
+    const base = { id: candidato.id, hostId: null };
+    const agregar = (fila: FilaVistaPreviaZoom, reserva?: ReservaZoom) => ({
+      filas: [...acumulado.filas, fila],
+      reservas: reserva ? [...acumulado.reservas, reserva] : acumulado.reservas,
+    });
+    if (candidato.estado !== "PROGRAMADA" || candidato.inicio <= input.ahora || candidato.fin <= candidato.inicio) {
+      return agregar({ ...base, estado: "NO_FUTURO" });
+    }
+    if (candidato.proveedorActivo === "ZOOM") return agregar({ ...base, estado: "YA_ZOOM" });
+    if (candidato.conservarGoogleMeet) return agregar({ ...base, estado: "EXCEPCION" });
+    if (candidato.inicio.getTime() <= limiteCercano) return agregar({ ...base, estado: "CERCANO" });
+    if (
+      candidato.proveedorActivo !== "GOOGLE_MEET" ||
+      !candidato.meetSincronizado ||
+      !candidato.meetJoinUrl ||
+      candidato.zoomSincronizado
+    ) {
+      return agregar({ ...base, estado: "REVISAR" });
+    }
+
+    const hostId = elegirCuentaHostParaPeriodos(
+      null,
+      input.hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
+      acumulado.reservas,
+      [{ inicio: candidato.inicio, fin: candidato.fin }]
+    );
+    if (!hostId) return agregar({ ...base, estado: "SIN_SALA" });
+    return agregar({ id: candidato.id, estado: "MIGRABLE", hostId }, { cuentaProveedorId: hostId, inicio: candidato.inicio, fin: candidato.fin });
+  }, { filas: [], reservas: [...input.reservasZoom] }).filas;
+}

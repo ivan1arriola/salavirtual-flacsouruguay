@@ -3,6 +3,7 @@ import {
   claveMesAnteriorUtc3,
   contarPostulacionesAbiertas
 } from "./dashboard-asistente.domain";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { obtenerAsistenciasPersonales } from "./resumen-personal.adapter";
 import {
   claveMesUtc3,
@@ -84,7 +85,7 @@ export async function obtenerDashboardAsistente(
   const previousMeetings = history.filter(({ inicioAt }) => claveMesUtc3(inicioAt) === previousMonth);
   const proximasCoberturas = upcomingAssignments.map((assignment) => {
     const meeting = assignment.instancia;
-    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = seleccionarEventoProveedorActivo(meeting);
     return {
       id: meeting.id,
       solicitudId: meeting.solicitudSalaId,

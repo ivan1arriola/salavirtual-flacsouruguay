@@ -21,7 +21,7 @@ describe("recordatorios de invitados externos", () => {
             docentePrograma: { docente: { usuarioId: "u2" }, programa: { nombre: "Género" } }
           },
           asignaciones: [],
-          eventosProveedor: [{ codigoReunion: "abc-defg-hij", joinUrl: "https://meet.google.com/abc-defg-hij",
+          eventosProveedor: [{ proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: "abc-defg-hij", joinUrl: "https://meet.google.com/abc-defg-hij",
             cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" } }]
         }]),
         findUnique: vi.fn().mockResolvedValue({

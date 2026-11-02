@@ -10,7 +10,9 @@ export type ReunionResumenMonitoreo = Readonly<{
   modalidad: string;
   programa: string;
   docente: string;
+  /** Enlace de acceso del proveedor activo (Google Meet o Zoom). */
   meetUrl?: string | null;
+  proveedor?: "GOOGLE_MEET" | "ZOOM";
 }>;
 
 export type ResumenMonitoreoEmailInput = Readonly<{
@@ -36,11 +38,16 @@ function escapar(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function enlaceMeetValido(value?: string | null): string | null {
+function enlaceAccesoValido(value: string | null | undefined, proveedor: "GOOGLE_MEET" | "ZOOM"): string | null {
   if (!value) return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.hostname === "meet.google.com" ? url.toString() : null;
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    const permitido = proveedor === "ZOOM"
+      ? host === "zoom.us" || host.endsWith(".zoom.us")
+      : host === "meet.google.com";
+    return permitido ? url.toString() : null;
   } catch {
     return null;
   }
@@ -58,7 +65,8 @@ function boton(url: string, label: string, secondary = false): string {
 }
 
 function tarjeta(reunion: ReunionResumenMonitoreo, index: number, variante: ResumenMonitoreoEmailInput["variante"]): string {
-  const meet = variante === "asignadas" ? enlaceMeetValido(reunion.meetUrl) : null;
+  const proveedor = reunion.proveedor ?? "GOOGLE_MEET";
+  const meet = variante === "asignadas" ? enlaceAccesoValido(reunion.meetUrl, proveedor) : null;
   const titulo = escapar(reunion.titulo);
   const fecha = escapar(reunion.fecha);
   const modalidad = escapar(reunion.modalidad);
@@ -79,7 +87,7 @@ function tarjeta(reunion: ReunionResumenMonitoreo, index: number, variante: Resu
     '</td></tr></table>',
     '<p style="margin:0 0 4px;color:' + COLOR.muted + ';font-size:13px;line-height:1.5"><strong style="color:' + COLOR.ink + '">Programa:</strong> ' + escapar(reunion.programa) + '</p>',
     '<p style="margin:0;color:' + COLOR.muted + ';font-size:13px;line-height:1.5"><strong style="color:' + COLOR.ink + '">Docente:</strong> ' + escapar(reunion.docente) + '</p>',
-    meet ? '<div style="padding-top:14px">' + boton(meet, "Ingresar a Google Meet", true) + '</div>' : '',
+    meet ? '<div style="padding-top:14px">' + boton(meet, proveedor === "ZOOM" ? "Ingresar a Zoom" : "Ingresar a Google Meet", true) + '</div>' : '',
     '</td></tr></table>'
   ].join("");
 }

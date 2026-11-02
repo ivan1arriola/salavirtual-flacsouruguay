@@ -10,6 +10,7 @@ import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-personal.adapter";
@@ -196,9 +197,7 @@ export default async function MiAgendaPage({
                     const meeting = assignment.instancia;
                     const association = meeting.solicitud.docentePrograma;
                     const teacher = association.docente.usuario;
-                    const meet = meeting.eventosProveedor.find(
-                      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
-                    );
+                    const meet = seleccionarEventoProveedorActivo(meeting);
                     const isNext = assignment.id === nextAssignment?.id;
                     const roomName = meet?.cuentaProveedor?.emailOrganizador
                       ?? meet?.cuentaProveedor?.nombre

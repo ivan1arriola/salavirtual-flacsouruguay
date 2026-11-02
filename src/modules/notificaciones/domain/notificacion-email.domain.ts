@@ -55,6 +55,8 @@ export function construirCorreoNotificacion(
 }
 
 export function reunionEmailText(input: ReunionEmailInput): string {
+  const todosZoom = input.instancias.length > 0 && input.instancias.every(({ proveedor }) => proveedor === "ZOOM");
+  const nombreProveedor = todosZoom ? "Zoom" : "Google Meet";
   const headerLines = [
     "DATOS DE LA REUNIÓN",
     `Reunión: ${input.titulo}`,
@@ -74,7 +76,7 @@ export function reunionEmailText(input: ReunionEmailInput): string {
       `${index + 1}. ${item.inicio} – ${item.fin}`,
       item.sala ? `   Sala: ${item.sala}` : null,
       item.password ? `   Contraseña: ${item.password}` : null,
-      item.meet ? `   Código de Meet: ${item.meet}` : null,
+      item.meet ? `   ${item.proveedor === "ZOOM" ? "ID de Zoom" : "Código de Meet"}: ${item.meet}` : null,
       item.joinUrl ? `   Acceso: ${item.joinUrl}` : null,
       index < input.instancias.length - 1 ? "" : null,
     ].filter((line): line is string => line !== null);
@@ -84,16 +86,25 @@ export function reunionEmailText(input: ReunionEmailInput): string {
     ? input.asistenteTecnico
       ? `• Monitoreo: asignado a ${input.asistenteTecnico}. La persona asignada al monitoreo ingresará como anfitrión/co-anfitrión para brindar soporte y moderar la sesión.`
       : "• Monitoreo: la reunión requiere monitoreo (pendiente de asignación). Quien sea designado/a como asistente de monitoreo ingresará como anfitrión/co-anfitrión de la sesión."
-    : "• Monitoreo: no requerido. Quien solicitó la reunión y el/la docente o anfitrión designado cuentan con permisos de anfitrión en Google Meet.";
+    : `• Monitoreo: no requerido. Quien solicitó la reunión y el/la docente o anfitrión designado cuentan con permisos de anfitrión en ${nombreProveedor}.`;
 
-  const footerLines = [
-    "",
-    "¿CÓMO ACCEDER A LA REUNIÓN?",
-    "• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.",
-    "• Anfitriones y docentes: ingresen al enlace de Google Meet directamente con su cuenta de Google asignada. Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host) para iniciar la sesión, admitir participantes y gestionar la grabación.",
-    "• Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet provisto.",
-    asistenciaText,
-  ];
+  const footerLines = todosZoom
+    ? [
+        "",
+        "¿CÓMO ACCEDER A LA REUNIÓN?",
+        "• Ingresen al enlace de Zoom indicado para cada encuentro. No es necesario iniciar sesión con la cuenta de la sala.",
+        "• Anfitriones y docentes: ingresen con el mismo enlace de Zoom; ante dudas sobre permisos de anfitrión, consulten a Administración.",
+        "• Participantes y estudiantes: ingresan directamente a través del enlace de Zoom provisto.",
+        asistenciaText,
+      ]
+    : [
+        "",
+        "¿CÓMO ACCEDER A LA REUNIÓN?",
+        "• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.",
+        "• Anfitriones y docentes: ingresen al enlace de Google Meet directamente con su cuenta de Google asignada. Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host) para iniciar la sesión, admitir participantes y gestionar la grabación.",
+        "• Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet provisto.",
+        asistenciaText,
+      ];
 
   return [...headerLines, ...instanciaLines, ...footerLines].join("\n");
 }

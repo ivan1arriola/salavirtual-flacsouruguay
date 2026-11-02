@@ -18,6 +18,7 @@ import { SeriesManagement } from "@/src/modules/reuniones/presentation/component
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatLongDate } from "@/src/lib/ui/format";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import {
   cohostsConfirmados,
   detalleCohostsVerificados,
@@ -162,10 +163,13 @@ export default async function ReunionDetailPage({
 
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
+    // Cohosts, grabaciones y asistencia son artefactos históricos de Google Meet;
+    // el enlace y el organizador visibles siguen al proveedor activo.
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const activeEvent = seleccionarEventoProveedorActivo(meeting);
     const assignment = meeting.asignaciones[0];
-    const organizerAccount = event?.cuentaProveedor?.emailOrganizador
-      ?? event?.cuentaProveedor?.nombre
+    const organizerAccount = activeEvent?.cuentaProveedor?.emailOrganizador
+      ?? activeEvent?.cuentaProveedor?.nombre
       ?? "Cuenta pendiente";
     const cohostLabels = unique(
       extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
@@ -222,7 +226,7 @@ export default async function ReunionDetailPage({
         extraerCohostEmailsDeInstancia(meeting),
       ),
       codigoMeet: event?.codigoReunion ?? null,
-      joinUrl: event?.joinUrl ?? null,
+      joinUrl: activeEvent?.joinUrl ?? null,
       grabacionUrl: recordingFile?.webViewUrl ?? (recordingFile?.driveFileId ? `https://drive.google.com/open?id=${recordingFile.driveFileId}` : null),
       asistenciaUrl: attendanceFile?.webViewUrl ?? (attendanceFile?.driveFileId ? `https://drive.google.com/open?id=${attendanceFile.driveFileId}` : null),
       driveFolderUrl: driveFolderId ? `https://drive.google.com/drive/folders/${driveFolderId}` : null,

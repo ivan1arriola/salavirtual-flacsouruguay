@@ -3,6 +3,7 @@ import {
   actualizarReunionZoomHttp,
   crearReunionZoomHttp,
   eliminarReunionZoomHttp,
+  obtenerReunionZoomHttp,
   obtenerZoomAccessToken
 } from "../src/integrations/zoom/zoom-client";
 
@@ -77,5 +78,27 @@ describe("Zoom Client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(eliminarReunionZoomHttp("bearer-token", "98765432100")).resolves.toBeUndefined();
+  });
+
+  it("recupera el enlace real de una reunión existente, incluido su passcode", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 98765432100,
+        join_url: "https://flacso.zoom.us/j/98765432100?pwd=xyz",
+        start_url: "https://flacso.zoom.us/s/98765432100?zak=abc",
+        password: "xyz",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await obtenerReunionZoomHttp("bearer-token", "98765432100");
+
+    expect(result.joinUrl).toBe("https://flacso.zoom.us/j/98765432100?pwd=xyz");
+    expect(result.startUrl).toContain("zak=abc");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.zoom.us/v2/meetings/98765432100",
+      expect.objectContaining({ headers: { Authorization: "Bearer bearer-token" } }),
+    );
   });
 });

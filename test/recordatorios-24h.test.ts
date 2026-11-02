@@ -24,6 +24,7 @@ const meeting = {
   },
   asignaciones: [{ asistenteTecnico: { usuarioId: "assistant", cesadoHastaProximoInicioSesion: false } }],
   eventosProveedor: [{
+    proveedor: { tipo: "GOOGLE_MEET" },
     codigoReunion: "abc-defg-hij",
     joinUrl: "https://meet.google.com/abc-defg-hij",
     cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }

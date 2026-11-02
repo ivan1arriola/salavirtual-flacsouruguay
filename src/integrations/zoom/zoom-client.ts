@@ -91,7 +91,7 @@ export async function crearReunionZoomHttp(
         waiting_room: true,
         mute_upon_entry: true,
         auto_recording: input.requiereGrabacion ? "cloud" : "none",
-        approval_type: 2 // Automatically approve
+        approval_type: 2 // 2 = sin registro; 0 sería "aprobar automáticamente" tras registrarse
       }
     })
   });
@@ -142,6 +142,33 @@ export async function actualizarReunionZoomHttp(
     const errorBody = await response.text().catch(() => "");
     throw new Error(`Zoom API error al actualizar reunión (${response.status}): ${errorBody || response.statusText}`);
   }
+}
+
+export async function obtenerReunionZoomHttp(
+  token: string,
+  meetingId: string,
+): Promise<ZoomMeetingResult> {
+  const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`Zoom API error al obtener reunión (${response.status}): ${errorBody || response.statusText}`);
+  }
+  const data = (await response.json()) as {
+    id: string | number;
+    join_url?: string;
+    start_url?: string;
+    password?: string;
+  };
+  if (!data.join_url) throw new Error("Zoom no devolvió el enlace de acceso de la reunión.");
+  return {
+    meetingId: String(data.id),
+    joinUrl: data.join_url,
+    startUrl: data.start_url,
+    password: data.password,
+  };
 }
 
 export async function eliminarReunionZoomHttp(

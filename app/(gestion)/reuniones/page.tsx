@@ -29,6 +29,7 @@ import {
   type PeriodoAgenda
 } from "@/src/modules/reuniones/reuniones-page.service";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import {
   cohostAccountGuidance,
   cohostsConfirmados,
@@ -104,9 +105,14 @@ export default async function ReunionesPage({
       </header>
 
       {actor.rol === "ADMINISTRACION" && (
-        <Link className="secondary-action" href="/reuniones/buscar-meet">
-          <Search size={17} aria-hidden="true" /> Buscar por enlace o código Meet
-        </Link>
+        <div>
+          <Link className="secondary-action" href="/reuniones/buscar-meet">
+            <Search size={17} aria-hidden="true" /> Buscar por enlace o código Meet
+          </Link>{" "}
+          <Link className="secondary-action" href="/reuniones/migracion-zoom">
+            Migración a Zoom
+          </Link>
+        </div>
       )}
 
       {actor.rol === "ADMINISTRACION" ? (
@@ -317,9 +323,10 @@ export default async function ReunionesPage({
                   })
                 )
               );
-              const events = seriesMeetings.flatMap(({ eventosProveedor }) =>
-                eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
-              );
+              const events = seriesMeetings.flatMap((meeting) => {
+                const active = seleccionarEventoProveedorActivo(meeting);
+                return active ? [active] : [];
+              });
               const organizers = unique(
                 events.flatMap(({ cuentaProveedor }) => {
                   const account =
@@ -328,8 +335,8 @@ export default async function ReunionesPage({
                 })
               );
               const codes = unique(
-                events.flatMap(({ codigoReunion }) =>
-                  codigoReunion ? [codigoReunion] : []
+                events.flatMap(({ proveedor, codigoReunion }) =>
+                  proveedor.tipo === "GOOGLE_MEET" && codigoReunion ? [codigoReunion] : []
                 )
               );
               const links = unique(
@@ -563,10 +570,13 @@ export default async function ReunionesPage({
             meetings.map((meeting) => {
               const association = meeting.solicitud.docentePrograma;
               const teacher = association.docente.usuario;
-              const event =
-                meeting.eventosProveedor.find(
-                  ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
-                ) ?? meeting.eventosProveedor[0];
+              // El enlace y la cuenta visibles siguen al proveedor activo; los
+              // cohosts se verifican solo contra el evento de Google Meet.
+              const activeEvent =
+                seleccionarEventoProveedorActivo(meeting) ?? meeting.eventosProveedor[0];
+              const event = meeting.eventosProveedor.find(
+                ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+              );
               const assignment = meeting.asignaciones[0];
               const assistant = assignment?.asistenteTecnico.usuario;
               const assistantName = assistant ? personName(assistant) : null;
@@ -679,20 +689,22 @@ export default async function ReunionesPage({
                       <div className="agenda-access-block agenda-host-reference">
                         <span>Cuenta organizadora</span>
                         <strong>
-                          {event?.cuentaProveedor?.emailOrganizador ??
-                            event?.cuentaProveedor?.nombre ??
+                          {activeEvent?.cuentaProveedor?.emailOrganizador ??
+                            activeEvent?.cuentaProveedor?.nombre ??
                             "Pendiente"}
                         </strong>
                         <small>Solo referencia · no iniciar sesión.</small>
                         <MeetIntegrationStatus
-                          status={event?.estadoIntegracion}
-                          hasMeet={Boolean(event?.joinUrl)}
+                          status={activeEvent?.estadoIntegracion}
+                          hasMeet={Boolean(activeEvent?.joinUrl)}
                           hideSettingsWarning={cohostLabels.length > 0}
                         />
                       </div>
                       <div className="agenda-access-block">
                         <span>Código Meet</span>
-                        <strong>{event?.codigoReunion ?? "Pendiente"}</strong>
+                        <strong>
+                          {(activeEvent?.proveedor.tipo === "GOOGLE_MEET" ? activeEvent.codigoReunion : null) ?? "Pendiente"}
+                        </strong>
                       </div>
                     </div>
 
@@ -740,6 +752,7 @@ export default async function ReunionesPage({
                     {actor.rol === "ADMINISTRACION" &&
                     !cohostsConfirmadosEnMeet &&
                     cohostLabels.length > 0 &&
+                    activeEvent?.proveedor.tipo === "GOOGLE_MEET" &&
                     event?.id &&
                     event.joinUrl ? (
                       <AdminRetryMeetAction
@@ -748,13 +761,13 @@ export default async function ReunionesPage({
                         label="Verificar cohosts"
                       />
                     ) : null}
-                    {event?.joinUrl ? (
+                    {activeEvent?.joinUrl ? (
                       <MeetLinkActions
                         openClassName="secondary-action agenda-meet-action"
-                        url={event.joinUrl}
+                        url={activeEvent.joinUrl}
                       />
                     ) : (
-                      <span className="muted-text">Enlace Meet pendiente</span>
+                      <span className="muted-text">Enlace pendiente</span>
                     )}
                   </footer>
                 </article>

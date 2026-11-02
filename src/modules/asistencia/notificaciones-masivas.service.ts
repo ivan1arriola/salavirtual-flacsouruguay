@@ -4,6 +4,7 @@ import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuario, notificarUsuarios } from "../notificaciones/notificaciones.service";
 import type { NotificationMessage } from "../notificaciones/domain";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { construirHtmlResumenMonitoreo } from "./correo-monitoreo.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
@@ -216,10 +217,7 @@ export async function notificarReunionesAsignadas(
               }
             }
           },
-          eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
-            take: 1
-          }
+          eventosProveedor: { include: { proveedor: { select: { tipo: true } } } }
         }
       }
     }
@@ -263,7 +261,7 @@ export async function notificarReunionesAsignadas(
         const inicioTecnico = inst.inicioAsistenciaTecnicaAt ?? inst.inicioProgramadoAt;
         const finTecnico = inst.finAsistenciaTecnicaAt ?? inst.finProgramadoAt;
         const mod = (inst.modalidadOverride ?? inst.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
-        const meet = inst.eventosProveedor[0];
+        const meet = seleccionarEventoProveedorActivo(inst);
         const lineas = [
           `${i + 1}. ${formatDate(inicioTecnico)} · Horario de monitoreo: ${formatTime(inicioTecnico)}–${formatTime(finTecnico)} h (${mod})`,
           `   Reunión: ${inst.solicitud.titulo}`,
@@ -271,7 +269,7 @@ export async function notificarReunionesAsignadas(
           `   Docente: ${doc}`
         ];
         if (meet?.joinUrl) {
-          lineas.push(`   Enlace de Meet: ${meet.joinUrl}`);
+          lineas.push(`   Enlace de ${meet.proveedor.tipo === "ZOOM" ? "Zoom" : "Meet"}: ${meet.joinUrl}`);
         }
         return lineas.join("\n");
       }),
@@ -305,7 +303,8 @@ export async function notificarReunionesAsignadas(
             modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
             programa: inst.solicitud.docentePrograma.programa.nombre,
             docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
-            meetUrl: inst.eventosProveedor[0]?.joinUrl
+            meetUrl: seleccionarEventoProveedorActivo(inst)?.joinUrl,
+            proveedor: seleccionarEventoProveedorActivo(inst)?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
           };
         })
       }),

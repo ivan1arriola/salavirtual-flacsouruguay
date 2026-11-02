@@ -60,6 +60,8 @@ export type ReunionEmailInput = Readonly<{
     password?: string | null;
     meet?: string | null;
     joinUrl?: string | null;
+    /** Proveedor activo del encuentro; por omisión Google Meet. */
+    proveedor?: "GOOGLE_MEET" | "ZOOM";
   }>[];
 }>;
 

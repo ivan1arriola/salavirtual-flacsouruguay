@@ -49,7 +49,7 @@ export async function prepararCatalogos(
         secretRef: cuenta.clientSecretRef,
         prioridad: cuenta.prioridad,
         tieneLicencia: true,
-        limiteConcurrente: cuenta.limiteEventosConcurrentes,
+        limiteConcurrente: 1,
         activa: cuenta.activa,
         createdAt: cuenta.createdAt,
         updatedAt: cuenta.updatedAt
@@ -60,7 +60,7 @@ export async function prepararCatalogos(
         externalAccountId: cuenta.zoomAccountId,
         prioridad: cuenta.prioridad,
         tieneLicencia: true,
-        limiteConcurrente: cuenta.limiteEventosConcurrentes,
+        limiteConcurrente: 1,
         activa: cuenta.activa
       }
     });

@@ -5,6 +5,7 @@ import {
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia
 } from "@/src/modules/conferencias/api";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type {
   AssistantDashboardData,
@@ -82,17 +83,19 @@ export async function obtenerDashboardAsistenteOptimizado(
     });
 
     if (nextMeetingInstance) {
-      const meet = nextMeetingInstance.eventosProveedor.find(
+      // Cohosts se verifican solo contra Google Meet; enlace y sala siguen al proveedor activo.
+      const meetCohosts = nextMeetingInstance.eventosProveedor.find(
         ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
       );
+      const meet = seleccionarEventoProveedorActivo(nextMeetingInstance);
       const cohostEmails = extraerCohostEmailsDeInstancia(nextMeetingInstance);
       const isVerified = Boolean(
-        !meet?.errorIntegracion &&
-          !meet?.operacionPendiente &&
+        !meetCohosts?.errorIntegracion &&
+          !meetCohosts?.operacionPendiente &&
           cohostsConfirmados(
-            meet?.payloadUltimo,
-            meet?.codigoReunion,
-            meet?.cuentaProveedor?.emailOrganizador,
+            meetCohosts?.payloadUltimo,
+            meetCohosts?.codigoReunion,
+            meetCohosts?.cuentaProveedor?.emailOrganizador,
             cohostEmails
           )
       );

@@ -53,6 +53,8 @@ export async function recuperarEnlaceSerie(
     where: {
       solicitud: construirFiltroSerieSolicitud(request),
       estado: "PROGRAMADA",
+      proveedorActivoTipo: "GOOGLE_MEET",
+      conservarGoogleMeet: true,
       inicioProgramadoAt: { gt: new Date() }
     },
     orderBy: { inicioProgramadoAt: "asc" },

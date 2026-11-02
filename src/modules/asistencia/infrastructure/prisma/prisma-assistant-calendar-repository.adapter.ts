@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import type {
   AssistantCalendarRepositoryPort,
   CredencialesWorkspaceCalendar,
@@ -50,10 +51,9 @@ export function crearPrismaAssistantCalendarRepository(
               },
             },
           },
+          proveedorActivoTipo: true,
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
-            select: { joinUrl: true },
-            take: 1,
+            select: { joinUrl: true, proveedor: { select: { tipo: true } } },
           },
           asignaciones: {
             select: {
@@ -109,7 +109,7 @@ export function crearPrismaAssistantCalendarRepository(
         solicitudDescripcion: meeting.solicitud.descripcion,
         programaNombre: meeting.solicitud.docentePrograma.programa.nombre,
         docenteNombreCompleto: docente,
-        joinUrl: meeting.eventosProveedor[0]?.joinUrl ?? null,
+        joinUrl: seleccionarEventoProveedorActivo(meeting)?.joinUrl ?? null,
         asignaciones: meeting.asignaciones,
       };
     },

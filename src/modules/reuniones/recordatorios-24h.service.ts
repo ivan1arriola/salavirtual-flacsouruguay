@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { formatLongDate, formatTime } from "@/src/lib/ui/format";
 import { construirRecordatorioReunion, type AccesoRecordatorio } from "./recordatorio-reunion-email.domain";
 import { construirCorreoParticipacion } from "./avisos-participacion.domain";
+import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 
 const HORA = 60 * 60 * 1000;
 const APP_URL = "https://salavirtual.flacso.edu.uy";
@@ -99,10 +100,14 @@ export async function procesarRecordatorios24h(
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
         select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } }
       },
+      proveedorActivoTipo: true,
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        take: 1,
-        select: { codigoReunion: true, joinUrl: true, cuentaProveedor: { select: { emailOrganizador: true } } }
+        select: {
+          codigoReunion: true,
+          joinUrl: true,
+          proveedor: { select: { tipo: true } },
+          cuentaProveedor: { select: { emailOrganizador: true } }
+        }
       }
     }
   });
@@ -132,9 +137,11 @@ export async function procesarRecordatorios24h(
         }
       }
     });
-    const event = meeting.eventosProveedor[0];
-    const organizador = normalizarEmail(event?.cuentaProveedor?.emailOrganizador);
-    const codigo = event?.codigoReunion;
+    // El enlace sigue al proveedor activo; los cohosts solo existen en Google Meet.
+    const event = seleccionarEventoProveedorActivo(meeting);
+    const proveedor = event?.proveedor.tipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const;
+    const organizador = proveedor === "GOOGLE_MEET" ? normalizarEmail(event?.cuentaProveedor?.emailOrganizador) : null;
+    const codigo = proveedor === "GOOGLE_MEET" ? event?.codigoReunion : null;
     let confirmados: ReadonlySet<string> | null = null;
     if (organizador && codigo) {
       const key = organizador + "|" + codigo;
@@ -145,7 +152,7 @@ export async function procesarRecordatorios24h(
       }
       confirmados = await consulta;
     }
-    if (confirmados === null) counters.verificacionesFallidas++;
+    if (confirmados === null && proveedor === "GOOGLE_MEET") counters.verificacionesFallidas++;
 
     for (const usuario of usuarios) {
       const destino = normalizarEmail(usuario.emailPrincipal);
@@ -220,6 +227,7 @@ export async function procesarRecordatorios24h(
             ? formatTime(inicioMonitor) + "–" + formatTime(finMonitor) + " h" : null,
           modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual",
           urlMeet: event?.joinUrl ?? null,
+          proveedor,
           urlDetalle: APP_URL + "/reuniones/" + encodeURIComponent(meeting.solicitud.id),
           acceso
         });
@@ -308,7 +316,8 @@ export async function procesarRecordatorios24h(
         const correo = construirCorreoParticipacion("RECORDATORIO", [{
           id: meeting.id, titulo: meeting.solicitud.titulo,
           inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt,
-          urlMeet: event?.joinUrl ?? null
+          urlMeet: event?.joinUrl ?? null,
+          proveedor
         }], "INVITADO");
         const result = await deps.enviarCorreo({ to: [email], ...correo });
         await db.recordatorioInvitadoReunion.update({
