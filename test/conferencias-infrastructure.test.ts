@@ -134,6 +134,9 @@ describe("conferencias/infrastructure", () => {
       expect(snapshots).toHaveLength(1);
       expect(snapshots[0].id).toBe("evt-1");
       expect(snapshots[0].operacionPendiente).toBe("PROVISIONAR");
+      expect(mockDb.eventoProveedor.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: { in: ["evt-1"] } },
+      }));
     });
   });
 });
