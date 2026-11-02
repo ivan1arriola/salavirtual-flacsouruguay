@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import styles from "./excepcion-meet-control.module.css";
 
 export function ExcepcionMeetControl({
   instanciaId,
@@ -9,6 +10,7 @@ export function ExcepcionMeetControl({
   motivoActual,
 }: Readonly<{ instanciaId: string; conservar: boolean; motivoActual: string | null }>) {
   const router = useRouter();
+  const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState(motivoActual ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -16,45 +18,52 @@ export function ExcepcionMeetControl({
   function guardar(nuevoValor: boolean) {
     setError(null);
     startTransition(async () => {
-      const response = await fetch(`/api/v1/reuniones/instancias/${instanciaId}/excepcion-meet`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conservar: nuevoValor, motivo: nuevoValor ? motivo : null }),
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => null) as { error?: string } | null;
-        setError(body?.error ?? "No se pudo guardar la excepción.");
-        return;
+      try {
+        const response = await fetch(`/api/v1/reuniones/instancias/${instanciaId}/excepcion-meet`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conservar: nuevoValor, motivo: nuevoValor ? motivo.trim() : null }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => null) as { error?: string } | null;
+          throw new Error(body?.error ?? "No se pudo guardar la excepción.");
+        }
+        setAbierto(false);
+        router.refresh();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "No se pudo guardar la excepción.");
       }
-      router.refresh();
     });
   }
 
   return (
-    <div>
-      <label>
-        <input
-          type="checkbox"
-          checked={conservar}
-          disabled={pending}
-          onChange={(event) => (event.target.checked ? undefined : guardar(false))}
-          aria-label="Conservar en Google Meet"
-        />{" "}
-        Conservar en Google Meet
-      </label>
-      <input
-        type="text"
-        value={motivo}
-        maxLength={500}
-        placeholder="Motivo"
-        disabled={pending}
-        onChange={(event) => setMotivo(event.target.value)}
-        aria-label="Motivo para conservar en Google Meet"
-      />
-      <button type="button" disabled={pending || motivo.trim().length < 3} onClick={() => guardar(true)}>
-        {conservar ? "Actualizar motivo" : "Conservar en Meet"}
-      </button>
-      {error ? <p role="alert">{error}</p> : null}
+    <div className={styles.control}>
+      {conservar ? (
+        <div className={styles.saved}>
+          <span><strong>Excepción Meet</strong> · {motivoActual}</span>
+          <div className={styles.actions}>
+            <button type="button" disabled={pending} onClick={() => setAbierto((valor) => !valor)}>Editar motivo</button>
+            <button type="button" disabled={pending} onClick={() => guardar(false)}>Quitar excepción</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className={styles.openButton} disabled={pending} onClick={() => setAbierto((valor) => !valor)}>
+          {abierto ? "Cancelar excepción" : "Conservar este encuentro en Meet"}
+        </button>
+      )}
+      {abierto && (
+        <div className={styles.form}>
+          <label htmlFor={`motivo-meet-${instanciaId}`}>Motivo de la excepción</label>
+          <div>
+            <input id={`motivo-meet-${instanciaId}`} type="text" value={motivo} maxLength={500}
+              placeholder="Por qué debe seguir en Meet" disabled={pending} onChange={(event) => setMotivo(event.target.value)} />
+            <button type="button" disabled={pending || motivo.trim().length < 3} onClick={() => guardar(true)}>
+              {pending ? "Guardando…" : "Guardar excepción"}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p className={styles.error} role="alert">{error}</p>}
     </div>
   );
 }
