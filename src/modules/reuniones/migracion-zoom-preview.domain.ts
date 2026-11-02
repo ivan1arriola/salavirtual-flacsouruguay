@@ -7,7 +7,7 @@ export type CandidatoMigracionZoom = Readonly<{
   estado: string;
   proveedorActivo: "GOOGLE_MEET" | "ZOOM" | null;
   conservarGoogleMeet: boolean;
-  meetSincronizado: boolean;
+  meetPreparado: boolean;
   meetJoinUrl: string | null;
   zoomSincronizado: boolean;
 }>;
@@ -29,6 +29,19 @@ export type FilaVistaPreviaZoom = Readonly<{
 
 type HostZoom = Readonly<{ id: string; prioridad: number; limiteConcurrente: number | null }>;
 type ReservaZoom = Readonly<{ cuentaProveedorId: string; inicio: Date; fin: Date }>;
+
+/** CONFIGURAR_MEET deja un enlace y un evento Calendar operativos; solo faltan ajustes de Meet. */
+export function meetPreparadoParaMigracion(evento: Readonly<{
+  estadoIntegracion: string;
+  operacionPendiente: string | null;
+  joinUrl: string | null;
+  externalEventId: string | null;
+  emailOrganizador: string | null;
+}> | null): boolean {
+  if (!evento?.joinUrl || !evento.externalEventId || !evento.emailOrganizador) return false;
+  return (evento.estadoIntegracion === "SINCRONIZADA" && !evento.operacionPendiente)
+    || evento.operacionPendiente === "CONFIGURAR_MEET";
+}
 
 export function planificarMigracionZoom(input: Readonly<{
   ahora: Date;
@@ -62,7 +75,7 @@ export function planificarMigracionZoom(input: Readonly<{
     if (candidato.inicio.getTime() <= limiteCercano) return agregar({ ...base, estado: "CERCANO" });
     if (
       candidato.proveedorActivo !== "GOOGLE_MEET" ||
-      !candidato.meetSincronizado ||
+      !candidato.meetPreparado ||
       !candidato.meetJoinUrl ||
       candidato.zoomSincronizado
     ) {

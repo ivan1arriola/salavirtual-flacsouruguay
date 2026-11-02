@@ -95,8 +95,16 @@ describe("excepción Conservar en Google Meet", () => {
 });
 
 describe("vista previa de migración a Zoom", () => {
-  function previewDb() {
-    const meetOk = { joinUrl: "https://meet.google.com/abc", estadoIntegracion: "SINCRONIZADA", proveedor: { tipo: "GOOGLE_MEET" } };
+  function previewDb(meetOverrides: Record<string, unknown> = {}) {
+    const meetOk = {
+      joinUrl: "https://meet.google.com/abc",
+      externalEventId: "calendar-event",
+      estadoIntegracion: "SINCRONIZADA",
+      operacionPendiente: null,
+      cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" },
+      proveedor: { tipo: "GOOGLE_MEET" },
+      ...meetOverrides,
+    };
     const base = {
       estado: "PROGRAMADA", proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: false, motivoConservarGoogleMeet: null,
       solicitud: {
@@ -149,5 +157,12 @@ describe("vista previa de migración a Zoom", () => {
     expect(porId.d.estado).toBe("CERCANO");
     expect(vista.conteos).toMatchObject({ MIGRABLE: 1, SIN_SALA: 1, EXCEPCION: 1, CERCANO: 1 });
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it("incluye encuentros con Meet operativo y solo ajustes de cohosts pendientes", async () => {
+    const { db } = previewDb({ estadoIntegracion: "PENDIENTE", operacionPendiente: "CONFIGURAR_MEET" });
+    const vista = await obtenerVistaPreviaMigracionZoom(db, admin, ahora);
+    expect(vista.conteos.MIGRABLE).toBe(1);
+    expect(vista.conteos.REVISAR).toBe(0);
   });
 });
