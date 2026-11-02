@@ -181,9 +181,11 @@ async function prepararBajoBloqueo(
     const hostsDb = await tx.cuentaProveedor.findMany({
       where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, prioridad: true, limiteConcurrente: true },
+      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });
     const hosts = zoom?.cuentaProveedorId ? hostsDb.filter(({ id }) => id === zoom.cuentaProveedorId) : hostsDb;
+    const emailMeet = meet.cuentaProveedor.emailOrganizador.trim().toLowerCase();
+    const cuentaZoomPreferidaId = hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null;
     const reservas = await tx.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "ZOOM" },
@@ -215,6 +217,7 @@ async function prepararBajoBloqueo(
           emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
         }),
         meetJoinUrl: meet.joinUrl,
+        cuentaZoomPreferidaId,
         zoomSincronizado: false,
       }],
     });

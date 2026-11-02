@@ -9,6 +9,7 @@ export type CandidatoMigracionZoom = Readonly<{
   conservarGoogleMeet: boolean;
   meetPreparado: boolean;
   meetJoinUrl: string | null;
+  cuentaZoomPreferidaId: string | null;
   zoomSincronizado: boolean;
 }>;
 
@@ -83,7 +84,7 @@ export function planificarMigracionZoom(input: Readonly<{
     }
 
     const hostId = elegirCuentaHostParaPeriodos(
-      null,
+      candidato.cuentaZoomPreferidaId,
       input.hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
       acumulado.reservas,
       [{ inicio: candidato.inicio, fin: candidato.fin }]
