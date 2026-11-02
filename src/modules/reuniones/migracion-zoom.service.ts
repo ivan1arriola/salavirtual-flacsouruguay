@@ -189,6 +189,10 @@ export async function obtenerVistaPreviaMigracionZoom(
       const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
       const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
+      const emailMeet = meet?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+      const cuentaZoomPreferidaId = emailMeet
+        ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
+        : null;
       return {
         id: instancia.id,
         inicio: instancia.inicioProgramadoAt,
@@ -201,6 +205,7 @@ export async function obtenerVistaPreviaMigracionZoom(
           emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
         } : null),
         meetJoinUrl: meet?.joinUrl ?? null,
+        cuentaZoomPreferidaId,
         zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
       };
     }),

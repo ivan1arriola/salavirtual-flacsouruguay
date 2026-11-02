@@ -15,6 +15,7 @@ function candidate(id: string, overrides: Record<string, unknown> = {}) {
     conservarGoogleMeet: false,
     meetPreparado: true,
     meetJoinUrl: `https://meet.google.com/${id}`,
+    cuentaZoomPreferidaId: null,
     zoomSincronizado: false,
     ...overrides,
   };
@@ -60,6 +61,23 @@ describe("planificarMigracionZoom", () => {
       { estado: "EXCEPCION", hostId: null },
       { estado: "MIGRABLE", hostId: "sala01" },
     ]);
+  });
+
+  it("conserva la sala equivalente a Meet cuando está libre y usa otra si se ocupa", () => {
+    const result = planificarMigracionZoom({
+      ahora: now,
+      margenSeguridadHoras: 24,
+      candidatos: [
+        candidate("a", { cuentaZoomPreferidaId: "sala02" }),
+        candidate("b", { cuentaZoomPreferidaId: "sala02" }),
+      ],
+      hosts: [
+        { id: "sala01", prioridad: 1, limiteConcurrente: 1 },
+        { id: "sala02", prioridad: 2, limiteConcurrente: 1 },
+      ],
+      reservasZoom: [],
+    });
+    expect(result.map(({ hostId }) => hostId)).toEqual(["sala02", "sala01"]);
   });
 
   it("excluye encuentros próximos, pasados y sin Meet preparado", () => {
