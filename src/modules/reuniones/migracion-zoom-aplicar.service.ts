@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import { prepararCambioEnlaceCalendarZoom } from "./migracion-zoom-calendar.domain";
-import { planificarMigracionZoom } from "./migracion-zoom-preview.domain";
+import { meetPreparadoParaMigracion, planificarMigracionZoom } from "./migracion-zoom-preview.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 import {
@@ -210,7 +210,10 @@ async function prepararBajoBloqueo(
         estado: instancia.estado,
         proveedorActivo: activo === "GOOGLE_MEET" ? "GOOGLE_MEET" : null,
         conservarGoogleMeet: instancia.conservarGoogleMeet,
-        meetSincronizado: meet.estadoIntegracion === "SINCRONIZADA",
+        meetPreparado: meetPreparadoParaMigracion({
+          ...meet,
+          emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
+        }),
         meetJoinUrl: meet.joinUrl,
         zoomSincronizado: false,
       }],

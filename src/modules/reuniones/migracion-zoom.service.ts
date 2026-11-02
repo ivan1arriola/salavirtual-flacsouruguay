@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import {
+  meetPreparadoParaMigracion,
   planificarMigracionZoom,
   type EstadoVistaPreviaZoom,
 } from "./migracion-zoom-preview.domain";
@@ -145,7 +146,10 @@ export async function obtenerVistaPreviaMigracionZoom(
         eventosProveedor: {
           select: {
             joinUrl: true,
+            externalEventId: true,
             estadoIntegracion: true,
+            operacionPendiente: true,
+            cuentaProveedor: { select: { emailOrganizador: true } },
             proveedor: { select: { tipo: true } },
           },
         },
@@ -192,7 +196,10 @@ export async function obtenerVistaPreviaMigracionZoom(
         estado: instancia.estado,
         proveedorActivo: activo === "GOOGLE_MEET" || activo === "ZOOM" ? activo : null,
         conservarGoogleMeet: instancia.conservarGoogleMeet,
-        meetSincronizado: meet?.estadoIntegracion === "SINCRONIZADA",
+        meetPreparado: meetPreparadoParaMigracion(meet ? {
+          ...meet,
+          emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
+        } : null),
         meetJoinUrl: meet?.joinUrl ?? null,
         zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
       };
