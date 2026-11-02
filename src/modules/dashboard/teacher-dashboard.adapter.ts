@@ -4,6 +4,7 @@ import {
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia
 } from "@/src/modules/conferencias/api";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal, esMismoDiaMontevideo } from "./dashboard.domain";
 import type {
   HeroMeetingDTO,
@@ -124,21 +125,23 @@ export async function obtenerDashboardDocente(
   ]);
 
   const mappedMeetings = instances.map((instance) => {
-    const meet = instance.eventosProveedor.find(
+    // Cohosts se verifican solo contra Google Meet; enlace y sala siguen al proveedor activo.
+    const meetCohosts = instance.eventosProveedor.find(
       ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
     );
+    const meet = seleccionarEventoProveedorActivo(instance);
     const cohostEmails = extraerCohostEmailsDeInstancia(instance);
     const cohostsList = extraerCohostsUnificadosDeInstancia(instance).map((c) => ({
       name: c.name ?? "",
       email: c.email
     }));
     const isVerified = Boolean(
-      !meet?.errorIntegracion &&
-        !meet?.operacionPendiente &&
+      !meetCohosts?.errorIntegracion &&
+        !meetCohosts?.operacionPendiente &&
         cohostsConfirmados(
-          meet?.payloadUltimo,
-          meet?.codigoReunion,
-          meet?.cuentaProveedor?.emailOrganizador,
+          meetCohosts?.payloadUltimo,
+          meetCohosts?.codigoReunion,
+          meetCohosts?.cuentaProveedor?.emailOrganizador,
           cohostEmails
         )
     );

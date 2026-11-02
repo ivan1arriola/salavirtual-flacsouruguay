@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -12,6 +13,17 @@ const revisionSchema = z.object({
   eventoProveedorId: z.string().min(1),
   operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional()
 });
+
+const eventoReintentable = {
+  OR: [
+    { proveedor: { tipo: "ZOOM" } },
+    {
+      proveedor: { tipo: "GOOGLE_MEET" },
+      externalEventId: { not: null },
+      instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
+    },
+  ],
+} satisfies Prisma.EventoProveedorWhereInput;
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -43,7 +55,7 @@ export async function POST(request: Request) {
       const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
-          proveedor: { tipo: "GOOGLE_MEET" }
+          ...eventoReintentable,
         },
         select: {
           id: true,
@@ -53,7 +65,7 @@ export async function POST(request: Request) {
       });
 
       if (!current) {
-        return NextResponse.json({ error: "El evento Meet no existe." }, { status: 404 });
+        return NextResponse.json({ error: "El evento no admite este reintento." }, { status: 404 });
       }
 
       if (!current.operacionPendiente) {
@@ -78,7 +90,7 @@ export async function POST(request: Request) {
         const assigned = await db.eventoProveedor.updateMany({
           where: {
             id: revision.eventoProveedorId,
-            proveedor: { tipo: "GOOGLE_MEET" },
+            ...eventoReintentable,
             operacionPendiente: null,
             estadoIntegracion: { in: [...validStates] }
           },
@@ -103,7 +115,7 @@ export async function POST(request: Request) {
 
     const ids = targetIds ?? (await db.eventoProveedor.findMany({
       where: {
-        proveedor: { tipo: "GOOGLE_MEET" },
+        ...eventoReintentable,
         operacionPendiente: { not: null }
       },
       select: { id: true }

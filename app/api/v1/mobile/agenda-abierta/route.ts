@@ -4,6 +4,7 @@ import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-acto
 import { db } from "@/src/lib/db";
 import { evaluarConflictoAsistencia, type AsignacionExistente } from "@/src/modules/asistencia/agenda-abierta.domain";
 import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asistencia.service";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
   const openMeetings = meetings.map((meeting) => {
     const association = meeting.solicitud.docentePrograma;
     const teacher = association.docente.usuario;
-    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = seleccionarEventoProveedorActivo(meeting);
     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
     const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
     const inicioAsistenciaConfigurada = modality === "VIRTUAL"

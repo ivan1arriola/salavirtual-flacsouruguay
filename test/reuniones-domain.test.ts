@@ -331,6 +331,18 @@ describe("dias derivados de reuniones", () => {
     ]);
   });
 
+  it("solo admite Zoom para reuniones nuevas", () => {
+    const input = {
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      modalidad: "VIRTUAL",
+      timezone: "America/Montevideo",
+      instancias: [{ inicio: "2027-08-03T13:00:00Z", fin: "2027-08-03T14:00:00Z" }],
+    };
+    expect(crearReunionesSchema.parse(input).plataforma).toBe("ZOOM");
+    expect(crearReunionesSchema.safeParse({ ...input, plataforma: "GOOGLE_MEET" }).success).toBe(false);
+  });
+
   it("reserva la asignacion inicial a Administracion", () => {
     expect(resolverAsignacionInicial("ADMINISTRACION", true, "assistant")).toBe("assistant");
     expect(resolverAsignacionInicial("ADMINISTRACION", true)).toBeNull();

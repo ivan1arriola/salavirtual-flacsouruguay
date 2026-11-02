@@ -168,7 +168,7 @@ describe("notificaciones-masivas.service", () => {
                     },
                   },
                 },
-                eventosProveedor: [{ joinUrl: "https://meet.google.com/abc-defg-hij" }],
+                eventosProveedor: [{ joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } }],
               },
             },
             {

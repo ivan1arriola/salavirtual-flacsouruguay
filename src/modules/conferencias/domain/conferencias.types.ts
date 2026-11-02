@@ -9,6 +9,7 @@ export type ConferenceProvisionRequest = Readonly<{
   cohostEmails?: readonly string[];
   guestEmails?: readonly string[];
   requiereAsistenciaTecnica?: boolean;
+  requiereGrabacion?: boolean;
   calendarEventId: string;
 }>;
 

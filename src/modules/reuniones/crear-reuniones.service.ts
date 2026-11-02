@@ -114,7 +114,7 @@ export async function crearReuniones(
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
 
-    const tipoProveedor = input.plataforma === "ZOOM" ? "ZOOM" : "GOOGLE_MEET";
+    const tipoProveedor = "ZOOM" as const;
     const [docentePrograma, proveedor] = await Promise.all([
       tx.docentePrograma.findUnique({
         where: { id: input.docenteProgramaId },
@@ -158,7 +158,7 @@ export async function crearReuniones(
           proveedorId: proveedor.id,
           cuentaProveedorId: { not: null },
           instancia: {
-            estado: "PROGRAMADA",
+            estado: { in: ["PROGRAMADA", "EN_CURSO"] },
             OR: input.instancias.map(({ inicio, fin }) => ({
               inicioProgramadoAt: { lt: fin },
               finProgramadoAt: { gt: inicio },
@@ -172,59 +172,33 @@ export async function crearReuniones(
       }),
     ]);
 
-    // El docente es siempre cohost. Si hay un asistente ya asignado, también se agrega
-    // como cohost técnico. Los cohosts adicionales ingresados en el formulario se guardan
-    // como correos manuales y Google Meet validará que correspondan a cuentas Google.
-    const cohostUserIds = [
-      docentePrograma.docente.usuarioId,
-      ...(assistant ? [assistant.usuarioId] : []),
-    ];
-    const [linkedAccounts, docenteUser] = await Promise.all([
-      tx.cuentaGoogleFlacso.findMany({
-        where: { userId: { in: [...new Set(cohostUserIds)] }, user: { activo: true } },
-        select: { id: true, userId: true, email: true },
-      }),
-      tx.usuario.findUnique({
-        where: { id: docentePrograma.docente.usuarioId },
-        select: { emailPrincipal: true },
-      }),
-    ]);
+    // El docente y el asistente asignado se guardan como cohosts por correo.
+    const docenteUser = await tx.usuario.findUnique({
+      where: { id: docentePrograma.docente.usuarioId },
+      select: { emailPrincipal: true },
+    });
 
-    const usersWithGoogleAccount = new Set(linkedAccounts.map(({ userId }) => userId));
+    // Zoom no requiere cuenta Google: se guardan siempre los correos como texto.
     const fallbackEmails: string[] = [];
-    if (!usersWithGoogleAccount.has(docentePrograma.docente.usuarioId)) {
-      if (!docenteUser?.emailPrincipal) {
-        throw new ValidationApiError("El docente no tiene una cuenta Google configurada para usar como cohost.");
-      }
-      fallbackEmails.push(docenteUser.emailPrincipal);
+    if (!docenteUser?.emailPrincipal) {
+      throw new ValidationApiError("El docente no tiene un correo principal configurado.");
     }
-    if (
-      assistant &&
-      !usersWithGoogleAccount.has(assistant.usuarioId) &&
-      assistant.usuario.emailPrincipal
-    ) {
+    fallbackEmails.push(docenteUser.emailPrincipal);
+    if (assistant?.usuario.emailPrincipal) {
       fallbackEmails.push(assistant.usuario.emailPrincipal);
     }
 
-    const cohostIds = [...new Set(linkedAccounts.map(({ id }) => id))];
     const manualCohostEmails = normalizeCohostEmails([
       ...input.cohostEmailsManual,
       ...fallbackEmails,
     ]);
-    const cohostEmailSet = new Set(normalizeCohostEmails([
-      ...linkedAccounts.map(({ email }) => email),
-      ...manualCohostEmails,
-    ]));
+    const cohostEmailSet = new Set(manualCohostEmails);
     const invitadosEmails = normalizeCohostEmails(invitadosSolicitados)
       .filter((email) => !cohostEmailSet.has(email));
 
-    if (cohostIds.length === 0 && manualCohostEmails.length === 0) {
-      throw new ValidationApiError("El docente debe tener una cuenta Google válida para ser cohost.");
-    }
-
     const cuentaHostId = elegirCuentaHostParaPeriodos(
       null,
-      hosts,
+      hosts.map((host) => tipoProveedor === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host),
       occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
         cuentaProveedorId,
         inicio: instancia.inicioProgramadoAt,
@@ -282,6 +256,7 @@ export async function crearReuniones(
             timezone: input.timezone,
             requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
             requiereGrabacion: input.requiereGrabacion,
+            proveedorActivoTipo: "ZOOM",
           },
         });
         const evento = await tx.eventoProveedor.create({
@@ -295,11 +270,6 @@ export async function crearReuniones(
               : {}),
           },
         });
-        if (cohostIds.length > 0) {
-          await tx.cohostReunion.createMany({
-            data: cohostIds.map((id) => ({ instanciaSalaId: instancia.id, cuentaGoogleId: id })),
-          });
-        }
         if (manualCohostEmails.length > 0) {
           await tx.cohostEmailReunion.createMany({
             data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email })),

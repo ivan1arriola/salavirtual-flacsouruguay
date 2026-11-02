@@ -1,6 +1,7 @@
 import { Prisma, type EstadoInstancia, type PrismaClient } from "@prisma/client";
 import type { AdminMeeting, AdminPage, AdminQuery, AdminSummary } from "./contracts";
 import { obtenerDashboardAdministracion } from "../dashboard/admin-dashboard.adapter";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 const INSTANCE_STATES = ["PROGRAMADA", "EN_CURSO", "FINALIZADA", "CANCELADA", "NO_REALIZADA"] as const;
@@ -175,7 +176,7 @@ function buildWhere(query: AdminQuery, from: Date, to: Date, cursor: Cursor | nu
 function toAdminMeeting(meeting: MeetingRow): AdminMeeting {
   const association = meeting.solicitud.docentePrograma;
   const teacher = association.docente.usuario;
-  const providerEvent = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+  const providerEvent = seleccionarEventoProveedorActivo(meeting);
   const assignment = meeting.asignaciones[0] ?? null;
   const assistant = assignment?.asistenteTecnico.usuario;
 

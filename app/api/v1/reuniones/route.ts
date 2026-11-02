@@ -14,7 +14,8 @@ import {
   sincronizarCalendariosAsistenteSolicitud,
 } from "@/src/modules/asistencia/calendario-asistente.service";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
-import { notificarUsuario, notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
+import { notificarUsuario,notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
 import { destinatariosDocentesPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
@@ -126,7 +127,7 @@ async function notificarReunionCreada(solicitudId: string) {
     ...docentesPrograma
   ];
   const instancias = solicitud.instancias.map((instancia) => {
-    const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = seleccionarEventoProveedorActivo(instancia);
     const inicioFecha = formatShortDate(instancia.inicioProgramadoAt);
     const finFecha = formatShortDate(instancia.finProgramadoAt);
     const inicio = `${capitalizar(inicioFecha)}, ${formatTime(instancia.inicioProgramadoAt)}`;
@@ -138,9 +139,11 @@ async function notificarReunionCreada(solicitudId: string) {
       fin,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
       meet: meet?.codigoReunion,
-      joinUrl: meet?.joinUrl
+      joinUrl: meet?.joinUrl,
+      proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const
     };
   });
+  const usaZoom = instancias.length > 0 && instancias.every(({ proveedor }) => proveedor === "ZOOM");
   const firstAssignedAssistant = solicitud.instancias
     .flatMap((i) => i.asignaciones)
     .find((a) => a.asistenteTecnico)?.asistenteTecnico;
@@ -188,7 +191,9 @@ async function notificarReunionCreada(solicitudId: string) {
         href: "/mi-agenda",
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Te asignaron un monitoreo: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada para contar con permisos de moderación, admisión y grabación.`,
+        emailText: usaZoom
+          ? `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Esta reunión se realiza en Zoom.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Zoom indicado para cada encuentro; ante dudas sobre permisos de moderación, consultá a Administración.`
+          : `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Has sido configurado/a como anfitrión/co-anfitrión en Google Meet para esta reunión.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Meet directamente con tu cuenta de Google vinculada para contar con permisos de moderación, admisión y grabación.`,
         emailActionLabel: "Abrir mi agenda"
       }
     );
@@ -202,7 +207,9 @@ async function notificarReunionCreada(solicitudId: string) {
         href: `/reuniones/${solicitud.id}`,
         metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
         emailSubject: `Monitoreo asignado: ${solicitud.titulo}`,
-        emailText: `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
+        emailText: usaZoom
+          ? `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Zoom para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Zoom sin requerir credenciales de sala.`
+          : `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
         emailActionLabel: "Ver reunión"
       }
     );
@@ -229,7 +236,9 @@ async function notificarReunionCreada(solicitudId: string) {
       href: "/agenda-abierta",
       metadata: { solicitudId: solicitud.id },
       emailSubject: `Monitoreo requerido: ${solicitud.titulo}`,
-      emailText: `${detailsText}\n\nEsta reunión requiere monitoreo. Podés postularte desde Agenda abierta.\nAl ser asignado/a, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para ingresar directamente a dar cobertura sin requerir credenciales de sala.`,
+      emailText: usaZoom
+        ? `${detailsText}\n\nEsta reunión requiere monitoreo. Podés postularte desde Agenda abierta.\nLa reunión se realiza en Zoom; ingresarás con el enlace indicado sin requerir credenciales de sala.`
+        : `${detailsText}\n\nEsta reunión requiere monitoreo. Podés postularte desde Agenda abierta.\nAl ser asignado/a, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para ingresar directamente a dar cobertura sin requerir credenciales de sala.`,
       emailActionLabel: "Ver agenda abierta"
     }
   );

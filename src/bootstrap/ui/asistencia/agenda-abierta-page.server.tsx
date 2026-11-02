@@ -8,6 +8,7 @@ import {
 import { AssistantInterestButton } from "@/src/modules/asistencia/presentation/components/assistant-interest-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDateTime, formatTime } from "@/src/lib/ui/format";
@@ -222,7 +223,7 @@ export default async function AgendaAbiertaPage() {
                   {group.items.map((meeting) => {
                     const association = meeting.solicitud.docentePrograma;
                     const teacher = association.docente.usuario;
-                    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                    const meet = seleccionarEventoProveedorActivo(meeting);
                     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
                     const interested = interest && "estado" in interest && interest.estado === "ME_INTERESA";
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
@@ -326,7 +327,7 @@ export default async function AgendaAbiertaPage() {
               <tbody>
                 {meetings.map((meeting) => {
                   const association = meeting.solicitud.docentePrograma;
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                  const meet = seleccionarEventoProveedorActivo(meeting);
                   const meetingApplicants = interests
                     .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {

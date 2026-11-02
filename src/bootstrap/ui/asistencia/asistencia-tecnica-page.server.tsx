@@ -8,6 +8,7 @@ import { CoverageAssistanceActions } from "@/src/modules/asistencia/presentation
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { buildAssignmentSuggestions } from "@/src/modules/asistencia/asignacion-sugerencias.service";
 
@@ -200,7 +201,7 @@ export default async function AsistenciaTecnicaPage({
           <div className="coverage-card-list">
             {rows.map(({ meeting, assignment, covered }) => {
                   const association = meeting.solicitud.docentePrograma;
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                  const meet = seleccionarEventoProveedorActivo(meeting);
                   const assistantName = assignment
                     ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;

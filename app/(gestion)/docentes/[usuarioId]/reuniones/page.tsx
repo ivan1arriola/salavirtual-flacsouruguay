@@ -7,6 +7,7 @@ import { MeetIntegrationStatus } from "@/src/components/meet-integration-status"
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 
 export default async function ReunionesDocentePage({
   params
@@ -72,7 +73,7 @@ export default async function ReunionesDocentePage({
               <thead><tr><th>Fecha</th><th>Hora</th><th>Reunión</th><th>Programa</th><th>Estado</th><th>Monitoreo</th><th>Meet</th></tr></thead>
               <tbody>
                 {meetings.map((meeting) => {
-                  const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+                  const meet = seleccionarEventoProveedorActivo(meeting);
                   const assistant = meeting.asignaciones[0]?.asistenteTecnico.usuario;
                   return (
                     <tr key={meeting.id}>

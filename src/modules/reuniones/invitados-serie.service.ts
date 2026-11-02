@@ -5,6 +5,7 @@ import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { construirCorreoParticipacion, type AvisoEncuentro } from "./avisos-participacion.domain";
+import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 
 export const invitadosSchema = z.object({
   emails: z.array(z.email().transform(s => s.trim().toLowerCase())).max(100)
@@ -60,23 +61,30 @@ export async function actualizarInvitadosSerie(
       cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { cuentaProveedor: { select: { emailOrganizador: true } } },
-        take: 1
+        include: {
+          proveedor: { select: { tipo: true } },
+          cuentaProveedor: { select: { emailOrganizador: true } }
+        }
       }
     }
   });
   if (!meetings.length) throw new ConflictApiError("No hay encuentros futuros para modificar.");
+  // Calendar sigue anclado al evento de Google Meet; solo el enlace enviado a las
+  // personas invitadas sigue al proveedor activo.
+  const eventoCalendar = (m: (typeof meetings)[number]) =>
+    m.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
   const forbidden = new Set(meetings.flatMap(m => [
     ...m.cohosts.map(c => c.cuentaGoogle.email.toLowerCase()),
     ...m.cohostEmails.map(c => c.email.toLowerCase()),
-    ...m.eventosProveedor.flatMap(e => e.cuentaProveedor?.emailOrganizador ? [e.cuentaProveedor.emailOrganizador.toLowerCase()] : [])
+    ...m.eventosProveedor
+      .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
+      .flatMap(e => e.cuentaProveedor?.emailOrganizador ? [e.cuentaProveedor.emailOrganizador.toLowerCase()] : [])
   ]));
   if (emails.some(email => forbidden.has(email))) throw new ConflictApiError("Una cuenta anfitriona o coanfitriona no puede agregarse también como invitada.");
   const updates: Array<{ host: string; eventId: string; previo: CalendarGuestState["attendees"] }> = [];
   try {
     for (const meeting of meetings) {
-      const event = meeting.eventosProveedor[0];
+      const event = eventoCalendar(meeting);
       const host = event?.cuentaProveedor?.emailOrganizador;
       if (!host || !event?.externalEventId) throw new ConflictApiError("Un encuentro no tiene vinculación completa con Calendar.");
       const current = await deps.leerCalendario(host, event.externalEventId);
@@ -124,11 +132,15 @@ export async function actualizarInvitadosSerie(
   for (const email of emails) {
     const nuevos = meetings.filter(m => !m.invitados.some(g => g.email.toLowerCase() === email));
     if (!nuevos.length) continue;
-    const avisos: AvisoEncuentro[] = nuevos.map(m => ({
-      id: m.id, titulo: request.titulo,
-      inicio: m.inicioProgramadoAt, fin: m.finProgramadoAt,
-      urlMeet: m.eventosProveedor[0]?.joinUrl ?? null
-    }));
+    const avisos: AvisoEncuentro[] = nuevos.map(m => {
+      const activo = seleccionarEventoProveedorActivo(m);
+      return {
+        id: m.id, titulo: request.titulo,
+        inicio: m.inicioProgramadoAt, fin: m.finProgramadoAt,
+        urlMeet: activo?.joinUrl ?? null,
+        proveedor: activo?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
+      };
+    });
     try {
       if (await deps.enviarCorreo(email, construirCorreoParticipacion("INVITACION", avisos, "INVITADO"))) correosEnviados++;
       else erroresCorreo++;

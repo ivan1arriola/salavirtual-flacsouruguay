@@ -544,6 +544,7 @@ function buildProvisionRequest(event: {
     finProgramadoAt: Date;
     timezone: string;
     requiereAsistenciaTecnica: boolean;
+    requiereGrabacion: boolean;
     cohosts: { cuentaGoogle: { email: string } }[];
     cohostEmails: { email: string }[];
   };
@@ -561,6 +562,7 @@ function buildProvisionRequest(event: {
     cohostEmails,
     guestEmails: extraerInvitados(event.payloadUltimo, cohostEmails),
     requiereAsistenciaTecnica: instancia.requiereAsistenciaTecnica,
+    requiereGrabacion: instancia.requiereGrabacion,
     calendarEventId: calendarEventId(event.id),
   };
 }

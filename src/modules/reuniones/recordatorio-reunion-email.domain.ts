@@ -17,11 +17,54 @@ export type DatosRecordatorio = Readonly<{
   horarioMonitoreo?: string | null;
   modalidad: string;
   urlMeet?: string | null;
+  /** Proveedor del enlace; Zoom no tiene verificación de coanfitriones de Meet. */
+  proveedor?: "GOOGLE_MEET" | "ZOOM";
   urlDetalle: string;
   acceso: AccesoRecordatorio;
 }>;
 
+function construirRecordatorioZoom(input: DatosRecordatorio): Readonly<{ subject: string; text: string; html: string }> {
+  const e = escaparHtmlEmail;
+  const text = [
+    "Recordatorio: tu próxima reunión",
+    "",
+    "Hola " + input.nombre + ",",
+    input.reunion + " — " + input.programa,
+    "Fecha: " + input.fecha,
+    "Horario de clase: " + input.horarioClase,
+    input.horarioMonitoreo ? "Horario de monitoreo: " + input.horarioMonitoreo : null,
+    "Modalidad: " + input.modalidad,
+    "",
+    input.urlMeet ? "Enlace de Zoom: " + input.urlMeet : "El enlace de Zoom todavía no está disponible.",
+    "Revisá la reunión en " + input.urlDetalle,
+  ].filter((line): line is string => line !== null).join("\n");
+  const detalles = panelCorreo(
+    '<p style="margin:0 0 6px;color:#192b44;font-size:18px;line-height:26px;font-weight:700">' + e(input.reunion) + '</p>' +
+    '<p style="margin:0 0 14px;color:#526277;font-size:13px;line-height:20px">' + e(input.programa) + '</p>' +
+    '<p style="margin:0 0 4px;color:#183b70;font-size:14px;font-weight:700">' + e(input.fecha) + '</p>' +
+    '<p style="margin:0 0 5px;color:#192b44;font-size:20px;line-height:28px;font-weight:700">' + e(input.horarioClase) + '</p>' +
+    (input.horarioMonitoreo ? '<p style="margin:5px 0;color:#526277;font-size:13px">Monitoreo: <strong>' + e(input.horarioMonitoreo) + '</strong></p>' : "") +
+    '<p style="margin:8px 0 0;color:#526277;font-size:13px">' + e(input.modalidad) + '</p>',
+    "Fecha y horario · Uruguay"
+  );
+  const zoom = input.urlMeet
+    ? '<div style="margin:15px 0">' + botonCorreo({ texto: "Ingresar a Zoom", url: input.urlMeet }) + '</div>'
+    : '<p style="color:#995218;font-size:13px">El enlace de Zoom todavía no está disponible.</p>';
+  const html = envolverCorreo({
+    categoria: "Recordatorio de reunión",
+    titulo: "Tu próxima reunión",
+    resumen: "Hola, " + input.nombre + ". Revisá el horario y el enlace de acceso.",
+    variante: "accion",
+    contenidoHtml: detalles + zoom,
+    accion: { texto: "Ver detalle de la reunión", url: input.urlDetalle },
+    nota: "Si el horario cambia, consultá la agenda actualizada.",
+    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+  });
+  return { subject: "Recordatorio: " + input.reunion + " · Sala Virtual FLACSO", text, html };
+}
+
 export function construirRecordatorioReunion(input: DatosRecordatorio): Readonly<{ subject: string; text: string; html: string }> {
+  if (input.proveedor === "ZOOM") return construirRecordatorioZoom(input);
   const e = escaparHtmlEmail;
   const confirmadas = input.acceso.cuentasConfirmadas;
   const sinPermiso = input.acceso.cuentasSinPermiso;

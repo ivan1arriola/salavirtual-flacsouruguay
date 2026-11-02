@@ -6,7 +6,7 @@ const admin = { id: "admin-1", rol: "ADMINISTRACION", activo: true } as const;
 const start = new Date("2030-10-24T13:00:00Z");
 const end = new Date("2030-10-24T15:00:00Z");
 const event = {
-  id: "provider1", externalEventId: "cal-1",
+  id: "provider1", externalEventId: "cal-1", proveedor: { tipo: "GOOGLE_MEET" },
   joinUrl: "https://meet.google.com/old-aaaa-bbb",
   codigoReunion: "old-aaaa-bbb",
   cuentaProveedor: { emailOrganizador: "sala02@flacso.edu.uy" }

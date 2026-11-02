@@ -42,7 +42,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
   async function createHost(formData: FormData) {
     setSaving("new");
     setMessage("Guardando cuenta…");
-    const result = await request("POST", payloadFromForm(formData, true));
+    const result = await request("POST", payloadFromForm(formData));
     setSuccess(result.ok);
     setMessage(result.message);
     setSaving(null);
@@ -57,7 +57,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
     setMessage(`Guardando ${host.nombre}…`);
     const result = await request("PUT", {
       id: host.id,
-      ...payloadFromForm(formData, false),
+      ...payloadFromForm(formData),
       notificarCambioPassword: formData.get("notificarCambioPassword") === "on"
     });
     setSuccess(result.ok);
@@ -175,7 +175,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                     <form className="settings-room-edit-form" action={(formData) => updateHost(host, formData)}>
                       <header>
                         <KeyRound size={19} aria-hidden="true" />
-                        <div><strong>Editar {host.nombre}</strong><p>{host.passwordConfigurada ? "La contraseña cifrada está configurada." : "Esta cuenta necesita una contraseña."}</p></div>
+                        <div><strong>Editar {host.nombre}</strong><p>{host.proveedorTipo === "ZOOM" ? "Usa las credenciales institucionales de Zoom." : host.passwordConfigurada ? "La contraseña cifrada está configurada." : "Esta cuenta necesita una contraseña."}</p></div>
                       </header>
                       <HostFields host={host} hostsCount={hosts.length} />
                       <div className="settings-risk-zone">
@@ -204,21 +204,23 @@ function HostFields({
   host,
   hostsCount
 }: Readonly<{ host?: MeetHostVisible; hostsCount: number }>) {
+  const [platform, setPlatform] = useState<"GOOGLE_MEET" | "ZOOM">(host?.proveedorTipo ?? "ZOOM");
   return (
     <div className="form-grid">
       <label className="field">
         <span>Plataforma</span>
-        <select name="proveedorTipo" defaultValue={host?.proveedorTipo ?? "GOOGLE_MEET"}>
+        <select name="proveedorTipo" value={platform} onChange={(event) => setPlatform(event.target.value as "GOOGLE_MEET" | "ZOOM")} disabled={Boolean(host)}>
           <option value="GOOGLE_MEET">Google Meet</option>
           <option value="ZOOM">Zoom</option>
         </select>
+        {host ? <input type="hidden" name="proveedorTipo" value={platform} /> : null}
       </label>
       <label className="field">
         <span>Nombre</span>
         <input name="nombre" defaultValue={host?.nombre} placeholder="Sala principal" required />
       </label>
       <label className="field">
-        <span>Correo de Google Workspace</span>
+        <span>{platform === "ZOOM" ? "Correo de la cuenta Zoom" : "Correo de Google Workspace"}</span>
         <input
           type="email"
           name="email"
@@ -229,23 +231,25 @@ function HostFields({
           required
         />
       </label>
-      <label className="field">
-        <span>{host ? "Nueva contraseña" : "Contraseña"}</span>
-        <input
-          type="password"
-          name="password"
-          minLength={8}
-          autoComplete="new-password"
-          placeholder={host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"}
-          required={!host}
-        />
-        {host ? <small>Dejala vacía para conservar la contraseña actual.</small> : null}
-      </label>
+      {platform === "GOOGLE_MEET" ? (
+        <label className="field">
+          <span>{host ? "Nueva contraseña" : "Contraseña"}</span>
+          <input
+            type="password"
+            name="password"
+            minLength={8}
+            autoComplete="new-password"
+            placeholder={host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"}
+            required={!host}
+          />
+          {host ? <small>Dejala vacía para conservar la contraseña actual.</small> : null}
+        </label>
+      ) : <p className="field">Esta sala usa la conexión institucional Zoom Server-to-Server OAuth.</p>}
       <label className="field">
         <span>Prioridad</span>
         <input type="number" name="prioridad" min={1} max={1000} defaultValue={host?.prioridad ?? hostsCount + 1} required />
       </label>
-      <label className="field">
+      {platform === "ZOOM" ? <p className="field">Límite de reuniones simultáneas: 1 por cuenta Zoom.</p> : <label className="field">
         <span>Límite de reuniones simultáneas</span>
         <input
           type="number"
@@ -256,17 +260,17 @@ function HostFields({
           placeholder="1 (predeterminado)"
         />
         <small>Cantidad máxima de reuniones que esta sala puede alojar al mismo tiempo (ej: 2 para permitir reuniones simultáneas).</small>
-      </label>
+      </label>}
       <label className="check-field"><input type="checkbox" name="tieneLicencia" defaultChecked={host?.tieneLicencia ?? true} /><span>Disponible para alojar reuniones</span></label>
       <label className="check-field"><input type="checkbox" name="activa" defaultChecked={host?.activa ?? true} /><span>Cuenta activa</span></label>
-      {host ? (
+      {host?.proveedorTipo === "GOOGLE_MEET" ? (
         <label className="check-field field-wide"><input type="checkbox" name="notificarCambioPassword" defaultChecked /><span>Si cambia la contraseña, avisar a las personas con reuniones futuras en esta cuenta.</span></label>
       ) : null}
     </div>
   );
 }
 
-function payloadFromForm(formData: FormData, requirePassword: boolean) {
+function payloadFromForm(formData: FormData) {
   const password = String(formData.get("password") ?? "").trim();
   const limitRaw = String(formData.get("limiteConcurrente") ?? "").trim();
   const proveedorTipo = (formData.get("proveedorTipo") as string) || "GOOGLE_MEET";
@@ -275,10 +279,10 @@ function payloadFromForm(formData: FormData, requirePassword: boolean) {
     nombre: String(formData.get("nombre") ?? ""),
     email: String(formData.get("email") ?? ""),
     prioridad: Number(formData.get("prioridad")),
-    limiteConcurrente: limitRaw ? Number(limitRaw) : null,
+    limiteConcurrente: proveedorTipo === "ZOOM" ? 1 : limitRaw ? Number(limitRaw) : null,
     tieneLicencia: formData.get("tieneLicencia") === "on",
     activa: formData.get("activa") === "on",
-    ...(requirePassword || password ? { password } : {})
+    ...(password ? { password } : {})
   };
 }
 

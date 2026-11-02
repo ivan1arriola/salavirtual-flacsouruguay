@@ -5,6 +5,7 @@ import {
   extraerCohostsUnificadosDeInstancia
 } from "@/src/modules/conferencias/api";
 import { listarCasosRevisionDuplicados } from "../reuniones/duplicados.service";
+import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal } from "./dashboard.domain";
 import type { EstadoTemporalReunion } from "./types";
 
@@ -351,7 +352,9 @@ export async function obtenerDashboardAdministracion(
     const teacher = association.docente.usuario;
     const assignment = meeting.asignaciones[0];
     const assistant = assignment?.asistenteTecnico.usuario;
-    const meet = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    // Cohosts se verifican solo contra Google Meet; enlace, estado y organizador siguen al proveedor activo.
+    const meetCohosts = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = seleccionarEventoProveedorActivo(meeting);
 
     const cohosts = extraerCohostsUnificadosDeInstancia(meeting).map((c) => ({
       email: c.email,
@@ -361,12 +364,12 @@ export async function obtenerDashboardAdministracion(
     const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
 
     const cohostsConfirmadosEnMeet = Boolean(
-      !meet?.errorIntegracion &&
-        !meet?.operacionPendiente &&
+      !meetCohosts?.errorIntegracion &&
+        !meetCohosts?.operacionPendiente &&
         cohostsConfirmados(
-          meet?.payloadUltimo,
-          meet?.codigoReunion,
-          meet?.cuentaProveedor?.emailOrganizador,
+          meetCohosts?.payloadUltimo,
+          meetCohosts?.codigoReunion,
+          meetCohosts?.cuentaProveedor?.emailOrganizador,
           cohostEmails
         )
     );

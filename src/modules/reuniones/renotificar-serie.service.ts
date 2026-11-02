@@ -8,6 +8,7 @@ import {
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { destinatariosDocentesPrograma, puedeGestionarPrograma } from "./permisos-programa.service";
+import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 
 export type RenotificarSerieDependencies = Readonly<{
@@ -67,6 +68,7 @@ export async function renotificarSerieAlPrograma(
         select: {
           inicioProgramadoAt: true,
           finProgramadoAt: true,
+          proveedorActivoTipo: true,
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
             select: {
@@ -78,10 +80,10 @@ export async function renotificarSerieAlPrograma(
             }
           },
           eventosProveedor: {
-            where: { proveedor: { tipo: "GOOGLE_MEET" } },
             select: {
               codigoReunion: true,
               joinUrl: true,
+              proveedor: { select: { tipo: true } },
               cuentaProveedor: {
                 select: {
                   nombre: true,
@@ -90,7 +92,6 @@ export async function renotificarSerieAlPrograma(
                 },
               },
             },
-            take: 1,
           },
         },
       },
@@ -121,7 +122,7 @@ export async function renotificarSerieAlPrograma(
     requiereGrabacion: request.requiereGrabacion,
     asistenteTecnico: assistantName,
     instancias: meetings.map((meeting) => {
-      const meet = meeting.eventosProveedor[0];
+      const meet = seleccionarEventoProveedorActivo(meeting);
       const inicioFecha = formatShortDate(meeting.inicioProgramadoAt);
       const finFecha = formatShortDate(meeting.finProgramadoAt);
       return {
@@ -132,6 +133,7 @@ export async function renotificarSerieAlPrograma(
         sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
         meet: meet?.codigoReunion,
         joinUrl: meet?.joinUrl,
+        proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET",
       };
     }),
   });

@@ -61,7 +61,7 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="teacher-create"]', {
       title: "Crear una reunión",
-      description: "Usá Nueva reunión para programar una clase, seminario u otra actividad. Podés crear un único encuentro o una serie completa y Sala Virtual generará los eventos de Calendar y sus enlaces de Google Meet.",
+      description: "Usá Nueva reunión para programar una clase, seminario u otra actividad. Podés crear un único encuentro o una serie completa y Sala Virtual generará los enlaces de Zoom.",
       side: "right",
       align: "start"
     })
@@ -174,7 +174,7 @@ function meetingSteps(): DriveStep[] {
     }),
     step('.meeting-form .form-actions button[type="submit"]', {
       title: "Crear la reunión",
-      description: "Cuando todo esté correcto, confirmá desde este botón. Sala Virtual guardará la actividad, asignará una misma cuenta de sala disponible para todas las fechas, creará los eventos de Google Calendar y configurará los enlaces de Google Meet. Mientras aparece “Creando reunión…”, no vuelvas a presionar el botón.",
+      description: "Cuando todo esté correcto, confirmá desde este botón. Sala Virtual guardará la actividad, asignará una sala Zoom disponible y configurará los enlaces de acceso. Mientras aparece “Creando reunión…”, no vuelvas a presionar el botón.",
       side: "top",
       align: "center"
     })
