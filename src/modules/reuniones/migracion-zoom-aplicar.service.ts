@@ -23,6 +23,7 @@ export type EventoCalendarMigracion = Readonly<{
   location?: string;
   hangoutLink?: string;
   conferenceData?: unknown;
+  attendees?: readonly Readonly<{ email: string }>[];
 }>;
 
 /** Puertos externos: Zoom (provisión existente + verificación) y Google Calendar. */
@@ -359,7 +360,13 @@ async function enviarAvisos(deps: DependenciasMigracionZoom, instanciaId: string
     };
   }
   try {
-    return await notificarMigracionZoom({ db: deps.db, enviarCorreo: deps.enviarCorreo, ahora: deps.ahora }, instanciaId);
+    return await notificarMigracionZoom({
+      db: deps.db,
+      enviarCorreo: deps.enviarCorreo,
+      leerInvitadosCalendar: async (calendarId, eventId) =>
+        (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(({ email }) => email) ?? [],
+      ahora: deps.ahora,
+    }, instanciaId);
   } catch (error) {
     return {
       estado: "PARCIAL", motivo: error instanceof Error ? error.message : "No se pudieron preparar los avisos.",

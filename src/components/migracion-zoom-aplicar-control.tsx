@@ -105,7 +105,7 @@ export function MigracionZoomAplicarControl({ filas, filasEnZoom = [] }: Readonl
                         ))}
                       </ul>
                     )}
-                    {resultado.avisos.errores > 0 && (
+                    {(resultado.avisos.errores > 0 || Boolean(resultado.avisos.motivo)) && (
                       <button type="button" disabled={procesando} onClick={() => aplicar("PILOTO", [resultado.instanciaId])}>
                         Reintentar avisos pendientes
                       </button>

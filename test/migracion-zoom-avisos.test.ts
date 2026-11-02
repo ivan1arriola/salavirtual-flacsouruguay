@@ -17,7 +17,7 @@ function escenario(over: Record<string, unknown> = {}) {
     id: "i1", estado: "PROGRAMADA", proveedorActivoTipo: "ZOOM",
     inicioProgramadoAt: new Date("2026-11-10T12:00:00Z"), finProgramadoAt: new Date("2026-11-10T13:00:00Z"),
     eventosProveedor: [
-      { joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } },
+      { joinUrl: "https://meet.google.com/abc-defg-hij", externalEventId: "cal-1", cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }, proveedor: { tipo: "GOOGLE_MEET" } },
       { joinUrl: ZOOM, proveedor: { tipo: "ZOOM" } },
     ],
     solicitud: {
@@ -63,6 +63,34 @@ describe("notificarMigracionZoom", () => {
     ]);
     expect(r).toMatchObject({ estado: "COMPLETO", destinatarios: 6, enviados: 6, errores: 0 });
     expect(e.outbox.filas.every((f) => f.estado === "ACEPTADO" && f.enviadoAt)).toBe(true);
+  });
+
+  it("incluye invitados agregados solo en Calendar y los deduplica con Sala Virtual", async () => {
+    const e = escenario();
+    const enviarCorreo = ok();
+    const leerInvitadosCalendar = vi.fn(async () => ["NUEVA@example.org", "invitada@example.org"]);
+    const r = await notificarMigracionZoom({ db: e.db, enviarCorreo, leerInvitadosCalendar, ahora: () => ahora }, "i1");
+    expect(leerInvitadosCalendar).toHaveBeenCalledWith("sala01@flacso.edu.uy", "cal-1");
+    expect(r).toMatchObject({ estado: "COMPLETO", destinatarios: 7, enviados: 7 });
+    expect(e.outbox.filas.filter((fila) => fila.email === "nueva@example.org")).toHaveLength(1);
+  });
+
+  it("permite completar después los invitados de Calendar si la lectura inicial falla", async () => {
+    const e = escenario();
+    const enviarCorreo = ok();
+    const primera = await notificarMigracionZoom({
+      db: e.db, enviarCorreo,
+      leerInvitadosCalendar: async () => { throw new Error("Calendar 503"); },
+      ahora: () => ahora,
+    }, "i1");
+    expect(primera).toMatchObject({ estado: "PARCIAL", enviados: 6 });
+    expect(primera.motivo).toContain("Calendar");
+    const segunda = await notificarMigracionZoom({
+      db: e.db, enviarCorreo,
+      leerInvitadosCalendar: async () => ["tardia@example.org"],
+      ahora: () => ahora,
+    }, "i1");
+    expect(segunda).toMatchObject({ estado: "COMPLETO", enviados: 1, yaEnviados: 6 });
   });
 
   it("incluye el join_url real de Zoom y la fecha, nunca el enlace Meet", async () => {

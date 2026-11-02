@@ -13,6 +13,7 @@ export type EnviarCorreoMigracion = (input: Readonly<{
 export type DependenciasAvisosMigracionZoom = Readonly<{
   db: PrismaClient;
   enviarCorreo: EnviarCorreoMigracion;
+  leerInvitadosCalendar?: (calendarId: string, eventId: string) => Promise<readonly string[]>;
   ahora?: () => Date;
 }>;
 
@@ -58,7 +59,12 @@ const seleccion = {
   inicioProgramadoAt: true,
   finProgramadoAt: true,
   proveedorActivoTipo: true,
-  eventosProveedor: { select: { joinUrl: true, proveedor: { select: { tipo: true } } } },
+  eventosProveedor: { select: {
+    joinUrl: true,
+    externalEventId: true,
+    cuentaProveedor: { select: { emailOrganizador: true } },
+    proveedor: { select: { tipo: true } },
+  } },
   solicitud: {
     select: {
       titulo: true,
@@ -121,6 +127,19 @@ export async function notificarMigracionZoom(
   for (const c of instancia.cohosts) agregar(c.cuentaGoogle.email);
   for (const c of instancia.cohostEmails) agregar(c.email);
   for (const g of instancia.invitados) agregar(g.email, g.nombre);
+
+  // Calendar puede contener invitados añadidos manualmente que aún no figuran
+  // en Sala Virtual. La clave única de la outbox deduplica ambos orígenes.
+  const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+  let errorCalendar: string | null = null;
+  if (deps.leerInvitadosCalendar && meet?.externalEventId && meet.cuentaProveedor?.emailOrganizador) {
+    try {
+      const invitadosCalendar = await deps.leerInvitadosCalendar(meet.cuentaProveedor.emailOrganizador, meet.externalEventId);
+      for (const email of invitadosCalendar) agregar(email);
+    } catch (error) {
+      errorCalendar = error instanceof Error ? error.message : "No se pudieron leer los invitados de Calendar.";
+    }
+  }
 
   const fecha = formatLongDate(instancia.inicioProgramadoAt);
   const horario = formatTime(instancia.inicioProgramadoAt) + "–" + formatTime(instancia.finProgramadoAt) + " h";
@@ -197,7 +216,8 @@ export async function notificarMigracionZoom(
   const errores = cuenta("ERROR");
   const enCurso = cuenta("EN_CURSO");
   return {
-    estado: errores || enCurso ? "PARCIAL" : "COMPLETO",
+    estado: errores || enCurso || errorCalendar ? "PARCIAL" : "COMPLETO",
+    ...(errorCalendar ? { motivo: `No se pudieron leer todos los invitados de Calendar: ${errorCalendar}` } : {}),
     destinatarios: detalle.length,
     enviados: cuenta("ENVIADO"),
     yaEnviados: cuenta("YA_ENVIADO"),
