@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Clock3, Hash, Trash2, Video } from "lucide-react";
+import { CalendarClock, Clock3, Hash, Plus, Trash2, Video } from "lucide-react";
 import "./reunion-zoom-encuentros.css";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -60,7 +60,9 @@ export function ReunionZoomEncuentros({
   solicitudIds,
   esAdmin,
   puedeModificar,
-  permiteCancelarSerie
+  permiteCancelarSerie,
+  solicitudIdParaAgregar,
+  permiteAgregarCompartida
 }: Readonly<{
   encuentros: readonly EncuentroZoomView[];
   solicitudIds: readonly string[];
@@ -69,10 +71,13 @@ export function ReunionZoomEncuentros({
   puedeModificar: boolean;
   /** Falso en una serie partida: cancelarla entera cancelaría también los encuentros del otro proveedor. */
   permiteCancelarSerie: boolean;
+  solicitudIdParaAgregar: string;
+  permiteAgregarCompartida: boolean;
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
+  const [agregando, setAgregando] = useState(false);
   const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
   const fechaInputRef = useRef<HTMLInputElement>(null);
   const botonEditarRef = useRef<HTMLButtonElement>(null);
@@ -108,6 +113,28 @@ export function ReunionZoomEncuentros({
       method: "PATCH",
       body: { accion: "EDITAR_FECHA", inicio: aIso(fecha, inicio), fin: aIso(fecha, fin) }
     }), () => setEditando(null));
+  }
+
+  function agregar(form: HTMLFormElement) {
+    const datos = new FormData(form);
+    const fecha = String(datos.get("fecha") ?? "");
+    const inicio = String(datos.get("horaInicio") ?? "");
+    const fin = String(datos.get("horaFin") ?? "");
+    const descripcion = String(datos.get("descripcion") ?? "").trim();
+    if (!fecha || !inicio || !fin || fin <= inicio) {
+      setMensaje({ texto: "Revisá la fecha y las horas del nuevo encuentro.", error: true });
+      return;
+    }
+    const inicioIso = aIso(fecha, inicio);
+    const finIso = aIso(fecha, fin);
+    if (new Date(inicioIso).getTime() <= Date.now()) {
+      setMensaje({ texto: "El nuevo encuentro debe comenzar en el futuro.", error: true });
+      return;
+    }
+    ejecutar(() => enviarAccionEncuentro(fetch, `/api/v1/reuniones/${solicitudIdParaAgregar}/encuentros`, {
+      method: "POST",
+      body: { inicio: inicioIso, fin: finIso, descripcion, requiereAsistenciaTecnica: false, requiereGrabacion: false }
+    }), () => setAgregando(false));
   }
 
   function cancelarEncuentro(encuentro: EncuentroZoomView) {
@@ -199,6 +226,37 @@ export function ReunionZoomEncuentros({
           );
         })}
       </ul>
+      {puedeModificar && permiteCancelarSerie ? (
+        <div className="zoom-series-add">
+          {permiteAgregarCompartida ? (
+            <>
+              <button className="primary-action zoom-series-add__toggle" type="button" disabled={pending}
+                aria-expanded={agregando} aria-controls="zoom-series-add-form"
+                onClick={() => setAgregando((actual) => !actual)}>
+                <Plus size={17} aria-hidden="true" /> Agregar encuentro a la serie
+              </button>
+              {agregando ? (
+                <form id="zoom-series-add-form" className="zoom-series-add__form" onSubmit={(event) => { event.preventDefault(); agregar(event.currentTarget); }}>
+                  <p>El nuevo encuentro utilizará la misma reunión e ID de Zoom. Horario de Uruguay.</p>
+                  <label>Fecha<input type="date" name="fecha" required /></label>
+                  <label>Inicio<input type="time" name="horaInicio" required /></label>
+                  <label>Fin<input type="time" name="horaFin" required /></label>
+                  <label className="zoom-series-add__description">Descripción (opcional)<input type="text" name="descripcion" maxLength={4000} /></label>
+                  <div className="zoom-series-add__buttons">
+                    <button className="primary-action" type="submit" disabled={pending}>{pending ? "Guardando…" : "Crear encuentro"}</button>
+                    <button className="secondary-action" type="button" disabled={pending} onClick={() => setAgregando(false)}>Cerrar</button>
+                  </div>
+                </form>
+              ) : null}
+            </>
+          ) : (
+            <p className="zoom-series-add__notice" role="note">
+              Para agregar encuentros con el mismo ID de Zoom, primero hay que unificar los enlaces de esta serie.
+              No se creará automáticamente otro enlace independiente.
+            </p>
+          )}
+        </div>
+      ) : null}
       {hayEditables ? (
         <div className="zoom-series-encounters__footer">
           <button className="secondary-action zoom-series-encounters__cancel" disabled={pending} onClick={cancelarSerie} type="button">
