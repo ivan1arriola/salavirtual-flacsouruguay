@@ -48,6 +48,45 @@ describe("planificarMigracionZoom", () => {
     expect(result.map(({ estado }) => estado)).toEqual(["MIGRABLE", "SIN_SALA"]);
   });
 
+  it("bloquea los encuentros de una serie con varios encuentros futuros y no consume sala", () => {
+    const result = planificarMigracionZoom({
+      ahora: now,
+      margenSeguridadHoras: 24,
+      candidatos: [candidate("a", { encuentrosSerie: 3 }), candidate("b")],
+      hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
+      reservasZoom: [],
+    });
+    expect(result.map(({ id, estado, hostId }) => ({ id, estado, hostId }))).toEqual([
+      { id: "a", estado: "SERIE", hostId: null },
+      { id: "b", estado: "MIGRABLE", hostId: "sala01" },
+    ]);
+  });
+
+  it("una serie de un solo encuentro sigue siendo migrable", () => {
+    const [fila] = planificarMigracionZoom({
+      ahora: now,
+      margenSeguridadHoras: 24,
+      candidatos: [candidate("a", { encuentrosSerie: 1 })],
+      hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
+      reservasZoom: [],
+    });
+    expect(fila.estado).toBe("MIGRABLE");
+  });
+
+  it("una excepción de Meet y un encuentro ya en Zoom no se reclasifican como SERIE", () => {
+    const result = planificarMigracionZoom({
+      ahora: now,
+      margenSeguridadHoras: 24,
+      candidatos: [
+        candidate("a", { encuentrosSerie: 3, conservarGoogleMeet: true }),
+        candidate("b", { encuentrosSerie: 3, proveedorActivo: "ZOOM" }),
+      ],
+      hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
+      reservasZoom: [],
+    });
+    expect(result.map(({ estado }) => estado)).toEqual(["EXCEPCION", "YA_ZOOM"]);
+  });
+
   it("respeta excepciones y no consume sala para ellas", () => {
     const result = planificarMigracionZoom({
       ahora: now,

@@ -11,11 +11,14 @@ export type CandidatoMigracionZoom = Readonly<{
   meetJoinUrl: string | null;
   cuentaZoomPreferidaId: string | null;
   zoomSincronizado: boolean;
+  /** Encuentros futuros de la serie (incluido este). Más de uno bloquea la migración por encuentro. */
+  encuentrosSerie?: number;
 }>;
 
 export type EstadoVistaPreviaZoom =
   | "MIGRABLE"
   | "EXCEPCION"
+  | "SERIE"
   | "YA_ZOOM"
   | "SIN_SALA"
   | "CERCANO"
@@ -73,6 +76,8 @@ export function planificarMigracionZoom(input: Readonly<{
     }
     if (candidato.proveedorActivo === "ZOOM") return agregar({ ...base, estado: "YA_ZOOM" });
     if (candidato.conservarGoogleMeet) return agregar({ ...base, estado: "EXCEPCION" });
+    // Una serie de Meet comparte un solo enlace: migrarla encuentro por encuentro daría enlaces distintos.
+    if ((candidato.encuentrosSerie ?? 1) > 1) return agregar({ ...base, estado: "SERIE" });
     if (candidato.inicio.getTime() <= limiteCercano) return agregar({ ...base, estado: "CERCANO" });
     if (
       candidato.proveedorActivo !== "GOOGLE_MEET" ||

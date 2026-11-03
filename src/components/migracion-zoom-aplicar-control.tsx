@@ -26,6 +26,7 @@ const FECHA = new Intl.DateTimeFormat("es-UY", {
 const ETIQUETAS: Record<FilaVistaPreviaMigracion["estado"], string> = {
   MIGRABLE: "Lista para convertir",
   EXCEPCION: "Se conserva en Meet",
+  SERIE: "Serie con varios encuentros",
   YA_ZOOM: "En Zoom",
   SIN_SALA: "Sin sala Zoom disponible",
   CERCANO: "Comienza dentro de 24 horas",
@@ -44,7 +45,7 @@ function resumenAvisos(avisos: Avisos): string {
 
 function coincideFiltro(fila: FilaVistaPreviaMigracion, filtro: Filtro): boolean {
   if (filtro === "TODOS") return true;
-  if (filtro === "ATENCION") return ["SIN_SALA", "CERCANO", "REVISAR", "NO_FUTURO"].includes(fila.estado);
+  if (filtro === "ATENCION") return ["SIN_SALA", "CERCANO", "REVISAR", "NO_FUTURO", "SERIE"].includes(fila.estado);
   return fila.estado === filtro;
 }
 
@@ -63,7 +64,7 @@ export function MigracionZoomAplicarControl({ vistaPrevia }: Readonly<{ vistaPre
   const seleccionActiva = seleccion.filter((id) => idsMigrables.has(id));
   const seleccionadas = migrables.filter((fila) => seleccionActiva.includes(fila.id));
   const atencion = vistaPrevia.conteos.SIN_SALA + vistaPrevia.conteos.CERCANO
-    + vistaPrevia.conteos.REVISAR + vistaPrevia.conteos.NO_FUTURO;
+    + vistaPrevia.conteos.REVISAR + vistaPrevia.conteos.NO_FUTURO + vistaPrevia.conteos.SERIE;
   const consulta = busqueda.trim().toLocaleLowerCase("es-UY");
   const visibles = vistaPrevia.filas.filter((fila) =>
     coincideFiltro(fila, filtro)

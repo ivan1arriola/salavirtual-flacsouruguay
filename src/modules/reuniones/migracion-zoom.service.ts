@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
+import { claveSerieReunion } from "./serie-reunion.domain";
 import {
   meetPreparadoParaMigracion,
   planificarMigracionZoom,
@@ -130,6 +131,9 @@ export async function obtenerVistaPreviaMigracionZoom(
         solicitud: {
           select: {
             titulo: true,
+            serieReunionId: true,
+            docenteProgramaId: true,
+            createdAt: true,
             creadaPor: { select: { emailPrincipal: true } },
             docentePrograma: { select: {
               programa: { select: { nombre: true } },
@@ -174,6 +178,12 @@ export async function obtenerVistaPreviaMigracionZoom(
   ]);
 
   const porInstancia = new Map(instancias.map((instancia) => [instancia.id, instancia]));
+  // Encuentros futuros por serie: una serie de Meet comparte un solo enlace, y migrarla
+  // encuentro por encuentro dejaría un enlace distinto en cada uno.
+  const encuentrosPorSerie = instancias.reduce<ReadonlyMap<string, number>>((conteo, { solicitud }) => {
+    const clave = claveSerieReunion(solicitud);
+    return new Map([...conteo, [clave, (conteo.get(clave) ?? 0) + 1]]);
+  }, new Map());
   const hostPorId = new Map(hosts.map((host) => [host.id, host]));
 
   const plan = planificarMigracionZoom({
@@ -207,12 +217,13 @@ export async function obtenerVistaPreviaMigracionZoom(
         meetJoinUrl: meet?.joinUrl ?? null,
         cuentaZoomPreferidaId,
         zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
+        encuentrosSerie: encuentrosPorSerie.get(claveSerieReunion(instancia.solicitud)) ?? 1,
       };
     }),
   });
 
   const conteos: Record<EstadoVistaPreviaZoom, number> = {
-    MIGRABLE: 0, EXCEPCION: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
+    MIGRABLE: 0, EXCEPCION: 0, SERIE: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
   };
   const filas = plan.map((fila): FilaVistaPreviaMigracion => {
     conteos[fila.estado] += 1;
