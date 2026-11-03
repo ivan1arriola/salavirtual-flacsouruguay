@@ -72,6 +72,7 @@ export default async function ReunionZoomDetailPage({
       puedeCancelar: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
       puedeUnirse,
       joinUrl: enlace.joinUrl,
+      zoomMeetingId: activo?.proveedor.tipo === "ZOOM" ? (activo.codigoReunion ?? activo.externalEventId ?? null) : null,
       puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
       estadoEnlace: enlace.estado,
       eventoProveedorId: enlace.eventoProveedorId,
