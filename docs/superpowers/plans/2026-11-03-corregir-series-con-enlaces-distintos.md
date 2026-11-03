@@ -4,13 +4,13 @@
 
 **Goal:** Detectar las series que ya tienen encuentros con enlaces de Zoom distintos y unificarlas en una sola reunión compartida, sin dejar a nadie con un enlace inválido.
 
-**Architecture:** Detección de solo lectura; un plan de corrección por serie (enlace canónico, reuniones a retirar, citas a parchear); aplicación idempotente por serie que primero crea y verifica la reunión compartida y las citas de Calendar, y solo después elimina las reuniones sobrantes. Reutiliza el modelo `ReunionProveedor` del plan de enlace único.
+**Architecture:** Detección de solo lectura; un plan de corrección por serie (enlace canónico, reuniones a retirar, citas a parchear); aplicación idempotente por serie que crea y verifica la reunión compartida y las citas de Calendar, vincula los encuentros y difiere siete días la limpieza de reuniones antiguas. Reutiliza `ReunionProveedor` y las tablas de seguimiento del plan de enlace único.
 
 **Tech Stack:** Next.js 16, TypeScript, Prisma/PostgreSQL, Zoom Server-to-Server OAuth, Google Calendar API, Vitest.
 
 **Spec:** `docs/superpowers/specs/2026-11-03-zoom-enlace-unico-por-serie-design.md` (sección "Corrección de series existentes")
 
-**Depende de:** `docs/superpowers/plans/2026-11-03-zoom-enlace-unico-por-serie.md`, Tasks 1 a 4 (esquema `ReunionProveedor`, cliente Zoom recurrente, dominio de usos y worker). Este plan no se ejecuta antes.
+**Depende de:** Tasks 1 a 4 de `docs/superpowers/plans/2026-11-03-zoom-enlace-unico-por-serie.md`, incluidas las tablas `CambioEnlaceCita` y `AvisoEnlaceSerie` y los campos de estado de creación persistido de `ReunionProveedor`. Este plan no se ejecuta antes.
 
 ## Decisión pendiente (confirmar antes de ejecutar)
 
@@ -23,7 +23,9 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 
 ## Global Constraints
 
-- La corrección no elimina ninguna reunión Zoom antigua hasta que **todas** las citas de Calendar de la serie estén parcheadas y verificadas con el enlace nuevo.
+- Las reuniones Zoom antiguas se conservan durante **7 días** después de verificar la serie, como período de convivencia para quienes conserven el enlace viejo en un correo; solo después las elimina una limpieza explícita. Una reunión antigua inexistente (404) no hace fallar la limpieza.
+- Los avisos de esta corrección se registran en `AvisoEnlaceSerie` (único por serie, destinatario y tipo), nunca en `AvisoMigracionZoom`.
+- Un encuentro sin cita de Google Calendar no bloquea la corrección.
 - Idempotente y reanudable por serie: reintentar no crea una segunda reunión compartida ni vuelve a enviar avisos ya enviados.
 - Solo Administración puede ver la detección y aplicar la corrección. Todo cambio deja auditoría (`SERIE_ENLACE_UNIFICADO`).
 - Una cuenta anfitriona con capacidad 1: la sala elegida debe estar libre en **todos** los horarios futuros de la serie; si no, la serie queda `REVISAR`, sin cambios.
@@ -34,7 +36,12 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 
 ## Review Focus
 
-- Una serie cuya corrección falla al parchear la tercera cita no elimina ninguna reunión antigua y el reintento termina sin duplicar la reunión compartida.
+- Una serie creada en Zoom sin citas de Calendar se corrige igual.
+- El aviso de corrección no choca con un aviso de la migración anterior para el mismo encuentro y correo.
+- El enlace viejo sigue funcionando durante los 7 días de convivencia.
+- Un fallo al parchear la primera, segunda o tercera cita deja la serie sin vincular y el reintento retoma solo las citas pendientes.
+- Una serie ya unificada no vuelve a corregirse.
+- La limpieza no elimina reuniones antes de los 7 días; después las elimina, tolera 404 y no repite eliminaciones.
 - Un destinatario presente en varios encuentros de la serie recibe un solo aviso.
 - Una serie ya unificada (todos con el mismo enlace) no aparece en la detección y aplicarla de nuevo no cambia nada.
 - Una serie mixta (algunos encuentros en Meet y otros en Zoom) no se corrige con este flujo: se informa y se deja para la migración por serie.
@@ -68,10 +75,10 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 **Interfaces:**
 - Produces:
   - `type EncuentroSerieParaCorregir = Readonly<{ instanciaId: string; inicio: Date; fin: Date; joinUrl: string | null; externalEventId: string | null; cuentaProveedorId: string | null; calendarId: string | null; calendarEventId: string | null }>`
-  - `type PlanCorreccionSerie = Readonly<{ estado: "CORREGIBLE" | "SIN_SALA" | "CERCANO" | "SIN_CALENDAR" | "REVISAR"; hostId: string | null; encuentroIds: readonly string[]; reunionesARetirar: readonly string[]; encuentrosSinCalendar: readonly string[] }>`
+  - `type PlanCorreccionSerie = Readonly<{ estado: "CORREGIBLE" | "SIN_SALA" | "CERCANO" | "REVISAR"; hostId: string | null; encuentroIds: readonly string[]; reunionesARetirar: readonly string[]; encuentrosSinCalendar: readonly string[] }>`
   - `planificarCorreccionSerie(input: Readonly<{ ahora: Date; margenSeguridadHoras: number; encuentros: readonly EncuentroSerieParaCorregir[]; hosts: readonly Readonly<{ id: string; prioridad: number; limiteConcurrente: number | null }>[]; reservasZoom: readonly Readonly<{ cuentaProveedorId: string; inicio: Date; fin: Date; instanciaId: string }>[] }>): PlanCorreccionSerie` — la reserva de la propia serie no cuenta como colisión; el host se elige con `elegirCuentaHostParaPeriodos` para **todos** los horarios, prefiriendo la cuenta que ya usan más encuentros de la serie; `reunionesARetirar` son los `externalEventId` distintos y no nulos de la serie.
 
-- [ ] **Step 1: Failing tests:** (a) serie de 3 encuentros en cuentas distintas, sala libre → `CORREGIBLE` con la cuenta más usada y 3 reuniones a retirar; (b) la cuenta preferida ocupada en un horario → otra libre o `SIN_SALA`; (c) un encuentro a menos de 24 horas → `CERCANO`; (d) un encuentro sin cita de Calendar → `SIN_CALENDAR` listando cuál; (e) las reservas de la propia serie no bloquean; (f) función pura sin `let`/mutación.
+- [ ] **Step 1: Failing tests:** (a) serie de 3 encuentros en cuentas distintas, sala libre → `CORREGIBLE` con la cuenta más usada y 3 reuniones a retirar; (b) la cuenta preferida ocupada en un horario → otra libre o `SIN_SALA`; (c) si cualquier encuentro comienza dentro del margen de seguridad, toda la serie queda `CERCANO`; (d) un encuentro sin cita no bloquea y aparece en `encuentrosSinCalendar` sin cambiar el estado; (e) las reservas de la propia serie no bloquean; (f) función pura sin `let`/mutación.
 - [ ] **Step 2:** FAIL. **Step 3:** Implementar. **Step 4:** PASS + `npx vitest run test/functional-architecture.test.ts`. **Step 5: Commit** `feat: planificar la corrección de series con enlaces distintos`.
 
 ### Task 3: Aplicar la corrección por serie
@@ -84,11 +91,12 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 **Interfaces:**
 - Consumes: Tasks 1–2; plan de enlace único Tasks 1–4.
 - Produces:
-  - `prepararCambioEnlaceZoomACalendar(actual: EventoCalendarMigracion, enlaceAnterior: string | null, enlaceNuevo: string): Readonly<Record<string, unknown>>` — misma forma que `prepararCambioEnlaceCalendarZoom`; reemplaza el `join_url` anterior por el nuevo en descripción y ubicación y no toca otros campos.
-  - `corregirSerieEnlaces(deps: DependenciasCorreccionSerie, actor, input: Readonly<{ serieClave: string }>): Promise<ResultadoCorreccionSerie>` con `ResultadoCorreccionSerie = { serieClave; resultado: "CORREGIDA" | "YA_UNIFICADA" | "OMITIDA" | "ERROR"; etapa: "VALIDACION" | "ZOOM" | "CALENDAR" | "VINCULACION" | "LIMPIEZA" | "AVISOS"; mensaje?: string; reintentable: boolean }`.
-  - Etapas, bajo bloqueo asesor de la serie: (1) revalidar el plan; (2) crear o reutilizar la `ReunionProveedor` recurrente en la cuenta elegida y verificar su `join_url` con GET; (3) parchear y verificar cada cita de Calendar con el enlace nuevo; (4) en una transacción, vincular todos los eventos Zoom de la serie a la reunión nueva (copiando `externalEventId`/`joinUrl`) y auditar `SERIE_ENLACE_UNIFICADO`; (5) eliminar en Zoom las reuniones antiguas (404 se tolera); (6) avisar a los destinatarios, una vez por serie y destinatario.
+  - `prepararCambioEnlaceZoomACalendar(actual: EventoCalendarMigracion, enlaceAnterior: string | null, enlaceNuevo: string): Readonly<Record<string, unknown>>` — misma forma que `prepararCambioEnlaceCalendarZoom`; quita cualquier enlace de Zoom previo en descripción y ubicación, agrega el nuevo sin dejar dos enlaces y no toca otros campos.
+  - `corregirSerieEnlaces(deps: DependenciasCorreccionSerie, actor: Readonly<{ id: string; rol: string }>, input: Readonly<{ serieClave: string }>): Promise<ResultadoCorreccionSerie>` con `ResultadoCorreccionSerie = { serieClave; resultado: "CORREGIDA" | "YA_UNIFICADA" | "OMITIDA" | "ERROR"; etapa: "VALIDACION" | "ZOOM" | "CALENDAR" | "VINCULACION" | "AVISOS"; mensaje?: string; reintentable: boolean }`.
+  - `limpiarReunionesAntiguas(deps: DependenciasCorreccionSerie, actor: Readonly<{ id: string; rol: string }>, ahora?: Date): Promise<Readonly<{ eliminadas: number; pendientes: number; errores: number }>>` — solo actúa en series con todas sus citas `VERIFICADA`; elimina reuniones cuya fecha `eliminarDespuesDe` ya pasó, tolera 404 y es idempotente.
+  - Etapas bajo bloqueo asesor de la serie: (1) revalidar el plan; (2) crear o reutilizar `ReunionProveedor` en la cuenta elegida y verificar `join_url` con GET; (3) por cada encuentro con cita, parchear y verificar Calendar, persistiendo por cita en `CambioEnlaceCita` los estados `PENDIENTE` → `PARCHEADA` → `VERIFICADA`, y en reintentos retomar solo las pendientes; los encuentros sin cita no bloquean; (4) en transacción, vincular los eventos Zoom a la reunión nueva, actualizando `EventoProveedor.cuentaProveedorId = plan.hostId`, `externalEventId`, `joinUrl` y `reunionProveedorId`, y auditar `SERIE_ENLACE_UNIFICADO`; (5) registrar en `CambioEnlaceCita` `reunionAnteriorExternalId` y `eliminarDespuesDe = ahora + 7 días`, sin eliminar reuniones; (6) registrar avisos en `AvisoEnlaceSerie` con tipo `CORRECCION_ENLACE`, una vez por serie y destinatario.
 
-- [ ] **Step 1: Failing tests** con puertos simulados (Zoom, Calendar, correo): (a) camino feliz: una sola reunión nueva, 3 citas parcheadas, 3 eventos vinculados, 3 reuniones antiguas eliminadas, una auditoría; (b) el parche de la tercera cita falla → no se vincula ni se elimina nada, `reintentable: true`, y el reintento reutiliza la reunión ya creada; (c) fallo al eliminar una reunión antigua con error distinto de 404 → la serie queda unificada, resultado `CORREGIDA` con la limpieza pendiente anotada; (d) serie ya unificada → `YA_UNIFICADA` sin llamadas externas; (e) un destinatario en 3 encuentros recibe un solo aviso; (f) `prepararCambioEnlaceZoomACalendar` reemplaza el enlace anterior y conserva el resto de la descripción.
+- [ ] **Step 1: Failing tests** con puertos simulados (Zoom, Calendar, correo): (a) camino feliz: una reunión nueva, citas con estado `VERIFICADA`, eventos vinculados, avisos deduplicados y fecha de limpieza registrada a siete días; no se elimina ninguna reunión en el momento; (b) fallo al parchear la primera, segunda o tercera cita deja la serie sin vincular y reintentable; el reintento reutiliza la reunión y retoma solo citas `PENDIENTE`; (c) serie sin citas de Calendar se corrige y se vincula; (d) serie ya unificada devuelve `YA_UNIFICADA` sin llamadas externas; (e) destinatario en varios encuentros recibe un aviso en `AvisoEnlaceSerie` con tipo `CORRECCION_ENLACE`, sin colisión con `AvisoMigracionZoom` del mismo encuentro y correo; (f) dos citas con enlaces Zoom previos distintos quedan con un solo enlace; (g) `limpiarReunionesAntiguas` antes de siete días no elimina, después elimina, tolera 404 y no repite; (h) la limpieza no actúa en serie que no tenga todas las citas `VERIFICADA`; (i) `prepararCambioEnlaceZoomACalendar` quita múltiples enlaces Zoom previos de descripción y ubicación y conserva otros campos.
 - [ ] **Step 2:** FAIL. **Step 3:** Implementar. **Step 4:** PASS + `npx vitest run test/corregir-serie-enlaces.test.ts test/migracion-zoom-calendar.test.ts`. **Step 5: Commit** `feat: unificar el enlace de Zoom de una serie`.
 
 ### Task 4: Ruta y pantalla de administración
@@ -99,16 +107,22 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 - Test: `test/series-enlaces-route.test.ts`
 
 **Interfaces:**
-- `GET` devuelve `{ series: SerieConEnlacesDistintos[]; planes: Record<serieClave, PlanCorreccionSerie> }` (vista previa, sin escrituras). `POST` con `{ modo: "PILOTO" | "LOTE", serieClaves }` aplica `corregirSerieEnlaces` a cada una; el piloto corrige exactamente una serie y un lote admite hasta 5. Ambos exigen Administración.
-- La pantalla lista las series afectadas con sus enlaces, el plan (host, estado) y un botón por serie para el piloto y por lote; muestra resultados y errores por serie.
+- `GET` devuelve `{ series: SerieConEnlacesDistintos[]; planes: Record<serieClave, PlanCorreccionSerie> }` (vista previa, sin escrituras). `POST` con `{ modo: "PILOTO" | "LOTE", serieClaves }` aplica `corregirSerieEnlaces` a cada una; el piloto corrige exactamente una serie y un lote admite hasta 5. También acepta `{ accion: "LIMPIAR" }` sin `serieClaves` e invoca `limpiarReunionesAntiguas`. Ambos modos exigen Administración.
+- La pantalla lista las series afectadas con sus enlaces, el plan (host, estado) y un botón por serie para el piloto y por lote; muestra resultados y errores por serie, y suma el botón “Limpiar reuniones antiguas” con el conteo de pendientes.
 
-- [ ] **Step 1: Failing tests** de la ruta con `db` y servicios simulados: (a) no administrador → 403; (b) `GET` no escribe; (c) `POST` piloto con más de una serie → 422; (d) lote de más de 5 → 422; (e) un error de una serie no impide aplicar las demás.
+- [ ] **Step 1: Failing tests** de la ruta con `db` y servicios simulados: (a) no administrador → 403; (b) `GET` no escribe; (c) `POST` piloto con más de una serie → 422; (d) lote de más de 5 → 422; (e) un error de una serie no impide aplicar las demás; (f) solo Administración puede ejecutar `LIMPIAR`; (g) `LIMPIAR` no elimina reuniones cuya fecha aún no llegó (dentro de los 7 días).
 - [ ] **Step 2:** FAIL. **Step 3:** Implementar ruta y pantalla (leer `node_modules/next/dist/docs/` para la ruta). **Step 4:** PASS. **Step 5: Commit** `feat: pantalla para corregir series con enlaces distintos`.
 
 ### Task 5: Verificación y salida a producción
 
 - [ ] **Step 1:** `npm run check`, `npx vitest run` y `npm run build` limpios.
 - [ ] **Step 2 (manual, requiere Zoom y Calendar reales):** correr la detección y revisar a mano que las series listadas sean las esperadas.
-- [ ] **Step 3:** Piloto con **una** serie de bajo impacto: comprobar en Zoom que existe una sola reunión recurrente y las antiguas desaparecieron; en Google Calendar que todas las citas tienen el enlace nuevo; y que los avisos llegaron una sola vez.
+- [ ] **Step 3:** Piloto con **una** serie de bajo impacto: comprobar en Zoom que existe una sola reunión recurrente, el enlace antiguo sigue vivo durante los 7 días y desaparece tras ejecutar la limpieza; en Google Calendar que todas las citas tienen el enlace nuevo; y que los avisos llegaron una sola vez.
 - [ ] **Step 4:** Lotes pequeños, revisando errores por serie antes de la siguiente tanda.
 - [ ] **Step 5:** Si no se ejecutaron los pasos manuales, dejarlo anotado: no declarar la corrección verificada.
+
+
+## Decisiones pendientes
+
+- Opción A/B del enlace: ver la decisión pendiente indicada arriba; el plan asume B.
+- Series mixtas (Meet y Zoom): este plan solo las informa y no las corrige; se resuelven con la migración por serie.
