@@ -77,3 +77,24 @@
 @media (prefers-reduced-motion: reduce) {
   .zoom-series-page *, .zoom-series-page *::before, .zoom-series-page *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
 }
+
+
+/* Alta de un encuentro en una reunión Zoom compartida. */
+.zoom-series-add { display: grid; gap: 12px; padding: 15px; border: 1px solid #cddced; border-radius: 13px; background: #f8fbff; }
+.zoom-series-add__toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; width: fit-content; padding: 9px 16px; }
+.zoom-series-add__form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.zoom-series-add__form p { grid-column: 1 / -1; margin: 0; color: #375371; font-size: .85rem; line-height: 1.5; }
+.zoom-series-add__form label { display: grid; gap: 5px; color: #25466d; font-size: .8rem; font-weight: 750; }
+.zoom-series-add__form input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; border: 1px solid #c9d5e5; border-radius: 7px; background: white; padding: 8px; color: #19365c; font: inherit; font-size: 16px; }
+.zoom-series-add__description, .zoom-series-add__buttons { grid-column: 1 / -1; }
+.zoom-series-add__buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.zoom-series-add__buttons button { min-height: 44px; }
+.zoom-series-add__notice { margin: 0; border-left: 3px solid #d39a22; border-radius: 4px; background: #fff7e6; color: #60481b; padding: 12px 14px; font-size: .85rem; line-height: 1.5; }
+@media (max-width: 700px) {
+  .zoom-series-add { padding: 12px; }
+  .zoom-series-add__toggle { width: 100%; }
+  .zoom-series-add__form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zoom-series-add__form label:first-of-type { grid-column: 1 / -1; }
+  .zoom-series-add__buttons button { flex: 1 1 auto; }
+}
+@media (max-width: 370px) { .zoom-series-add__form { grid-template-columns: 1fr; } }
