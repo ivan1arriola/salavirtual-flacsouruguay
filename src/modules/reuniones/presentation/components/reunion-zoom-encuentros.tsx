@@ -19,6 +19,7 @@ export type EncuentroZoomView = Readonly<{
   puedeCancelar: boolean;
   puedeUnirse: boolean;
   joinUrl: string | null;
+  zoomMeetingId: string | null;
   puedeIniciar: boolean;
   estadoEnlace: EstadoEnlaceZoom;
   eventoProveedorId: string | null;
@@ -136,6 +137,7 @@ export function ReunionZoomEncuentros({
                 </div>
                 <span className={`status zoom-encuentro__estado ${estado.clase}`}>{estado.etiqueta}</span>
                 {encuentro.descripcion ? <p>{encuentro.descripcion}</p> : null}
+                {encuentro.zoomMeetingId ? <p><strong>ID de reunión Zoom:</strong> <span>{encuentro.zoomMeetingId}</span></p> : null}
               </div>
               {encuentro.puedeUnirse ? (
                 <div className="zoom-encuentro__enlaces">
