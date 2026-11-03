@@ -33,7 +33,7 @@ export function MeetingCreationDialog({
           </h2>
           <p>
             {saving
-              ? `Guardando ${meetingCount} ${meetingCount === 1 ? "encuentro" : "encuentros"} y configurando Google Meet.`
+              ? `Guardando ${meetingCount} ${meetingCount === 1 ? "encuentro" : "encuentros"} y configurando Zoom.`
               : message}
           </p>
         </div>
