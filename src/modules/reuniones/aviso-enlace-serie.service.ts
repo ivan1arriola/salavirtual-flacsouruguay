@@ -61,8 +61,6 @@ function codigoError(error: unknown): string {
   return error instanceof Error ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0, 80) || "Error" : "Error";
 }
 
-type InstanciaAviso = Awaited<ReturnType<PrismaClient["instanciaSala"]["findMany"]>>[number];
-
 /** Encuentro que todavía corresponde avisar: programado a futuro, en Zoom y de una solicitud vigente. */
 function esVigente(
   instancia: Readonly<{ estado: string; inicioProgramadoAt: Date; proveedorActivoTipo: string | null; solicitud: Readonly<{ estado: string }> }>,
@@ -129,7 +127,7 @@ export async function notificarCambioEnlaceSerie(
     }
   }
 
-  const primera: InstanciaAviso = vigentes[0];
+  const primera = vigentes[0];
   const encuentros = vigentes.map((instancia) => ({
     fecha: formatLongDate(instancia.inicioProgramadoAt),
     horario: `${formatTime(instancia.inicioProgramadoAt)}–${formatTime(instancia.finProgramadoAt)} h`,
