@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
 const leer = (ruta: string) => readFileSync(new URL(`../${ruta}`, import.meta.url), "utf8");
 
-const encuentro = (hostUrl: string | null) => ({
+const encuentro = (puedeIniciar: boolean) => ({
   id: "i1",
   solicitudId: "s1",
   inicioIso: "2099-10-10T10:00:00-03:00",
@@ -17,38 +17,64 @@ const encuentro = (hostUrl: string | null) => ({
   descripcion: null,
   estado: "PROGRAMADA",
   editable: true,
+  puedeUnirse: true,
   joinUrl: "https://zoom.us/j/1",
-  hostUrl,
+  puedeIniciar,
   estadoEnlace: "LISTO" as const,
   eventoProveedorId: "ev1",
   operacion: "PROVISIONAR" as const
 });
 
-function render(hostUrl: string | null) {
+function render(puedeIniciar: boolean, esAdmin = false, extra: Record<string, unknown> = {}) {
   return renderToStaticMarkup(createElement(ReunionZoomEncuentros, {
     solicitudIds: ["s1"],
-    esAdmin: false,
-    encuentros: [encuentro(hostUrl)]
+    esAdmin,
+    encuentros: [{ ...encuentro(puedeIniciar), ...extra } as ReturnType<typeof encuentro>]
   }));
 }
 
 describe("encuentros de una reunión Zoom", () => {
-  it("no muestra 'Iniciar como anfitrión' sin hostUrl", () => {
-    expect(render(null)).not.toContain("Iniciar como anfitrión");
+  it("no muestra 'Iniciar como anfitrión' si el actor no puede iniciar", () => {
+    expect(render(false)).not.toContain("Iniciar como anfitrión");
   });
 
-  it("muestra 'Iniciar como anfitrión' con hostUrl", () => {
-    const html = render("https://zoom.us/s/1?zak=x");
+  it("muestra 'Iniciar como anfitrión' apuntando a la ruta del servidor y nunca a un start_url", () => {
+    const html = render(true);
     expect(html).toContain("Iniciar como anfitrión");
+    expect(html).toContain("/api/v1/reuniones/instancias/i1/iniciar-zoom");
+    expect(html).not.toContain("zak=");
     expect(html).toContain("Unirse");
   });
 
+  it("sigue ofreciendo unirse e iniciar con el encuentro ya empezado", () => {
+    const html = render(true, false, { editable: false, puedeUnirse: true });
+    expect(html).toContain("Unirse");
+    expect(html).toContain("Iniciar como anfitrión");
+    expect(html).not.toContain("Editar fecha y hora");
+  });
+
+  it("no ofrece unirse, iniciar ni estado de enlace en un encuentro cancelado", () => {
+    const html = render(true, true, { estado: "CANCELADA", editable: false, puedeUnirse: false, estadoEnlace: "PENDIENTE" });
+    expect(html).not.toContain("Unirse");
+    expect(html).not.toContain("Iniciar como anfitrión");
+    expect(html).not.toContain("Reintentar");
+    expect(html).not.toContain("Enlace pendiente");
+  });
+
+  it("'Reintentar' aparece para administración y no para otros cuando el enlace falló", () => {
+    const fallado = { estadoEnlace: "ERROR", joinUrl: null };
+    expect(render(false, true, fallado)).toContain("Reintentar");
+    expect(render(false, false, fallado)).not.toContain("Reintentar");
+  });
+
+  it("un cambio sin sincronizar conserva 'Unirse' y ofrece 'Reintentar' a administración", () => {
+    const html = render(false, true, { estadoEnlace: "ATENCION" });
+    expect(html).toContain("Unirse");
+    expect(html).toContain("Reintentar");
+  });
+
   it("no ofrece unirse sin joinUrl", () => {
-    const html = renderToStaticMarkup(createElement(ReunionZoomEncuentros, {
-      solicitudIds: ["s1"],
-      esAdmin: false,
-      encuentros: [{ ...encuentro(null), joinUrl: null, estadoEnlace: "PENDIENTE" as const }]
-    }));
+    const html = render(false, false, { joinUrl: null, estadoEnlace: "PENDIENTE" });
     expect(html).not.toContain("Unirse");
     expect(html).toContain("Enlace pendiente");
   });
@@ -85,8 +111,9 @@ describe("detalle de reunión Zoom", () => {
     expect(pagina).not.toMatch(/google|\bmeet\b|cohost|LISTA_ASISTENCIA/i);
   });
 
-  it("solo entrega hostUrl a quien puede verlo", () => {
+  it("no selecciona ni serializa hostUrl hacia el navegador", () => {
     const pagina = leer("src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx");
+    expect(pagina).not.toContain("hostUrl");
     expect(pagina).toContain("puedeVerEnlaceAnfitrion");
   });
 });

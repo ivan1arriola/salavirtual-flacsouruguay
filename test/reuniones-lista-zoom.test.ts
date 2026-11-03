@@ -13,6 +13,10 @@ describe("estado del enlace Zoom", () => {
     expect(estadoEnlaceZoom({ joinUrl: null, estadoIntegracion: "ERROR", errorIntegracion: "Sin sala" })).toBe("ERROR");
   });
 
+  it("es ATENCION cuando hay joinUrl pero la última operación en Zoom falló", () => {
+    expect(estadoEnlaceZoom({ joinUrl: "https://zoom.us/j/1", estadoIntegracion: "ERROR", errorIntegracion: "x" })).toBe("ATENCION");
+  });
+
   it("es PENDIENTE sin joinUrl y sin error, o sin evento", () => {
     expect(estadoEnlaceZoom({ joinUrl: null, estadoIntegracion: "PENDIENTE", errorIntegracion: null })).toBe("PENDIENTE");
     expect(estadoEnlaceZoom(null)).toBe("PENDIENTE");

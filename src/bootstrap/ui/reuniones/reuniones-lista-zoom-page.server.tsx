@@ -59,6 +59,12 @@ export default async function ReunionesZoomPage({
       </header>
 
       {esAdmin ? (
+        <p>
+          <Link className="secondary-action" href="/reuniones/migracion-zoom">Migración a Zoom</Link>
+        </p>
+      ) : null}
+
+      {esAdmin ? (
         <nav className={styles.tabs} aria-label="Período de reuniones">
           <Link aria-current={!isHistory ? "page" : undefined} href={href(undefined, "proximas")}>
             <CalendarDays size={17} aria-hidden="true" /> Próximas

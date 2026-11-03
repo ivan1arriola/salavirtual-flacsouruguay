@@ -7,6 +7,7 @@ import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reunione
 
 const ETIQUETAS: Record<EstadoEnlaceZoom, string> = {
   LISTO: "Enlace listo",
+  ATENCION: "Enlace listo, cambios sin sincronizar",
   PENDIENTE: "Enlace pendiente",
   ERROR: "Error al crear el enlace"
 };

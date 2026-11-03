@@ -1,6 +1,6 @@
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 
-export type EstadoEnlaceZoom = "LISTO" | "PENDIENTE" | "ERROR";
+export type EstadoEnlaceZoom = "LISTO" | "ATENCION" | "PENDIENTE" | "ERROR";
 
 type EventoEnlace = Readonly<{
   joinUrl: string | null;
@@ -10,7 +10,7 @@ type EventoEnlace = Readonly<{
 
 export function estadoEnlaceZoom(evento: EventoEnlace | null): EstadoEnlaceZoom {
   if (!evento) return "PENDIENTE";
-  if (evento.joinUrl) return "LISTO";
+  if (evento.joinUrl) return evento.estadoIntegracion === "ERROR" ? "ATENCION" : "LISTO";
   return evento.estadoIntegracion === "ERROR" || evento.errorIntegracion ? "ERROR" : "PENDIENTE";
 }
 

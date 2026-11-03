@@ -16,8 +16,9 @@ export type EncuentroZoomView = Readonly<{
   descripcion: string | null;
   estado: string;
   editable: boolean;
+  puedeUnirse: boolean;
   joinUrl: string | null;
-  hostUrl: string | null;
+  puedeIniciar: boolean;
   estadoEnlace: EstadoEnlaceZoom;
   eventoProveedorId: string | null;
   operacion: ResumenEnlaceZoom["operacion"];
@@ -105,21 +106,23 @@ export function ReunionZoomEncuentros({
                 <span className="status">{encuentro.estado.toLowerCase().replaceAll("_", " ")}</span>
                 {encuentro.descripcion ? <p>{encuentro.descripcion}</p> : null}
               </div>
-              <div>
-                <ZoomLinkStatus
-                  estado={encuentro.estadoEnlace}
-                  esAdmin={esAdmin}
-                  eventoProveedorId={encuentro.eventoProveedorId}
-                  operacion={encuentro.operacion}
-                />
-                {encuentro.joinUrl && encuentro.editable ? <ZoomJoinActions url={encuentro.joinUrl} /> : null}
-                {encuentro.hostUrl && encuentro.editable ? (
-                  <a className="secondary-action" href={encuentro.hostUrl} rel="noreferrer" target="_blank">
-                    <Video size={16} aria-hidden="true" />
-                    Iniciar como anfitrión
-                  </a>
-                ) : null}
-              </div>
+              {encuentro.puedeUnirse ? (
+                <div>
+                  <ZoomLinkStatus
+                    estado={encuentro.estadoEnlace}
+                    esAdmin={esAdmin}
+                    eventoProveedorId={encuentro.eventoProveedorId}
+                    operacion={encuentro.operacion}
+                  />
+                  {encuentro.joinUrl ? <ZoomJoinActions url={encuentro.joinUrl} /> : null}
+                  {encuentro.puedeIniciar ? (
+                    <a className="secondary-action" href={`/api/v1/reuniones/instancias/${encuentro.id}/iniciar-zoom`} rel="noreferrer" target="_blank">
+                      <Video size={16} aria-hidden="true" />
+                      Iniciar como anfitrión
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
               {encuentro.editable ? (
                 <div>
                   {editando === encuentro.id ? (
