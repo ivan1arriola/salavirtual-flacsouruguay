@@ -20,7 +20,7 @@ export type EncuentroZoomView = Readonly<{
   puedeCancelar: boolean;
   puedeUnirse: boolean;
   joinUrl: string | null;
-  zoomMeetingId: string | null;
+  zoomMeetingId?: string | null;
   puedeIniciar: boolean;
   estadoEnlace: EstadoEnlaceZoom;
   eventoProveedorId: string | null;
@@ -71,8 +71,8 @@ export function ReunionZoomEncuentros({
   puedeModificar: boolean;
   /** Falso en una serie partida: cancelarla entera cancelaría también los encuentros del otro proveedor. */
   permiteCancelarSerie: boolean;
-  solicitudIdParaAgregar: string;
-  permiteAgregarCompartida: boolean;
+  solicitudIdParaAgregar?: string;
+  permiteAgregarCompartida?: boolean;
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -226,7 +226,7 @@ export function ReunionZoomEncuentros({
           );
         })}
       </ul>
-      {puedeModificar && permiteCancelarSerie ? (
+      {puedeModificar && permiteCancelarSerie && solicitudIdParaAgregar ? (
         <div className="zoom-series-add">
           {permiteAgregarCompartida ? (
             <>
