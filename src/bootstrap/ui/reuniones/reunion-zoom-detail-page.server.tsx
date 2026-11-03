@@ -81,6 +81,11 @@ export default async function ReunionZoomDetailPage({
     });
   }).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
+  const zoomActivos = serie.flatMap(({ instancias }) => instancias.filter((instancia) => instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM"));
+  const eventosZoom = zoomActivos.map((instancia) => seleccionarEventoProveedorActivo(instancia));
+  const idsCompartidos = [...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean))];
+  const permiteAgregarCompartida = !otroProveedor && zoomActivos.length > 0 && idsCompartidos.length === 1 && eventosZoom.every((evento) => evento?.reunionProveedorId === idsCompartidos[0]);
+
   return (
     <div className="meeting-detail-v2 zoom-series-page">
       <Link className="meeting-detail-back" href="/reuniones?proveedor=zoom">
@@ -109,6 +114,8 @@ export default async function ReunionZoomDetailPage({
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
         permiteCancelarSerie={!otroProveedor}
+        solicitudIdParaAgregar={solicitud.id}
+        permiteAgregarCompartida={permiteAgregarCompartida}
         solicitudIds={serie.map(({ id }) => id)}
       />
     </div>
