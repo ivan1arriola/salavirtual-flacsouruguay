@@ -44,6 +44,71 @@ export type VistaPreviaMigracionZoomSerie = Readonly<{
   filas: readonly FilaVistaPreviaSerie[];
 }>;
 
+/** Encuentro futuro con lo necesario para decidir si su serie se puede migrar (lo comparten la vista previa y la aplicación). */
+export type InstanciaParaSerieMigracion = Readonly<{
+  id: string;
+  estado: string;
+  inicioProgramadoAt: Date;
+  finProgramadoAt: Date;
+  proveedorActivoTipo: string | null;
+  conservarGoogleMeet: boolean;
+  eventosProveedor: readonly Readonly<{
+    joinUrl: string | null;
+    externalEventId: string | null;
+    estadoIntegracion: string;
+    operacionPendiente: string | null;
+    reunionProveedorId: string | null;
+    cuentaProveedorId: string | null;
+    cuentaProveedor: Readonly<{ emailOrganizador: string | null }> | null;
+    proveedor: Readonly<{ tipo: string }>;
+  }>[];
+}>;
+
+/** Convierte los encuentros de una serie al modelo del planificador, con la sala preferida de la serie. */
+export function armarSerieMigracionZoom(
+  serieClave: string,
+  delaSerie: readonly InstanciaParaSerieMigracion[],
+  hosts: readonly Readonly<{ id: string; emailOrganizador: string | null }>[],
+): SerieMigracionZoom {
+  const encuentros = delaSerie.map((instancia): EncuentroSerieMigracionZoom => {
+    const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
+    const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
+    return {
+      id: instancia.id,
+      inicio: instancia.inicioProgramadoAt,
+      fin: instancia.finProgramadoAt,
+      estado: instancia.estado,
+      proveedorActivo: activo === "GOOGLE_MEET" || activo === "ZOOM" ? activo : null,
+      conservarGoogleMeet: instancia.conservarGoogleMeet,
+      meetPreparado: meetPreparadoParaMigracion(meet ? {
+        ...meet,
+        emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
+      } : null),
+      meetJoinUrl: meet?.joinUrl ?? null,
+      zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
+      reunionCompartidaId: zoom?.reunionProveedorId ?? null,
+    };
+  });
+
+  // Sala preferida: la de la reunión compartida si ya hay encuentros en Zoom; si no, la que
+  // corresponde al organizador Meet del primer encuentro.
+  const primeroEnZoom = delaSerie
+    .flatMap(({ eventosProveedor, proveedorActivoTipo }) =>
+      proveedorActivoTipo === "ZOOM"
+        ? eventosProveedor.filter(({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId)
+        : [])[0];
+  const emailMeet = delaSerie
+    .flatMap(({ eventosProveedor }) => eventosProveedor)
+    .find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
+    ?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+  const cuentaZoomPreferidaId = primeroEnZoom?.cuentaProveedorId
+    ?? (emailMeet
+      ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
+      : null);
+  return { serieClave, encuentros, cuentaZoomPreferidaId };
+}
+
 /**
  * Propuesta de migración por serie: la unidad es la serie completa (un solo anfitrión Zoom con sala
  * libre en todos los horarios y una sola reunión compartida). No realiza ninguna escritura.
@@ -65,45 +130,8 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
     new Map(),
   );
 
-  const series: SerieMigracionZoom[] = [...porSerie].map(([serieClave, delaSerie]) => {
-    const encuentros = delaSerie.map((instancia): EncuentroSerieMigracionZoom => {
-      const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
-      const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-      const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
-      return {
-        id: instancia.id,
-        inicio: instancia.inicioProgramadoAt,
-        fin: instancia.finProgramadoAt,
-        estado: instancia.estado,
-        proveedorActivo: activo === "GOOGLE_MEET" || activo === "ZOOM" ? activo : null,
-        conservarGoogleMeet: instancia.conservarGoogleMeet,
-        meetPreparado: meetPreparadoParaMigracion(meet ? {
-          ...meet,
-          emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
-        } : null),
-        meetJoinUrl: meet?.joinUrl ?? null,
-        zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
-        reunionCompartidaId: zoom?.reunionProveedorId ?? null,
-      };
-    });
-
-    // Sala preferida: la de la reunión compartida si ya hay encuentros en Zoom; si no, la que
-    // corresponde al organizador Meet del primer encuentro.
-    const primeroEnZoom = delaSerie
-      .flatMap(({ eventosProveedor, proveedorActivoTipo }) =>
-        proveedorActivoTipo === "ZOOM"
-          ? eventosProveedor.filter(({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId)
-          : [])[0];
-    const emailMeet = delaSerie
-      .flatMap(({ eventosProveedor }) => eventosProveedor)
-      .find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
-      ?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
-    const cuentaZoomPreferidaId = primeroEnZoom?.cuentaProveedorId
-      ?? (emailMeet
-        ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
-        : null);
-    return { serieClave, encuentros, cuentaZoomPreferidaId };
-  });
+  const series: SerieMigracionZoom[] = [...porSerie].map(([serieClave, delaSerie]) =>
+    armarSerieMigracionZoom(serieClave, delaSerie, hosts));
 
   const plan = planificarMigracionZoomPorSerie({
     ahora,

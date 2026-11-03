@@ -31,3 +31,20 @@ export function construirFiltroSerieSolicitud(request: Readonly<{
     createdAt: request.createdAt,
   };
 }
+
+/**
+ * Inversa de `claveSerieReunion`: la condición de consulta sobre `SolicitudSala` que reúne a los
+ * encuentros de una serie. Devuelve `null` si la clave no tiene la forma esperada.
+ */
+export function filtroSerieDesdeClave(
+  clave: string
+): { serieReunionId: string } | { docenteProgramaId: string; titulo: string; createdAt: Date } | null {
+  if (clave.startsWith("serie:")) {
+    const serieReunionId = clave.slice("serie:".length);
+    return serieReunionId ? { serieReunionId } : null;
+  }
+  const [docenteProgramaId, titulo, creada, ...resto] = clave.split("\u0000");
+  const createdAt = new Date(creada ?? "");
+  if (!docenteProgramaId || titulo === undefined || resto.length > 0 || Number.isNaN(createdAt.getTime())) return null;
+  return { docenteProgramaId, titulo, createdAt };
+}
