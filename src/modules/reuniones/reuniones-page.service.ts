@@ -5,6 +5,7 @@ import {
   normalizarCodigoReunionBuscado,
   parsearFechaFiltro,
   resolverPaginacionAgenda,
+  resolverPeriodoAgenda,
   resolverVistaAgenda
 } from "./agenda-view.domain";
 
@@ -84,8 +85,8 @@ export async function obtenerDatosPaginaReuniones(
   const vista = resolverVistaAgenda(vistaParam);
   const query = q.trim();
   const programaId = actor.rol === "ADMINISTRACION" ? programaParam.trim() : "";
-  const periodo: PeriodoAgenda =
-    actor.rol === "ADMINISTRACION" && periodoParam === "anteriores" ? "anteriores" : "proximas";
+  // El alcance de cada rol lo fija requestScope: un docente solo ve reuniones de sus programas.
+  const periodo: PeriodoAgenda = resolverPeriodoAgenda(periodoParam);
   const isHistory = periodo === "anteriores";
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();

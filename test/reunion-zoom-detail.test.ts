@@ -17,6 +17,7 @@ const encuentro = (puedeIniciar: boolean) => ({
   descripcion: null,
   estado: "PROGRAMADA",
   editable: true,
+  puedeCancelar: true,
   puedeUnirse: true,
   joinUrl: "https://zoom.us/j/1",
   puedeIniciar,
@@ -44,6 +45,17 @@ describe("encuentros de una reunión Zoom", () => {
     expect(html).toContain("/api/v1/reuniones/instancias/i1/iniciar-zoom");
     expect(html).not.toContain("zak=");
     expect(html).toContain("Unirse");
+  });
+
+  it("oculta 'Cancelar encuentro' cuando es el único activo, pero deja editarlo y cancelar la serie", () => {
+    const html = render(false, false, { puedeCancelar: false });
+    expect(html).not.toContain("Cancelar encuentro");
+    expect(html).toContain("Editar fecha y hora");
+    expect(html).toContain("Cancelar toda la serie");
+  });
+
+  it("ofrece 'Cancelar encuentro' cuando hay más de un encuentro activo", () => {
+    expect(render(false, false, { puedeCancelar: true })).toContain("Cancelar encuentro");
   });
 
   it("sigue ofreciendo unirse e iniciar con el encuentro ya empezado", () => {
@@ -109,6 +121,11 @@ describe("detalle de reunión Zoom", () => {
   it("la página no menciona Google, Meet, cohosts ni archivos de asistencia", () => {
     const pagina = leer("src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx");
     expect(pagina).not.toMatch(/google|\bmeet\b|cohost|LISTA_ASISTENCIA/i);
+  });
+
+  it("calcula cuántos encuentros activos tiene cada solicitud para ofrecer cancelar", () => {
+    const pagina = leer("src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx");
+    expect(pagina).toContain("puedeCancelar");
   });
 
   it("no selecciona ni serializa hostUrl hacia el navegador", () => {

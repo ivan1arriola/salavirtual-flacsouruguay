@@ -45,7 +45,10 @@ export default async function ReunionZoomDetailPage({
   const verAnfitrion = puedeVerEnlaceAnfitrion(actor, docente.id);
   const esAdmin = actor.rol === "ADMINISTRACION";
 
-  const encuentros = serie.flatMap(({ id, instancias }) => instancias.map((instancia) => {
+  const encuentros = serie.flatMap(({ id, instancias }) => {
+    // El servidor exige conservar al menos un encuentro por solicitud.
+    const activos = instancias.filter(({ estado }) => estado !== "CANCELADA").length;
+    return instancias.map((instancia) => {
     const enlace = resumenEnlaceZoom(instancia);
     const activo = seleccionarEventoProveedorActivo(instancia);
     const puedeUnirse = instancia.estado === "PROGRAMADA" && instancia.finProgramadoAt > ahora;
@@ -57,6 +60,7 @@ export default async function ReunionZoomDetailPage({
       descripcion: instancia.descripcion ?? null,
       estado: instancia.estado,
       editable: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora,
+      puedeCancelar: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
       puedeUnirse,
       joinUrl: enlace.joinUrl,
       puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
@@ -64,7 +68,8 @@ export default async function ReunionZoomDetailPage({
       eventoProveedorId: enlace.eventoProveedorId,
       operacion: enlace.operacion
     };
-  })).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
+    });
+  }).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
   return (
     <div className="meeting-detail-v2">

@@ -16,6 +16,7 @@ export type EncuentroZoomView = Readonly<{
   descripcion: string | null;
   estado: string;
   editable: boolean;
+  puedeCancelar: boolean;
   puedeUnirse: boolean;
   joinUrl: string | null;
   puedeIniciar: boolean;
@@ -139,10 +140,12 @@ export function ReunionZoomEncuentros({
                         <Pencil size={16} aria-hidden="true" />
                         Editar fecha y hora
                       </button>
-                      <button className="secondary-action" disabled={pending} onClick={() => cancelarEncuentro(encuentro)} type="button">
-                        <Trash2 size={16} aria-hidden="true" />
-                        Cancelar encuentro
-                      </button>
+                      {encuentro.puedeCancelar ? (
+                        <button className="secondary-action" disabled={pending} onClick={() => cancelarEncuentro(encuentro)} type="button">
+                          <Trash2 size={16} aria-hidden="true" />
+                          Cancelar encuentro
+                        </button>
+                      ) : null}
                     </>
                   )}
                 </div>

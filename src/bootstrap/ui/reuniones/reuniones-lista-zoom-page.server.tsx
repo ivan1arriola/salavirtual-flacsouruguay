@@ -64,8 +64,7 @@ export default async function ReunionesZoomPage({
         </p>
       ) : null}
 
-      {esAdmin ? (
-        <nav className={styles.tabs} aria-label="Período de reuniones">
+      <nav className={styles.tabs} aria-label="Período de reuniones">
           <Link aria-current={!isHistory ? "page" : undefined} href={href(undefined, "proximas")}>
             <CalendarDays size={17} aria-hidden="true" /> Próximas
           </Link>
@@ -73,10 +72,9 @@ export default async function ReunionesZoomPage({
             <History size={17} aria-hidden="true" /> Pasadas
           </Link>
         </nav>
-      ) : null}
 
       <form className={styles.filters} method="get">
-        {esAdmin ? <input name="periodo" type="hidden" value={periodo} /> : null}
+        <input name="periodo" type="hidden" value={periodo} />
         <label className={styles.search}>
           <span className="sr-only">Buscar reuniones</span>
           <Search size={18} aria-hidden="true" />
