@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays, Repeat2, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -72,6 +72,7 @@ export default async function ReunionZoomDetailPage({
       puedeCancelar: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
       puedeUnirse,
       joinUrl: enlace.joinUrl,
+      zoomMeetingId: activo?.proveedor.tipo === "ZOOM" ? (activo.codigoReunion ?? activo.externalEventId ?? null) : null,
       puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
       estadoEnlace: enlace.estado,
       eventoProveedorId: enlace.eventoProveedorId,
@@ -80,23 +81,41 @@ export default async function ReunionZoomDetailPage({
     });
   }).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
+  const zoomActivos = serie.flatMap(({ instancias }) => instancias.filter((instancia) => instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM"));
+  const eventosZoom = zoomActivos.map((instancia) => seleccionarEventoProveedorActivo(instancia));
+  const idsCompartidos = [...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean))];
+  const permiteAgregarCompartida = !otroProveedor && zoomActivos.length > 0 && idsCompartidos.length === 1 && eventosZoom.every((evento) => evento?.reunionProveedorId === idsCompartidos[0]);
+
   return (
-    <div className="meeting-detail-v2">
+    <div className="meeting-detail-v2 zoom-series-page">
       <Link className="meeting-detail-back" href="/reuniones?proveedor=zoom">
         <ArrowLeft size={15} aria-hidden="true" />Volver a reuniones
       </Link>
       {otroProveedor ? <OtroProveedorAviso {...otroProveedor} /> : null}
-      <header>
-        <p className="page-eyebrow">{solicitud.docentePrograma.programa.nombre}</p>
-        <h1>{solicitud.titulo}</h1>
-        <p>{[docente.nombres, docente.apellidos].filter(Boolean).join(" ")}</p>
-        {solicitud.descripcion ? <p>{solicitud.descripcion}</p> : null}
+      <header className="zoom-series-hero">
+        <div className="zoom-series-hero__content">
+          <p className="zoom-series-hero__eyebrow">{solicitud.docentePrograma.programa.nombre}</p>
+          <h1>{solicitud.titulo}</h1>
+          <p className="zoom-series-hero__teacher">{[docente.nombres, docente.apellidos].filter(Boolean).join(" ")}</p>
+          {solicitud.descripcion ? <p className="zoom-series-hero__description">{solicitud.descripcion}</p> : null}
+          <div className="zoom-series-hero__facts" aria-label="Información de la serie">
+            <span><CalendarDays size={17} aria-hidden="true" /> Clases sincrónicas</span>
+            <span><Repeat2 size={17} aria-hidden="true" /> {encuentros.length} {encuentros.length === 1 ? "encuentro" : "encuentros"}</span>
+            <span><Video size={17} aria-hidden="true" /> Zoom</span>
+          </div>
+        </div>
+        <div className="zoom-series-hero__brand" aria-hidden="true">
+          <span className="zoom-series-hero__brand-mark">SV</span>
+          <span>FLACSO<br />URUGUAY</span>
+        </div>
       </header>
       <ReunionZoomEncuentros
         encuentros={encuentros}
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
         permiteCancelarSerie={!otroProveedor}
+        solicitudIdParaAgregar={solicitud.id}
+        permiteAgregarCompartida={permiteAgregarCompartida}
         solicitudIds={serie.map(({ id }) => id)}
       />
     </div>
