@@ -157,7 +157,7 @@ export function MigracionZoomAplicarControl({ vistaPrevia }: Readonly<{ vistaPre
           <div className={styles.meetings}>
             {visibles.map((fila) => {
               const migrable = fila.estado === "MIGRABLE";
-              const editable = ["MIGRABLE", "EXCEPCION", "CERCANO", "SIN_SALA"].includes(fila.estado);
+              const editable = ["MIGRABLE", "EXCEPCION", "CERCANO", "SIN_SALA", "SERIE"].includes(fila.estado);
               const selected = seleccionActiva.includes(fila.id);
               return (
                 <article key={fila.id} className={`${styles.meeting} ${selected ? styles.meetingSelected : ""}`}>

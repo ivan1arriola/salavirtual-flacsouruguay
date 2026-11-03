@@ -12,6 +12,11 @@ describe("pantalla de migración con series bloqueadas", () => {
 
   it("solo ofrece seleccionar los encuentros migrables, nunca los de una serie bloqueada", () => {
     expect(control).toContain('const migrable = fila.estado === "MIGRABLE";');
-    expect(control).not.toMatch(/\["MIGRABLE"[^\]]*"SERIE"[^\]]*\]\.includes\(fila\.estado\)/);
+    expect(control).toContain("{migrable ? (");
+  });
+
+  it("permite marcar la excepción Conservar en Meet también en los encuentros de una serie bloqueada", () => {
+    expect(control).toMatch(/const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(fila\.estado\);/);
+    expect(control).toContain("{editable && <ExcepcionMeetControl");
   });
 });
