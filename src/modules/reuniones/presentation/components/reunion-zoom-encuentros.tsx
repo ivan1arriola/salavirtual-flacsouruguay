@@ -173,13 +173,15 @@ export function ReunionZoomEncuentros({
                   <span className={`zoom-series-card__state ${estado.clase}`}>{estado.etiqueta}</span>
                 </div>
                 <div className="zoom-series-card__meta">
-                  <ZoomLinkStatus
-                    estado={encuentro.estadoEnlace}
-                    esAdmin={esAdmin}
-                    eventoProveedorId={encuentro.eventoProveedorId}
-                    operacion={encuentro.operacion}
-                    contexto={contexto}
-                  />
+                  {encuentro.puedeUnirse ? (
+                    <ZoomLinkStatus
+                      estado={encuentro.estadoEnlace}
+                      esAdmin={esAdmin}
+                      eventoProveedorId={encuentro.eventoProveedorId}
+                      operacion={encuentro.operacion}
+                      contexto={contexto}
+                    />
+                  ) : null}
                   {encuentro.zoomMeetingId ? (
                     <span className="zoom-series-card__id"><Hash size={15} aria-hidden="true" /> ID de reunión: <strong>{encuentro.zoomMeetingId}</strong></span>
                   ) : (
