@@ -35,7 +35,7 @@ export type VistaPreviaMigracionZoom = Readonly<{
   filas: readonly FilaVistaPreviaMigracion[];
 }>;
 
-function exigirAdministracion(actor: Actor) {
+export function exigirAdministracion(actor: Actor) {
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede gestionar la migración a Zoom.");
   }
@@ -108,14 +108,8 @@ export async function actualizarExcepcionGoogleMeet(
   });
 }
 
-/** Calcula la propuesta de migración. No realiza ninguna escritura. */
-export async function obtenerVistaPreviaMigracionZoom(
-  db: PrismaClient,
-  actor: Actor,
-  ahora: Date = new Date(),
-): Promise<VistaPreviaMigracionZoom> {
-  exigirAdministracion(actor);
-
+/** Encuentros futuros, salas Zoom y reservas vigentes. Solo lectura; la comparten las vistas por encuentro y por serie. */
+export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
   const [instancias, hosts, reservas] = await Promise.all([
     db.instanciaSala.findMany({
       where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } },
@@ -153,6 +147,8 @@ export async function obtenerVistaPreviaMigracionZoom(
             externalEventId: true,
             estadoIntegracion: true,
             operacionPendiente: true,
+            reunionProveedorId: true,
+            cuentaProveedorId: true,
             cuentaProveedor: { select: { emailOrganizador: true } },
             proveedor: { select: { tipo: true } },
           },
@@ -172,10 +168,23 @@ export async function obtenerVistaPreviaMigracionZoom(
       },
       select: {
         cuentaProveedorId: true,
+        instanciaSalaId: true,
         instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
       },
     }),
   ]);
+  return { instancias, hosts, reservas };
+}
+
+/** Calcula la propuesta de migración. No realiza ninguna escritura. */
+export async function obtenerVistaPreviaMigracionZoom(
+  db: PrismaClient,
+  actor: Actor,
+  ahora: Date = new Date(),
+): Promise<VistaPreviaMigracionZoom> {
+  exigirAdministracion(actor);
+
+  const { instancias, hosts, reservas } = await cargarDatosMigracionZoom(db, ahora);
 
   const porInstancia = new Map(instancias.map((instancia) => [instancia.id, instancia]));
   // Encuentros futuros por serie: una serie de Meet comparte un solo enlace, y migrarla
