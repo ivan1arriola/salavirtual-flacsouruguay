@@ -41,4 +41,21 @@ describe("formulario de nueva reunión Zoom", () => {
     expect(form).toContain("La reunión quedó guardada. El enlace de Zoom continúa pendiente.");
     expect(form).toContain("La reunión y sus enlaces de Zoom quedaron creados correctamente.");
   });
+
+  it("las filas de fechas usan un identificador estable y no el índice como clave", () => {
+    expect(form).not.toContain("key={index}");
+    expect(form).toContain("key={date.id}");
+  });
+
+  it("el identificador de la fila no viaja al servidor", () => {
+    const instancias = form.match(/instancias: dates\.map\(\(\{([^}]*)\}\)/)?.[1] ?? "";
+    expect(instancias).toContain("fecha");
+    expect(instancias).not.toMatch(/id/);
+  });
+
+  it("tras un error de envío el foco pasa al mensaje", () => {
+    expect(form).toContain("mensajeErrorRef");
+    expect(form).toMatch(/mensajeErrorRef\.current\?\.focus\(\)/);
+    expect(form).toContain("tabIndex={-1}");
+  });
 });

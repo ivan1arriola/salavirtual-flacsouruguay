@@ -2,7 +2,7 @@
 
 import { Pencil, Trash2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
@@ -29,6 +29,17 @@ const ZONA = "America/Montevideo";
 const fechaFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const horaFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const partesFmt = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const contextoFechaFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" });
+const ESTADOS_ENCUENTRO: Record<string, Readonly<{ etiqueta: string; clase: string }>> = {
+  PROGRAMADO: { etiqueta: "Programado", clase: "is-programado" },
+  PROGRAMADA: { etiqueta: "Programado", clase: "is-programado" },
+  CANCELADO: { etiqueta: "Cancelado", clase: "is-cancelado" },
+  CANCELADA: { etiqueta: "Cancelado", clase: "is-cancelado" },
+  REALIZADO: { etiqueta: "Realizado", clase: "is-realizado" },
+  COMPLETADO: { etiqueta: "Realizado", clase: "is-realizado" },
+  EN_CURSO: { etiqueta: "En curso", clase: "is-en-curso" },
+  PENDIENTE: { etiqueta: "Pendiente", clase: "is-pendiente" }
+};
 
 function aInputs(iso: string): { fecha: string; hora: string } {
   const partes = Object.fromEntries(partesFmt.formatToParts(new Date(iso)).map(({ type, value }) => [type, value]));
@@ -58,6 +69,13 @@ export function ReunionZoomEncuentros({
   const [pending, startTransition] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
+  const fechaInputRef = useRef<HTMLInputElement>(null);
+  const botonEditarRef = useRef<HTMLButtonElement>(null);
+  const devolverFocoRef = useRef(false);
+  useEffect(() => {
+    if (editando) fechaInputRef.current?.focus();
+    else if (devolverFocoRef.current) { devolverFocoRef.current = false; botonEditarRef.current?.focus(); }
+  }, [editando]);
   const hayEditables = puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
 
   function ejecutar(accion: () => ReturnType<typeof enviarAccionEncuentro>, alTerminar?: () => void) {
@@ -88,12 +106,14 @@ export function ReunionZoomEncuentros({
   }
 
   function cancelarEncuentro(encuentro: EncuentroZoomView) {
-    if (!window.confirm("¿Cancelar este encuentro?")) return;
+    const fechaLarga = `${contextoFechaFmt.format(new Date(encuentro.inicioIso))}, ${horaFmt.format(new Date(encuentro.inicioIso))}`;
+    if (!window.confirm(`¿Cancelar el encuentro del ${fechaLarga}?`)) return;
     ejecutar(() => enviarAccionEncuentro(fetch, `/api/v1/reuniones/${encuentro.solicitudId}/encuentros/${encuentro.id}`, { method: "DELETE" }));
   }
 
   function cancelarSerie() {
-    if (!window.confirm("¿Cancelar toda la serie de encuentros?")) return;
+    const cantidad = encuentros.filter(({ editable }) => editable).length;
+    if (!window.confirm(`¿Cancelar toda la serie? Se cancelarán ${cantidad} encuentros.`)) return;
     ejecutar(() => enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", { method: "POST", body: { solicitudIds } }));
   }
 
@@ -105,23 +125,28 @@ export function ReunionZoomEncuentros({
           const fin = new Date(encuentro.finIso);
           const valores = aInputs(encuentro.inicioIso);
           const finValor = aInputs(encuentro.finIso);
+          const estado = ESTADOS_ENCUENTRO[encuentro.estado.toUpperCase()] ?? { etiqueta: encuentro.estado.toLowerCase().replaceAll("_", " "), clase: "is-desconocido" };
+          const contexto = `${contextoFechaFmt.format(inicio)}, ${horaFmt.format(inicio)}`;
           return (
-            <li key={encuentro.id}>
-              <div>
-                <strong>{fechaFmt.format(inicio)}</strong>
-                <span>{horaFmt.format(inicio)} – {horaFmt.format(fin)}</span>
-                <span className="status">{encuentro.estado.toLowerCase().replaceAll("_", " ")}</span>
+            <li key={encuentro.id} className="zoom-encuentro">
+              <div className="zoom-encuentro__datos">
+                <div className="zoom-encuentro__fecha">
+                  <strong>{fechaFmt.format(inicio)}</strong>
+                  <span>{horaFmt.format(inicio)} – {horaFmt.format(fin)}</span>
+                </div>
+                <span className={`status zoom-encuentro__estado ${estado.clase}`}>{estado.etiqueta}</span>
                 {encuentro.descripcion ? <p>{encuentro.descripcion}</p> : null}
               </div>
               {encuentro.puedeUnirse ? (
-                <div>
+                <div className="zoom-encuentro__enlaces">
                   <ZoomLinkStatus
                     estado={encuentro.estadoEnlace}
                     esAdmin={esAdmin}
                     eventoProveedorId={encuentro.eventoProveedorId}
                     operacion={encuentro.operacion}
+                    contexto={contexto}
                   />
-                  {encuentro.joinUrl ? <ZoomJoinActions url={encuentro.joinUrl} /> : null}
+                  {encuentro.joinUrl ? <ZoomJoinActions url={encuentro.joinUrl} contexto={contexto} /> : null}
                   {encuentro.puedeIniciar ? (
                     <a className="secondary-action" href={`/api/v1/reuniones/instancias/${encuentro.id}/iniciar-zoom`} rel="noreferrer" target="_blank">
                       <Video size={16} aria-hidden="true" />
@@ -131,18 +156,18 @@ export function ReunionZoomEncuentros({
                 </div>
               ) : null}
               {puedeModificar && encuentro.editable ? (
-                <div>
+                <div className="zoom-encuentro__acciones">
                   {editando === encuentro.id ? (
-                    <form onSubmit={(event) => { event.preventDefault(); guardar(encuentro, event.currentTarget); }}>
-                      <label>Fecha<input defaultValue={valores.fecha} name="fecha" required type="date" /></label>
+                    <form className="zoom-encuentro__form" onSubmit={(event) => { event.preventDefault(); guardar(encuentro, event.currentTarget); }}>
+                      <label>Fecha<input ref={fechaInputRef} defaultValue={valores.fecha} name="fecha" required type="date" /></label>
                       <label>Inicio<input defaultValue={valores.hora} name="horaInicio" required type="time" /></label>
                       <label>Fin<input defaultValue={finValor.hora} name="horaFin" required type="time" /></label>
                       <button className="primary-action" disabled={pending} type="submit">Guardar</button>
-                      <button className="secondary-action" onClick={() => setEditando(null)} type="button">Cancelar edición</button>
+                      <button className="secondary-action" disabled={pending} onClick={() => { devolverFocoRef.current = true; setEditando(null); }} type="button">Cancelar edición</button>
                     </form>
                   ) : (
                     <>
-                      <button className="secondary-action" onClick={() => setEditando(encuentro.id)} type="button">
+                      <button ref={botonEditarRef} className="secondary-action" disabled={pending} onClick={() => { devolverFocoRef.current = false; setEditando(encuentro.id); }} type="button">
                         <Pencil size={16} aria-hidden="true" />
                         Editar fecha y hora
                       </button>

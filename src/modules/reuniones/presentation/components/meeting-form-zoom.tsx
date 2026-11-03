@@ -11,7 +11,7 @@ import {
   Trash2,
   UsersRound
 } from "lucide-react";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 import { horarioAsistenciaCumpleMargen, sugerirHorarioAsistencia, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
@@ -20,6 +20,8 @@ import { asistenciaLocalAIso } from "@/src/modules/reuniones/horarios-asistencia
 type Option = Readonly<{ id: string; label: string }>;
 type ProgramOption = Option & Readonly<{ teacher: string }>;
 type MeetingDate = Readonly<{
+  /** Identifica la fila para React; nunca se envía al servidor. */
+  id: number;
   fecha: string;
   horaInicio: string;
   horaFin: string;
@@ -51,6 +53,7 @@ const WEEKDAYS = [
 ] as const;
 
 const EMPTY_DATE: MeetingDate = {
+  id: 0,
   fecha: "",
   horaInicio: "",
   horaFin: "",
@@ -91,6 +94,13 @@ export function MeetingFormZoom({
   const [message, setMessage] = useState("");
   const [createdMeetingId, setCreatedMeetingId] = useState<string>();
   const submittingRef = useRef(false);
+  const siguienteIdFechaRef = useRef(1);
+  const mensajeErrorRef = useRef<HTMLParagraphElement>(null);
+  const nuevaFecha = (): MeetingDate => ({ ...EMPTY_DATE, id: siguienteIdFechaRef.current++ });
+  // Tras un error de envío, el foco pasa al mensaje para que quien usa lector de pantalla o teclado lo encuentre.
+  useEffect(() => {
+    if (status === "error") mensajeErrorRef.current?.focus();
+  }, [status, message]);
   const idempotencyKeyRef = useRef<string>("");
   const recurrenceReviewRef = useRef<HTMLDivElement>(null);
 
@@ -243,6 +253,7 @@ export function MeetingFormZoom({
       if (generated.length === 0) throw new Error("No hay fechas que coincidan con esa regla.");
       setDates(generated.map((date) => ({
         ...date,
+        id: siguienteIdFechaRef.current++,
         horaAsistenciaInicio: requiresAssistance ? recurrence.horaAsistenciaInicio : "",
         horaAsistenciaFin: requiresAssistance ? recurrence.horaAsistenciaFin : "",
         descripcion: ""
@@ -261,9 +272,9 @@ export function MeetingFormZoom({
     setDateMode(mode);
     setRecurrenceMessage("");
     setRecurrenceGenerated(false);
-    if (mode === "SINGLE") setDates([dates[0] ?? EMPTY_DATE]);
+    if (mode === "SINGLE") setDates([dates[0] ?? nuevaFecha()]);
     else if (mode === "RECURRENT") setDates([]);
-    else if (dates.length === 0) setDates([EMPTY_DATE]);
+    else if (dates.length === 0) setDates([nuevaFecha()]);
   }
 
   return (
@@ -357,7 +368,7 @@ export function MeetingFormZoom({
             <>
               <div className={`date-rows${dates.length > 5 ? " is-scrollable" : ""}`}>
                 {dates.map((date, index) => (
-                  <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={index}>
+                  <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={date.id}>
                     {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{index + 1}</span> : null}
                     <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))} /></Field>
                     <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => cambiarHoraEncuentro(index, "horaInicio", event.target.value)} /></Field>
@@ -380,7 +391,7 @@ export function MeetingFormZoom({
                       </div>
                     ) : null}
                     {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => setDates(dates.filter((_, current) => current !== index))}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
-                    <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"}>
+                    <details className="meeting-date-notes" key={dateMode + "-" + date.id + "-notes"}>
                       <summary><Plus size={15} aria-hidden="true" /> Notas del encuentro <span>(opcional)</span></summary>
                       <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => setDates(updateDate(dates, index, "descripcion", event.target.value))} /></label>
                     </details>
@@ -389,7 +400,7 @@ export function MeetingFormZoom({
                   </div>
                 ))}
               </div>
-              {dateMode !== "SINGLE" ? <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, EMPTY_DATE])}><Plus size={17} />{dateMode === "RECURRENT" ? "Agregar encuentro a la serie" : "Agregar otra fecha"}</button> : null}
+              {dateMode !== "SINGLE" ? <button className="secondary-action add-date" type="button" onClick={() => setDates([...dates, nuevaFecha()])}><Plus size={17} />{dateMode === "RECURRENT" ? "Agregar encuentro a la serie" : "Agregar otra fecha"}</button> : null}
             </>
           ) : null}
         </div>
@@ -467,7 +478,7 @@ export function MeetingFormZoom({
 
       <footer className="form-actions meeting-form-actions-v2">
         {status === "saving" ? <p className="form-message saving" role="status">Creando la reunión y configurando Zoom…</p> : null}
-        {status === "error" ? <p className="form-message" role="alert">{message}</p> : null}
+        {status === "error" ? <p className="form-message" role="alert" ref={mensajeErrorRef} tabIndex={-1}>{message}</p> : null}
         {status !== "saving" && status !== "error" ? (
           <div className="meeting-form-summary-v2" role="status" aria-live="polite">
             <strong>{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</strong>
@@ -527,7 +538,7 @@ function Field({ label, wide = false, children }: Readonly<{ label: string; wide
   return <label className={wide ? "field field-wide" : "field"}><span>{label}</span>{children}</label>;
 }
 
-function updateDate(dates: readonly MeetingDate[], index: number, key: keyof MeetingDate, value: string): readonly MeetingDate[] {
+function updateDate(dates: readonly MeetingDate[], index: number, key: Exclude<keyof MeetingDate, "id">, value: string): readonly MeetingDate[] {
   return dates.map((date, current) => current === index ? { ...date, [key]: value } : date);
 }
 

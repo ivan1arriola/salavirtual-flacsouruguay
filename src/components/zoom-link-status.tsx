@@ -16,12 +16,15 @@ export function ZoomLinkStatus({
   estado,
   esAdmin,
   eventoProveedorId,
-  operacion
+  operacion,
+  contexto
 }: Readonly<{
   estado: EstadoEnlaceZoom;
   esAdmin: boolean;
   eventoProveedorId: string | null;
   operacion: ResumenEnlaceZoom["operacion"];
+  /** Identifica el encuentro para dar un nombre accesible al reintento de cada fila. */
+  contexto?: string;
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -45,10 +48,16 @@ export function ZoomLinkStatus({
   }
 
   return (
-    <span className={`status zoom-link-status is-${estado.toLowerCase()}`}>
-      {ETIQUETAS[estado]}
+    <span aria-busy={pending || undefined} className={`status zoom-link-status is-${estado.toLowerCase()}`}>
+      <span className="zoom-link-status-texto">{ETIQUETAS[estado]}</span>
       {esAdmin && estado !== "LISTO" && eventoProveedorId ? (
-        <button className="secondary-action" disabled={pending} onClick={reintentar} type="button">
+        <button
+          aria-label={contexto ? `Reintentar el enlace de ${contexto}` : undefined}
+          className="secondary-action"
+          disabled={pending}
+          onClick={reintentar}
+          type="button"
+        >
           <RefreshCw size={14} aria-hidden="true" />
           {pending ? "Reintentando…" : "Reintentar"}
         </button>

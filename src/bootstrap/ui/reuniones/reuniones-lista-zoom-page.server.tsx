@@ -9,6 +9,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
+import { mensajeListaVacia } from "@/src/modules/reuniones/lista-vacia.domain";
 import {
   obtenerDatosPaginaReuniones,
   type PeriodoAgenda
@@ -45,6 +46,8 @@ export default async function ReunionesZoomPage({
   const encuentros = datos.meetings;
   const href = (page?: number, nuevoPeriodo: PeriodoAgenda = periodo) =>
     reunionesHref({ q, programa: programaId, periodo: nuevoPeriodo, desde: desdeParam, hasta: hastaParam, page });
+  const hayFiltros = Boolean(q || programaId || desdeParam || hastaParam);
+  const vacio = mensajeListaVacia({ hayFiltros, esHistorial: isHistory });
 
   return (
     <div className={styles.page}>
@@ -56,26 +59,25 @@ export default async function ReunionesZoomPage({
           <h1>Reuniones</h1>
           <p>{isHistory ? "Reuniones realizadas." : "Próximas reuniones por Zoom."}</p>
         </div>
-        <Link className="primary-action" href="/reuniones/nueva">
-          <CalendarPlus size={18} aria-hidden="true" />
-          Nueva reunión
-        </Link>
+        <div className={styles.headerActions}>
+          <Link className="primary-action" href="/reuniones/nueva">
+            <CalendarPlus size={18} aria-hidden="true" />
+            Nueva reunión
+          </Link>
+          {esAdmin ? (
+            <Link className="secondary-action" href="/reuniones/migracion-zoom">Migración a Zoom</Link>
+          ) : null}
+        </div>
       </header>
 
-      {esAdmin ? (
-        <p>
-          <Link className="secondary-action" href="/reuniones/migracion-zoom">Migración a Zoom</Link>
-        </p>
-      ) : null}
-
       <nav className={styles.tabs} aria-label="Período de reuniones">
-          <Link aria-current={!isHistory ? "page" : undefined} href={href(undefined, "proximas")}>
-            <CalendarDays size={17} aria-hidden="true" /> Próximas
-          </Link>
-          <Link aria-current={isHistory ? "page" : undefined} href={href(undefined, "anteriores")}>
-            <History size={17} aria-hidden="true" /> Pasadas
-          </Link>
-        </nav>
+        <Link aria-current={!isHistory ? "page" : undefined} href={href(undefined, "proximas")}>
+          <CalendarDays size={17} aria-hidden="true" /> Próximas
+        </Link>
+        <Link aria-current={isHistory ? "page" : undefined} href={href(undefined, "anteriores")}>
+          <History size={17} aria-hidden="true" /> Pasadas
+        </Link>
+      </nav>
 
       <form className={styles.filters} method="get">
         <input name="periodo" type="hidden" value={periodo} />
@@ -83,37 +85,42 @@ export default async function ReunionesZoomPage({
         <label className={styles.search}>
           <span className="sr-only">Buscar reuniones</span>
           <Search size={18} aria-hidden="true" />
-          <input aria-label="Buscar reuniones" defaultValue={q} name="q" placeholder="Buscar por título, programa o docente" type="search" />
+          <input defaultValue={q} name="q" placeholder="Buscar por título, programa o docente" type="search" />
         </label>
         {esAdmin ? (
           <label>
             <span className="sr-only">Filtrar por programa</span>
-            <select aria-label="Filtrar por programa" defaultValue={programaId} name="programa">
+            <select defaultValue={programaId} name="programa">
               <option value="">Todos los programas</option>
               {programs.map((program) => <option key={program.id} value={program.id}>{program.nombre}</option>)}
             </select>
           </label>
         ) : null}
         <label>
-          <span className="sr-only">Desde</span>
-          <input aria-label="Fecha desde" defaultValue={desdeParam} name="desde" type="date" />
+          <span className={styles.fieldLabel}>Desde</span>
+          <input defaultValue={desdeParam} name="desde" type="date" />
         </label>
         <label>
-          <span className="sr-only">Hasta</span>
-          <input aria-label="Fecha hasta" defaultValue={hastaParam} name="hasta" type="date" />
+          <span className={styles.fieldLabel}>Hasta</span>
+          <input defaultValue={hastaParam} name="hasta" type="date" />
         </label>
         <button className="secondary-action" type="submit">Aplicar</button>
-        {q || programaId || desdeParam || hastaParam ? <Link href={reunionesHref({ periodo })}>Limpiar</Link> : null}
+        {hayFiltros ? <Link className={styles.clear} href={reunionesHref({ periodo })}>Limpiar filtros</Link> : null}
       </form>
 
       {encuentros.length === 0 ? (
-        <p className={styles.empty} role="status">No hay reuniones para mostrar.</p>
+        <div className={styles.empty} role="status">
+          <p>{vacio.texto}</p>
+          {vacio.accion === "LIMPIAR" ? <Link className="secondary-action" href={reunionesHref({ periodo })}>Limpiar filtros</Link> : null}
+          {vacio.accion === "CREAR" ? <Link className="primary-action" href="/reuniones/nueva">Crear una reunión</Link> : null}
+        </div>
       ) : (
         <ul className={styles.list}>
           {encuentros.map((encuentro) => {
             const enlace = resumenEnlaceZoom(encuentro);
             const { docentePrograma } = encuentro.solicitud;
             const docente = `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
+            const contexto = `${encuentro.solicitud.titulo}, ${formatShortDate(encuentro.inicioProgramadoAt)} ${formatTime(encuentro.inicioProgramadoAt)}`;
             return (
               <li className={styles.item} key={encuentro.id}>
                 <div className={styles.when}>
@@ -130,8 +137,9 @@ export default async function ReunionesZoomPage({
                     esAdmin={esAdmin}
                     eventoProveedorId={enlace.eventoProveedorId}
                     operacion={enlace.operacion}
+                    contexto={contexto}
                   />
-                  {enlace.joinUrl && !isHistory ? <ZoomJoinActions url={enlace.joinUrl} /> : null}
+                  {enlace.joinUrl && !isHistory ? <ZoomJoinActions url={enlace.joinUrl} contexto={contexto} /> : null}
                 </div>
               </li>
             );
