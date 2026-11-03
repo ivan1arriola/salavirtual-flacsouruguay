@@ -3,11 +3,18 @@ import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { crearGoogleCalendarAuthClient } from "@/src/integrations/google/auth";
 import { actualizarEventoCalendarHttp, obtenerEventoCalendar } from "@/src/integrations/google/calendar";
-import { obtenerReunionZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import {
+  buscarReunionZoomPorMarcaHttp,
+  crearReunionZoomRecurrenteHttp,
+  eliminarReunionZoomHttp,
+  obtenerReunionZoomHttp,
+  obtenerZoomAccessToken,
+} from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
+import type { DependenciasCorreccionSerie } from "@/src/modules/reuniones/corregir-serie-enlaces.service";
 import type { DependenciasMigracionZoom } from "@/src/modules/reuniones/migracion-zoom-aplicar.service";
 
 async function calendarAuth(calendarId: string) {
@@ -48,6 +55,35 @@ export function crearDependenciasMigracionZoom(): DependenciasMigracionZoom {
           conferenceDataVersion: 1,
           sendUpdates: "none",
         });
+      },
+    },
+  };
+}
+
+async function tokenZoom(): Promise<string> {
+  const creds = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+  if (!creds.disponible) throw new Error(creds.error || "Credenciales de Zoom no configuradas.");
+  return obtenerZoomAccessToken({
+    accountId: creds.accountId,
+    clientId: creds.clientId,
+    clientSecret: creds.clientSecret,
+  });
+}
+
+/** Dependencias para unificar el enlace de una serie: las de la migración más crear, buscar y eliminar reuniones Zoom. */
+export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie {
+  return {
+    ...crearDependenciasMigracionZoom(),
+    zoom: {
+      async buscarPorMarca(hostEmail, marca) {
+        return buscarReunionZoomPorMarcaHttp(await tokenZoom(), hostEmail, marca);
+      },
+      async crearRecurrente(hostEmail, input) {
+        const { meetingId, joinUrl } = await crearReunionZoomRecurrenteHttp(await tokenZoom(), hostEmail, input);
+        return { meetingId, joinUrl };
+      },
+      async eliminar(meetingId) {
+        await eliminarReunionZoomHttp(await tokenZoom(), meetingId);
       },
     },
   };
