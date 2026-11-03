@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string; role: string } },
   actor: null as null | { id: string; rol: string; activo: boolean },
   aplicar: vi.fn(),
+  habilitada: false,
 }));
 
 vi.mock("next/server", () => ({
@@ -23,6 +24,10 @@ vi.mock("@/src/modules/reuniones/migracion-zoom-aplicar.service", () => ({
   MAXIMO_LOTE_MIGRACION_ZOOM: 10,
 }));
 
+vi.mock("@/src/modules/reuniones/reunion-compartida.domain", () => ({
+  reunionCompartidaHabilitada: () => state.habilitada,
+}));
+
 import { POST } from "../app/api/v1/reuniones/migracion-zoom/aplicar/route";
 
 const post = (body: unknown) => new Request("http://localhost/x", { method: "POST", body: JSON.stringify(body) });
@@ -30,6 +35,7 @@ const post = (body: unknown) => new Request("http://localhost/x", { method: "POS
 beforeEach(() => {
   state.session = { user: { id: "u", email: "a@flacso.edu.uy", role: "ADMINISTRACION" } };
   state.actor = { id: "u", rol: "ADMINISTRACION", activo: true };
+  state.habilitada = false;
   state.aplicar.mockReset().mockResolvedValue([{ instanciaId: "i1", resultado: "MIGRADA" }]);
 });
 
@@ -62,5 +68,11 @@ describe("POST /api/v1/reuniones/migracion-zoom/aplicar", () => {
     state.actor = { id: "u", rol: "DOCENTE", activo: true };
     state.aplicar.mockRejectedValue(new ForbiddenApiError("No"));
     expect(((await POST(post({ modo: "PILOTO", instanciaIds: ["i1"] }))) as any).status).toBe(403);
+  });
+
+  it("con la bandera encendida responde 409: la migración se aplica por serie", async () => {
+    state.habilitada = true;
+    expect(((await POST(post({ modo: "PILOTO", instanciaIds: ["i1"] }))) as any).status).toBe(409);
+    expect(state.aplicar).not.toHaveBeenCalled();
   });
 });

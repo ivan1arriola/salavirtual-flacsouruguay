@@ -9,6 +9,7 @@ import {
   aplicarMigracionZoom,
   MAXIMO_LOTE_MIGRACION_ZOOM,
 } from "@/src/modules/reuniones/migracion-zoom-aplicar.service";
+import { reunionCompartidaHabilitada } from "@/src/modules/reuniones/reunion-compartida.domain";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -22,6 +23,14 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Con un solo enlace por serie la unidad de migración es la serie: migrar un encuentro suelto la dejaría mixta.
+  if (reunionCompartidaHabilitada(process.env)) {
+    return NextResponse.json(
+      { error: "La migración se aplica por serie: usa la migración por serie." },
+      { status: 409 },
+    );
+  }
 
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
