@@ -26,7 +26,14 @@ export async function obtenerEnlaceInicioZoom(
       estado: true,
       finProgramadoAt: true,
       proveedorActivoTipo: true,
-      eventosProveedor: { select: { externalEventId: true, proveedor: { select: { tipo: true } } } },
+      eventosProveedor: {
+        select: {
+          externalEventId: true,
+          reunionProveedorId: true,
+          reunionProveedor: { select: { externalId: true } },
+          proveedor: { select: { tipo: true } }
+        }
+      },
       solicitud: {
         select: {
           docentePrograma: { select: { programaId: true, docente: { select: { usuarioId: true } } } }
@@ -48,11 +55,15 @@ export async function obtenerEnlaceInicioZoom(
   }
 
   const evento = seleccionarEventoProveedorActivo(instancia);
-  if (evento?.proveedor.tipo !== "ZOOM" || !evento.externalEventId) {
+  // En una serie con reunión compartida el ID de la reunión es el de la serie, no el del encuentro.
+  const zoomMeetingId = evento?.reunionProveedorId
+    ? evento.reunionProveedor?.externalId
+    : evento?.externalEventId;
+  if (evento?.proveedor.tipo !== "ZOOM" || !zoomMeetingId) {
     throw new ConflictApiError("El encuentro no tiene una reunión de Zoom activa.");
   }
 
-  const startUrl = await dependencias.obtenerStartUrl(evento.externalEventId);
+  const startUrl = await dependencias.obtenerStartUrl(zoomMeetingId);
   if (!startUrl) throw new ConflictApiError("Zoom no devolvió el enlace de inicio de la reunión.");
   return startUrl;
 }

@@ -54,6 +54,24 @@ describe("excepción Conservar en Google Meet", () => {
     }) });
   });
 
+  it("toma el bloqueo de la serie antes que el del encuentro, con la misma clave que la migración por serie", async () => {
+    const fila = instancia({
+      solicitud: { serieReunionId: "s-1", docenteProgramaId: "dp", titulo: "Clase", createdAt: new Date("2026-10-01T12:00:00Z") },
+    });
+    const bloqueos: string[] = [];
+    const tx = {
+      $executeRaw: vi.fn(async (_: unknown, clave: string) => { bloqueos.push(clave); return 1; }),
+      instanciaSala: { findUnique: vi.fn(async () => fila), update: vi.fn(async () => ({ id: "i1" })) },
+      auditoria: { create: vi.fn(async () => ({})) },
+    };
+    const db = { $transaction: vi.fn(async (cb: (t: typeof tx) => unknown) => cb(tx)) } as unknown as PrismaClient;
+    await actualizarExcepcionGoogleMeet(db, admin, { instanciaId: "i1", conservar: true, motivo: "Evento externo" }, ahora);
+    expect(bloqueos).toEqual([
+      "flacso-meet:migracion-zoom-serie:serie:s-1",
+      "flacso-meet:migracion-zoom:i1",
+    ]);
+  });
+
   it("exige motivo al marcar y lo borra al quitar la excepción", async () => {
     const { db, update } = fakeDb(instancia({ conservarGoogleMeet: true, motivoConservarGoogleMeet: "x" }));
     await expect(actualizarExcepcionGoogleMeet(db, admin, { instanciaId: "i1", conservar: true, motivo: " " }, ahora))

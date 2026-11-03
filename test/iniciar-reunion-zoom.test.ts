@@ -36,6 +36,34 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
     expect(obtenerStartUrl).toHaveBeenCalledWith("123");
   });
 
+  it("con reunión compartida pide el enlace de inicio con el ID de la reunión de la serie", async () => {
+    const obtenerStartUrl = vi.fn(async () => "https://zoom.us/s/555?zak=fresco");
+    const compartida = instancia({
+      eventosProveedor: [{
+        externalEventId: "123",
+        reunionProveedorId: "r1",
+        reunionProveedor: { externalId: "555" },
+        proveedor: { tipo: "ZOOM" }
+      }]
+    });
+    await obtenerEnlaceInicioZoom({ db: db(compartida), obtenerStartUrl }, titular, "i1");
+    expect(obtenerStartUrl).toHaveBeenCalledWith("555");
+  });
+
+  it("con reunión compartida sin ID externo todavía no hay reunión activa", async () => {
+    const obtenerStartUrl = vi.fn(async () => "x");
+    const compartida = instancia({
+      eventosProveedor: [{
+        externalEventId: "123",
+        reunionProveedorId: "r1",
+        reunionProveedor: { externalId: null },
+        proveedor: { tipo: "ZOOM" }
+      }]
+    });
+    await expect(obtenerEnlaceInicioZoom({ db: db(compartida), obtenerStartUrl }, titular, "i1")).rejects.toThrow(/Zoom activa/);
+    expect(obtenerStartUrl).not.toHaveBeenCalled();
+  });
+
   it("administración también puede", async () => {
     const obtenerStartUrl = vi.fn(async () => "https://zoom.us/s/123?zak=x");
     await expect(obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, admin, "i1")).resolves.toContain("zoom.us");

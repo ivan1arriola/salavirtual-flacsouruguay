@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
-import { claveSerieReunion } from "./serie-reunion.domain";
+import { claveBloqueoSerieMigracion, claveSerieReunion } from "./serie-reunion.domain";
 import {
   meetPreparadoParaMigracion,
   planificarMigracionZoom,
@@ -62,6 +62,14 @@ export async function actualizarExcepcionGoogleMeet(
   }
 
   return db.$transaction(async (tx) => {
+    // Misma clave que la migración por serie: una excepción no cambia mientras se convierte su serie.
+    const base = await tx.instanciaSala.findUnique({
+      where: { id: input.instanciaId },
+      select: { solicitud: { select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true } } },
+    });
+    if (base?.solicitud) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${claveBloqueoSerieMigracion(claveSerieReunion(base.solicitud))}))`;
+    }
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:migracion-zoom:${input.instanciaId}`}))`;
     const instancia = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaId },
