@@ -2,6 +2,7 @@ import { CalendarDays, CalendarPlus, History, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { ProveedorTabs } from "@/src/components/proveedor-tabs";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -22,6 +23,7 @@ type SearchParams = Readonly<{
   page?: string;
   desde?: string;
   hasta?: string;
+  proveedor?: string;
 }>;
 
 export default async function ReunionesZoomPage({
@@ -38,7 +40,7 @@ export default async function ReunionesZoomPage({
 
   const params = await searchParams;
   const esAdmin = actor.rol === "ADMINISTRACION";
-  const datos = await obtenerDatosPaginaReuniones(db, actor, { ...params, vista: "encuentros" });
+  const datos = await obtenerDatosPaginaReuniones(db, actor, { ...params, vista: "encuentros", proveedor: "zoom" });
   const { q, programaId, periodo, isHistory, pagination, programs, desdeParam, hastaParam } = datos;
   const encuentros = datos.meetings;
   const href = (page?: number, nuevoPeriodo: PeriodoAgenda = periodo) =>
@@ -46,6 +48,8 @@ export default async function ReunionesZoomPage({
 
   return (
     <div className={styles.page}>
+      <ProveedorTabs activo="ZOOM" />
+
       <header className={styles.header}>
         <div>
           <p className="page-eyebrow">{formatShortDate(new Date())}</p>
@@ -75,6 +79,7 @@ export default async function ReunionesZoomPage({
 
       <form className={styles.filters} method="get">
         <input name="periodo" type="hidden" value={periodo} />
+        <input name="proveedor" type="hidden" value="zoom" />
         <label className={styles.search}>
           <span className="sr-only">Buscar reuniones</span>
           <Search size={18} aria-hidden="true" />
@@ -154,6 +159,7 @@ function reunionesHref(params: Readonly<{
   page?: number;
 }>): string {
   const search = new URLSearchParams();
+  search.set("proveedor", "zoom");
   if (params.q) search.set("q", params.q);
   if (params.programa) search.set("programa", params.programa);
   if (params.periodo === "anteriores") search.set("periodo", params.periodo);
@@ -161,5 +167,5 @@ function reunionesHref(params: Readonly<{
   if (params.hasta) search.set("hasta", params.hasta);
   if (params.page && params.page > 1) search.set("page", String(params.page));
   const query = search.toString();
-  return query ? `/reuniones?${query}` : "/reuniones";
+  return `/reuniones?${query}`;
 }

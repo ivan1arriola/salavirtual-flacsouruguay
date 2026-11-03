@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
 import { puedeVerEnlaceAnfitrion } from "@/src/modules/reuniones/enlace-anfitrion.domain";
+import { proveedorActivoDeInstancia, type ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
@@ -13,8 +15,13 @@ import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reu
 import { ReunionZoomEncuentros } from "@/src/modules/reuniones/presentation/components/reunion-zoom-encuentros";
 
 export default async function ReunionZoomDetailPage({
-  params
-}: Readonly<{ params: Promise<{ solicitudId: string }> }>) {
+  params,
+  otroProveedor = null
+}: Readonly<{
+  params: Promise<{ solicitudId: string }>;
+  /** Encuentros de la misma serie que siguen en el otro proveedor: viven en su propio panel. */
+  otroProveedor?: Readonly<{ proveedor: ProveedorReunion; cantidad: number; href: string }> | null;
+}>) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
@@ -50,7 +57,7 @@ export default async function ReunionZoomDetailPage({
   const encuentros = serie.flatMap(({ id, instancias }) => {
     // El servidor exige conservar al menos un encuentro por solicitud.
     const activos = instancias.filter(({ estado }) => estado !== "CANCELADA").length;
-    return instancias.map((instancia) => {
+    return instancias.filter((instancia) => proveedorActivoDeInstancia(instancia) === "ZOOM").map((instancia) => {
     const enlace = resumenEnlaceZoom(instancia);
     const activo = seleccionarEventoProveedorActivo(instancia);
     const puedeUnirse = instancia.estado === "PROGRAMADA" && instancia.finProgramadoAt > ahora;
@@ -75,9 +82,10 @@ export default async function ReunionZoomDetailPage({
 
   return (
     <div className="meeting-detail-v2">
-      <Link className="meeting-detail-back" href="/reuniones">
+      <Link className="meeting-detail-back" href="/reuniones?proveedor=zoom">
         <ArrowLeft size={15} aria-hidden="true" />Volver a reuniones
       </Link>
+      {otroProveedor ? <OtroProveedorAviso {...otroProveedor} /> : null}
       <header>
         <p className="page-eyebrow">{solicitud.docentePrograma.programa.nombre}</p>
         <h1>{solicitud.titulo}</h1>
@@ -88,6 +96,7 @@ export default async function ReunionZoomDetailPage({
         encuentros={encuentros}
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
+        permiteCancelarSerie={!otroProveedor}
         solicitudIds={serie.map(({ id }) => id)}
       />
     </div>

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
+import { ProveedorTabs } from "@/src/components/proveedor-tabs";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { MeetIntegrationStatus, MeetPendingNotice } from "@/src/components/meet-integration-status";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
@@ -48,6 +49,7 @@ export default async function ReunionesPage({
     page?: string;
     desde?: string;
     hasta?: string;
+    proveedor?: string;
   }>;
 }>) {
   const session = await auth();
@@ -84,10 +86,12 @@ export default async function ReunionesPage({
     hasPendingMeet,
     desdeParam,
     hastaParam
-  } = await obtenerDatosPaginaReuniones(db, actor, params);
+  } = await obtenerDatosPaginaReuniones(db, actor, { ...params, proveedor: "meet" });
 
   return (
     <div className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}>
+      <ProveedorTabs activo="GOOGLE_MEET" />
+
       <header className="meetings-agenda-hero">
         <div>
           <p className="page-eyebrow">{formatShortDate(now)}</p>
@@ -210,6 +214,7 @@ export default async function ReunionesPage({
 
         <form className="agenda-filter-panel" method="get">
           <input name="vista" type="hidden" value={vista} />
+          <input name="proveedor" type="hidden" value="meet" />
           {actor.rol === "ADMINISTRACION" ? (
             <input name="periodo" type="hidden" value={periodo} />
           ) : null}
@@ -928,6 +933,7 @@ function pageHref(params: {
   page?: number;
 }): string {
   const search = new URLSearchParams({ vista: params.vista });
+  search.set("proveedor", "meet");
   if (params.q) search.set("q", params.q);
   if (params.programa) search.set("programa", params.programa);
   if (params.periodo === "anteriores") search.set("periodo", params.periodo);

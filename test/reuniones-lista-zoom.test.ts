@@ -56,7 +56,8 @@ describe("resumen del enlace de una instancia", () => {
 
 describe("lista de reuniones Zoom", () => {
   it("la ruta apunta a la lista Zoom y la lista de Meet se conserva con su export", () => {
-    expect(leer("app/(gestion)/reuniones/page.tsx")).toContain("reuniones-lista-zoom-page.server");
+    expect(leer("app/(gestion)/reuniones/page.tsx")).toContain("reuniones-lista-page.server");
+    expect(leer("src/bootstrap/ui/reuniones/reuniones-lista-page.server.tsx")).toContain("reuniones-lista-zoom-page.server");
     expect(leer("src/bootstrap/ui/reuniones/reuniones-lista-meet-page.server.tsx")).toContain("export default async function ReunionesPage");
   });
 

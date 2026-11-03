@@ -43,19 +43,22 @@ export function ReunionZoomEncuentros({
   encuentros,
   solicitudIds,
   esAdmin,
-  puedeModificar
+  puedeModificar,
+  permiteCancelarSerie
 }: Readonly<{
   encuentros: readonly EncuentroZoomView[];
   solicitudIds: readonly string[];
   esAdmin: boolean;
   /** Solo el titular de la reunión y administración; el resto la ve sin poder cambiarla. */
   puedeModificar: boolean;
+  /** Falso en una serie partida: cancelarla entera cancelaría también los encuentros del otro proveedor. */
+  permiteCancelarSerie: boolean;
 }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
-  const hayEditables = puedeModificar && encuentros.some(({ editable }) => editable);
+  const hayEditables = puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
 
   function ejecutar(accion: () => ReturnType<typeof enviarAccionEncuentro>, alTerminar?: () => void) {
     setMensaje(null);

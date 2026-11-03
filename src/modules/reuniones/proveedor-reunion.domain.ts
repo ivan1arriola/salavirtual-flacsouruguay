@@ -57,14 +57,19 @@ export function elegirProveedorDetalle(
   const activos = encuentros.filter(({ estado }) => estado !== "CANCELADA");
   const cuenta = (proveedor: ProveedorReunion) => activos.filter((item) => item.proveedor === proveedor).length;
 
-  let elegido: ProveedorReunion;
-  if (solicitado && cuenta(solicitado) > 0) {
-    elegido = solicitado;
-  } else {
-    const ordenados = [...activos].sort((a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime());
-    const proximo = ordenados.find(({ finProgramadoAt }) => finProgramadoAt >= ahora);
-    elegido = (proximo ?? ordenados[ordenados.length - 1])?.proveedor ?? "ZOOM";
-  }
+  const proximo = activos
+    .filter(({ finProgramadoAt }) => finProgramadoAt >= ahora)
+    .reduce<EncuentroDeSerie | null>(
+      (menor, item) => (!menor || item.inicioProgramadoAt < menor.inicioProgramadoAt ? item : menor),
+      null
+    );
+  const ultimo = activos.reduce<EncuentroDeSerie | null>(
+    (mayor, item) => (!mayor || item.inicioProgramadoAt > mayor.inicioProgramadoAt ? item : mayor),
+    null
+  );
+  const elegido: ProveedorReunion = solicitado && cuenta(solicitado) > 0
+    ? solicitado
+    : (proximo ?? ultimo)?.proveedor ?? "ZOOM";
 
   const otroProveedor: ProveedorReunion = elegido === "ZOOM" ? "GOOGLE_MEET" : "ZOOM";
   const cantidad = cuenta(otroProveedor);

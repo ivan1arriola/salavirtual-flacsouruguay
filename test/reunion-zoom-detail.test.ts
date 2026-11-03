@@ -31,6 +31,7 @@ function render(puedeIniciar: boolean, esAdmin = false, extra: Record<string, un
     solicitudIds: ["s1"],
     esAdmin,
     puedeModificar: true,
+    permiteCancelarSerie: true,
     encuentros: [{ ...encuentro(puedeIniciar), ...extra } as ReturnType<typeof encuentro>]
   }));
 }
@@ -60,12 +61,25 @@ describe("encuentros de una reunión Zoom", () => {
       solicitudIds: ["s1"],
       esAdmin: false,
       puedeModificar: false,
+      permiteCancelarSerie: true,
       encuentros: [encuentro(false)]
     }));
     expect(html).toContain("Unirse");
     expect(html).not.toContain("Editar fecha y hora");
     expect(html).not.toContain("Cancelar encuentro");
     expect(html).not.toContain("Cancelar toda la serie");
+  });
+
+  it("en una serie partida entre Meet y Zoom no ofrece cancelar toda la serie", () => {
+    const html = renderToStaticMarkup(createElement(ReunionZoomEncuentros, {
+      solicitudIds: ["s1"],
+      esAdmin: true,
+      puedeModificar: true,
+      permiteCancelarSerie: false,
+      encuentros: [encuentro(false)]
+    }));
+    expect(html).not.toContain("Cancelar toda la serie");
+    expect(html).toContain("Editar fecha y hora");
   });
 
   it("la página decide puedeModificar con la regla del titular", () => {
@@ -133,8 +147,9 @@ describe("enviarAccionEncuentro", () => {
 });
 
 describe("detalle de reunión Zoom", () => {
-  it("la ruta apunta al detalle Zoom", () => {
-    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain("reunion-zoom-detail-page.server");
+  it("la ruta pasa por el despachador, que puede abrir el detalle Zoom", () => {
+    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain("reunion-detalle-page.server");
+    expect(leer("src/bootstrap/ui/reuniones/reunion-detalle-page.server.tsx")).toContain("reunion-zoom-detail-page.server");
   });
 
   it("la página no menciona Google, Meet, cohosts ni archivos de asistencia", () => {

@@ -26,6 +26,7 @@ import "./agenda-day-zebra.css";
 import "./assistant-agenda.css";
 import "./meeting-form-v2.css";
 import "./meeting-detail-v2.css";
+import "./proveedor-tabs.css";
 import "./meeting-detail-mobile-continuous.css";
 import "./attendance-view.css";
 import "./agenda-mobile-compact.css";
