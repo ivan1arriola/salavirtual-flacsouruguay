@@ -48,3 +48,8 @@ export function filtroSerieDesdeClave(
   if (!docenteProgramaId || titulo === undefined || resto.length > 0 || Number.isNaN(createdAt.getTime())) return null;
   return { docenteProgramaId, titulo, createdAt };
 }
+
+/** Clave de bloqueo asesor de una serie: PostgreSQL no admite el carácter NUL en el texto que se le pasa a `hashtext`. */
+export function claveBloqueoSerieMigracion(serieClave: string): string {
+  return `flacso-meet:migracion-zoom-serie:${serieClave.replaceAll("\u0000", "|")}`;
+}
