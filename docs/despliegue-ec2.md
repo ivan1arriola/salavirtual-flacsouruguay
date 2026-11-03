@@ -241,6 +241,20 @@ El script `scripts/deploy-ec2.sh`:
 5. Conecta por SSH y ejecuta `deploy.sh` en `/srv/apps/salavirtual-flacso/source`.
 6. Verifica el healthcheck en tiempo real.
 
+## Reuniones de Zoom compartidas por serie (bandera `ZOOM_REUNION_COMPARTIDA`)
+
+Todos los encuentros de una serie en Zoom pasan a compartir una sola reunión (un solo enlace y una sola sala). La creación compartida está detrás de la variable `ZOOM_REUNION_COMPARTIDA`, apagada por defecto (`1` o `true` la enciende; cualquier otro valor la deja apagada). Con la bandera apagada todo funciona como antes.
+
+Orden obligatorio:
+
+1. Desplegar la migración y el código con la bandera apagada.
+2. Comprobar que no queda ninguna versión anterior del worker en ejecución: una versión vieja procesaría un `CANCELAR` sobre un evento con reunión compartida y borraría la reunión que usan los demás encuentros.
+3. Agregar `ZOOM_REUNION_COMPARTIDA=1` a `/srv/apps/salavirtual-flacso/shared/.env.production` y reiniciar `salavirtual.service`.
+4. Probar una serie nueva de 3 encuentros: deben tener el mismo enlace; cancelar uno no debe borrar la reunión; cancelar el último sí.
+5. Recién entonces usar la migración de Meet a Zoom por serie y la corrección de series que ya tienen enlaces distintos.
+
+Rollback: quitar la variable o ponerla en `0` y reiniciar. Las series ya creadas con reunión compartida conservan su enlace; solo deja de crearse la reunión compartida para series nuevas.
+
 ## Segunda fase opcional: mover PostgreSQL a EC2
 
 No hacer esta migración en el mismo corte que el runtime.
