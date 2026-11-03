@@ -78,6 +78,8 @@ Plan aparte (`2026-11-03-corregir-series-con-enlaces-distintos.md`), que depende
 ## Supuestos por verificar antes de implementar
 
 - Que las reuniones recurrentes sin horario fijo (`type: 3`) de la API de Zoom sirvan para este uso: un `join_url` estable, sesiones en cualquier momento y sin vencimiento mientras se usen. Zoom elimina las reuniones recurrentes sin uso tras un plazo; hay que confirmar cuál y qué pasa con series que quedan sin encuentros durante meses.
+- Limitación conocida, fuera de este diseño: al reprogramar o cancelar un encuentro ya migrado, la cita de Google Calendar (propiedad del evento Meet histórico) no se actualiza. Esta entrega no lo cambia.
+- Series mixtas (encuentros en Meet y en Zoom con reuniones propias distintas): por defecto no son migrables y quedan en `REVISAR`; decidir si se unifican dentro de la migración por serie o con la corrección previa.
 - Que el límite "una reunión a la vez por cuenta" se aplique como hoy cuando varios encuentros comparten una misma reunión (la capacidad la sigue controlando Sala Virtual).
 - Cómo debe enviarse el cuerpo de una reunión recurrente sin horario fijo (`type: 3`): el plan no incluye `recurrence`, y hay que confirmarlo con la documentación de Zoom y una prueba real.
 - Si las series creadas en Zoom tienen o no cita de Google Calendar (no se verificó): el diseño no depende de que la tengan.
