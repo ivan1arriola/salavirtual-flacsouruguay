@@ -17,6 +17,8 @@ export function estadoEnlaceZoom(evento: EventoEnlace | null): EstadoEnlaceZoom 
 export type ResumenEnlaceZoom = Readonly<{
   eventoProveedorId: string | null;
   joinUrl: string | null;
+  /** Cuenta de Zoom que anfitrionea la reunión (correo, o nombre si no tiene correo). */
+  cuentaAnfitrion: string | null;
   estado: EstadoEnlaceZoom;
   operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
 }>;
@@ -30,6 +32,7 @@ export function resumenEnlaceZoom(instancia: Readonly<{
     id: string;
     proveedor: Readonly<{ tipo: string }>;
     operacionPendiente: string | null;
+    cuentaProveedor?: Readonly<{ nombre: string; emailOrganizador: string | null }> | null;
   }>)[];
 }>): ResumenEnlaceZoom {
   const evento = seleccionarEventoProveedorActivo(instancia);
@@ -37,6 +40,7 @@ export function resumenEnlaceZoom(instancia: Readonly<{
   return {
     eventoProveedorId: evento?.id ?? null,
     joinUrl: evento?.joinUrl ?? null,
+    cuentaAnfitrion: evento?.cuentaProveedor?.emailOrganizador ?? evento?.cuentaProveedor?.nombre ?? null,
     estado: estadoEnlaceZoom(evento),
     operacion
   };

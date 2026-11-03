@@ -130,6 +130,7 @@ export default async function ReunionesZoomPage({
                 <div className={styles.what}>
                   <Link href={`/reuniones/${encuentro.solicitudSalaId}`}>{encuentro.solicitud.titulo}</Link>
                   <span>{docentePrograma.programa.nombre} · {docente}</span>
+                  <span>Cuenta anfitriona: {enlace.cuentaAnfitrion ?? "Sin asignar"}</span>
                 </div>
                 <div className={styles.link}>
                   <ZoomLinkStatus

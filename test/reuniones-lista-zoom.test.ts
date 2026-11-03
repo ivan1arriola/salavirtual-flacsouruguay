@@ -43,6 +43,17 @@ describe("resumen del enlace de una instancia", () => {
     expect(resumen.estado).toBe("LISTO");
   });
 
+  it("informa la cuenta anfitriona del evento activo: correo, o nombre si no tiene correo", () => {
+    const conCuenta = (cuentaProveedor: { nombre: string; emailOrganizador: string | null } | null) =>
+      resumenEnlaceZoom({
+        proveedorActivoTipo: "ZOOM",
+        eventosProveedor: [{ ...evento("ZOOM", "https://zoom.us/j/9"), cuentaProveedor }]
+      }).cuentaAnfitrion;
+    expect(conCuenta({ nombre: "Sala 01", emailOrganizador: "sala01@flacso.edu.uy" })).toBe("sala01@flacso.edu.uy");
+    expect(conCuenta({ nombre: "Sala 01", emailOrganizador: null })).toBe("Sala 01");
+    expect(conCuenta(null)).toBeNull();
+  });
+
   it("sin joinUrl no ofrece unirse y propone reintentar la operación pendiente", () => {
     const resumen = resumenEnlaceZoom({
       proveedorActivoTipo: "ZOOM",
