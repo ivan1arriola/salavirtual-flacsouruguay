@@ -30,7 +30,7 @@ const solicitud = (id: string, estado = "PROVISIONADA") => ({
   docenteProgramaId: "dp-1",
   createdAt: new Date("2026-10-10T11:00:00Z"),
   estado,
-  docentePrograma: { programaId: "programa-1" },
+  docentePrograma: { programaId: "programa-1", docente: { usuarioId: "titular" } },
   instancias: [{
     detallesLiquidacion: [],
     eventosProveedor: [
@@ -55,5 +55,23 @@ describe("cancelación de series con eventos Zoom", () => {
     const { db } = fakeDatabase([solicitud("s1", "CANCELADA")]);
     const result = await cancelarSolicitudesAtomicas(db, actor, ["s1"]);
     expect(result.eventoProveedorIds).toEqual(["zoom-s1"]);
+  });
+});
+
+describe("cancelación de serie: solo el titular o administración", () => {
+  it("otro docente del programa no puede cancelar la serie y no se escribe nada", async () => {
+    const { db, tx } = fakeDatabase([solicitud("s1")]);
+    const otro = { id: "otro", rol: "DOCENTE" as const, activo: true };
+    await expect(cancelarSolicitudesAtomicas(db, otro, ["s1"])).rejects.toThrow(/permisos/);
+    expect(tx.auditoria.create).not.toHaveBeenCalled();
+    expect(tx.solicitudSala.update).not.toHaveBeenCalled();
+    expect(tx.eventoProveedor.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("el docente titular sí puede cancelar su serie", async () => {
+    const { db } = fakeDatabase([solicitud("s1")]);
+    const titular = { id: "titular", rol: "DOCENTE" as const, activo: true };
+    const result = await cancelarSolicitudesAtomicas(db, titular, ["s1"]);
+    expect(result.solicitudesCanceladas).toBe(1);
   });
 });

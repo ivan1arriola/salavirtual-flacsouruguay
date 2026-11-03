@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { puedeVerEnlaceAnfitrion } from "@/src/modules/reuniones/enlace-anfitrion.domain";
+import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
@@ -43,6 +44,7 @@ export default async function ReunionZoomDetailPage({
   const ahora = new Date();
   const docente = solicitud.docentePrograma.docente.usuario;
   const verAnfitrion = puedeVerEnlaceAnfitrion(actor, docente.id);
+  const puedeModificar = puedeGestionarEncuentros(actor.rol, actor.id, docente.id);
   const esAdmin = actor.rol === "ADMINISTRACION";
 
   const encuentros = serie.flatMap(({ id, instancias }) => {
@@ -85,6 +87,7 @@ export default async function ReunionZoomDetailPage({
       <ReunionZoomEncuentros
         encuentros={encuentros}
         esAdmin={esAdmin}
+        puedeModificar={puedeModificar}
         solicitudIds={serie.map(({ id }) => id)}
       />
     </div>

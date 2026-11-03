@@ -30,6 +30,7 @@ function render(puedeIniciar: boolean, esAdmin = false, extra: Record<string, un
   return renderToStaticMarkup(createElement(ReunionZoomEncuentros, {
     solicitudIds: ["s1"],
     esAdmin,
+    puedeModificar: true,
     encuentros: [{ ...encuentro(puedeIniciar), ...extra } as ReturnType<typeof encuentro>]
   }));
 }
@@ -52,6 +53,24 @@ describe("encuentros de una reunión Zoom", () => {
     expect(html).not.toContain("Cancelar encuentro");
     expect(html).toContain("Editar fecha y hora");
     expect(html).toContain("Cancelar toda la serie");
+  });
+
+  it("quien no es titular ni administración ve los encuentros pero no puede modificarlos", () => {
+    const html = renderToStaticMarkup(createElement(ReunionZoomEncuentros, {
+      solicitudIds: ["s1"],
+      esAdmin: false,
+      puedeModificar: false,
+      encuentros: [encuentro(false)]
+    }));
+    expect(html).toContain("Unirse");
+    expect(html).not.toContain("Editar fecha y hora");
+    expect(html).not.toContain("Cancelar encuentro");
+    expect(html).not.toContain("Cancelar toda la serie");
+  });
+
+  it("la página decide puedeModificar con la regla del titular", () => {
+    const pagina = leer("src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx");
+    expect(pagina).toContain("puedeGestionarEncuentros");
   });
 
   it("ofrece 'Cancelar encuentro' cuando hay más de un encuentro activo", () => {
