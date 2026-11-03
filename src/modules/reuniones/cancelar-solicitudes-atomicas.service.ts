@@ -64,7 +64,9 @@ export async function cancelarSolicitudesAtomicas(
         continue;
       }
       const meetIds = solicitud.instancias.flatMap((instancia) =>
-        instancia.eventosProveedor.filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET").map((evento) => evento.id)
+        instancia.eventosProveedor
+          .filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET" || evento.proveedor.tipo === "ZOOM")
+          .map((evento) => evento.id)
       );
       pending.push(...meetIds);
       await tx.auditoria.create({
@@ -98,7 +100,7 @@ export async function cancelarSolicitudesAtomicas(
         data: {
           estado: "CANCELADA",
           canceladaAt: new Date(),
-          canceladaMotivo: "Cancelación de serie; Google Calendar pendiente."
+          canceladaMotivo: "Cancelación de serie; enlaces externos pendientes."
         }
       });
     }

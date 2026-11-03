@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     // A successful transaction persists each event's pending CANCELAR operation.
     // The background reconciliation endpoint performs Google HTTP calls later.
     return NextResponse.json({
-      message: "La cancelación quedó registrada. Google Calendar se actualizará en segundo plano.",
+      message: "La cancelación quedó registrada. Los enlaces se actualizarán en segundo plano.",
       solicitudesCanceladas: result.solicitudesCanceladas,
       eventosGooglePendientes: result.eventoProveedorIds.length
     }, { status: 202 });
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
         instancias: {
           select: {
             eventosProveedor: {
-              where: { proveedor: { tipo: "GOOGLE_MEET" } },
+              where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
               select: { estadoIntegracion: true, operacionPendiente: true }
             }
           }
