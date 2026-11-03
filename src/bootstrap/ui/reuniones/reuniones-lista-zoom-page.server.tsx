@@ -3,12 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProveedorTabs } from "@/src/components/proveedor-tabs";
+import { CorregirSerieZoomBoton } from "@/src/components/corregir-serie-zoom-boton";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDate, formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
+import { claveSerieReunion } from "@/src/modules/reuniones/serie-reunion.domain";
+import { resumirSerieZoom } from "@/src/modules/reuniones/serie-zoom-resumen.domain";
 import { mensajeListaVacia } from "@/src/modules/reuniones/lista-vacia.domain";
 import {
   obtenerDatosPaginaReuniones,
@@ -25,6 +28,7 @@ type SearchParams = Readonly<{
   desde?: string;
   hasta?: string;
   proveedor?: string;
+  vista?: string;
 }>;
 
 export default async function ReunionesZoomPage({
@@ -41,11 +45,14 @@ export default async function ReunionesZoomPage({
 
   const params = await searchParams;
   const esAdmin = actor.rol === "ADMINISTRACION";
-  const datos = await obtenerDatosPaginaReuniones(db, actor, { ...params, vista: "encuentros", proveedor: "zoom" });
+  const datos = await obtenerDatosPaginaReuniones(db, actor, { ...params, vista: params.vista === "series" ? "series" : "encuentros", proveedor: "zoom" });
   const { q, programaId, periodo, isHistory, pagination, programs, desdeParam, hastaParam } = datos;
   const encuentros = datos.meetings;
-  const href = (page?: number, nuevoPeriodo: PeriodoAgenda = periodo) =>
-    reunionesHref({ q, programa: programaId, periodo: nuevoPeriodo, desde: desdeParam, hasta: hastaParam, page });
+  const porSerie = datos.vista === "series";
+  const series = datos.series;
+  const vista = porSerie ? ("series" as const) : undefined;
+  const href = (page?: number, nuevoPeriodo: PeriodoAgenda = periodo, nuevaVista = vista) =>
+    reunionesHref({ q, programa: programaId, periodo: nuevoPeriodo, desde: desdeParam, hasta: hastaParam, page, vista: nuevaVista });
   const hayFiltros = Boolean(q || programaId || desdeParam || hastaParam);
   const vacio = mensajeListaVacia({ hayFiltros, esHistorial: isHistory });
 
@@ -79,9 +86,15 @@ export default async function ReunionesZoomPage({
         </Link>
       </nav>
 
+      <nav className={styles.tabs} aria-label="Agrupar reuniones">
+        <Link aria-current={!porSerie ? "page" : undefined} href={href(undefined, periodo, undefined)}>Por reunión</Link>
+        <Link aria-current={porSerie ? "page" : undefined} href={href(undefined, periodo, "series")}>Por serie</Link>
+      </nav>
+
       <form className={styles.filters} method="get">
         <input name="periodo" type="hidden" value={periodo} />
         <input name="proveedor" type="hidden" value="zoom" />
+        {porSerie ? <input name="vista" type="hidden" value="series" /> : null}
         <label className={styles.search}>
           <span className="sr-only">Buscar reuniones</span>
           <Search size={18} aria-hidden="true" />
@@ -108,12 +121,50 @@ export default async function ReunionesZoomPage({
         {hayFiltros ? <Link className={styles.clear} href={reunionesHref({ periodo })}>Limpiar filtros</Link> : null}
       </form>
 
-      {encuentros.length === 0 ? (
+      {(porSerie ? series.length : encuentros.length) === 0 ? (
         <div className={styles.empty} role="status">
           <p>{vacio.texto}</p>
           {vacio.accion === "LIMPIAR" ? <Link className="secondary-action" href={reunionesHref({ periodo })}>Limpiar filtros</Link> : null}
           {vacio.accion === "CREAR" ? <Link className="primary-action" href="/reuniones/nueva">Crear una reunión</Link> : null}
         </div>
+      ) : porSerie ? (
+        <ul className={styles.list}>
+          {series.map((serie) => {
+            const primero = serie[0];
+            const { docentePrograma } = primero.solicitud;
+            const docente = `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
+            const resumen = resumirSerieZoom(serie);
+            const serieClave = claveSerieReunion(primero.solicitud);
+            const proximo = serie[0];
+            return (
+              <li className={styles.item} key={serieClave}>
+                <div className={styles.when}>
+                  <strong>{serie.length === 1 ? "1 encuentro" : `${serie.length} encuentros`}</strong>
+                  <span>{formatShortDate(proximo.inicioProgramadoAt)} {formatTime(proximo.inicioProgramadoAt)}</span>
+                </div>
+                <div className={styles.what}>
+                  <Link href={`/reuniones/${primero.solicitudSalaId}`}>{primero.solicitud.titulo}</Link>
+                  <span>{docentePrograma.programa.nombre} · {docente}</span>
+                  <span>
+                    {resumen.unificada
+                      ? `Cuenta anfitriona: ${resumen.cuentas[0] ?? "Sin asignar"}`
+                      : `Cuentas anfitrionas distintas: ${resumen.cuentas.join(", ") || "Sin asignar"}`}
+                  </span>
+                </div>
+                <div className={styles.link}>
+                  {resumen.unificada ? (
+                    resumen.enlaces[0] && !isHistory ? <ZoomJoinActions url={resumen.enlaces[0]} contexto={primero.solicitud.titulo} /> : null
+                  ) : (
+                    <>
+                      <span className="status is-atencion">Enlaces o cuentas distintos</span>
+                      {esAdmin && !isHistory ? <CorregirSerieZoomBoton serieClave={serieClave} titulo={primero.solicitud.titulo} /> : null}
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       ) : (
         <ul className={styles.list}>
           {encuentros.map((encuentro) => {
@@ -166,9 +217,11 @@ function reunionesHref(params: Readonly<{
   desde?: string;
   hasta?: string;
   page?: number;
+  vista?: "series";
 }>): string {
   const search = new URLSearchParams();
   search.set("proveedor", "zoom");
+  if (params.vista === "series") search.set("vista", "series");
   if (params.q) search.set("q", params.q);
   if (params.programa) search.set("programa", params.programa);
   if (params.periodo === "anteriores") search.set("periodo", params.periodo);
