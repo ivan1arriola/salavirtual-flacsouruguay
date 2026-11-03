@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url), "utf8");
@@ -96,5 +96,49 @@ describe("schema 3NF inicial", () => {
     expect(preferencia).toContain("push      Boolean  @default(true)");
     expect(preferencia).toContain("email     Boolean  @default(true)");
     expect(preferencia).toContain("@@unique([usuarioId, tipo])");
+  });
+});
+
+describe("reunión compartida por serie", () => {
+  const migraciones = readdirSync(new URL("../prisma/migrations/", import.meta.url));
+  const carpeta = migraciones.find((nombre) => nombre.endsWith("_reunion_proveedor_compartida"));
+  const sql = carpeta
+    ? readFileSync(new URL(`../prisma/migrations/${carpeta}/migration.sql`, import.meta.url), "utf8")
+    : "";
+
+  it("define ReunionProveedor con estado de creación persistido y sus unicidades", () => {
+    const reunion = model("ReunionProveedor");
+    for (const campo of ["serieClave", "externalId", "joinUrl", "estadoCreacion", "reclamoToken", "reclamoAt"]) {
+      expect(reunion, campo).toContain(campo);
+    }
+    expect(reunion).toContain("@@unique([proveedorId, externalId])");
+    expect(reunion).toContain("@@unique([proveedorId, serieClave])");
+  });
+
+  it("EventoProveedor referencia la reunión compartida y ya no exige un ID externo único", () => {
+    const evento = model("EventoProveedor");
+    expect(evento).toContain("reunionProveedorId");
+    expect(evento).not.toContain("@@unique([proveedorId, externalEventId])");
+    expect(evento).toContain("@@index([proveedorId, externalEventId])");
+    expect(evento).toContain("@@unique([instanciaSalaId, proveedorId])");
+  });
+
+  it("define el avance por cita de Calendar y los avisos por serie", () => {
+    const cita = model("CambioEnlaceCita");
+    for (const campo of ["enlaceNuevo", "estado", "reunionAnteriorExternalId", "eliminarDespuesDe", "reunionAnteriorEliminadaAt", "sinCita"]) {
+      expect(cita, campo).toContain(campo);
+    }
+    expect(cita).toContain("@@unique([instanciaSalaId, reunionProveedorId])");
+    const aviso = model("AvisoEnlaceSerie");
+    expect(aviso).toContain("@@unique([serieClave, email, tipo])");
+  });
+
+  it("la migración crea las tablas, agrega la columna y reemplaza el índice único", () => {
+    expect(carpeta).toBeDefined();
+    expect(sql).toContain('CREATE TABLE "ReunionProveedor"');
+    expect(sql).toContain('CREATE TABLE "CambioEnlaceCita"');
+    expect(sql).toContain('CREATE TABLE "AvisoEnlaceSerie"');
+    expect(sql).toContain('ADD COLUMN "reunionProveedorId"');
+    expect(sql).toMatch(/DROP INDEX (IF EXISTS )?"EventoProveedor_proveedorId_externalEventId_key"/);
   });
 });

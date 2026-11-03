@@ -233,6 +233,7 @@ model ProveedorReunion {
   historico Boolean           @default(false)
   cuentas   CuentaProveedor[]
   eventos   EventoProveedor[]
+  reunionesCompartidas ReunionProveedor[]
 }
 
 model CuentaProveedor {
@@ -251,6 +252,7 @@ model CuentaProveedor {
   updatedAt          DateTime          @updatedAt
   proveedor          ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
   eventosProveedor   EventoProveedor[]
+  reunionesCompartidas ReunionProveedor[]
 
   @@unique([proveedorId, externalAccountId])
   @@index([proveedorId, activa, prioridad])
@@ -323,6 +325,7 @@ model InstanciaSala {
   costoReal                 Decimal?                              @db.Decimal(12, 2)
   solicitud                 SolicitudSala                         @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
   eventosProveedor          EventoProveedor[]
+  cambiosEnlaceCita         CambioEnlaceCita[]
   postulaciones             PostulacionAsistenciaTecnica[]
   asignaciones              AsignacionAsistenciaTecnica[]
   incidencias               Incidencia[]
@@ -347,6 +350,7 @@ model EventoProveedor {
   instanciaSalaId         String
   proveedorId             String
   cuentaProveedorId       String?
+  reunionProveedorId      String?
   externalEventId         String?
   codigoReunion           String?
   joinUrl                 String?
@@ -369,9 +373,11 @@ model EventoProveedor {
   instancia               InstanciaSala     @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
   proveedor               ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
   cuentaProveedor         CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  reunionProveedor        ReunionProveedor? @relation(fields: [reunionProveedorId], references: [id], onDelete: SetNull)
   archivos                ArchivoReunion[]
 
-  @@unique([proveedorId, externalEventId])
+  @@index([proveedorId, externalEventId])
+  @@index([reunionProveedorId])
   @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
   @@index([grabacionEstadoMeet, grabacionObservadaAt])
@@ -957,3 +963,64 @@ model RegistroAsistenciaMeet {
   @@index([instanciaSalaId, email])
 }
 
+/// Reunión externa compartida por todos los encuentros de una serie (Zoom recurrente sin horario fijo).
+model ReunionProveedor {
+  id                String             @id @default(cuid())
+  proveedorId       String
+  cuentaProveedorId String?
+  serieClave        String
+  externalId        String?
+  joinUrl           String?
+  /// PENDIENTE | CREANDO | CREADA | ELIMINADA
+  estadoCreacion    String             @default("PENDIENTE")
+  reclamoToken      String?
+  reclamoAt         DateTime?
+  estadoIntegracion EstadoIntegracion  @default(PENDIENTE)
+  errorIntegracion  String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  proveedor         ProveedorReunion   @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  cuentaProveedor   CuentaProveedor?   @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  eventos           EventoProveedor[]
+  cambiosCita       CambioEnlaceCita[]
+
+  @@unique([proveedorId, externalId])
+  @@unique([proveedorId, serieClave])
+}
+
+/// Avance del cambio de enlace en la cita de Calendar de cada encuentro, para reanudar sin repetir.
+model CambioEnlaceCita {
+  id                         String           @id @default(cuid())
+  instanciaSalaId            String
+  reunionProveedorId         String
+  enlaceNuevo                String
+  /// PENDIENTE | PARCHEADA | VERIFICADA
+  estado                     String           @default("PENDIENTE")
+  sinCita                    Boolean          @default(false)
+  reunionAnteriorExternalId  String?
+  eliminarDespuesDe          DateTime?
+  reunionAnteriorEliminadaAt DateTime?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+  instancia                  InstanciaSala    @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  reunion                    ReunionProveedor @relation(fields: [reunionProveedorId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaSalaId, reunionProveedorId])
+  @@index([eliminarDespuesDe])
+}
+
+/// Aviso de cambio de enlace por serie: único por serie, destinatario y tipo.
+model AvisoEnlaceSerie {
+  id         String    @id @default(cuid())
+  serieClave String
+  email      String
+  /// MIGRACION_SERIE | CORRECCION_ENLACE
+  tipo       String
+  estado     String    @default("RESERVADO")
+  enviadoAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([serieClave, email, tipo])
+  @@index([estado, updatedAt])
+}
