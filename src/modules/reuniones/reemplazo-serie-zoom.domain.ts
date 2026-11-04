@@ -56,7 +56,7 @@ export function planificarReemplazoSerieZoom(
     return { ...acc, copiar: [...acc.copiar, encuentro] };
   }, { errores: erroresIniciales, conservar: [], copiar: [] });
 
-  const ordenados = [...evaluados.copiar].sort((a, b) =>
+  const ordenados = evaluados.copiar.toSorted((a, b) =>
     a.inicio.getTime() - b.inicio.getTime() || a.id.localeCompare(b.id)
   );
   const superpuestos = ordenados.some((actual, indice) =>
