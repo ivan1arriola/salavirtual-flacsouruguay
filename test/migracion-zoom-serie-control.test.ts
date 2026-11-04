@@ -29,9 +29,9 @@ describe("pantalla de migración por serie", () => {
     expect(control).toContain("<ExcepcionMeetControl");
   });
 
-  it("la página elige la pantalla por serie solo con la bandera encendida", () => {
-    expect(pagina).toContain("reunionCompartidaHabilitada(process.env)");
+  it("la página usa siempre la pantalla por serie", () => {
+    expect(pagina).not.toContain("reunionCompartidaHabilitada");
     expect(pagina).toContain("<MigracionZoomSerieControl");
-    expect(pagina).toContain("<MigracionZoomAplicarControl");
+    expect(pagina).not.toContain("<MigracionZoomAplicarControl");
   });
 });

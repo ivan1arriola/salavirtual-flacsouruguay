@@ -111,7 +111,7 @@ type PreparacionSerie =
  * Calendar pendientes y no repite avisos. Los encuentros no cambian de enlace en Sala Virtual
  * hasta que cada cita de Calendar con enlace quedó verificada. Las reuniones antiguas se
  * conservan 7 días (`limpiarReunionesAntiguas`). Requiere el worker con soporte de reunión
- * compartida, pero no depende de la bandera `ZOOM_REUNION_COMPARTIDA`.
+ * compartida.
  */
 export async function corregirSerieEnlaces(
   deps: DependenciasCorreccionSerie,

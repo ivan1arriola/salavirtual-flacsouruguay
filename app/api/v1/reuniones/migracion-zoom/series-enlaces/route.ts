@@ -17,9 +17,8 @@ import { detectarSeriesConEnlacesDistintos } from "@/src/modules/reuniones/serie
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-// Esta ruta NO depende de la bandera ZOOM_REUNION_COMPARTIDA: corregir una serie crea una reunión
-// compartida, así que solo debe usarse con el worker que ya soporta reuniones compartidas
-// (sin versiones anteriores en ejecución).
+// Corregir una serie crea una reunión compartida, así que solo debe usarse con el worker que ya
+// soporta reuniones compartidas (sin versiones anteriores en ejecución).
 const bodySchema = z.union([
   z.object({
     modo: z.enum(["PILOTO", "LOTE"]),

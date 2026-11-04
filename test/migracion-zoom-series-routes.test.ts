@@ -5,7 +5,6 @@ const state = vi.hoisted(() => ({
   actor: null as null | { id: string; rol: string; activo: boolean },
   aplicar: vi.fn(),
   vistaPrevia: vi.fn(),
-  habilitada: true,
 }));
 
 vi.mock("next/server", () => ({
@@ -27,9 +26,6 @@ vi.mock("@/src/modules/reuniones/migracion-zoom-serie-aplicar.service", () => ({
 vi.mock("@/src/modules/reuniones/migracion-zoom-serie.service", () => ({
   obtenerVistaPreviaMigracionZoomPorSerie: state.vistaPrevia,
 }));
-vi.mock("@/src/modules/reuniones/reunion-compartida.domain", () => ({
-  reunionCompartidaHabilitada: () => state.habilitada,
-}));
 
 import { POST } from "../app/api/v1/reuniones/migracion-zoom/series/aplicar/route";
 import { GET } from "../app/api/v1/reuniones/migracion-zoom/series/vista-previa/route";
@@ -39,7 +35,6 @@ const post = (body: unknown) => new Request("http://localhost/x", { method: "POS
 beforeEach(() => {
   state.session = { user: { id: "u", email: "a@flacso.edu.uy", role: "ADMINISTRACION" } };
   state.actor = { id: "u", rol: "ADMINISTRACION", activo: true };
-  state.habilitada = true;
   state.aplicar.mockReset().mockResolvedValue([{ serieClave: "serie:s", resultado: "MIGRADA" }]);
   state.vistaPrevia.mockReset().mockResolvedValue({ modo: "SERIE", filas: [] });
 });
@@ -53,14 +48,6 @@ describe("rutas de migración por serie", () => {
     state.actor = { id: "u", rol: "ADMINISTRACION", activo: false };
     expect(((await POST(post({ modo: "PILOTO", serieClaves: ["serie:s"] }))) as any).status).toBe(401);
     expect(state.aplicar).not.toHaveBeenCalled();
-  });
-
-  it("con la bandera apagada responden 409 sin tocar nada", async () => {
-    state.habilitada = false;
-    expect(((await POST(post({ modo: "PILOTO", serieClaves: ["serie:s"] }))) as any).status).toBe(409);
-    expect(((await GET()) as any).status).toBe(409);
-    expect(state.aplicar).not.toHaveBeenCalled();
-    expect(state.vistaPrevia).not.toHaveBeenCalled();
   });
 
   it("valida el cuerpo: exige modo y claves y acota el lote", async () => {

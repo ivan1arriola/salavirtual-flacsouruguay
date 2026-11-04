@@ -241,19 +241,18 @@ El script `scripts/deploy-ec2.sh`:
 5. Conecta por SSH y ejecuta `deploy.sh` en `/srv/apps/salavirtual-flacso/source`.
 6. Verifica el healthcheck en tiempo real.
 
-## Reuniones de Zoom compartidas por serie (bandera `ZOOM_REUNION_COMPARTIDA`)
+## Reuniones de Zoom compartidas por serie
 
-Todos los encuentros de una serie en Zoom pasan a compartir una sola reunión (un solo enlace y una sola sala). La creación compartida está detrás de la variable `ZOOM_REUNION_COMPARTIDA`, apagada por defecto (`1` o `true` la enciende; cualquier otro valor la deja apagada). Con la bandera apagada todo funciona como antes.
+Todos los encuentros de una serie en Zoom comparten una sola reunión (un solo enlace y una sola sala). Es el único comportamiento: la bandera `ZOOM_REUNION_COMPARTIDA` se retiró y, si sigue definida en `.env.production`, se ignora (puede borrarse).
 
-Orden obligatorio:
+Requisito del primer despliegue con este cambio: no puede quedar ninguna versión anterior del worker en ejecución. Una versión vieja procesaría un `CANCELAR` sobre un evento con reunión compartida y borraría la reunión que usan los demás encuentros. Orden obligatorio:
 
-1. Desplegar la migración y el código con la bandera apagada.
-2. Comprobar que no queda ninguna versión anterior del worker en ejecución: una versión vieja procesaría un `CANCELAR` sobre un evento con reunión compartida y borraría la reunión que usan los demás encuentros.
-3. Agregar `ZOOM_REUNION_COMPARTIDA=1` a `/srv/apps/salavirtual-flacso/shared/.env.production` y reiniciar `salavirtual.service`.
-4. Probar una serie nueva de 3 encuentros: deben tener el mismo enlace; cancelar uno no debe borrar la reunión; cancelar el último sí.
-5. Recién entonces usar la migración de Meet a Zoom por serie y la corrección de series que ya tienen enlaces distintos.
+1. Detener el worker anterior y desplegar app y worker juntos con `deploy.sh`.
+2. Comprobar que solo corre la versión nueva del worker.
+3. Probar una serie nueva de 3 encuentros: deben tener el mismo enlace; cancelar uno no debe borrar la reunión; cancelar el último sí.
+4. Recién entonces usar la migración de Meet a Zoom por serie y la corrección de series que ya tienen enlaces distintos.
 
-Rollback: quitar la variable o ponerla en `0` y reiniciar. Las series ya creadas con reunión compartida conservan su enlace; solo deja de crearse la reunión compartida para series nuevas.
+Rollback: volver al despliegue anterior. Las series creadas con reunión compartida conservan su enlace; una versión anterior del código las trataría como eventos independientes, por lo que no debe reactivarse el worker viejo mientras existan.
 
 ## Segunda fase opcional: mover PostgreSQL a EC2
 
