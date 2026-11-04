@@ -98,3 +98,27 @@
   .zoom-series-add__buttons button { flex: 1 1 auto; }
 }
 @media (max-width: 370px) { .zoom-series-add__form { grid-template-columns: 1fr; } }
+
+
+/* Detectar y resolver discrepancias de ID o enlace en el detalle de Zoom. */
+.zoom-series-link-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  border: 1px solid #ebc876;
+  border-left: 4px solid #be8312;
+  border-radius: 11px;
+  background: #fff9eb;
+  padding: 15px 18px;
+  color: #44381c;
+}
+.zoom-series-link-warning > div { flex: 1 1 270px; min-width: 0; }
+.zoom-series-link-warning strong { display: block; font-size: .94rem; }
+.zoom-series-link-warning p { margin: 5px 0 0; font-size: .82rem; line-height: 1.5; }
+.zoom-series-link-warning :is(a, button) { min-height: 44px; }
+@media (max-width: 700px) {
+  .zoom-series-link-warning { align-items: stretch; padding: 13px; }
+  .zoom-series-link-warning > span, .zoom-series-link-warning :is(a, button) { width: 100%; }
+}
