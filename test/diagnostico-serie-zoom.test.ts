@@ -30,9 +30,16 @@ describe("diagnosticarSerieZoom", () => {
     expect(diagnostico({ encuentros: [meet()] })).toMatchObject({ clasificacion: "MIGRABLE", acciones: ["MIGRAR"] });
   });
 
-  it.each(["CREADA", "CREANDO"])("prioriza MEZCLADA sobre una reunión %s y ofrece MIGRAR sin unificación", (estado) => {
-    expect(diagnostico({ encuentros: [encuentro(), meet()], reuniones: [reunion(estado)] }))
+  it.each(["CREADA", "CREANDO"])("prioriza MEZCLADA sobre una reunión %s y, con los encuentros Zoom ya unificados, ofrece MIGRAR", (estado) => {
+    expect(diagnostico({ encuentros: [encuentro({ reunionProveedorId: "r1" }), meet()], reuniones: [reunion(estado)] }))
       .toMatchObject({ clasificacion: "MEZCLADA", acciones: ["MIGRAR", "VER_DETALLE"] });
+  });
+
+  it("una serie MEZCLADA cuyos encuentros en Zoom no comparten reunión ofrece primero UNIFICAR_ENLACE", () => {
+    expect(diagnostico({ encuentros: [encuentro(), encuentro({ instanciaId: "i2", joinUrl: "https://zoom.us/j/2" }), meet()] }))
+      .toMatchObject({ clasificacion: "MEZCLADA", acciones: ["UNIFICAR_ENLACE", "VER_DETALLE"] });
+    expect(diagnostico({ encuentros: [encuentro(), meet()] }))
+      .toMatchObject({ clasificacion: "MEZCLADA", acciones: ["UNIFICAR_ENLACE", "VER_DETALLE"] });
   });
 
   it("clasifica ENLACES_DISTINTOS y ofrece UNIFICAR_ENLACE y VER_DETALLE", () => {

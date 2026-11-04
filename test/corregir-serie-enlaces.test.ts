@@ -271,11 +271,28 @@ describe("corregirSerieEnlaces", () => {
     expect(e.zoomCreados.n).toBe(1);
   });
 
-  it("una serie mixta (Meet y Zoom) se omite sin cambios", async () => {
+  it("una serie mixta unifica solo los encuentros que ya están en Zoom y deja el de Meet para la migración", async () => {
     const e = crearEscenario({ mixta: true });
     const r = await corregir(e);
-    expect(r).toMatchObject({ resultado: "OMITIDA", etapa: "VALIDACION" });
+    expect(r).toMatchObject({ resultado: "CORREGIDA", etapa: "AVISOS", encuentros: 2, reintentable: false });
+    expect(e.zoomCreados.n).toBe(1);
+    const [z1, z2, z3] = eventosZoom(e);
+    for (const evento of [z1, z2]) {
+      expect(evento).toMatchObject({ reunionProveedorId: "r1", joinUrl: NUEVO, externalEventId: "999", cuentaProveedorId: "h1" });
+    }
+    expect(z3).toMatchObject({ reunionProveedorId: null, joinUrl: viejo(3) });
+    expect(e.instancias[2].proveedorActivoTipo).toBe("GOOGLE_MEET");
+    expect(e.cambios).toHaveLength(2);
+    expect(e.actualizar.mock.calls.map(([argumentos]: any[]) => argumentos.eventId)).not.toContain("cal-3");
+    expect(e.auditorias[0].valorNuevo.instanciaIds).toEqual(["i1", "i2"]);
+  });
+
+  it("una serie mixta cuyos encuentros en Zoom ya comparten reunión no cambia nada", async () => {
+    const e = crearEscenario({ mixta: true, unificada: true });
+    const r = await corregir(e);
+    expect(r).toMatchObject({ resultado: "YA_UNIFICADA" });
     expect(e.zoom.crearRecurrente).not.toHaveBeenCalled();
+    expect(e.actualizar).not.toHaveBeenCalled();
   });
 
   it("si la sala no está libre en todos los horarios la serie queda sin cambios", async () => {

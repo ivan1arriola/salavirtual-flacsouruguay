@@ -184,6 +184,25 @@ describe("aplicarMigracionZoomSerie", () => {
       });
     };
 
+    it("una serie mixta ya unificada completa los encuentros de Meet con la misma reunión, sin crear otra", async () => {
+      const e = crearEscenario();
+      e.reuniones.push({ id: "r-prev", proveedorId: "prov-zoom", cuentaProveedorId: "h1", serieClave: SERIE, estadoCreacion: "CREADA", externalId: "999", joinUrl: ZOOM, errorIntegracion: null });
+      for (const instancia of e.instancias.slice(0, 2)) {
+        instancia.proveedorActivoTipo = "ZOOM";
+        instancia.eventosProveedor.push({
+          id: `zoom-previo-${instancia.id}`, externalEventId: "999", joinUrl: ZOOM, estadoIntegracion: "SINCRONIZADA", operacionPendiente: null,
+          reunionProveedorId: "r-prev", cuentaProveedorId: "h1", cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }, proveedor: { tipo: "ZOOM" },
+        });
+      }
+      const [r] = await migrar(e);
+      expect(r).toMatchObject({ resultado: "MIGRADA", etapa: "FINAL", encuentros: 1 });
+      expect(e.reuniones).toHaveLength(1);
+      expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual(["ZOOM", "ZOOM", "ZOOM"]);
+      const zoom = e.instancias.flatMap((i) => i.eventosProveedor).filter((ev) => ev.proveedor.tipo === "ZOOM");
+      expect(new Set(zoom.map((ev) => ev.reunionProveedorId))).toEqual(new Set(["r-prev"]));
+      expect(new Set(zoom.map((ev) => ev.cuentaProveedorId))).toEqual(new Set(["h1"]));
+    });
+
     it.each([
       ["otra reunión Zoom distinta", "otra-reunion"],
       ["un evento Zoom sin reunión compartida", null],

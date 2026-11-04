@@ -21,6 +21,11 @@ export type EvaluacionEnlacesSerie = Readonly<{
   encuentrosZoom: number;
   /** La serie necesita corrección: más de un enlace o más de una cuenta, sin estar unificada ni mixta. */
   necesitaCorreccion: boolean;
+  /**
+   * Serie mixta cuyos encuentros en Zoom aún no comparten una reunión: hay que unificarlos (solo ellos)
+   * antes de migrar los que siguen en Meet, para que toda la serie termine con un único enlace.
+   */
+  mixtaSinUnificar: boolean;
 }>;
 
 const distintos = (valores: readonly (string | null)[]): number =>
@@ -50,5 +55,6 @@ export function evaluarEnlacesDeSerie(
     cuentasDistintas,
     encuentrosZoom: enZoom.length,
     necesitaCorreccion: !mixta && !unificada && enZoom.length > 1 && (enlacesDistintos > 1 || cuentasDistintas > 1),
+    mixtaSinUnificar: mixta && !unificada,
   };
 }
