@@ -137,10 +137,15 @@ export function describirResultadoSerie(
     const reintentable =
       Boolean(entrada.reintentable) && !noReintentablePorTexto;
 
+    // Un resultado exitoso solo es reintentable cuando quedaron avisos por correo sin enviar.
     return {
       titulo: plantilla.titulo,
-      detalle: plantilla.detalle,
-      accionSugerida: plantilla.accionSugerida,
+      detalle: reintentable
+        ? `${plantilla.detalle} Algunos avisos por correo quedaron sin enviar.`
+        : plantilla.detalle,
+      accionSugerida: reintentable
+        ? "Pulsá «Reintentar» para reenviar solo los avisos pendientes; los que ya se enviaron no se repiten."
+        : plantilla.accionSugerida,
       reintentable,
     };
   }

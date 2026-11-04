@@ -184,4 +184,18 @@ describe("describirResultadoSerie", () => {
     expect(msgMigracion.detalleTecnico).toBeUndefined();
     expect(msgCorreccion.detalleTecnico).toBeUndefined();
   });
+
+  it.each(["MIGRADA", "CORREGIDA", "YA_ZOOM", "YA_UNIFICADA"] as const)(
+    "un %s reintentable por avisos pendientes no dice que no hace falta hacer nada",
+    (resultado) => {
+      const mensaje = describirResultadoSerie({ resultado, reintentable: true });
+      expect(mensaje.reintentable).toBe(true);
+      expect(`${mensaje.detalle} ${mensaje.accionSugerida}`).toMatch(/avisos/i);
+      expect(`${mensaje.detalle} ${mensaje.accionSugerida}`).not.toMatch(/no (tenés que hacer nada|hace falta ninguna acción)/i);
+    },
+  );
+
+  it("un resultado exitoso sin reintento conserva su mensaje de «no hace falta nada»", () => {
+    expect(describirResultadoSerie({ resultado: "YA_UNIFICADA", reintentable: false }).accionSugerida).toMatch(/no hace falta/i);
+  });
 });
