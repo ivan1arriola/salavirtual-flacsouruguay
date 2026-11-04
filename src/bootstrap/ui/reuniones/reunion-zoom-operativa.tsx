@@ -109,7 +109,7 @@ export function ReunionZoomOperativa({
       </details>
       <OperationalIncidentForm instanciaId={reunion.id} />
       {esAsistente && reunion.asistencia.asignacionId && completada ? (
-        <OperationalAssistanceClosureForm assignmentId={reunion.asistencia.asignacionId}
+        <OperationalAssistanceClosureForm asignacionId={reunion.asistencia.asignacionId}
           inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
           finProgramado={reunion.asistencia.finAt.toISOString()}
           cierreConfirmado={reunion.asistencia.cierreConfirmado} />
