@@ -25,7 +25,7 @@ export function RecurrenceRuleEditor({ recurrence, requiresAssistance, meetingMo
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   return (
     <div className="recurrence-builder">
-      <div className="recurrence-guidance"><strong>1. Definí la repetición</strong><span>Indicá el período, el horario común y los días de la semana.</span></div>
+      <div className="recurrence-guidance"><strong>Definí la repetición</strong><span>Indicá el período, el horario común y los días de la semana.</span></div>
       <div className="recurrence-grid">
         <Field label="Fecha inicial"><input type="date" value={recurrence.desde} onChange={(event) => onChange("desde", event.target.value)} /></Field>
         <Field label="Fecha final"><input type="date" value={recurrence.hasta} onChange={(event) => onChange("hasta", event.target.value)} /></Field>
