@@ -14,7 +14,7 @@ import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 import { horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import type { Option, ProgramOption, MeetingDate, MeetingDateMode, RecurrenceState } from "./nueva-reunion/tipos";
-import { construirSolicitudReunion } from "./nueva-reunion/solicitud-reunion";
+import { construirSolicitudReunion, resolverAsistenteTecnicoId } from "./nueva-reunion/solicitud-reunion";
 
 const EMPTY_DATE: MeetingDate = {
   id: 0,
@@ -111,9 +111,7 @@ export function MeetingFormZoom({
           titulo: formData.get("titulo") as string,
           descripcion: (formData.get("descripcion") || undefined) as string | undefined,
           docenteProgramaId: selectedProgramId,
-          asistenteTecnicoId: canAssignAssistant && requiresAssistance && assistanceMode === "ASSIGN"
-            ? (formData.get("asistenteTecnicoId") || undefined) as string | undefined
-            : undefined,
+          asistenteTecnicoId: resolverAsistenteTecnicoId({ puedeAsignar: canAssignAssistant, requiereAsistencia: requiresAssistance, modoAsistencia: assistanceMode, valorSeleccionado: formData.get("asistenteTecnicoId") as string | null }),
           requiereAsistencia: requiresAssistance,
           requiereGrabacion: requiresRecording,
           modalidad: meetingMode,

@@ -50,3 +50,15 @@ export function construirSolicitudReunion({ titulo, descripcion, docentePrograma
 export function localMontevideoToIso(fecha: string, hora: string): string {
   return new Date(`${fecha}T${hora}:00-03:00`).toISOString();
 }
+
+/** Solo Administración asigna asistente, y solo si se pidió monitoreo en modo «Asignar ahora». */
+export function resolverAsistenteTecnicoId(entrada: Readonly<{
+  puedeAsignar: boolean;
+  requiereAsistencia: boolean;
+  modoAsistencia: "OPEN" | "ASSIGN";
+  valorSeleccionado: string | null | undefined;
+}>): string | undefined {
+  return entrada.puedeAsignar && entrada.requiereAsistencia && entrada.modoAsistencia === "ASSIGN"
+    ? entrada.valorSeleccionado || undefined
+    : undefined;
+}

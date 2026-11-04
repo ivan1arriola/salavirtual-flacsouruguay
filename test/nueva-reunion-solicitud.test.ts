@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { construirSolicitudReunion, localMontevideoToIso, type EntradaSolicitud } from "../src/modules/reuniones/presentation/components/nueva-reunion/solicitud-reunion";
+import { construirSolicitudReunion, localMontevideoToIso, resolverAsistenteTecnicoId, type EntradaSolicitud } from "../src/modules/reuniones/presentation/components/nueva-reunion/solicitud-reunion";
 import { asistenciaLocalAIso } from "../src/modules/reuniones/horarios-asistencia.adapter";
 import { sugerirHorarioAsistencia } from "../src/modules/reuniones/horarios-asistencia.domain";
 
@@ -48,5 +48,23 @@ describe("construcción de la solicitud de reunión", () => {
   it("propaga el asistente solo cuando viene resuelto en la entrada", () => {
     expect(construirSolicitudReunion(entrada).asistenteTecnicoId).toBeUndefined();
     expect(construirSolicitudReunion({ ...entrada, asistenteTecnicoId: "asistente" }).asistenteTecnicoId).toBe("asistente");
+  });
+});
+
+describe("asignación directa de asistente", () => {
+  const base = { puedeAsignar: true, requiereAsistencia: true, modoAsistencia: "ASSIGN", valorSeleccionado: "asistente-1" } as const;
+
+  it("asigna solo con permiso, monitoreo solicitado y modo «Asignar ahora»", () => {
+    expect(resolverAsistenteTecnicoId(base)).toBe("asistente-1");
+  });
+
+  it.each([
+    ["sin permiso de Administración", { puedeAsignar: false }],
+    ["sin monitoreo solicitado", { requiereAsistencia: false }],
+    ["en modo abierto a postulaciones", { modoAsistencia: "OPEN" }],
+    ["con selección vacía", { valorSeleccionado: "" }],
+    ["sin campo en el formulario", { valorSeleccionado: null }]
+  ] as const)("no asigna %s", (_nombre, cambio) => {
+    expect(resolverAsistenteTecnicoId({ ...base, ...cambio })).toBeUndefined();
   });
 });
