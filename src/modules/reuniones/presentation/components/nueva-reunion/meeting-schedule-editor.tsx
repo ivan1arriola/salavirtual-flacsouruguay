@@ -5,7 +5,7 @@ import { MeetingInstancesEditor, type MeetingInstancesEditorProps } from "./meet
 import { RecurrenceRuleEditor } from "./recurrence-rule-editor";
 import type { MeetingDateMode, RecurrenceState } from "./tipos";
 
-export function MeetingScheduleEditor({ dates, dateMode, requiresAssistance, meetingMode, recurrence, message, recurrenceGenerated, recurrenceReviewRef, onModeChange, onChange, onRecurrenceTimeChange, onGenerate, onFieldChange, onTimeChange, onRemove, onAdd }: MeetingInstancesEditorProps & Readonly<{
+export function MeetingScheduleEditor({ dates, dateMode, requiresAssistance, meetingMode, recurrence, message, recurrenceGenerated, recurrenceReviewRef, onModeChange, onChange, onRecurrenceTimeChange, onGenerate, onFieldChange, onTimeChange, onRemove, onAdd, onDuplicate, onSort }: MeetingInstancesEditorProps & Readonly<{
   recurrence: RecurrenceState;
   message: string;
   recurrenceGenerated: boolean;
@@ -16,13 +16,12 @@ export function MeetingScheduleEditor({ dates, dateMode, requiresAssistance, mee
   onGenerate: () => void;
 }>) {
   return (
-    <FormSection id="fechas" icon={<CalendarDays size={19} />} number="2" title="Fechas" detail="Todos los horarios se interpretan en UTC-3 · Montevideo.">
-      <fieldset className="date-mode-selector">
+    <FormSection id="fechas" icon={<CalendarDays size={19} />} title="Fechas" detail="Todos los horarios se interpretan en UTC-3 · Montevideo.">
+      {dateMode !== "SINGLE" ? <fieldset className="date-mode-selector">
         <legend>¿Cómo querés definir las fechas?</legend>
-        <label><input type="radio" name="dateMode" value="SINGLE" checked={dateMode === "SINGLE"} onChange={() => onModeChange("SINGLE")} /><span className="option-copy"><strong>Una fecha</strong><small>Un único encuentro</small></span></label>
         <label><input type="radio" name="dateMode" value="RECURRENT" checked={dateMode === "RECURRENT"} onChange={() => onModeChange("RECURRENT")} /><span className="option-copy"><strong>Repetición semanal</strong><small>Elegí un período, días y horario</small></span></label>
         <label><input type="radio" name="dateMode" value="MANUAL" checked={dateMode === "MANUAL"} onChange={() => onModeChange("MANUAL")} /><span className="option-copy"><strong>Fechas específicas</strong><small>Cargá cada encuentro por separado</small></span></label>
-      </fieldset>
+      </fieldset> : null}
       {requiresAssistance ? (
         <div className={`meeting-assistance-hint${meetingMode === "VIRTUAL" ? " is-virtual" : ""}`} role="note">
           <Clock3 size={19} aria-hidden="true" />
@@ -39,12 +38,12 @@ export function MeetingScheduleEditor({ dates, dateMode, requiresAssistance, mee
         ) : null}
         {dateMode === "MANUAL" || recurrenceGenerated ? (
           <div className={dateMode === "RECURRENT" ? "generated-dates-heading recurrence-review-heading" : "generated-dates-heading"} ref={dateMode === "RECURRENT" ? recurrenceReviewRef : undefined}>
-            <div><strong>{dateMode === "RECURRENT" ? "2. Revisá y ajustá los encuentros" : "Fechas cargadas manualmente"}</strong>{dateMode === "RECURRENT" ? <small>Podés cambiar fechas y horarios, quitar encuentros o agregar excepciones.</small> : null}</div>
-            <span className="date-count">{dates.length}</span>
+            <div><strong>{dateMode === "RECURRENT" ? "Revisá y ajustá los encuentros" : "Fechas específicas"}</strong><small>Se muestran en orden cronológico. Podés duplicar, quitar o agregar encuentros.</small></div>
+            <span className="date-count">{dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}</span>
           </div>
         ) : null}
         {dateMode !== "RECURRENT" || recurrenceGenerated ? (
-          <MeetingInstancesEditor dates={dates} dateMode={dateMode} requiresAssistance={requiresAssistance} meetingMode={meetingMode} onFieldChange={onFieldChange} onTimeChange={onTimeChange} onRemove={onRemove} onAdd={onAdd} />
+          <MeetingInstancesEditor dates={dates} dateMode={dateMode} requiresAssistance={requiresAssistance} meetingMode={meetingMode} onFieldChange={onFieldChange} onTimeChange={onTimeChange} onRemove={onRemove} onAdd={onAdd} onDuplicate={onDuplicate} onSort={onSort} />
         ) : null}
       </div>
     </FormSection>

@@ -2,7 +2,6 @@
 
 import {
   CalendarPlus,
-  CheckCircle2,
   LoaderCircle
 } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -15,6 +14,9 @@ import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.do
 import { horarioAsistenciaCumpleMargen, sincronizarHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import type { Option, ProgramOption, MeetingDate, MeetingDateMode, RecurrenceState } from "./nueva-reunion/tipos";
 import { construirSolicitudReunion, resolverAsistenteTecnicoId } from "./nueva-reunion/solicitud-reunion";
+import { MeetingTypeSelector } from "./nueva-reunion/meeting-type-selector";
+import { duplicarEncuentro, fechaIsoValida, fechasAlCambiarModo, invalidarRecurrencia, ordenarEncuentros, requiereConfirmacionCambio } from "./nueva-reunion/fechas-formulario";
+import styles from "./nueva-reunion/nueva-reunion.module.css";
 
 const EMPTY_DATE: MeetingDate = {
   id: 0,
@@ -39,6 +41,7 @@ export function MeetingFormZoom({
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<readonly MeetingDate[]>([EMPTY_DATE]);
   const [dateMode, setDateMode] = useState<MeetingDateMode>("SINGLE");
+  const [pendingMode, setPendingMode] = useState<MeetingDateMode | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceState>({
     desde: "",
     hasta: "",
@@ -54,6 +57,7 @@ export function MeetingFormZoom({
   const [requiresAssistance, setRequiresAssistance] = useState(false);
   const [requiresRecording, setRequiresRecording] = useState(false);
   const [assistanceMode, setAssistanceMode] = useState<"OPEN" | "ASSIGN">("OPEN");
+  const [selectedAssistantId, setSelectedAssistantId] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [createdMeetingId, setCreatedMeetingId] = useState<string>();
@@ -70,15 +74,16 @@ export function MeetingFormZoom({
 
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const academicReady = title.trim().length >= 3 && Boolean(selectedProgram);
-  const datesReady = dates.length > 0 && dates.every((date) =>
-    Boolean(date.fecha && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
+  const datesReady = dates.length > 0 && dates.length <= 100 && (dateMode !== "SINGLE" || dates.length === 1) && (dateMode !== "RECURRENT" || recurrenceGenerated) && dates.every((date) =>
+    Boolean(fechaIsoValida(date.fecha) && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
     (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode))
   );
-  const isReady = academicReady && datesReady;
+  const isReady = academicReady && datesReady && !pendingMode;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submittingRef.current) return;
+    if (pendingMode) return;
     if (!selectedProgram) {
       setStatus("error");
       setMessage("Seleccioná el programa y docente antes de crear la reunión.");
@@ -115,7 +120,7 @@ export function MeetingFormZoom({
           requiereAsistencia: requiresAssistance,
           requiereGrabacion: requiresRecording,
           modalidad: meetingMode,
-          fechas: dates
+          fechas: ordenarEncuentros(dates)
         }))
       });
       const result = await response.json();
@@ -170,9 +175,10 @@ export function MeetingFormZoom({
   }
 
   function invalidarVistaPreviaRecurrencia() {
-    setRecurrenceGenerated(false);
-    setDates([]);
-    setRecurrenceMessage("");
+    const invalidada = invalidarRecurrencia();
+    setRecurrenceGenerated(invalidada.recurrenceGenerated);
+    setDates(invalidada.dates);
+    setRecurrenceMessage(invalidada.recurrenceMessage);
   }
 
   function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
@@ -211,21 +217,26 @@ export function MeetingFormZoom({
   }
 
   function setMeetingDateMode(mode: MeetingDateMode) {
+    if (mode === dateMode) return;
+    if (requiereConfirmacionCambio(dateMode, mode, dates, recurrence)) {
+      setPendingMode(mode);
+      return;
+    }
+    confirmarModo(mode);
+  }
+
+  function confirmarModo(mode: MeetingDateMode) {
     setDateMode(mode);
     setRecurrenceMessage("");
     setRecurrenceGenerated(false);
-    if (mode === "SINGLE") setDates([dates[0] ?? nuevaFecha()]);
-    else if (mode === "RECURRENT") setDates([]);
-    else if (dates.length === 0) setDates([nuevaFecha()]);
+    setDates(fechasAlCambiarModo(mode, dates, nuevaFecha));
+    setPendingMode(null);
   }
 
   return (
-    <form className="meeting-form meeting-form-v2" onSubmit={submit} aria-busy={status === "saving"}>
-      <nav className="meeting-form-steps" aria-label="Secciones del formulario">
-        <a className={academicReady ? "is-complete" : ""} href="#datos-academicos" aria-label={academicReady ? "Datos académicos completos" : "Ir a datos académicos"}><span>{academicReady ? <CheckCircle2 size={17} aria-hidden="true" /> : "1"}</span><div><strong>Datos</strong><small>Programa y título</small></div></a>
-        <a className={datesReady ? "is-complete" : ""} href="#fechas" aria-label={datesReady ? "Fechas completas" : "Ir a fechas"}><span>{datesReady ? <CheckCircle2 size={17} aria-hidden="true" /> : "2"}</span><div><strong>Fechas</strong><small>Encuentros</small></div></a>
-        <a href="#organizacion" aria-label="Ir a opciones"><span>3</span><div><strong>Opciones</strong><small>Grabación y soporte</small></div></a>
-      </nav>
+    <form className={styles.form} onSubmit={submit} aria-busy={status === "saving"}>
+      <div className={styles.fields}>
+      <MeetingTypeSelector dateMode={dateMode} onModeChange={setMeetingDateMode} pendingMode={pendingMode} onConfirm={() => { if (pendingMode) confirmarModo(pendingMode); }} onCancel={() => setPendingMode(null)} />
 
       <AcademicDetails programs={programs} selectedProgramId={selectedProgramId} onProgramChange={setSelectedProgramId} title={title} onTitleChange={setTitle} />
 
@@ -238,22 +249,25 @@ export function MeetingFormZoom({
         onFieldChange={(index, campo, value) => setDates(updateDate(dates, index, campo, value))}
         onTimeChange={cambiarHoraEncuentro}
         onRemove={(index) => setDates(dates.filter((_, current) => current !== index))}
-        onAdd={() => setDates([...dates, nuevaFecha()])}
+        onAdd={() => { if (dates.length < 100) setDates([...dates, nuevaFecha()]); }}
+        onSort={() => setDates(ordenarEncuentros(dates))}
+        onDuplicate={(index) => { if (dates.length < 100) setDates([...dates, duplicarEncuentro(dates[index], siguienteIdFechaRef.current++)]); }}
       />
 
       <MeetingOptions
         requiresAssistance={requiresAssistance} requiresRecording={requiresRecording} meetingMode={meetingMode}
         assistanceMode={assistanceMode} canAssignAssistant={canAssignAssistant} assistants={assistants}
+        selectedAssistantId={selectedAssistantId} onAssistantChange={setSelectedAssistantId}
         onRequiresAssistanceChange={cambiarRequiereAsistencia} onRequiresRecordingChange={setRequiresRecording}
         onModeChange={cambiarModalidad} onAssistanceModeChange={setAssistanceMode}
       />
+      </div>
 
-      <footer className="form-actions meeting-form-actions-v2">
+      <MeetingSummary dates={dates} dateMode={dateMode} selectedProgram={selectedProgram} isReady={isReady} academicReady={academicReady} requiresAssistance={requiresAssistance} requiresRecording={requiresRecording} meetingMode={meetingMode} canAssignAssistant={canAssignAssistant} assistanceMode={assistanceMode} selectedAssistant={assistants.find((assistant) => assistant.id === selectedAssistantId)} />
+
+      <footer className={styles.actions}>
         {status === "saving" ? <p className="form-message saving" role="status">Creando la reunión y configurando Zoom…</p> : null}
         {status === "error" ? <p className="form-message" role="alert" ref={mensajeErrorRef} tabIndex={-1}>{message}</p> : null}
-        {status !== "saving" && status !== "error" ? (
-          <MeetingSummary count={dates.length} isReady={isReady} hasProgram={Boolean(selectedProgram)} academicReady={academicReady} requiresAssistance={requiresAssistance} requiresRecording={requiresRecording} />
-        ) : null}
         <button className="primary-action" type="submit" disabled={!isReady || status === "saving" || status === "done"}>
           {status === "saving" ? <LoaderCircle className="button-spinner" size={18} /> : <CalendarPlus size={18} />}
           {status === "saving" ? "Creando reunión…" : dates.length === 0 ? "Definí las fechas" : `Crear ${dates.length === 1 ? "reunión" : `${dates.length} encuentros`}`}

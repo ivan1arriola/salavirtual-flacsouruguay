@@ -1,7 +1,8 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 import { horarioAsistenciaCumpleMargen, sugerirHorarioAsistencia } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import { Field } from "./form-primitives";
 import type { MeetingDate, MeetingDateMode } from "./tipos";
+import { detectarSolapamientos, ordenarEncuentros } from "./fechas-formulario";
 
 export type MeetingInstancesEditorProps = Readonly<{
   dates: readonly MeetingDate[];
@@ -12,16 +13,24 @@ export type MeetingInstancesEditorProps = Readonly<{
   onTimeChange: (index: number, campo: "horaInicio" | "horaFin", value: string) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
+  onDuplicate: (index: number) => void;
+  /** Ordena cronológicamente a pedido; nunca mientras se edita una fila. */
+  onSort?: () => void;
 }>;
 
-export function MeetingInstancesEditor({ dates, dateMode, requiresAssistance, meetingMode, onFieldChange, onTimeChange, onRemove, onAdd }: MeetingInstancesEditorProps) {
+export function MeetingInstancesEditor({ dates, dateMode, requiresAssistance, meetingMode, onFieldChange, onTimeChange, onRemove, onAdd, onDuplicate, onSort }: MeetingInstancesEditorProps) {
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
+  const desordenadas = ordenarEncuentros(dates).some((fila, i) => fila.id !== dates[i].id);
+  const solapamientos = detectarSolapamientos(dates);
   return (
     <>
-      <div className={`date-rows${dates.length > 5 ? " is-scrollable" : ""}`}>
-        {dates.map((date, index) => (
+      {solapamientos.length ? <p className="meeting-date-warning" role="note"><strong>Hay encuentros que se solapan.</strong> Revisá las fechas y horarios. Podés continuar si son correctos.</p> : null}
+      <div className="date-rows">
+        {dates.map((date, index) => {
+          const posicion = index;
+          return (
           <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={date.id}>
-            {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{index + 1}</span> : null}
+            {dateMode !== "SINGLE" ? <span className="date-row-number" aria-hidden="true">{posicion + 1}</span> : null}
             <Field label="Fecha"><input type="date" required value={date.fecha} onChange={(event) => onFieldChange(index, "fecha", event.target.value)} /></Field>
             <Field label="Hora de inicio"><input type="time" required value={date.horaInicio} onChange={(event) => onTimeChange(index, "horaInicio", event.target.value)} /></Field>
             <Field label="Hora de fin"><input type="time" required value={date.horaFin} onChange={(event) => onTimeChange(index, "horaFin", event.target.value)} /></Field>
@@ -42,7 +51,10 @@ export function MeetingInstancesEditor({ dates, dateMode, requiresAssistance, me
                 </div>
               </div>
             ) : null}
-            {dateMode !== "SINGLE" ? <button className="icon-button remove-date" type="button" title={`Quitar encuentro ${index + 1}`} onClick={() => onRemove(index)}><Trash2 size={18} /><span className="sr-only">Quitar encuentro {index + 1}</span></button> : null}
+            {dateMode !== "SINGLE" ? <div className="date-row-actions">
+              <button type="button" aria-label={`Duplicar encuentro ${posicion + 1}`} disabled={dates.length >= 100} onClick={() => onDuplicate(index)}><Copy size={18} aria-hidden="true" />Duplicar</button>
+              <button type="button" title={`Quitar encuentro ${posicion + 1}`} aria-label={`Quitar encuentro ${posicion + 1}`} onClick={() => onRemove(index)}><Trash2 size={18} aria-hidden="true" />Quitar</button>
+            </div> : null}
             <details className="meeting-date-notes" key={dateMode + "-" + date.id + "-notes"}>
               <summary><Plus size={15} aria-hidden="true" /> Notas del encuentro <span>(opcional)</span></summary>
               <label className="field date-description"><span>Descripción de este encuentro</span><textarea rows={2} value={date.descripcion} placeholder="Si queda vacía, se usará la descripción general" onChange={(event) => onFieldChange(index, "descripcion", event.target.value)} /></label>
@@ -50,9 +62,11 @@ export function MeetingInstancesEditor({ dates, dateMode, requiresAssistance, me
             {date.horaInicio && date.horaFin && date.horaFin <= date.horaInicio ? <p className="meeting-date-warning" role="status">La hora de fin debe ser posterior a la de inicio.</p> : null}
             {requiereHorarioPresencial && date.horaInicio && date.horaFin && date.horaAsistenciaInicio && date.horaAsistenciaFin && !horarioAsistenciaCumpleMargen(date) ? <p className="meeting-date-warning" role="alert">El asistente debe llegar al menos 30 minutos antes y salir 30 minutos después del encuentro.</p> : null}
           </div>
-        ))}
+        );})}
       </div>
-      {dateMode !== "SINGLE" ? <button className="secondary-action add-date" type="button" onClick={onAdd}><Plus size={17} />{dateMode === "RECURRENT" ? "Agregar encuentro a la serie" : "Agregar otra fecha"}</button> : null}
+      {dateMode !== "SINGLE" && desordenadas && onSort ? <button className="secondary-action" type="button" data-accion="ordenar" onClick={onSort}>Ordenar por fecha y hora</button> : null}
+      {dateMode !== "SINGLE" ? <button className="secondary-action add-date" type="button" disabled={dates.length >= 100} onClick={onAdd}><Plus size={17} aria-hidden="true" />{dateMode === "RECURRENT" ? "Agregar encuentro a la serie" : "Agregar otra fecha"}</button> : null}
+      {dates.length >= 100 ? <p role="note">Máximo de 100 encuentros. Quitá uno para agregar otra fecha.</p> : null}
     </>
   );
 }

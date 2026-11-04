@@ -31,8 +31,8 @@ export function ChoicePanel({
 }
 
 
-export function FormSection({ id, icon, number, title, detail, children }: Readonly<{ id: string; icon: React.ReactNode; number: string; title: string; detail: string; children: React.ReactNode }>) {
-  return <section className="form-section" id={id}><div className="form-section-title"><span>{icon}</span><div><p>Paso {number}</p><h2>{title}</h2><small>{detail}</small></div></div>{children}</section>;
+export function FormSection({ id, icon, title, detail, children }: Readonly<{ id: string; icon: React.ReactNode; title: string; detail: string; children: React.ReactNode }>) {
+  return <section className="form-section" id={id}><div className="form-section-title"><span aria-hidden="true">{icon}</span><div><h2>{title}</h2><small>{detail}</small></div></div>{children}</section>;
 }
 
 export function Field({ label, wide = false, children }: Readonly<{ label: string; wide?: boolean; children: React.ReactNode }>) {

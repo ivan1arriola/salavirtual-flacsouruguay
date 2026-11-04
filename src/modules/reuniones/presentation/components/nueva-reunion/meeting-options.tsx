@@ -2,13 +2,15 @@ import { Clock3, UsersRound } from "lucide-react";
 import { ChoicePanel, Field, FormSection } from "./form-primitives";
 import type { Option } from "./tipos";
 
-export function MeetingOptions({ requiresAssistance, requiresRecording, meetingMode, assistanceMode, canAssignAssistant, assistants, onRequiresAssistanceChange, onRequiresRecordingChange, onModeChange, onAssistanceModeChange }: Readonly<{
+export function MeetingOptions({ requiresAssistance, requiresRecording, meetingMode, assistanceMode, canAssignAssistant, assistants, selectedAssistantId = "", onAssistantChange, onRequiresAssistanceChange, onRequiresRecordingChange, onModeChange, onAssistanceModeChange }: Readonly<{
   requiresAssistance: boolean;
   requiresRecording: boolean;
   meetingMode: "VIRTUAL" | "HIBRIDA";
   assistanceMode: "OPEN" | "ASSIGN";
   canAssignAssistant: boolean;
   assistants: readonly Option[];
+  selectedAssistantId?: string;
+  onAssistantChange?: (id: string) => void;
   onRequiresAssistanceChange: (value: boolean) => void;
   onRequiresRecordingChange: (value: boolean) => void;
   onModeChange: (mode: "VIRTUAL" | "HIBRIDA") => void;
@@ -16,20 +18,9 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
 }>) {
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   return (
-    <FormSection id="organizacion" icon={<UsersRound size={19} />} number="3" title="Opciones" detail="Indicá si debe grabarse y si requiere un asistente técnico.">
+    <FormSection id="organizacion" icon={<UsersRound size={19} />} title="Organización" detail="Indicá si debe grabarse y si requiere un asistente técnico.">
       <div className="organization-v2">
         <section className="organization-support-grid" aria-label="Soporte y grabación">
-          <ChoicePanel
-            title="Monitoreo"
-            detail="¿Necesitás que un asistente de monitoreo participe?"
-            name="requiereAsistenciaTecnica"
-            value={requiresAssistance}
-            noLabel="No requiere"
-            noDetail="La reunión puede realizarse sin monitoreo."
-            yesLabel="Sí, solicitar"
-            yesDetail="Se asignará un asistente de monitoreo."
-            onChange={onRequiresAssistanceChange}
-          />
           <ChoicePanel
             title="Grabación"
             detail="¿La reunión debe quedar grabada?"
@@ -40,6 +31,17 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
             yesLabel="Sí, grabar"
             yesDetail="El encuentro deberá grabarse."
             onChange={onRequiresRecordingChange}
+          />
+          <ChoicePanel
+            title="Monitoreo"
+            detail="¿Necesitás que un asistente de monitoreo participe?"
+            name="requiereAsistenciaTecnica"
+            value={requiresAssistance}
+            noLabel="No requiere"
+            noDetail="La reunión puede realizarse sin monitoreo."
+            yesLabel="Sí, solicitar"
+            yesDetail="Se asignará un asistente de monitoreo."
+            onChange={onRequiresAssistanceChange}
           />
         </section>
 
@@ -73,12 +75,13 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
             </fieldset>
             {canAssignAssistant ? (
               <fieldset className="assistance-choice organization-assistance-choice">
+                <legend>Asignación del asistente</legend>
                 <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => onAssistanceModeChange("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
                 <label className={assistants.length === 0 ? "is-disabled" : ""}><input type="radio" name="modoAsistencia" value="ASSIGN" disabled={assistants.length === 0} checked={assistanceMode === "ASSIGN"} onChange={() => onAssistanceModeChange("ASSIGN")} /><span className="option-copy"><strong>Asignar ahora</strong><small>{assistants.length > 0 ? `${assistants.length} asistentes disponibles` : "No hay asistentes disponibles"}</small></span></label>
               </fieldset>
             ) : <span className="status status-warning">Abierta a postulaciones</span>}
             {canAssignAssistant && assistanceMode === "ASSIGN" ? (
-              <Field label="Asistente de monitoreo"><select name="asistenteTecnicoId" required defaultValue=""><option value="" disabled>Seleccionar asistente de monitoreo</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select></Field>
+              <Field label="Asistente de monitoreo"><select name="asistenteTecnicoId" required value={selectedAssistantId} onChange={(event) => onAssistantChange?.(event.target.value)}><option value="" disabled>Seleccioná un asistente de monitoreo</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select></Field>
             ) : null}
           </section>
         ) : null}

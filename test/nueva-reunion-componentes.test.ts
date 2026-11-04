@@ -9,7 +9,8 @@ import { MeetingScheduleEditor } from "../src/modules/reuniones/presentation/com
 import { MeetingOptions } from "../src/modules/reuniones/presentation/components/nueva-reunion/meeting-options";
 
 const sinCambios = () => {};
-const resumen = { count: 1, isReady: false, hasProgram: true, academicReady: true, requiresAssistance: false, requiresRecording: false };
+const fecha = { id: 1, fecha: "2026-11-10", horaInicio: "10:00", horaFin: "17:00", horaAsistenciaInicio: "09:30", horaAsistenciaFin: "17:30", descripcion: "" };
+const resumen: Parameters<typeof MeetingSummary>[0] = { dates: [fecha], dateMode: "SINGLE", selectedProgram: { id: "uno", label: "Programa uno", teacher: "Ana" }, isReady: false, academicReady: true, requiresAssistance: false, requiresRecording: false, meetingMode: "VIRTUAL", canAssignAssistant: false, assistanceMode: "OPEN" };
 
 describe("datos académicos y resumen", () => {
   it("conserva campos, restricciones y etiquetas de cada programa y docente", () => {
@@ -24,7 +25,7 @@ describe("datos académicos y resumen", () => {
   });
   it.each([
     [{ isReady: true }, "Listo para crear"],
-    [{ hasProgram: false, academicReady: false }, "Elegí un programa"],
+    [{ selectedProgram: undefined, academicReady: false }, "Elegí un programa"],
     [{ academicReady: false }, "Completá el título"],
     [{}, "Revisá fechas y horarios"]
   ])("comunica el estado del formulario: %s", (cambios, texto) => {
@@ -34,7 +35,7 @@ describe("datos académicos y resumen", () => {
   });
   it("conserva singular, plural y las opciones del resumen", () => {
     const uno = renderToStaticMarkup(createElement(MeetingSummary, resumen));
-    const dos = renderToStaticMarkup(createElement(MeetingSummary, { ...resumen, count: 2, requiresAssistance: true, requiresRecording: true }));
+    const dos = renderToStaticMarkup(createElement(MeetingSummary, { ...resumen, dates: [fecha, { ...fecha, id: 2 }], requiresAssistance: true, requiresRecording: true }));
     expect(uno).toContain("1 encuentro");
     expect(uno).toContain("Sin monitoreo · Sin grabación");
     expect(dos).toContain("2 encuentros");
@@ -42,13 +43,12 @@ describe("datos académicos y resumen", () => {
   });
 });
 
-const fecha = { id: 1, fecha: "2026-11-10", horaInicio: "10:00", horaFin: "17:00", horaAsistenciaInicio: "09:30", horaAsistenciaFin: "17:30", descripcion: "" };
 const recurrencia = { desde: "2026-11-10", hasta: "2026-11-20", diasSemana: [2], horaInicio: "10:00", horaFin: "17:00", horaAsistenciaInicio: "09:45", horaAsistenciaFin: "17:00" };
 
 function renderizarFechas(cambios: Partial<Parameters<typeof MeetingScheduleEditor>[0]> = {}) {
   return renderToStaticMarkup(createElement(MeetingScheduleEditor, {
     dates: [fecha], dateMode: "SINGLE", requiresAssistance: false, meetingMode: "VIRTUAL", recurrence: recurrencia, message: "", recurrenceGenerated: false, recurrenceReviewRef: { current: null },
-    onChange: sinCambios, onRecurrenceTimeChange: sinCambios, onGenerate: sinCambios, onFieldChange: sinCambios, onTimeChange: sinCambios, onRemove: sinCambios, onAdd: sinCambios, onModeChange: sinCambios,
+    onChange: sinCambios, onRecurrenceTimeChange: sinCambios, onGenerate: sinCambios, onFieldChange: sinCambios, onTimeChange: sinCambios, onRemove: sinCambios, onAdd: sinCambios, onDuplicate: sinCambios, onModeChange: sinCambios,
     ...cambios
   }));
 }
@@ -59,7 +59,7 @@ describe("editores de fechas", () => {
     expect(html.match(/class="date-row date-row-single"/g)).toHaveLength(1);
     expect(html).not.toContain("Quitar encuentro");
     expect(html).not.toContain("Agregar otra fecha");
-    expect(html).toContain('class="date-mode-selector"');
+    expect(html).not.toContain('class="date-mode-selector"');
   });
   it("numera las fechas manuales y permite agregar y quitar", () => {
     const html = renderizarFechas({ dateMode: "MANUAL", dates: [fecha, { ...fecha, id: 2 }] });
@@ -81,7 +81,7 @@ describe("editores de fechas", () => {
   it("muestra la revisión y las filas después de generar la serie", () => {
     const html = renderizarFechas({ dateMode: "RECURRENT", recurrenceGenerated: true });
     expect(html).toContain('class="date-row"');
-    expect(html).toContain("2. Revisá y ajustá los encuentros");
+    expect(html).toContain("Revisá y ajustá los encuentros");
     expect(html).toContain("Agregar encuentro a la serie");
   });
   it("permite editar la cobertura híbrida y calcula la virtual fija", () => {
