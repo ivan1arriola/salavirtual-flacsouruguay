@@ -1,17 +1,18 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays, Repeat2, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
+import { CorregirSerieZoomBoton } from "@/src/components/corregir-serie-zoom-boton";
 import { puedeVerEnlaceAnfitrion } from "@/src/modules/reuniones/enlace-anfitrion.domain";
 import { proveedorActivoDeInstancia, type ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
-import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
+import { claveSerieReunion, construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
 import { ReunionZoomEncuentros } from "@/src/modules/reuniones/presentation/components/reunion-zoom-encuentros";
 
 export default async function ReunionZoomDetailPage({
@@ -72,6 +73,7 @@ export default async function ReunionZoomDetailPage({
       puedeCancelar: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
       puedeUnirse,
       joinUrl: enlace.joinUrl,
+      zoomMeetingId: activo?.proveedor.tipo === "ZOOM" ? (activo.codigoReunion ?? activo.externalEventId ?? null) : null,
       puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
       estadoEnlace: enlace.estado,
       eventoProveedorId: enlace.eventoProveedorId,
@@ -80,23 +82,73 @@ export default async function ReunionZoomDetailPage({
     });
   }).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
+  const zoomActivos = serie.flatMap(({ instancias }) => instancias.filter((instancia) => instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM"));
+  const eventosZoom = zoomActivos.map((instancia) => seleccionarEventoProveedorActivo(instancia));
+  const idsCompartidos = [...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean))];
+  const permiteAgregarCompartida = !otroProveedor && zoomActivos.length > 0 && idsCompartidos.length === 1 && eventosZoom.every((evento) => evento?.reunionProveedorId === idsCompartidos[0]);
+  // Una serie Zoom debe compartir el mismo ID externo, enlace y anfitrión.
+  // Se omiten encuentros cancelados: no deben disparar correcciones operativas.
+  const distintos = (valores: readonly (string | null | undefined)[]) =>
+    new Set(valores.filter((valor): valor is string => Boolean(valor)));
+  const idsZoom = distintos(eventosZoom.map((evento) => evento?.codigoReunion ?? evento?.externalEventId));
+  const enlacesZoom = distintos(eventosZoom.map((evento) => evento?.joinUrl));
+  const cuentasZoom = distintos(eventosZoom.map((evento) => evento?.cuentaProveedorId));
+  const necesitaCorreccion = zoomActivos.length > 1 &&
+    (idsZoom.size > 1 || enlacesZoom.size > 1 || cuentasZoom.size > 1);
+  const esSerieMixta = Boolean(otroProveedor);
+
+
   return (
-    <div className="meeting-detail-v2">
+    <div className="meeting-detail-v2 zoom-series-page">
       <Link className="meeting-detail-back" href="/reuniones?proveedor=zoom">
         <ArrowLeft size={15} aria-hidden="true" />Volver a reuniones
       </Link>
       {otroProveedor ? <OtroProveedorAviso {...otroProveedor} /> : null}
-      <header>
-        <p className="page-eyebrow">{solicitud.docentePrograma.programa.nombre}</p>
-        <h1>{solicitud.titulo}</h1>
-        <p>{[docente.nombres, docente.apellidos].filter(Boolean).join(" ")}</p>
-        {solicitud.descripcion ? <p>{solicitud.descripcion}</p> : null}
+      <header className="zoom-series-hero">
+        <div className="zoom-series-hero__content">
+          <p className="zoom-series-hero__eyebrow">{solicitud.docentePrograma.programa.nombre}</p>
+          <h1>{solicitud.titulo}</h1>
+          <p className="zoom-series-hero__teacher">{[docente.nombres, docente.apellidos].filter(Boolean).join(" ")}</p>
+          {solicitud.descripcion ? <p className="zoom-series-hero__description">{solicitud.descripcion}</p> : null}
+          <div className="zoom-series-hero__facts" aria-label="Información de la serie">
+            <span><CalendarDays size={17} aria-hidden="true" /> Clases sincrónicas</span>
+            <span><Repeat2 size={17} aria-hidden="true" /> {encuentros.length} {encuentros.length === 1 ? "encuentro" : "encuentros"}</span>
+            <span><Video size={17} aria-hidden="true" /> Zoom</span>
+          </div>
+        </div>
+        <div className="zoom-series-hero__brand" aria-hidden="true">
+          <span className="zoom-series-hero__brand-mark">SV</span>
+          <span>FLACSO<br />URUGUAY</span>
+        </div>
       </header>
+      {necesitaCorreccion ? (
+        <section className="zoom-series-link-warning" role="status" aria-label="Inconsistencia de reuniones Zoom">
+          <div>
+            <strong>Los encuentros de esta serie tienen reuniones Zoom diferentes.</strong>
+            <p>Se detectaron {idsZoom.size} IDs y {enlacesZoom.size} enlaces de Zoom distintos.
+              Los encuentros de una misma serie deberían compartir una sola reunión y un solo enlace.</p>
+            {esSerieMixta ? (
+              <p>Esta serie también contiene encuentros en otro proveedor. Por seguridad, primero hay que resolver la migración para no alterar esos encuentros.</p>
+            ) : null}
+          </div>
+          {esAdmin ? (
+            esSerieMixta ? (
+              <Link className="secondary-action" href="/reuniones/migracion-zoom">
+                Revisar migración y corregir
+              </Link>
+            ) : (
+              <CorregirSerieZoomBoton serieClave={claveSerieReunion(solicitud)} titulo={solicitud.titulo} />
+            )
+          ) : null}
+        </section>
+      ) : null}
       <ReunionZoomEncuentros
         encuentros={encuentros}
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
         permiteCancelarSerie={!otroProveedor}
+        solicitudIdParaAgregar={solicitud.id}
+        permiteAgregarCompartida={permiteAgregarCompartida}
         solicitudIds={serie.map(({ id }) => id)}
       />
     </div>

@@ -64,6 +64,7 @@ export type ReunionesPageSearchParams = Readonly<{
   programa?: string;
   periodo?: string;
   page?: string;
+  porPagina?: string;
   desde?: string;
   hasta?: string;
   /** `meet` o `zoom`: sólo los encuentros cuyo proveedor activo es ese. Sin valor, no se filtra. */
@@ -81,6 +82,7 @@ export async function obtenerDatosPaginaReuniones(
     programa: programaParam = "",
     periodo: periodoParam,
     page: pageParam,
+    porPagina: porPaginaParam,
     desde: desdeParam = "",
     hasta: hastaParam = "",
     proveedor: proveedorParam
@@ -281,7 +283,11 @@ export async function obtenerDatosPaginaReuniones(
     db.solicitudSala.count({ where: seriesWhere })
   ]);
 
-  const requestedPagination = resolverPaginacionAgenda(pageParam, 50);
+  // El listado Zoom permite 10/20/50 sin alterar el tamaño histórico de Meet.
+  const tamanoPagina = proveedor === "ZOOM" && [10, 20, 50].includes(Number(porPaginaParam))
+    ? Number(porPaginaParam)
+    : proveedor === "ZOOM" ? 10 : 50;
+  const requestedPagination = resolverPaginacionAgenda(pageParam, tamanoPagina);
   const selectedTotal = vista === "series" ? totalSeries : totalMeetings;
   const pagination = calcularInfoPaginacion(
     selectedTotal,
