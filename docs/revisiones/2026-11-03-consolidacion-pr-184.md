@@ -10,7 +10,7 @@ La integración debe hacerse en este PR y no directamente en `main`. **No cerrar
 | #179 | ID de Zoom en detalle | **Ya presente en el código de partida** | Comprobar la regresión; no sobreescribir rediseño actual con componente anterior. |
 | #173 | Proveedor operativo Zoom | **Pendiente de revisión diferencial** | Rama 75 commits detrás de #184 y 86 archivos modificados; no sustituir los módulos de producción actuales con versiones antiguas sin reconciliación. |
 | #172 | Iconos y PWA | **Pendiente de integrar** | Incluye tres imágenes PNG binarias; requiere integrar blobs y comprobar contrato PWA en build y móviles. |
-| #165 | Actualización actions/cache 4 a 6 | **Pendiente de integrar** | Verificar compatibilidad de action y entorno de ejecución con workflows actuales. |
+| #165 | Actualización actions/cache 4 a 6 | **Incorporado en código** | Se actualizó `.github/workflows/check-build.yml` a `actions/cache@v6`; validación CI pendiente. |
 | #166 | Actualización en lote de dependencias | **Pendiente de integrar** | Resolver conflictos en package.json/lock, reconstruir lock coherente y probar. |
 | #167 | @prisma/client 7 | **Pendiente de integrar** | Debe coordinarse con #169 (prisma 7) y sus cambios incompatibles de configuración/generación. |
 | #168 | TypeScript 7 | **Pendiente de integrar** | Revisar compatibilidad con Next.js, tipos, lint y Vitest antes de fijar versión. |
@@ -29,7 +29,7 @@ La integración debe hacerse en este PR y no directamente en `main`. **No cerrar
 
 1. Comprobar los cambios del #183 y la regresión de #179 dentro de #184.
 2. Auditar #173 contra el proveedor Zoom ya operativo, adoptar solo diferencias que falten.
-3. Incorporar #172 y #165 con sus verificaciones.
+3. Incorporar #172 y verificar CI de #165 ya aplicado.
 4. Unificar y reconstruir dependencias (#166–#170), manteniendo versiones compatibles.
 5. Implementar el orquestador real de reemplazo con nuevas entidades, provisionamiento Zoom compartido, validación Calendar, cancelación posterior y pruebas de recuperación.
 6. Ejecutar CI completo, verificar permisos, invariantes de historial y series mixtas. Solo después considerar la fusión a main.
