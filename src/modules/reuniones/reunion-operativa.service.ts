@@ -84,6 +84,15 @@ export type RegistroAsistenciaOperativoView = Readonly<{
 export type ReunionOperativaView = Readonly<{
   id: string;
   solicitudId: string;
+  proveedorActivo: "ZOOM" | "GOOGLE_MEET";
+  zoom: Readonly<{
+    id: string | null;
+    joinUrl: string | null;
+    anfitrion: string | null;
+    estadoIntegracion: string | null;
+    operacionPendiente: string | null;
+    errorIntegracion: string | null;
+  }>;
   titulo: string;
   programa: string;
   docente: string;
@@ -227,9 +236,8 @@ export async function obtenerReunionOperativa(
         }
       },
       eventosProveedor: {
-        where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { proveedor: true, cuentaProveedor: true },
-        take: 1
+        where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
+        include: { proveedor: true, cuentaProveedor: true }
       },
       cohosts: {
         include: { cuentaGoogle: true }
@@ -262,7 +270,9 @@ export async function obtenerReunionOperativa(
     return { estado: "PROHIBIDA" };
   }
 
-  const evento = meeting.eventosProveedor[0] ?? null;
+  const evento = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null;
+  const eventoZoom = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM") ?? null;
+  const proveedorActivo = meeting.proveedorActivoTipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const;
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
   const cohostConfirmado = Boolean(
     evento
@@ -873,6 +883,15 @@ export async function obtenerReunionOperativa(
     reunion: {
       id: meeting.id,
       solicitudId: meeting.solicitud.id,
+      proveedorActivo,
+      zoom: {
+        id: eventoZoom?.codigoReunion ?? eventoZoom?.externalEventId ?? null,
+        joinUrl: eventoZoom?.joinUrl ?? null,
+        anfitrion: eventoZoom?.cuentaProveedor?.emailOrganizador ?? null,
+        estadoIntegracion: eventoZoom?.estadoIntegracion ?? null,
+        operacionPendiente: eventoZoom?.operacionPendiente ?? null,
+        errorIntegracion: eventoZoom?.errorIntegracion ?? null
+      },
       titulo: meeting.solicitud.titulo,
       programa: association.programa.nombre,
       docente: teacherFullName,
