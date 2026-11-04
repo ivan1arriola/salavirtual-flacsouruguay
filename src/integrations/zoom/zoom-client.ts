@@ -188,3 +188,92 @@ export async function eliminarReunionZoomHttp(
     throw new Error(`Zoom API error al eliminar reunión (${response.status}): ${errorBody || response.statusText}`);
   }
 }
+
+export type ZoomCreateRecurringMeetingInput = Readonly<{
+  topic: string;
+  /** Lleva la marca `[serie:<clave>]` para reconocer la reunión si queda huérfana. */
+  agenda?: string | null;
+  requiereGrabacion?: boolean;
+}>;
+
+/**
+ * Crea una reunión recurrente sin horario fijo (`type: 3`): un `join_url` estable que
+ * todos los encuentros de una serie comparten. No lleva `start_time` ni `recurrence`.
+ * El cuerpo exacto debe confirmarse contra la documentación de Zoom y una prueba real.
+ */
+export async function crearReunionZoomRecurrenteHttp(
+  token: string,
+  userEmail: string,
+  input: ZoomCreateRecurringMeetingInput
+): Promise<ZoomMeetingResult> {
+  const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      topic: input.topic,
+      type: 3, // Recurrente sin horario fijo
+      agenda: input.agenda ?? undefined,
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: false,
+        waiting_room: true,
+        mute_upon_entry: true,
+        auto_recording: input.requiereGrabacion ? "cloud" : "none",
+        approval_type: 2
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`Zoom API error al crear reunión recurrente (${response.status}): ${errorBody || response.statusText}`);
+  }
+
+  const data = (await response.json()) as {
+    id: number | string;
+    join_url?: string;
+    start_url?: string;
+    password?: string;
+  };
+  if (!data.join_url) throw new Error("Zoom no devolvió el enlace de acceso de la reunión recurrente.");
+
+  return {
+    meetingId: String(data.id),
+    joinUrl: data.join_url,
+    startUrl: data.start_url,
+    password: data.password
+  };
+}
+
+/**
+ * Busca entre las reuniones del anfitrión la que lleve `marca` en su agenda. Sirve para
+ * recuperar una reunión creada por un reclamo que murió antes de guardar su ID.
+ */
+export async function buscarReunionZoomPorMarcaHttp(
+  token: string,
+  userEmail: string,
+  marca: string
+): Promise<ZoomMeetingResult | null> {
+  const base = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings?type=scheduled&page_size=300`;
+  const buscarPagina = async (paginaToken: string | null): Promise<ZoomMeetingResult | null> => {
+    const url = paginaToken ? `${base}&next_page_token=${encodeURIComponent(paginaToken)}` : base;
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      throw new Error(`Zoom API error al listar reuniones (${response.status}): ${errorBody || response.statusText}`);
+    }
+    const data = (await response.json()) as {
+      meetings?: readonly { id: number | string; join_url?: string; agenda?: string }[];
+      next_page_token?: string;
+    };
+    const encontrada = (data.meetings ?? []).find(({ agenda, join_url }) => join_url && agenda?.includes(marca));
+    if (encontrada?.join_url) return { meetingId: String(encontrada.id), joinUrl: encontrada.join_url };
+    return data.next_page_token ? buscarPagina(data.next_page_token) : null;
+  };
+  return buscarPagina(null);
+}

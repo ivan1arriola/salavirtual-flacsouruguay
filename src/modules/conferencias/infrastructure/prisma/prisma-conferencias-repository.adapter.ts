@@ -26,6 +26,8 @@ import type {
 } from "../../ports/conferencias-repository.port";
 
 const CLAIM_TIMEOUT_MS = 10 * 60_000;
+/** Un reclamo de creación de la reunión compartida que supera este plazo se considera muerto y se puede retomar. */
+const RECLAMO_REUNION_TIMEOUT_MS = 5 * 60_000;
 
 export type PrismaConferenciasRepositoryOptions = Readonly<{
   db: PrismaClient;
@@ -43,7 +45,7 @@ export function crearPrismaConferenciasRepository(
     async obtenerSnapshotsEventos(ids) {
       if (ids.length === 0) return [];
       const rows = await db.eventoProveedor.findMany({
-        where: { id: { in: [...ids] }, proveedor: { tipo: "GOOGLE_MEET" } },
+        where: { id: { in: [...ids] } },
         select: {
           id: true,
           estadoIntegracion: true,
@@ -107,6 +109,7 @@ export function crearPrismaConferenciasRepository(
           include: {
             cuentaProveedor: true,
             proveedor: true,
+            reunionProveedor: { select: { serieClave: true } },
             instancia: {
               include: {
                 solicitud: true,
@@ -153,12 +156,149 @@ export function crearPrismaConferenciasRepository(
             solicitudSalaId: event.instancia.solicitudSalaId,
             organizerEmail: event.cuentaProveedor?.emailOrganizador ?? "",
             request,
+            reunionProveedorId: event.reunionProveedorId ?? null,
+            serieClave: event.reunionProveedor?.serieClave ?? null,
           },
           operacion,
           at,
           token,
         };
       });
+    },
+
+    // --- Reunión compartida por serie -------------------------------------------------
+
+    async reclamarCreacionReunionCompartida(eventoProveedorId, token, ahora) {
+      return db.$transaction(async (tx) => {
+        const evento = await tx.eventoProveedor.findUnique({
+          where: { id: eventoProveedorId },
+          select: { reunionProveedorId: true },
+        });
+        const reunionId = evento?.reunionProveedorId;
+        if (!reunionId) return null;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:reunion-proveedor:${reunionId}`}))`;
+
+        // Una reunión eliminada que vuelve a necesitarse (nuevo encuentro) empieza de cero.
+        await tx.reunionProveedor.updateMany({
+          where: { id: reunionId, estadoCreacion: "ELIMINADA" },
+          data: { estadoCreacion: "PENDIENTE", externalId: null, joinUrl: null, reclamoToken: null, reclamoAt: null },
+        });
+
+        // Reclamo condicional (no un bloqueo): solo si está pendiente, vencido o ya es de este token.
+        const vencido = new Date(ahora.getTime() - RECLAMO_REUNION_TIMEOUT_MS);
+        const reclamado = await tx.reunionProveedor.updateMany({
+          where: {
+            id: reunionId,
+            OR: [
+              { estadoCreacion: "PENDIENTE" },
+              { estadoCreacion: "CREANDO", reclamoAt: { lt: vencido } },
+              { estadoCreacion: "CREANDO", reclamoToken: token },
+            ],
+          },
+          data: { estadoCreacion: "CREANDO", reclamoToken: token, reclamoAt: ahora },
+        });
+        const reunion = await tx.reunionProveedor.findUnique({
+          where: { id: reunionId },
+          select: { estadoCreacion: true, externalId: true, joinUrl: true },
+        });
+        if (reclamado.count === 1) {
+          // Un reclamo vencido pudo haber guardado ya el ID de Zoom: se reutiliza.
+          return { reunionId, resultado: "RECLAMADA" as const, externalId: reunion?.externalId ?? null, joinUrl: reunion?.joinUrl ?? null };
+        }
+        if (reunion?.estadoCreacion === "CREADA") {
+          return { reunionId, resultado: "YA_CREADA" as const, externalId: reunion.externalId, joinUrl: reunion.joinUrl };
+        }
+        return { reunionId, resultado: "EN_CURSO_POR_OTRO" as const, externalId: null, joinUrl: null };
+      });
+    },
+
+    async registrarExternalIdTemprano(reunionId, token, externalId) {
+      const actualizado = await db.reunionProveedor.updateMany({
+        where: { id: reunionId, estadoCreacion: "CREANDO", reclamoToken: token },
+        data: { externalId },
+      });
+      if (actualizado.count !== 1) {
+        throw new Error("El reclamo de la reunión compartida ya no es válido; otro proceso la tomó.");
+      }
+    },
+
+    async guardarReunionCompartida(reunionId, token, datos) {
+      await db.$transaction(async (tx) => {
+        const actualizado = await tx.reunionProveedor.updateMany({
+          where: { id: reunionId, estadoCreacion: "CREANDO", reclamoToken: token },
+          data: {
+            estadoCreacion: "CREADA",
+            externalId: datos.externalId,
+            joinUrl: datos.joinUrl,
+            estadoIntegracion: "SINCRONIZADA",
+            errorIntegracion: null,
+            reclamoToken: null,
+            reclamoAt: null,
+          },
+        });
+        if (actualizado.count !== 1) {
+          throw new Error("El reclamo de la reunión compartida ya no es válido; otro proceso la tomó.");
+        }
+        // Los eventos de la serie que todavía no tienen ID reciben la copia, para que las lecturas no cambien.
+        await tx.eventoProveedor.updateMany({
+          where: { reunionProveedorId: reunionId, externalEventId: null },
+          data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl },
+        });
+      });
+    },
+
+    async vincularEventoReunionCompartida(claim, datos) {
+      const actualizado = await db.eventoProveedor.updateMany({
+        where: {
+          id: claim.event.id,
+          operacionPendiente: claim.operacion,
+          reclamoIntegracionAt: claim.at,
+          reclamoIntegracionToken: claim.token,
+          OR: [{ externalEventId: null }, { externalEventId: datos.externalId }],
+        },
+        data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl },
+      });
+      if (actualizado.count !== 1) {
+        throw new Error("El claim de integración caducó o el evento ya fue modificado.");
+      }
+    },
+
+    async liberarReclamoEvento(claim) {
+      await db.eventoProveedor.updateMany({
+        where: { id: claim.event.id, reclamoIntegracionToken: claim.token, reclamoIntegracionAt: claim.at },
+        data: { reclamoIntegracionAt: null, reclamoIntegracionToken: null },
+      });
+    },
+
+    async usosDeReunionCompartida(reunionId) {
+      const reunion = await db.reunionProveedor.findUnique({
+        where: { id: reunionId },
+        select: {
+          externalId: true,
+          estadoCreacion: true,
+          eventos: {
+            select: { id: true, instancia: { select: { estado: true, finProgramadoAt: true } } },
+          },
+        },
+      });
+      if (!reunion) return { usos: [], externalId: null, eliminada: true };
+      return {
+        externalId: reunion.externalId,
+        eliminada: reunion.estadoCreacion === "ELIMINADA",
+        usos: reunion.eventos.map((evento) => ({
+          eventoProveedorId: evento.id,
+          instanciaEstado: evento.instancia.estado,
+          instanciaFin: evento.instancia.finProgramadoAt,
+        })),
+      };
+    },
+
+    async marcarReunionCompartidaEliminada(reunionId) {
+      const actualizado = await db.reunionProveedor.updateMany({
+        where: { id: reunionId, estadoCreacion: { not: "ELIMINADA" } },
+        data: { estadoCreacion: "ELIMINADA", reclamoToken: null, reclamoAt: null },
+      });
+      return actualizado.count === 1;
     },
 
     async buscarConferenceDataCompartida(solicitudSalaId, excludeEventoId) {

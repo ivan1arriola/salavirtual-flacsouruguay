@@ -5,6 +5,7 @@ import {
   normalizarCodigoReunionBuscado,
   parsearFechaFiltro,
   resolverPaginacionAgenda,
+  resolverPeriodoAgenda,
   resolverVistaAgenda
 } from "../src/modules/reuniones/agenda-view.domain";
 
@@ -22,6 +23,15 @@ function meeting(id: string, requestId: string, createdAt: string, title = "Dipl
     }
   };
 }
+
+describe("período de la agenda", () => {
+  it("acepta anteriores y cualquier otro valor es próximas", () => {
+    expect(resolverPeriodoAgenda("anteriores")).toBe("anteriores");
+    expect(resolverPeriodoAgenda("proximas")).toBe("proximas");
+    expect(resolverPeriodoAgenda(undefined)).toBe("proximas");
+    expect(resolverPeriodoAgenda("cualquiera")).toBe("proximas");
+  });
+});
 
 describe("vista de agenda", () => {
   it("usa series como vista predeterminada", () => {

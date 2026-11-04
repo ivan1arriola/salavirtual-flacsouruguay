@@ -4,6 +4,7 @@ import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.doma
 import { prepararCambioEnlaceCalendarZoom } from "./migracion-zoom-calendar.domain";
 import { meetPreparadoParaMigracion, planificarMigracionZoom } from "./migracion-zoom-preview.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
+import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 import {
   notificarMigracionZoom,
@@ -75,6 +76,7 @@ const seleccionInstancia = {
   finProgramadoAt: true,
   proveedorActivoTipo: true,
   conservarGoogleMeet: true,
+  solicitud: { select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true } },
   eventosProveedor: {
     select: {
       id: true,
@@ -181,9 +183,19 @@ async function prepararBajoBloqueo(
     const hostsDb = await tx.cuentaProveedor.findMany({
       where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, prioridad: true, limiteConcurrente: true },
+      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });
     const hosts = zoom?.cuentaProveedorId ? hostsDb.filter(({ id }) => id === zoom.cuentaProveedorId) : hostsDb;
+    const emailMeet = meet.cuentaProveedor.emailOrganizador.trim().toLowerCase();
+    const cuentaZoomPreferidaId = hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null;
+    // Una serie de Meet comparte un solo enlace; migrar un encuentro por separado le daría uno distinto.
+    const encuentrosSerie = await tx.instanciaSala.count({
+      where: {
+        estado: "PROGRAMADA",
+        inicioProgramadoAt: { gt: ahora },
+        solicitud: construirFiltroSerieSolicitud(instancia.solicitud),
+      },
+    });
     const reservas = await tx.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "ZOOM" },
@@ -215,9 +227,19 @@ async function prepararBajoBloqueo(
           emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
         }),
         meetJoinUrl: meet.joinUrl,
+        cuentaZoomPreferidaId,
         zoomSincronizado: false,
+        encuentrosSerie,
       }],
     });
+    if (fila?.estado === "SERIE") {
+      throw new FalloEtapa(
+        "VALIDACION",
+        "La serie tiene varios encuentros: la migración debe hacerse por serie completa y todavía no está disponible.",
+        false,
+        true,
+      );
+    }
     if (fila?.estado !== "MIGRABLE" || !fila.hostId) {
       throw new FalloEtapa("VALIDACION", `El encuentro ya no es migrable (${fila?.estado ?? "sin datos"}).`, false, true);
     }

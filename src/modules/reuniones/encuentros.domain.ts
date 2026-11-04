@@ -209,7 +209,7 @@ export function idsCancelacionesGooglePendientes(
   return instancias.flatMap(({ eventosProveedor }) =>
     eventosProveedor
       .filter(({ proveedor, operacionPendiente }) =>
-        proveedor.tipo === "GOOGLE_MEET" && operacionPendiente === "CANCELAR"
+        (proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM") && operacionPendiente === "CANCELAR"
       )
       .map(({ id }) => id)
   );

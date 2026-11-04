@@ -12,7 +12,7 @@ const MEET = "https://meet.google.com/abc-defg-hij";
 const ZOOM = "https://us06web.zoom.us/j/123?pwd=xyz";
 
 /** Base en memoria mínima con las operaciones que usa el servicio. */
-function crearEscenario(over: { instancia?: Record<string, unknown>; zoomExistente?: Record<string, unknown> | null } = {}) {
+function crearEscenario(over: { instancia?: Record<string, unknown>; zoomExistente?: Record<string, unknown> | null; encuentrosSerie?: number } = {}) {
   const instancia: Record<string, any> = {
     id: "i1",
     estado: "PROGRAMADA",
@@ -22,6 +22,7 @@ function crearEscenario(over: { instancia?: Record<string, unknown>; zoomExisten
     conservarGoogleMeet: false,
     solicitud: {
       titulo: "Clase 3", estado: "APROBADA", creadaPorUsuarioId: "creador",
+      serieReunionId: "serie-1", docenteProgramaId: "dp-1", createdAt: new Date("2026-10-01T12:00:00Z"),
       docentePrograma: { docente: { usuarioId: "docente" }, programa: { nombre: "Maestría" } },
     },
     asignaciones: [], cohosts: [], cohostEmails: [],
@@ -53,6 +54,7 @@ function crearEscenario(over: { instancia?: Record<string, unknown>; zoomExisten
     $executeRaw: vi.fn(async () => 1),
     instanciaSala: {
       findUnique: vi.fn(async () => ({ ...instancia, eventosProveedor: eventos })),
+      count: vi.fn(async () => over.encuentrosSerie ?? 1),
       updateMany: vi.fn(async ({ where, data }: any) => {
         if (instancia.estado !== where.estado || instancia.conservarGoogleMeet !== where.conservarGoogleMeet ||
           !where.OR.some((condicion: any) => condicion.proveedorActivoTipo === instancia.proveedorActivoTipo)) return { count: 0 };
@@ -129,6 +131,24 @@ describe("aplicarMigracionZoom", () => {
     await expect(aplicarMigracionZoom(e.deps, admin, { modo: "LOTE", instanciaIds: Array.from({ length: 11 }, (_, i) => `i${i}`) }))
       .rejects.toMatchObject({ status: 400 });
     await expect(aplicarMigracionZoom(e.deps, admin, { modo: "LOTE", instanciaIds: [] })).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("omite un encuentro de una serie con varios encuentros futuros sin crear Zoom ni tocar Calendar", async () => {
+    const e = crearEscenario({ encuentrosSerie: 3 });
+    const [r] = await aplicarMigracionZoom(e.deps, admin, { modo: "PILOTO", instanciaIds: ["i1"] });
+    expect(r).toMatchObject({ resultado: "OMITIDA", etapa: "VALIDACION", reintentable: false });
+    expect(r.mensaje).toContain("serie");
+    expect(e.creaciones).toHaveLength(0);
+    expect(e.sincronizarEventos).not.toHaveBeenCalled();
+    expect(e.actualizar).not.toHaveBeenCalled();
+    expect(e.instancia.proveedorActivoTipo).toBe("GOOGLE_MEET");
+  });
+
+  it("consulta los encuentros futuros de la serie con el filtro de serie de la solicitud", async () => {
+    const e = crearEscenario();
+    await aplicarMigracionZoom(e.deps, admin, { modo: "PILOTO", instanciaIds: ["i1"] });
+    const consulta = (e.db.instanciaSala.count as unknown as { mock: { calls: [{ where: any }][] } }).mock.calls[0][0].where;
+    expect(consulta).toMatchObject({ estado: "PROGRAMADA", solicitud: { serieReunionId: "serie-1" } });
   });
 
   it("migra: Zoom con ID persistido, Calendar sin Meet con ubicación física, luego proveedor activo y Meet intacto", async () => {

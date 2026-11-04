@@ -5,7 +5,8 @@ permissions:
   contents: read
 jobs:
   postgres:
-    runs-on: ubuntu-24.04
+    # Activar solo después de registrar y verificar un runner aislado con etiqueta salavirtual-ci.
+    runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
     timeout-minutes: 20
     services:
       postgres:

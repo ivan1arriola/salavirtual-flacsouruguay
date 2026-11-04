@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
+import { planEliminacionEncuentro } from "@/src/modules/reuniones/eliminacion-encuentro.domain";
 import {
   filtrarEncuentrosPorVista,
   type VistaTemporalEncuentros
@@ -201,9 +202,48 @@ export function MeetingDetailManager({
     if (updated) setOperationalEditor(null);
   }
 
-  function remove(id: string) {
+  function planEliminacion(meeting: Encounter) {
+    return planEliminacionEncuentro({
+      editable: meeting.editable,
+      ocupado: busy !== null,
+      encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
+      encuentrosEnPagina: meetings.length,
+    });
+  }
+
+  async function cancelarSolicitudDelEncuentro(meeting: Encounter): Promise<boolean> {
+    setBusy(meeting.id);
+    setMessage("Registrando la cancelación del encuentro…");
+    try {
+      const response = await fetch("/api/v1/reuniones/cancelar-serie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ solicitudIds: [meeting.solicitudId] })
+      });
+      const result = await response.json().catch(() => ({}));
+      setMessage(response.ok ? result.message ?? "Cancelación registrada." : result.error ?? "No se pudo cancelar el encuentro.");
+      if (response.ok) router.refresh();
+      return response.ok;
+    } catch {
+      setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(id: string) {
+    const meeting = meetings.find((item) => item.id === id);
+    if (!meeting) return;
+    const plan = planEliminacion(meeting);
+    if (!plan.habilitado) return;
+    if (plan.modo === "SOLICITUD") {
+      if (!window.confirm("Se cancelará este encuentro y su evento de Calendar. Los demás encuentros de la serie no cambian. ¿Continuar?")) return;
+      await cancelarSolicitudDelEncuentro(meeting);
+      return;
+    }
     if (!window.confirm("Se cancelará el evento de Calendar y se eliminará este encuentro. ¿Continuar?")) return;
-    return request(meetings.find((meeting) => meeting.id === id)?.solicitudId ?? solicitudId, id, { method: "DELETE" });
+    await request(meeting.solicitudId ?? solicitudId, id, { method: "DELETE" });
   }
 
   async function removeAll() {
@@ -457,15 +497,20 @@ export function MeetingDetailManager({
                           <UserRoundPlus size={16} />Pedir asistencia
                         </button>
                       ) : null}
-                      <button
-                        className="icon-button danger-action"
-                        disabled={!meeting.editable || busy !== null || meeting.encuentrosEnSolicitud <= 1}
-                        onClick={() => remove(meeting.id)}
-                        title={meeting.encuentrosEnSolicitud <= 1 ? "Usá Eliminar reunión para borrar la serie completa" : "Eliminar encuentro"}
-                        type="button"
-                      >
-                        <Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span>
-                      </button>
+                      {(() => {
+                        const plan = planEliminacion(meeting);
+                        return (
+                          <button
+                            className="icon-button danger-action"
+                            disabled={!plan.habilitado}
+                            onClick={() => remove(meeting.id)}
+                            title={plan.motivo ?? "Eliminar encuentro"}
+                            type="button"
+                          >
+                            <Trash2 size={17} /><span className="sr-only">Eliminar encuentro</span>
+                          </button>
+                        );
+                      })()}
                     </div>
                   </footer>
 

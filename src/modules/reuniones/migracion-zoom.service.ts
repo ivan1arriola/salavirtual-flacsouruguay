@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
+import { claveBloqueoSerieMigracion, claveSerieReunion } from "./serie-reunion.domain";
 import {
   meetPreparadoParaMigracion,
   planificarMigracionZoom,
@@ -34,7 +35,7 @@ export type VistaPreviaMigracionZoom = Readonly<{
   filas: readonly FilaVistaPreviaMigracion[];
 }>;
 
-function exigirAdministracion(actor: Actor) {
+export function exigirAdministracion(actor: Actor) {
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede gestionar la migración a Zoom.");
   }
@@ -61,6 +62,14 @@ export async function actualizarExcepcionGoogleMeet(
   }
 
   return db.$transaction(async (tx) => {
+    // Misma clave que la migración por serie: una excepción no cambia mientras se convierte su serie.
+    const base = await tx.instanciaSala.findUnique({
+      where: { id: input.instanciaId },
+      select: { solicitud: { select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true } } },
+    });
+    if (base?.solicitud) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${claveBloqueoSerieMigracion(claveSerieReunion(base.solicitud))}))`;
+    }
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:migracion-zoom:${input.instanciaId}`}))`;
     const instancia = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaId },
@@ -107,14 +116,8 @@ export async function actualizarExcepcionGoogleMeet(
   });
 }
 
-/** Calcula la propuesta de migración. No realiza ninguna escritura. */
-export async function obtenerVistaPreviaMigracionZoom(
-  db: PrismaClient,
-  actor: Actor,
-  ahora: Date = new Date(),
-): Promise<VistaPreviaMigracionZoom> {
-  exigirAdministracion(actor);
-
+/** Encuentros futuros, salas Zoom y reservas vigentes. Solo lectura; la comparten las vistas por encuentro y por serie. */
+export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
   const [instancias, hosts, reservas] = await Promise.all([
     db.instanciaSala.findMany({
       where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } },
@@ -130,6 +133,9 @@ export async function obtenerVistaPreviaMigracionZoom(
         solicitud: {
           select: {
             titulo: true,
+            serieReunionId: true,
+            docenteProgramaId: true,
+            createdAt: true,
             creadaPor: { select: { emailPrincipal: true } },
             docentePrograma: { select: {
               programa: { select: { nombre: true } },
@@ -149,6 +155,8 @@ export async function obtenerVistaPreviaMigracionZoom(
             externalEventId: true,
             estadoIntegracion: true,
             operacionPendiente: true,
+            reunionProveedorId: true,
+            cuentaProveedorId: true,
             cuentaProveedor: { select: { emailOrganizador: true } },
             proveedor: { select: { tipo: true } },
           },
@@ -168,12 +176,31 @@ export async function obtenerVistaPreviaMigracionZoom(
       },
       select: {
         cuentaProveedorId: true,
+        instanciaSalaId: true,
         instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
       },
     }),
   ]);
+  return { instancias, hosts, reservas };
+}
+
+/** Calcula la propuesta de migración. No realiza ninguna escritura. */
+export async function obtenerVistaPreviaMigracionZoom(
+  db: PrismaClient,
+  actor: Actor,
+  ahora: Date = new Date(),
+): Promise<VistaPreviaMigracionZoom> {
+  exigirAdministracion(actor);
+
+  const { instancias, hosts, reservas } = await cargarDatosMigracionZoom(db, ahora);
 
   const porInstancia = new Map(instancias.map((instancia) => [instancia.id, instancia]));
+  // Encuentros futuros por serie: una serie de Meet comparte un solo enlace, y migrarla
+  // encuentro por encuentro dejaría un enlace distinto en cada uno.
+  const encuentrosPorSerie = instancias.reduce<ReadonlyMap<string, number>>((conteo, { solicitud }) => {
+    const clave = claveSerieReunion(solicitud);
+    return new Map([...conteo, [clave, (conteo.get(clave) ?? 0) + 1]]);
+  }, new Map());
   const hostPorId = new Map(hosts.map((host) => [host.id, host]));
 
   const plan = planificarMigracionZoom({
@@ -189,6 +216,10 @@ export async function obtenerVistaPreviaMigracionZoom(
       const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
       const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
+      const emailMeet = meet?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
+      const cuentaZoomPreferidaId = emailMeet
+        ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
+        : null;
       return {
         id: instancia.id,
         inicio: instancia.inicioProgramadoAt,
@@ -201,13 +232,15 @@ export async function obtenerVistaPreviaMigracionZoom(
           emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
         } : null),
         meetJoinUrl: meet?.joinUrl ?? null,
+        cuentaZoomPreferidaId,
         zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
+        encuentrosSerie: encuentrosPorSerie.get(claveSerieReunion(instancia.solicitud)) ?? 1,
       };
     }),
   });
 
   const conteos: Record<EstadoVistaPreviaZoom, number> = {
-    MIGRABLE: 0, EXCEPCION: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
+    MIGRABLE: 0, EXCEPCION: 0, SERIE: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
   };
   const filas = plan.map((fila): FilaVistaPreviaMigracion => {
     conteos[fila.estado] += 1;

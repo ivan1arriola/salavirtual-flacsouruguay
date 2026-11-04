@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
+import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 import { cancelarSolicitudesAtomicas } from "@/src/modules/reuniones/cancelar-solicitudes-atomicas.service";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 
@@ -24,13 +25,26 @@ export async function POST(request: Request) {
     const input = schema.parse(await request.json().catch(() => null));
     const result = await cancelarSolicitudesAtomicas(db, actor, input.solicitudIds);
 
-    // A successful transaction persists each event's pending CANCELAR operation.
-    // The background reconciliation endpoint performs Google HTTP calls later.
+    // La transacción dejó CANCELAR pendiente en cada evento. Se sincroniza ahora, igual que al
+    // cancelar un encuentro: así Zoom y el calendario quedan al día sin esperar al proceso periódico.
+    // Una falla externa no revierte la cancelación local; queda pendiente y se reintenta después.
+    let pendientes = result.eventoProveedorIds.length;
+    if (pendientes > 0) {
+      try {
+        const sincronizacion = await obtenerServicioConferencias()
+          .sincronizarEventosPendientes(result.eventoProveedorIds);
+        pendientes = sincronizacion.filter(({ estado }) => estado !== "SINCRONIZADA").length;
+      } catch {
+        // pendientes conserva el total: nada se confirmó.
+      }
+    }
     return NextResponse.json({
-      message: "La cancelación quedó registrada. Google Calendar se actualizará en segundo plano.",
+      message: pendientes === 0
+        ? "La serie se canceló y se eliminó de Zoom."
+        : "La cancelación quedó registrada. Hay eliminaciones pendientes en Zoom que se reintentarán.",
       solicitudesCanceladas: result.solicitudesCanceladas,
-      eventosGooglePendientes: result.eventoProveedorIds.length
-    }, { status: 202 });
+      eventosGooglePendientes: pendientes
+    }, { status: pendientes === 0 ? 200 : 202 });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
@@ -57,7 +71,7 @@ export async function GET(request: Request) {
         instancias: {
           select: {
             eventosProveedor: {
-              where: { proveedor: { tipo: "GOOGLE_MEET" } },
+              where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
               select: { estadoIntegracion: true, operacionPendiente: true }
             }
           }

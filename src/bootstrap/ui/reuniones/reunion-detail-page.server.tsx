@@ -36,10 +36,17 @@ import {
   puedeGestionarPrograma
 } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
+import { proveedorActivoDeInstancia, type ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion.domain";
+import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
 
 export default async function ReunionDetailPage({
-  params
-}: Readonly<{ params: Promise<{ solicitudId: string }> }>) {
+  params,
+  otroProveedor = null
+}: Readonly<{
+  params: Promise<{ solicitudId: string }>;
+  /** Encuentros de la misma serie que ya pasaron a Zoom: viven en su propio panel. */
+  otroProveedor?: Readonly<{ proveedor: ProveedorReunion; cantidad: number; href: string }> | null;
+}>) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
@@ -61,6 +68,7 @@ export default async function ReunionDetailPage({
       orderBy: { id: "asc" },
       select: {
         id: true,
+        estado: true,
         modalidad: true,
         inicioAsistenciaTecnicaAt: true,
         finAsistenciaTecnicaAt: true,
@@ -111,6 +119,7 @@ export default async function ReunionDetailPage({
       finAsistenciaBase: seriesRequest.finAsistenciaTecnicaAt,
       encuentrosEnSolicitud: seriesRequest.instancias.length
     })))
+    .filter((meeting) => proveedorActivoDeInstancia(meeting) === "GOOGLE_MEET")
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
 
   const manageableMeetings = meetings.filter((meeting) =>
@@ -155,7 +164,8 @@ export default async function ReunionDetailPage({
     return { email, confirmed, total: manageableMeetings.length, pending: manageableMeetings.length - confirmed };
   });
 
-  const estadoVisible = request.estado === "CANCELADA"
+  const serieCancelada = request.estado === "CANCELADA" && seriesRequests.every((item) => item.estado === "CANCELADA");
+  const estadoVisible = serieCancelada
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
       meetings.flatMap(({ eventosProveedor }) => eventosProveedor.map((event) => estadoIntegracionEfectivo(event)))
@@ -275,9 +285,10 @@ export default async function ReunionDetailPage({
 
   return (
     <div className="meeting-detail-v2">
-      <Link className="meeting-detail-back" href="/reuniones">
+      <Link className="meeting-detail-back" href="/reuniones?proveedor=meet">
         <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
       </Link>
+      {otroProveedor ? <OtroProveedorAviso {...otroProveedor} /> : null}
 
       <MeetingDetailTabs
         tabs={[

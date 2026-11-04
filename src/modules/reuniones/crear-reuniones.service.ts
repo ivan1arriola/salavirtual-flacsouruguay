@@ -20,6 +20,7 @@ import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
+import { claveSerieReunion } from "./serie-reunion.domain";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
 export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
@@ -220,10 +221,11 @@ export async function crearReuniones(
         instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime()
       )
     );
+    const serieReunionId = randomUUID();
     const solicitud = await tx.solicitudSala.create({
       data: {
         claveIdempotenciaCreacion,
-        serieReunionId: randomUUID(),
+        serieReunionId,
         docenteProgramaId: input.docenteProgramaId,
         creadaPorUsuarioId: actor.id,
         titulo: input.titulo,
@@ -240,6 +242,21 @@ export async function crearReuniones(
         requiereGrabacion: input.requiereGrabacion,
         estado: "REGISTRADA",
       },
+    });
+
+    // Todos los encuentros de la serie comparten UNA reunión de Zoom (mismo enlace y misma sala).
+    const reunionCompartida = await tx.reunionProveedor.create({
+      data: {
+        proveedorId: proveedor.id,
+        cuentaProveedorId: cuentaHostId,
+        serieClave: claveSerieReunion({
+          serieReunionId,
+          docenteProgramaId: input.docenteProgramaId,
+          titulo: input.titulo,
+          createdAt: solicitud.createdAt,
+        }),
+      },
+      select: { id: true },
     });
 
     const eventoProveedorIds = await Promise.all(
@@ -264,6 +281,7 @@ export async function crearReuniones(
             instanciaSalaId: instancia.id,
             proveedorId: proveedor.id,
             cuentaProveedorId: cuentaHostId,
+            reunionProveedorId: reunionCompartida.id,
             operacionPendiente: "PROVISIONAR",
             ...(invitadosEmails.length > 0
               ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }

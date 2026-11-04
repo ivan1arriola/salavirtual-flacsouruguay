@@ -24,6 +24,28 @@ export type EventoReclamableInfo = Readonly<{
   solicitudSalaId: string;
   organizerEmail: string;
   request: ConferenceProvisionRequest;
+  /** Reunión externa compartida por la serie (Zoom). Nulo o ausente: el evento tiene su propia reunión. */
+  reunionProveedorId?: string | null;
+  serieClave?: string | null;
+}>;
+
+export type ReclamoReunionCompartida = Readonly<{
+  reunionId: string;
+  resultado: "RECLAMADA" | "EN_CURSO_POR_OTRO" | "YA_CREADA";
+  externalId: string | null;
+  joinUrl: string | null;
+}>;
+
+export type UsoReunionCompartidaInfo = Readonly<{
+  eventoProveedorId: string;
+  instanciaEstado: string;
+  instanciaFin: Date;
+}>;
+
+export type EstadoReunionCompartida = Readonly<{
+  usos: readonly UsoReunionCompartidaInfo[];
+  externalId: string | null;
+  eliminada: boolean;
 }>;
 
 export type ClaimInfo = Readonly<{
@@ -104,5 +126,45 @@ export type ConferenciasRepositoryPort = Readonly<{
   descartarOperacionesNoBloqueantesLote: () => Promise<DescartarLoteResult>;
 
   reclasificarOperacionesPendientesLote?: () => Promise<ReclasificarLoteResult>;
+
+  // Reunión compartida por serie. Opcionales: solo se usan con eventos que tienen `reunionProveedorId`.
+
+  /** Reclama la creación con una actualización condicional (PENDIENTE -> CREANDO, o un reclamo vencido). */
+  reclamarCreacionReunionCompartida?: (
+    eventoProveedorId: string,
+    token: string,
+    ahora: Date
+  ) => Promise<ReclamoReunionCompartida | null>;
+
+  /** Guarda el ID de Zoom apenas se recibe; solo si el token sigue siendo el del reclamo. */
+  registrarExternalIdTemprano?: (
+    reunionId: string,
+    token: string,
+    externalId: string
+  ) => Promise<void>;
+
+  /** Pasa la reunión a CREADA y copia `externalEventId`/`joinUrl` a sus eventos. */
+  guardarReunionCompartida?: (
+    reunionId: string,
+    token: string,
+    datos: Readonly<{ externalId: string; joinUrl: string }>
+  ) => Promise<void>;
+
+  usosDeReunionCompartida?: (reunionId: string) => Promise<EstadoReunionCompartida>;
+
+  /** Condicional: devuelve true solo si pasó a ELIMINADA en esta llamada. */
+  marcarReunionCompartidaEliminada?: (reunionId: string) => Promise<boolean>;
+
+  /**
+   * Deja el evento reclamado apuntando a la reunión compartida (ID y enlace). Idempotente:
+   * acepta un evento sin ID o que ya tiene el mismo. Falla si el claim del evento caducó.
+   */
+  vincularEventoReunionCompartida?: (
+    claim: ClaimInfo,
+    datos: Readonly<{ externalId: string; joinUrl: string }>
+  ) => Promise<void>;
+
+  /** Limpia el reclamo del evento sin tocar su operación pendiente, para reintentar enseguida. */
+  liberarReclamoEvento?: (claim: ClaimInfo) => Promise<void>;
 }>;
 

@@ -87,7 +87,7 @@ function advertenciaSincronizacion(
 ): string | null {
   const warnings: string[] = [];
   if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
-    warnings.push("El cambio quedó guardado en la aplicación, pero Google Meet todavía tiene sincronizaciones pendientes.");
+    warnings.push("El cambio quedó guardado en la aplicación, pero la sincronización de la reunión todavía tiene pendientes.");
   }
   if (errorCalendario || calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
     warnings.push("El calendario del asistente técnico todavía tiene sincronizaciones pendientes.");

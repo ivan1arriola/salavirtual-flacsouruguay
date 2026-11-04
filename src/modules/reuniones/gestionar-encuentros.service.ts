@@ -20,6 +20,7 @@ import {
   modalidadEfectivaEncuentro,
   periodoAsistenciaTecnica,
   puedeCorregirModalidadHistorica,
+  puedeGestionarEncuentros,
 } from "./encuentros.domain";
 import { bloquearReservaSalas, bloquearSolicitudSala } from "./reserva-salas.adapter";
 import { pertenecenAlMismoDia } from "./periodos.domain";
@@ -67,7 +68,7 @@ export async function agregarEncuentro(
       },
     });
     if (!serie) throw new NotFoundApiError("La reunión no existe.");
-    await validarGestion(tx, actor, serie.docentePrograma.programaId);
+    await validarGestion(tx, actor, serie.docentePrograma);
     // Nunca se crean nuevas reuniones Meet: todo encuentro agregado usa Zoom,
     // incluso en series legadas de Meet.
     const provider = await tx.proveedorReunion.findUnique({ where: { tipo: "ZOOM" } });
@@ -120,10 +121,17 @@ export async function agregarEncuentro(
         cuentaProveedorId && proveedor.tipo === "ZOOM" ? [cuentaProveedorId] : []
       )
     )[0] ?? null;
+    // Una serie con reunión compartida usa siempre la misma sala: no se elige otra.
+    const eventoCompartido = serie.instancias
+      .flatMap(({ eventosProveedor }) => eventosProveedor)
+      .find((evento) => evento.proveedor.tipo === "ZOOM" && evento.reunionProveedorId && evento.cuentaProveedorId);
+    const hostsElegibles = eventoCompartido
+      ? hosts.filter(({ id }) => id === eventoCompartido.cuentaProveedorId)
+      : hosts;
     const hostId = elegirCuentaHostParaPeriodos(
-      seriePreferredHost,
+      eventoCompartido?.cuentaProveedorId ?? seriePreferredHost,
       // Zoom opera con capacidad 1 por host.
-      hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
+      hostsElegibles.map((host) => ({ ...host, limiteConcurrente: 1 })),
       conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
         cuentaProveedorId,
         inicio: instancia.inicioProgramadoAt,
@@ -132,7 +140,11 @@ export async function agregarEncuentro(
       [input],
     );
     if (!hostId) {
-      throw new ConflictApiError("No hay un host Zoom libre para ese horario.");
+      throw new ConflictApiError(
+        eventoCompartido
+          ? "La sala de la serie está ocupada en ese horario."
+          : "No hay un host Zoom libre para ese horario."
+      );
     }
 
     const ordinal = serie.instancias.reduce((max, item) => Math.max(max, item.ordinal), 0) + 1;
@@ -159,6 +171,7 @@ export async function agregarEncuentro(
         instanciaSalaId: meeting.id,
         proveedorId: provider.id,
         cuentaProveedorId: hostId,
+        ...(eventoCompartido ? { reunionProveedorId: eventoCompartido.reunionProveedorId } : {}),
         operacionPendiente: "PROVISIONAR",
       },
     });
@@ -207,7 +220,7 @@ export async function actualizarEncuentro(
     await bloquearSolicitudSala(tx, solicitudId);
     const actual = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
     if (!actual) throw new NotFoundApiError("El encuentro no existe.");
-    await validarGestion(tx, actor, actual.solicitud.docentePrograma.programaId);
+    await validarGestion(tx, actor, actual.solicitud.docentePrograma);
     const puedeCorregirModalidad = input.accion === "CAMBIAR_MODALIDAD" &&
       puedeCorregirModalidadHistorica(actor.rol, actual.estado);
     if (actual.estado !== "PROGRAMADA" && !puedeCorregirModalidad) {
@@ -317,7 +330,12 @@ export async function actualizarEncuentro(
           ...(input.descripcion !== undefined ? { descripcion: input.descripcion || null } : {}),
         },
       });
-      if (event) {
+      // Con una reunión compartida ya creada en Zoom, el horario de este encuentro vive en
+      // Sala Virtual y en Calendar: no hay nada que reprogramar en Zoom.
+      const reunionCompartidaCreada = Boolean(
+        event && event.proveedor.tipo === "ZOOM" && event.reunionProveedorId && event.externalEventId
+      );
+      if (event && !reunionCompartidaCreada) {
         await marcarOperacionPendiente(
           tx,
           event.id,
@@ -334,7 +352,7 @@ export async function actualizarEncuentro(
         fin: input.fin.toISOString(),
         descripcion: input.descripcion === undefined ? actual.descripcion : input.descripcion || null,
       });
-      return { eventoProveedorIds: event ? [event.id] : [] };
+      return { eventoProveedorIds: event && !reunionCompartidaCreada ? [event.id] : [] };
     }
 
     if (input.accion === "CAMBIAR_MODALIDAD") {
@@ -563,7 +581,7 @@ export async function eliminarEncuentro(
     await bloquearSolicitudSala(tx, solicitudId);
     const meeting = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
     if (!meeting) throw new NotFoundApiError("El encuentro no existe.");
-    await validarGestion(tx, actor, meeting.solicitud.docentePrograma.programaId);
+    await validarGestion(tx, actor, meeting.solicitud.docentePrograma);
     if (meeting.estado !== "PROGRAMADA" || meeting.inicioProgramadoAt <= new Date()) {
       throw new ConflictApiError("Solo se pueden eliminar encuentros futuros y programados.");
     }
@@ -619,7 +637,7 @@ export async function eliminarReunionCompleta(
       },
     });
     if (!request) throw new NotFoundApiError("La reunión no existe.");
-    await validarGestion(tx, actor, request.docentePrograma.programaId);
+    await validarGestion(tx, actor, request.docentePrograma);
     // A repeated DELETE must not requeue already synchronized Google deletions
     // or create duplicate audit records.
     if (request.estado === "CANCELADA") {
@@ -707,12 +725,17 @@ async function marcarOperacionPendiente(
   });
 }
 
+/** Modificar una reunión es del docente titular y de administración; el programa solo da acceso de lectura. */
 async function validarGestion(
   tx: Prisma.TransactionClient,
   actor: SessionActor,
-  programaId?: string
+  docentePrograma?: Readonly<{ programaId: string; docente?: Readonly<{ usuarioId: string }> | null }>
 ): Promise<void> {
-  if (!programaId || !await puedeGestionarPrograma(tx, actor, programaId)) {
+  if (
+    !docentePrograma?.programaId ||
+    !await puedeGestionarPrograma(tx, actor, docentePrograma.programaId) ||
+    !puedeGestionarEncuentros(actor.rol, actor.id, docentePrograma.docente?.usuarioId ?? "")
+  ) {
     throw new ForbiddenApiError("No tiene permisos para gestionar estos encuentros.");
   }
 }

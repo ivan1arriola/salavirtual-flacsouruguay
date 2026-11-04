@@ -1,1 +1,1 @@
-export { default } from "@/src/bootstrap/ui/reuniones/reunion-detail-page.server";
+export { default } from "@/src/bootstrap/ui/reuniones/reunion-detalle-page.server";

@@ -5,8 +5,10 @@ import {
   normalizarCodigoReunionBuscado,
   parsearFechaFiltro,
   resolverPaginacionAgenda,
+  resolverPeriodoAgenda,
   resolverVistaAgenda
 } from "./agenda-view.domain";
+import { filtroProveedorActivo, resolverProveedorReunion } from "./proveedor-reunion.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 export type PeriodoAgenda = "proximas" | "anteriores";
@@ -62,8 +64,11 @@ export type ReunionesPageSearchParams = Readonly<{
   programa?: string;
   periodo?: string;
   page?: string;
+  porPagina?: string;
   desde?: string;
   hasta?: string;
+  /** `meet` o `zoom`: sólo los encuentros cuyo proveedor activo es ese. Sin valor, no se filtra. */
+  proveedor?: string;
 }>;
 
 export async function obtenerDatosPaginaReuniones(
@@ -77,15 +82,21 @@ export async function obtenerDatosPaginaReuniones(
     programa: programaParam = "",
     periodo: periodoParam,
     page: pageParam,
+    porPagina: porPaginaParam,
     desde: desdeParam = "",
-    hasta: hastaParam = ""
+    hasta: hastaParam = "",
+    proveedor: proveedorParam
   } = params;
 
   const vista = resolverVistaAgenda(vistaParam);
+  const proveedor = resolverProveedorReunion(proveedorParam);
+  const proveedorWhere: Prisma.InstanciaSalaWhereInput = proveedor
+    ? { AND: [filtroProveedorActivo(proveedor) as Prisma.InstanciaSalaWhereInput] }
+    : {};
   const query = q.trim();
   const programaId = actor.rol === "ADMINISTRACION" ? programaParam.trim() : "";
-  const periodo: PeriodoAgenda =
-    actor.rol === "ADMINISTRACION" && periodoParam === "anteriores" ? "anteriores" : "proximas";
+  // El alcance de cada rol lo fija requestScope: un docente solo ve reuniones de sus programas.
+  const periodo: PeriodoAgenda = resolverPeriodoAgenda(periodoParam);
   const isHistory = periodo === "anteriores";
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
@@ -192,7 +203,8 @@ export async function obtenerDatosPaginaReuniones(
   const baseInstanceWhere: Prisma.InstanciaSalaWhereInput = {
     estado: { not: "CANCELADA" },
     solicitud: requestScope,
-    ...instanceSearch
+    ...instanceSearch,
+    ...proveedorWhere
   };
   const encounterWhere: Prisma.InstanciaSalaWhereInput = {
     ...baseInstanceWhere,
@@ -260,7 +272,8 @@ export async function obtenerDatosPaginaReuniones(
     instancias: {
       some: {
         estado: { not: "CANCELADA" },
-        ...temporalWhere
+        ...temporalWhere,
+        ...proveedorWhere
       }
     }
   };
@@ -270,7 +283,11 @@ export async function obtenerDatosPaginaReuniones(
     db.solicitudSala.count({ where: seriesWhere })
   ]);
 
-  const requestedPagination = resolverPaginacionAgenda(pageParam, 50);
+  // El listado Zoom permite 10/20/50 sin alterar el tamaño histórico de Meet.
+  const tamanoPagina = proveedor === "ZOOM" && [10, 20, 50].includes(Number(porPaginaParam))
+    ? Number(porPaginaParam)
+    : proveedor === "ZOOM" ? 10 : 50;
+  const requestedPagination = resolverPaginacionAgenda(pageParam, tamanoPagina);
   const selectedTotal = vista === "series" ? totalSeries : totalMeetings;
   const pagination = calcularInfoPaginacion(
     selectedTotal,
@@ -303,7 +320,8 @@ export async function obtenerDatosPaginaReuniones(
               where: {
                 solicitudSalaId: { in: requestIds },
                 estado: { not: "CANCELADA" },
-                ...temporalWhere
+                ...temporalWhere,
+                ...proveedorWhere
               },
               orderBy: { inicioProgramadoAt: isHistory ? "desc" : "asc" },
               include: meetingInclude
@@ -395,6 +413,7 @@ export async function obtenerDatosPaginaReuniones(
 
   return {
     vista,
+    proveedor,
     q,
     query,
     programaId,

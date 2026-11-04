@@ -54,6 +54,24 @@ describe("excepción Conservar en Google Meet", () => {
     }) });
   });
 
+  it("toma el bloqueo de la serie antes que el del encuentro, con la misma clave que la migración por serie", async () => {
+    const fila = instancia({
+      solicitud: { serieReunionId: "s-1", docenteProgramaId: "dp", titulo: "Clase", createdAt: new Date("2026-10-01T12:00:00Z") },
+    });
+    const bloqueos: string[] = [];
+    const tx = {
+      $executeRaw: vi.fn(async (_: unknown, clave: string) => { bloqueos.push(clave); return 1; }),
+      instanciaSala: { findUnique: vi.fn(async () => fila), update: vi.fn(async () => ({ id: "i1" })) },
+      auditoria: { create: vi.fn(async () => ({})) },
+    };
+    const db = { $transaction: vi.fn(async (cb: (t: typeof tx) => unknown) => cb(tx)) } as unknown as PrismaClient;
+    await actualizarExcepcionGoogleMeet(db, admin, { instanciaId: "i1", conservar: true, motivo: "Evento externo" }, ahora);
+    expect(bloqueos).toEqual([
+      "flacso-meet:migracion-zoom-serie:serie:s-1",
+      "flacso-meet:migracion-zoom:i1",
+    ]);
+  });
+
   it("exige motivo al marcar y lo borra al quitar la excepción", async () => {
     const { db, update } = fakeDb(instancia({ conservarGoogleMeet: true, motivoConservarGoogleMeet: "x" }));
     await expect(actualizarExcepcionGoogleMeet(db, admin, { instanciaId: "i1", conservar: true, motivo: " " }, ahora))
@@ -95,7 +113,7 @@ describe("excepción Conservar en Google Meet", () => {
 });
 
 describe("vista previa de migración a Zoom", () => {
-  function previewDb(meetOverrides: Record<string, unknown> = {}) {
+  function previewDb(meetOverrides: Record<string, unknown> = {}, seriePorId: Record<string, string> = {}) {
     const meetOk = {
       joinUrl: "https://meet.google.com/abc",
       externalEventId: "calendar-event",
@@ -115,7 +133,14 @@ describe("vista previa de migración a Zoom", () => {
       asignaciones: [], cohostEmails: [{ email: "co@flacso.edu.uy" }], invitados: [], eventosProveedor: [meetOk],
     };
     const at = (id: string, day: number) => ({
-      ...base, id,
+      ...base,
+      solicitud: {
+        ...base.solicitud,
+        serieReunionId: seriePorId[id] ?? `serie-${id}`,
+        docenteProgramaId: "dp-1",
+        createdAt: new Date("2026-10-01T12:00:00Z"),
+      },
+      id,
       inicioProgramadoAt: new Date(`2026-11-${String(day).padStart(2, "0")}T12:00:00Z`),
       finProgramadoAt: new Date(`2026-11-${String(day).padStart(2, "0")}T13:00:00Z`),
     });
@@ -157,6 +182,25 @@ describe("vista previa de migración a Zoom", () => {
     expect(porId.d.estado).toBe("CERCANO");
     expect(vista.conteos).toMatchObject({ MIGRABLE: 1, SIN_SALA: 1, EXCEPCION: 1, CERCANO: 1 });
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it("bloquea todos los encuentros de una serie con varios encuentros futuros y no les asigna sala", async () => {
+    const { db, write } = previewDb({}, { a: "serie-comun", b: "serie-comun", c: "serie-comun" });
+    const vista = await obtenerVistaPreviaMigracionZoom(db, admin, ahora);
+    const porId = Object.fromEntries(vista.filas.map((fila) => [fila.id, fila]));
+    expect(porId.a).toMatchObject({ estado: "SERIE", hostZoom: null, cambioEnlace: false, destinatarios: [] });
+    expect(porId.b).toMatchObject({ estado: "SERIE", hostZoom: null, cambioEnlace: false });
+    expect(porId.c.estado).toBe("EXCEPCION");
+    expect(vista.conteos.SERIE).toBe(2);
+    expect(vista.conteos.MIGRABLE).toBe(0);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("una serie con un solo encuentro futuro sigue siendo migrable", async () => {
+    const { db } = previewDb();
+    const vista = await obtenerVistaPreviaMigracionZoom(db, admin, ahora);
+    expect(vista.conteos.SERIE).toBe(0);
+    expect(vista.conteos.MIGRABLE).toBe(1);
   });
 
   it("incluye encuentros con Meet operativo y solo ajustes de cohosts pendientes", async () => {

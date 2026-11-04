@@ -7,7 +7,7 @@ function source(relativePath: string): string {
 }
 
 describe("agenda de reuniones en móvil", () => {
-  const page = source("app/(gestion)/reuniones/page.tsx");
+  const page = source("src/bootstrap/ui/reuniones/reuniones-lista-meet-page.server.tsx");
   const styles = source("app/(gestion)/agenda-mobile-compact.css");
 
   it("conserva búsqueda directa y acceso a filtros avanzados con valores persistentes", () => {

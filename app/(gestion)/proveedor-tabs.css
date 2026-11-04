@@ -1,0 +1,48 @@
+.proveedor-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.proveedor-tabs a {
+  min-width: 96px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 18px;
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+
+.proveedor-tabs a.active {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, #ffffff);
+  font-weight: 700;
+}
+
+.proveedor-aviso {
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--brand) 6%, #ffffff);
+  padding: 10px 14px;
+}
+
+.proveedor-aviso a {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.proveedor-tabs a:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.proveedor-tabs a.active {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}

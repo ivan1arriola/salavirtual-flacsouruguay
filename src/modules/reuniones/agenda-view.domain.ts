@@ -18,6 +18,12 @@ export function resolverVistaAgenda(value?: string): VistaAgenda {
   return value === "encuentros" ? "encuentros" : "series";
 }
 
+export type PeriodoAgendaValor = "proximas" | "anteriores";
+
+export function resolverPeriodoAgenda(value?: string): PeriodoAgendaValor {
+  return value === "anteriores" ? "anteriores" : "proximas";
+}
+
 export function normalizarCodigoReunionBuscado(value: string): string {
   return normalizeMeetLink(value)?.code ?? value.trim().toLowerCase();
 }

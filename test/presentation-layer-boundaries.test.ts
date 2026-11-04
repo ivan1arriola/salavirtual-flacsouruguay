@@ -25,7 +25,9 @@ const meetingComponents = [
   "meeting-creation-dialog.tsx",
   "meeting-detail-manager.tsx",
   "meeting-form-v2.tsx",
+  "meeting-form-zoom.tsx",
   "meeting-integration-problems.tsx",
+  "reunion-zoom-encuentros.tsx",
   "series-management.tsx"
 ] as const;
 
@@ -64,6 +66,12 @@ describe("capa de presentacion modular", () => {
     }
   });
 
+  it("expone los componentes Zoom de reuniones en la fachada pública", () => {
+    const fachada = readFileSync(join(root, "src/modules/reuniones/presentation.ts"), "utf8");
+    expect(fachada).toContain("MeetingFormZoom");
+    expect(fachada).toContain("ReunionZoomEncuentros");
+  });
+
   it("elimina fachadas legacy de presentacion sin consumidores", () => {
     const files = [
       ...assistanceComponents.map((file) => `src/components/${file}`),
@@ -82,6 +90,7 @@ describe("capa de presentacion modular", () => {
       "app/(gestion)/asistentes/page.tsx",
       "app/(gestion)/asistentes/[usuarioId]/page.tsx",
       "app/(gestion)/mi-agenda/page.tsx",
+      "app/(gestion)/reuniones/page.tsx",
       "app/(gestion)/reuniones/nueva/page.tsx",
       "app/(gestion)/reuniones/[solicitudId]/page.tsx"
     ];

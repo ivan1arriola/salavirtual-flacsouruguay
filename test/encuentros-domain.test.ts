@@ -130,7 +130,7 @@ describe("gestión funcional de encuentros", () => {
       { id: "s1", prioridad: 1, limiteConcurrente: 1 }
     ], [{ cuentaProveedorId: "s1", ...periodo }], [periodo])).toBeNull();
   });
-  it("reintenta solo cancelaciones Google pendientes sin reencolar eventos completados", () => {
+  it("reintenta solo cancelaciones pendientes de Google y Zoom sin reencolar eventos completados", () => {
     expect(idsCancelacionesGooglePendientes([
       { eventosProveedor: [
         { id: "pendiente", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" },
@@ -140,7 +140,7 @@ describe("gestión funcional de encuentros", () => {
       { eventosProveedor: [
         { id: "otro", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" }
       ] }
-    ])).toEqual(["pendiente", "otro"]);
+    ])).toEqual(["pendiente", "zoom", "otro"]);
     expect(idsCancelacionesGooglePendientes([
       { eventosProveedor: [
         { id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null }

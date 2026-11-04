@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
 import { idsCancelacionesGooglePendientes } from "./encuentros.domain";
+import { puedeGestionarEncuentros } from "./encuentros.domain";
 import { puedeGestionarPrograma } from "./permisos-programa.service";
 import { bloquearSolicitudSala } from "./reserva-salas.adapter";
 
@@ -26,7 +27,7 @@ export async function cancelarSolicitudesAtomicas(
     const solicitudes = await tx.solicitudSala.findMany({
       where: { id: { in: ids } },
       include: {
-        docentePrograma: { select: { programaId: true } },
+        docentePrograma: { select: { programaId: true, docente: { select: { usuarioId: true } } } },
         instancias: {
           include: {
             eventosProveedor: { include: { proveedor: { select: { tipo: true } } } },
@@ -47,7 +48,10 @@ export async function cancelarSolicitudesAtomicas(
 
     // Validate all permissions and constraints before changing any record.
     for (const solicitud of solicitudes) {
-      if (!await puedeGestionarPrograma(tx, actor, solicitud.docentePrograma.programaId)) {
+      if (
+        !await puedeGestionarPrograma(tx, actor, solicitud.docentePrograma.programaId) ||
+        !puedeGestionarEncuentros(actor.rol, actor.id, solicitud.docentePrograma.docente?.usuarioId ?? "")
+      ) {
         throw new ForbiddenApiError("No tenés permisos para cancelar toda la serie.");
       }
       if (solicitud.estado !== "CANCELADA" &&
@@ -64,7 +68,9 @@ export async function cancelarSolicitudesAtomicas(
         continue;
       }
       const meetIds = solicitud.instancias.flatMap((instancia) =>
-        instancia.eventosProveedor.filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET").map((evento) => evento.id)
+        instancia.eventosProveedor
+          .filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET" || evento.proveedor.tipo === "ZOOM")
+          .map((evento) => evento.id)
       );
       pending.push(...meetIds);
       await tx.auditoria.create({
@@ -98,7 +104,7 @@ export async function cancelarSolicitudesAtomicas(
         data: {
           estado: "CANCELADA",
           canceladaAt: new Date(),
-          canceladaMotivo: "Cancelación de serie; Google Calendar pendiente."
+          canceladaMotivo: "Cancelación de serie; enlaces externos pendientes."
         }
       });
     }

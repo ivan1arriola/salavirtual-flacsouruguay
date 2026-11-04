@@ -7,6 +7,7 @@ import {
   type ProvisionConferenciaResult,
 } from "../domain";
 import type {
+  ClaimInfo,
   ConferenceProvider,
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
@@ -19,8 +20,11 @@ import {
   actualizarReunionZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
+  crearReunionZoomRecurrenteHttp,
+  buscarReunionZoomPorMarcaHttp,
   type ZoomMeetingResult,
 } from "@/src/integrations/zoom/zoom-client";
+import { debeEliminarseReunionCompartida } from "@/src/modules/reuniones/reunion-compartida.domain";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -110,6 +114,24 @@ export async function sincronizarEventosPendientesUseCase(
 
         switch (claim.operacion) {
           case "PROVISIONAR": {
+            if (claim.event.reunionProveedorId) {
+              const compartida = await provisionarReunionCompartida(repository, claim, token, hostEmail);
+              if (compartida.espera) {
+                // Otro encuentro de la serie está creando la reunión: se reintenta sin esperar al reclamo del evento.
+                await repository.liberarReclamoEvento?.(claim);
+                results.push({ eventoProveedorId: id, estado: "EN_PROCESO" });
+                continue;
+              }
+              result = {
+                externalEventId: compartida.meetingInfo.meetingId,
+                codigoReunion: compartida.meetingInfo.meetingId,
+                joinUrl: compartida.meetingInfo.joinUrl,
+                payload: { meetingId: compartida.meetingInfo.meetingId, joinUrl: compartida.meetingInfo.joinUrl },
+              };
+              await repository.persistirMeetDetectado(claim, result);
+              break;
+            }
+
             let externalEventId = claim.event.externalEventId;
             let meetingInfo: ZoomMeetingResult;
 
@@ -146,13 +168,16 @@ export async function sincronizarEventosPendientesUseCase(
             if (!claim.event.externalEventId) {
               throw new Error("No existe una reunión de Zoom para reprogramar.");
             }
-            await actualizarReunionZoomHttp(token, claim.event.externalEventId, {
-              topic: request.titulo,
-              startTime: request.inicio,
-              durationMinutes,
-              timezone: request.timezone || "America/Montevideo",
-              agenda: request.descripcion,
-            });
+            // En una reunión compartida el horario vive en Sala Virtual y en Calendar: no se toca Zoom.
+            if (!claim.event.reunionProveedorId) {
+              await actualizarReunionZoomHttp(token, claim.event.externalEventId, {
+                topic: request.titulo,
+                startTime: request.inicio,
+                durationMinutes,
+                timezone: request.timezone || "America/Montevideo",
+                agenda: request.descripcion,
+              });
+            }
             const meetingInfo = await obtenerReunionZoomHttp(token, claim.event.externalEventId);
             result = {
               externalEventId: claim.event.externalEventId,
@@ -177,7 +202,9 @@ export async function sincronizarEventosPendientesUseCase(
           }
 
           case "CANCELAR": {
-            if (claim.event.externalEventId) {
+            if (claim.event.reunionProveedorId) {
+              await cancelarUsoReunionCompartida(repository, claim, token);
+            } else if (claim.event.externalEventId) {
               try {
                 await eliminarReunionZoomHttp(token, claim.event.externalEventId);
               } catch (error) {
@@ -453,4 +480,98 @@ function esEventoInexistente(error: unknown): boolean {
     value.response?.status === 404 ||
     value.response?.status === 410
   );
+}
+
+type ProvisionCompartida =
+  | Readonly<{ espera: true }>
+  | Readonly<{ espera: false; meetingInfo: ZoomMeetingResult }>;
+
+/**
+ * Primer `PROVISIONAR` de una serie: reclama la creación (estado persistido, no un bloqueo que
+ * se libera antes del POST a Zoom), recupera una reunión huérfana si la hay, crea la reunión
+ * recurrente una sola vez y guarda su ID apenas lo recibe. Los demás encuentros la reutilizan.
+ */
+async function provisionarReunionCompartida(
+  repository: ConferenciasRepositoryPort,
+  claim: ClaimInfo,
+  token: string,
+  hostEmail: string
+): Promise<ProvisionCompartida> {
+  const {
+    reclamarCreacionReunionCompartida,
+    registrarExternalIdTemprano,
+    guardarReunionCompartida,
+    vincularEventoReunionCompartida,
+  } = repository;
+  if (
+    !reclamarCreacionReunionCompartida ||
+    !registrarExternalIdTemprano ||
+    !guardarReunionCompartida ||
+    !vincularEventoReunionCompartida
+  ) {
+    throw new Error("El repositorio no soporta reuniones de Zoom compartidas.");
+  }
+  const serieClave = claim.event.serieClave;
+  if (!serieClave) throw new Error("La reunión compartida no tiene clave de serie.");
+
+  const reclamo = await reclamarCreacionReunionCompartida(claim.event.id, claim.token, new Date());
+  if (!reclamo) throw new Error("No se pudo reclamar la reunión compartida de la serie.");
+  if (reclamo.resultado === "EN_CURSO_POR_OTRO") return { espera: true };
+
+  if (reclamo.resultado === "YA_CREADA") {
+    if (!reclamo.externalId) throw new Error("La reunión compartida figura creada pero no tiene ID de Zoom.");
+    const info = reclamo.joinUrl
+      ? { meetingId: reclamo.externalId, joinUrl: reclamo.joinUrl }
+      : await obtenerReunionZoomHttp(token, reclamo.externalId);
+    // Un encuentro agregado después de crear la reunión no recibió la copia del ID: se vincula ahora.
+    await vincularEventoReunionCompartida(claim, { externalId: info.meetingId, joinUrl: info.joinUrl });
+    return { espera: false, meetingInfo: info };
+  }
+
+  const marca = `[serie:${serieClave}]`;
+  const request = claim.event.request;
+  const existente = reclamo.externalId
+    ? await obtenerReunionZoomHttp(token, reclamo.externalId)
+    : await buscarReunionZoomPorMarcaHttp(token, hostEmail, marca);
+  const info = existente ?? await crearReunionZoomRecurrenteHttp(token, hostEmail, {
+    topic: request.titulo,
+    agenda: [request.descripcion, marca].filter(Boolean).join("\n"),
+    requiereGrabacion: request.requiereGrabacion ?? false,
+  });
+  await registrarExternalIdTemprano(reclamo.reunionId, claim.token, info.meetingId);
+  await guardarReunionCompartida(reclamo.reunionId, claim.token, {
+    externalId: info.meetingId,
+    joinUrl: info.joinUrl,
+  });
+  await vincularEventoReunionCompartida(claim, { externalId: info.meetingId, joinUrl: info.joinUrl });
+  return { espera: false, meetingInfo: info };
+}
+
+/**
+ * Cancelar un encuentro desvincula su uso. La reunión Zoom se elimina solo cuando no queda
+ * ningún encuentro activo y todavía no fue eliminada; primero en Zoom (404 se tolera) y
+ * después se marca, para que un fallo intermedio no deje una reunión huérfana.
+ */
+async function cancelarUsoReunionCompartida(
+  repository: ConferenciasRepositoryPort,
+  claim: ClaimInfo,
+  token: string
+): Promise<void> {
+  const { usosDeReunionCompartida, marcarReunionCompartidaEliminada } = repository;
+  const reunionId = claim.event.reunionProveedorId;
+  if (!reunionId || !usosDeReunionCompartida || !marcarReunionCompartidaEliminada) {
+    throw new Error("El repositorio no soporta reuniones de Zoom compartidas.");
+  }
+  const estado = await usosDeReunionCompartida(reunionId);
+  if (estado.eliminada || !debeEliminarseReunionCompartida(estado.usos, claim.event.id, new Date())) return;
+
+  const externalId = estado.externalId ?? claim.event.externalEventId;
+  if (externalId) {
+    try {
+      await eliminarReunionZoomHttp(token, externalId);
+    } catch (error) {
+      if (!esEventoInexistente(error)) throw error;
+    }
+  }
+  await marcarReunionCompartidaEliminada(reunionId);
 }

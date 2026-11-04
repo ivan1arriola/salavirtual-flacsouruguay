@@ -97,6 +97,9 @@ describe("crearReuniones - cohosts e invitados", () => {
           return Promise.resolve({ id: "evento-1" });
         })
       },
+      reunionProveedor: {
+        create: vi.fn().mockResolvedValue({ id: "reunion-1" })
+      },
       instanciaSala: {
         create: vi.fn().mockResolvedValue({ id: "instancia-1" })
       },
@@ -115,7 +118,7 @@ describe("crearReuniones - cohosts e invitados", () => {
     };
 
     const db = { $transaction: vi.fn().mockImplementation((fn) => fn(tx)) };
-    return { db, createdCohostReuniones, createdCohostEmails, createdEventos };
+    return { db, createdCohostReuniones, createdCohostEmails, createdEventos, tx };
   }
 
   it("guarda el correo del docente sin exigir una cuenta Google", async () => {
@@ -189,4 +192,52 @@ describe("crearReuniones - cohosts e invitados", () => {
       payloadUltimo: { salaVirtual: { invitadosEmails: ["invitado@ejemplo.org"] } }
     });
   });
+
+  describe("crearReuniones - reunión Zoom compartida por serie", () => {
+  const dia = (n: number) => ({
+    inicio: new Date(`2027-10-0${n}T14:00:00-03:00`),
+    fin: new Date(`2027-10-0${n}T16:00:00-03:00`)
+  });
+  const input = (cantidad: number) => ({
+    titulo: "Seminario de Investigación",
+    docenteProgramaId: "dp-123",
+    modalidad: "VIRTUAL" as const,
+    timezone: "America/Montevideo",
+    requiereAsistenciaTecnica: false,
+    instancias: Array.from({ length: cantidad }, (_, i) => dia(i + 1))
+  });
+  const admin = { id: "actor-user-admin", rol: "ADMINISTRACION" as const };
+
+  it("siempre crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
+    const { db, tx, createdEventos } = createMockDb();
+    await crearReuniones(db as never, admin, input(3));
+
+    expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
+    expect(tx.reunionProveedor.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        proveedorId: "prov-zoom",
+        cuentaProveedorId: "sala-01",
+        serieClave: expect.stringMatching(/^serie:/)
+      })
+    }));
+    expect(createdEventos).toHaveLength(3);
+    for (const evento of createdEventos) {
+      expect(evento).toMatchObject({ reunionProveedorId: "reunion-1", cuentaProveedorId: "sala-01", operacionPendiente: "PROVISIONAR" });
+    }
+  });
+
+  it("una reunión de un solo encuentro también crea la suya", async () => {
+    const { db, tx, createdEventos } = createMockDb();
+    await crearReuniones(db as never, admin, input(1));
+    expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
+    expect(createdEventos[0]).toMatchObject({ reunionProveedorId: "reunion-1" });
+  });
+
+  it("la disponibilidad de todos los horarios se sigue validando con la reunión compartida", async () => {
+    const { db, tx } = createMockDb();
+    tx.cuentaProveedor.findMany.mockResolvedValue([]);
+    await expect(crearReuniones(db as never, admin, input(2))).rejects.toThrow();
+    expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
+  });
+});
 });
