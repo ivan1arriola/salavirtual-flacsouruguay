@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { obtenerDiagnosticosSeriesZoom } from "../src/modules/reuniones/diagnostico-serie-zoom.service";
+import { claveSerieReunion } from "../src/modules/reuniones/serie-reunion.domain";
 
 const ahora = new Date("2026-11-04T12:00:00Z");
 const admin = { id: "admin", rol: "ADMINISTRACION" };
@@ -55,7 +56,9 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
     ]);
     const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
     expect([...resultado.keys()]).toEqual([
-      "serie:s1", "serie:s2", "dp\u0000Seminario\u00002026-10-01T00:00:00.000Z", "dp\u0000Otro\u00002026-10-01T00:00:00.000Z",
+      "serie:s1", "serie:s2",
+      claveSerieReunion(solicitud(null)),
+      claveSerieReunion({ ...solicitud(null), titulo: "Otro" }),
     ]);
     expect([...resultado.values()].map(({ conteos }) => conteos.total)).toEqual([2, 1, 2, 1]);
   });
@@ -128,5 +131,40 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe("series huérfanas", () => {
+    it("por defecto no las busca: solo diagnostica las series con encuentros futuros", async () => {
+      const { db, cliente } = base([instancia("i1", "s1")], [reunion("serie:s1"), reunion("serie:vieja")]);
+      const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
+      expect([...resultado.keys()]).toEqual(["serie:s1"]);
+      expect(db.reunionProveedor.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { serieClave: { in: ["serie:s1"] }, proveedor: { tipo: "ZOOM" } },
+      }));
+    });
+
+    it("con incluirHuerfanas suma las series con reunión activa y sin encuentros futuros, con una sola consulta de reuniones", async () => {
+      const { db, cliente, escritura } = base([instancia("i1", "s1")], [reunion("serie:s1"), reunion("serie:vieja"), reunion("legacy:dp|x|y")], [aviso("serie:vieja")]);
+      const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora, { incluirHuerfanas: true });
+      expect([...resultado.keys()].sort()).toEqual(["legacy:dp|x|y", "serie:s1", "serie:vieja"]);
+      expect(resultado.get("serie:vieja")).toMatchObject({
+        clasificacion: "HUERFANA", acciones: ["VER_DETALLE"], conteos: { total: 0, enZoom: 0, enMeet: 0 }, avisos: { enviados: 1 },
+      });
+      expect(db.reunionProveedor.findMany).toHaveBeenCalledTimes(1);
+      expect(db.reunionProveedor.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          proveedor: { tipo: "ZOOM" },
+          OR: [
+            { serieClave: { in: ["serie:s1"] } },
+            { serieClave: { notIn: ["serie:s1"] }, estadoCreacion: { in: ["PENDIENTE", "CREANDO", "CREADA"] } },
+          ],
+        },
+      }));
+      expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledTimes(1);
+      expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { serieClave: { in: expect.arrayContaining(["serie:s1", "serie:vieja", "legacy:dp|x|y"]) } },
+      }));
+      expect(escritura).not.toHaveBeenCalled();
+    });
   });
 });
