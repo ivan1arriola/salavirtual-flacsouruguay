@@ -56,9 +56,15 @@ export function planificarReemplazoSerieZoom(
     return { ...acc, copiar: [...acc.copiar, encuentro] };
   }, { errores: erroresIniciales, conservar: [], copiar: [] });
 
-  const ordenados = evaluados.copiar.toSorted((a, b) =>
-    a.inicio.getTime() - b.inicio.getTime() || a.id.localeCompare(b.id)
-  );
+  const ordenados = evaluados.copiar.reduce<readonly EncuentroParaReemplazo[]>((orden, actual) => {
+    const indice = orden.findIndex((item) =>
+      actual.inicio.getTime() < item.inicio.getTime() ||
+      (actual.inicio.getTime() === item.inicio.getTime() && actual.id.localeCompare(item.id) < 0)
+    );
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+  }, []);
   const superpuestos = ordenados.some((actual, indice) =>
     indice > 0 && actual.inicio < ordenados[indice - 1].fin
   );
