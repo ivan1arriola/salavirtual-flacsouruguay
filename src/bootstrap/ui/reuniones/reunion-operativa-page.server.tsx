@@ -15,6 +15,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
@@ -50,6 +51,10 @@ export default async function ReunionOperativaPage({
   if (result.estado !== "OK") notFound();
 
   const reunion = result.reunion;
+  if (reunion.proveedorActivo === "ZOOM") {
+    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} />;
+  }
+
   const active = reunion.conferencia.participantesActivos;
   const desconectados = reunion.conferencia.participantesDesconectados;
   const hostsYCohosts = reunion.conferencia.hostsYCohosts;
