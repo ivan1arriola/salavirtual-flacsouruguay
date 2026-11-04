@@ -128,7 +128,7 @@ export default async function ReunionZoomDetailPage({
             <p>Se detectaron {idsZoom.size} IDs y {enlacesZoom.size} enlaces de Zoom distintos.
               Los encuentros de una misma serie deberían compartir una sola reunión y un solo enlace.</p>
             {esSerieMixta ? (
-              <p>Esta serie también contiene encuentros en Meet. Por seguridad, primero hay que resolver la migración de la serie para no alterar los encuentros de Meet.</p>
+              <p>Esta serie también contiene encuentros en otro proveedor. Por seguridad, primero hay que resolver la migración para no alterar esos encuentros.</p>
             ) : null}
           </div>
           {esAdmin ? (
