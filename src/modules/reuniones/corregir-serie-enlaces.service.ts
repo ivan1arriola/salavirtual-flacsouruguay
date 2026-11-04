@@ -9,7 +9,7 @@ import { prepararCambioEnlaceZoomACalendar } from "./migracion-zoom-calendar.dom
 import type { ResumenAvisosMigracion } from "./migracion-zoom-avisos.service";
 import { proveedorActivoDeInstancia } from "./proveedor-reunion.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
-import { claveBloqueoSerieMigracion, filtroSerieDesdeClave } from "./serie-reunion.domain";
+import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -119,7 +119,7 @@ export async function corregirSerieEnlaces(
   input: Readonly<{ serieClave: string }>,
 ): Promise<ResultadoCorreccionSerie> {
   exigirAdministracionCorreccion(actor);
-  const serieClave = input.serieClave;
+  const serieClave = normalizarClaveSerie(input.serieClave);
   try {
     return await corregirSerie(deps, actor, serieClave);
   } catch (error) {
@@ -149,7 +149,7 @@ export async function corregirSeriesEnlaces(
   input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>,
 ): Promise<readonly ResultadoCorreccionSerie[]> {
   exigirAdministracionCorreccion(actor);
-  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0))];
+  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))];
   if (claves.length === 0) throw new ValidationApiError("Indicá al menos una serie.");
   if (input.modo === "PILOTO" && claves.length !== 1) {
     throw new ValidationApiError("El piloto corrige exactamente una serie.");

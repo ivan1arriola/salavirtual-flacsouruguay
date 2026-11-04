@@ -11,7 +11,7 @@ import { planificarMigracionZoomPorSerie } from "./migracion-zoom-preview.domain
 import { armarSerieMigracionZoom } from "./migracion-zoom-serie.service";
 import { notificarCambioEnlaceSerie } from "./aviso-enlace-serie.service";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
-import { claveBloqueoSerieMigracion, filtroSerieDesdeClave } from "./serie-reunion.domain";
+import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
 
@@ -96,7 +96,7 @@ export async function aplicarMigracionZoomSerie(
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede aplicar la migración a Zoom.");
   }
-  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0))];
+  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))];
   if (claves.length === 0) throw new ValidationApiError("Indicá al menos una serie.");
   if (input.modo === "PILOTO" && claves.length !== 1) {
     throw new ValidationApiError("El piloto convierte exactamente una serie.");

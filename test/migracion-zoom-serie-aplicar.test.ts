@@ -175,6 +175,18 @@ describe("aplicarMigracionZoomSerie", () => {
     expect(e.db.$transaction).not.toHaveBeenCalled();
   });
 
+  it("una serie antigua con clave de formato anterior (NUL) nunca lleva NUL a la base ni al resultado", async () => {
+    const e = crearEscenario();
+    const claveAntigua = "dp-1\u0000Taller Metodológico I\u00002026-10-01T12:00:00.000Z";
+    const [r] = await aplicarMigracionZoomSerie(e.deps, admin, { modo: "PILOTO", serieClaves: [claveAntigua] });
+    expect(r.resultado).toBe("MIGRADA");
+    expect(r.serieClave).not.toContain("\u0000");
+    expect(e.reuniones).toHaveLength(1);
+    expect(e.reuniones[0].serieClave).toBe(r.serieClave);
+    expect(JSON.stringify(e.auditorias)).not.toContain("\u0000");
+    expect(e.auditorias[0].entidadId).toBe(r.serieClave);
+  });
+
   it("migra los tres encuentros con una sola reunión Zoom y el mismo enlace", async () => {
     const e = crearEscenario();
     const [r] = await migrar(e);
