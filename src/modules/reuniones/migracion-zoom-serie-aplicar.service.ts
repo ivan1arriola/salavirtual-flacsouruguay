@@ -161,6 +161,19 @@ async function prepararBajoBloqueo(
       where: { proveedorId_serieClave: { proveedorId: proveedorZoom.id, serieClave } },
       select: { id: true, cuentaProveedorId: true },
     });
+    // Si algún encuentro ya está en Zoom, todos deben usar la reunión de esta serie. Si apuntan a otra,
+    // o a un evento sin reunión compartida, migrar el resto crearía una segunda reunión para la misma serie.
+    const zoomFueraDeLaSerie = instancias.some((instancia) =>
+      instancia.proveedorActivoTipo === "ZOOM"
+      && instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM")?.reunionProveedorId !== reunion?.id);
+    if (zoomFueraDeLaSerie) {
+      throw new FalloEtapa(
+        "VALIDACION",
+        "Hay encuentros de la serie en Zoom con otra reunión o sin reunión compartida: usá «Unificar enlace» antes de migrar el resto.",
+        false,
+        true,
+      );
+    }
     const ids = instancias.map(({ id }) => id);
     const reservas = await tx.eventoProveedor.findMany({
       where: {

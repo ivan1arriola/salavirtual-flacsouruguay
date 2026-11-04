@@ -175,6 +175,29 @@ describe("aplicarMigracionZoomSerie", () => {
     expect(e.db.$transaction).not.toHaveBeenCalled();
   });
 
+  describe("serie mezclada cuyos encuentros en Zoom no comparten la reunión de la serie", () => {
+    const enZoom = (e: ReturnType<typeof crearEscenario>, reunionProveedorId: string | null) => {
+      e.instancias[0].proveedorActivoTipo = "ZOOM";
+      e.instancias[0].eventosProveedor.push({
+        id: "zoom-previo", externalEventId: "55", joinUrl: ZOOM, estadoIntegracion: "SINCRONIZADA", operacionPendiente: null,
+        reunionProveedorId, cuentaProveedorId: "h1", cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }, proveedor: { tipo: "ZOOM" },
+      });
+    };
+
+    it.each([
+      ["otra reunión Zoom distinta", "otra-reunion"],
+      ["un evento Zoom sin reunión compartida", null],
+    ])("no crea una segunda reunión si un encuentro ya está en Zoom con %s y pide unificar el enlace", async (_nombre, reunionProveedorId) => {
+      const e = crearEscenario();
+      enZoom(e, reunionProveedorId);
+      const [r] = await migrar(e);
+      expect(r).toMatchObject({ resultado: "OMITIDA", etapa: "VALIDACION", reintentable: false });
+      expect(r.mensaje).toContain("Unificar enlace");
+      expect(e.reuniones).toHaveLength(0);
+      expect(e.sincronizarEventos).not.toHaveBeenCalled();
+    });
+  });
+
   it("una serie antigua con clave de formato anterior (NUL) nunca lleva NUL a la base ni al resultado", async () => {
     const e = crearEscenario();
     const claveAntigua = "dp-1\u0000Taller Metodológico I\u00002026-10-01T12:00:00.000Z";
