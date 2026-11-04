@@ -20,7 +20,6 @@ import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
-import { reunionCompartidaHabilitada } from "./reunion-compartida.domain";
 import { claveSerieReunion } from "./serie-reunion.domain";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
 
@@ -41,7 +40,6 @@ export async function crearReuniones(
   actor: ActorReunion,
   rawInput: unknown,
   claveIdempotenciaCreacion?: string,
-  opciones: Readonly<{ reunionCompartida?: boolean }> = {},
 ): Promise<Readonly<{
   solicitudId: string;
   reuniones: number;
@@ -246,23 +244,20 @@ export async function crearReuniones(
       },
     });
 
-    // Con la bandera encendida, todos los encuentros de la serie comparten UNA reunión de Zoom
-    // (mismo enlace y misma sala). Apagada, cada encuentro conserva su evento independiente.
-    const reunionCompartida = (opciones.reunionCompartida ?? reunionCompartidaHabilitada(process.env))
-      ? await tx.reunionProveedor.create({
-          data: {
-            proveedorId: proveedor.id,
-            cuentaProveedorId: cuentaHostId,
-            serieClave: claveSerieReunion({
-              serieReunionId,
-              docenteProgramaId: input.docenteProgramaId,
-              titulo: input.titulo,
-              createdAt: solicitud.createdAt,
-            }),
-          },
-          select: { id: true },
-        })
-      : null;
+    // Todos los encuentros de la serie comparten UNA reunión de Zoom (mismo enlace y misma sala).
+    const reunionCompartida = await tx.reunionProveedor.create({
+      data: {
+        proveedorId: proveedor.id,
+        cuentaProveedorId: cuentaHostId,
+        serieClave: claveSerieReunion({
+          serieReunionId,
+          docenteProgramaId: input.docenteProgramaId,
+          titulo: input.titulo,
+          createdAt: solicitud.createdAt,
+        }),
+      },
+      select: { id: true },
+    });
 
     const eventoProveedorIds = await Promise.all(
       input.instancias.map(async (fecha, index) => {
@@ -286,7 +281,7 @@ export async function crearReuniones(
             instanciaSalaId: instancia.id,
             proveedorId: proveedor.id,
             cuentaProveedorId: cuentaHostId,
-            ...(reunionCompartida ? { reunionProveedorId: reunionCompartida.id } : {}),
+            reunionProveedorId: reunionCompartida.id,
             operacionPendiente: "PROVISIONAR",
             ...(invitadosEmails.length > 0
               ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }

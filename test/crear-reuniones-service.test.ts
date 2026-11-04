@@ -208,9 +208,9 @@ describe("crearReuniones - cohosts e invitados", () => {
   });
   const admin = { id: "actor-user-admin", rol: "ADMINISTRACION" as const };
 
-  it("con la bandera encendida crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
+  it("siempre crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
     const { db, tx, createdEventos } = createMockDb();
-    await crearReuniones(db as never, admin, input(3), undefined, { reunionCompartida: true });
+    await crearReuniones(db as never, admin, input(3));
 
     expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
     expect(tx.reunionProveedor.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -228,41 +228,15 @@ describe("crearReuniones - cohosts e invitados", () => {
 
   it("una reunión de un solo encuentro también crea la suya", async () => {
     const { db, tx, createdEventos } = createMockDb();
-    await crearReuniones(db as never, admin, input(1), undefined, { reunionCompartida: true });
+    await crearReuniones(db as never, admin, input(1));
     expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
     expect(createdEventos[0]).toMatchObject({ reunionProveedorId: "reunion-1" });
   });
 
-  it("con la bandera apagada no crea la reunión compartida y cada encuentro conserva su evento independiente", async () => {
-    const { db, tx, createdEventos } = createMockDb();
-    await crearReuniones(db as never, admin, input(3), undefined, { reunionCompartida: false });
-    expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
-    expect(createdEventos).toHaveLength(3);
-    for (const evento of createdEventos) expect(evento).not.toHaveProperty("reunionProveedorId");
-  });
-
-  it("sin indicarlo, la bandera sale de ZOOM_REUNION_COMPARTIDA y está apagada por defecto", async () => {
-    const anterior = process.env.ZOOM_REUNION_COMPARTIDA;
-    delete process.env.ZOOM_REUNION_COMPARTIDA;
-    try {
-      const apagada = createMockDb();
-      await crearReuniones(apagada.db as never, admin, input(2));
-      expect(apagada.tx.reunionProveedor.create).not.toHaveBeenCalled();
-
-      process.env.ZOOM_REUNION_COMPARTIDA = "1";
-      const encendida = createMockDb();
-      await crearReuniones(encendida.db as never, admin, input(2));
-      expect(encendida.tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
-    } finally {
-      if (anterior === undefined) delete process.env.ZOOM_REUNION_COMPARTIDA;
-      else process.env.ZOOM_REUNION_COMPARTIDA = anterior;
-    }
-  });
-
-  it("la disponibilidad de todos los horarios se sigue validando con la bandera encendida", async () => {
+  it("la disponibilidad de todos los horarios se sigue validando con la reunión compartida", async () => {
     const { db, tx } = createMockDb();
     tx.cuentaProveedor.findMany.mockResolvedValue([]);
-    await expect(crearReuniones(db as never, admin, input(2), undefined, { reunionCompartida: true })).rejects.toThrow();
+    await expect(crearReuniones(db as never, admin, input(2))).rejects.toThrow();
     expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
   });
 });

@@ -1,16 +1,7 @@
 /**
- * La creación de una reunión Zoom compartida por serie está detrás de la bandera
- * `ZOOM_REUNION_COMPARTIDA` (apagada por defecto). Se enciende solo después de desplegar y
- * sin versiones anteriores del worker en ejecución: una versión vieja no debe procesar un
- * `CANCELAR` sobre un evento con reunión compartida.
+ * Todos los encuentros de una serie en Zoom comparten una sola reunión (un enlace y una sala).
+ * Es el único comportamiento: la antigua bandera `ZOOM_REUNION_COMPARTIDA` se retiró.
  */
-export function reunionCompartidaHabilitada(
-  env: Readonly<Record<string, string | undefined>>
-): boolean {
-  const valor = env.ZOOM_REUNION_COMPARTIDA;
-  return valor === "1" || valor === "true";
-}
-
 export type UsoReunionCompartida = Readonly<{
   eventoProveedorId: string;
   instanciaEstado: string;
