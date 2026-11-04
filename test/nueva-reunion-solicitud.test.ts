@@ -10,6 +10,10 @@ describe("construcción de la solicitud de reunión", () => {
   it("convierte el horario de Montevideo a ISO sin depender del navegador", () => {
     expect(localMontevideoToIso("2026-11-10", "09:30")).toBe("2026-11-10T12:30:00.000Z");
   });
+
+  it("conserva la precondición original: una fecha vacía lanza error y la validación del formulario debe impedirlo", () => {
+    expect(() => localMontevideoToIso("", "09:30")).toThrow(RangeError);
+  });
   it("conserva los datos generales y los horarios del encuentro", () => {
     expect(construirSolicitudReunion(entrada)).toMatchObject({ titulo: "Seminario", descripcion: "Descripción general", docenteProgramaId: "programa", requiereAsistenciaTecnica: false, requiereGrabacion: true, plataforma: "ZOOM", timezone: "America/Montevideo", instancias: [{ inicio: "2026-11-10T13:00:00.000Z", fin: "2026-11-10T20:00:00.000Z" }] });
   });

@@ -24,7 +24,7 @@
 
 ## Revisión de foco
 
-- Fechas en blanco o con hora fin ≤ inicio: la función no debe lanzar excepción con entradas vacías previas a la validación (la validación sigue en el contenedor).
+- Fechas en blanco o con hora fin ≤ inicio: `localMontevideoToIso` conserva su precondición original (lanza `RangeError` con fecha u hora vacías); la validación que lo impide sigue en `submit()` (`datesReady`) y una prueba fija esa precondición.
 - Hora cruzando medianoche en cobertura (p. ej. salida 00:30): `asistenciaLocalAIso` ya maneja el desfase; la función pura debe delegar sin reimplementarlo.
 - Cambio de modo de fechas descarta filas: el comportamiento actual se conserva tal cual (A2 añadirá confirmación).
 - Programa único preseleccionado: el valor inicial de `selectedProgramId` no cambia.
