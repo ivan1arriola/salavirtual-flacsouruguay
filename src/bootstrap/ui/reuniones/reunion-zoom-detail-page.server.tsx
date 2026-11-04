@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Repeat2, Video } from "lucide-react";
+import { ArrowLeft, CalendarDays, Repeat2, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -7,6 +7,7 @@ import { db } from "@/src/lib/db";
 import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
 import { CorregirSerieZoomBoton } from "@/src/components/corregir-serie-zoom-boton";
 import { puedeVerEnlaceAnfitrion } from "@/src/modules/reuniones/enlace-anfitrion.domain";
+import { resumenCuentasAnfitrionas } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { proveedorActivoDeInstancia, type ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
@@ -73,6 +74,7 @@ export default async function ReunionZoomDetailPage({
       puedeCancelar: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
       puedeUnirse,
       joinUrl: enlace.joinUrl,
+      cuentaAnfitrion: enlace.cuentaAnfitrion,
       zoomMeetingId: activo?.proveedor.tipo === "ZOOM" ? (activo.codigoReunion ?? activo.externalEventId ?? null) : null,
       puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
       estadoEnlace: enlace.estado,
@@ -96,6 +98,7 @@ export default async function ReunionZoomDetailPage({
   const necesitaCorreccion = zoomActivos.length > 1 &&
     (idsZoom.size > 1 || enlacesZoom.size > 1 || cuentasZoom.size > 1);
   const esSerieMixta = Boolean(otroProveedor);
+  const resumenCuentas = resumenCuentasAnfitrionas(encuentros.filter(({ estado }) => estado !== "CANCELADA").map(({ cuentaAnfitrion }) => cuentaAnfitrion));
 
 
   return (
@@ -114,6 +117,10 @@ export default async function ReunionZoomDetailPage({
             <span><CalendarDays size={17} aria-hidden="true" /> Clases sincrónicas</span>
             <span><Repeat2 size={17} aria-hidden="true" /> {encuentros.length} {encuentros.length === 1 ? "encuentro" : "encuentros"}</span>
             <span><Video size={17} aria-hidden="true" /> Zoom</span>
+            <span className="zoom-series-hero__host" data-cuentas={resumenCuentas.tipo}>
+              <UserRound size={17} aria-hidden="true" /> Cuenta anfitriona:{" "}
+              <strong>{resumenCuentas.tipo === "NINGUNA" ? "Sin asignar" : resumenCuentas.tipo === "UNA" ? resumenCuentas.correos[0] : `Varias (${resumenCuentas.correos.join(", ")})`}</strong>
+            </span>
           </div>
         </div>
         <div className="zoom-series-hero__brand" aria-hidden="true">

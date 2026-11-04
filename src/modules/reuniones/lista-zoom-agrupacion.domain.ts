@@ -1,4 +1,20 @@
-export const TAMANO_PALETA_CUENTAS = 12;
+/** Un par de colores por cuenta: el mismo en la lista (CSS) y en el detalle. Una prueba exige que coincidan. */
+export const PALETA_CUENTAS_ZOOM: readonly Readonly<{ fuerte: string; palido: string }>[] = [
+  { fuerte: "#2563eb", palido: "#eff4ff" },
+  { fuerte: "#dc2626", palido: "#fff1f1" },
+  { fuerte: "#16a34a", palido: "#eefaf2" },
+  { fuerte: "#d97706", palido: "#fff7e8" },
+  { fuerte: "#7c3aed", palido: "#f5f0ff" },
+  { fuerte: "#0891b2", palido: "#ecfafd" },
+  { fuerte: "#db2777", palido: "#fff0f7" },
+  { fuerte: "#4d7c0f", palido: "#f4f9e8" },
+  { fuerte: "#ea580c", palido: "#fff2ea" },
+  { fuerte: "#0f766e", palido: "#ebf8f6" },
+  { fuerte: "#475569", palido: "#f1f5f9" },
+  { fuerte: "#92400e", palido: "#fbf3ec" },
+];
+
+export const TAMANO_PALETA_CUENTAS = PALETA_CUENTAS_ZOOM.length;
 
 const ZONA_MONTEVIDEO = "America/Montevideo";
 const PATRON_SALA = /^sala(\d+)@/;
@@ -166,4 +182,15 @@ export function cuentasPresentes(
   }, []);
 
   return unicas.reduce<readonly CuentaPresenteZoom[]>(insertarOrdenada, []);
+}
+
+export type ResumenCuentasAnfitrionas = Readonly<{ tipo: "NINGUNA" | "UNA" | "VARIAS"; correos: readonly string[] }>;
+
+/** Cuentas anfitrionas distintas de una serie, en orden de aparición. */
+export function resumenCuentasAnfitrionas(correos: readonly (string | null | undefined)[]): ResumenCuentasAnfitrionas {
+  const distintas = correos.reduce<readonly string[]>((acumulado, valor) => {
+    const limpio = valor?.trim() ?? "";
+    return limpio && !acumulado.includes(limpio) ? [...acumulado, limpio] : acumulado;
+  }, []);
+  return { tipo: distintas.length === 0 ? "NINGUNA" : distintas.length === 1 ? "UNA" : "VARIAS", correos: distintas };
 }
