@@ -27,51 +27,50 @@ export function planificarReemplazoSerieZoom(
   encuentros: readonly EncuentroParaReemplazo[],
   ahora: Date
 ): PlanReemplazoSerie {
-  const errores: string[] = [];
   const ids = encuentros.map(({ id }) => id);
-  if (new Set(ids).size !== ids.length) errores.push("La serie contiene identificadores de encuentros duplicados.");
-  if (!Number.isFinite(ahora.getTime())) errores.push("La fecha de referencia es inválida.");
+  const erroresIniciales = [
+    ...(new Set(ids).size !== ids.length ? ["La serie contiene identificadores de encuentros duplicados."] : []),
+    ...(!Number.isFinite(ahora.getTime()) ? ["La fecha de referencia es inválida."] : [])
+  ];
 
-  const conservar: string[] = [];
-  const copiar: EncuentroParaReemplazo[] = [];
-  for (const encuentro of encuentros) {
+  const evaluados = encuentros.reduce<{
+    errores: readonly string[];
+    conservar: readonly string[];
+    copiar: readonly EncuentroParaReemplazo[];
+  }>((acc, encuentro) => {
     if (!Number.isFinite(encuentro.inicio.getTime()) ||
         !Number.isFinite(encuentro.fin.getTime()) ||
         encuentro.fin <= encuentro.inicio) {
-      errores.push(`El encuentro ${encuentro.id} tiene un horario inválido.`);
-      continue;
+      return { ...acc, errores: [...acc.errores, `El encuentro ${encuentro.id} tiene un horario inválido.`] };
     }
-    if (encuentro.estado === "CANCELADA" ||
-        encuentro.estado === "REALIZADA" ||
-        encuentro.estado === "FINALIZADA" ||
-        encuentro.estado === "EN_CURSO" ||
+    if (["CANCELADA", "REALIZADA", "FINALIZADA", "EN_CURSO"].includes(encuentro.estado) ||
         encuentro.inicio <= ahora) {
-      conservar.push(encuentro.id);
-      continue;
+      return { ...acc, conservar: [...acc.conservar, encuentro.id] };
     }
     if (encuentro.estado !== "PROGRAMADA") {
-      errores.push(`El estado del encuentro ${encuentro.id} requiere revisión manual.`);
-      continue;
+      return { ...acc, errores: [...acc.errores, `El estado del encuentro ${encuentro.id} requiere revisión manual.`] };
     }
     if (encuentro.tieneLiquidacion) {
-      errores.push(`El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`);
-      continue;
+      return { ...acc, errores: [...acc.errores, `El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`] };
     }
-    copiar.push(encuentro);
-  }
+    return { ...acc, copiar: [...acc.copiar, encuentro] };
+  }, { errores: erroresIniciales, conservar: [], copiar: [] });
 
-  const ordenados = [...copiar].sort((a, b) => a.inicio.getTime() - b.inicio.getTime() || a.id.localeCompare(b.id));
-  for (let i = 1; i < ordenados.length; i++) {
-    if (ordenados[i].inicio < ordenados[i - 1].fin) {
-      errores.push("Hay encuentros futuros superpuestos dentro de la serie.");
-      break;
-    }
-  }
+  const ordenados = [...evaluados.copiar].sort((a, b) =>
+    a.inicio.getTime() - b.inicio.getTime() || a.id.localeCompare(b.id)
+  );
+  const superpuestos = ordenados.some((actual, indice) =>
+    indice > 0 && actual.inicio < ordenados[indice - 1].fin
+  );
+  const errores = [
+    ...evaluados.errores,
+    ...(superpuestos ? ["Hay encuentros futuros superpuestos dentro de la serie."] : [])
+  ];
   return {
     estado: errores.length > 0 ? "REVISAR" : ordenados.length === 0 ? "NO_FUTUROS" : "PREPARABLE",
     copiar: errores.length > 0 ? [] : ordenados,
     cancelarDespuesDeVerificar: errores.length > 0 ? [] : ordenados.map(({ id }) => id),
-    conservar,
+    conservar: evaluados.conservar,
     errores
   };
 }
