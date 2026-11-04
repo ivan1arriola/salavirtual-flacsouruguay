@@ -83,6 +83,10 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
       enlacesDistintos: evaluacion.enlacesDistintos,
     },
     avisos: resumenAvisos,
-    acciones: accionesPorClasificacion[clasificacion],
+    // Una serie mixta se resuelve en dos pasos: primero unificar los encuentros que ya están en Zoom y
+    // después migrar los de Meet a esa misma reunión.
+    acciones: clasificacion === "MEZCLADA" && evaluacion.mixtaSinUnificar
+      ? ["UNIFICAR_ENLACE", "VER_DETALLE"]
+      : accionesPorClasificacion[clasificacion],
   };
 }
