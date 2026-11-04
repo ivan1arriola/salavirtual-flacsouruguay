@@ -11,7 +11,7 @@ import { planificarMigracionZoomPorSerie } from "./migracion-zoom-preview.domain
 import { armarSerieMigracionZoom } from "./migracion-zoom-serie.service";
 import { notificarCambioEnlaceSerie } from "./aviso-enlace-serie.service";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
-import { claveBloqueoSerieMigracion, filtroSerieDesdeClave } from "./serie-reunion.domain";
+import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
 
@@ -96,7 +96,7 @@ export async function aplicarMigracionZoomSerie(
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede aplicar la migración a Zoom.");
   }
-  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0))];
+  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))];
   if (claves.length === 0) throw new ValidationApiError("Indicá al menos una serie.");
   if (input.modo === "PILOTO" && claves.length !== 1) {
     throw new ValidationApiError("El piloto convierte exactamente una serie.");
@@ -161,6 +161,19 @@ async function prepararBajoBloqueo(
       where: { proveedorId_serieClave: { proveedorId: proveedorZoom.id, serieClave } },
       select: { id: true, cuentaProveedorId: true },
     });
+    // Si algún encuentro ya está en Zoom, todos deben usar la reunión de esta serie. Si apuntan a otra,
+    // o a un evento sin reunión compartida, migrar el resto crearía una segunda reunión para la misma serie.
+    const zoomFueraDeLaSerie = instancias.some((instancia) =>
+      instancia.proveedorActivoTipo === "ZOOM"
+      && instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM")?.reunionProveedorId !== reunion?.id);
+    if (zoomFueraDeLaSerie) {
+      throw new FalloEtapa(
+        "VALIDACION",
+        "Hay encuentros de la serie en Zoom con otra reunión o sin reunión compartida: usá «Unificar enlace» antes de migrar el resto.",
+        false,
+        true,
+      );
+    }
     const ids = instancias.map(({ id }) => id);
     const reservas = await tx.eventoProveedor.findMany({
       where: {

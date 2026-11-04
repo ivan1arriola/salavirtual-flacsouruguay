@@ -68,6 +68,7 @@ export default async function ReunionDetailPage({
       orderBy: { id: "asc" },
       select: {
         id: true,
+        estado: true,
         modalidad: true,
         inicioAsistenciaTecnicaAt: true,
         finAsistenciaTecnicaAt: true,
@@ -163,7 +164,8 @@ export default async function ReunionDetailPage({
     return { email, confirmed, total: manageableMeetings.length, pending: manageableMeetings.length - confirmed };
   });
 
-  const estadoVisible = request.estado === "CANCELADA"
+  const serieCancelada = request.estado === "CANCELADA" && seriesRequests.every((item) => item.estado === "CANCELADA");
+  const estadoVisible = serieCancelada
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
       meetings.flatMap(({ eventosProveedor }) => eventosProveedor.map((event) => estadoIntegracionEfectivo(event)))

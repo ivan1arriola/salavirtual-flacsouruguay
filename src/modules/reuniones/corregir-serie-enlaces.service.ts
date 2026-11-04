@@ -9,7 +9,7 @@ import { prepararCambioEnlaceZoomACalendar } from "./migracion-zoom-calendar.dom
 import type { ResumenAvisosMigracion } from "./migracion-zoom-avisos.service";
 import { proveedorActivoDeInstancia } from "./proveedor-reunion.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
-import { claveBloqueoSerieMigracion, filtroSerieDesdeClave } from "./serie-reunion.domain";
+import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -119,7 +119,7 @@ export async function corregirSerieEnlaces(
   input: Readonly<{ serieClave: string }>,
 ): Promise<ResultadoCorreccionSerie> {
   exigirAdministracionCorreccion(actor);
-  const serieClave = input.serieClave;
+  const serieClave = normalizarClaveSerie(input.serieClave);
   try {
     return await corregirSerie(deps, actor, serieClave);
   } catch (error) {
@@ -149,7 +149,7 @@ export async function corregirSeriesEnlaces(
   input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>,
 ): Promise<readonly ResultadoCorreccionSerie[]> {
   exigirAdministracionCorreccion(actor);
-  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0))];
+  const claves = [...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))];
   if (claves.length === 0) throw new ValidationApiError("Indicá al menos una serie.");
   if (input.modo === "PILOTO" && claves.length !== 1) {
     throw new ValidationApiError("El piloto corrige exactamente una serie.");
@@ -283,21 +283,19 @@ async function prepararBajoBloqueo(
   return deps.db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${claveBloqueoSerieMigracion(serieClave)}))`;
     const serie = await evaluarSerie(tx, serieClave, ahora);
-    const instanciaIds = serie.vigentes.map(({ id }) => id);
+    // En una serie mixta solo se unifican los encuentros que ya están en Zoom; el de Meet lo migra después
+    // la migración por serie, que reutiliza esta misma reunión.
+    const aCorregir = serie.evaluacion.mixta
+      ? serie.vigentes.filter((instancia) => proveedorActivoDeInstancia(instancia) === "ZOOM")
+      : serie.vigentes;
+    const instanciaIds = aCorregir.map(({ id }) => id);
     const pendientes = serie.reunion
       ? await tx.cambioEnlaceCita.count({ where: { reunionProveedorId: serie.reunion.id, estado: { not: "VERIFICADA" } } })
       : 0;
 
-    if (serie.evaluacion.mixta) {
-      throw new FalloEtapa(
-        "VALIDACION",
-        "La serie tiene encuentros en Meet y en Zoom: se resuelve con la migración por serie.",
-        false,
-        true,
-      );
-    }
     // Ya unificada (o con un solo enlace y cuenta) y sin citas pendientes: nada que corregir.
-    if ((serie.evaluacion.unificada || !serie.evaluacion.necesitaCorreccion) && pendientes === 0) {
+    const necesitaCorreccion = serie.evaluacion.necesitaCorreccion || serie.evaluacion.mixtaSinUnificar;
+    if (!necesitaCorreccion && pendientes === 0) {
       return { tipo: "SIN_CAMBIOS", reunionId: serie.reunion?.id ?? null, instanciaIds };
     }
     if (serie.plan.estado !== "CORREGIBLE" || !serie.plan.hostId) {
@@ -312,7 +310,7 @@ async function prepararBajoBloqueo(
     if (!host?.emailOrganizador) throw new FalloEtapa("VALIDACION", "La sala elegida no tiene un correo de anfitrión.", false);
 
     const eventoIds: string[] = [];
-    for (const instancia of serie.vigentes) {
+    for (const instancia of aCorregir) {
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
       if (!zoom) throw new FalloEtapa("VALIDACION", "Un encuentro de la serie no tiene reunión Zoom: revisá la serie.", false, true);
       if (zoom.operacionPendiente) {
@@ -361,12 +359,12 @@ async function prepararBajoBloqueo(
       reunionId,
       hostId: serie.plan.hostId,
       hostEmail: host.emailOrganizador,
-      titulo: serie.vigentes[0].solicitud.titulo,
+      titulo: aCorregir[0].solicitud.titulo,
       reclamoToken,
       externalId,
       instanciaIds,
       eventoIds,
-      citas: serie.vigentes.map((instancia): CitaCorreccion => {
+      citas: aCorregir.map((instancia): CitaCorreccion => {
         const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
         const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
         return {

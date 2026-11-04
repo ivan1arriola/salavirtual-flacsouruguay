@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarClock, Clock3, Hash, Plus, Trash2, Video } from "lucide-react";
+import { CalendarClock, Clock3, Hash, Plus, Trash2, UserRound, Video } from "lucide-react";
+import { PALETA_CUENTAS_ZOOM, colorCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import "./reunion-zoom-encuentros.css";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -21,6 +22,7 @@ export type EncuentroZoomView = Readonly<{
   puedeUnirse: boolean;
   joinUrl: string | null;
   zoomMeetingId?: string | null;
+  cuentaAnfitrion?: string | null;
   puedeIniciar: boolean;
   estadoEnlace: EstadoEnlaceZoom;
   eventoProveedorId: string | null;
@@ -182,6 +184,13 @@ export function ReunionZoomEncuentros({
                       contexto={contexto}
                     />
                   ) : null}
+                  <span
+                    className="zoom-series-card__host"
+                    style={{ "--cuenta": PALETA_CUENTAS_ZOOM[colorCuentaZoom(encuentro.cuentaAnfitrion) ?? -1]?.fuerte ?? "#8093ae" } as React.CSSProperties}
+                  >
+                    <UserRound size={15} aria-hidden="true" /> Cuenta anfitriona:{" "}
+                    <strong>{encuentro.cuentaAnfitrion ?? "Sin asignar"}</strong>
+                  </span>
                   {encuentro.zoomMeetingId ? (
                     <span className="zoom-series-card__id"><Hash size={15} aria-hidden="true" /> ID de reunión: <strong>{encuentro.zoomMeetingId}</strong></span>
                   ) : (
