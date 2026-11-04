@@ -270,7 +270,7 @@ export async function obtenerReunionOperativa(
     return { estado: "PROHIBIDA" };
   }
 
-  const evento = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null;
+  const evento = meeting.proveedorActivoTipo === "ZOOM" ? null : meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null;
   const eventoZoom = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM") ?? null;
   const proveedorActivo = meeting.proveedorActivoTipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const;
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
