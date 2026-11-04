@@ -14,6 +14,7 @@ import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento
 import { claveSerieReunion } from "@/src/modules/reuniones/serie-reunion.domain";
 import { resumirSerieZoom } from "@/src/modules/reuniones/serie-zoom-resumen.domain";
 import { mensajeListaVacia } from "@/src/modules/reuniones/lista-vacia.domain";
+import { agruparPorDia, colorCuentaZoom, cuentasPresentes, nombreCuentaZoom, type RelativoDiaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { obtenerDatosPaginaReuniones, type PeriodoAgenda } from "@/src/modules/reuniones/reuniones-page.service";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
 import styles from "@/app/(gestion)/reuniones/reuniones-zoom.module.css";
@@ -44,10 +45,16 @@ function reunionesHref(params: LinkFilters): string {
   return `/reuniones?${search.toString()}`;
 }
 
-/** Un mismo identificador recibe el mismo color incluso entre páginas y períodos. */
-function tonoSerie(clave: string): string {
-  const hash = [...clave].reduce((value, char) => ((value * 31 + char.charCodeAt(0)) >>> 0), 7);
-  return String(hash % 7);
+const RELATIVO: Readonly<Record<Exclude<RelativoDiaZoom, null>, string>> = { HOY: "Hoy", MANANA: "Mañana" };
+
+/** Cuenta anfitriona con su color y su nombre en texto: el color nunca es la única señal. */
+function ChipCuenta({ correo }: Readonly<{ correo: string | null | undefined }>) {
+  return (
+    <span className={styles.cuentaChip} data-cuenta={colorCuentaZoom(correo) ?? "sin"} title={correo ?? undefined}>
+      <span className={styles.punto} aria-hidden="true" />
+      {correo ? nombreCuentaZoom(correo) : "Sin asignar"}
+    </span>
+  );
 }
 
 function idReunionZoom(instancia: Readonly<{
@@ -110,6 +117,19 @@ export default async function ReunionesZoomPage({
   const url = (cambios: Partial<LinkFilters> = {}) => reunionesHref({ ...filtro, ...cambios });
   const hayFiltros = Boolean(q || programaId || desdeParam || hastaParam);
   const vacio = mensajeListaVacia({ hayFiltros, esHistorial: isHistory });
+  const ahora = new Date();
+  const cuentas = cuentasPresentes(porSerie
+    ? series.flatMap((serie) => resumirSerieZoom(serie).cuentas)
+    : encuentros.map((encuentro) => resumenEnlaceZoom(encuentro).cuentaAnfitrion));
+  const diasSeries = agruparPorDia(series, (serie) => serie[0].inicioProgramadoAt, ahora);
+  const diasEncuentros = agruparPorDia(encuentros, (encuentro) => encuentro.inicioProgramadoAt, ahora);
+  const encabezadoDia = (dia: { clave: string; etiqueta: string; relativo: RelativoDiaZoom }, cantidad: number) => (
+    <h2 className={styles.diaTitulo} id={`dia-${dia.clave}`}>
+      {dia.relativo ? <span className={styles.diaRelativo}>{RELATIVO[dia.relativo]}</span> : null}
+      {dia.etiqueta}
+      <span className={styles.diaCantidad}>{cantidad} {porSerie ? (cantidad === 1 ? "serie" : "series") : (cantidad === 1 ? "reunión" : "reuniones")}</span>
+    </h2>
+  );
 
   return (
     <div className={`${styles.page} ${densidad === "compacta" ? styles.compact : ""}`}>
@@ -183,6 +203,19 @@ export default async function ReunionesZoomPage({
         </form>
       </div>
 
+      {cuentas.length > 0 ? (
+        <section className={styles.leyenda} aria-label="Cuentas anfitrionas">
+          <h2 className={styles.leyendaTitulo}>Cuentas anfitrionas</h2>
+          <ul>
+            {cuentas.map((cuenta) => (
+              <li key={cuenta.correo} data-cuenta={cuenta.color} title={cuenta.correo}>
+                <span className={styles.punto} aria-hidden="true" />{cuenta.nombre}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {(porSerie ? series.length : encuentros.length) === 0 ? (
         <div className={styles.empty} role="status">
           <p>{vacio.texto}</p>
@@ -190,8 +223,12 @@ export default async function ReunionesZoomPage({
           {vacio.accion === "CREAR" ? <Link className="primary-action" href="/reuniones/nueva">Crear una reunión</Link> : null}
         </div>
       ) : porSerie ? (
-        <ul className={styles.list}>
-          {series.map(serie => {
+        <div className={styles.dias}>
+          {diasSeries.map((dia) => (
+          <section className={styles.dia} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
+          {encabezadoDia(dia, dia.items.length)}
+          <ul className={styles.list}>
+          {dia.items.map(serie => {
             const primero = serie[0];
             const { docentePrograma } = primero.solicitud;
             const docente = `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
@@ -199,12 +236,12 @@ export default async function ReunionesZoomPage({
             const serieClave = claveSerieReunion(primero.solicitud);
             const idZoom = resumen.unificada ? idReunionZoom(primero) : null;
             return (
-              <li className={styles.item} data-tone={tonoSerie(serieClave)} key={serieClave}>
+              <li className={styles.item} data-cuenta={resumen.cuentas.length === 1 ? colorCuentaZoom(resumen.cuentas[0]) ?? "sin" : resumen.cuentas.length > 1 ? "varias" : "sin"} key={serieClave}>
                 <div className={styles.when}><strong>{serie.length} {serie.length === 1 ? "encuentro" : "encuentros"}</strong><span><CalendarDays size={15} /> {formatShortDate(primero.inicioProgramadoAt)}</span><span>{formatTime(primero.inicioProgramadoAt)}</span></div>
                 <div className={styles.what}>
                   <Link className={styles.titleLink} href={`/reuniones/${primero.solicitudSalaId}`}>{primero.solicitud.titulo}</Link>
                   <span>{docentePrograma.programa.nombre} · {docente}</span>
-                  <span>Cuenta: {resumen.cuentas.join(", ") || "Sin asignar"}</span>
+                  <span className={styles.cuentas}>Cuenta: {resumen.cuentas.length ? resumen.cuentas.map((cuenta) => <ChipCuenta correo={cuenta} key={cuenta} />) : <ChipCuenta correo={null} />}</span>
                   <span className={styles.seriesBadge}>Serie · {serie.length} encuentros</span>
                 </div>
                 <div className={styles.link}>
@@ -225,10 +262,17 @@ export default async function ReunionesZoomPage({
               </li>
             );
           })}
-        </ul>
+          </ul>
+          </section>
+          ))}
+        </div>
       ) : (
-        <ul className={styles.list}>
-          {encuentros.map(encuentro => {
+        <div className={styles.dias}>
+          {diasEncuentros.map((dia) => (
+          <section className={styles.dia} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
+          {encabezadoDia(dia, dia.items.length)}
+          <ul className={styles.list}>
+          {dia.items.map(encuentro => {
             const enlace = resumenEnlaceZoom(encuentro);
             const { docentePrograma } = encuentro.solicitud;
             const docente = `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
@@ -236,7 +280,7 @@ export default async function ReunionesZoomPage({
             const serieClave = claveSerieReunion(encuentro.solicitud);
             const zoomId = idReunionZoom(encuentro);
             return (
-              <li className={styles.item} data-tone={tonoSerie(serieClave)} key={encuentro.id}>
+              <li className={styles.item} data-cuenta={colorCuentaZoom(enlace.cuentaAnfitrion) ?? "sin"} key={encuentro.id}>
                 <div className={styles.when}>
                   <strong><CalendarDays size={15} aria-hidden="true" /> {formatShortDate(encuentro.inicioProgramadoAt)}</strong>
                   <span><Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} – {formatTime(encuentro.finProgramadoAt)}</span>
@@ -244,7 +288,7 @@ export default async function ReunionesZoomPage({
                 <div className={styles.what}>
                   <Link className={styles.titleLink} href={`/reuniones/${encuentro.solicitudSalaId}`}>{encuentro.solicitud.titulo}</Link>
                   <span>{docentePrograma.programa.nombre} · {docente}</span>
-                  <span>Anfitrión: {enlace.cuentaAnfitrion ?? "Sin asignar"}</span>
+                  <span className={styles.cuentas}>Anfitrión: <ChipCuenta correo={enlace.cuentaAnfitrion} /></span>
                   <Link className={styles.seriesBadge} href={`/reuniones/${encuentro.solicitudSalaId}`}>Ver serie</Link>
                 </div>
                 <div className={styles.link}>
@@ -256,7 +300,10 @@ export default async function ReunionesZoomPage({
               </li>
             );
           })}
-        </ul>
+          </ul>
+          </section>
+          ))}
+        </div>
       )}
 
       {pagination.totalElementos > 0 ? (

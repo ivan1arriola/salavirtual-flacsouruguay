@@ -122,3 +122,8 @@
   .zoom-series-link-warning { align-items: stretch; padding: 13px; }
   .zoom-series-link-warning > span, .zoom-series-link-warning :is(a, button) { width: 100%; }
 }
+
+/* Cuenta anfitriona: siempre en texto, con un punto del color de la cuenta (el mismo de la lista). */
+.zoom-series-card__host, .zoom-series-hero__host { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.zoom-series-card__host { padding: 2px 10px 2px 8px; border: 1px solid var(--cuenta, #8093ae); border-radius: 999px; font-size: .8rem; }
+.zoom-series-card__host::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--cuenta, #8093ae); order: -1; }
