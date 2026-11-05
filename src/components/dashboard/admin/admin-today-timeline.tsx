@@ -68,7 +68,7 @@ export function AdminTodayTimeline({
                   <span className="timeline-sub-hour">
                     {formatDate(inicio)} · Horario del encuentro
                   </span>
-                  {isLive ? <LiveParticipantsIndicator instanciaId={meeting.id} /> : null}
+                  {isLive && provider.supportsCohosts ? <LiveParticipantsIndicator instanciaId={meeting.id} /> : null}
                 </div>
 
                 <div className="admin-timeline-info">
