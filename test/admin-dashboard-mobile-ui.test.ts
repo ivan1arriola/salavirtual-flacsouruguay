@@ -21,15 +21,18 @@ describe("dashboard administración en teléfonos", () => {
     expect(styles).toContain("@media (max-width: 360px)");
   });
 
-  it("mantiene navegación, operación y acciones Meet sin esconderlas en móvil", () => {
+  it("mantiene navegación y acciones del proveedor activo sin esconderlas en móvil", () => {
     const dashboard = component("admin-dashboard.tsx");
     const today = component("admin-today-timeline.tsx");
-    expect(dashboard).toContain('href="/reuniones/buscar-meet"');
+    expect(dashboard).toContain('href="/reuniones"');
+    expect(dashboard).toContain("Buscar reunión");
+    expect(dashboard).not.toContain("/reuniones/buscar-meet");
     expect(dashboard).toContain('href="/monitoreo"');
     expect(dashboard).toContain('href="/reuniones/nueva"');
     expect(today).toContain('href={`/operacion/${meeting.id}`}');
     expect(today).toContain("<CopyMeetLinkButton");
     expect(today).toContain("meeting.joinUrl");
+    expect(today).toContain("provider.joinLabel");
     expect(styles).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
   });
 

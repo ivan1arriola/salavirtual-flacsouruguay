@@ -4,7 +4,7 @@ Las páginas iniciales ya usan componentes separados para administración, docen
 
 ## Administración
 
-El orden es agenda de hoy, próximos encuentros, triage de intervención y dos indicadores generales. La lista próxima muestra hasta cinco reuniones de los siguientes siete días, con horario académico, programa, docente, modalidad y estado de monitoreo. El triage muestra incidencias abiertas primero, luego cobertura pendiente, errores de Meet, grabaciones y posibles duplicados.
+El orden es agenda de hoy, próximos encuentros, triage de intervención y dos indicadores generales. La lista próxima muestra hasta cinco reuniones de los siguientes siete días, con horario académico, programa, docente, modalidad y estado de monitoreo. La agenda de hoy identifica el proveedor activo para nombrar el acceso y el enlace; los cohosts se presentan únicamente cuando el proveedor es Google Meet. El triage muestra incidencias abiertas primero, luego cobertura pendiente, errores de integración, grabaciones y posibles duplicados.
 
 Los indicadores secundarios conservan solicitudes activas y actividad de siete días. Los conteos de hoy, cobertura pendiente, errores y grabaciones se mantienen disponibles para los componentes y consumidores actuales, pero no se repiten como tarjetas en el dashboard.
 

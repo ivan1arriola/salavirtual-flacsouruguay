@@ -21,6 +21,7 @@ export interface AdminTodayMeetingDTO {
   readonly inicioAsistenciaAt: string | null;
   readonly finAsistenciaAt: string | null;
   readonly joinUrl: string | null;
+  readonly proveedorTipo: string | null;
   readonly estadoIntegracion: string | null;
   readonly estadoTemporal: EstadoTemporalReunion;
   readonly cohostConfirmado: boolean;
@@ -397,6 +398,7 @@ export async function obtenerDashboardAdministracion(
       inicioAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString() : null,
       finAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString() : null,
       joinUrl: meet?.joinUrl ?? null,
+      proveedorTipo: meet?.proveedor.tipo ?? null,
       estadoIntegracion: meet?.estadoIntegracion ?? null,
       estadoTemporal,
       cohostConfirmado: cohostsConfirmadosEnMeet,

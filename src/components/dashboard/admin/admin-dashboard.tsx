@@ -22,8 +22,8 @@ export async function AdminDashboard({
       <DashboardHeader
         actions={
           <>
-            <Link className="secondary-action" href="/reuniones/buscar-meet">
-              <Search size={16} /> Buscar Meet
+            <Link className="secondary-action" href="/reuniones">
+              <Search size={16} /> Buscar reunión
             </Link>
             <Link className="secondary-action" href="/monitoreo">
               <UserCheck size={16} />
