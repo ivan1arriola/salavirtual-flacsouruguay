@@ -129,6 +129,18 @@ export async function agregarEncuentro(
     const hostsElegibles = eventoCompartido
       ? hosts.filter(({ id }) => id === eventoCompartido.cuentaProveedorId)
       : hosts;
+    // Si la sala compartida ya no recibe reuniones nuevas no es que esté ocupada: se dice por qué.
+    if (eventoCompartido?.cuentaProveedorId && hostsElegibles.length === 0) {
+      const sala = await tx.cuentaProveedor.findUnique({
+        where: { id: eventoCompartido.cuentaProveedorId },
+        select: { fueraDelGrupoAt: true },
+      });
+      throw new ConflictApiError(
+        sala?.fueraDelGrupoAt
+          ? "La sala de esta serie salió del grupo de Zoom. Usá «Unificar enlace» o creá una serie nueva."
+          : "La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva."
+      );
+    }
     const hostId = elegirCuentaHostParaPeriodos(
       eventoCompartido?.cuentaProveedorId ?? seriePreferredHost,
       // Zoom opera con capacidad 1 por host.

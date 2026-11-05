@@ -82,6 +82,32 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
     expect(tx.instanciaSala.create).not.toHaveBeenCalled();
   });
 
+  it("si la sala de la serie salió del grupo de Zoom lo dice, en vez de decir que está ocupada", async () => {
+    const tx = txAgregar([eventoZoom()]);
+    // zoom-host-b ya no es asignable: la consulta de salas disponibles no la trae.
+    tx.cuentaProveedor.findMany.mockResolvedValue([{ id: "zoom-host-a", prioridad: 1 }]);
+    const cuenta = vi.fn().mockResolvedValue({ fueraDelGrupoAt: new Date("2099-04-01T00:00:00Z") });
+    Object.assign(tx.cuentaProveedor, { findUnique: cuenta });
+
+    await expect(agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin }))
+      .rejects.toThrow("La sala de esta serie salió del grupo de Zoom. Usá «Unificar enlace» o creá una serie nueva.");
+    expect(cuenta).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "zoom-host-b" } }));
+    expect(tx.eventoProveedor.create).not.toHaveBeenCalled();
+    expect(tx.instanciaSala.create).not.toHaveBeenCalled();
+  });
+
+  it("si la sala de la serie está desactivada o sin licencia lo dice, sin elegir otra sala", async () => {
+    const tx = txAgregar([eventoZoom()]);
+    tx.cuentaProveedor.findMany.mockResolvedValue([{ id: "zoom-host-a", prioridad: 1 }]);
+    Object.assign(tx.cuentaProveedor, { findUnique: vi.fn().mockResolvedValue({ fueraDelGrupoAt: null }) });
+
+    await expect(agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin }))
+      .rejects.toThrow(
+        "La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva."
+      );
+    expect(tx.eventoProveedor.create).not.toHaveBeenCalled();
+  });
+
   it("en una serie de Zoom sin reunión compartida mantiene el comportamiento anterior", async () => {
     const tx = txAgregar([eventoZoom({ reunionProveedorId: null, externalEventId: "propia-1" })], [{
       cuentaProveedorId: "zoom-host-b",
