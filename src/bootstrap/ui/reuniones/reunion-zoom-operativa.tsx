@@ -1,6 +1,7 @@
-import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2 } from "lucide-react";
 import Link from "next/link";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
+import { ZoomPasscodeControl } from "@/src/components/zoom-passcode-control";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
@@ -14,10 +15,11 @@ import styles from "./reunion-zoom-operativa.module.css";
  * El sistema todavía no consulta participantes ni estadísticas en vivo de Zoom.
  */
 export function ReunionZoomOperativa({
-  reunion, rol
+  reunion, rol, salaEspera
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+  salaEspera: boolean | null;
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const backHref = esAsistente ? "/mi-agenda" : "/reuniones?proveedor=zoom";
@@ -40,74 +42,73 @@ export function ReunionZoomOperativa({
         <div className={styles.eyebrow}><span>{reunion.programa}</span><span className={styles.provider}><Video size={15} /> Zoom</span></div>
         <h1>{reunion.titulo}</h1>
         <p className={styles.subtitle}>{reunion.docente}{reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}</p>
-        <div className={styles.chips}>
+        <div className={styles.chips} aria-label="Fecha y horario">
           <span><CalendarClock size={15} /> {formatDate(reunion.inicioProgramadoAt)}</span>
           <span><Clock3 size={15} /> {formatTime(reunion.inicioProgramadoAt)} – {formatTime(reunion.finProgramadoAt)}</span>
           <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
         </div>
-        <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt}
+        <details className={styles.scheduleDetails}><summary>Ver horarios de asistencia</summary><MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt}
           requiresAssistance={reunion.asistencia.requerida} modality={reunion.modalidad}
           assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt}
-          viewerIsAssistant={esAsistente} compact />
+          viewerIsAssistant={esAsistente} compact /></details>
         <div className={styles.actions}>
           {enlace ? (
             <a href={enlace} rel="noreferrer" target="_blank" className={styles.primary}>
               <ExternalLink size={17} aria-hidden="true" /> Unirse a Zoom
             </a>
           ) : <span className={styles.pending}><AlertTriangle size={16} /> Enlace Zoom pendiente</span>}
-          {!esAsistente ? <Link className={styles.secondary} href={`/reuniones/${reunion.solicitudId}`}>Ver ficha completa</Link> : null}
+
           {puedeDesasignarse && reunion.asistencia.asignacionId ?
             <AssistantSelfUnassignButton assignmentId={reunion.asistencia.asignacionId} title={reunion.titulo} /> : null}
         </div>
       </header>
 
-      <section className={styles.grid} aria-label="Estado y datos de la reunión Zoom">
-        <article className={styles.card}>
-          <div className={styles.heading}><Hash size={19} aria-hidden="true" /><h2>Datos de Zoom</h2></div>
-          <dl className={styles.facts}>
-            <div><dt>ID de reunión</dt><dd className={styles.mono}>{reunion.zoom.id ?? "Pendiente"}</dd></div>
-            <div><dt>Cuenta anfitriona</dt><dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd></div>
-            <div><dt>Integración</dt><dd>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</dd></div>
-            <div><dt>Operación pendiente</dt><dd>{reunion.zoom.operacionPendiente ?? "Ninguna"}</dd></div>
-          </dl>
-          {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
-        </article>
-
-        <article className={styles.card}>
-          <div className={styles.heading}><Activity size={19} aria-hidden="true" /><h2>Estado operativo</h2></div>
-          <p className={styles.status}>{reunion.estado.replaceAll("_", " ").toLowerCase()}</p>
-          <p className={styles.note}>La programación no confirma que haya participantes conectados ni una sesión activa.</p>
-          <p><strong>Grabación solicitada:</strong> {reunion.requiereGrabacion ? "Sí" : "No"}</p>
-          <p><strong>Monitoreo:</strong> {reunion.asistencia.requerida ? reunion.asistencia.asistente ?? "Pendiente de asignación" : "No requerido"}</p>
-        </article>
-
-        <article className={styles.card}>
-          <div className={styles.heading}><Users size={19} aria-hidden="true" /><h2>Participantes</h2></div>
-          <div className={styles.unavailable}><Radio size={17} aria-hidden="true" /><strong>Sin datos en vivo de Zoom</strong></div>
-          <p className={styles.note}>SalaVirtual todavía no sincroniza el listado de conectados, las entradas ni las salidas desde Zoom. No se muestran cifras de Google Meet como si fueran de Zoom.</p>
-        </article>
-
-        <article className={styles.card}>
-          <div className={styles.heading}><FileText size={19} aria-hidden="true" /><h2>Grabaciones y transcripciones</h2></div>
-          <p className={styles.note}>Los estados en vivo de Google Meet no son aplicables a esta reunión. Consultá las grabaciones de Zoom desde la sección de archivos cuando estén sincronizadas.</p>
-          <Link href="/grabaciones" className={styles.secondary}>Ver grabaciones y archivos</Link>
-        </article>
+      <section className={styles.card} aria-label="Estado de la reunión">
+        <div className={styles.heading}><Activity size={19} aria-hidden="true" /><h2>Estado de la reunión</h2></div>
+        <p className={styles.status}>{reunion.estado.replaceAll("_", " ").toLowerCase()}</p>
+        <div className={styles.statusGrid}>
+          <div><Video size={18} aria-hidden="true" /><strong>Zoom</strong><span>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</span></div>
+          <div><Users size={18} aria-hidden="true" /><strong>Asistencia</strong><span>Sin datos en vivo</span></div>
+          <div><Radio size={18} aria-hidden="true" /><strong>Grabación</strong><span>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</span></div>
+          <div><Hash size={18} aria-hidden="true" /><strong>Sala de espera</strong><span>{salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}</span></div>
+        </div>
+        <p className={styles.note}>La programación no confirma que la sesión esté activa. SalaVirtual aún no recibe participantes en vivo de Zoom.</p>
+        {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
       </section>
 
-      <section className={styles.notice} role="note">
-        <ClipboardList size={20} aria-hidden="true" />
-        <div><strong>Configuración operativa de Zoom</strong>
-          <p>Las políticas de admisión, coanfitriones y grabación se administran desde Zoom. Los controles remotos exclusivos de Google Meet no se aplican aquí.</p>
+      <section className={styles.card} aria-label="Acciones rápidas">
+        <div className={styles.heading}><ClipboardList size={19} aria-hidden="true" /><h2>Acciones rápidas</h2></div>
+        <div className={styles.quickActions}>
+          {!esAsistente ? <Link href={`/reuniones/${reunion.solicitudId}`}><FileText size={19} /> Ficha completa</Link> : null}
+          <Link href="/grabaciones"><FileText size={19} /> Grabaciones</Link>
+          <a href="#incidencias"><AlertTriangle size={19} /> Incidencias</a>
+          <a href="#datos-zoom"><Settings2 size={19} /> Configuración</a>
         </div>
       </section>
 
-      <details className={styles.incidents}>
-        <summary>Incidencias ({reunion.incidencias.filter((i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS").length} abiertas)</summary>
-        {reunion.incidencias.length ? (
-          <ul>{reunion.incidencias.map((i) => <li key={i.id}><strong>{i.tipo.replaceAll("_"," ")}</strong> · {i.estado}<p>{i.descripcion}</p></li>)}</ul>
-        ) : <p>No hay incidencias registradas.</p>}
+      <section id="incidencias" className={styles.card}>
+        <div className={styles.heading}><AlertTriangle size={19} aria-hidden="true" /><h2>Incidencias ({reunion.incidencias.filter((i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS").length} abiertas)</h2></div>
+        <details className={styles.incidents}>
+          <summary>Ver historial de incidencias</summary>
+          {reunion.incidencias.length ? (
+            <ul>{reunion.incidencias.map((i) => <li key={i.id}><strong>{i.tipo.replaceAll("_", " ")}</strong> · {i.estado}<p>{i.descripcion}</p></li>)}</ul>
+          ) : <p>No hay incidencias registradas.</p>}
+        </details>
+        <OperationalIncidentForm instanciaId={reunion.id} />
+      </section>
+
+      <details id="datos-zoom" className={styles.advanced}>
+        <summary><Hash size={18} aria-hidden="true" /> Datos técnicos y configuración de Zoom</summary>
+        <dl className={styles.facts}>
+          <div><dt>ID de reunión</dt><dd className={styles.mono}>{reunion.zoom.id ?? "Pendiente"}</dd></div>
+          <div><dt>Cuenta anfitriona</dt><dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd></div>
+          <div><dt>Integración</dt><dd>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</dd></div>
+          <div><dt>Operación pendiente</dt><dd>{reunion.zoom.operacionPendiente ?? "Ninguna"}</dd></div>
+          <div><dt>Monitoreo</dt><dd>{reunion.asistencia.requerida ? reunion.asistencia.asistente ?? "Pendiente de asignación" : "No requerido"}</dd></div>
+        </dl>
+        {rol === "ADMINISTRACION" ? <ZoomPasscodeControl instanciaId={reunion.id} /> : null}
+        <p className={styles.note}>La admisión, los coanfitriones y la grabación se administran desde Zoom.</p>
       </details>
-      <OperationalIncidentForm instanciaId={reunion.id} />
       {esAsistente && reunion.asistencia.asignacionId && completada ? (
         <OperationalAssistanceClosureForm asignacionId={reunion.asistencia.asignacionId}
           inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
