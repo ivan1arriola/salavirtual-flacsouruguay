@@ -80,6 +80,7 @@ export default async function ReunionOperativaPage({
               const reporte = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
               // El UUID solo se persiste después de confirmar que Zoom dispone del reporte.
               // Un cambio concurrente de horario, reunión o UUID impide atribuir el reporte.
+              if (reporte !== null) {
               const actualizado = await db.eventoProveedor.updateMany({
                 where: {
                   id: eventoZoom.id,
@@ -98,7 +99,8 @@ export default async function ReunionOperativaPage({
                   zoomUuidMeetingId: reunion.zoom.id
                 }
               });
-              if (actualizado.count === 1 && reporte !== null) sesiones = reporte;
+              if (actualizado.count === 1) sesiones = reporte;
+              }
             }
           }
         } catch {
