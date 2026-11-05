@@ -8,6 +8,7 @@ import {
   leerVistaPrevia,
   pedidoDeSincronizacion,
   resultadoSincronizacion,
+  puedeRevisarSincronizacion,
   vistaPreviaSinCambios,
   type VistaPreviaSincronizacion
 } from "./zoom-grupo-config.domain";
@@ -76,6 +77,7 @@ export function ZoomGrupoConfig({
   function cerrarSelector() {
     setEligiendo(false);
     setAviso(null);
+    setVistaPrevia(null);
   }
 
   async function guardarGrupo() {
@@ -102,6 +104,7 @@ export function ZoomGrupoConfig({
         texto: `${data?.message ?? `Grupo de Zoom «${grupo.nombre}» guardado.`} Sincronizá para actualizar las cuentas anfitrionas.`
       });
       setEligiendo(false);
+      setVistaPrevia(null);
       router.refresh();
     } catch {
       setAviso({ ok: false, texto: SIN_CONEXION });
@@ -227,7 +230,7 @@ export function ZoomGrupoConfig({
             className="primary-action"
             type="button"
             onClick={revisarSincronizacion}
-            disabled={!grupoId || ocupado || vistaPrevia !== null}
+            disabled={!puedeRevisarSincronizacion({ grupoId, ocupado, eligiendo, hayVistaPrevia: vistaPrevia !== null })}
           >
             <RefreshCw size={16} />{pendiente === "vistaPrevia" ? "Revisando…" : "Sincronizar con el grupo"}
           </button>

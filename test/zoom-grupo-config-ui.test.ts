@@ -13,6 +13,7 @@ import { VistaPreviaSincronizacionPanel, ZoomGrupoConfig } from "../src/componen
 import {
   leerVistaPrevia,
   pedidoDeSincronizacion,
+  puedeRevisarSincronizacion,
   resultadoSincronizacion,
   type VistaPreviaSincronizacion
 } from "../src/components/zoom-grupo-config.domain";
@@ -321,5 +322,23 @@ describe("resultado de la sincronización", () => {
       ok: false,
       mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo."
     });
+  });
+});
+
+describe("puedeRevisarSincronizacion", () => {
+  const base = { grupoId: "g1", ocupado: false, eligiendo: false, hayVistaPrevia: false };
+
+  it("permite revisar con un grupo guardado y nada en curso", () => {
+    expect(puedeRevisarSincronizacion(base)).toBe(true);
+  });
+
+  it("no permite revisar mientras el selector de grupo está abierto", () => {
+    expect(puedeRevisarSincronizacion({ ...base, eligiendo: true })).toBe(false);
+  });
+
+  it("no permite revisar sin grupo, ocupado o con una vista previa abierta", () => {
+    expect(puedeRevisarSincronizacion({ ...base, grupoId: null })).toBe(false);
+    expect(puedeRevisarSincronizacion({ ...base, ocupado: true })).toBe(false);
+    expect(puedeRevisarSincronizacion({ ...base, hayVistaPrevia: true })).toBe(false);
   });
 });

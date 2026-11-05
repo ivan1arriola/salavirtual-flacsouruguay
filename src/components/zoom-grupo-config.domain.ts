@@ -79,3 +79,11 @@ function textoDeRespuesta(respuesta: Record<string, unknown>): string | null {
   const error = typeof respuesta.error === "string" && respuesta.error ? respuesta.error : null;
   return resumen ?? error;
 }
+
+/** Si se puede pedir la vista previa: hay grupo guardado, nada en curso, ni selector ni vista previa abiertos. */
+export function puedeRevisarSincronizacion(
+  { grupoId, ocupado, eligiendo, hayVistaPrevia }:
+    Readonly<{ grupoId: string | null; ocupado: boolean; eligiendo: boolean; hayVistaPrevia: boolean }>
+): boolean {
+  return Boolean(grupoId) && !ocupado && !eligiendo && !hayVistaPrevia;
+}
