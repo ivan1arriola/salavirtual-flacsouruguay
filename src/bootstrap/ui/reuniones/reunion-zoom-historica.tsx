@@ -10,7 +10,7 @@ export function ReunionZoomHistorica({ reunion, rol }: Readonly<{
 }>) {
   const incidenciasAbiertas = reunion.incidencias.filter(i => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS");
   const esAsistente = rol === "ASISTENTE_TECNICO";
-  const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "No iniciada" : reunion.estado.replaceAll("_", " ");
+  const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "Realización sin verificar" : reunion.estado.replaceAll("_", " ");
   return (
     <main className={styles.page}>
       <nav className={styles.toolbar} aria-label="Navegación">
