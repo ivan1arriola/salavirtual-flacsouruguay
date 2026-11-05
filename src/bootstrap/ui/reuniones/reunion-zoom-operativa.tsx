@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2 } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2, ShieldCheck, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { ZoomPasscodeControl } from "@/src/components/zoom-passcode-control";
@@ -63,6 +63,25 @@ export function ReunionZoomOperativa({
         </div>
       </header>
 
+      <section className={styles.securityCard} aria-label="Seguridad y acceso de Zoom">
+        <div className={styles.heading}><ShieldCheck size={20} aria-hidden="true" /><h2>Seguridad y acceso</h2></div>
+        <p className={styles.note}>Configuración consultada en Zoom. Los cambios pueden afectar a toda una serie de reuniones.</p>
+        <div className={styles.securityGrid}>
+          <div className={styles.securityItem}>
+            <div className={styles.securityLabel}><Users size={19} aria-hidden="true" /><strong>Sala de espera</strong></div>
+            <span className={salaEspera === true ? styles.enabled : salaEspera === false ? styles.disabled : styles.unknown}>
+              {salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}
+            </span>
+            <small>Información de Zoom · Solo lectura</small>
+          </div>
+          <div className={styles.securityItem}>
+            <div className={styles.securityLabel}><LockKeyhole size={19} aria-hidden="true" /><strong>Código de acceso</strong></div>
+            {rol === "ADMINISTRACION" ? <ZoomPasscodeControl instanciaId={reunion.id} /> :
+              <p className={styles.note}>La consulta y gestión del código requieren permisos de administración.</p>}
+          </div>
+        </div>
+      </section>
+
       <section className={styles.card} aria-label="Estado de la reunión">
         <div className={styles.heading}><Activity size={19} aria-hidden="true" /><h2>Estado de la reunión</h2></div>
         <p className={styles.status}>{reunion.estado.replaceAll("_", " ").toLowerCase()}</p>
@@ -70,7 +89,7 @@ export function ReunionZoomOperativa({
           <div><Video size={18} aria-hidden="true" /><strong>Zoom</strong><span>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</span></div>
           <div><Users size={18} aria-hidden="true" /><strong>Asistencia</strong><span>Sin datos en vivo</span></div>
           <div><Radio size={18} aria-hidden="true" /><strong>Grabación</strong><span>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</span></div>
-          <div><Hash size={18} aria-hidden="true" /><strong>Sala de espera</strong><span>{salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}</span></div>
+
         </div>
         <p className={styles.note}>La programación no confirma que la sesión esté activa. SalaVirtual aún no recibe participantes en vivo de Zoom.</p>
         {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
@@ -82,7 +101,7 @@ export function ReunionZoomOperativa({
           {!esAsistente ? <Link href={`/reuniones/${reunion.solicitudId}`}><FileText size={19} /> Ficha completa</Link> : null}
           <Link href="/grabaciones"><FileText size={19} /> Grabaciones</Link>
           <a href="#incidencias"><AlertTriangle size={19} /> Incidencias</a>
-          <a href="#datos-zoom"><Settings2 size={19} /> Configuración</a>
+          <a href="#datos-zoom"><Settings2 size={19} /> Datos técnicos</a>
         </div>
       </section>
 
@@ -106,7 +125,6 @@ export function ReunionZoomOperativa({
           <div><dt>Operación pendiente</dt><dd>{reunion.zoom.operacionPendiente ?? "Ninguna"}</dd></div>
           <div><dt>Monitoreo</dt><dd>{reunion.asistencia.requerida ? reunion.asistencia.asistente ?? "Pendiente de asignación" : "No requerido"}</dd></div>
         </dl>
-        {rol === "ADMINISTRACION" ? <ZoomPasscodeControl instanciaId={reunion.id} /> : null}
         <p className={styles.note}>La admisión, los coanfitriones y la grabación se administran desde Zoom.</p>
       </details>
       {esAsistente && reunion.asistencia.asignacionId && completada ? (
