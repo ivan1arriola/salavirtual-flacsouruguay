@@ -72,30 +72,34 @@ export default async function ReunionOperativaPage({
             });
             const inicioCoincide = eventoZoom?.zoomUuidInicioAt?.getTime() === reunion.inicioProgramadoAt.getTime()
               && eventoZoom?.zoomUuidMeetingId === reunion.zoom.id;
-            let uuid = inicioCoincide ? eventoZoom?.zoomMeetingUuid : null;
-            if (!uuid) {
-              uuid = await resolverUuidInstanciaZoomHttp(
-                token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
-              );
-              if (uuid && eventoZoom) {
-                await db.eventoProveedor.updateMany({
-                  where: {
-                    id: eventoZoom.id,
-                    instancia: { inicioProgramadoAt: reunion.inicioProgramadoAt },
-                    OR: [
-                      { externalEventId: reunion.zoom.id },
-                      { reunionProveedor: { externalId: reunion.zoom.id } }
-                    ]
-                  },
-                  data: {
-                    zoomMeetingUuid: uuid,
-                    zoomUuidInicioAt: reunion.inicioProgramadoAt,
-                    zoomUuidMeetingId: reunion.zoom.id
-                  }
-                });
-              }
+            const uuidGuardado = inicioCoincide ? eventoZoom?.zoomMeetingUuid : null;
+            const uuid = uuidGuardado ?? await resolverUuidInstanciaZoomHttp(
+              token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
+            );
+            if (uuid && eventoZoom) {
+              const reporte = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
+              // El UUID solo se persiste después de confirmar que Zoom dispone del reporte.
+              // Un cambio concurrente de horario, reunión o UUID impide atribuir el reporte.
+              const actualizado = await db.eventoProveedor.updateMany({
+                where: {
+                  id: eventoZoom.id,
+                  instancia: { inicioProgramadoAt: reunion.inicioProgramadoAt },
+                  OR: [
+                    { externalEventId: reunion.zoom.id },
+                    { reunionProveedor: { externalId: reunion.zoom.id } }
+                  ],
+                  ...(uuidGuardado
+                    ? { zoomMeetingUuid: uuid, zoomUuidMeetingId: reunion.zoom.id, zoomUuidInicioAt: reunion.inicioProgramadoAt }
+                    : { zoomMeetingUuid: eventoZoom.zoomMeetingUuid, zoomUuidMeetingId: eventoZoom.zoomUuidMeetingId, zoomUuidInicioAt: eventoZoom.zoomUuidInicioAt })
+                },
+                data: {
+                  zoomMeetingUuid: uuid,
+                  zoomUuidInicioAt: reunion.inicioProgramadoAt,
+                  zoomUuidMeetingId: reunion.zoom.id
+                }
+              });
+              if (actualizado.count === 1 && reporte !== null) sesiones = reporte;
             }
-            if (uuid) sesiones = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
           }
         } catch {
           // Reporte no disponible: no presentar cero asistentes.
