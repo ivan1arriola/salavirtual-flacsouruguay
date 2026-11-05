@@ -110,3 +110,5 @@
   .link :global(.zoom-join-actions) { width: 100%; }
   .link :global(.zoom-join-actions > *) { flex: 1 1 auto; }
 }
+
+.durationChip { display: inline-flex; align-items: center; width: fit-content; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #4a6180; font-size: .74rem; font-weight: 700; }
