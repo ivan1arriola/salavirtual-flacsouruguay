@@ -15,3 +15,30 @@
 .incidents{padding:10px 12px;border-radius:9px}
 .incidents p{margin:10px 0 0}
 @media(max-width:360px){.statusGrid{gap:5px}.statusGrid>div{padding:10px 3px}.quickActions{gap:7px}}
+
+
+/* Consola operativa Zoom v2: seguridad visible, jerarquía compacta y controles táctiles. */
+.page{width:min(100%,1160px);gap:16px;color:#172f55}
+.hero{border-radius:18px;border-color:#cbd9eb;background:linear-gradient(135deg,#fff 55%,#f2f6fd);box-shadow:0 10px 30px #1837650a}
+.hero h1{font-size:clamp(1.45rem,3vw,2.2rem);letter-spacing:-.025em}
+.card,.securityCard,.advanced{box-shadow:0 3px 14px #18376508}
+.securityCard{display:grid;gap:14px;background:#fff;border:1px solid #b8cbe4;border-radius:16px;padding:clamp(16px,2.5vw,24px)}
+.securityCard .heading h2{font-size:1.12rem}
+.securityGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.securityItem{display:grid;align-content:start;gap:11px;min-width:0;border:1px solid #dce6f2;border-radius:13px;background:#f8fafd;padding:17px}
+.securityLabel{display:flex;align-items:center;gap:9px;color:#193b70;font-size:.91rem}
+.securityItem small{font-size:.75rem;color:#64758e}
+.enabled,.disabled,.unknown{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:7px 11px;border-radius:8px;font-size:.8rem;font-weight:800}
+.enabled{background:#e4f4eb;color:#17653b}
+.disabled{background:#fff0e7;color:#8e421d}
+.unknown{background:#e9eef5;color:#58677b}
+.securityItem button{cursor:pointer;min-height:40px;padding:8px 12px;border:1px solid #bacde5;border-radius:9px;background:#fff;color:#1d3a72;font-weight:750}
+.securityItem button:disabled{opacity:.55;cursor:not-allowed}
+.securityItem button:hover:not(:disabled){background:#eaf2fc}
+.securityItem code{display:inline-block;padding:7px 10px;border-radius:7px;background:#e8eff8;color:#1a345c}
+.statusGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.statusGrid>div{align-items:flex-start;text-align:left;padding:15px;gap:7px}
+.quickActions{grid-template-columns:repeat(4,minmax(0,1fr))}
+.quickActions a{min-height:72px}
+@media(max-width:750px){.securityGrid{grid-template-columns:1fr}.quickActions{grid-template-columns:repeat(2,minmax(0,1fr))}.statusGrid{grid-template-columns:1fr 1fr}.securityItem{padding:14px}}
+@media(max-width:420px){.statusGrid{grid-template-columns:1fr}.securityCard{padding:15px}.hero{padding:17px}.quickActions a{min-height:64px}}
