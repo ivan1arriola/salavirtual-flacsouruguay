@@ -277,3 +277,15 @@ export async function buscarReunionZoomPorMarcaHttp(
   };
   return buscarPagina(null);
 }
+
+/** Consulta la configuración efectiva de sala de espera; null significa que Zoom no informó el dato. */
+export async function obtenerSalaEsperaZoomHttp(token: string, meetingId: string): Promise<boolean | null> {
+  const response = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000)
+  });
+  if (!response.ok) throw new Error(`Zoom API error al consultar sala de espera (${response.status})`);
+  const data = (await response.json()) as { settings?: { waiting_room?: unknown } };
+  return typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null;
+}
