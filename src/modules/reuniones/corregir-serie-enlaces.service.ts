@@ -419,6 +419,8 @@ async function corregirSerie(
         cuentaProveedorId: prep.hostId,
         reunionProveedorId: prep.reunionId,
         externalEventId: externalId,
+        zoomMeetingUuid: null,
+        zoomUuidInicioAt: null,
         codigoReunion: externalId,
         joinUrl,
         estadoIntegracion: "SINCRONIZADA",
