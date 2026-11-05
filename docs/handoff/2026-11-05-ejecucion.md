@@ -19,6 +19,19 @@ Rama de trabajo: `codex/pendientes-2026-11-05`, desde `32fe959` de `main`. El pl
 - Los informes de Codex y los reportes finales están copiados a `docs/superpowers/reviews/2026-11-05-cuentas-zoom-por-grupo/`. Los `.log` crudos siguen solo en `.superpowers`; no son necesarios para reconstruir las conclusiones.
 - La primera sincronización real, la nueva app de Zoom y las correcciones en producción requieren datos y revisión operativa; aún no se ejecutaron.
 
+## Avance en esta rama
+
+- `ce9420c`: se versionaron las notas de traspaso y las revisiones de Codex; los logs crudos permanecen locales.
+- `a98335f`: el cron rechaza cuentas anfitrionas nuevas hasta que un administrador las revise.
+- `5cfe4b3`: la consulta de reuniones pendientes conserva las salas con encuentros `EN_CURSO`, aunque hayan superado la hora prevista.
+- `d61905d`: el cron también rechaza pérdidas de licencia; se actualizó la prueba de Configuración para la consulta nueva.
+- `4616d52`: una confirmación administrativa usa la huella del plan visto y rechaza cualquier diferencia al volver a calcularlo.
+- `44ab9b6`: la vista previa muestra las reactivaciones y las cuenta como cambios reales.
+
+Pendiente inmediato en la sincronización: proteger cuentas reservadas por migraciones incompletas; revisar rechazos persistidos, errores Zoom 401/403 y mensajes de rutas; añadir la prueba PostgreSQL de la consulta; instalar el temporizador solo después de la primera sincronización manual validada. Los demás bloques del plan siguen pendientes.
+
+Verificación de esta tanda: `npm test` pasó con 2882 pruebas y 14 omitidas; `npm run check` terminó sin errores; `npm run build` terminó con código 0. La cuenta Codex llegó a 98 % de su ventana de cinco horas durante esta tanda; continuar desde este punto sin rehacer los commits anteriores.
+
 ## Decisiones de producto
 
 - Seguridad y datos antes que cambios visuales. Entregas separadas.
