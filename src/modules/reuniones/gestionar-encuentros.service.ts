@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { idsCancelacionesPendientes } from "./encuentros.domain";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   ConflictApiError,
@@ -95,7 +96,7 @@ export async function agregarEncuentro(
     await bloquearReservaSalas(tx, provider.id);
     const [hosts, conflicts] = await Promise.all([
       tx.cuentaProveedor.findMany({
-        where: { proveedorId: provider.id, activa: true, tieneLicencia: true },
+        where: { proveedorId: provider.id, ...CUENTA_ZOOM_ASIGNABLE },
         orderBy: { prioridad: "asc" },
         select: { id: true, prioridad: true },
       }),

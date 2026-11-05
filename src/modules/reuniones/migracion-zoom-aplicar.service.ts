@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { prepararCambioEnlaceCalendarZoom } from "./migracion-zoom-calendar.domain";
 import { meetPreparadoParaMigracion, planificarMigracionZoom } from "./migracion-zoom-preview.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
@@ -181,7 +182,7 @@ async function prepararBajoBloqueo(
     // Reutiliza el planificador de la vista previa. Al reanudar, el host ya
     // elegido queda fijo y su propia reserva no cuenta como colisión.
     const hostsDb = await tx.cuentaProveedor.findMany({
-      where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
+      where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
       select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });
