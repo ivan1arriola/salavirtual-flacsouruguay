@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarClock, Clock3, Hash, Plus, Trash2, UserRound, Video } from "lucide-react";
+import { ArrowUpRight, CalendarClock, Clock3, Hash, Plus, Trash2, UserRound, Video } from "lucide-react";
 import { PALETA_CUENTAS_ZOOM, colorCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import "./reunion-zoom-encuentros.css";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
@@ -196,6 +197,11 @@ export function ReunionZoomEncuentros({
                   ) : (
                     <span className="zoom-series-card__id zoom-series-card__id--pending"><Hash size={15} aria-hidden="true" /> ID de reunión pendiente</span>
                   )}
+                </div>
+                <div className="zoom-series-card__main-actions">
+                  <Link className="secondary-action" href={`/operacion/${encuentro.id}`} aria-label={`Abrir ficha del encuentro del ${contexto}`}>
+                    <ArrowUpRight size={16} aria-hidden="true" /> Ver encuentro
+                  </Link>
                 </div>
                 {encuentro.puedeUnirse ? (
                   <div className="zoom-series-card__main-actions">
