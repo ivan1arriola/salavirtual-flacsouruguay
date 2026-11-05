@@ -45,7 +45,7 @@ export default async function ReunionZoomDetailPage({
       id: true,
       instancias: {
         orderBy: { inicioProgramadoAt: "asc" },
-        include: { eventosProveedor: { include: { proveedor: true } } }
+        include: { eventosProveedor: { include: { proveedor: true, cuentaProveedor: { select: { nombre: true, emailOrganizador: true } } } } }
       }
     }
   });
