@@ -14,10 +14,11 @@ import styles from "./reunion-zoom-operativa.module.css";
  * El sistema todavía no consulta participantes ni estadísticas en vivo de Zoom.
  */
 export function ReunionZoomOperativa({
-  reunion, rol
+  reunion, rol, salaEspera
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+  salaEspera: boolean | null;
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const backHref = esAsistente ? "/mi-agenda" : "/reuniones?proveedor=zoom";
@@ -68,6 +69,7 @@ export function ReunionZoomOperativa({
           <div><Video size={18} aria-hidden="true" /><strong>Zoom</strong><span>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</span></div>
           <div><Users size={18} aria-hidden="true" /><strong>Asistencia</strong><span>Sin datos en vivo</span></div>
           <div><Radio size={18} aria-hidden="true" /><strong>Grabación</strong><span>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</span></div>
+          <div><Hash size={18} aria-hidden="true" /><strong>Sala de espera</strong><span>{salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}</span></div>
         </div>
         <p className={styles.note}>La programación no confirma que la sesión esté activa. SalaVirtual aún no recibe participantes en vivo de Zoom.</p>
         {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
