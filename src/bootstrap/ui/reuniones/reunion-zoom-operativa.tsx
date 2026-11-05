@@ -12,7 +12,7 @@ import styles from "./reunion-zoom-operativa.module.css";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 
 /** La consola Zoom no debe presentar datos o controles de Google Meet como propios.
- * El sistema todavía no consulta participantes ni estadísticas en vivo de Zoom.
+ * Los datos de participantes se muestran solo si Zoom Dashboard los facilita.
  */
 export function ReunionZoomOperativa({
   reunion, rol, salaEspera, asistenciaEnVivo
@@ -85,7 +85,7 @@ export function ReunionZoomOperativa({
           <div><Radio size={18} aria-hidden="true" /><strong>Grabación</strong><span>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</span></div>
 
         </div>
-        <p className={styles.note}>La programación no confirma que la sesión esté activa. SalaVirtual aún no recibe participantes en vivo de Zoom.</p>
+        <p className={styles.note}>La programación no confirma que la sesión esté activa. La información de participantes depende de la disponibilidad de Zoom Dashboard.</p>
         {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
       </section>
 
@@ -104,7 +104,7 @@ export function ReunionZoomOperativa({
                   </div>
                 ))}
               </div>
-            ) : <p className={styles.note}>Zoom no informa participantes conectados en este momento.</p>}
+            ) : <p className={styles.note}>Zoom no devolvió participantes para esta consulta.</p>}
           </>
         ) : (
           <p className={styles.note}>{asistenciaEnVivo.motivo === "SIN_PERMISOS"
