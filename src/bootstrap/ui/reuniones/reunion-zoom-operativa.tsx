@@ -1,15 +1,14 @@
-import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2, ShieldCheck, LockKeyhole } from "lucide-react";
+import { Activity, AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2, ShieldCheck, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { ZoomPasscodeControl } from "@/src/components/zoom-passcode-control";
-import { RefreshButton } from "@/src/components/refresh-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
-import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
 import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
+import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 
 /** La consola Zoom no debe presentar datos o controles de Google Meet como propios.
  * El sistema todavía no consulta participantes ni estadísticas en vivo de Zoom.
@@ -22,7 +21,6 @@ export function ReunionZoomOperativa({
   salaEspera: boolean | null;
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
-  const backHref = esAsistente ? "/mi-agenda" : "/reuniones?proveedor=zoom";
   const enlace = reunion.zoom.joinUrl;
   const puedeDesasignarse = esAsistente && Boolean(reunion.asistencia.asignacionId)
     && reunion.asistencia.inicioAt > reunion.actualizadoAt;
@@ -30,13 +28,7 @@ export function ReunionZoomOperativa({
 
   return (
     <main className={styles.page}>
-      <nav className={styles.toolbar} aria-label="Acciones de navegación">
-        <Link href={backHref} className={styles.back}><ArrowLeft size={17} aria-hidden="true" /> Volver a reuniones</Link>
-        <div className={styles.refresh}>
-          <OperationalAutoRefresh enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"} />
-          <RefreshButton />
-        </div>
-      </nav>
+      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica={false} />
 
       <header className={styles.hero}>
         <div className={styles.eyebrow}><span>{reunion.programa}</span><span className={styles.provider}><Video size={15} /> Zoom</span></div>
