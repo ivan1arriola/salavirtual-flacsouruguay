@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  GrupoZoomVacioError,
   planificarSincronizacionGrupoZoom,
   type CuentaZoomActual,
   type MiembroGrupoZoom
@@ -10,6 +9,7 @@ const miembro = (id: string, email: string): MiembroGrupoZoom => ({ id, email, n
 const cuenta = (id: string, email: string | null, extra: Partial<CuentaZoomActual> = {}): CuentaZoomActual => ({
   id,
   emailOrganizador: email,
+  externalAccountId: null,
   activa: true,
   fueraDelGrupoAt: null,
   prioridad: 100,
@@ -30,6 +30,7 @@ describe("zoom-grupo-sincronizacion.domain", () => {
   it("usa prioridad 100 si no hay cuentas y cuenta una vez los correos duplicados", () => {
     const plan = planificarSincronizacionGrupoZoom([miembro("a", "A@x.uy"), miembro("a2", " a@x.uy ")], [], {});
     expect(plan.crear).toHaveLength(1);
+    expect(plan.crear[0].miembro.id).toBe("a");
     expect(plan.crear[0].prioridad).toBe(100);
   });
 
@@ -37,6 +38,43 @@ describe("zoom-grupo-sincronizacion.domain", () => {
     const plan = planificarSincronizacionGrupoZoom([miembro("a", "Ana@X.uy")], [cuenta("c1", " ana@x.uy")], {});
     expect(plan.crear).toHaveLength(0);
     expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("a", "Ana@X.uy"), reactivar: false }]);
+  });
+
+  it("empareja por id de Zoom una cuenta cuyo correo cambió y la actualiza sin crear otra", () => {
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("u1", "nuevo@x.uy")],
+      [cuenta("c1", "viejo@x.uy", { externalAccountId: "u1" })],
+      {}
+    );
+    expect(plan.crear).toEqual([]);
+    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }]);
+    expect(plan.desactivar).toEqual([]);
+    expect(plan.marcarFuera).toEqual([]);
+  });
+
+  it("adopta por correo una cuenta cargada a mano cuyo id externo es el correo", () => {
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("u1", "Sala01@x.uy")],
+      [cuenta("c1", "sala01@x.uy", { externalAccountId: "sala01@x.uy" })],
+      {}
+    );
+    expect(plan.crear).toEqual([]);
+    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "Sala01@x.uy"), reactivar: false }]);
+  });
+
+  it("una cuenta emparejada por id no se empareja también por correo", () => {
+    // u1 cambió su correo a nuevo@; su correo viejo (otro@) ahora es de u2.
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("u1", "nuevo@x.uy"), miembro("u2", "otro@x.uy")],
+      [
+        cuenta("c1", "otro@x.uy", { externalAccountId: "u1" }),
+        cuenta("c2", "nuevo@x.uy", { externalAccountId: "nuevo@x.uy" })
+      ],
+      {}
+    );
+    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }]);
+    expect(plan.crear).toEqual([{ miembro: miembro("u2", "otro@x.uy"), prioridad: 101 }]);
+    expect(plan.desactivar).toEqual(["c2"]);
   });
 
   it("reactiva una cuenta que vuelve al grupo", () => {
@@ -55,6 +93,16 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       {}
     );
     expect(plan.actualizar[0].reactivar).toBe(true);
+  });
+
+  it("no reactiva una cuenta del grupo que se desactivó a mano", () => {
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("a", "a@x.uy")],
+      [cuenta("c1", "a@x.uy", { activa: false, fueraDelGrupoAt: null })],
+      {}
+    );
+    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("a", "a@x.uy"), reactivar: false }]);
+    expect(plan.desactivar).toEqual([]);
   });
 
   it("desactiva la que salió sin reuniones futuras", () => {
@@ -90,14 +138,10 @@ describe("zoom-grupo-sincronizacion.domain", () => {
     expect(plan.desactivar).toEqual(["c2"]);
   });
 
-  it("trata las cuentas sin correo como fuera del grupo y nunca las empareja", () => {
+  it("trata las cuentas sin correo como fuera del grupo y nunca las empareja por correo", () => {
     const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy")], [cuenta("c1", null)], {});
     expect(plan.crear).toHaveLength(1);
     expect(plan.desactivar).toEqual(["c1"]);
-  });
-
-  it("lanza GrupoZoomVacioError con grupo vacío", () => {
-    expect(() => planificarSincronizacionGrupoZoom([], [cuenta("c1", "a@x.uy")], {})).toThrow(GrupoZoomVacioError);
   });
 
   it("el resumen cuenta nuevas, desactivadas y fuera del grupo", () => {

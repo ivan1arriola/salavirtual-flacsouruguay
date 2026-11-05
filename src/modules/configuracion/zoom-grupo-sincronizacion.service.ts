@@ -18,9 +18,24 @@ const CONFIGURACION_ID = "principal";
 const CANDADO_VENCE_MS = 10 * 60 * 1000;
 const AVISO_SIN_GRUPO = "Elegí un grupo de Zoom para obtener las cuentas anfitrionas.";
 const AVISO_EN_CURSO = "Ya hay una sincronización en curso.";
-const ERROR_GENERICO = "No se pudo sincronizar con el grupo de Zoom.";
+const ERROR_GENERICO = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
 
 export type ResultadoSincronizacionZoom = Readonly<{ ok: boolean; resumen: string }>;
+
+/** Error cuyo mensaje está pensado para mostrarse tal cual como resultado de la sincronización. */
+export class SincronizacionZoomError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SincronizacionZoomError";
+  }
+}
+
+export class GrupoZoomVacioError extends SincronizacionZoomError {
+  constructor(message = "El grupo de Zoom no tiene miembros.") {
+    super(message);
+    this.name = "GrupoZoomVacioError";
+  }
+}
 
 type Descifrar = (cifrado: string) => string;
 type GrupoElegido = Readonly<{ id: string; nombre: string | null }>;
@@ -87,9 +102,17 @@ export async function sincronizarCuentasZoomConGrupo(
   if (candado.count === 0) return { ok: false, resumen: AVISO_EN_CURSO };
 
   try {
+    // Lectura de Zoom fuera de la transacción; sus errores (permisos, grupo borrado, red) se muestran tal cual.
     const token = await obtenerTokenZoom(db, descifrar);
     const miembros = await listarMiembrosGrupoZoomHttp(token, config.grupoId);
-    const resumen = await aplicarSincronizacion(db, { id: config.grupoId, nombre: config.grupoNombre }, miembros, ahora);
+    // Con cero miembros el plan desactivaría todas las cuentas: se rechaza antes de tocar la base.
+    if (miembros.length === 0) throw new GrupoZoomVacioError();
+    const resumen = await aplicarSincronizacion(db, { id: config.grupoId, nombre: config.grupoNombre }, miembros, ahora)
+      .catch((error: unknown) => {
+        if (error instanceof SincronizacionZoomError) throw error;
+        console.error("[zoom] Falló la sincronización de cuentas con el grupo de Zoom", error);
+        throw new SincronizacionZoomError(ERROR_GENERICO);
+      });
     return { ok: true, resumen };
   } catch (error) {
     const resumen = error instanceof Error && error.message ? error.message : ERROR_GENERICO;
@@ -156,7 +179,7 @@ async function aplicarSincronizacion(
 ): Promise<string> {
   return db.$transaction(async (tx) => {
     const proveedor = await tx.proveedorReunion.findUnique({ where: { tipo: "ZOOM" }, select: { id: true } });
-    if (!proveedor) throw new Error("El proveedor Zoom no está configurado.");
+    if (!proveedor) throw new SincronizacionZoomError("El proveedor Zoom no está configurado.");
     // Mismo candado que la asignación de cuentas: ninguna reunión nueva cae en una cuenta
     // entre que se cuentan sus reuniones futuras y se decide desactivarla.
     await bloquearReservaSalas(tx, proveedor.id);
@@ -164,7 +187,7 @@ async function aplicarSincronizacion(
     const cuentas = await tx.cuentaProveedor.findMany({
       where: { proveedorId: proveedor.id },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, emailOrganizador: true, activa: true, fueraDelGrupoAt: true, prioridad: true }
+      select: { id: true, emailOrganizador: true, externalAccountId: true, activa: true, fueraDelGrupoAt: true, prioridad: true }
     });
     const reunionesFuturas = await contarReunionesFuturas(tx, proveedor.id, ahora);
     const plan = planificarSincronizacionGrupoZoom(miembros, cuentas, reunionesFuturas);

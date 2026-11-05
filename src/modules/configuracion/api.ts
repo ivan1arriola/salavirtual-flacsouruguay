@@ -59,6 +59,8 @@ export {
   listarGruposZoom,
   elegirGrupoZoom,
   sincronizarCuentasZoomConGrupo,
+  GrupoZoomVacioError,
+  SincronizacionZoomError,
   type ResultadoSincronizacionZoom,
 } from "./zoom-grupo-sincronizacion.service";
 

@@ -85,6 +85,23 @@ function cumpleCampo(valor: unknown, condicion: unknown): boolean {
   return valor === condicion;
 }
 
+function elegirCampos<T extends Record<string, unknown>>(fila: T, select?: Record<string, boolean>): Partial<T> {
+  if (!select) return { ...fila };
+  return Object.fromEntries(Object.keys(select).filter((campo) => select[campo]).map((campo) => [campo, fila[campo]])) as Partial<T>;
+}
+
+/** Igual que `@@unique([proveedorId, externalAccountId])` del esquema. */
+function exigirIdExternoUnico(cuentas: readonly Cuenta[], candidata: Cuenta): void {
+  const choque = cuentas.find(
+    (c) =>
+      c.id !== candidata.id &&
+      candidata.externalAccountId !== null &&
+      c.proveedorId === candidata.proveedorId &&
+      c.externalAccountId === candidata.externalAccountId
+  );
+  if (choque) throw new Error("Unique constraint failed on the fields: (`proveedorId`,`externalAccountId`)");
+}
+
 function coincide(fila: Record<string, unknown>, where: Record<string, unknown>): boolean {
   return Object.entries(where).every(([campo, condicion]) =>
     campo === "OR"
@@ -124,10 +141,10 @@ function crearBase(opciones: {
       findUnique: vi.fn(async ({ where }: any) => (PROVEEDORES[where.tipo] ? { id: PROVEEDORES[where.tipo] } : null))
     },
     cuentaProveedor: {
-      findMany: vi.fn(async ({ where }: any = {}) =>
+      findMany: vi.fn(async ({ where, select }: any = {}) =>
         cuentas
           .filter((c) => where?.proveedorId === undefined || c.proveedorId === where.proveedorId)
-          .map((c) => ({ ...c }))
+          .map((c) => elegirCampos(c, select))
       ),
       create: vi.fn(async ({ data }: any) => {
         const nueva: Cuenta = {
@@ -142,12 +159,14 @@ function crearBase(opciones: {
           fueraDelGrupoAt: null,
           ...data
         };
+        exigirIdExternoUnico(cuentas, nueva);
         cuentas.push(nueva);
         return { ...nueva };
       }),
       update: vi.fn(async ({ where, data }: any) => {
         const cuenta = cuentas.find((c) => c.id === where.id);
         if (!cuenta) throw new Error(`No existe la cuenta ${where.id}`);
+        exigirIdExternoUnico(cuentas, { ...cuenta, ...data });
         Object.assign(cuenta, data);
         return { ...cuenta };
       })
@@ -321,11 +340,69 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(base.cuentas).toEqual(original);
     expect(base.mock.cuentaProveedor.update).not.toHaveBeenCalled();
     expect(base.mock.cuentaProveedor.create).not.toHaveBeenCalled();
+    // Se rechaza antes de abrir la transacción: ni siquiera toma el candado de reserva de salas.
+    expect(base.mock.$transaction).not.toHaveBeenCalled();
+    expect(base.mock.$executeRaw).not.toHaveBeenCalled();
     expect(base.estado.config).toMatchObject({
       ultimaSincronizacionAt: ahora,
       ultimaSincronizacionResultado: "El grupo de Zoom no tiene miembros.",
       sincronizandoDesdeAt: null
     });
+  });
+
+  it("un miembro que cambió su correo en Zoom actualiza su cuenta sin chocar con el id externo", async () => {
+    const base = crearBase({
+      cuentas: [cuentaZoom("z1", "viejo@flacso.edu.uy", { externalAccountId: "u1", origenGrupoZoom: true })]
+    });
+    zoom.miembros.mockResolvedValue([miembro("u1", "nuevo@flacso.edu.uy")]);
+
+    const primera = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora);
+    const segunda = await sincronizarCuentasZoomConGrupo(base.db, descifrar, new Date(ahora.getTime() + 60_000));
+
+    const sinCambios = "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones";
+    expect(primera).toEqual({ ok: true, resumen: sinCambios });
+    expect(segunda).toEqual({ ok: true, resumen: sinCambios });
+    expect(base.mock.cuentaProveedor.create).not.toHaveBeenCalled();
+    expect(base.cuentas).toHaveLength(1);
+    expect(base.cuentas[0]).toMatchObject({
+      id: "z1",
+      emailOrganizador: "nuevo@flacso.edu.uy",
+      externalAccountId: "u1",
+      activa: true,
+      fueraDelGrupoAt: null
+    });
+  });
+
+  it("un error inesperado de la base guarda un aviso legible y registra el original", async () => {
+    const original = [cuentaZoom("z1", "sala01@flacso.edu.uy")];
+    const base = crearBase({ cuentas: original });
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy"), miembro("u2", "nueva@flacso.edu.uy")]);
+    const falla = new Error("Invalid `prisma.cuentaProveedor.create()` invocation: connection reset");
+    base.mock.cuentaProveedor.create.mockRejectedValueOnce(falla);
+    const consola = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora);
+
+    const aviso = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
+    expect(resultado).toEqual({ ok: false, resumen: aviso });
+    expect(base.estado.config).toMatchObject({
+      ultimaSincronizacionAt: ahora,
+      ultimaSincronizacionResultado: aviso,
+      sincronizandoDesdeAt: null
+    });
+    expect(consola).toHaveBeenCalledWith(expect.any(String), falla);
+    consola.mockRestore();
+  });
+
+  it("sin proveedor Zoom avisa con un mensaje claro", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy")] });
+    base.mock.proveedorReunion.findUnique.mockResolvedValueOnce(null);
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy")]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora);
+
+    expect(resultado).toEqual({ ok: false, resumen: "El proveedor Zoom no está configurado." });
+    expect(base.estado.config?.ultimaSincronizacionResultado).toBe("El proveedor Zoom no está configurado.");
   });
 
   it("sin grupo elegido avisa", async () => {
