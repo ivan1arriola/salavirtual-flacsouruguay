@@ -42,7 +42,7 @@ describe("identificación de instancias Zoom", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect(await resolverUuidInstanciaZoomHttp("token", "123", fin, inicio)).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
 });
