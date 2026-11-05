@@ -26,4 +26,23 @@ describe("identificación de instancias Zoom", () => {
     }), { status: 200 })));
     expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBeNull();
   });
+  it("no selecciona una ocurrencia fuera del horario, aunque comparta ID", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      meetings: [{ uuid: "otra-fecha", start_time: "2026-11-06T14:00:00Z" }]
+    }), { status: 200 })));
+    expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBeNull();
+  });
+
+  it("no identifica sesiones si Zoom no dispone de instancias", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 404 })));
+    expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBeNull();
+  });
+
+  it("rechaza fechas programadas inválidas", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await resolverUuidInstanciaZoomHttp("token", "123", fin, inicio)).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
 });
