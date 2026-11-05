@@ -13,6 +13,7 @@ import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { LiveParticipantsIndicator } from "@/src/components/dashboard/admin/live-participants-indicator";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import type { AdminTodayMeetingDTO } from "@/src/modules/dashboard/admin-dashboard.adapter";
+import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
 
 export function AdminTodayTimeline({
   meetings
@@ -45,6 +46,7 @@ export function AdminTodayTimeline({
             const inicio = new Date(meeting.inicioProgramadoAt);
             const fin = new Date(meeting.finProgramadoAt);
             const isLive = meeting.estadoTemporal === "EN_VIVO";
+            const provider = getMeetingProviderPresentation(meeting.proveedorTipo);
 
             return (
               <article
@@ -103,20 +105,22 @@ export function AdminTodayTimeline({
                       )}
                     </div>
 
-                    <div className="admin-timeline-cohost">
-                      <small>Cohosts:</small>
-                      {meeting.cohostConfirmado ? (
-                        <span className="status-text-ok" title="Verificado en Google Meet">
-                          <CheckCircle2 size={13} /> Confirmado en Meet
-                        </span>
-                      ) : meeting.cohostCount > 0 ? (
-                        <span className="status-text-warning" title="Permisos de cohost en proceso de confirmación">
-                          <AlertTriangle size={13} /> Pendiente en Meet
-                        </span>
-                      ) : (
-                        <span className="muted-text">Sin cohost</span>
-                      )}
-                    </div>
+                    {provider.supportsCohosts ? (
+                      <div className="admin-timeline-cohost">
+                        <small>Cohosts:</small>
+                        {meeting.cohostConfirmado ? (
+                          <span className="status-text-ok" title="Verificado en Google Meet">
+                            <CheckCircle2 size={13} /> Confirmado en Meet
+                          </span>
+                        ) : meeting.cohostCount > 0 ? (
+                          <span className="status-text-warning" title="Permisos de cohost en proceso de confirmación">
+                            <AlertTriangle size={13} /> Pendiente en Meet
+                          </span>
+                        ) : (
+                          <span className="muted-text">Sin cohost</span>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -134,12 +138,12 @@ export function AdminTodayTimeline({
                         target="_blank"
                       >
                         <Video size={16} />
-                        <span>Meet</span>
+                        <span>{provider.name}</span>
                       </a>
-                      <CopyMeetLinkButton url={meeting.joinUrl} />
+                      <CopyMeetLinkButton title={`Copiar enlace de ${provider.name}`} url={meeting.joinUrl} />
                     </>
                   ) : (
-                    <span className="status-muted">Link pendiente</span>
+                    <span className="status-muted">{provider.pendingLinkLabel}</span>
                   )}
                 </div>
               </article>
