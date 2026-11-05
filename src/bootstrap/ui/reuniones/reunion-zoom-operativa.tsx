@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2, ShieldCheck, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import type { EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { ZoomPasscodeControl } from "@/src/components/zoom-passcode-control";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
@@ -11,14 +12,15 @@ import styles from "./reunion-zoom-operativa.module.css";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 
 /** La consola Zoom no debe presentar datos o controles de Google Meet como propios.
- * El sistema todavía no consulta participantes ni estadísticas en vivo de Zoom.
+ * Los datos de participantes se muestran solo si Zoom Dashboard los facilita.
  */
 export function ReunionZoomOperativa({
-  reunion, rol, salaEspera
+  reunion, rol, salaEspera, asistenciaEnVivo
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   salaEspera: boolean | null;
+  asistenciaEnVivo: EstadoAsistenciaZoomEnVivo;
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const enlace = reunion.zoom.joinUrl;
@@ -79,12 +81,38 @@ export function ReunionZoomOperativa({
         <p className={styles.status}>{reunion.estado.replaceAll("_", " ").toLowerCase()}</p>
         <div className={styles.statusGrid}>
           <div><Video size={18} aria-hidden="true" /><strong>Zoom</strong><span>{reunion.zoom.estadoIntegracion ?? "Pendiente"}</span></div>
-          <div><Users size={18} aria-hidden="true" /><strong>Asistencia</strong><span>Sin datos en vivo</span></div>
+          <div><Users size={18} aria-hidden="true" /><strong>Asistencia</strong><span>{asistenciaEnVivo.estado === "DISPONIBLE" ? `${asistenciaEnVivo.participantes.length} conexiones informadas` : "No disponible"}</span></div>
           <div><Radio size={18} aria-hidden="true" /><strong>Grabación</strong><span>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</span></div>
 
         </div>
-        <p className={styles.note}>La programación no confirma que la sesión esté activa. SalaVirtual aún no recibe participantes en vivo de Zoom.</p>
+        <p className={styles.note}>La programación no confirma que la sesión esté activa. La información de participantes depende de la disponibilidad de Zoom Dashboard.</p>
         {reunion.zoom.errorIntegracion ? <p role="alert" className={styles.warning}>{reunion.zoom.errorIntegracion}</p> : null}
+      </section>
+
+      <section className={styles.card} aria-label="Participantes de Zoom en vivo">
+        <div className={styles.heading}><Users size={19} aria-hidden="true" /><h2>Asistencia en vivo</h2></div>
+        {asistenciaEnVivo.estado === "DISPONIBLE" ? (
+          <>
+            <p className={styles.note}>Zoom informa {asistenciaEnVivo.participantes.length} conexiones. Los correos solo aparecen si Zoom los facilita. La lista se actualiza al refrescar esta vista.</p>
+            {asistenciaEnVivo.participantes.length ? (
+              <div className={styles.liveList}>
+                {asistenciaEnVivo.participantes.map((p, index) => (
+                  <div key={`${p.id}:${index}`} className={styles.liveRow}>
+                    <strong>{p.nombre}</strong>
+                    <span>{p.email ?? "Correo no disponible"}</span>
+                    <small>{p.ingreso ? `Ingreso: ${formatTime(new Date(p.ingreso))}` : "Ingreso sin horario"}</small>
+                  </div>
+                ))}
+              </div>
+            ) : <p className={styles.note}>Zoom no devolvió participantes para esta consulta.</p>}
+          </>
+        ) : (
+          <p className={styles.note}>{asistenciaEnVivo.motivo === "SIN_PERMISOS"
+            ? "La cuenta Zoom no tiene permisos o plan habilitado para consultar participantes en vivo."
+            : asistenciaEnVivo.motivo === "SIN_REUNION"
+              ? "Zoom no encuentra una reunión activa para este ID."
+              : "No se pudo verificar la asistencia en vivo. No significa que haya cero asistentes."}</p>
+        )}
       </section>
 
       <section className={styles.card} aria-label="Acciones rápidas">

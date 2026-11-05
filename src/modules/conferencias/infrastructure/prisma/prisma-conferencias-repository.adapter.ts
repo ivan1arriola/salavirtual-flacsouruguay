@@ -242,7 +242,7 @@ export function crearPrismaConferenciasRepository(
         // Los eventos de la serie que todavía no tienen ID reciben la copia, para que las lecturas no cambien.
         await tx.eventoProveedor.updateMany({
           where: { reunionProveedorId: reunionId, externalEventId: null },
-          data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl },
+          data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl, zoomMeetingUuid: null, zoomUuidInicioAt: null, zoomUuidMeetingId: null },
         });
       });
     },
@@ -256,7 +256,7 @@ export function crearPrismaConferenciasRepository(
           reclamoIntegracionToken: claim.token,
           OR: [{ externalEventId: null }, { externalEventId: datos.externalId }],
         },
-        data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl },
+        data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl, zoomMeetingUuid: null, zoomUuidInicioAt: null, zoomUuidMeetingId: null },
       });
       if (actualizado.count !== 1) {
         throw new Error("El claim de integración caducó o el evento ya fue modificado.");

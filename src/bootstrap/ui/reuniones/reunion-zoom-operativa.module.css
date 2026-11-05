@@ -53,3 +53,8 @@
 .historyGrid small{font-size:.72rem;color:#61718a;line-height:1.45}
 @media(max-width:800px){.historyGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:460px){.historyGrid{grid-template-columns:1fr}}
+
+.liveList{display:grid;gap:8px;max-height:480px;overflow:auto}
+.liveRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;align-items:center;gap:12px;padding:12px;border:1px solid #dce6f2;border-radius:9px;background:#f8fafd;font-size:.83rem;overflow-wrap:anywhere}
+.liveRow span,.liveRow small{color:#526781}
+@media(max-width:650px){.liveRow{grid-template-columns:minmax(0,1fr)}.liveRow small{font-size:.74rem}}
