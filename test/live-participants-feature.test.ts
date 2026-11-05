@@ -18,7 +18,7 @@ describe("participantes activos de Google Meet", () => {
     expect(source).toContain("obtenerParticipantesActivosInstancia");
   });
 
-  it("actualiza automáticamente el indicador mientras la reunión está en vivo", () => {
+  it("actualiza automáticamente el indicador de Meet mientras la reunión está en vivo", () => {
     expect(existsSync(componentUrl)).toBe(true);
 
     const source = readFileSync(componentUrl, "utf8");
@@ -29,6 +29,6 @@ describe("participantes activos de Google Meet", () => {
     expect(source).toContain("participantes-activos");
     expect(source).toContain("conectados");
     expect(timelineSource).toContain("LiveParticipantsIndicator");
-    expect(timelineSource).toContain("isLive ? <LiveParticipantsIndicator");
+    expect(timelineSource).toContain("isLive && provider.supportsCohosts ? <LiveParticipantsIndicator");
   });
 });
