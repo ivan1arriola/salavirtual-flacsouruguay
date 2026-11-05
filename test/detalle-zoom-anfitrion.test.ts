@@ -35,6 +35,9 @@ describe("detalle de Zoom muestra la cuenta anfitriona", () => {
     expect(pagina).toContain("resumenCuentasAnfitrionas(");
     expect(pagina).toContain("Cuenta anfitriona");
   });
+  it("la consulta carga la cuenta del proveedor; sin eso siempre diría «Sin asignar»", () => {
+    expect(pagina).toMatch(/eventosProveedor: \{ include: \{[^}]*cuentaProveedor: \{ select: \{ nombre: true, emailOrganizador: true \}/);
+  });
   it("cada encuentro lo muestra en texto con el color de su cuenta", () => {
     expect(encuentros).toContain("cuentaAnfitrion?: string | null;");
     expect(encuentros).toContain("Cuenta anfitriona");
