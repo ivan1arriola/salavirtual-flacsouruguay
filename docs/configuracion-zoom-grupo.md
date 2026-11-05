@@ -22,7 +22,7 @@ La primera sincronización es **manual**: elegí el grupo y tocá «Sincronizar 
 
 ## Vista previa y confirmación
 
-«Sincronizar con el grupo» primero muestra qué va a cambiar, sin tocar nada: cuentas nuevas, cuentas que se desactivan, cuentas que quedan fuera del grupo (con sus reuniones futuras), cuentas que pasan a sin licencia y cuántos miembros están sin licencia. Después confirmás con «Confirmar y sincronizar» o cancelás.
+«Sincronizar con el grupo» primero muestra qué va a cambiar, sin tocar nada: cuentas nuevas, cuentas que se reactivan, cuentas que se desactivan, cuentas que quedan fuera del grupo (con sus reuniones futuras), cuentas que pasan a sin licencia y cuántos miembros están sin licencia. Después confirmás con «Confirmar y sincronizar» o cancelás.
 
 Si la sincronización dejaría sin reuniones nuevas a **más de la mitad** de las salas Zoom que hoy las reciben, se muestra como alerta y el servidor no la aplica sin esa confirmación explícita. Suele indicar que se eligió el grupo equivocado.
 

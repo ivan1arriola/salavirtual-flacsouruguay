@@ -757,7 +757,18 @@ describe("previsualizarSincronizacionConGrupo", () => {
     expect(base.auditorias).toEqual([]);
   }
 
-  const vacia = { masivo: false, avisoMasivo: null, revision: null, crear: [], desactivar: [], marcarFuera: [], sinLicencia: [], pierdenLicencia: [] };
+  const vacia = { masivo: false, avisoMasivo: null, revision: null, crear: [], reactivar: [], desactivar: [], marcarFuera: [], sinLicencia: [], pierdenLicencia: [] };
+
+  it("muestra las salas que volverían a estar disponibles", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy", {
+      activa: false, fueraDelGrupoAt: minutosAntes(60)
+    })] });
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy")]);
+
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+
+    expect(vista).toMatchObject({ ok: true, reactivar: ["sala01@flacso.edu.uy"] });
+  });
 
   it("describe lo que cambiaría sin escribir nada ni tomar el candado", async () => {
     const original = [
@@ -787,6 +798,7 @@ describe("previsualizarSincronizacionConGrupo", () => {
       avisoMasivo: null,
       revision: expect.any(String),
       crear: ["nueva@flacso.edu.uy"],
+      reactivar: [],
       desactivar: ["sala02@flacso.edu.uy"],
       marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
       sinLicencia: ["sala04@flacso.edu.uy", "nueva@flacso.edu.uy"],

@@ -44,6 +44,7 @@ const VISTA_PREVIA = {
   masivo: false,
   avisoMasivo: null,
   crear: ["nueva@flacso.edu.uy"],
+  reactivar: [],
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [],
   sinLicencia: ["nueva@flacso.edu.uy"],

@@ -9,6 +9,7 @@ export type VistaPreviaSincronizacion = Readonly<{
   avisoMasivo: string | null;
   revision: string;
   crear: readonly string[];
+  reactivar: readonly string[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ email: string; reunionesFuturas: number }>[];
   sinLicencia: readonly string[];
@@ -36,19 +37,19 @@ export function leerVistaPrevia(
 ): Readonly<{ ok: true; vistaPrevia: VistaPreviaSincronizacion } | { ok: false; mensaje: string }> {
   const respuesta = comoObjeto(data);
   if (respuesta.ok !== true) return { ok: false, mensaje: textoDeRespuesta(respuesta) ?? ERROR_VISTA_PREVIA };
-  const { resumen, masivo, avisoMasivo, revision, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } = respuesta;
+  const { resumen, masivo, avisoMasivo, revision, crear, reactivar, desactivar, marcarFuera, sinLicencia, pierdenLicencia } = respuesta;
   const valida = typeof resumen === "string" && typeof masivo === "boolean" &&
     (avisoMasivo === null || typeof avisoMasivo === "string") &&
     typeof revision === "string" && /^[0-9a-f]{64}$/.test(revision) &&
-    esListaDeTextos(crear) && esListaDeTextos(desactivar) && esListaFuera(marcarFuera) &&
+    esListaDeTextos(crear) && esListaDeTextos(reactivar) && esListaDeTextos(desactivar) && esListaFuera(marcarFuera) &&
     esListaDeTextos(sinLicencia) && esListaDeTextos(pierdenLicencia);
   if (!valida) return { ok: false, mensaje: ERROR_VISTA_PREVIA };
-  return { ok: true, vistaPrevia: { resumen, masivo, avisoMasivo, revision, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } };
+  return { ok: true, vistaPrevia: { resumen, masivo, avisoMasivo, revision, crear, reactivar, desactivar, marcarFuera, sinLicencia, pierdenLicencia } };
 }
 
 /** Si la sincronización no cambiaría ninguna cuenta (los miembros sin licencia de antes no cuentan). */
 export function vistaPreviaSinCambios(vistaPrevia: VistaPreviaSincronizacion): boolean {
-  return [vistaPrevia.crear, vistaPrevia.desactivar, vistaPrevia.marcarFuera, vistaPrevia.pierdenLicencia]
+  return [vistaPrevia.crear, vistaPrevia.reactivar, vistaPrevia.desactivar, vistaPrevia.marcarFuera, vistaPrevia.pierdenLicencia]
     .every((lista) => lista.length === 0);
 }
 

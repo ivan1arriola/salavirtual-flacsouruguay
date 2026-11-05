@@ -44,6 +44,7 @@ export type VistaPreviaSincronizacionZoom = Readonly<{
   avisoMasivo: string | null;
   revision: string | null;
   crear: readonly string[];
+  reactivar: readonly string[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ email: string; reunionesFuturas: number }>[];
   sinLicencia: readonly string[];
@@ -223,6 +224,7 @@ function vistaPreviaFallida(resumen: string): VistaPreviaSincronizacionZoom {
     avisoMasivo: null,
     revision: null,
     crear: [],
+    reactivar: [],
     desactivar: [],
     marcarFuera: [],
     sinLicencia: [],
@@ -333,6 +335,7 @@ function describirPlan({ cuentas, plan, riesgo }: Awaited<ReturnType<typeof plan
     avisoMasivo: riesgo.masivo ? avisoSincronizacionMasiva(riesgo) : null,
     revision: revisionDelPlan(grupoId, plan),
     crear: plan.crear.map(({ miembro }) => normalizarEmail(miembro.email)),
+    reactivar: plan.actualizar.filter(({ reactivar }) => reactivar).map(({ miembro }) => normalizarEmail(miembro.email)),
     desactivar: plan.desactivar.map(identificar),
     marcarFuera: plan.marcarFuera.map(({ cuentaId, reunionesFuturas }) => ({ email: identificar(cuentaId), reunionesFuturas })),
     sinLicencia: plan.sinLicencia.map(({ email }) => normalizarEmail(email)),
