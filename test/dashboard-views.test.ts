@@ -38,5 +38,30 @@ describe("integración de vistas de dashboard", () => {
     expect(determinarEstadoTemporal(inicio, fin, baseDate)).toBe("EN_VIVO");
     expect(formatearTiempoHastaReunion(inicio, baseDate)).toBe("En curso");
   });
+
+  it("presenta acciones y estados según el proveedor activo", () => {
+    const adapter = readFileSync(
+      join(process.cwd(), "src/modules/dashboard/admin-dashboard.adapter.ts"),
+      "utf8"
+    );
+    const dashboard = readFileSync(
+      join(process.cwd(), "src/components/dashboard/admin/admin-dashboard.tsx"),
+      "utf8"
+    );
+    const timeline = readFileSync(
+      join(process.cwd(), "src/components/dashboard/admin/admin-today-timeline.tsx"),
+      "utf8"
+    );
+
+    expect(adapter).toContain("readonly proveedorTipo: string | null");
+    expect(adapter).toContain("proveedorTipo: meet?.proveedor.tipo ?? null");
+    expect(dashboard).toContain('href="/reuniones"');
+    expect(dashboard).toContain("Buscar reunión");
+    expect(dashboard).not.toContain("/reuniones/buscar-meet");
+    expect(timeline).toContain("getMeetingProviderPresentation(meeting.proveedorTipo)");
+    expect(timeline).toContain("provider.supportsCohosts");
+    expect(timeline).toContain("provider.joinLabel");
+  });
+
 });
 
