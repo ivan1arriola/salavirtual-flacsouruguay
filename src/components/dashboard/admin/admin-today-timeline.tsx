@@ -138,7 +138,7 @@ export function AdminTodayTimeline({
                         target="_blank"
                       >
                         <Video size={16} />
-                        <span>{provider.name}</span>
+                        <span>{provider.joinLabel}</span>
                       </a>
                       <CopyMeetLinkButton title={`Copiar enlace de ${provider.name}`} url={meeting.joinUrl} />
                     </>
