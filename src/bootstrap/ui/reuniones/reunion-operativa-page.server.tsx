@@ -19,6 +19,7 @@ import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integra
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
+import { ReunionZoomHistorica } from "./reunion-zoom-historica";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
@@ -55,6 +56,9 @@ export default async function ReunionOperativaPage({
 
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
+    if (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") {
+      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} />;
+    }
     let salaEspera: boolean | null = null;
     if (reunion.zoom.id) {
       try {
