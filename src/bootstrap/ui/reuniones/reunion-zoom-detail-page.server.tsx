@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Repeat2, UserRound, Video } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, History, Repeat2, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -84,6 +84,10 @@ export default async function ReunionZoomDetailPage({
     });
   }).sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
+  const encuentrosPasados = encuentros.filter((encuentro) => new Date(encuentro.finIso) < ahora && encuentro.estado !== "CANCELADA");
+  const encuentrosPendientes = encuentros.filter((encuentro) => new Date(encuentro.finIso) >= ahora && encuentro.estado !== "CANCELADA");
+  const proximoEncuentro = encuentrosPendientes[0] ?? null;
+
   const zoomActivos = serie.flatMap(({ instancias }) => instancias.filter((instancia) => instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM"));
   const eventosZoom = zoomActivos.map((instancia) => seleccionarEventoProveedorActivo(instancia));
   const idsCompartidos = [...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean))];
@@ -128,6 +132,12 @@ export default async function ReunionZoomDetailPage({
           <span>FLACSO<br />URUGUAY</span>
         </div>
       </header>
+      <section className="meeting-detail-summary" aria-label="Resumen de encuentros de la serie">
+        <article><Repeat2 size={18} aria-hidden="true" /><div><span>Encuentros</span><strong>{encuentros.length}</strong><small>Incluye encuentros cancelados</small></div></article>
+        <article><History size={18} aria-hidden="true" /><div><span>Pasados</span><strong>{encuentrosPasados.length}</strong><small>Su realización debe verificarse con Zoom</small></div></article>
+        <article><Clock3 size={18} aria-hidden="true" /><div><span>Pendientes</span><strong>{encuentrosPendientes.length}</strong><small>Según horario programado</small></div></article>
+        <article><CalendarDays size={18} aria-hidden="true" /><div><span>Próximo encuentro</span><strong>{proximoEncuentro ? new Intl.DateTimeFormat("es-UY", { dateStyle: "medium", timeZone: "America/Montevideo" }).format(new Date(proximoEncuentro.inicioIso)) : "Sin próximos"}</strong>{proximoEncuentro ? <Link href={`/operacion/${proximoEncuentro.id}`}>Abrir encuentro</Link> : <small>Todos los encuentros programados ya pasaron</small>}</div></article>
+      </section>
       {necesitaCorreccion ? (
         <section className="zoom-series-link-warning" role="status" aria-label="Inconsistencia de reuniones Zoom">
           <div>

@@ -1,5 +1,7 @@
-import { AlertTriangle, ArrowLeft, CalendarDays, Clock3, ExternalLink, FileText, History, Radio, Users, Video } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock3, ExternalLink, FileText, History, Radio, Users, Video } from "lucide-react";
 import Link from "next/link";
+import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
+import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
@@ -13,10 +15,7 @@ export function ReunionZoomHistorica({ reunion, rol }: Readonly<{
   const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "Realización sin verificar" : reunion.estado.replaceAll("_", " ");
   return (
     <main className={styles.page}>
-      <nav className={styles.toolbar} aria-label="Navegación">
-        <Link href={esAsistente ? "/mi-agenda" : "/reuniones?proveedor=zoom"} className={styles.back}><ArrowLeft size={17} /> Volver a reuniones</Link>
-        <span className={styles.historyTag}><History size={15} /> Historial</span>
-      </nav>
+      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica />
       <header className={styles.hero}>
         <div className={styles.eyebrow}><span>{reunion.programa}</span><span className={styles.provider}><Video size={15} /> Zoom</span><span className={styles.historyTag}>{estado}</span></div>
         <h1>{reunion.titulo}</h1>
@@ -48,6 +47,7 @@ export function ReunionZoomHistorica({ reunion, rol }: Readonly<{
           <Link href="/grabaciones"><Video size={18}/> Consultar grabaciones</Link>
         </div>
       </section>
+      {esAsistente && reunion.asistencia.asignacionId ? <section className={styles.card} aria-label="Cierre de asistencia técnica"><div className={styles.heading}><FileText size={19}/><h2>Cierre de asistencia técnica</h2></div><OperationalAssistanceClosureForm asignacionId={reunion.asistencia.asignacionId} inicioProgramado={reunion.asistencia.inicioAt.toISOString()} finProgramado={reunion.asistencia.finAt.toISOString()} cierreConfirmado={reunion.asistencia.cierreConfirmado} /></section> : null}
       <details className={styles.advanced}>
         <summary><Video size={18}/> Identificación y datos técnicos</summary>
         <dl className={styles.facts}>
