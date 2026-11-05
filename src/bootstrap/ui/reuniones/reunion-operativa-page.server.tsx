@@ -15,6 +15,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { obtenerParticipantesZoomEnVivoHttp, type EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -60,18 +61,24 @@ export default async function ReunionOperativaPage({
       return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} />;
     }
     let salaEspera: boolean | null = null;
+    let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };
     if (reunion.zoom.id) {
       try {
         const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
         if (credenciales.disponible) {
           const token = await obtenerZoomAccessToken(credenciales);
-          salaEspera = await obtenerSalaEsperaZoomHttp(token, reunion.zoom.id);
+          const [espera, asistencia] = await Promise.allSettled([
+            obtenerSalaEsperaZoomHttp(token, reunion.zoom.id),
+            obtenerParticipantesZoomEnVivoHttp(token, reunion.zoom.id)
+          ]);
+          if (espera.status === "fulfilled") salaEspera = espera.value;
+          if (asistencia.status === "fulfilled") asistenciaEnVivo = asistencia.value;
         }
       } catch {
         // Sin permisos, conexión o respuesta válida: no afirmar que está deshabilitada.
       }
     }
-    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} salaEspera={salaEspera} />;
+    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} salaEspera={salaEspera} asistenciaEnVivo={asistenciaEnVivo} />;
   }
 
   const active = reunion.conferencia.participantesActivos;
