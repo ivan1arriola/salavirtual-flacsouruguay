@@ -3,7 +3,10 @@
 import { Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
-export function CopyMeetLinkButton({ url }: Readonly<{ url: string }>) {
+export function CopyMeetLinkButton({
+  url,
+  title = "Copiar enlace de la reunión"
+}: Readonly<{ url: string; title?: string }>) {
   const [copied, setCopied] = useState(false);
 
   async function copy(): Promise<void> {
@@ -20,7 +23,7 @@ export function CopyMeetLinkButton({ url }: Readonly<{ url: string }>) {
     <button
       className="copy-meet-button"
       onClick={copy}
-      title="Copiar enlace de Google Meet"
+      title={title}
       type="button"
     >
       {copied ? <Check size={14} /> : <Copy size={14} />}
