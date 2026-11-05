@@ -15,6 +15,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { resolverUuidInstanciaZoomHttp } from "@/src/integrations/zoom/zoom-instances.client";
+import { listarParticipantesReunionPasadaZoomHttp, type ZoomSesionParticipante } from "@/src/integrations/zoom/zoom-reports.client";
 import { obtenerParticipantesZoomEnVivoHttp, type EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
@@ -58,7 +60,22 @@ export default async function ReunionOperativaPage({
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
     if (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") {
-      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} />;
+      let sesiones: readonly ZoomSesionParticipante[] | null = null;
+      if (reunion.zoom.id) {
+        try {
+          const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+          if (credenciales.disponible) {
+            const token = await obtenerZoomAccessToken(credenciales);
+            const uuid = await resolverUuidInstanciaZoomHttp(
+              token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
+            );
+            if (uuid) sesiones = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
+          }
+        } catch {
+          // Reporte no disponible: no presentar cero asistentes.
+        }
+      }
+      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} sesiones={sesiones} />;
     }
     let salaEspera: boolean | null = null;
     let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };
