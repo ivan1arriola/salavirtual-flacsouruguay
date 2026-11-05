@@ -239,8 +239,8 @@ function datosDelMiembro(miembro: MiembroGrupoZoom) {
 }
 
 /**
- * Reuniones futuras por cuenta Zoom en una sola consulta: encuentros programados que todavía no
- * terminaron y cuyo evento Zoom es el vigente (el mismo criterio que usa la agenda).
+ * Reuniones pendientes por cuenta Zoom en una sola consulta: encuentros programados que todavía no
+ * terminaron o en curso, cuyo evento Zoom es el vigente.
  * Sin `proveedorId` (fuera de la sincronización) se acota al proveedor Zoom por su tipo.
  */
 export async function contarReunionesFuturasZoom(
@@ -254,8 +254,10 @@ export async function contarReunionesFuturasZoom(
       ...(proveedorId ? { proveedorId } : { proveedor: { tipo: "ZOOM" } }),
       cuentaProveedorId: { not: null },
       instancia: {
-        estado: "PROGRAMADA",
-        finProgramadoAt: { gt: ahora },
+        OR: [
+          { estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } },
+          { estado: "EN_CURSO" }
+        ],
         AND: [filtroProveedorActivo("ZOOM") as Prisma.InstanciaSalaWhereInput]
       }
     },

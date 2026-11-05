@@ -271,12 +271,17 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(porId.z5).toMatchObject({ activa: true, fueraDelGrupoAt: null, prioridad: 5 });
     expect(base.cuentas).toHaveLength(5);
 
-    // Reuniones futuras: una sola consulta agrupada, acotada a Zoom, programadas y no terminadas.
+    // Una reunión en curso también protege su cuenta, aunque haya salido del grupo.
     expect(base.mock.eventoProveedor.groupBy).toHaveBeenCalledTimes(1);
     const consulta = base.mock.eventoProveedor.groupBy.mock.calls[0][0] as any;
     expect(consulta.by).toEqual(["cuentaProveedorId"]);
     expect(consulta.where.proveedorId).toBe(PROVEEDORES.ZOOM);
-    expect(consulta.where.instancia).toMatchObject({ estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } });
+    expect(consulta.where.instancia).toMatchObject({
+      OR: [
+        { estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } },
+        { estado: "EN_CURSO" }
+      ]
+    });
 
     expect(base.mock.$transaction).toHaveBeenCalledTimes(1);
     expect(base.estado.config).toMatchObject({
