@@ -86,6 +86,7 @@ export type ReunionOperativaView = Readonly<{
   solicitudId: string;
   proveedorActivo: "ZOOM" | "GOOGLE_MEET";
   zoom: Readonly<{
+    eventoProveedorId: string | null;
     id: string | null;
     joinUrl: string | null;
     anfitrion: string | null;
@@ -885,7 +886,8 @@ export async function obtenerReunionOperativa(
       solicitudId: meeting.solicitud.id,
       proveedorActivo,
       zoom: {
-        id: eventoZoom?.codigoReunion ?? eventoZoom?.externalEventId ?? null,
+        eventoProveedorId: eventoZoom?.id ?? null,
+        id: eventoZoom?.externalEventId ?? eventoZoom?.codigoReunion ?? null,
         joinUrl: eventoZoom?.joinUrl ?? null,
         anfitrion: eventoZoom?.cuentaProveedor?.emailOrganizador ?? null,
         estadoIntegracion: eventoZoom?.estadoIntegracion ?? null,
