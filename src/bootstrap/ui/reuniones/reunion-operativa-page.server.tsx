@@ -66,9 +66,23 @@ export default async function ReunionOperativaPage({
           const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
           if (credenciales.disponible) {
             const token = await obtenerZoomAccessToken(credenciales);
-            const uuid = await resolverUuidInstanciaZoomHttp(
-              token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
-            );
+            const eventoZoom = await db.eventoProveedor.findFirst({
+              where: { instanciaSalaId: reunion.id, proveedor: { tipo: "ZOOM" } },
+              select: { id: true, zoomMeetingUuid: true, zoomUuidInicioAt: true }
+            });
+            const inicioCoincide = eventoZoom?.zoomUuidInicioAt?.getTime() === reunion.inicioProgramadoAt.getTime();
+            let uuid = inicioCoincide ? eventoZoom?.zoomMeetingUuid : null;
+            if (!uuid) {
+              uuid = await resolverUuidInstanciaZoomHttp(
+                token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
+              );
+              if (uuid && eventoZoom) {
+                await db.eventoProveedor.update({
+                  where: { id: eventoZoom.id },
+                  data: { zoomMeetingUuid: uuid, zoomUuidInicioAt: reunion.inicioProgramadoAt }
+                });
+              }
+            }
             if (uuid) sesiones = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
           }
         } catch {
