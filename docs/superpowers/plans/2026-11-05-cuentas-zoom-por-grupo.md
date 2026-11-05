@@ -16,7 +16,7 @@
 - Cada cuenta Zoom admite una sola reunión simultánea: `limiteConcurrente = 1`.
 - `tieneLicencia = true` solo si Zoom informa el usuario como licenciado (`type === 2`); si no, `false`. Las asignaciones ya exigen `tieneLicencia: true`.
 - Textos de interfaz en español rioplatense (voseo), sin tecnicismos en pantalla.
-- La app de Zoom necesita los permisos `group:read:admin` y `user:read:admin`; el mensaje de error debe nombrarlos si faltan.
+- La app de Zoom necesita los permisos `group:read:list_groups:admin` y `group_member:read:list_members:admin` (nombres granulares de Zoom; no se usa `user:read:admin`); el mensaje de error debe nombrarlos si faltan.
 - Commits con el trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`; PR con la línea `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - Endpoints periódicos usan `Authorization: Bearer ${CRON_SECRET}`, como `app/api/v1/reuniones/reconciliar-pendientes/route.ts`.
 
@@ -106,7 +106,7 @@
   export async function listarGruposZoomHttp(token: string): Promise<readonly GrupoZoom[]>;           // GET https://api.zoom.us/v2/groups
   export async function listarMiembrosGrupoZoomHttp(token: string, grupoId: string): Promise<readonly MiembroGrupoZoom[]>; // GET /v2/groups/{id}/members?page_size=300, sigue next_page_token
   ```
-- `MiembroGrupoZoom.licenciado = (type === 2)`; `nombre` = `first_name last_name` recortado o el correo. 401/403 → `ZoomPermisosError` con el mensaje «Falta permiso en la app de Zoom: group:read:admin y user:read:admin.»; 404 → `Error("El grupo de Zoom ya no existe.")`.
+- `MiembroGrupoZoom.licenciado = (type === 2)`; `nombre` = `first_name last_name` recortado o el correo. 401/403 → `ZoomPermisosError` con el mensaje «Falta permiso en la app de Zoom: group:read:list_groups:admin y group_member:read:list_members:admin.»; 404 → `Error("El grupo de Zoom ya no existe.")`.
 
 - [ ] **Step 1: Write the failing tests** con `fetch` simulado: `lista los grupos`, `pagina los miembros siguiendo next_page_token`, `marca licenciado solo con type 2`, `403 lanza ZoomPermisosError`, `404 informa que el grupo ya no existe`.
 - [ ] **Step 2: Run** `npx vitest run test/zoom-grupos-client.test.ts` — Expected: FAIL.
@@ -174,7 +174,7 @@
 
 **Files:**
 - Create: `src/components/zoom-grupo-config.tsx` (selector de grupo cargado desde `GET .../zoom/grupo`, botón «Sincronizar con el grupo», fecha y resultado de la última sincronización; aviso «Elegí un grupo de Zoom para obtener las cuentas anfitrionas» si no hay grupo)
-- Modify: `src/components/meet-hosts-config.tsx` (la plataforma del formulario «Agregar sala» ofrece solo Google Meet; las filas Zoom no muestran borrar y muestran «Fuera del grupo (N reuniones futuras)» cuando `fueraDelGrupoAt` no es nulo), `src/modules/configuracion/configuracion-page.service.ts:39` (seleccionar `fueraDelGrupoAt`, `origenGrupoZoom`, conteo de reuniones futuras por cuenta, y los campos de grupo de `ConfiguracionZoom`), `app/(gestion)/configuracion/page.tsx:208` (renderizar `ZoomGrupoConfig` en la sección `salas`)
+- Modify: `src/components/meet-hosts-config.tsx` (la plataforma del formulario «Agregar sala» ofrece solo Google Meet; las filas Zoom no muestran borrar y muestran «Fuera del grupo (N reuniones futuras)» cuando `fueraDelGrupoAt` no es nulo), `src/modules/configuracion/configuracion-page.service.ts:39` (seleccionar `fueraDelGrupoAt`, `origenGrupoZoom`, conteo de reuniones futuras por cuenta, y los campos de grupo de `ConfiguracionZoom`), `app/(gestion)/configuracion/page.tsx:208` (renderizar `ZoomGrupoConfig` en la sección `salas`), `src/components/zoom-config-form.tsx:231` (la ayuda de scopes lista los permisos granulares: meeting:write:meeting:admin, meeting:read:meeting:admin, meeting:update:meeting:admin, meeting:delete:meeting:admin, meeting:read:list_meetings:admin, group:read:list_groups:admin, group_member:read:list_members:admin)
 - Test: `test/meet-hosts-config-domain.test.ts` (ampliar), `test/zoom-grupo-config-ui.test.ts`
 
 **Interfaces:**
@@ -192,7 +192,7 @@
 - Modify: `docs/configuracion-zoom.md` si existe (si no, crear `docs/configuracion-zoom-grupo.md`): permisos de la app de Zoom, URL del endpoint periódico y el secreto, y el paso de revisar el grupo antes de sincronizar.
 
 - [ ] **Step 1:** Abrir el PR desde la rama de trabajo; esperar CI en verde (`gh pr checks`).
-- [ ] **Step 2:** Antes de mergear, confirmar con la persona usuaria que la app de Zoom tiene `group:read:admin` y `user:read:admin` y que ya se revisó el grupo en Zoom.
+- [ ] **Step 2:** Antes de mergear, confirmar con la persona usuaria que la app de Zoom tiene `group:read:list_groups:admin` y `group_member:read:list_members:admin` y que ya se revisó el grupo en Zoom.
 - [ ] **Step 3:** Mergear (despliega) y esperar «Deploy · EC2» con éxito (`gh run list --branch main --limit 3`).
 - [ ] **Step 4:** Con la persona usuaria, elegir el grupo en Configuración y correr una sincronización **manual**; revisar el resumen antes de programar el endpoint periódico.
 - [ ] **Step 5:** Programar `GET /api/v1/configuracion/zoom/grupo/sincronizar` con el `CRON_SECRET` en el mecanismo periódico que ya usa el servidor para los otros endpoints; confirmar con la persona usuaria cómo se programa, porque no está en este repositorio.
