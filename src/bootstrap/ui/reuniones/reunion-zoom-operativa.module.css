@@ -42,3 +42,14 @@
 .quickActions a{min-height:72px}
 @media(max-width:750px){.securityGrid{grid-template-columns:1fr}.quickActions{grid-template-columns:repeat(2,minmax(0,1fr))}.statusGrid{grid-template-columns:1fr 1fr}.securityItem{padding:14px}}
 @media(max-width:420px){.statusGrid{grid-template-columns:1fr}.securityCard{padding:15px}.hero{padding:17px}.quickActions a{min-height:64px}}
+
+
+.historyTag{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:7px 10px;background:#e8eef7;color:#25456e;font-size:.76rem;font-weight:800}
+.historyGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.historyGrid>div{display:flex;flex-direction:column;gap:7px;padding:16px;border:1px solid #dce6f2;border-radius:12px;background:#f8fafd;min-width:0}
+.historyGrid svg{color:#1d3a72}
+.historyGrid span{font-size:.75rem;color:#526781}
+.historyGrid strong{font-size:.97rem;color:#1d3a72;overflow-wrap:anywhere}
+.historyGrid small{font-size:.72rem;color:#61718a;line-height:1.45}
+@media(max-width:800px){.historyGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.historyGrid{grid-template-columns:1fr}}
