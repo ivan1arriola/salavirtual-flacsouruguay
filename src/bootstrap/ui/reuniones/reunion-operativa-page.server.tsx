@@ -15,6 +15,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
+import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
@@ -52,7 +55,19 @@ export default async function ReunionOperativaPage({
 
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
-    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} />;
+    let salaEspera: boolean | null = null;
+    if (reunion.zoom.id) {
+      try {
+        const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+        if (credenciales.disponible) {
+          const token = await obtenerZoomAccessToken(credenciales);
+          salaEspera = await obtenerSalaEsperaZoomHttp(token, reunion.zoom.id);
+        }
+      } catch {
+        // Sin permisos, conexión o respuesta válida: no afirmar que está deshabilitada.
+      }
+    }
+    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} salaEspera={salaEspera} />;
   }
 
   const active = reunion.conferencia.participantesActivos;
