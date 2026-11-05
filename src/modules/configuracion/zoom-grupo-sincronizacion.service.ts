@@ -340,6 +340,13 @@ async function aplicarSincronizacion(
         resumen: `Hay ${cantidad} ${cantidad === 1 ? "cuenta nueva" : "cuentas nuevas"} de Zoom. Revisá la vista previa y confirmá desde Configuración.`
       };
     }
+    if (opciones.actorId === null && plan.pierdenLicencia.length > 0) {
+      const cantidad = plan.pierdenLicencia.length;
+      return {
+        ok: false,
+        resumen: `Hay ${cantidad} ${cantidad === 1 ? "sala que perdería" : "salas que perderían"} su licencia en Zoom. Revisá la vista previa y confirmá desde Configuración.`
+      };
+    }
     // Antes de escribir nada: una sincronización masiva solo se aplica confirmada después de la
     // vista previa. La tarea periódica nunca confirma, así que la rechaza.
     if (riesgo.masivo && opciones.confirmar !== true) {

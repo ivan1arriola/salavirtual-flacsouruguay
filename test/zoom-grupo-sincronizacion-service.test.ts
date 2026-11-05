@@ -376,6 +376,20 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(base.auditorias).toEqual([]);
   });
 
+  it("el temporizador no quita la licencia asignable sin revisión administrativa", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy")] });
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy", false)]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { actorId: null });
+
+    expect(resultado).toEqual({
+      ok: false,
+      resumen: "Hay 1 sala que perdería su licencia en Zoom. Revisá la vista previa y confirmá desde Configuración."
+    });
+    expect(base.cuentas[0].tieneLicencia).toBe(true);
+    expect(base.auditorias).toEqual([]);
+  });
+
   it("quitar exactamente la mitad de las cuentas no pide confirmación", async () => {
     const base = crearBase({
       cuentas: [
