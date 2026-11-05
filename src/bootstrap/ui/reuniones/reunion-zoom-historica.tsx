@@ -12,8 +12,6 @@ export function ReunionZoomHistorica({ reunion, rol, sesiones }: Readonly<{
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   sesiones: readonly ZoomSesionParticipante[] | null;
 }>) {
-  const personas = new Set((sesiones ?? []).map(s => s.email?.toLowerCase() || s.participantId || s.userId).filter(Boolean));
-  const cantidad = sesiones === null ? null : personas.size || (sesiones.length ? null : 0);
   const incidenciasAbiertas = reunion.incidencias.filter(i => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS");
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "Realización sin verificar" : reunion.estado.replaceAll("_", " ");
@@ -35,7 +33,7 @@ export function ReunionZoomHistorica({ reunion, rol, sesiones }: Readonly<{
         <div className={styles.heading}><History size={19} /><h2 id="historical-summary">Resumen histórico</h2></div>
         <div className={styles.historyGrid}>
           <div><Clock3 size={19}/><span>Horario real</span><strong>No disponible</strong><small>Se muestra únicamente el horario programado arriba.</small></div>
-          <div><Users size={19}/><span>Participantes reales</span><strong>{cantidad === null ? "Sin reporte verificable" : cantidad}</strong><small>{sesiones === null ? "No se interpreta como cero asistentes." : "Identidades identificables por Zoom; pueden faltar participantes sin identificador."}</small></div>
+          <div><Users size={19}/><span>Participantes reales</span><strong>{sesiones === null ? "Sin reporte verificable" : `${sesiones.length} conexiones`}</strong><small>{sesiones === null ? "No se interpreta como cero asistentes." : "Registros de conexión, no personas únicas."}</small></div>
           <div><Radio size={19}/><span>Grabación</span><strong>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</strong><small>La solicitud no confirma que exista un archivo.</small></div>
           <div><AlertTriangle size={19}/><span>Incidencias abiertas</span><strong>{incidenciasAbiertas.length}</strong><small>{reunion.incidencias.length} registradas en total.</small></div>
         </div>
