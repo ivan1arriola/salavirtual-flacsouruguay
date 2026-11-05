@@ -67,7 +67,12 @@ describe("datos de Configuración › Salas", () => {
     const consulta = mock.eventoProveedor.groupBy.mock.calls[0][0] as any;
     expect(consulta.by).toEqual(["cuentaProveedorId"]);
     expect(consulta.where.proveedor).toEqual({ tipo: "ZOOM" });
-    expect(consulta.where.instancia).toMatchObject({ estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } });
+    expect(consulta.where.instancia).toMatchObject({
+      OR: [
+        { estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } },
+        { estado: "EN_CURSO" }
+      ]
+    });
 
     expect(datos.hosts.map(({ id, reunionesFuturas }) => [id, reunionesFuturas])).toEqual([
       ["meet-1", 0],

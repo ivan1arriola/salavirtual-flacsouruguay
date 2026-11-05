@@ -289,6 +289,7 @@ export function VistaPreviaSincronizacionPanel({
           <span>{sinLicencia.length} sin licencia: esas cuentas no reciben reuniones nuevas hasta que tengan licencia en Zoom.</span>
         ) : null}
         <ListaDeCuentas titulo="Cuentas nuevas" cuentas={vistaPrevia.crear} />
+        <ListaDeCuentas titulo="Se reactivan" cuentas={vistaPrevia.reactivar} />
         <ListaDeCuentas titulo="Se desactivan" cuentas={vistaPrevia.desactivar} />
         <ListaDeCuentas
           titulo="Quedan fuera del grupo"

@@ -44,6 +44,7 @@ const VISTA_PREVIA = {
   masivo: false,
   avisoMasivo: null,
   crear: ["nueva@flacso.edu.uy"],
+  reactivar: [],
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [],
   sinLicencia: ["nueva@flacso.edu.uy"],
@@ -174,11 +175,12 @@ describe("rutas del grupo de Zoom", () => {
     expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: false });
   });
 
-  it("POST con confirmar pasa la confirmación y el actor de la sesión, nunca el del cuerpo", async () => {
-    const response = await POST(post({ confirmar: true, actorId: "otra-persona" })) as any;
+  it("POST con confirmar pasa la revisión y el actor de la sesión, nunca el del cuerpo", async () => {
+    const revision = "a".repeat(64);
+    const response = await POST(post({ confirmar: true, revision, actorId: "otra-persona" })) as any;
 
     expect(response.status).toBe(200);
-    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: true });
+    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: true, revision });
   });
 
   it("POST con vistaPrevia devuelve lo que cambiaría y no sincroniza", async () => {

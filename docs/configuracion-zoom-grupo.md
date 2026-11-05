@@ -22,9 +22,11 @@ La primera sincronización es **manual**: elegí el grupo y tocá «Sincronizar 
 
 ## Vista previa y confirmación
 
-«Sincronizar con el grupo» primero muestra qué va a cambiar, sin tocar nada: cuentas nuevas, cuentas que se desactivan, cuentas que quedan fuera del grupo (con sus reuniones futuras), cuentas que pasan a sin licencia y cuántos miembros están sin licencia. Después confirmás con «Confirmar y sincronizar» o cancelás.
+«Sincronizar con el grupo» primero muestra qué va a cambiar, sin tocar nada: cuentas nuevas, cuentas que se reactivan, cuentas que se desactivan, cuentas que quedan fuera del grupo (con sus reuniones futuras), cuentas que pasan a sin licencia y cuántos miembros están sin licencia. Después confirmás con «Confirmar y sincronizar» o cancelás.
 
 Si la sincronización dejaría sin reuniones nuevas a **más de la mitad** de las salas Zoom que hoy las reciben, se muestra como alerta y el servidor no la aplica sin esa confirmación explícita. Suele indicar que se eligió el grupo equivocado.
+
+La confirmación lleva una huella del plan revisado. Si el grupo o el plan cambian entre la vista previa y la confirmación, no se aplica nada: hay que volver a revisar.
 
 El resultado de cada sincronización («1 nueva, 0 desactivadas, 0 fuera del grupo con reuniones, 1 sin licencia») queda en la pantalla y en la auditoría, con quién la pidió.
 
@@ -39,6 +41,8 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/v1/configur
 **Todavía no está programado.** Programarlo con un timer de systemd, siguiendo el modelo de `infra/ec2/salavirtual-google-pending.service` y `.timer`, queda para un cambio posterior, una vez verificada la primera sincronización manual. Se recomienda cada hora o una vez por día.
 
 El endpoint responde 502 mientras no haya un grupo elegido y cuando la sincronización necesita confirmación (es masiva): nunca la confirma solo. En ese caso hay que revisarla y confirmarla desde Configuración › Salas.
+
+También responde 502 si el grupo contiene cuentas nuevas que aún no están en Sala Virtual o si una sala perdería la licencia: un administrador debe revisar esos cambios desde Configuración.
 
 ## Si elegiste el grupo equivocado
 

@@ -201,7 +201,9 @@ const VISTA_PREVIA: VistaPreviaSincronizacion = {
   resumen: "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
   masivo: false,
   avisoMasivo: null,
+  revision: "a".repeat(64),
   crear: ["nueva@flacso.edu.uy"],
+  reactivar: [],
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
   sinLicencia: ["sala04@flacso.edu.uy", "nueva@flacso.edu.uy"],
@@ -212,7 +214,9 @@ const SIN_CAMBIOS: VistaPreviaSincronizacion = {
   resumen: "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
   masivo: false,
   avisoMasivo: null,
+  revision: "b".repeat(64),
   crear: [],
+  reactivar: [],
   desactivar: [],
   marcarFuera: [],
   sinLicencia: [],
@@ -272,6 +276,13 @@ describe("vista previa de la sincronización", () => {
     expect(html).toContain("Confirmar y sincronizar");
   });
 
+  it("muestra una reactivación como cambio real en la vista previa", () => {
+    const html = panel({ ...SIN_CAMBIOS, reactivar: ["sala01@flacso.edu.uy"] });
+    expect(html).toContain("Se reactivan (1)");
+    expect(html).toContain("sala01@flacso.edu.uy");
+    expect(html).not.toContain("No cambia ninguna cuenta");
+  });
+
   it("una reunión futura se nombra en singular", () => {
     const html = panel({ ...SIN_CAMBIOS, marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }] });
     expect(html).toContain("sala03@flacso.edu.uy (1 reunión futura)");
@@ -279,8 +290,8 @@ describe("vista previa de la sincronización", () => {
   });
 
   it("solo confirma la sincronización masiva que se vio en la vista previa", () => {
-    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true });
-    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false });
+    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true, revision: "a".repeat(64) });
+    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false, revision: "a".repeat(64) });
   });
 
   it("lee la vista previa de la respuesta y, si no se pudo armar, el mensaje", () => {

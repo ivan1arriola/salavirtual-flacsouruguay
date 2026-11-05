@@ -38,7 +38,8 @@ const grupoSchema = z.object(
 const sincronizarSchema = z.object(
   {
     vistaPrevia: z.boolean({ error: OPCIONES_INVALIDAS }).optional(),
-    confirmar: z.boolean({ error: OPCIONES_INVALIDAS }).optional()
+    confirmar: z.boolean({ error: OPCIONES_INVALIDAS }).optional(),
+    revision: z.string({ error: OPCIONES_INVALIDAS }).regex(/^[0-9a-f]{64}$/, OPCIONES_INVALIDAS).optional()
   },
   { error: OPCIONES_INVALIDAS }
 );
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? OPCIONES_INVALIDAS }, { status: 400 });
   }
-  const { vistaPrevia, confirmar } = parsed.data;
+  const { vistaPrevia, confirmar, revision } = parsed.data;
 
   try {
     if (vistaPrevia) {
@@ -100,7 +101,8 @@ export async function POST(request: Request) {
     }
     const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date(), {
       actorId: actor.id,
-      confirmar: confirmar ?? false
+      confirmar: confirmar ?? false,
+      ...(revision ? { revision } : {})
     });
     return NextResponse.json({ ok, resumen });
   } catch (error) {

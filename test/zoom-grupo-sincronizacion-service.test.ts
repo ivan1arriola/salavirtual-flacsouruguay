@@ -233,7 +233,8 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     ]);
 
     // Quita 2 de las 3 cuentas que hoy reciben reuniones (z2 y z3): es masiva y se confirma.
-    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { confirmar: true });
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { confirmar: true, revision: vista.revision ?? "" });
 
     expect(resultado).toEqual({
       ok: true,
@@ -271,12 +272,17 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(porId.z5).toMatchObject({ activa: true, fueraDelGrupoAt: null, prioridad: 5 });
     expect(base.cuentas).toHaveLength(5);
 
-    // Reuniones futuras: una sola consulta agrupada, acotada a Zoom, programadas y no terminadas.
-    expect(base.mock.eventoProveedor.groupBy).toHaveBeenCalledTimes(1);
+    // Una reunión en curso también protege su cuenta, aunque haya salido del grupo.
+    expect(base.mock.eventoProveedor.groupBy).toHaveBeenCalledTimes(2);
     const consulta = base.mock.eventoProveedor.groupBy.mock.calls[0][0] as any;
     expect(consulta.by).toEqual(["cuentaProveedorId"]);
     expect(consulta.where.proveedorId).toBe(PROVEEDORES.ZOOM);
-    expect(consulta.where.instancia).toMatchObject({ estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } });
+    expect(consulta.where.instancia).toMatchObject({
+      OR: [
+        { estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } },
+        { estado: "EN_CURSO" }
+      ]
+    });
 
     expect(base.mock.$transaction).toHaveBeenCalledTimes(1);
     expect(base.estado.config).toMatchObject({
@@ -344,7 +350,8 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     });
     zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy")]);
 
-    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { confirmar: true });
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { confirmar: true, revision: vista.revision ?? "" });
 
     expect(resultado).toEqual({ ok: true, resumen: "0 nuevas, 2 desactivadas, 1 fuera del grupo con reuniones" });
     const porId = Object.fromEntries(base.cuentas.map((c) => [c.id, c]));
@@ -352,6 +359,79 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(porId.z3).toMatchObject({ activa: false, fueraDelGrupoAt: ahora });
     expect(porId.z4).toMatchObject({ activa: false, fueraDelGrupoAt: ahora });
     expect(base.estado.config?.ultimaSincronizacionResultado).toBe(resultado.resumen);
+  });
+
+  it("rechaza confirmar si el grupo cambió después de la vista previa", async () => {
+    const base = crearBase({ cuentas: [
+      cuentaZoom("z1", "sala01@flacso.edu.uy"),
+      cuentaZoom("z2", "sala02@flacso.edu.uy"),
+      cuentaZoom("z3", "sala03@flacso.edu.uy")
+    ] });
+    zoom.miembros.mockResolvedValueOnce([miembro("u1", "sala01@flacso.edu.uy")]);
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+    zoom.miembros.mockResolvedValueOnce([miembro("u2", "sala02@flacso.edu.uy")]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, {
+      actorId: "admin-1",
+      confirmar: true,
+      revision: vista.revision ?? ""
+    });
+
+    expect(resultado).toEqual({ ok: false, resumen: "El grupo de Zoom cambió desde la vista previa. Revisá los cambios de nuevo." });
+    expect(base.cuentas).toHaveLength(3);
+    expect(base.auditorias).toEqual([]);
+  });
+
+  it("rechaza confirmar un plan que dejó de ser masivo pero cambió desde la vista previa", async () => {
+    const base = crearBase({ cuentas: [
+      cuentaZoom("z1", "sala01@flacso.edu.uy"),
+      cuentaZoom("z2", "sala02@flacso.edu.uy"),
+      cuentaZoom("z3", "sala03@flacso.edu.uy")
+    ] });
+    zoom.miembros.mockResolvedValueOnce([miembro("u1", "sala01@flacso.edu.uy")]);
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+    zoom.miembros.mockResolvedValueOnce([
+      miembro("u1", "sala01@flacso.edu.uy"),
+      miembro("u2", "sala02@flacso.edu.uy")
+    ]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, {
+      actorId: "admin-1", confirmar: true, revision: vista.revision ?? ""
+    });
+
+    expect(resultado).toEqual({ ok: false, resumen: "El grupo de Zoom cambió desde la vista previa. Revisá los cambios de nuevo." });
+    expect(base.auditorias).toEqual([]);
+  });
+
+  it("el temporizador no crea una sala nueva sin revisión administrativa", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy")] });
+    zoom.miembros.mockResolvedValue([
+      miembro("u1", "sala01@flacso.edu.uy"),
+      miembro("u2", "nueva@flacso.edu.uy")
+    ]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { actorId: null });
+
+    expect(resultado).toEqual({
+      ok: false,
+      resumen: "Hay 1 cuenta nueva de Zoom. Revisá la vista previa y confirmá desde Configuración."
+    });
+    expect(base.cuentas).toHaveLength(1);
+    expect(base.auditorias).toEqual([]);
+  });
+
+  it("el temporizador no quita la licencia asignable sin revisión administrativa", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy")] });
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy", false)]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { actorId: null });
+
+    expect(resultado).toEqual({
+      ok: false,
+      resumen: "Hay 1 sala que perdería su licencia en Zoom. Revisá la vista previa y confirmá desde Configuración."
+    });
+    expect(base.cuentas[0].tieneLicencia).toBe(true);
+    expect(base.auditorias).toEqual([]);
   });
 
   it("quitar exactamente la mitad de las cuentas no pide confirmación", async () => {
@@ -677,7 +757,18 @@ describe("previsualizarSincronizacionConGrupo", () => {
     expect(base.auditorias).toEqual([]);
   }
 
-  const vacia = { masivo: false, avisoMasivo: null, crear: [], desactivar: [], marcarFuera: [], sinLicencia: [], pierdenLicencia: [] };
+  const vacia = { masivo: false, avisoMasivo: null, revision: null, crear: [], reactivar: [], desactivar: [], marcarFuera: [], sinLicencia: [], pierdenLicencia: [] };
+
+  it("muestra las salas que volverían a estar disponibles", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy", {
+      activa: false, fueraDelGrupoAt: minutosAntes(60)
+    })] });
+    zoom.miembros.mockResolvedValue([miembro("u1", "sala01@flacso.edu.uy")]);
+
+    const vista = await previsualizarSincronizacionConGrupo(base.db, descifrar, ahora);
+
+    expect(vista).toMatchObject({ ok: true, reactivar: ["sala01@flacso.edu.uy"] });
+  });
 
   it("describe lo que cambiaría sin escribir nada ni tomar el candado", async () => {
     const original = [
@@ -705,7 +796,9 @@ describe("previsualizarSincronizacionConGrupo", () => {
       resumen: "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
       masivo: false,
       avisoMasivo: null,
+      revision: expect.any(String),
       crear: ["nueva@flacso.edu.uy"],
+      reactivar: [],
       desactivar: ["sala02@flacso.edu.uy"],
       marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
       sinLicencia: ["sala04@flacso.edu.uy", "nueva@flacso.edu.uy"],
