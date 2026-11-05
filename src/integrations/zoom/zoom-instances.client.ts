@@ -8,6 +8,9 @@ export async function resolverUuidInstanciaZoomHttp(
   inicioProgramado: Date,
   finProgramado: Date
 ): Promise<string | null> {
+  const inicio = inicioProgramado.getTime();
+  const fin = finProgramado.getTime();
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin <= inicio) return null;
   const response = await fetch(
     `https://api.zoom.us/v2/past_meetings/${encodeURIComponent(meetingId)}/instances`,
     { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
@@ -15,9 +18,6 @@ export async function resolverUuidInstanciaZoomHttp(
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Zoom: error al listar instancias (${response.status})`);
   const data = await response.json() as { meetings?: Array<{ uuid?: string; start_time?: string }> };
-  const inicio = inicioProgramado.getTime();
-  const fin = finProgramado.getTime();
-  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin <= inicio) return null;
   const candidatas = (data.meetings ?? [])
     .map(m => ({ uuid: m.uuid, fecha: m.start_time ? new Date(m.start_time).getTime() : NaN }))
     .filter((m): m is { uuid: string; fecha: number } => Boolean(m.uuid) && Number.isFinite(m.fecha))
