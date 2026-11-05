@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProveedorTabs } from "@/src/components/proveedor-tabs";
 import { CorregirSerieZoomBoton } from "@/src/components/corregir-serie-zoom-boton";
+import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { formatShortDate, formatTime } from "@/src/lib/ui/format";
+import { formatShortDate, formatTime, formatDuration } from "@/src/lib/ui/format";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { claveSerieReunion } from "@/src/modules/reuniones/serie-reunion.domain";
@@ -284,6 +285,7 @@ export default async function ReunionesZoomPage({
                 <div className={styles.when}>
                   <strong><CalendarDays size={15} aria-hidden="true" /> {formatShortDate(encuentro.inicioProgramadoAt)}</strong>
                   <span><Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} – {formatTime(encuentro.finProgramadoAt)}</span>
+                  <span className={styles.durationChip}>{formatDuration(encuentro.inicioProgramadoAt, encuentro.finProgramadoAt)}</span>
                 </div>
                 <div className={styles.what}>
                   <Link className={styles.titleLink} href={`/reuniones/${encuentro.solicitudSalaId}`}>{encuentro.solicitud.titulo}</Link>
@@ -293,6 +295,7 @@ export default async function ReunionesZoomPage({
                 </div>
                 <div className={styles.link}>
                   <span className={styles.zoomId}><Hash size={15} aria-hidden="true" /> ID de Zoom: <strong>{zoomId ?? "Pendiente"}</strong></span>
+                  {zoomId ? <ZoomCopyIdButton meetingId={zoomId} contexto={contexto} /> : null}
                   <ZoomLinkStatus estado={enlace.estado} esAdmin={esAdmin} eventoProveedorId={enlace.eventoProveedorId} operacion={enlace.operacion} contexto={contexto} />
                   {enlace.joinUrl && !isHistory ? <ZoomJoinActions url={enlace.joinUrl} contexto={contexto} /> : null}
                   <Link className={styles.details} href={`/reuniones/${encuentro.solicitudSalaId}`}>Detalle</Link>
