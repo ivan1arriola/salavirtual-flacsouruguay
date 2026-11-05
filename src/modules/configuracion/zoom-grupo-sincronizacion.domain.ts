@@ -1,3 +1,5 @@
+import { esCuentaAsignable } from "../reuniones/cuenta-asignable.domain";
+
 export type MiembroGrupoZoom = Readonly<{ id: string; email: string; nombre: string; licenciado: boolean }>;
 
 export type CuentaZoomActual = Readonly<{
@@ -5,6 +7,7 @@ export type CuentaZoomActual = Readonly<{
   emailOrganizador: string | null;
   externalAccountId: string | null;
   activa: boolean;
+  tieneLicencia: boolean;
   fueraDelGrupoAt: Date | null;
   prioridad: number;
 }>;
@@ -14,8 +17,15 @@ export type PlanSincronizacionZoom = Readonly<{
   actualizar: readonly Readonly<{ cuentaId: string; miembro: MiembroGrupoZoom; reactivar: boolean }>[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ cuentaId: string; reunionesFuturas: number }>[];
+  /** Miembros que Zoom no informa como licenciados: sus cuentas no reciben reuniones nuevas. */
+  sinLicencia: readonly MiembroGrupoZoom[];
+  /** Cuentas que hoy tienen licencia y con esta sincronización pasan a sin licencia. */
+  pierdenLicencia: readonly Readonly<{ cuentaId: string; miembro: MiembroGrupoZoom }>[];
   resumen: string;
 }>;
+
+/** Cuántas de las cuentas que hoy reciben reuniones nuevas dejarían de recibirlas. */
+export type RiesgoSincronizacionZoom = Readonly<{ masivo: boolean; afectadas: number; asignables: number }>;
 
 const PRIORIDAD_INICIAL = 100;
 
@@ -66,6 +76,10 @@ export function planificarSincronizacionGrupoZoom(
   const actualizar = emparejados.flatMap(({ miembro, cuenta }) =>
     cuenta ? [{ cuentaId: cuenta.id, miembro, reactivar: cuenta.fueraDelGrupoAt !== null }] : []
   );
+  const sinLicencia = unicos.filter(({ licenciado }) => !licenciado);
+  const pierdenLicencia = emparejados.flatMap(({ miembro, cuenta }) =>
+    cuenta?.tieneLicencia && !miembro.licenciado ? [{ cuentaId: cuenta.id, miembro }] : []
+  );
 
   const enElGrupo = new Set(actualizar.map(({ cuentaId }) => cuentaId));
   const salieron = cuentas
@@ -78,8 +92,35 @@ export function planificarSincronizacionGrupoZoom(
   const resumen = [
     plural(crear.length, "nueva", "nuevas"),
     plural(desactivar.length, "desactivada", "desactivadas"),
-    `${marcarFuera.length} fuera del grupo con reuniones`
+    `${marcarFuera.length} fuera del grupo con reuniones`,
+    ...(sinLicencia.length > 0 ? [avisoLicencias(sinLicencia.length, pierdenLicencia.length)] : [])
   ].join(", ");
 
-  return { crear, actualizar, desactivar, marcarFuera, resumen };
+  return { crear, actualizar, desactivar, marcarFuera, sinLicencia, pierdenLicencia, resumen };
+}
+
+function avisoLicencias(sinLicencia: number, pierden: number): string {
+  const detalle = pierden > 0 ? ` (${plural(pierden, "pasa", "pasan")} a sin licencia)` : "";
+  return `${sinLicencia} sin licencia${detalle}`;
+}
+
+/**
+ * Una sincronización es masiva cuando deja sin reuniones nuevas (desactiva o marca fuera del
+ * grupo) a más de la mitad de las cuentas que hoy las reciben. Solo cuentan las cuentas
+ * asignables ahora: las que ya estaban fuera del grupo con reuniones reaparecen en `marcarFuera`
+ * en cada pasada y no deben volver masiva cada sincronización.
+ */
+export function evaluarRiesgoSincronizacion(
+  plan: Pick<PlanSincronizacionZoom, "desactivar" | "marcarFuera">,
+  cuentas: readonly CuentaZoomActual[]
+): RiesgoSincronizacionZoom {
+  const asignables = cuentas.filter(esCuentaAsignable).map(({ id }) => id);
+  const salen = new Set([...plan.desactivar, ...plan.marcarFuera.map(({ cuentaId }) => cuentaId)]);
+  const afectadas = asignables.filter((id) => salen.has(id)).length;
+  return { masivo: afectadas * 2 > asignables.length, afectadas, asignables: asignables.length };
+}
+
+/** Aviso legible de una sincronización masiva: «… (X de Y).» */
+export function avisoSincronizacionMasiva(riesgo: RiesgoSincronizacionZoom): string {
+  return `Esta sincronización cambiaría muchas cuentas (${riesgo.afectadas} de ${riesgo.asignables}).`;
 }
