@@ -87,7 +87,7 @@ export default async function ReunionOperativaPage({
                   instancia: { inicioProgramadoAt: reunion.inicioProgramadoAt },
                   OR: [
                     { externalEventId: reunion.zoom.id },
-                    { reunionProveedor: { externalId: reunion.zoom.id } }
+                    { externalEventId: null, reunionProveedor: { externalId: reunion.zoom.id } }
                   ],
                   ...(uuidGuardado
                     ? { zoomMeetingUuid: uuid, zoomUuidMeetingId: reunion.zoom.id, zoomUuidInicioAt: reunion.inicioProgramadoAt }
