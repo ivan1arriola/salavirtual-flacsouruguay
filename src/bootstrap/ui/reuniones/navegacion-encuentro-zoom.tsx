@@ -1,4 +1,4 @@
-import { ArrowLeft, History, RefreshCw } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import Link from "next/link";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { OperationalAutoRefresh } from "@/src/components/operational-auto-refresh";
