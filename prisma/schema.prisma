@@ -359,6 +359,7 @@ model EventoProveedor {
   cuentaProveedorId       String?
   reunionProveedorId      String?
   externalEventId         String?
+  zoomMeetingUuid         String?
   codigoReunion           String?
   joinUrl                 String?
   hostUrl                 String?
@@ -384,6 +385,7 @@ model EventoProveedor {
   archivos                ArchivoReunion[]
 
   @@index([proveedorId, externalEventId])
+  @@index([zoomMeetingUuid])
   @@index([reunionProveedorId])
   @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
