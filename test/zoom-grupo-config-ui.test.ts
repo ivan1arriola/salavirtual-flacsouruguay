@@ -7,9 +7,15 @@ import {
   MeetHostsConfig,
   type MeetHostVisible
 } from "../src/components/meet-hosts-config";
+import { readFileSync } from "node:fs";
 import { ZoomConfigForm } from "../src/components/zoom-config-form";
-import { ZoomGrupoConfig } from "../src/components/zoom-grupo-config";
-import { resultadoSincronizacion } from "../src/components/zoom-grupo-config.domain";
+import { VistaPreviaSincronizacionPanel, ZoomGrupoConfig } from "../src/components/zoom-grupo-config";
+import {
+  leerVistaPrevia,
+  pedidoDeSincronizacion,
+  resultadoSincronizacion,
+  type VistaPreviaSincronizacion
+} from "../src/components/zoom-grupo-config.domain";
 import { formatDateTime } from "../src/lib/ui/format";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
@@ -187,6 +193,113 @@ describe("ayuda de permisos de la app de Zoom", () => {
       expect(html).toContain(permiso);
     }
     expect(html).not.toContain("user:read:admin");
+  });
+});
+
+const VISTA_PREVIA: VistaPreviaSincronizacion = {
+  resumen: "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
+  masivo: false,
+  avisoMasivo: null,
+  crear: ["nueva@flacso.edu.uy"],
+  desactivar: ["sala02@flacso.edu.uy"],
+  marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
+  sinLicencia: ["sala04@flacso.edu.uy", "nueva@flacso.edu.uy"],
+  pierdenLicencia: ["sala04@flacso.edu.uy"]
+};
+
+const SIN_CAMBIOS: VistaPreviaSincronizacion = {
+  resumen: "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
+  masivo: false,
+  avisoMasivo: null,
+  crear: [],
+  desactivar: [],
+  marcarFuera: [],
+  sinLicencia: [],
+  pierdenLicencia: []
+};
+
+function panel(vistaPrevia: VistaPreviaSincronizacion) {
+  return renderToStaticMarkup(createElement(VistaPreviaSincronizacionPanel, {
+    vistaPrevia,
+    ocupado: false,
+    onConfirmar: () => {},
+    onCancelar: () => {}
+  }));
+}
+
+describe("vista previa de la sincronización", () => {
+  it("muestra qué cuentas cambian y pide confirmar con botones explícitos", () => {
+    const html = panel(VISTA_PREVIA);
+    expect(html).toContain("Revisá lo que va a cambiar");
+    expect(html).toContain(VISTA_PREVIA.resumen);
+    for (const texto of [
+      "Cuentas nuevas (1)",
+      "nueva@flacso.edu.uy",
+      "Se desactivan (1)",
+      "sala02@flacso.edu.uy",
+      "Quedan fuera del grupo (1)",
+      "sala03@flacso.edu.uy (2 reuniones futuras)",
+      "Pasan a sin licencia (1)",
+      "sala04@flacso.edu.uy",
+      "2 sin licencia"
+    ]) {
+      expect(html).toContain(texto);
+    }
+    expect(html).toContain("Confirmar y sincronizar");
+    expect(html).toContain("Cancelar");
+    expect(html).not.toContain("muchas cuentas");
+    expect(html).toContain('role="status"');
+  });
+
+  it("una sincronización masiva muestra un aviso destacado", () => {
+    const html = panel({
+      ...VISTA_PREVIA,
+      masivo: true,
+      avisoMasivo: "Esta sincronización cambiaría muchas cuentas (3 de 4)."
+    });
+    expect(html).toContain("is-error");
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Esta sincronización cambiaría muchas cuentas (3 de 4).");
+    expect(html).toContain("Confirmar y sincronizar");
+  });
+
+  it("si no cambia ninguna cuenta lo dice y deja sincronizar igual", () => {
+    const html = panel(SIN_CAMBIOS);
+    expect(html).toContain("No cambia ninguna cuenta");
+    expect(html).not.toContain("Cuentas nuevas");
+    expect(html).not.toContain("sin licencia");
+    expect(html).toContain("Confirmar y sincronizar");
+  });
+
+  it("una reunión futura se nombra en singular", () => {
+    const html = panel({ ...SIN_CAMBIOS, marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }] });
+    expect(html).toContain("sala03@flacso.edu.uy (1 reunión futura)");
+    expect(html).not.toContain("No cambia ninguna cuenta");
+  });
+
+  it("solo confirma la sincronización masiva que se vio en la vista previa", () => {
+    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true });
+    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false });
+  });
+
+  it("lee la vista previa de la respuesta y, si no se pudo armar, el mensaje", () => {
+    expect(leerVistaPrevia({ ok: true, ...VISTA_PREVIA })).toEqual({ ok: true, vistaPrevia: VISTA_PREVIA });
+    expect(leerVistaPrevia({ ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [] }))
+      .toEqual({ ok: false, mensaje: "El grupo de Zoom no tiene miembros." });
+    expect(leerVistaPrevia({ error: "Forbidden" })).toEqual({ ok: false, mensaje: "Forbidden" });
+    expect(leerVistaPrevia({ ok: true, resumen: "x", crear: "a@x.uy" })).toEqual({
+      ok: false,
+      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo."
+    });
+    expect(leerVistaPrevia(null)).toEqual({
+      ok: false,
+      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo."
+    });
+  });
+
+  it("no usa el cuadro de confirmación del navegador", () => {
+    const fuente = readFileSync(new URL("../src/components/zoom-grupo-config.tsx", import.meta.url), "utf8");
+    expect(fuente).not.toMatch(/\bconfirm\s*\(/);
   });
 });
 
