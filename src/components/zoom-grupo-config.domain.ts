@@ -7,6 +7,7 @@ export type VistaPreviaSincronizacion = Readonly<{
   resumen: string;
   masivo: boolean;
   avisoMasivo: string | null;
+  revision: string;
   crear: readonly string[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ email: string; reunionesFuturas: number }>[];
@@ -35,13 +36,14 @@ export function leerVistaPrevia(
 ): Readonly<{ ok: true; vistaPrevia: VistaPreviaSincronizacion } | { ok: false; mensaje: string }> {
   const respuesta = comoObjeto(data);
   if (respuesta.ok !== true) return { ok: false, mensaje: textoDeRespuesta(respuesta) ?? ERROR_VISTA_PREVIA };
-  const { resumen, masivo, avisoMasivo, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } = respuesta;
+  const { resumen, masivo, avisoMasivo, revision, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } = respuesta;
   const valida = typeof resumen === "string" && typeof masivo === "boolean" &&
     (avisoMasivo === null || typeof avisoMasivo === "string") &&
+    typeof revision === "string" && /^[0-9a-f]{64}$/.test(revision) &&
     esListaDeTextos(crear) && esListaDeTextos(desactivar) && esListaFuera(marcarFuera) &&
     esListaDeTextos(sinLicencia) && esListaDeTextos(pierdenLicencia);
   if (!valida) return { ok: false, mensaje: ERROR_VISTA_PREVIA };
-  return { ok: true, vistaPrevia: { resumen, masivo, avisoMasivo, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } };
+  return { ok: true, vistaPrevia: { resumen, masivo, avisoMasivo, revision, crear, desactivar, marcarFuera, sinLicencia, pierdenLicencia } };
 }
 
 /** Si la sincronización no cambiaría ninguna cuenta (los miembros sin licencia de antes no cuentan). */
@@ -54,8 +56,8 @@ export function vistaPreviaSinCambios(vistaPrevia: VistaPreviaSincronizacion): b
  * Cuerpo del POST que confirma la sincronización. Solo confirma si la vista previa ya mostró una
  * sincronización masiva: si el grupo cambió desde entonces y ahora lo es, el servidor la rechaza.
  */
-export function pedidoDeSincronizacion(vistaPrevia: VistaPreviaSincronizacion): Readonly<{ confirmar: boolean }> {
-  return { confirmar: vistaPrevia.masivo };
+export function pedidoDeSincronizacion(vistaPrevia: VistaPreviaSincronizacion): Readonly<{ confirmar: boolean; revision: string }> {
+  return { confirmar: vistaPrevia.masivo, revision: vistaPrevia.revision };
 }
 
 /**

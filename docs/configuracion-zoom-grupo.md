@@ -26,6 +26,8 @@ La primera sincronización es **manual**: elegí el grupo y tocá «Sincronizar 
 
 Si la sincronización dejaría sin reuniones nuevas a **más de la mitad** de las salas Zoom que hoy las reciben, se muestra como alerta y el servidor no la aplica sin esa confirmación explícita. Suele indicar que se eligió el grupo equivocado.
 
+La confirmación lleva una huella del plan revisado. Si el grupo o el plan cambian entre la vista previa y la confirmación, no se aplica nada: hay que volver a revisar.
+
 El resultado de cada sincronización («1 nueva, 0 desactivadas, 0 fuera del grupo con reuniones, 1 sin licencia») queda en la pantalla y en la auditoría, con quién la pidió.
 
 ## Sincronización periódica

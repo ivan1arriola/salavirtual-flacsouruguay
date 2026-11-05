@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import {
@@ -12,7 +13,8 @@ import {
   avisoSincronizacionMasiva,
   evaluarRiesgoSincronizacion,
   planificarSincronizacionGrupoZoom,
-  type MiembroGrupoZoom
+  type MiembroGrupoZoom,
+  type PlanSincronizacionZoom
 } from "./zoom-grupo-sincronizacion.domain";
 
 const CONFIGURACION_ID = "principal";
@@ -30,6 +32,8 @@ export type OpcionesSincronizacionZoom = Readonly<{
   actorId?: string | null;
   /** Necesario para aplicar una sincronización masiva (ver `evaluarRiesgoSincronizacion`). */
   confirmar?: boolean;
+  /** Huella de la vista previa que el administrador confirmó. */
+  revision?: string;
 }>;
 
 /** Lo que cambiaría una sincronización, sin aplicarla. Las cuentas se identifican por correo. */
@@ -38,6 +42,7 @@ export type VistaPreviaSincronizacionZoom = Readonly<{
   resumen: string;
   masivo: boolean;
   avisoMasivo: string | null;
+  revision: string | null;
   crear: readonly string[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ email: string; reunionesFuturas: number }>[];
@@ -121,7 +126,7 @@ export async function previsualizarSincronizacionConGrupo(
     const lectura = await buscarProveedorZoom(db)
       .then((proveedorId) => planificarConLaBase(db, proveedorId, miembros, ahora))
       .catch(protegerErrorDeBase("[zoom] Falló la vista previa de la sincronización con el grupo de Zoom"));
-    return describirPlan(lectura);
+    return describirPlan(lectura, grupo.id);
   } catch (error) {
     return vistaPreviaFallida(mensajeDeError(error));
   }
@@ -216,6 +221,7 @@ function vistaPreviaFallida(resumen: string): VistaPreviaSincronizacionZoom {
     resumen,
     masivo: false,
     avisoMasivo: null,
+    revision: null,
     crear: [],
     desactivar: [],
     marcarFuera: [],
@@ -300,7 +306,21 @@ async function planificarConLaBase(
   return { cuentas, plan, riesgo: evaluarRiesgoSincronizacion(plan, cuentas) };
 }
 
-function describirPlan({ cuentas, plan, riesgo }: Awaited<ReturnType<typeof planificarConLaBase>>): VistaPreviaSincronizacionZoom {
+function revisionDelPlan(grupoId: string, plan: PlanSincronizacionZoom): string {
+  const ordenar = <T>(items: readonly T[]) => items.map((item) => JSON.stringify(item)).sort();
+  const contenido = JSON.stringify({
+    grupoId,
+    crear: ordenar(plan.crear),
+    actualizar: ordenar(plan.actualizar),
+    desactivar: [...plan.desactivar].sort(),
+    marcarFuera: ordenar(plan.marcarFuera),
+    sinLicencia: ordenar(plan.sinLicencia),
+    pierdenLicencia: ordenar(plan.pierdenLicencia)
+  });
+  return createHash("sha256").update(contenido).digest("hex");
+}
+
+function describirPlan({ cuentas, plan, riesgo }: Awaited<ReturnType<typeof planificarConLaBase>>, grupoId: string): VistaPreviaSincronizacionZoom {
   const cuentaPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
   const identificar = (cuentaId: string) => {
     const cuenta = cuentaPorId.get(cuentaId);
@@ -311,6 +331,7 @@ function describirPlan({ cuentas, plan, riesgo }: Awaited<ReturnType<typeof plan
     resumen: plan.resumen,
     masivo: riesgo.masivo,
     avisoMasivo: riesgo.masivo ? avisoSincronizacionMasiva(riesgo) : null,
+    revision: revisionDelPlan(grupoId, plan),
     crear: plan.crear.map(({ miembro }) => normalizarEmail(miembro.email)),
     desactivar: plan.desactivar.map(identificar),
     marcarFuera: plan.marcarFuera.map(({ cuentaId, reunionesFuturas }) => ({ email: identificar(cuentaId), reunionesFuturas })),
@@ -351,6 +372,9 @@ async function aplicarSincronizacion(
     // vista previa. La tarea periódica nunca confirma, así que la rechaza.
     if (riesgo.masivo && opciones.confirmar !== true) {
       return { ok: false, resumen: `${avisoSincronizacionMasiva(riesgo)} ${PEDIDO_CONFIRMACION}` };
+    }
+    if ((opciones.revision !== undefined || riesgo.masivo) && opciones.revision !== revisionDelPlan(grupo.id, plan)) {
+      return { ok: false, resumen: "El grupo de Zoom cambió desde la vista previa. Revisá los cambios de nuevo." };
     }
     const cuentaPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
 

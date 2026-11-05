@@ -201,6 +201,7 @@ const VISTA_PREVIA: VistaPreviaSincronizacion = {
   resumen: "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
   masivo: false,
   avisoMasivo: null,
+  revision: "a".repeat(64),
   crear: ["nueva@flacso.edu.uy"],
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
@@ -212,6 +213,7 @@ const SIN_CAMBIOS: VistaPreviaSincronizacion = {
   resumen: "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
   masivo: false,
   avisoMasivo: null,
+  revision: "b".repeat(64),
   crear: [],
   desactivar: [],
   marcarFuera: [],
@@ -279,8 +281,8 @@ describe("vista previa de la sincronización", () => {
   });
 
   it("solo confirma la sincronización masiva que se vio en la vista previa", () => {
-    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true });
-    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false });
+    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true, revision: "a".repeat(64) });
+    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false, revision: "a".repeat(64) });
   });
 
   it("lee la vista previa de la respuesta y, si no se pudo armar, el mensaje", () => {
