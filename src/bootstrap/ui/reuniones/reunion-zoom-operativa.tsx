@@ -1,6 +1,7 @@
 import { Activity, AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Clock3, ExternalLink, FileText, Hash, Radio, Users, Video, Settings2 } from "lucide-react";
 import Link from "next/link";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
+import { ZoomPasscodeControl } from "@/src/components/zoom-passcode-control";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
@@ -105,6 +106,7 @@ export function ReunionZoomOperativa({
           <div><dt>Operación pendiente</dt><dd>{reunion.zoom.operacionPendiente ?? "Ninguna"}</dd></div>
           <div><dt>Monitoreo</dt><dd>{reunion.asistencia.requerida ? reunion.asistencia.asistente ?? "Pendiente de asignación" : "No requerido"}</dd></div>
         </dl>
+        {rol === "ADMINISTRACION" ? <ZoomPasscodeControl instanciaId={reunion.id} /> : null}
         <p className={styles.note}>La admisión, los coanfitriones y la grabación se administran desde Zoom.</p>
       </details>
       {esAsistente && reunion.asistencia.asignacionId && completada ? (
