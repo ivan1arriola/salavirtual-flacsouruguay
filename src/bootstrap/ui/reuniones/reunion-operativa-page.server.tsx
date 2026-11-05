@@ -78,9 +78,20 @@ export default async function ReunionOperativaPage({
                 token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
               );
               if (uuid && eventoZoom) {
-                await db.eventoProveedor.update({
-                  where: { id: eventoZoom.id },
-                  data: { zoomMeetingUuid: uuid, zoomUuidInicioAt: reunion.inicioProgramadoAt, zoomUuidMeetingId: reunion.zoom.id }
+                await db.eventoProveedor.updateMany({
+                  where: {
+                    id: eventoZoom.id,
+                    instancia: { inicioProgramadoAt: reunion.inicioProgramadoAt },
+                    OR: [
+                      { externalEventId: reunion.zoom.id },
+                      { reunionProveedor: { externalId: reunion.zoom.id } }
+                    ]
+                  },
+                  data: {
+                    zoomMeetingUuid: uuid,
+                    zoomUuidInicioAt: reunion.inicioProgramadoAt,
+                    zoomUuidMeetingId: reunion.zoom.id
+                  }
                 });
               }
             }
