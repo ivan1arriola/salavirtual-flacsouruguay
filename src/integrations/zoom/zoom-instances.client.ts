@@ -17,6 +17,7 @@ export async function resolverUuidInstanciaZoomHttp(
   const data = await response.json() as { meetings?: Array<{ uuid?: string; start_time?: string }> };
   const inicio = inicioProgramado.getTime();
   const fin = finProgramado.getTime();
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin <= inicio) return null;
   const candidatas = (data.meetings ?? [])
     .map(m => ({ uuid: m.uuid, fecha: m.start_time ? new Date(m.start_time).getTime() : NaN }))
     .filter((m): m is { uuid: string; fecha: number } => Boolean(m.uuid) && Number.isFinite(m.fecha))
