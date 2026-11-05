@@ -60,6 +60,7 @@ describe("integración de vistas de dashboard", () => {
     expect(dashboard).not.toContain("/reuniones/buscar-meet");
     expect(timeline).toContain("getMeetingProviderPresentation(meeting.proveedorTipo)");
     expect(timeline).toContain("provider.supportsCohosts");
+    expect(timeline).toContain("isLive && provider.supportsCohosts");
     expect(timeline).toContain("provider.joinLabel");
   });
 
