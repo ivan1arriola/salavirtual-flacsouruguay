@@ -55,6 +55,18 @@ export {
   type OperacionPendienteItem,
 } from "./configuracion-page.service";
 
+export {
+  listarGruposZoom,
+  elegirGrupoZoom,
+  sincronizarCuentasZoomConGrupo,
+  previsualizarSincronizacionConGrupo,
+  GrupoZoomVacioError,
+  SincronizacionZoomError,
+  type ResultadoSincronizacionZoom,
+  type OpcionesSincronizacionZoom,
+  type VistaPreviaSincronizacionZoom,
+} from "./zoom-grupo-sincronizacion.service";
+
 export * from "./google-workspace.domain";
 export * from "./asistencia-tecnica.domain";
 export * from "./settings-navigation.domain";

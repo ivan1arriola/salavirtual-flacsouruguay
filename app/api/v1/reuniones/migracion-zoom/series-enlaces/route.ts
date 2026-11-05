@@ -6,6 +6,7 @@ import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import { crearDependenciasCorreccionSerie } from "@/src/bootstrap/migracion-zoom.server";
 import { planificarCorreccionSerie } from "@/src/modules/reuniones/corregir-serie-enlaces.domain";
+import { CUENTA_ZOOM_ASIGNABLE } from "@/src/modules/reuniones/cuenta-asignable.domain";
 import {
   corregirSeriesEnlaces,
   limpiarReunionesAntiguas,
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
 /** Plan de cada serie detectada (host propuesto y estado) sin escribir nada. */
 async function vistaPreviaPlanes(series: Awaited<ReturnType<typeof detectarSeriesConEnlacesDistintos>>) {
   const hosts = await db.cuentaProveedor.findMany({
-    where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
+    where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
     orderBy: [{ prioridad: "asc" }, { id: "asc" }],
     select: { id: true, prioridad: true, limiteConcurrente: true },
   });

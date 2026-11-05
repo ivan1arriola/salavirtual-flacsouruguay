@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { claveBloqueoSerieMigracion, claveSerieReunion } from "./serie-reunion.domain";
 import {
   meetPreparadoParaMigracion,
@@ -164,7 +165,7 @@ export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
       },
     }),
     db.cuentaProveedor.findMany({
-      where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
+      where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
       select: { id: true, nombre: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     }),

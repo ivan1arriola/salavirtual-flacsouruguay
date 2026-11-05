@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { notificarCambioEnlaceSerie } from "./aviso-enlace-serie.service";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { planificarCorreccionSerie, type PlanCorreccionSerie } from "./corregir-serie-enlaces.domain";
 import { MARGEN_SEGURIDAD_HORAS_APLICAR, type DependenciasMigracionZoom } from "./migracion-zoom-aplicar.service";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
@@ -227,7 +228,7 @@ async function evaluarSerie(
     select: { id: true, cuentaProveedorId: true, externalId: true, joinUrl: true, estadoCreacion: true, reclamoAt: true },
   });
   const hostsDb = await tx.cuentaProveedor.findMany({
-    where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
+    where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
     orderBy: [{ prioridad: "asc" }, { id: "asc" }],
     select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
   });

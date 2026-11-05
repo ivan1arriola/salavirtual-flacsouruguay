@@ -44,9 +44,31 @@ const updateSchema = hostFields.extend({
   }
 });
 
+/**
+ * Las cuentas Zoom vienen del grupo elegido: acá solo se editan `prioridad` y `activa`.
+ * Nombre, correo y licencia los fija la sincronización, así que se ignoran si llegan.
+ */
+const zoomUpdateSchema = z.object({
+  id: z.string().min(1),
+  proveedorTipo: z.literal("ZOOM"),
+  prioridad: hostFields.shape.prioridad,
+  activa: hostFields.shape.activa,
+  limiteConcurrente: hostFields.shape.limiteConcurrente.optional(),
+  password: z.string().optional()
+}).superRefine(({ limiteConcurrente, password }, context) => {
+  if (limiteConcurrente !== undefined && limiteConcurrente !== 1) {
+    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
+  }
+  if (password?.trim()) {
+    context.addIssue({ code: "custom", path: ["password"], message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual." });
+  }
+});
+
 const deleteSchema = z.object({
   id: z.string().min(1)
 });
+
+const CUENTAS_ZOOM_POR_GRUPO = "Las cuentas de Zoom vienen del grupo elegido en Configuración.";
 
 type SafeHost = Readonly<{
   id: string;
@@ -65,7 +87,9 @@ export async function POST(request: Request) {
   if (actor instanceof NextResponse) return actor;
 
   try {
-    const input = createSchema.parse(await request.json());
+    const body: unknown = await request.json();
+    if (esCuentaZoom(body)) return cuentasZoomPorGrupo();
+    const input = createSchema.parse(body);
     const host = await db.$transaction(async (tx) => {
       const provider = await tx.proveedorReunion.upsert({
         where: { tipo: input.proveedorTipo },
@@ -130,7 +154,9 @@ export async function PUT(request: Request) {
   if (actor instanceof NextResponse) return actor;
 
   try {
-    const input = updateSchema.parse(await request.json());
+    const body: unknown = await request.json();
+    if (esCuentaZoom(body)) return await actualizarCuentaZoom(actor.id, zoomUpdateSchema.parse(body));
+    const input = updateSchema.parse(body);
     const result = await db.$transaction(async (tx) => {
       const current = await tx.cuentaProveedor.findUnique({
         where: { id: input.id },
@@ -272,6 +298,7 @@ export async function DELETE(request: Request) {
       if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
         throw new Error("La cuenta organizadora no existe.");
       }
+      if (current.proveedor.tipo === "ZOOM") return null;
 
       const activeMeetings = await tx.eventoProveedor.count({
         where: {
@@ -292,7 +319,7 @@ export async function DELETE(request: Request) {
       await tx.auditoria.create({
         data: {
           actorUsuarioId: actor.id,
-          accion: current.proveedor.tipo === "ZOOM" ? "CUENTA_ZOOM_ELIMINADA" : "CUENTA_MEET_ELIMINADA",
+          accion: "CUENTA_MEET_ELIMINADA",
           entidadTipo: "CuentaProveedor",
           entidadId: current.id,
           valorAnterior: {
@@ -310,10 +337,71 @@ export async function DELETE(request: Request) {
       return current;
     });
 
+    if (!deleted) return cuentasZoomPorGrupo();
     return NextResponse.json({ message: `${deleted.nombre} fue eliminada.` });
   } catch (error) {
     return errorResponse(error);
   }
+}
+
+function esCuentaZoom(body: unknown): boolean {
+  return typeof body === "object" && body !== null && "proveedorTipo" in body && body.proveedorTipo === "ZOOM";
+}
+
+function cuentasZoomPorGrupo() {
+  return NextResponse.json({ error: CUENTAS_ZOOM_POR_GRUPO }, { status: 409 });
+}
+
+async function actualizarCuentaZoom(actorId: string, input: z.infer<typeof zoomUpdateSchema>) {
+  const result = await db.$transaction(async (tx) => {
+    const current = await tx.cuentaProveedor.findUnique({
+      where: { id: input.id },
+      include: {
+        proveedor: { select: { tipo: true } },
+        _count: { select: { eventosProveedor: true } }
+      }
+    });
+    if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
+      throw new Error("La cuenta organizadora no existe.");
+    }
+    if (current.proveedor.tipo !== "ZOOM") {
+      throw new Error("La plataforma de una cuenta existente no se puede cambiar.");
+    }
+
+    const updated = await tx.cuentaProveedor.update({
+      where: { id: current.id },
+      data: { prioridad: input.prioridad, activa: input.activa }
+    });
+    await tx.auditoria.create({
+      data: {
+        actorUsuarioId: actorId,
+        accion: "CUENTA_ZOOM_ACTUALIZADA",
+        entidadTipo: "CuentaProveedor",
+        entidadId: current.id,
+        valorAnterior: datosAuditables(current),
+        valorNuevo: datosAuditables(updated)
+      }
+    });
+    return { host: updated, enUso: current._count.eventosProveedor > 0 };
+  });
+
+  return NextResponse.json({
+    host: toSafeHost(result.host, result.enUso),
+    notificados: 0,
+    message: "Sala Zoom actualizada."
+  });
+}
+
+function datosAuditables(host: Parameters<typeof toSafeHost>[0]) {
+  return {
+    nombre: host.nombre,
+    emailOrganizador: host.emailOrganizador,
+    prioridad: host.prioridad,
+    limiteConcurrente: host.limiteConcurrente,
+    tieneLicencia: host.tieneLicencia,
+    activa: host.activa,
+    passwordConfigurada: Boolean(host.secretRef)
+  };
 }
 
 async function requireAdmin(): Promise<{ id: string } | NextResponse> {

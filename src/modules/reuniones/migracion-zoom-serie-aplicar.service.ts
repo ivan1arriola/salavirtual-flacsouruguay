@@ -10,6 +10,7 @@ import type { ResumenAvisosMigracion } from "./migracion-zoom-avisos.service";
 import { planificarMigracionZoomPorSerie } from "./migracion-zoom-preview.domain";
 import { armarSerieMigracionZoom } from "./migracion-zoom-serie.service";
 import { notificarCambioEnlaceSerie } from "./aviso-enlace-serie.service";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 
@@ -153,7 +154,7 @@ async function prepararBajoBloqueo(
     if (instancias.length === 0) throw new FalloEtapa("VALIDACION", "La serie no tiene encuentros futuros.", false, true);
 
     const hostsDb = await tx.cuentaProveedor.findMany({
-      where: { activa: true, tieneLicencia: true, proveedor: { tipo: "ZOOM" } },
+      where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
       select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });

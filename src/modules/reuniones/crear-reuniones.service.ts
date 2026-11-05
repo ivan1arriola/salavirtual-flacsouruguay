@@ -18,6 +18,7 @@ import {
 import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
+import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
 import { claveSerieReunion } from "./serie-reunion.domain";
@@ -150,7 +151,7 @@ export async function crearReuniones(
 
     const [hosts, occupiedHosts] = await Promise.all([
       tx.cuentaProveedor.findMany({
-        where: { proveedorId: proveedor.id, activa: true, tieneLicencia: true },
+        where: { proveedorId: proveedor.id, ...CUENTA_ZOOM_ASIGNABLE },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
         select: { id: true, prioridad: true, limiteConcurrente: true },
       }),

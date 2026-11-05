@@ -228,9 +228,13 @@ export function ZoomConfigForm({
             <li>Tipo de App: <strong>Server-to-Server OAuth</strong></li>
             <li>
               Scopes necesarios:
-              <code> meeting:write:admin</code>,
-              <code> meeting:read:admin</code>,
-              <code> user:read:admin</code>
+              <code> meeting:write:meeting:admin</code>,
+              <code> meeting:read:meeting:admin</code>,
+              <code> meeting:update:meeting:admin</code>,
+              <code> meeting:delete:meeting:admin</code>,
+              <code> meeting:read:list_meetings:admin</code>,
+              <code> group:read:list_groups:admin</code>,
+              <code> group_member:read:list_members:admin</code>
             </li>
             <li>
               Las 10 cuentas de sala deben ser miembros de la misma organización o cuenta maestra.
