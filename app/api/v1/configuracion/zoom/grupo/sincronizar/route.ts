@@ -9,7 +9,11 @@ export const maxDuration = 300;
 
 const ERROR_SINCRONIZAR = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
 
-/** Sincronización periódica de las cuentas Zoom con el grupo elegido (tarea programada). */
+/**
+ * Sincronización periódica de las cuentas Zoom con el grupo elegido (tarea programada). Nunca
+ * confirma: una sincronización masiva se rechaza (502) hasta que alguien la confirme desde
+ * Configuración › Salas.
+ */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== "Bearer " + secret) {
@@ -17,7 +21,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date());
+    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date(), {
+      actorId: null,
+      confirmar: false
+    });
     return NextResponse.json({ resumen }, { status: ok ? 200 : 502 });
   } catch (error) {
     console.error("[zoom] Falló la sincronización periódica de las cuentas Zoom", error);

@@ -8,6 +8,7 @@ import { db } from "@/src/lib/db";
 import {
   elegirGrupoZoom,
   listarGruposZoom,
+  previsualizarSincronizacionConGrupo,
   sincronizarCuentasZoomConGrupo
 } from "@/src/modules/configuracion/api";
 
@@ -19,6 +20,7 @@ const ERROR_GRUPOS = "No se pudo obtener la lista de grupos de Zoom. Revisá la 
 const ERROR_GUARDAR = "No se pudo guardar el grupo de Zoom. Probá de nuevo.";
 const ERROR_SINCRONIZAR = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
 const GRUPO_INVALIDO = "Elegí un grupo de Zoom válido.";
+const OPCIONES_INVALIDAS = "El pedido de sincronización no es válido. Recargá la página y probá de nuevo.";
 
 const grupoSchema = z.object(
   {
@@ -30,6 +32,15 @@ const grupoSchema = z.object(
       .max(200, "El nombre del grupo de Zoom es demasiado largo.")
   },
   { error: GRUPO_INVALIDO }
+);
+
+/** Cuerpo opcional del POST. El actor sale siempre de la sesión: cualquier otro campo se descarta. */
+const sincronizarSchema = z.object(
+  {
+    vistaPrevia: z.boolean({ error: OPCIONES_INVALIDAS }).optional(),
+    confirmar: z.boolean({ error: OPCIONES_INVALIDAS }).optional()
+  },
+  { error: OPCIONES_INVALIDAS }
 );
 
 export async function GET() {
@@ -67,17 +78,45 @@ export async function PUT(request: Request) {
   }
 }
 
-/** Sincronización a pedido (botón): el resultado viaja en `ok`, también cuando no se pudo sincronizar. */
-export async function POST() {
+/**
+ * Sincronización a pedido (botón). Con `{ vistaPrevia: true }` solo describe lo que cambiaría,
+ * sin escribir nada; si no, sincroniza, y una sincronización masiva necesita `{ confirmar: true }`.
+ * El resultado viaja en `ok`, también cuando no se pudo sincronizar. Sin cuerpo es una
+ * sincronización sin confirmar.
+ */
+export async function POST(request: Request) {
   const actor = await requireAdmin();
   if (actor instanceof NextResponse) return actor;
 
+  const parsed = sincronizarSchema.safeParse(await leerCuerpoOpcional(request));
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? OPCIONES_INVALIDAS }, { status: 400 });
+  }
+  const { vistaPrevia, confirmar } = parsed.data;
+
   try {
-    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date());
+    if (vistaPrevia) {
+      return NextResponse.json(await previsualizarSincronizacionConGrupo(db, descifrarConfiguracion, new Date()));
+    }
+    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date(), {
+      actorId: actor.id,
+      confirmar: confirmar ?? false
+    });
     return NextResponse.json({ ok, resumen });
   } catch (error) {
     console.error("[zoom] Falló la sincronización a pedido de las cuentas Zoom", error);
     return NextResponse.json({ ok: false, resumen: ERROR_SINCRONIZAR }, { status: 502 });
+  }
+}
+
+/** Un cuerpo vacío vale `{}`; un JSON mal formado vale `null` para que la validación lo rechace. */
+async function leerCuerpoOpcional(request: Request): Promise<unknown> {
+  const texto = await request.text().catch(() => "");
+  if (!texto.trim()) return {};
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return null;
   }
 }
 

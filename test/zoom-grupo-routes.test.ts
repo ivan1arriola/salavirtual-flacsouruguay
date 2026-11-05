@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   listar: vi.fn(),
   elegir: vi.fn(),
   sincronizar: vi.fn(),
+  previsualizar: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
@@ -27,6 +28,7 @@ vi.mock("@/src/modules/configuracion/api", () => ({
   listarGruposZoom: state.listar,
   elegirGrupoZoom: state.elegir,
   sincronizarCuentasZoomConGrupo: state.sincronizar,
+  previsualizarSincronizacionConGrupo: state.previsualizar,
 }));
 
 import { GET, POST, PUT } from "../app/api/v1/configuracion/zoom/grupo/route";
@@ -35,11 +37,25 @@ import * as periodica from "../app/api/v1/configuracion/zoom/grupo/sincronizar/r
 const URL_GRUPO = "http://localhost/api/v1/configuracion/zoom/grupo";
 const URL_PERIODICA = "http://localhost/api/v1/configuracion/zoom/grupo/sincronizar";
 const ERROR_GENERICO = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
+const AVISO_MASIVO = "Esta sincronización cambiaría muchas cuentas (3 de 4). Revisá la vista previa y confirmá para continuar.";
+const VISTA_PREVIA = {
+  ok: true,
+  resumen: "1 nueva, 1 desactivada, 0 fuera del grupo con reuniones, 1 sin licencia",
+  masivo: false,
+  avisoMasivo: null,
+  crear: ["nueva@flacso.edu.uy"],
+  desactivar: ["sala02@flacso.edu.uy"],
+  marcarFuera: [],
+  sinLicencia: ["nueva@flacso.edu.uy"],
+  pierdenLicencia: [],
+};
 
 const put = (body: unknown) => new Request(URL_GRUPO, {
   method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
 });
-const post = () => new Request(URL_GRUPO, { method: "POST" });
+const post = (body?: unknown) => new Request(URL_GRUPO, body === undefined ? { method: "POST" } : {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+});
 const periodicaGet = (authorization?: string) => new Request(URL_PERIODICA, {
   headers: authorization ? { authorization } : {},
 });
@@ -50,6 +66,7 @@ beforeEach(() => {
   state.listar.mockReset().mockResolvedValue([{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }]);
   state.elegir.mockReset().mockResolvedValue(undefined);
   state.sincronizar.mockReset().mockResolvedValue({ ok: true, resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones" });
+  state.previsualizar.mockReset().mockResolvedValue(VISTA_PREVIA);
   vi.stubEnv("CRON_SECRET", "secreto-cron");
 });
 
@@ -64,15 +81,17 @@ describe("rutas del grupo de Zoom", () => {
 
     expect(((await GET()) as any).status).toBe(403);
     expect(((await PUT(put({ grupoId: "g1", grupoNombre: "Anfitriones" }))) as any).status).toBe(403);
-    expect(((await POST()) as any).status).toBe(403);
+    expect(((await POST(post())) as any).status).toBe(403);
+    expect(((await POST(post({ vistaPrevia: true }))) as any).status).toBe(403);
 
     state.session = null;
     expect(((await GET()) as any).status).toBe(403);
-    expect(((await POST()) as any).status).toBe(403);
+    expect(((await POST(post())) as any).status).toBe(403);
 
     expect(state.listar).not.toHaveBeenCalled();
     expect(state.elegir).not.toHaveBeenCalled();
     expect(state.sincronizar).not.toHaveBeenCalled();
+    expect(state.previsualizar).not.toHaveBeenCalled();
   });
 
   it("una sesión desactualizada recibe 401", async () => {
@@ -140,17 +159,80 @@ describe("rutas del grupo de Zoom", () => {
   });
 
   it("POST devuelve el resumen", async () => {
-    const response = await POST() as any;
+    const response = await POST(post()) as any;
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones" });
-    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date));
+    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: false });
+    expect(state.previsualizar).not.toHaveBeenCalled();
+  });
+
+  it("POST con el cuerpo vacío sincroniza sin confirmar", async () => {
+    const response = await POST(new Request(URL_GRUPO, { method: "POST", body: "" })) as any;
+
+    expect(response.status).toBe(200);
+    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: false });
+  });
+
+  it("POST con confirmar pasa la confirmación y el actor de la sesión, nunca el del cuerpo", async () => {
+    const response = await POST(post({ confirmar: true, actorId: "otra-persona" })) as any;
+
+    expect(response.status).toBe(200);
+    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: "admin", confirmar: true });
+  });
+
+  it("POST con vistaPrevia devuelve lo que cambiaría y no sincroniza", async () => {
+    const response = await POST(post({ vistaPrevia: true })) as any;
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(VISTA_PREVIA);
+    expect(state.previsualizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date));
+    expect(state.sincronizar).not.toHaveBeenCalled();
+
+    // Aunque también pida confirmar, una vista previa nunca escribe.
+    await POST(post({ vistaPrevia: true, confirmar: true }));
+    expect(state.sincronizar).not.toHaveBeenCalled();
+  });
+
+  it("POST con vistaPrevia devuelve el aviso con 200 cuando no se pudo armar", async () => {
+    const aviso = { ...VISTA_PREVIA, ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [], desactivar: [], sinLicencia: [] };
+    state.previsualizar.mockResolvedValue(aviso);
+
+    const response = await POST(post({ vistaPrevia: true })) as any;
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(aviso);
+  });
+
+  it("POST con vistaPrevia responde 502 con un mensaje genérico si falla de forma inesperada", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    state.previsualizar.mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:5432"));
+
+    const response = await POST(post({ vistaPrevia: true })) as any;
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({ ok: false, resumen: ERROR_GENERICO });
+  });
+
+  it("POST rechaza opciones inválidas con 400", async () => {
+    for (const body of [{ confirmar: "si" }, { vistaPrevia: 1 }, null, [true], "confirmar"]) {
+      const response = await POST(post(body)) as any;
+
+      expect(response.status).toBe(400);
+      expect(typeof response.body.error).toBe("string");
+      expect(response.body.error).not.toMatch(/Invalid|expected/i);
+    }
+
+    const malformado = await POST(new Request(URL_GRUPO, { method: "POST", body: "{no es json" })) as any;
+    expect(malformado.status).toBe(400);
+    expect(state.sincronizar).not.toHaveBeenCalled();
+    expect(state.previsualizar).not.toHaveBeenCalled();
   });
 
   it("POST devuelve el aviso cuando la sincronización no se hizo", async () => {
     state.sincronizar.mockResolvedValue({ ok: false, resumen: "Ya hay una sincronización en curso." });
 
-    const response = await POST() as any;
+    const response = await POST(post()) as any;
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: false, resumen: "Ya hay una sincronización en curso." });
@@ -160,7 +242,7 @@ describe("rutas del grupo de Zoom", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     state.sincronizar.mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:5432"));
 
-    const response = await POST() as any;
+    const response = await POST(post()) as any;
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({ ok: false, resumen: ERROR_GENERICO });
@@ -185,7 +267,17 @@ describe("sincronización periódica del grupo de Zoom", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones" });
-    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date));
+    // Sin actor y sin confirmar: una sincronización masiva nunca se aplica sola.
+    expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), { actorId: null, confirmar: false });
+  });
+
+  it("el GET periódico responde 502 cuando la sincronización necesita confirmación", async () => {
+    state.sincronizar.mockResolvedValue({ ok: false, resumen: AVISO_MASIVO });
+
+    const response = await periodica.GET(periodicaGet("Bearer secreto-cron")) as any;
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({ resumen: AVISO_MASIVO });
   });
 
   it("el GET periódico responde 502 si la sincronización no se hizo", async () => {
