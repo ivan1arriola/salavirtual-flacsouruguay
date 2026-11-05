@@ -67,7 +67,7 @@ export default async function ReunionOperativaPage({
           if (credenciales.disponible) {
             const token = await obtenerZoomAccessToken(credenciales);
             const eventoZoom = await db.eventoProveedor.findFirst({
-              where: { instanciaSalaId: reunion.id, proveedor: { tipo: "ZOOM" } },
+              where: { id: reunion.zoom.eventoProveedorId ?? "", instanciaSalaId: reunion.id, proveedor: { tipo: "ZOOM" } },
               select: { id: true, zoomMeetingUuid: true, zoomUuidInicioAt: true, zoomUuidMeetingId: true }
             });
             const inicioCoincide = eventoZoom?.zoomUuidInicioAt?.getTime() === reunion.inicioProgramadoAt.getTime()
