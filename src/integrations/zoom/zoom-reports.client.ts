@@ -30,7 +30,7 @@ export async function listarParticipantesReunionPasadaZoomHttp(
     const id = encodeURIComponent(encodeURIComponent(meetingUuid));
     const response = await fetch(
       `https://api.zoom.us/v2/past_meetings/${id}/participants?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
     );
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Zoom: error al consultar asistencia (${response.status})`);
