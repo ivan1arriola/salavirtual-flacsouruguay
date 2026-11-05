@@ -331,6 +331,13 @@ async function aplicarSincronizacion(
     await bloquearReservaSalas(tx, proveedorId);
 
     const { cuentas, plan, riesgo } = await planificarConLaBase(tx, proveedorId, miembros, ahora);
+    if (opciones.actorId === null && plan.crear.length > 0) {
+      const cantidad = plan.crear.length;
+      return {
+        ok: false,
+        resumen: `Hay ${cantidad} ${cantidad === 1 ? "cuenta nueva" : "cuentas nuevas"} de Zoom. Revisá la vista previa y confirmá desde Configuración.`
+      };
+    }
     // Antes de escribir nada: una sincronización masiva solo se aplica confirmada después de la
     // vista previa. La tarea periódica nunca confirma, así que la rechaza.
     if (riesgo.masivo && opciones.confirmar !== true) {

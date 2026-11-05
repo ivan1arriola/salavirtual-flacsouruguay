@@ -354,6 +354,23 @@ describe("sincronizarCuentasZoomConGrupo", () => {
     expect(base.estado.config?.ultimaSincronizacionResultado).toBe(resultado.resumen);
   });
 
+  it("el temporizador no crea una sala nueva sin revisión administrativa", async () => {
+    const base = crearBase({ cuentas: [cuentaZoom("z1", "sala01@flacso.edu.uy")] });
+    zoom.miembros.mockResolvedValue([
+      miembro("u1", "sala01@flacso.edu.uy"),
+      miembro("u2", "nueva@flacso.edu.uy")
+    ]);
+
+    const resultado = await sincronizarCuentasZoomConGrupo(base.db, descifrar, ahora, { actorId: null });
+
+    expect(resultado).toEqual({
+      ok: false,
+      resumen: "Hay 1 cuenta nueva de Zoom. Revisá la vista previa y confirmá desde Configuración."
+    });
+    expect(base.cuentas).toHaveLength(1);
+    expect(base.auditorias).toEqual([]);
+  });
+
   it("quitar exactamente la mitad de las cuentas no pide confirmación", async () => {
     const base = crearBase({
       cuentas: [
