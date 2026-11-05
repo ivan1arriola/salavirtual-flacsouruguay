@@ -40,6 +40,8 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/v1/configur
 
 El endpoint responde 502 mientras no haya un grupo elegido y cuando la sincronización necesita confirmación (es masiva): nunca la confirma solo. En ese caso hay que revisarla y confirmarla desde Configuración › Salas.
 
+También responde 502 si el grupo contiene cuentas nuevas que aún no están en Sala Virtual: un administrador debe revisar esas altas desde Configuración antes de que reciban reuniones.
+
 ## Si elegiste el grupo equivocado
 
 Elegí el grupo correcto y sincronizá de nuevo: las salas del grupo correcto se adoptan o reactivan y las demás se desactivan o quedan fuera del grupo. Las reuniones creadas mientras tanto siguen en las salas donde se crearon; no se reasignan solas.

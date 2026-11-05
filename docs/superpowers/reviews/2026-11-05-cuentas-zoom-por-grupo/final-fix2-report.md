@@ -1,0 +1,1 @@
+Fix: guardarGrupo y cerrarSelector limpian vistaPrevia; boton Sincronizar deshabilitado con selector abierto via puedeRevisarSincronizacion (domain, puro). Tests: RED 3 fallos, GREEN 23/23; tsc ok; vitest 2867 passed.

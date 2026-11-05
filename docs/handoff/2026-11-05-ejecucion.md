@@ -1,0 +1,28 @@
+# Ejecución de los pendientes del 2026-11-05
+
+Rama de trabajo: `codex/pendientes-2026-11-05`, desde `32fe959` de `main`. El plan aprobado está en la conversación de esta sesión; los insumos están en `docs/handoff/` y `docs/superpowers/reviews/2026-11-05-cuentas-zoom-por-grupo/`.
+
+## Orden acordado
+
+1. Conservar el contexto y fijar el estado de partida.
+2. Endurecer la sincronización de salas Zoom.
+3. Validar manualmente la primera sincronización y recién entonces activar el timer horario.
+4. Diagnosticar y corregir de a uno los pendientes operativos de Meet y los históricos.
+5. Incorporar webhooks, asistencia final por UUID y archivos Zoom en Drive.
+6. Refactorizar Configuración, sidebar y panel de series.
+7. Auditar y cerrar PR y ramas obsoletos.
+
+## Estado
+
+- El PR #166 y el #195 están mergeados; el #173 y los #167–#170 seguían abiertos al comenzar esta rama.
+- La suite base pasó: 2876 pruebas, 14 omitidas (2026-11-05).
+- Los informes de Codex y los reportes finales están copiados a `docs/superpowers/reviews/2026-11-05-cuentas-zoom-por-grupo/`. Los `.log` crudos siguen solo en `.superpowers`; no son necesarios para reconstruir las conclusiones.
+- La primera sincronización real, la nueva app de Zoom y las correcciones en producción requieren datos y revisión operativa; aún no se ejecutaron.
+
+## Decisiones de producto
+
+- Seguridad y datos antes que cambios visuales. Entregas separadas.
+- Las altas automáticas de salas Zoom quedan pendientes de revisión administrativa. Timer cada hora después de la primera sincronización manual validada.
+- Administración resuelve ejecuciones Zoom ambiguas; el reporte posterior por UUID define la asistencia final.
+- Grabaciones y transcripciones literales van a Drive institucional con la política vigente de Meet. No se incluyen resúmenes de AI Companion.
+- Los encuentros cancelados permanecen visibles con su estado. Los 26 trabajos de Meet y los 306 encuentros históricos se diagnostican antes de cualquier corrección.
