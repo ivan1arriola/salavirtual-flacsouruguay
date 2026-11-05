@@ -1,5 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
+import { esCuentaAsignable } from "../reuniones/cuenta-asignable.domain";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "./google-workspace.service";
+import { contarReunionesFuturasZoom } from "./zoom-grupo-sincronizacion.service";
 
 export type OperacionPendienteItem = Readonly<{
   id: string;
@@ -24,15 +26,18 @@ export type OperacionPendienteItem = Readonly<{
 
 export async function obtenerDatosPaginaConfiguracion(
   db: PrismaClient,
-  section: string
+  section: string,
+  ahora: Date = new Date()
 ) {
   const [
     configuration,
     assistantConfiguration,
-    hosts,
+    accounts,
     programCount,
     activeProgramCount,
-    pendingMeetOperations
+    pendingMeetOperations,
+    futureMeetingsByAccount,
+    zoomGrupo
   ] = await Promise.all([
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
     db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
@@ -48,6 +53,8 @@ export async function obtenerDatosPaginaConfiguracion(
         tieneLicencia: true,
         activa: true,
         secretRef: true,
+        origenGrupoZoom: true,
+        fueraDelGrupoAt: true,
         proveedor: { select: { tipo: true, nombre: true } },
         _count: { select: { eventosProveedor: true } }
       }
@@ -102,8 +109,17 @@ export async function obtenerDatosPaginaConfiguracion(
           }
         }
       }
-    })
+    }),
+    section === "salas" ? contarReunionesFuturasZoom(db, ahora) : Promise.resolve<Record<string, number>>({}),
+    section === "salas"
+      ? db.configuracionZoom.findUnique({
+          where: { id: "principal" },
+          select: { grupoId: true, grupoNombre: true, ultimaSincronizacionAt: true, ultimaSincronizacionResultado: true }
+        })
+      : Promise.resolve(null)
   ]);
+
+  const hosts = accounts.map((account) => ({ ...account, reunionesFuturas: futureMeetingsByAccount[account.id] ?? 0 }));
 
   const [programs, teachers, academicUnits] = section === "programas"
     ? await Promise.all([
@@ -181,7 +197,7 @@ export async function obtenerDatosPaginaConfiguracion(
       })
     : [];
 
-  const availableHosts = hosts.filter((host) => host.activa && host.tieneLicencia).length;
+  const availableHosts = hosts.filter(esCuentaAsignable).length;
 
   const pendingOperationItems: OperacionPendienteItem[] = pendingMeetOperations.map((ep) => ({
     id: ep.id,
@@ -219,7 +235,8 @@ export async function obtenerDatosPaginaConfiguracion(
     adminReportRecipients,
     historicalMeetings,
     availableHosts,
-    pendingOperationItems
+    pendingOperationItems,
+    zoomGrupo
   };
 }
 

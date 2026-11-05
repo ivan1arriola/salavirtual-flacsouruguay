@@ -145,18 +145,19 @@ function datosDelMiembro(miembro: MiembroGrupoZoom) {
 }
 
 /**
- * Reuniones futuras por cuenta en una sola consulta: encuentros programados que todavía no
+ * Reuniones futuras por cuenta Zoom en una sola consulta: encuentros programados que todavía no
  * terminaron y cuyo evento Zoom es el vigente (el mismo criterio que usa la agenda).
+ * Sin `proveedorId` (fuera de la sincronización) se acota al proveedor Zoom por su tipo.
  */
-async function contarReunionesFuturas(
-  tx: Prisma.TransactionClient,
-  proveedorId: string,
-  ahora: Date
+export async function contarReunionesFuturasZoom(
+  db: Pick<Prisma.TransactionClient, "eventoProveedor">,
+  ahora: Date,
+  proveedorId?: string
 ): Promise<Record<string, number>> {
-  const grupos = await tx.eventoProveedor.groupBy({
+  const grupos = await db.eventoProveedor.groupBy({
     by: ["cuentaProveedorId"],
     where: {
-      proveedorId,
+      ...(proveedorId ? { proveedorId } : { proveedor: { tipo: "ZOOM" } }),
       cuentaProveedorId: { not: null },
       instancia: {
         estado: "PROGRAMADA",
@@ -189,7 +190,7 @@ async function aplicarSincronizacion(
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
       select: { id: true, emailOrganizador: true, externalAccountId: true, activa: true, fueraDelGrupoAt: true, prioridad: true }
     });
-    const reunionesFuturas = await contarReunionesFuturas(tx, proveedor.id, ahora);
+    const reunionesFuturas = await contarReunionesFuturasZoom(tx, ahora, proveedor.id);
     const plan = planificarSincronizacionGrupoZoom(miembros, cuentas, reunionesFuturas);
     const cuentaPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
 

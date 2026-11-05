@@ -11,6 +11,7 @@ import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/set
 import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { ZoomConfigForm } from "@/src/components/zoom-config-form";
+import { ZoomGrupoConfig } from "@/src/components/zoom-grupo-config";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
@@ -39,7 +40,8 @@ export default async function ConfiguracionPage({
     adminReportRecipients,
     historicalMeetings,
     availableHosts,
-    pendingOperationItems
+    pendingOperationItems,
+    zoomGrupo
   } = await obtenerDatosPaginaConfiguracion(db, section);
 
   const zoomConfig = (section === "zoom" || section === "resumen")
@@ -205,20 +207,30 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "salas" ? (
-        <MeetHostsConfig
-          hosts={hosts.map((host) => ({
-            id: host.id,
-            nombre: host.nombre,
-            emailOrganizador: host.emailOrganizador,
-            prioridad: host.prioridad,
-            limiteConcurrente: host.limiteConcurrente,
-            tieneLicencia: host.tieneLicencia,
-            activa: host.activa,
-            passwordConfigurada: Boolean(host.secretRef),
-            enUso: host._count.eventosProveedor > 0,
-            proveedorTipo: (host.proveedor?.tipo as "GOOGLE_MEET" | "ZOOM") ?? "GOOGLE_MEET"
-          }))}
-        />
+        <div className="settings-workspace-flow">
+          <ZoomGrupoConfig
+            grupoId={zoomGrupo?.grupoId ?? null}
+            grupoNombre={zoomGrupo?.grupoNombre ?? null}
+            ultimaSincronizacionFecha={zoomGrupo?.ultimaSincronizacionAt ? formatDateTime(zoomGrupo.ultimaSincronizacionAt) : null}
+            ultimaSincronizacionResultado={zoomGrupo?.ultimaSincronizacionResultado ?? null}
+          />
+          <MeetHostsConfig
+            hosts={hosts.map((host) => ({
+              id: host.id,
+              nombre: host.nombre,
+              emailOrganizador: host.emailOrganizador,
+              prioridad: host.prioridad,
+              limiteConcurrente: host.limiteConcurrente,
+              tieneLicencia: host.tieneLicencia,
+              activa: host.activa,
+              passwordConfigurada: Boolean(host.secretRef),
+              enUso: host._count.eventosProveedor > 0,
+              proveedorTipo: (host.proveedor?.tipo as "GOOGLE_MEET" | "ZOOM") ?? "GOOGLE_MEET",
+              fueraDelGrupoAt: host.fueraDelGrupoAt?.toISOString() ?? null,
+              reunionesFuturas: host.reunionesFuturas
+            }))}
+          />
+        </div>
       ) : null}
 
       {section === "asistencia" ? (

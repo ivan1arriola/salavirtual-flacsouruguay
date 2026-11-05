@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { filterMeetHosts, formatoLimiteConcurrente } from "./meet-hosts-config.domain";
+import { esCuentaAsignable } from "@/src/modules/reuniones/cuenta-asignable.domain";
+import { avisoFueraDelGrupo, filterMeetHosts, formatoLimiteConcurrente } from "./meet-hosts-config.domain";
 
 export type MeetHostVisible = Readonly<{
   id: string;
@@ -27,6 +28,10 @@ export type MeetHostVisible = Readonly<{
   passwordConfigurada: boolean;
   enUso: boolean;
   proveedorTipo?: "GOOGLE_MEET" | "ZOOM";
+  /** Solo Zoom: fecha (ISO) en que la cuenta salió del grupo elegido; `null` si pertenece. */
+  fueraDelGrupoAt?: string | null;
+  /** Solo Zoom: reuniones programadas que todavía no terminaron en esta cuenta. */
+  reunionesFuturas?: number;
 }>;
 
 export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVisible[] }>) {
@@ -55,7 +60,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
   async function updateHost(host: MeetHostVisible, formData: FormData) {
     setSaving(host.id);
     setMessage(`Guardando ${host.nombre}…`);
-    const result = await request("PUT", {
+    const result = await request("PUT", host.proveedorTipo === "ZOOM" ? zoomPayloadFromForm(host, formData) : {
       id: host.id,
       ...payloadFromForm(formData),
       notificarCambioPassword: formData.get("notificarCambioPassword") === "on"
@@ -148,7 +153,8 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
           <div className="settings-room-list">
             {filteredHosts.map((host) => {
               const isEditing = editingHostId === host.id;
-              const available = host.activa && host.tieneLicencia;
+              const available = esCuentaAsignable(host);
+              const outsideGroup = avisoFueraDelGrupo(host);
               return (
                 <article className={`settings-room-row${isEditing ? " is-editing" : ""}`} key={host.id}>
                   <div className="settings-room-row__summary">
@@ -162,6 +168,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                     <div className="settings-room-row__facts">
                       <span className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}>{available ? "Disponible" : "No disponible"}</span>
                       <span className="settings-mini-status is-neutral">{host.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"}</span>
+                      {outsideGroup ? <span className="settings-mini-status is-warning">{outsideGroup}</span> : null}
                       <small>Prioridad {host.prioridad}</small>
                       <small>{formatoLimiteConcurrente(host.limiteConcurrente)}</small>
                     </div>
@@ -172,21 +179,15 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                   </div>
 
                   {isEditing ? (
-                    <form className="settings-room-edit-form" action={(formData) => updateHost(host, formData)}>
-                      <header>
-                        <KeyRound size={19} aria-hidden="true" />
-                        <div><strong>Editar {host.nombre}</strong><p>{host.proveedorTipo === "ZOOM" ? "Usa las credenciales institucionales de Zoom." : host.passwordConfigurada ? "La contraseña cifrada está configurada." : "Esta cuenta necesita una contraseña."}</p></div>
-                      </header>
-                      <HostFields host={host} hostsCount={hosts.length} />
-                      <div className="settings-risk-zone">
-                        <div><strong>Eliminar esta sala</strong><span>Solo se permitirá si la cuenta no tiene reuniones activas que la necesiten.</span></div>
-                        <button className="secondary-action danger-action" type="button" disabled={saving !== null} onClick={() => deleteHost(host)}><Trash2 size={17} />Eliminar</button>
-                      </div>
-                      <footer className="form-actions">
-                        <span className={`form-message${success ? " done" : ""}`} role="status">{saving === host.id ? message : ""}</span>
-                        <button className="primary-action" type="submit" disabled={saving !== null}><Save size={17} />{saving === host.id ? "Guardando…" : "Guardar cambios"}</button>
-                      </footer>
-                    </form>
+                    <HostEditForm
+                      host={host}
+                      hostsCount={hosts.length}
+                      saving={saving}
+                      message={message}
+                      success={success}
+                      onSubmit={(formData) => updateHost(host, formData)}
+                      onDelete={() => deleteHost(host)}
+                    />
                   ) : null}
                 </article>
               );
@@ -200,27 +201,92 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
   );
 }
 
-function HostFields({
+/** Formulario de edición de una sala. Las cuentas Zoom vienen del grupo: no se borran desde acá. */
+export function HostEditForm({
+  host,
+  hostsCount,
+  saving,
+  message,
+  success,
+  onSubmit,
+  onDelete
+}: Readonly<{
+  host: MeetHostVisible;
+  hostsCount: number;
+  saving: string | null;
+  message: string;
+  success: boolean;
+  onSubmit: (formData: FormData) => void;
+  onDelete: () => void;
+}>) {
+  const isZoom = host.proveedorTipo === "ZOOM";
+  return (
+    <form className="settings-room-edit-form" action={onSubmit}>
+      <header>
+        <KeyRound size={19} aria-hidden="true" />
+        <div><strong>Editar {host.nombre}</strong><p>{isZoom ? "Usa las credenciales institucionales de Zoom. Nombre, correo y licencia vienen del grupo de Zoom." : host.passwordConfigurada ? "La contraseña cifrada está configurada." : "Esta cuenta necesita una contraseña."}</p></div>
+      </header>
+      {isZoom ? <ZoomHostFields host={host} /> : <HostFields host={host} hostsCount={hostsCount} />}
+      {isZoom ? null : (
+        <div className="settings-risk-zone">
+          <div><strong>Eliminar esta sala</strong><span>Solo se permitirá si la cuenta no tiene reuniones activas que la necesiten.</span></div>
+          <button className="secondary-action danger-action" type="button" disabled={saving !== null} onClick={onDelete}><Trash2 size={17} />Eliminar</button>
+        </div>
+      )}
+      <footer className="form-actions">
+        <span className={`form-message${success ? " done" : ""}`} role="status">{saving === host.id ? message : ""}</span>
+        <button className="primary-action" type="submit" disabled={saving !== null}><Save size={17} />{saving === host.id ? "Guardando…" : "Guardar cambios"}</button>
+      </footer>
+    </form>
+  );
+}
+
+/** Cuenta Zoom: nombre, correo y licencia los fija la sincronización con el grupo; acá solo prioridad y estado. */
+function ZoomHostFields({ host }: Readonly<{ host: MeetHostVisible }>) {
+  return (
+    <div className="form-grid">
+      <label className="field">
+        <span>Nombre</span>
+        <input value={host.nombre} readOnly />
+      </label>
+      <label className="field">
+        <span>Correo de la cuenta Zoom</span>
+        <input type="email" value={host.emailOrganizador ?? ""} readOnly />
+      </label>
+      <label className="field">
+        <span>Licencia de Zoom</span>
+        <input value={host.tieneLicencia ? "Con licencia" : "Sin licencia: no aloja reuniones"} readOnly />
+      </label>
+      <label className="field">
+        <span>Prioridad</span>
+        <input type="number" name="prioridad" min={1} max={1000} defaultValue={host.prioridad} required />
+      </label>
+      <p className="field">Límite de reuniones simultáneas: 1 por cuenta Zoom.</p>
+      <label className="check-field"><input type="checkbox" name="activa" defaultChecked={host.activa} /><span>Cuenta activa</span></label>
+    </div>
+  );
+}
+
+/** Campos de una sala Meet. «Agregar sala» solo crea cuentas Meet: las de Zoom vienen del grupo. */
+export function HostFields({
   host,
   hostsCount
 }: Readonly<{ host?: MeetHostVisible; hostsCount: number }>) {
-  const [platform, setPlatform] = useState<"GOOGLE_MEET" | "ZOOM">(host?.proveedorTipo ?? "ZOOM");
   return (
     <div className="form-grid">
       <label className="field">
         <span>Plataforma</span>
-        <select name="proveedorTipo" value={platform} onChange={(event) => setPlatform(event.target.value as "GOOGLE_MEET" | "ZOOM")} disabled={Boolean(host)}>
+        <select defaultValue="GOOGLE_MEET" disabled>
           <option value="GOOGLE_MEET">Google Meet</option>
-          <option value="ZOOM">Zoom</option>
         </select>
-        {host ? <input type="hidden" name="proveedorTipo" value={platform} /> : null}
+        <input type="hidden" name="proveedorTipo" value="GOOGLE_MEET" />
       </label>
       <label className="field">
         <span>Nombre</span>
         <input name="nombre" defaultValue={host?.nombre} placeholder="Sala principal" required />
       </label>
       <label className="field">
-        <span>{platform === "ZOOM" ? "Correo de la cuenta Zoom" : "Correo de Google Workspace"}</span>
+        <span>Correo de Google Workspace</span>
         <input
           type="email"
           name="email"
@@ -231,25 +297,23 @@ function HostFields({
           required
         />
       </label>
-      {platform === "GOOGLE_MEET" ? (
-        <label className="field">
-          <span>{host ? "Nueva contraseña" : "Contraseña"}</span>
-          <input
-            type="password"
-            name="password"
-            minLength={8}
-            autoComplete="new-password"
-            placeholder={host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"}
-            required={!host}
-          />
-          {host ? <small>Dejala vacía para conservar la contraseña actual.</small> : null}
-        </label>
-      ) : <p className="field">Esta sala usa la conexión institucional Zoom Server-to-Server OAuth.</p>}
+      <label className="field">
+        <span>{host ? "Nueva contraseña" : "Contraseña"}</span>
+        <input
+          type="password"
+          name="password"
+          minLength={8}
+          autoComplete="new-password"
+          placeholder={host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"}
+          required={!host}
+        />
+        {host ? <small>Dejala vacía para conservar la contraseña actual.</small> : null}
+      </label>
       <label className="field">
         <span>Prioridad</span>
         <input type="number" name="prioridad" min={1} max={1000} defaultValue={host?.prioridad ?? hostsCount + 1} required />
       </label>
-      {platform === "ZOOM" ? <p className="field">Límite de reuniones simultáneas: 1 por cuenta Zoom.</p> : <label className="field">
+      <label className="field">
         <span>Límite de reuniones simultáneas</span>
         <input
           type="number"
@@ -260,7 +324,7 @@ function HostFields({
           placeholder="1 (predeterminado)"
         />
         <small>Cantidad máxima de reuniones que esta sala puede alojar al mismo tiempo (ej: 2 para permitir reuniones simultáneas).</small>
-      </label>}
+      </label>
       <label className="check-field"><input type="checkbox" name="tieneLicencia" defaultChecked={host?.tieneLicencia ?? true} /><span>Disponible para alojar reuniones</span></label>
       <label className="check-field"><input type="checkbox" name="activa" defaultChecked={host?.activa ?? true} /><span>Cuenta activa</span></label>
       {host?.proveedorTipo === "GOOGLE_MEET" ? (
@@ -273,16 +337,25 @@ function HostFields({
 function payloadFromForm(formData: FormData) {
   const password = String(formData.get("password") ?? "").trim();
   const limitRaw = String(formData.get("limiteConcurrente") ?? "").trim();
-  const proveedorTipo = (formData.get("proveedorTipo") as string) || "GOOGLE_MEET";
   return {
-    proveedorTipo,
+    proveedorTipo: (formData.get("proveedorTipo") as string) || "GOOGLE_MEET",
     nombre: String(formData.get("nombre") ?? ""),
     email: String(formData.get("email") ?? ""),
     prioridad: Number(formData.get("prioridad")),
-    limiteConcurrente: proveedorTipo === "ZOOM" ? 1 : limitRaw ? Number(limitRaw) : null,
+    limiteConcurrente: limitRaw ? Number(limitRaw) : null,
     tieneLicencia: formData.get("tieneLicencia") === "on",
     activa: formData.get("activa") === "on",
     ...(password ? { password } : {})
+  };
+}
+
+/** Lo único que el servidor cambia de una cuenta Zoom: prioridad y si está activa. */
+function zoomPayloadFromForm(host: MeetHostVisible, formData: FormData) {
+  return {
+    id: host.id,
+    proveedorTipo: "ZOOM",
+    prioridad: Number(formData.get("prioridad")),
+    activa: formData.get("activa") === "on"
   };
 }
 
