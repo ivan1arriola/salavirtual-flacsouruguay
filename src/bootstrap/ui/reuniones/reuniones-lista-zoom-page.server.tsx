@@ -143,7 +143,6 @@ export default async function ReunionesZoomPage({
         </div>
         <div className={styles.headerActions}>
           <Link className="primary-action" href="/reuniones/nueva"><CalendarPlus size={18} aria-hidden="true" /> Nueva reunión</Link>
-          {esAdmin ? <Link className="secondary-action" href="/reuniones/migracion-zoom">Migración a Zoom</Link> : null}
         </div>
       </header>
 
