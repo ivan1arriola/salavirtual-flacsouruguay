@@ -115,6 +115,9 @@ export async function crearReuniones(
     if (!encuentrosComienzanEnFuturo(input.instancias, new Date())) {
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
+    if (input.instancias.length > 50) {
+      throw new ValidationApiError("Una serie de Zoom no puede superar los 50 encuentros.");
+    }
 
     const tipoProveedor = "ZOOM" as const;
     const [docentePrograma, proveedor] = await Promise.all([
@@ -245,20 +248,23 @@ export async function crearReuniones(
       },
     });
 
-    // Todos los encuentros de la serie comparten UNA reunión de Zoom (mismo enlace y misma sala).
-    const reunionCompartida = await tx.reunionProveedor.create({
-      data: {
-        proveedorId: proveedor.id,
-        cuentaProveedorId: cuentaHostId,
-        serieClave: claveSerieReunion({
-          serieReunionId,
-          docenteProgramaId: input.docenteProgramaId,
-          titulo: input.titulo,
-          createdAt: solicitud.createdAt,
-        }),
-      },
-      select: { id: true },
-    });
+    // Series con más de 1 encuentro comparten UNA reunión de Zoom (mismo enlace y misma sala).
+    // Encuentros únicos no crean reunión compartida: se crean como reunión programada puntual (type: 2).
+    const reunionCompartida = input.instancias.length > 1
+      ? await tx.reunionProveedor.create({
+          data: {
+            proveedorId: proveedor.id,
+            cuentaProveedorId: cuentaHostId,
+            serieClave: claveSerieReunion({
+              serieReunionId,
+              docenteProgramaId: input.docenteProgramaId,
+              titulo: input.titulo,
+              createdAt: solicitud.createdAt,
+            }),
+          },
+          select: { id: true },
+        })
+      : null;
 
     const eventoProveedorIds = await Promise.all(
       input.instancias.map(async (fecha, index) => {
@@ -282,7 +288,7 @@ export async function crearReuniones(
             instanciaSalaId: instancia.id,
             proveedorId: proveedor.id,
             cuentaProveedorId: cuentaHostId,
-            reunionProveedorId: reunionCompartida.id,
+            reunionProveedorId: reunionCompartida?.id ?? null,
             operacionPendiente: "PROVISIONAR",
             ...(invitadosEmails.length > 0
               ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }

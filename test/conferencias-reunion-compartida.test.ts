@@ -8,6 +8,7 @@ import {
   crearReunionZoomHttp,
   crearReunionZoomRecurrenteHttp,
   eliminarReunionZoomHttp,
+  eliminarOcurrenciaZoomHttp,
   obtenerReunionZoomHttp
 } from "@/src/integrations/zoom/zoom-client";
 
@@ -18,6 +19,7 @@ vi.mock("@/src/integrations/zoom/zoom-client", () => ({
   buscarReunionZoomPorMarcaHttp: vi.fn(async () => null),
   actualizarReunionZoomHttp: vi.fn(async () => {}),
   eliminarReunionZoomHttp: vi.fn(async () => {}),
+  eliminarOcurrenciaZoomHttp: vi.fn(async () => {}),
   obtenerReunionZoomHttp: vi.fn(async (_t: string, id: string) => ({ meetingId: id, joinUrl: `https://zoom.us/j/${id}` }))
 }));
 
@@ -117,8 +119,24 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
   it("la reunión nueva lleva la marca de la serie en su agenda", async () => {
     const { repo } = crearRepo({ eventos: { e1: { reunion: true, operacion: "PROVISIONAR" } } });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
-    expect(vi.mocked(crearReunionZoomRecurrenteHttp).mock.calls[0][2].agenda).toContain("[serie:serie-abc]");
+    const llamada = vi.mocked(crearReunionZoomRecurrenteHttp).mock.calls[0][2];
+    expect(llamada.agenda).toContain("[serie:serie-abc]");
+    expect(llamada.recurrence).toMatchObject({ type: 2, repeatInterval: 1 });
     expect(vi.mocked(buscarReunionZoomPorMarcaHttp).mock.calls[0][2]).toBe("[serie:serie-abc]");
+  });
+
+  it("elimina ocurrencias de Zoom que caen en feriados no planificados en la serie", async () => {
+    vi.mocked(crearReunionZoomRecurrenteHttp).mockResolvedValueOnce({
+      meetingId: "serie-1",
+      joinUrl: "https://zoom.us/j/serie-1",
+      occurrences: [
+        { occurrenceId: "occ-1", startTime: "2026-11-12T12:00:00.000Z", duration: 120 },
+        { occurrenceId: "occ-feriado", startTime: "2026-11-19T12:00:00.000Z", duration: 120 }
+      ]
+    });
+    const { repo } = crearRepo({ eventos: { e1: { reunion: true, operacion: "PROVISIONAR" } } });
+    await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
+    expect(eliminarOcurrenciaZoomHttp).toHaveBeenCalledWith("tok", "serie-1", "occ-feriado");
   });
 
   it("con dos reclamos simultáneos solo uno llama a Zoom y el otro espera", async () => {

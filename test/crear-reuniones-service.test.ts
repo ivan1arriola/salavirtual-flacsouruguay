@@ -226,11 +226,16 @@ describe("crearReuniones - cohosts e invitados", () => {
     }
   });
 
-  it("una reunión de un solo encuentro también crea la suya", async () => {
+  it("una reunión de un solo encuentro no crea reunión compartida y nace con reunionProveedorId null", async () => {
     const { db, tx, createdEventos } = createMockDb();
     await crearReuniones(db as never, admin, input(1));
-    expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
-    expect(createdEventos[0]).toMatchObject({ reunionProveedorId: "reunion-1" });
+    expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
+    expect(createdEventos[0]).toMatchObject({ reunionProveedorId: null });
+  });
+
+  it("rechaza series que superen el límite de 50 ocurrencias de Zoom", async () => {
+    const { db } = createMockDb();
+    await expect(crearReuniones(db as never, admin, input(51))).rejects.toThrow(/50/);
   });
 
   it("la disponibilidad de todos los horarios se sigue validando con la reunión compartida", async () => {

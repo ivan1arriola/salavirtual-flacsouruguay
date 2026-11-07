@@ -22,9 +22,11 @@ import {
   obtenerReunionZoomHttp,
   crearReunionZoomRecurrenteHttp,
   buscarReunionZoomPorMarcaHttp,
+  eliminarOcurrenciaZoomHttp,
   type ZoomMeetingResult,
 } from "@/src/integrations/zoom/zoom-client";
 import { debeEliminarseReunionCompartida } from "@/src/modules/reuniones/reunion-compartida.domain";
+import { calcularRecurrenciaZoom, detectarOcurrenciasSobrantes } from "../domain/zoom-recurrence.domain";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -533,11 +535,37 @@ async function provisionarReunionCompartida(
   const existente = reclamo.externalId
     ? await obtenerReunionZoomHttp(token, reclamo.externalId)
     : await buscarReunionZoomPorMarcaHttp(token, hostEmail, marca);
-  const info = existente ?? await crearReunionZoomRecurrenteHttp(token, hostEmail, {
-    topic: request.titulo,
-    agenda: [request.descripcion, marca].filter(Boolean).join("\n"),
-    requiereGrabacion: request.requiereGrabacion ?? false,
-  });
+
+  let info: ZoomMeetingResult;
+  if (existente) {
+    info = existente;
+  } else {
+    const instancias = reclamo.instanciasHorarios && reclamo.instanciasHorarios.length > 0
+      ? reclamo.instanciasHorarios
+      : [{ inicio: request.inicio, fin: request.fin }];
+    const tz = request.timezone || "America/Montevideo";
+    const recurrencia = calcularRecurrenciaZoom(instancias, tz);
+
+    const zoomRecurrente = await crearReunionZoomRecurrenteHttp(token, hostEmail, {
+      topic: request.titulo,
+      startTime: recurrencia.startTime,
+      durationMinutes: recurrencia.durationMinutes,
+      timezone: tz,
+      agenda: [request.descripcion, marca].filter(Boolean).join("\n"),
+      requiereGrabacion: request.requiereGrabacion ?? false,
+      recurrence: recurrencia.recurrence,
+    });
+
+    if (zoomRecurrente.occurrences && zoomRecurrente.occurrences.length > 0) {
+      const sobrantes = detectarOcurrenciasSobrantes(zoomRecurrente.occurrences, instancias, tz);
+      for (const occId of sobrantes) {
+        await eliminarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, occId).catch(() => undefined);
+      }
+    }
+
+    info = zoomRecurrente;
+  }
+
   await registrarExternalIdTemprano(reclamo.reunionId, claim.token, info.meetingId);
   await guardarReunionCompartida(reclamo.reunionId, claim.token, {
     externalId: info.meetingId,
