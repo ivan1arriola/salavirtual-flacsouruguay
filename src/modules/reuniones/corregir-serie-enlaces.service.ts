@@ -65,6 +65,7 @@ const seleccionInstancia = {
   inicioProgramadoAt: true,
   finProgramadoAt: true,
   proveedorActivoTipo: true,
+  timezone: true,
   solicitud: { select: { titulo: true } },
   eventosProveedor: {
     select: {
