@@ -203,7 +203,21 @@ export function crearPrismaConferenciasRepository(
         });
         if (reclamado.count === 1) {
           // Un reclamo vencido pudo haber guardado ya el ID de Zoom: se reutiliza.
-          return { reunionId, resultado: "RECLAMADA" as const, externalId: reunion?.externalId ?? null, joinUrl: reunion?.joinUrl ?? null };
+          const eventosSerie = await tx.eventoProveedor.findMany({
+            where: { reunionProveedorId: reunionId, instancia: { estado: { not: "CANCELADA" } } },
+            select: {
+              instancia: {
+                select: { id: true, inicioProgramadoAt: true, finProgramadoAt: true }
+              }
+            },
+            orderBy: { instancia: { inicioProgramadoAt: "asc" } }
+          });
+          const instanciasHorarios = eventosSerie.map((e) => ({
+            id: e.instancia.id,
+            inicio: e.instancia.inicioProgramadoAt,
+            fin: e.instancia.finProgramadoAt
+          }));
+          return { reunionId, resultado: "RECLAMADA" as const, externalId: reunion?.externalId ?? null, joinUrl: reunion?.joinUrl ?? null, instanciasHorarios };
         }
         if (reunion?.estadoCreacion === "CREADA") {
           return { reunionId, resultado: "YA_CREADA" as const, externalId: reunion.externalId, joinUrl: reunion.joinUrl };

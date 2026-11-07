@@ -25,7 +25,14 @@ function crearRepo(db: unknown) {
 const conTransaccion = <T extends Record<string, unknown>>(tx: T) =>
   ({ ...tx, $transaction: async (cb: (t: T) => unknown) => cb(tx) });
 
-function dobleReclamo(opciones: { reunionDelEvento?: string | null; actualizados: number; estado: string; externalId?: string | null; joinUrl?: string | null }) {
+function dobleReclamo(opciones: {
+  reunionDelEvento?: string | null;
+  actualizados: number;
+  estado: string;
+  externalId?: string | null;
+  joinUrl?: string | null;
+  eventosSerie?: readonly { instancia: { id: string; inicioProgramadoAt: Date; finProgramadoAt: Date } }[];
+}) {
   const updateMany = vi.fn(async (_arg: { where: unknown; data: unknown }) => ({ count: 0 }));
   updateMany.mockImplementation(async ({ where }: { where: unknown }) => {
     const esReinicio = JSON.stringify(where).includes('"ELIMINADA"') && !JSON.stringify(where).includes('"OR"');
@@ -33,7 +40,12 @@ function dobleReclamo(opciones: { reunionDelEvento?: string | null; actualizados
   });
   const tx = {
     $executeRaw: vi.fn(async () => 1),
-    eventoProveedor: { findUnique: vi.fn(async () => (opciones.reunionDelEvento === undefined ? { reunionProveedorId: "reunion-1" } : opciones.reunionDelEvento ? { reunionProveedorId: opciones.reunionDelEvento } : { reunionProveedorId: null })) },
+    eventoProveedor: {
+      findUnique: vi.fn(async () => (opciones.reunionDelEvento === undefined ? { reunionProveedorId: "reunion-1" } : opciones.reunionDelEvento ? { reunionProveedorId: opciones.reunionDelEvento } : { reunionProveedorId: null })),
+      findMany: vi.fn(async () => opciones.eventosSerie ?? [
+        { instancia: { id: "i-1", inicioProgramadoAt: new Date("2026-11-12T12:00:00Z"), finProgramadoAt: new Date("2026-11-12T14:00:00Z") } }
+      ])
+    },
     reunionProveedor: {
       updateMany,
       findUnique: vi.fn(async () => ({ estadoCreacion: opciones.estado, externalId: opciones.externalId ?? null, joinUrl: opciones.joinUrl ?? null }))
@@ -49,9 +61,20 @@ describe("reunión compartida: reclamo de creación", () => {
   });
 
   it("reclama con una actualización condicional que acepta PENDIENTE, reclamo vencido y el propio token", async () => {
-    const { db, updateMany } = dobleReclamo({ actualizados: 1, estado: "CREANDO" });
+    const eventosSerie = [
+      { instancia: { id: "inst-1", inicioProgramadoAt: new Date("2026-11-12T12:00:00Z"), finProgramadoAt: new Date("2026-11-12T14:00:00Z") } },
+      { instancia: { id: "inst-2", inicioProgramadoAt: new Date("2026-11-19T12:00:00Z"), finProgramadoAt: new Date("2026-11-19T14:00:00Z") } }
+    ];
+    const { db, updateMany } = dobleReclamo({ actualizados: 1, estado: "CREANDO", eventosSerie });
     const resultado = await crearRepo(db).reclamarCreacionReunionCompartida!("evento-1", "t1", ahora);
-    expect(resultado).toMatchObject({ reunionId: "reunion-1", resultado: "RECLAMADA" });
+    expect(resultado).toMatchObject({
+      reunionId: "reunion-1",
+      resultado: "RECLAMADA",
+      instanciasHorarios: [
+        { id: "inst-1", inicio: new Date("2026-11-12T12:00:00Z"), fin: new Date("2026-11-12T14:00:00Z") },
+        { id: "inst-2", inicio: new Date("2026-11-19T12:00:00Z"), fin: new Date("2026-11-19T14:00:00Z") }
+      ]
+    });
     const reclamo = updateMany.mock.calls.map(([arg]) => JSON.stringify(arg)).find((texto) => texto.includes('"reclamoToken":"t1"') && texto.includes('"CREANDO"'));
     expect(reclamo).toBeDefined();
     expect(reclamo).toContain('"PENDIENTE"');

@@ -29,11 +29,18 @@ export type EventoReclamableInfo = Readonly<{
   serieClave?: string | null;
 }>;
 
+export type InstanciaHorarioSerie = Readonly<{
+  id: string;
+  inicio: Date;
+  fin: Date;
+}>;
+
 export type ReclamoReunionCompartida = Readonly<{
   reunionId: string;
   resultado: "RECLAMADA" | "EN_CURSO_POR_OTRO" | "YA_CREADA";
   externalId: string | null;
   joinUrl: string | null;
+  instanciasHorarios?: readonly InstanciaHorarioSerie[];
 }>;
 
 export type UsoReunionCompartidaInfo = Readonly<{
