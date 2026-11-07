@@ -4,6 +4,7 @@ import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDate } from "@/src/lib/ui/format";
 import type { UpcomingMeetingSummaryDTO } from "@/src/modules/dashboard/types";
+import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
 
 export function TeacherUpcomingList({
   meetings
@@ -32,6 +33,7 @@ export function TeacherUpcomingList({
           {meetings.map((meeting) => {
             const inicio = new Date(meeting.inicioProgramadoAt);
             const fin = new Date(meeting.finProgramadoAt);
+            const provider = getMeetingProviderPresentation(meeting.providerType ?? null);
 
             return (
               <article className="teacher-upcoming-card" key={meeting.id}>
@@ -67,16 +69,16 @@ export function TeacherUpcomingList({
                         href={meeting.joinUrl}
                         rel="noreferrer"
                         target="_blank"
-                        title="Abrir reunión en Meet"
+                        title={provider.joinLabel}
                       >
                         <Video size={16} />
-                        <span>Meet</span>
+                        <span>{provider.name}</span>
                         <ExternalLink size={12} />
                       </a>
                       <CopyMeetLinkButton url={meeting.joinUrl} />
                     </>
                   ) : (
-                    <span className="status-muted">Link en preparación</span>
+                    <span className="status-muted">Enlace pendiente</span>
                   )}
                 </div>
               </article>
