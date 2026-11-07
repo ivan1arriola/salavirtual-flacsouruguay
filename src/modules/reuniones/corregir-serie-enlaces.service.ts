@@ -12,6 +12,8 @@ import { proveedorActivoDeInstancia } from "./proveedor-reunion.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
+import type { ZoomCreateRecurringMeetingInput } from "@/src/integrations/zoom/zoom-client";
+import { calcularRecurrenciaZoom } from "../conferencias/domain/zoom-recurrence.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
 
@@ -24,10 +26,10 @@ export type DependenciasCorreccionSerie = DependenciasMigracionZoom & Readonly<{
   zoom: Readonly<{
     /** Reunión del anfitrión que lleve la marca en su agenda (recupera una creada por un intento que murió). */
     buscarPorMarca: (hostEmail: string, marca: string) => Promise<Readonly<{ meetingId: string; joinUrl: string }> | null>;
-    /** Crea la reunión recurrente (tipo 3) con un `join_url` estable. */
+    /** Crea la reunión recurrente (tipo 8) con un `join_url` estable. */
     crearRecurrente: (
       hostEmail: string,
-      input: Readonly<{ topic: string; agenda: string }>,
+      input: ZoomCreateRecurringMeetingInput,
     ) => Promise<Readonly<{ meetingId: string; joinUrl: string }>>;
     /** Elimina una reunión; una inexistente (404) no es un error. */
     eliminar: (meetingId: string) => Promise<void>;
@@ -102,6 +104,8 @@ type PreparacionSerie =
     externalId: string | null;
     instanciaIds: readonly string[];
     eventoIds: readonly string[];
+    horarios: readonly Readonly<{ inicio: Date; fin: Date }>[];
+    timezone: string;
     citas: readonly CitaCorreccion[];
   }>;
 
@@ -365,6 +369,8 @@ async function prepararBajoBloqueo(
       externalId,
       instanciaIds,
       eventoIds,
+      horarios: aCorregir.map((instancia) => ({ inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt })),
+      timezone: aCorregir[0].timezone || "America/Montevideo",
       citas: aCorregir.map((instancia): CitaCorreccion => {
         const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
         const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
@@ -480,7 +486,15 @@ async function asegurarReunionZoom(
       const existente = prep.externalId
         ? { meetingId: prep.externalId }
         : await deps.zoom.buscarPorMarca(prep.hostEmail, marca);
-      const info = existente ?? await deps.zoom.crearRecurrente(prep.hostEmail, { topic: prep.titulo, agenda: marca });
+      const recurrencia = calcularRecurrenciaZoom(prep.horarios, prep.timezone);
+      const info = existente ?? await deps.zoom.crearRecurrente(prep.hostEmail, {
+        topic: prep.titulo,
+        startTime: recurrencia.startTime,
+        durationMinutes: recurrencia.durationMinutes,
+        timezone: prep.timezone,
+        agenda: marca,
+        recurrence: recurrencia.recurrence,
+      });
       // El ID se guarda apenas existe: si algo falla después, el reintento reutiliza esta reunión.
       const guardado = await deps.db.reunionProveedor.updateMany({
         where: { id: prep.reunionId, estadoCreacion: "CREANDO", reclamoToken: prep.reclamoToken },
