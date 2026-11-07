@@ -118,7 +118,7 @@ export function LiveMeetingHero({
             </span>
           )}
           <span className="dashboard-hero-date">
-            {formatDate(inicio)} · Encuentro: {formatTime(inicio)}–{formatTime(fin)}
+            {formatDate(inicio)}
           </span>
         </div>
 
