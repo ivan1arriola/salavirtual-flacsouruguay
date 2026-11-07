@@ -5,9 +5,8 @@ const control = readFileSync(new URL("../src/components/migracion-zoom-serie-con
 const pagina = readFileSync(new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url), "utf8");
 
 describe("panel de series Zoom", () => {
-  it("la página calcula el diagnóstico real de cada serie y se lo pasa al control", () => {
-    expect(pagina).toContain("obtenerDiagnosticosSeriesZoom(db, admin)");
-    expect(pagina).toContain("diagnosticos={Object.fromEntries(diagnosticos)}");
+  it("la ruta antigua abre la vista de series Zoom", () => {
+    expect(pagina).toContain('redirect("/reuniones?proveedor=zoom&vista=series")');
   });
 
   it("cada fila muestra su estado en texto, los conteos y el botón de la acción permitida", () => {

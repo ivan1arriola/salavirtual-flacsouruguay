@@ -11,6 +11,7 @@ export interface HeroMeetingDTO {
   readonly inicioAsistenciaAt?: string | null;
   readonly finAsistenciaAt?: string | null;
   readonly joinUrl: string | null;
+  readonly providerType?: string | null;
   readonly cohostConfirmado: boolean;
   readonly cohosts: readonly { readonly name: string; readonly email: string }[];
   readonly asistente: { readonly id: string; readonly nombre: string } | null;
@@ -29,6 +30,7 @@ export interface UpcomingMeetingSummaryDTO {
   readonly inicioAsistenciaAt?: string | null;
   readonly finAsistenciaAt?: string | null;
   readonly joinUrl: string | null;
+  readonly providerType?: string | null;
   readonly estadoTemporal: EstadoTemporalReunion;
   readonly asistenteNombre: string | null;
   readonly requiereAsistencia: boolean;

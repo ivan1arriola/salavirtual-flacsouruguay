@@ -20,7 +20,7 @@ export function DashboardHeader({
 
   const defaultSubtitles: Record<string, string> = {
     ADMINISTRACION: "Supervisión de salas, triage operativo y agenda institucional.",
-    DOCENTE: "Tus clases, accesos rápidos a Google Meet y grabaciones de cursos.",
+    DOCENTE: "Tus clases, enlaces de acceso y grabaciones recientes.",
     ASISTENTE_TECNICO: "Tus coberturas asignadas, vacantes abiertas y registro de horas."
   };
 
