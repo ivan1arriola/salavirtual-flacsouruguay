@@ -4,8 +4,10 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { crearGoogleCalendarAuthClient } from "@/src/integrations/google/auth";
 import { actualizarEventoCalendarHttp, obtenerEventoCalendar } from "@/src/integrations/google/calendar";
 import {
+  actualizarOcurrenciaZoomHttp,
   buscarReunionZoomPorMarcaHttp,
   crearReunionZoomRecurrenteHttp,
+  eliminarOcurrenciaZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
   obtenerZoomAccessToken,
@@ -79,11 +81,21 @@ export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie 
         return buscarReunionZoomPorMarcaHttp(await tokenZoom(), hostEmail, marca);
       },
       async crearRecurrente(hostEmail, input) {
-        const { meetingId, joinUrl } = await crearReunionZoomRecurrenteHttp(await tokenZoom(), hostEmail, input);
-        return { meetingId, joinUrl };
+        const res = await crearReunionZoomRecurrenteHttp(await tokenZoom(), hostEmail, input);
+        return {
+          meetingId: res.meetingId,
+          joinUrl: res.joinUrl,
+          occurrences: res.occurrences,
+        };
       },
       async eliminar(meetingId) {
         await eliminarReunionZoomHttp(await tokenZoom(), meetingId);
+      },
+      async eliminarOcurrencia(meetingId, occurrenceId) {
+        await eliminarOcurrenciaZoomHttp(await tokenZoom(), meetingId, occurrenceId);
+      },
+      async actualizarOcurrencia(meetingId, occurrenceId, input) {
+        await actualizarOcurrenciaZoomHttp(await tokenZoom(), meetingId, occurrenceId, input);
       },
     },
   };

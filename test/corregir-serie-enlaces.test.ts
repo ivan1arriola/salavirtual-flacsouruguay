@@ -156,8 +156,14 @@ function crearEscenario(opciones: Opciones = {}) {
   }));
   const zoom = {
     buscarPorMarca: vi.fn(async () => null),
-    crearRecurrente: vi.fn(async () => { zoomCreados.n += 1; return { meetingId: "999", joinUrl: NUEVO }; }),
+    crearRecurrente: vi.fn(async (): Promise<Readonly<{
+      meetingId: string;
+      joinUrl: string;
+      occurrences?: readonly { occurrenceId: string; startTime: string; duration?: number }[];
+    }>> => { zoomCreados.n += 1; return { meetingId: "999", joinUrl: NUEVO }; }),
     eliminar: vi.fn(async (_id: string) => undefined),
+    eliminarOcurrencia: vi.fn(async () => undefined),
+    actualizarOcurrencia: vi.fn(async () => undefined),
   };
   const deps: DependenciasCorreccionSerie = {
     db: db as unknown as PrismaClient,
@@ -238,6 +244,24 @@ describe("corregirSerieEnlaces", () => {
       expect(new Set(eventosZoom(e).map((ev) => ev.reunionProveedorId))).toEqual(new Set(["r1"]));
     },
   );
+
+  it("elimina ocurrencias sobrantes en Zoom al corregir la serie", async () => {
+    const e = crearEscenario();
+    e.zoom.crearRecurrente.mockResolvedValueOnce({
+      meetingId: "999",
+      joinUrl: NUEVO,
+      occurrences: [
+        { occurrenceId: "occ-1", startTime: "2026-11-10T12:00:00Z", duration: 60 },
+        { occurrenceId: "occ-sobrante", startTime: "2026-11-12T12:00:00Z", duration: 60 },
+        { occurrenceId: "occ-2", startTime: "2026-11-17T12:00:00Z", duration: 60 },
+        { occurrenceId: "occ-3", startTime: "2026-11-24T12:00:00Z", duration: 60 },
+      ],
+    });
+
+    const r = await corregir(e);
+    expect(r).toMatchObject({ resultado: "CORREGIDA" });
+    expect(e.zoom.eliminarOcurrencia).toHaveBeenCalledWith("999", "occ-sobrante");
+  });
 
   it("(c) una serie sin citas de Calendar se corrige igual", async () => {
     const e = crearEscenario({ sinCitas: true });

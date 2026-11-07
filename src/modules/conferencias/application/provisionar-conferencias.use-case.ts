@@ -23,10 +23,15 @@ import {
   crearReunionZoomRecurrenteHttp,
   buscarReunionZoomPorMarcaHttp,
   eliminarOcurrenciaZoomHttp,
+  actualizarOcurrenciaZoomHttp,
   type ZoomMeetingResult,
 } from "@/src/integrations/zoom/zoom-client";
 import { debeEliminarseReunionCompartida } from "@/src/modules/reuniones/reunion-compartida.domain";
-import { calcularRecurrenciaZoom, detectarOcurrenciasSobrantes } from "../domain/zoom-recurrence.domain";
+import {
+  calcularRecurrenciaZoom,
+  detectarOcurrenciasSobrantes,
+  detectarOcurrenciasAjustar
+} from "../domain/zoom-recurrence.domain";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -539,6 +544,7 @@ async function provisionarReunionCompartida(
   let info: ZoomMeetingResult;
   if (existente) {
     info = existente;
+    await registrarExternalIdTemprano(reclamo.reunionId, claim.token, info.meetingId);
   } else {
     const instancias = reclamo.instanciasHorarios && reclamo.instanciasHorarios.length > 0
       ? reclamo.instanciasHorarios
@@ -556,17 +562,46 @@ async function provisionarReunionCompartida(
       recurrence: recurrencia.recurrence,
     });
 
+    // Se registra externalId inmediatamente para que cualquier reintento o falla reconozca la reunión
+    await registrarExternalIdTemprano(reclamo.reunionId, claim.token, zoomRecurrente.meetingId);
+
     if (zoomRecurrente.occurrences && zoomRecurrente.occurrences.length > 0) {
+      // 1. Eliminar ocurrencias en días sobrantes (feriados / recesos)
       const sobrantes = detectarOcurrenciasSobrantes(zoomRecurrente.occurrences, instancias, tz);
       for (const occId of sobrantes) {
-        await eliminarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, occId).catch(() => undefined);
+        try {
+          await eliminarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, occId);
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await eliminarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, occId).catch(() => undefined);
+        }
+      }
+
+      // 2. Ajustar ocurrencias con horario o duración diferente a la base
+      const aAjustar = detectarOcurrenciasAjustar(
+        zoomRecurrente.occurrences,
+        instancias.map((i) => ({ inicio: i.inicio, fin: i.fin ?? new Date(i.inicio.getTime() + recurrencia.durationMinutes * 60_000) })),
+        tz
+      );
+      for (const ajuste of aAjustar) {
+        try {
+          await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
+            startTime: ajuste.startTime,
+            durationMinutes: ajuste.durationMinutes,
+          });
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
+            startTime: ajuste.startTime,
+            durationMinutes: ajuste.durationMinutes,
+          }).catch(() => undefined);
+        }
       }
     }
 
     info = zoomRecurrente;
   }
 
-  await registrarExternalIdTemprano(reclamo.reunionId, claim.token, info.meetingId);
   await guardarReunionCompartida(reclamo.reunionId, claim.token, {
     externalId: info.meetingId,
     joinUrl: info.joinUrl,

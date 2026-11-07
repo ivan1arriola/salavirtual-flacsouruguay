@@ -23,6 +23,7 @@ import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
 import { claveSerieReunion } from "./serie-reunion.domain";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
+import { MAX_ZOOM_OCCURRENCES, calcularRecurrenciaZoom } from "../conferencias/domain/zoom-recurrence.domain";
 
 export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
 
@@ -115,8 +116,18 @@ export async function crearReuniones(
     if (!encuentrosComienzanEnFuturo(input.instancias, new Date())) {
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
-    if (input.instancias.length > 50) {
-      throw new ValidationApiError("Una serie de Zoom no puede superar los 50 encuentros.");
+    if (input.instancias.length > MAX_ZOOM_OCCURRENCES) {
+      throw new ValidationApiError(`Una serie de Zoom no puede superar los ${MAX_ZOOM_OCCURRENCES} encuentros.`);
+    }
+    if (input.instancias.length > 1) {
+      try {
+        calcularRecurrenciaZoom(
+          input.instancias.map((i) => ({ inicio: i.inicio, fin: i.fin })),
+          input.timezone
+        );
+      } catch (err) {
+        throw new ValidationApiError(err instanceof Error ? err.message : "Error al calcular la recurrencia de la serie.");
+      }
     }
 
     const tipoProveedor = "ZOOM" as const;

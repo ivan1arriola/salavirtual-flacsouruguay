@@ -13,7 +13,11 @@ import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { claveBloqueoSerieMigracion, filtroSerieDesdeClave, normalizarClaveSerie } from "./serie-reunion.domain";
 import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
 import type { ZoomCreateRecurringMeetingInput } from "@/src/integrations/zoom/zoom-client";
-import { calcularRecurrenciaZoom } from "../conferencias/domain/zoom-recurrence.domain";
+import {
+  calcularRecurrenciaZoom,
+  detectarOcurrenciasSobrantes,
+  detectarOcurrenciasAjustar
+} from "../conferencias/domain/zoom-recurrence.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
 
@@ -30,9 +34,21 @@ export type DependenciasCorreccionSerie = DependenciasMigracionZoom & Readonly<{
     crearRecurrente: (
       hostEmail: string,
       input: ZoomCreateRecurringMeetingInput,
-    ) => Promise<Readonly<{ meetingId: string; joinUrl: string }>>;
+    ) => Promise<Readonly<{
+      meetingId: string;
+      joinUrl: string;
+      occurrences?: readonly { occurrenceId: string; startTime: string; duration?: number }[];
+    }>>;
     /** Elimina una reunión; una inexistente (404) no es un error. */
     eliminar: (meetingId: string) => Promise<void>;
+    /** Elimina una ocurrencia sobrante; 404 no es un error. */
+    eliminarOcurrencia?: (meetingId: string, occurrenceId: string) => Promise<void>;
+    /** Actualiza una ocurrencia puntual de horario o duración. */
+    actualizarOcurrencia?: (
+      meetingId: string,
+      occurrenceId: string,
+      input: Readonly<{ startTime?: Date; durationMinutes?: number }>
+    ) => Promise<void>;
   }>;
   /** Aviso por serie; por defecto el real. Se inyecta en las pruebas. */
   notificarCambioSerie?: typeof notificarCambioEnlaceSerie;
@@ -502,6 +518,30 @@ async function asegurarReunionZoom(
         data: { externalId: info.meetingId },
       });
       if (guardado.count !== 1) throw new Error("El reclamo de la reunión ya no es válido; otro proceso la tomó.");
+
+      // Limpieza y reconciliación de ocurrencias en Zoom si se acaban de crear
+      const occurrences = "occurrences" in info && Array.isArray(info.occurrences)
+        ? (info.occurrences as readonly { occurrenceId: string; startTime: string; duration?: number }[])
+        : undefined;
+
+      if (occurrences && occurrences.length > 0) {
+        if (deps.zoom.eliminarOcurrencia) {
+          const sobrantes = detectarOcurrenciasSobrantes(occurrences, prep.horarios, prep.timezone);
+          for (const occId of sobrantes) {
+            await deps.zoom.eliminarOcurrencia(info.meetingId, occId).catch(() => undefined);
+          }
+        }
+        if (deps.zoom.actualizarOcurrencia) {
+          const aAjustar = detectarOcurrenciasAjustar(occurrences, prep.horarios, prep.timezone);
+          for (const ajuste of aAjustar) {
+            await deps.zoom.actualizarOcurrencia(info.meetingId, ajuste.occurrenceId, {
+              startTime: ajuste.startTime,
+              durationMinutes: ajuste.durationMinutes,
+            }).catch(() => undefined);
+          }
+        }
+      }
+
       return info.meetingId;
     })();
 

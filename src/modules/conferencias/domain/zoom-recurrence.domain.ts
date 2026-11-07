@@ -13,6 +13,12 @@ export type RecurrenciaZoomCalculada = Readonly<{
   recurrence: ZoomRecurrenceInput;
 }>;
 
+export type OcurrenciaAjuste = Readonly<{
+  occurrenceId: string;
+  startTime: Date;
+  durationMinutes: number;
+}>;
+
 const MAPA_DIAS_ZOOM: Readonly<Record<string, number>> = {
   Sun: 1,
   Mon: 2,
@@ -26,6 +32,27 @@ const MAPA_DIAS_ZOOM: Readonly<Record<string, number>> = {
 function obtenerDiaZoom(fecha: Date, timezone: string): number {
   const diaTexto = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(fecha);
   return MAPA_DIAS_ZOOM[diaTexto] ?? 1;
+}
+
+function obtenerPartesFecha(fecha: Date, timezone: string): readonly [number, number, number] {
+  const formateador = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric"
+  });
+  const partes = formateador.formatToParts(fecha);
+  const anio = Number(partes.find((p) => p.type === "year")?.value ?? "0");
+  const mes = Number(partes.find((p) => p.type === "month")?.value ?? "0");
+  const dia = Number(partes.find((p) => p.type === "day")?.value ?? "0");
+  return [anio, mes, dia];
+}
+
+function formatearFechaIso(fecha: Date, timezone: string): string {
+  const [anio, mes, dia] = obtenerPartesFecha(fecha, timezone);
+  const m = String(mes).padStart(2, "0");
+  const d = String(dia).padStart(2, "0");
+  return `${anio}-${m}-${d}`;
 }
 
 function ordenarInstancias(
@@ -48,6 +75,31 @@ function ordenarNumeros(items: readonly number[]): readonly number[] {
   }, []);
 }
 
+/**
+ * Calcula la cantidad exacta de slots que Zoom generará en el calendario semanal
+ * desde la primera fecha hasta la última, asegurando que Zoom cubra toda la serie
+ * aun cuando haya feriados o huecos intermedios.
+ */
+export function calcularSlotsZoom(
+  primeraFecha: Date,
+  ultimaFecha: Date,
+  diasZoomValidos: readonly number[],
+  timezone: string
+): number {
+  const diaInicio = obtenerDiaZoom(primeraFecha, timezone);
+  const [y1, m1, d1] = obtenerPartesFecha(primeraFecha, timezone);
+  const [y2, m2, d2] = obtenerPartesFecha(ultimaFecha, timezone);
+
+  const utcInicio = Date.UTC(y1, m1 - 1, d1);
+  const utcFin = Date.UTC(y2, m2 - 1, d2);
+  const diffDias = Math.max(0, Math.round((utcFin - utcInicio) / 86_400_000));
+
+  return Array.from({ length: diffDias + 1 }, (_, i) => i).filter((i) => {
+    const diaActual = ((diaInicio - 1 + i) % 7) + 1;
+    return diasZoomValidos.includes(diaActual);
+  }).length;
+}
+
 export function calcularRecurrenciaZoom(
   instancias: readonly Readonly<{ inicio: Date; fin: Date }>[],
   timezone: string
@@ -61,6 +113,7 @@ export function calcularRecurrenciaZoom(
 
   const ordenadas = ordenarInstancias(instancias);
   const primera = ordenadas[0];
+  const ultima = ordenadas[ordenadas.length - 1];
   const duracionMs = primera.fin.getTime() - primera.inicio.getTime();
   const durationMinutes = Math.max(1, Math.round(duracionMs / 60_000));
 
@@ -69,6 +122,13 @@ export function calcularRecurrenciaZoom(
   const diasOrdenados = ordenarNumeros(diasUnicos);
   const weeklyDays = diasOrdenados.join(",");
 
+  const endTimes = calcularSlotsZoom(primera.inicio, ultima.inicio, diasOrdenados, timezone);
+  if (endTimes > MAX_ZOOM_OCCURRENCES) {
+    throw new Error(
+      `Una serie recurrente de Zoom no puede superar las ${MAX_ZOOM_OCCURRENCES} ocurrencias en Zoom (requiere ${endTimes} slots semanales).`
+    );
+  }
+
   return {
     startTime: primera.inicio,
     durationMinutes,
@@ -76,7 +136,7 @@ export function calcularRecurrenciaZoom(
       type: 2, // Semanal
       repeatInterval: 1,
       weeklyDays,
-      endTimes: ordenadas.length
+      endTimes
     }
   };
 }
@@ -84,16 +144,46 @@ export function calcularRecurrenciaZoom(
 export function detectarOcurrenciasSobrantes(
   ocurrenciasZoom: readonly Readonly<{ occurrenceId: string; startTime: string }>[],
   instanciasRequeridas: readonly Readonly<{ inicio: Date }>[],
-  _timezone: string
+  timezone: string
 ): readonly string[] {
-  const TOLERANCIA_MS = 15 * 60 * 1000; // 15 minutos de tolerancia
-  const tiemposRequeridos = instanciasRequeridas.map((inst) => inst.inicio.getTime());
+  const fechasRequeridas = instanciasRequeridas.map((inst) => formatearFechaIso(inst.inicio, timezone));
 
   return ocurrenciasZoom
     .filter((occ) => {
-      const zoomTime = new Date(occ.startTime).getTime();
-      const coincide = tiemposRequeridos.some((reqTime) => Math.abs(zoomTime - reqTime) <= TOLERANCIA_MS);
-      return !coincide;
+      const zoomDateIso = formatearFechaIso(new Date(occ.startTime), timezone);
+      return !fechasRequeridas.includes(zoomDateIso);
     })
     .map((occ) => occ.occurrenceId);
+}
+
+export function detectarOcurrenciasAjustar(
+  ocurrenciasZoom: readonly Readonly<{ occurrenceId: string; startTime: string; duration?: number }>[],
+  instanciasRequeridas: readonly Readonly<{ inicio: Date; fin: Date }>[],
+  timezone: string
+): readonly OcurrenciaAjuste[] {
+  return ocurrenciasZoom.flatMap((occ) => {
+    const zoomDate = new Date(occ.startTime);
+    const zoomDateIso = formatearFechaIso(zoomDate, timezone);
+    const instanciaCoincidente = instanciasRequeridas.find(
+      (inst) => formatearFechaIso(inst.inicio, timezone) === zoomDateIso
+    );
+    if (!instanciaCoincidente) return [];
+
+    const instDuracionMinutos = Math.max(
+      1,
+      Math.round((instanciaCoincidente.fin.getTime() - instanciaCoincidente.inicio.getTime()) / 60_000)
+    );
+    const diferenciaInicioMs = Math.abs(zoomDate.getTime() - instanciaCoincidente.inicio.getTime());
+    const diferenciaDuracionMinutos = occ.duration ? Math.abs(occ.duration - instDuracionMinutos) : 0;
+
+    // Si difiere en hora de inicio (más de 1 min) o duración (más de 1 min), requiere ajuste
+    if (diferenciaInicioMs > 60_000 || diferenciaDuracionMinutos > 1) {
+      return [{
+        occurrenceId: occ.occurrenceId,
+        startTime: instanciaCoincidente.inicio,
+        durationMinutes: instDuracionMinutos
+      }];
+    }
+    return [];
+  });
 }
