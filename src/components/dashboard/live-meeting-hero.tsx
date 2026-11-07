@@ -17,6 +17,7 @@ import {
   formatearTiempoHastaReunion
 } from "@/src/modules/dashboard/dashboard.domain";
 import type { HeroMeetingDTO } from "@/src/modules/dashboard/types";
+import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
 
 export function LiveMeetingHero({
   meeting,
@@ -34,6 +35,7 @@ export function LiveMeetingHero({
   emptyStateActionLabel?: string;
 }>) {
   const ahora = new Date();
+  const provider = getMeetingProviderPresentation(meeting?.providerType ?? null);
 
   if (!meeting) {
     const defaultTitle =
@@ -133,7 +135,7 @@ export function LiveMeetingHero({
           </h2>
           {meeting.salaNombre ? (
             <p className="dashboard-hero-room">
-              Sala virtual: <strong>{meeting.salaNombre}</strong>
+              Sala: <strong>{meeting.salaNombre}</strong>
             </p>
           ) : null}
         </div>
@@ -160,13 +162,13 @@ export function LiveMeetingHero({
                 target="_blank"
               >
                 <Video size={18} />
-                <span>Entrar a Google Meet</span>
+                <span>{provider.joinLabel}</span>
               </a>
               <CopyMeetLinkButton url={meeting.joinUrl} />
             </>
           ) : (
             <span className="status status-warning hero-pending-meet">
-              Enlace de Meet pendiente de generación
+              {provider.pendingLinkLabel}
             </span>
           )}
 
@@ -206,7 +208,7 @@ export function LiveMeetingHero({
         </div>
 
         <div className="dashboard-hero-metadata-item">
-          {meeting.cohostConfirmado ? (
+          {provider.supportsCohosts ? meeting.cohostConfirmado ? (
             <span className="status-ok-text">
               <CheckCircle2 size={16} /> Permisos de cohost confirmados en Meet
             </span>
@@ -218,7 +220,7 @@ export function LiveMeetingHero({
             <span className="muted-text">
               <Sparkles size={15} /> Sin cohosts adicionales configurados
             </span>
-          )}
+          ) : null}
         </div>
       </footer>
     </section>
