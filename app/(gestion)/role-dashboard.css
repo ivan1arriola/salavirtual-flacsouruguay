@@ -1400,3 +1400,71 @@
  .admin-dashboard-redesigned .admin-metrics-bar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
  .admin-dashboard-redesigned .admin-metric-card { min-height: 0; box-shadow: none; padding: 9px; }
 }
+
+
+/* Assistant dashboard: keep upcoming coverage cards readable at all widths.
+   The previous horizontal flex row forced three content groups into ~300px. */
+.assistant-dashboard-redesigned .assistant-coverages-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: stretch;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-width: 0;
+  height: 100%;
+  gap: 12px;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-when,
+.assistant-dashboard-redesigned .assistant-coverage-content,
+.assistant-dashboard-redesigned .assistant-coverage-actions {
+  width: 100%;
+  min-width: 0;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-when {
+  gap: 8px;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-when > .meeting-schedule-times {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-when .meeting-schedule-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-when > .badge-tag {
+  align-self: flex-start;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-content {
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-content h3 {
+  line-height: 1.45;
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.assistant-dashboard-redesigned .assistant-coverage-actions > * {
+  max-width: 100%;
+}
