@@ -115,6 +115,7 @@ export async function obtenerDashboardAsistenteOptimizado(
         inicioAsistenciaAt: nextMeetingInstance.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
         finAsistenciaAt: nextMeetingInstance.finAsistenciaTecnicaAt?.toISOString() ?? null,
         joinUrl: meet?.joinUrl ?? null,
+        providerType: meet?.proveedor.tipo ?? nextMeetingInstance.proveedorActivoTipo ?? null,
         cohostConfirmado: isVerified && assistantIsCohost,
         cohosts: extraerCohostsUnificadosDeInstancia(nextMeetingInstance).map((c) => ({
           name: c.name ?? "",
