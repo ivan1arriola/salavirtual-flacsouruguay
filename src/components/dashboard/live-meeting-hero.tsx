@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { formatDate } from "@/src/lib/ui/format";
 import {
   determinarEstadoTemporal,
   formatearTiempoHastaReunion
@@ -207,8 +207,9 @@ export function LiveMeetingHero({
           )}
         </div>
 
-        <div className="dashboard-hero-metadata-item">
-          {provider.supportsCohosts ? meeting.cohostConfirmado ? (
+        {provider.supportsCohosts ? (
+          <div className="dashboard-hero-metadata-item">
+          {meeting.cohostConfirmado ? (
             <span className="status-ok-text">
               <CheckCircle2 size={16} /> Permisos de cohost confirmados en Meet
             </span>
@@ -220,8 +221,9 @@ export function LiveMeetingHero({
             <span className="muted-text">
               <Sparkles size={15} /> Sin cohosts adicionales configurados
             </span>
-          ) : null}
-        </div>
+          )}
+          </div>
+        ) : null}
       </footer>
     </section>
   );
