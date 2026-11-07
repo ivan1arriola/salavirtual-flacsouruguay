@@ -189,23 +189,45 @@ export async function eliminarReunionZoomHttp(
   }
 }
 
+export type ZoomOccurrenceResult = Readonly<{
+  occurrenceId: string;
+  startTime: string;
+  duration: number;
+  status?: string;
+}>;
+
+export type ZoomMeetingWithOccurrencesResult = ZoomMeetingResult & Readonly<{
+  occurrences?: readonly ZoomOccurrenceResult[];
+}>;
+
+export type ZoomRecurrenceInput = Readonly<{
+  type: 1 | 2 | 3;
+  repeatInterval: number;
+  weeklyDays?: string;
+  endTimes?: number;
+  endDateTime?: string;
+}>;
+
 export type ZoomCreateRecurringMeetingInput = Readonly<{
   topic: string;
+  startTime: Date;
+  durationMinutes: number;
+  timezone: string;
   /** Lleva la marca `[serie:<clave>]` para reconocer la reunión si queda huérfana. */
   agenda?: string | null;
   requiereGrabacion?: boolean;
+  recurrence: ZoomRecurrenceInput;
 }>;
 
 /**
- * Crea una reunión recurrente sin horario fijo (`type: 3`): un `join_url` estable que
- * todos los encuentros de una serie comparten. No lleva `start_time` ni `recurrence`.
- * El cuerpo exacto debe confirmarse contra la documentación de Zoom y una prueba real.
+ * Crea una reunión recurrente con horario fijo (`type: 8`): un `join_url` y `meetingId` estables
+ * que todos los encuentros de una serie comparten, con ocurrencias registradas en el calendario de Zoom.
  */
 export async function crearReunionZoomRecurrenteHttp(
   token: string,
   userEmail: string,
   input: ZoomCreateRecurringMeetingInput
-): Promise<ZoomMeetingResult> {
+): Promise<ZoomMeetingWithOccurrencesResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
   const response = await fetch(url, {
     method: "POST",
@@ -215,8 +237,18 @@ export async function crearReunionZoomRecurrenteHttp(
     },
     body: JSON.stringify({
       topic: input.topic,
-      type: 3, // Recurrente sin horario fijo
+      type: 8, // Recurrente con horario fijo
+      start_time: input.startTime.toISOString(),
+      duration: Math.max(1, input.durationMinutes),
+      timezone: input.timezone,
       agenda: input.agenda ?? undefined,
+      recurrence: {
+        type: input.recurrence.type,
+        repeat_interval: input.recurrence.repeatInterval,
+        weekly_days: input.recurrence.weeklyDays,
+        end_times: input.recurrence.endTimes,
+        end_date_time: input.recurrence.endDateTime
+      },
       settings: {
         host_video: true,
         participant_video: true,
@@ -239,15 +271,74 @@ export async function crearReunionZoomRecurrenteHttp(
     join_url?: string;
     start_url?: string;
     password?: string;
+    occurrences?: readonly {
+      occurrence_id: string | number;
+      start_time: string;
+      duration: number;
+      status?: string;
+    }[];
   };
   if (!data.join_url) throw new Error("Zoom no devolvió el enlace de acceso de la reunión recurrente.");
+
+  const occurrences: readonly ZoomOccurrenceResult[] | undefined = data.occurrences?.map((occ) => ({
+    occurrenceId: String(occ.occurrence_id),
+    startTime: occ.start_time,
+    duration: occ.duration,
+    status: occ.status
+  }));
 
   return {
     meetingId: String(data.id),
     joinUrl: data.join_url,
     startUrl: data.start_url,
-    password: data.password
+    password: data.password,
+    ...(occurrences ? { occurrences } : {})
   };
+}
+
+export async function eliminarOcurrenciaZoomHttp(
+  token: string,
+  meetingId: string,
+  occurrenceId: string
+): Promise<void> {
+  const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok && response.status !== 204 && response.status !== 404) {
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`Zoom API error al eliminar ocurrencia (${response.status}): ${errorBody || response.statusText}`);
+  }
+}
+
+export async function actualizarOcurrenciaZoomHttp(
+  token: string,
+  meetingId: string,
+  occurrenceId: string,
+  input: Readonly<{ startTime?: Date; durationMinutes?: number }>
+): Promise<void> {
+  const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
+  const body: Record<string, unknown> = {};
+  if (input.startTime) body.start_time = input.startTime.toISOString();
+  if (input.durationMinutes) body.duration = Math.max(1, input.durationMinutes);
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`Zoom API error al actualizar ocurrencia (${response.status}): ${errorBody || response.statusText}`);
+  }
 }
 
 /**
