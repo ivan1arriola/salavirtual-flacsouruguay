@@ -29,9 +29,7 @@ describe("pantalla de migración por serie", () => {
     expect(control).toContain("<ExcepcionMeetControl");
   });
 
-  it("la página usa siempre la pantalla por serie", () => {
-    expect(pagina).not.toContain("reunionCompartidaHabilitada");
-    expect(pagina).toContain("<MigracionZoomSerieControl");
-    expect(pagina).not.toContain("<MigracionZoomAplicarControl");
+  it("la ruta anterior lleva al listado de series Zoom", () => {
+    expect(pagina).toContain('redirect("/reuniones?proveedor=zoom&vista=series")');
   });
 });
