@@ -1162,12 +1162,15 @@ model BarridoArchivoZoom {
 
 /// Reserva de cupo de transferencia (ventana móvil de 24 h con marcas exactas).
 /// Cuenta COALESCE(ajustadoBytes, bytesReservados) mientras reservadoAt esté en la ventana.
+/// Si el lease vence, la reserva abierta se cierra con lo confirmado desde bytesConfirmadosInicio.
 model ReservaTransferenciaZoom {
-  id              String                     @id @default(cuid())
-  archivoOrigenId String
-  leaseVersion    Int
-  bytesReservados BigInt
-  prioridad       PrioridadTransferenciaZoom
+  id                     String                     @id @default(cuid())
+  archivoOrigenId        String
+  leaseVersion           Int
+  bytesReservados        BigInt
+  /// Offset confirmado por Drive al reservar.
+  bytesConfirmadosInicio BigInt                     @default(0)
+  prioridad              PrioridadTransferenciaZoom
   reservadoAt     DateTime
   ajustadoBytes   BigInt?
   liberadoAt      DateTime?

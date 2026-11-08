@@ -1,14 +1,19 @@
 import { createHash, randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  ArchivoOrigenZoom,
-  LeaseArchivoZoom,
-  ReferenciaOcurrenciaZoom,
-  ResultadoInventarioZoom
+import {
+  PREFIJO_REFERENCIA_ARCHIVO_ZOOM,
+  referenciaExternaArchivoZoom,
+  type ArchivoOrigenZoom,
+  type LeaseArchivoZoom,
+  type ReferenciaOcurrenciaZoom,
+  type ResultadoInventarioZoom
 } from "../src/modules/archivos/domain";
+import { filtroArchivoReunionMeet } from "../src/modules/archivos/infrastructure/prisma/archivo-reunion-meet.filter";
+import { crearPrismaArchivosRepositoryAdapter } from "../src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter";
 import { crearPrismaZoomArchivoRepositoryAdapter } from "../src/modules/archivos/infrastructure/prisma/prisma-zoom-archivo-repository.adapter";
 import type { ZoomArchivoRepositoryPort } from "../src/modules/archivos/ports";
+import { obtenerDashboardDocente } from "../src/modules/dashboard/teacher-dashboard.adapter";
 
 const GB = 1024n ** 3n;
 const hash = (texto: string) => createHash("sha256").update(texto).digest("hex").slice(0, 24);
@@ -91,6 +96,41 @@ describe("repositorio Zoom: mutaciones de worker comparan la versión vigente (u
   it("rechaza duraciones de lease inválidas", async () => {
     const repo = crear({});
     await expect(repo.reclamarArchivo(new Date(), 0)).rejects.toThrow(RangeError);
+  });
+
+  it("recuperar un lease vencido consume un intento y cierra las reservas del intento caído", async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: "a-1", leaseVersion: 4, estado: "COPIANDO" }]);
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const reservas = { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn() };
+    const db = { archivoOrigenZoom: { findMany, updateMany }, reservaTransferenciaZoom: reservas } as unknown as PrismaClient;
+    const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash });
+    await expect(repo.reclamarArchivo(new Date("2026-11-08T12:00:00Z"), 60_000)).resolves.toMatchObject({ archivoId: "a-1", version: 5 });
+    expect(updateMany.mock.calls[0][0].where).toMatchObject({ id: "a-1", leaseVersion: 4, estado: "COPIANDO" });
+    expect(updateMany.mock.calls[0][0].data).toMatchObject({ estado: "COPIANDO", leaseVersion: 5, intentos: { increment: 1 }, errorCodigo: "LEASE_VENCIDO" });
+    expect(reservas.findMany.mock.calls[0][0].where).toMatchObject({ archivoOrigenId: "a-1", liberadoAt: null, leaseVersion: { lt: 5 } });
+  });
+
+  it("un reclamo normal no consume intentos", async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: "a-2", leaseVersion: 0, estado: "PENDIENTE" }]);
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const repo = crear({ findMany, updateMany });
+    await repo.reclamarArchivo(new Date("2026-11-08T12:00:00Z"), 60_000);
+    expect(updateMany.mock.calls[0][0].data.intentos).toBeUndefined();
+    expect(updateMany.mock.calls[0][0].where).toMatchObject({ estado: "PENDIENTE" });
+  });
+});
+
+describe("listados Meet existentes excluyen referencias de origen Zoom (unidad)", () => {
+  it("el predicado compartido coincide con el prefijo de referencia del inventario Zoom", () => {
+    expect(referenciaExternaArchivoZoom("cta", "uuid", "clave", hash).startsWith(PREFIJO_REFERENCIA_ARCHIVO_ZOOM)).toBe(true);
+    expect(filtroArchivoReunionMeet()).toEqual({ NOT: { externalResourceName: { startsWith: PREFIJO_REFERENCIA_ARCHIVO_ZOOM } } });
+  });
+
+  it("listarArchivosVisibles aplica el predicado compartido", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const repo = crearPrismaArchivosRepositoryAdapter({ archivoReunion: { findMany } } as unknown as PrismaClient);
+    await repo.listarArchivosVisibles({ id: "u", rol: "ADMINISTRACION" });
+    expect(findMany.mock.calls[0][0].where.AND).toContainEqual(filtroArchivoReunionMeet());
   });
 });
 
@@ -306,6 +346,40 @@ describe.skipIf(!enabled)("repositorio Zoom con PostgreSQL real", () => {
     // El nuevo worker registra el fallo y el recurso queda visible, sin reintentos mientras no sea descargable.
     expect(await repo2.registrarFallo(recuperado!, { tipo: "REINTENTABLE", codigo: "ZOOM_404", proximoIntentoAt: null })).toBe(true);
     expect(await repo.reclamarArchivo(new Date(reloj.getTime() + 3_600_000), 60_000)).toBeNull();
+  });
+
+  it("cada recuperación de un lease vencido consume un intento visible para el worker", async () => {
+    await guardar(referencia(), [recurso()]);
+    const inicial = (await repo.reclamarArchivo(reloj, 60_000))!;
+    let ahora = reloj;
+    for (const esperado of [1, 2, 3]) {
+      ahora = new Date(ahora.getTime() + 61_000);
+      const lease = (await repo2.reclamarArchivo(ahora, 60_000))!;
+      expect(lease).toMatchObject({ archivoId: inicial.archivoId, version: inicial.version + esperado });
+      expect(await repo2.obtenerArchivoReclamado(lease)).toMatchObject({ intentos: esperado });
+    }
+    expect(await db.archivoOrigenZoom.findUniqueOrThrow({ where: { id: inicial.archivoId } }))
+      .toMatchObject({ estado: "COPIANDO", intentos: 3, errorCodigo: "LEASE_VENCIDO" });
+  });
+
+  it("las referencias locales Zoom no aparecen en los listados Meet existentes; las de Meet sí", async () => {
+    const r = await guardar(referencia(), [recurso()]);
+    await repo.vincularOcurrencia(r.ocurrenciaId, eventoA, actor);
+    const { driveFileId } = await reclamarYConservar();
+    const zoomRef = await db.archivoReunion.findUniqueOrThrow({ where: { driveFileId } });
+    expect(zoomRef.externalResourceName.startsWith(PREFIJO_REFERENCIA_ARCHIVO_ZOOM)).toBe(true);
+    const meetRef = await db.archivoReunion.create({ data: {
+      eventoProveedorId: eventoMeet, tipo: "GRABACION", externalResourceName: `conferenceRecords/${randomUUID()}/recordings/r1`,
+      driveFileId: `drive-meet-${randomUUID()}`, nombre: "meet.mp4", capturadoAt: reloj
+    } });
+
+    const visibles = await crearPrismaArchivosRepositoryAdapter(db).listarArchivosVisibles({ id: tag, rol: "DOCENTE" });
+    expect(visibles.map((a) => a.id)).toContain(meetRef.id);
+    expect(visibles.map((a) => a.id)).not.toContain(zoomRef.id);
+
+    const tablero = await obtenerDashboardDocente(db, tag, reloj);
+    expect(tablero.recentRecordings.map((g) => g.id)).toContain(meetRef.id);
+    expect(tablero.recentRecordings.map((g) => g.id)).not.toContain(zoomRef.id);
   });
 
   it("registrar fallo: backoff persistente, espera de cupo sin consumir intentos y revisión al límite", async () => {
@@ -538,6 +612,46 @@ describe.skipIf(!enabled)("repositorio Zoom con PostgreSQL real", () => {
         .toMatchObject({ tipo: "SIN_CUPO", disponibleBytes: 10n * GB });
       expect(await repo.reservarTransferencia(rec, { bytes: 11n * GB, prioridad: "RECIENTE", ahora: reloj, limites: LIMITES }))
         .toMatchObject({ tipo: "RESERVADA", bytesReservados: 11n * GB });
+    });
+
+    it("recuperar un lease vencido cierra su reserva con los bytes confirmados y no la duplica", async () => {
+      const [lease1] = await leases(1);
+      const solicitud = (ahora: Date, bytes: bigint) => ({ bytes, prioridad: "RECIENTE" as const, ahora, limites: LIMITES });
+      expect((await repo.reservarTransferencia(lease1, solicitud(reloj, 50n * GB))).tipo).toBe("RESERVADA");
+      expect(await repo.guardarProgreso(lease1, { bytesConfirmados: 10n * GB })).toBe(true);
+
+      // El worker cae tras confirmar 10 GB: al recuperar el lease, su reserva se cierra con lo transferido.
+      const t2 = new Date(reloj.getTime() + 601_000);
+      const lease2 = (await repo2.reclamarArchivo(t2, 600_000))!;
+      expect(await db.reservaTransferenciaZoom.findMany({ where: { archivoOrigenId: lease1.archivoId } })).toEqual([
+        expect.objectContaining({ bytesReservados: 50n * GB, ajustadoBytes: 10n * GB, liberadoAt: t2 })
+      ]);
+      expect((await repo2.reservarTransferencia(lease2, solicitud(t2, 40n * GB))).tipo).toBe("RESERVADA");
+
+      // Cae otra vez sin avanzar: la reserva de ese intento queda en 0 y el resto se reserva una sola vez.
+      const t3 = new Date(t2.getTime() + 601_000);
+      const lease3 = (await repo.reclamarArchivo(t3, 600_000))!;
+      expect((await repo.reservarTransferencia(lease3, solicitud(t3, 40n * GB))).tipo).toBe("RESERVADA");
+      const reservas = await db.reservaTransferenciaZoom.findMany({
+        where: { archivoOrigenId: lease1.archivoId }, orderBy: { leaseVersion: "asc" }
+      });
+      expect(reservas.map((r) => [r.bytesReservados, r.ajustadoBytes, r.bytesConfirmadosInicio])).toEqual([
+        [50n * GB, 10n * GB, 0n], [40n * GB, 0n, 10n * GB], [40n * GB, null, 10n * GB]
+      ]);
+      expect(reservas.reduce((suma, r) => suma + (r.ajustadoBytes ?? r.bytesReservados), 0n)).toBe(50n * GB);
+    });
+
+    it("al reservar también se cierran reservas abiertas de leases anteriores (caída entre reclamo y cierre)", async () => {
+      const [lease] = await leases(1);
+      await db.reservaTransferenciaZoom.create({ data: {
+        archivoOrigenId: lease.archivoId, leaseVersion: lease.version - 1, bytesReservados: 50n * GB,
+        bytesConfirmadosInicio: 0n, prioridad: "RECIENTE", reservadoAt: reloj
+      } });
+      expect(await repo.guardarProgreso(lease, { bytesConfirmados: 5n * GB })).toBe(true);
+      expect(await repo.reservarTransferencia(lease, { bytes: 45n * GB, prioridad: "RECIENTE", ahora: reloj, limites: LIMITES }))
+        .toMatchObject({ tipo: "RESERVADA" });
+      const anterior = await db.reservaTransferenciaZoom.findFirstOrThrow({ where: { leaseVersion: lease.version - 1 } });
+      expect(anterior).toMatchObject({ ajustadoBytes: 5n * GB, liberadoAt: reloj });
     });
 
     it("la liberación ajusta a bytes transferidos y un lease obsoleto no reserva", async () => {

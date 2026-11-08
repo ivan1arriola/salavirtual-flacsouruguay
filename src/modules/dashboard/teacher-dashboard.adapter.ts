@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { filtroArchivoReunionMeet } from "@/src/modules/archivos/api";
 import {
   cohostsConfirmados,
   extraerCohostEmailsDeInstancia,
@@ -100,7 +101,8 @@ export async function obtenerDashboardDocente(
             estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
             ...teacherCondition
           }
-        }
+        },
+        AND: [filtroArchivoReunionMeet()]
       },
       orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
       take: 3,

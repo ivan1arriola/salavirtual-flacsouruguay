@@ -97,9 +97,23 @@ export function asignarNombresDestinoZoom(
   }, inicial).asignados;
 }
 
+/**
+ * Prefijo de `externalResourceName` de toda referencia local creada desde el inventario
+ * Zoom. Los consumidores Meet existentes lo usan para excluir esas filas.
+ */
+export const PREFIJO_REFERENCIA_ARCHIVO_ZOOM = "zoom/";
+
 /** `externalResourceName` de la referencia local: no expone cuenta ni UUID. */
 export function referenciaExternaArchivoZoom(cuentaZoomId: string, uuid: string, claveOrigen: string, hash: HashZoom): string {
-  return `zoom/${hash(cuentaZoomId)}/${hash(uuid)}/${claveOrigen}`;
+  return `${PREFIJO_REFERENCIA_ARCHIVO_ZOOM}${hash(cuentaZoomId)}/${hash(uuid)}/${claveOrigen}`;
+}
+
+/**
+ * Bytes que cuenta la reserva de un intento abandonado (lease vencido): lo que Drive
+ * confirmó desde que se reservó. Nunca negativo (una sesión reiniciada no resta).
+ */
+export function bytesTransferidosReservaAbandonadaZoom(bytesConfirmadosInicio: bigint, bytesConfirmadosActuales: bigint): bigint {
+  return bytesConfirmadosActuales > bytesConfirmadosInicio ? bytesConfirmadosActuales - bytesConfirmadosInicio : 0n;
 }
 
 /** Tipo local del ArchivoReunion: solo el MP4 es grabación; audios y auxiliares quedan como OTRO. */

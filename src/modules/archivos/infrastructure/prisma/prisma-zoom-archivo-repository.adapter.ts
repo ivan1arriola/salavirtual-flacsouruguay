@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import {
   asignarNombresDestinoZoom,
+  bytesTransferidosReservaAbandonadaZoom,
   estadoInicialArchivoZoom,
   estadoTrasReinventarioZoom,
   evaluarCupoTransferenciaZoom,
@@ -69,6 +70,27 @@ function leaseVigente(lease: LeaseArchivoZoom) {
 
 function esUnicidadViolada(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2002";
+}
+
+/**
+ * Cierra las reservas abiertas de leases anteriores del archivo (intentos caídos) con los
+ * bytes que Drive confirmó durante ese intento, para que un reclamo repetido nunca vuelva
+ * a contar el tamaño completo: el nuevo intento reserva solo lo que falta.
+ */
+async function cerrarReservasDeLeasesAnteriores(cliente: Tx, archivoId: string, versionVigente: number, ahora: Date): Promise<void> {
+  const abiertas = await cliente.reservaTransferenciaZoom.findMany({
+    where: { archivoOrigenId: archivoId, liberadoAt: null, leaseVersion: { lt: versionVigente } },
+    select: { id: true, bytesConfirmadosInicio: true, archivoOrigen: { select: { bytesConfirmados: true } } }
+  });
+  for (const reserva of abiertas) {
+    await cliente.reservaTransferenciaZoom.updateMany({
+      where: { id: reserva.id, liberadoAt: null },
+      data: {
+        ajustadoBytes: bytesTransferidosReservaAbandonadaZoom(reserva.bytesConfirmadosInicio, reserva.archivoOrigen.bytesConfirmados),
+        liberadoAt: ahora
+      }
+    });
+  }
 }
 
 /** Serializa operaciones de una ocurrencia (confirmación, vínculo, desvínculo). */
@@ -218,16 +240,28 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
           where: elegibleParaReclamo(ahora),
           orderBy: [{ proximoIntentoAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }, { id: "asc" }],
           take: CANDIDATOS_POR_RONDA,
-          select: { id: true, leaseVersion: true }
+          select: { id: true, leaseVersion: true, estado: true }
         });
         if (candidatos.length === 0) return null;
         for (const candidato of candidatos) {
-          // Concurrencia optimista: solo gana quien todavía ve la versión leída.
+          const version = candidato.leaseVersion + 1;
+          // Un lease vencido es un intento caído (p. ej. el worker murió): consume un intento
+          // para que el consumidor pueda cortar bucles de caídas con REQUIERE_REVISION.
+          const leaseVencido = candidato.estado === "COPIANDO";
+          // Concurrencia optimista: solo gana quien todavía ve la versión y el estado leídos.
           const { count } = await db.archivoOrigenZoom.updateMany({
-            where: { id: candidato.id, leaseVersion: candidato.leaseVersion, AND: [elegibleParaReclamo(ahora)] },
-            data: { estado: "COPIANDO", leaseVersion: candidato.leaseVersion + 1, leaseHasta: venceAt }
+            where: { id: candidato.id, leaseVersion: candidato.leaseVersion, estado: candidato.estado, AND: [elegibleParaReclamo(ahora)] },
+            data: {
+              estado: "COPIANDO", leaseVersion: version, leaseHasta: venceAt,
+              ...(leaseVencido ? {
+                intentos: { increment: 1 }, errorCodigo: "LEASE_VENCIDO",
+                errorDetalle: "El intento anterior no renovó su lease y se recuperó."
+              } : {})
+            }
           });
-          if (count === 1) return { archivoId: candidato.id, version: candidato.leaseVersion + 1, venceAt };
+          if (count !== 1) continue;
+          if (leaseVencido) await cerrarReservasDeLeasesAnteriores(db, candidato.id, version, ahora);
+          return { archivoId: candidato.id, version, venceAt };
         }
       }
       return null;
@@ -349,8 +383,10 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
       // Un único bloqueo transaccional para todo el cupo: suma y reserva son atómicas entre workers.
       return db.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CLAVE_BLOQUEO_CUPO}))`;
-        const vigente = await tx.archivoOrigenZoom.findFirst({ where: leaseVigente(lease), select: { id: true } });
+        const vigente = await tx.archivoOrigenZoom.findFirst({ where: leaseVigente(lease), select: { bytesConfirmados: true } });
         if (!vigente) return { tipo: "LEASE_OBSOLETO" } as const;
+        // Red de seguridad si el proceso cayó entre el reclamo y el cierre de reservas anteriores.
+        await cerrarReservasDeLeasesAnteriores(tx, lease.archivoId, lease.version, ahora);
         const reservas = await tx.reservaTransferenciaZoom.findMany({
           where: { reservadoAt: { gt: new Date(ahora.getTime() - limites.ventanaMs) } },
           select: { reservadoAt: true, bytesReservados: true, ajustadoBytes: true }
@@ -365,7 +401,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
         const reserva = await tx.reservaTransferenciaZoom.create({
           data: {
             archivoOrigenId: lease.archivoId, leaseVersion: lease.version, bytesReservados: solicitud.bytes,
-            prioridad: solicitud.prioridad, reservadoAt: ahora
+            bytesConfirmadosInicio: vigente.bytesConfirmados, prioridad: solicitud.prioridad, reservadoAt: ahora
           },
           select: { id: true }
         });

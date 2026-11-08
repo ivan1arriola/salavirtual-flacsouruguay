@@ -113,6 +113,7 @@ CREATE TABLE "ReservaTransferenciaZoom" (
     "archivoOrigenId" TEXT NOT NULL,
     "leaseVersion" INTEGER NOT NULL,
     "bytesReservados" BIGINT NOT NULL,
+    "bytesConfirmadosInicio" BIGINT NOT NULL DEFAULT 0,
     "prioridad" "PrioridadTransferenciaZoom" NOT NULL,
     "reservadoAt" TIMESTAMP(3) NOT NULL,
     "ajustadoBytes" BIGINT,

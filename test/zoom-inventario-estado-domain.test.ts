@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { nombreArchivoZoom, normalizarInventarioZoom } from "../src/modules/archivos/domain/zoom-archivos.domain";
 import {
+  PREFIJO_REFERENCIA_ARCHIVO_ZOOM,
   asignarNombresDestinoZoom,
+  bytesTransferidosReservaAbandonadaZoom,
   estadoInicialArchivoZoom,
   estadoTrasReinventarioZoom,
   evaluarCupoTransferenciaZoom,
@@ -113,9 +115,16 @@ describe("nombres de destino sin colisiones dentro de la ocurrencia", () => {
 });
 
 describe("referencias, tipos y errores saneados", () => {
-  it("la referencia externa no expone la cuenta ni el UUID", () => {
+  it("la referencia externa no expone la cuenta ni el UUID y usa el prefijo Zoom compartido", () => {
     expect(referenciaExternaArchivoZoom("cta-1", "uuid/ab==", "clave-1", hash))
       .toBe("zoom/h(cta-1)/h(uuid/ab==)/clave-1");
+    expect(PREFIJO_REFERENCIA_ARCHIVO_ZOOM).toBe("zoom/");
+  });
+
+  it("una reserva abandonada cuenta solo lo confirmado durante su intento", () => {
+    expect(bytesTransferidosReservaAbandonadaZoom(10n * GB, 25n * GB)).toBe(15n * GB);
+    expect(bytesTransferidosReservaAbandonadaZoom(10n * GB, 10n * GB)).toBe(0n);
+    expect(bytesTransferidosReservaAbandonadaZoom(10n * GB, 0n)).toBe(0n);
   });
 
   it("clasifica el tipo local sin presentar audios ni auxiliares como el video principal", () => {

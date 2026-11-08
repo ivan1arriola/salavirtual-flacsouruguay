@@ -100,6 +100,9 @@ describe("schema de inventario Zoom", () => {
     expect(campo(m, "prioridad")).toMatch(/PrioridadTransferenciaZoom/);
     expect(campo(m, "reservadoAt")).toMatch(/DateTime$/);
     expect(campo(m, "liberadoAt")).toMatch(/DateTime\?/);
+    // Offset confirmado al reservar: permite cerrar la reserva de un intento caído con lo transferido.
+    expect(campo(m, "bytesConfirmadosInicio")).toMatch(/BigInt\s+@default\(0\)/);
+    expect(sql).toMatch(/"bytesConfirmadosInicio" BIGINT NOT NULL DEFAULT 0/);
     expect(m).toContain("@@index([reservadoAt])");
     expect(m).toMatch(/archivoOrigen\s+ArchivoOrigenZoom\s+@relation\([^)]*onDelete: Restrict/);
   });
