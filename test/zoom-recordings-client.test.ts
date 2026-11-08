@@ -17,7 +17,7 @@ afterEach(() => {
 
 const fixture = (nombre: string) => readFileSync(`test/fixtures/zoom/${nombre}.json`, "utf8");
 const json = (texto: string, status = 200, headers?: Record<string, string>) => new Response(texto, { status, headers });
-const ventana = { cuentaZoomId: "cuenta-1", desde: "2026-11-01", hasta: "2026-11-30" } as const;
+const ventana = { cuentaZoomId: "cuenta-1", desde: "2026-11-03", hasta: "2026-11-30" } as const;
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
 async function errorDe(promesa: Promise<unknown>): Promise<ZoomApiError> {
@@ -57,12 +57,26 @@ describe("listado de grabaciones por anfitrión", () => {
 
     const url1 = new URL(String(fetchMock.mock.calls[0][0]));
     expect(decodeURIComponent(url1.pathname)).toBe("/v2/users/host@example.com/recordings");
-    expect(url1.searchParams.get("from")).toBe("2026-10-31");
+    expect(url1.searchParams.get("from")).toBe("2026-11-02");
     expect(url1.searchParams.get("to")).toBe("2026-12-01");
     expect(url1.searchParams.get("trash")).toBeNull();
     expect(url1.searchParams.get("next_page_token")).toBeNull();
     expect(new URL(String(fetchMock.mock.calls[1][0])).searchParams.get("next_page_token")).toBe("TOKEN_PAGINA_2");
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer tok");
+  });
+
+  it.each([
+    ["ventana completa", "2026-11-03", "2026-11-30"],
+    ["año bisiesto", "2028-02-01", "2028-02-28"],
+    ["límite de año", "2026-12-10", "2027-01-06"],
+    ["ventana de un día", "2026-11-03", "2026-11-03"]
+  ])("el rango enviado a Zoom nunca supera 30 días (%s)", async (_nombre, desde, hasta) => {
+    const fetchMock = vi.fn().mockResolvedValue(json(JSON.stringify({ meetings: [], next_page_token: "" })));
+    vi.stubGlobal("fetch", fetchMock);
+    await listarGrabacionesAnfitrionZoomHttp("tok", "h", { ...ventana, desde, hasta }, null);
+    const q = new URL(String(fetchMock.mock.calls[0][0])).searchParams;
+    const dias = (Date.parse(q.get("to")!) - Date.parse(q.get("from")!)) / 86_400_000 + 1;
+    expect(dias).toBeLessThanOrEqual(30);
   });
 
   it("consulta la papelera con trash=true", async () => {
@@ -88,10 +102,10 @@ describe("listado de grabaciones por anfitrión", () => {
     expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe("RESPUESTA_INCOMPLETA");
   });
 
-  it("rechaza ventanas de más de 30 días sin consultar Zoom", async () => {
+  it("rechaza ventanas de más de 28 días sin consultar Zoom", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", { ...ventana, hasta: "2026-12-15" }, null));
+    const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", { ...ventana, desde: "2026-11-01", hasta: "2026-11-29" }, null));
     expect(error.code).toBe("VENTANA_INVALIDA");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -245,6 +259,18 @@ describe("inventario de una ocurrencia", () => {
     const error = await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "u"));
     expect(error.code).toBe("ERROR_ZOOM");
     expect(`${error.message} ${error.recurso}`).not.toContain("SECRETO");
+  });
+});
+
+describe("errores de red", () => {
+  it("no filtran la URL firmada contenida en el error de fetch", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed: https://ssrweb.zoom.us/x?Signature=SECRETO")));
+    const inventario = await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "u"));
+    const listado = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null));
+    for (const e of [inventario, listado]) {
+      expect(e.code).toBe("ERROR_RED");
+      expect(`${e.message} ${e.recurso}`).not.toContain("SECRETO");
+    }
   });
 });
 

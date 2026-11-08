@@ -1,5 +1,5 @@
 import type { ReferenciaOcurrenciaZoom, ResultadoPagina } from "@/src/modules/archivos/domain/zoom-archivos.types";
-import { particionarPeriodoZoom, type VentanaZoom } from "@/src/modules/archivos/domain/zoom-recuperacion.domain";
+import { DIAS_VENTANA_LISTADO_GRABACIONES, particionarPeriodoZoom, type VentanaZoom } from "@/src/modules/archivos/domain/zoom-recuperacion.domain";
 import {
   ZoomApiError,
   codificarUuidZoom,
@@ -13,7 +13,12 @@ const ZONA_NEGOCIO = "America/Montevideo";
 const TIEMPO_MAXIMO_MS = 15_000;
 const MS_POR_DIA = 86_400_000;
 
-/** Ventana de consulta para un anfitrión: fechas inclusivas en hora de Montevideo. */
+/**
+ * Ventana de consulta para un anfitrión: fechas inclusivas en hora de Montevideo, de a lo sumo
+ * 28 días (DIAS_VENTANA_LISTADO_GRABACIONES). Como se expande ±1 día, Zoom recibe hasta 30 días.
+ * Zoom documenta un máximo de 1 mes por consulta; ese límite real debe confirmarse
+ * empíricamente antes de producción.
+ */
 export type VentanaConsultaZoom = VentanaZoom & Readonly<{
   cuentaZoomId: string;
   /** true consulta la papelera de Zoom (recuperaciones). */
@@ -72,7 +77,7 @@ function desplazarDia(fecha: string, dias: number): string {
 
 function validarVentana(ventana: VentanaZoom): void {
   try {
-    if (particionarPeriodoZoom(ventana.desde, ventana.hasta).length === 1) return;
+    if (particionarPeriodoZoom(ventana.desde, ventana.hasta, DIAS_VENTANA_LISTADO_GRABACIONES).length === 1) return;
   } catch {
     // Fecha inválida o rango invertido: se informa abajo con el mismo código.
   }

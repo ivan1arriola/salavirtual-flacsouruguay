@@ -7,6 +7,7 @@ export type CodigoErrorZoom =
   | "LIMITE_TASA"
   | "SOLICITUD_RECHAZADA"
   | "ERROR_ZOOM"
+  | "ERROR_RED"
   | "RESPUESTA_INCOMPLETA"
   | "PAGINACION_REPETIDA"
   | "VENTANA_INVALIDA"
@@ -77,6 +78,24 @@ async function descartarCuerpo(response: Response): Promise<void> {
 }
 
 /**
+ * Los errores de red de undici pueden citar la URL (firmada) en su mensaje: se reemplazan por un
+ * error público con código y recurso. La cancelación pedida por el llamador se conserva tal cual.
+ */
+async function hacerSinFiltrarRed(
+  hacer: (token: string) => Promise<Response>,
+  token: string,
+  recurso: string,
+  signal?: AbortSignal
+): Promise<Response> {
+  try {
+    return await hacer(token);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new ZoomApiError("ERROR_RED", recurso);
+  }
+}
+
+/**
  * Ejecuta una solicitud autenticada con a lo sumo un reintento por 401 (token renovado) y
  * a lo sumo un reintento por 429 (respetando Retry-After). Devuelve cualquier otra respuesta
  * para que el llamador la interprete.
@@ -93,7 +112,7 @@ export async function pedirZoom(
   let esperado429 = false;
 
   for (;;) {
-    const response = await hacer(token);
+    const response = await hacerSinFiltrarRed(hacer, token, recurso, signal);
     if (response.status === 401) {
       await descartarCuerpo(response);
       if (!proveedor || renovado) throw new ZoomApiError("NO_AUTORIZADO", recurso, { status: 401 });

@@ -218,4 +218,17 @@ describe("descarga de archivos Zoom", () => {
     expect(`${e403.message} ${e403.recurso}`).not.toMatch(/SECRETO|ssrweb|Signature/);
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe("NO_ENCONTRADO");
   });
+
+  it("errores de red no filtran la URL ni el Location firmados", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockRejectedValueOnce(new TypeError(`fetch failed ${URL_ZOOM}`))
+      .mockResolvedValueOnce(redireccion(URL_FIRMADA))
+      .mockRejectedValueOnce(new TypeError(`fetch failed ${URL_FIRMADA}`)));
+    const e1 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
+    const e2 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
+    for (const e of [e1, e2]) {
+      expect(e.code).toBe("ERROR_RED");
+      expect(`${e.message} ${e.recurso}`).not.toMatch(/SECRETO|Signature|ssrweb|SANEADO/);
+    }
+  });
 });
