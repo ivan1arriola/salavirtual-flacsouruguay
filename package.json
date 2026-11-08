@@ -43,6 +43,8 @@
     "assign:meet-hosts": "tsx scripts/assign-future-meet-hosts.ts --apply",
     "recalcular:estados-reuniones:dry": "tsx scripts/recalcular-estados-solicitudes.ts",
     "recalcular:estados-reuniones": "tsx scripts/recalcular-estados-solicitudes.ts --apply",
+    "forzar:modalidad-serie:dry": "tsx scripts/forzar-modalidad-serie.ts",
+    "forzar:modalidad-serie": "tsx scripts/forzar-modalidad-serie.ts --apply",
     "agrupar:salud-mental:dry": "tsx scripts/agrupar-salud-mental-por-horario.ts",
     "agrupar:salud-mental": "tsx scripts/agrupar-salud-mental-por-horario.ts --apply",
     "test": "vitest run",
