@@ -188,14 +188,16 @@ function sanearSegmento(valor: string, largoMaximo: number): string {
 
 /**
  * Nombre legible y seguro para el archivo dentro de la carpeta del encuentro:
- * fecha_TIPO_variante_idEstable.extension. No contiene separadores de ruta.
+ * fecha_TIPO_variante_idEstable[_sufijo].extension. No contiene separadores de ruta.
+ * El sufijo opcional (saneado) desambigua nombres que colisionan tras sanear o truncar.
  */
-export function nombreArchivoZoom(ocurrencia: ReferenciaOcurrenciaZoom, archivo: ArchivoOrigenZoom): string {
+export function nombreArchivoZoom(ocurrencia: ReferenciaOcurrenciaZoom, archivo: ArchivoOrigenZoom, sufijo?: string): string {
   const fecha = ocurrencia.inicioRealAt.toISOString().slice(0, 10);
   const tipo = sanearSegmento(archivo.tipoOriginal, 30) || "OTRO";
   const variante = archivo.variante ? sanearSegmento(archivo.variante, 60) : "";
   const identificador = sanearSegmento(archivo.archivoZoomId ?? archivo.claveOrigen, 60) || "sin-id";
   const extension = archivo.extension ? sanearSegmento(archivo.extension.replace(/^\./, ""), 10) : "";
-  const cuerpo = [fecha, tipo, variante, identificador].filter((parte) => parte !== "").join("_");
+  const desambiguador = sufijo ? sanearSegmento(sufijo, 80) : "";
+  const cuerpo = [fecha, tipo, variante, identificador, desambiguador].filter((parte) => parte !== "").join("_");
   return extension ? `${cuerpo}.${extension}` : cuerpo;
 }
