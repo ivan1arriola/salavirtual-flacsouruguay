@@ -35,13 +35,14 @@ type TokenCacheEntry = {
 
 const tokenCache = new Map<string, TokenCacheEntry>();
 
-export async function obtenerZoomAccessToken(creds: ZoomCredentials): Promise<string> {
-  const cacheKey = `${creds.accountId}:${creds.clientId}`;
-  const cached = tokenCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.accessToken;
-  }
+const renovacionesEnCurso = new Map<string, Promise<string>>();
 
+function claveCache(creds: ZoomCredentials): string {
+  return `${creds.accountId}:${creds.clientId}`;
+}
+
+async function solicitarNuevoToken(creds: ZoomCredentials): Promise<string> {
+  const cacheKey = claveCache(creds);
   const basicAuth = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString("base64");
   const url = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(creds.accountId)}`;
 
@@ -63,6 +64,51 @@ export async function obtenerZoomAccessToken(creds: ZoomCredentials): Promise<st
   tokenCache.set(cacheKey, { accessToken: data.access_token, expiresAt });
 
   return data.access_token;
+}
+
+/** Una sola solicitud OAuth en vuelo por cuenta: las llamadas concurrentes comparten el resultado. */
+function renovarCompartido(creds: ZoomCredentials): Promise<string> {
+  const cacheKey = claveCache(creds);
+  const enCurso = renovacionesEnCurso.get(cacheKey);
+  if (enCurso) return enCurso;
+  const promesa = solicitarNuevoToken(creds).finally(() => renovacionesEnCurso.delete(cacheKey));
+  renovacionesEnCurso.set(cacheKey, promesa);
+  return promesa;
+}
+
+export async function obtenerZoomAccessToken(creds: ZoomCredentials): Promise<string> {
+  const cached = tokenCache.get(claveCache(creds));
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.accessToken;
+  }
+  return renovarCompartido(creds);
+}
+
+/**
+ * Descarta el token que Zoom rechazó (401) y entrega uno nuevo. Si otra solicitud ya lo renovó
+ * mientras tanto, reutiliza ese token en vez de pedir otro: seguro ante concurrencia.
+ */
+export async function invalidarZoomAccessToken(creds: ZoomCredentials, tokenRechazado: string): Promise<string> {
+  const cacheKey = claveCache(creds);
+  const cached = tokenCache.get(cacheKey);
+  if (cached && cached.accessToken !== tokenRechazado && cached.expiresAt > Date.now()) {
+    return cached.accessToken;
+  }
+  if (cached && cached.accessToken === tokenRechazado) tokenCache.delete(cacheKey);
+  return renovarCompartido(creds);
+}
+
+/** Origen de tokens para clientes que reintentan una sola vez ante un 401. */
+export type ProveedorTokenZoom = Readonly<{
+  obtener: () => Promise<string>;
+  renovar: (tokenRechazado: string) => Promise<string>;
+}>;
+
+export function crearProveedorTokenZoom(creds: ZoomCredentials): ProveedorTokenZoom {
+  return {
+    obtener: () => obtenerZoomAccessToken(creds),
+    renovar: (tokenRechazado) => invalidarZoomAccessToken(creds, tokenRechazado)
+  };
 }
 
 export async function crearReunionZoomHttp(

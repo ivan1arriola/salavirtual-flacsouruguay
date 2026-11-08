@@ -33,4 +33,16 @@ describe("reportes de asistencia Zoom", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
     await expect(listarParticipantesReunionPasadaZoomHttp("token", "uuid")).rejects.toThrow("503");
   });
+  it("conserva el estado de cada participante (sala de espera incluida)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      participants: [
+        { id: "p1", name: "Ana", status: "in_meeting", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T15:00:00Z" },
+        { id: "p2", name: "Beto", status: "in_waiting_room", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" },
+        { id: "p3", name: "Caro", status: "desconocido", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" },
+        { id: "p4", name: "Dani", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" }
+      ]
+    }), { status: 200 })));
+    const rows = await listarParticipantesReunionPasadaZoomHttp("token", "uuid");
+    expect(rows?.map((r) => r.status)).toEqual(["in_meeting", "in_waiting_room", null, null]);
+  });
 });

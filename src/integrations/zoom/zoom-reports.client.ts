@@ -6,7 +6,15 @@ export type ZoomSesionParticipante = Readonly<{
   email: string | null;
   joinTime: Date;
   leaveTime: Date;
+  /** Estado informado por Zoom; las personas en sala de espera no estuvieron en la reunión. */
+  status: EstadoParticipanteZoom | null;
 }>;
+
+export type EstadoParticipanteZoom = "in_meeting" | "in_waiting_room";
+
+function estadoParticipante(valor: unknown): EstadoParticipanteZoom | null {
+  return valor === "in_meeting" || valor === "in_waiting_room" ? valor : null;
+}
 
 /**
  * Consulta el reporte histórico de una instancia de Zoom.
@@ -43,6 +51,7 @@ export async function listarParticipantesReunionPasadaZoomHttp(
         email?: string;
         join_time?: string;
         leave_time?: string;
+        status?: string;
       }>;
       next_page_token?: string;
     };
@@ -57,7 +66,8 @@ export async function listarParticipantesReunionPasadaZoomHttp(
         nombre: p.name?.trim() || "Sin nombre",
         email: (p.user_email || p.email || "").trim() || null,
         joinTime,
-        leaveTime
+        leaveTime,
+        status: estadoParticipante(p.status)
       });
     }
     pagina = data.next_page_token ?? "";

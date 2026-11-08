@@ -1,0 +1,17 @@
+{
+  "uuid": "AbCdEf1234567890+/==",
+  "id": 81234567890,
+  "host_id": "HOST_SANEADO_1",
+  "topic": "Seminario de Políticas Públicas",
+  "start_time": "2026-11-05T14:02:11Z",
+  "password": "SANEADA",
+  "share_url": "https://zoom.us/rec/share/SANEADO",
+  "recording_play_passcode": "SANEADO",
+  "recording_files": [
+    { "id": "f-mp4-1", "recording_start": "2026-11-05T14:02:15Z", "recording_end": "2026-11-05T15:35:00Z", "file_type": "MP4", "file_extension": "MP4", "file_size": 120000000, "play_url": "https://zoom.us/rec/play/SANEADO", "download_url": "https://zoom.us/rec/download/SANEADO-1", "status": "completed", "recording_type": "shared_screen_with_speaker_view" },
+    { "id": "f-tl-1", "recording_start": "2026-11-05T14:02:15Z", "file_type": "TIMELINE", "file_extension": "JSON", "file_size": 2048, "download_url": "https://zoom.us/rec/download/SANEADO-5", "status": "completed", "recording_type": "timeline" }
+  ],
+  "participant_audio_files": [
+    { "id": "f-aud-1", "recording_start": "2026-11-05T14:02:15Z", "file_type": "M4A", "file_extension": "M4A", "file_size": 900000, "file_name": "Ana Perez", "download_url": "https://zoom.us/rec/download/SANEADO-4", "status": "completed" }
+  ]
+}

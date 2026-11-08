@@ -1,0 +1,31 @@
+{
+  "from": "2026-10-31",
+  "to": "2026-11-30",
+  "page_size": 300,
+  "next_page_token": "TOKEN_PAGINA_2",
+  "meetings": [
+    {
+      "uuid": "AbCdEf1234567890+/==",
+      "id": 81234567890,
+      "account_id": "ACCT_SANEADA",
+      "host_id": "HOST_SANEADO_1",
+      "topic": "Seminario de Políticas Públicas",
+      "type": 8,
+      "start_time": "2026-11-05T14:02:11Z",
+      "timezone": "America/Montevideo",
+      "duration": 95,
+      "total_size": 123456789,
+      "recording_count": 3,
+      "share_url": "https://zoom.us/rec/share/SANEADO",
+      "password": "SANEADA",
+      "recording_files": [
+        { "id": "f-mp4-1", "meeting_id": "AbCdEf1234567890+/==", "recording_start": "2026-11-05T14:02:15Z", "recording_end": "2026-11-05T15:35:00Z", "file_type": "MP4", "file_extension": "MP4", "file_size": 120000000, "play_url": "https://zoom.us/rec/play/SANEADO", "download_url": "https://zoom.us/rec/download/SANEADO-1", "status": "completed", "recording_type": "shared_screen_with_speaker_view" },
+        { "id": "f-m4a-1", "recording_start": "2026-11-05T14:02:15Z", "recording_end": "2026-11-05T15:35:00Z", "file_type": "M4A", "file_extension": "M4A", "file_size": 3000000, "download_url": "https://zoom.us/rec/download/SANEADO-2", "status": "completed", "recording_type": "audio_only" },
+        { "id": "f-chat-1", "recording_start": "2026-11-05T14:02:15Z", "recording_end": "2026-11-05T15:35:00Z", "file_type": "CHAT", "file_extension": "TXT", "file_size": 456, "download_url": "https://zoom.us/rec/download/SANEADO-3", "status": "completed", "recording_type": "chat_file" }
+      ],
+      "participant_audio_files": [
+        { "id": "f-aud-1", "recording_start": "2026-11-05T14:02:15Z", "recording_end": "2026-11-05T15:35:00Z", "file_type": "M4A", "file_extension": "M4A", "file_size": 900000, "file_name": "Ana Perez", "download_url": "https://zoom.us/rec/download/SANEADO-4", "status": "completed" }
+      ]
+    }
+  ]
+}
