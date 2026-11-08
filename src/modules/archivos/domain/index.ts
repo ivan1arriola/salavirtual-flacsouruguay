@@ -6,3 +6,6 @@ export * from "./grabaciones-filtro.domain";
 export * from "./meet-attendance-summary.domain";
 export * from "./meet-email-attribution.domain";
 export * from "./grabaciones-query.domain";
+export * from "./zoom-archivos.types";
+export * from "./zoom-archivos.domain";
+export * from "./zoom-recuperacion.domain";
