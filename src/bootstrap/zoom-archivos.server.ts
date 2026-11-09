@@ -1,0 +1,117 @@
+// Sin `import "server-only"`: lo consume el worker de Node (scripts/zoom-archivos-worker.ts), no Next.
+import { createHash } from "node:crypto";
+import { crearGoogleDriveAuthClient } from "../integrations/google/auth";
+import { verificarEscrituraCarpetaDrive } from "../integrations/google/drive";
+import { crearProveedorTokenZoom } from "../integrations/zoom/zoom-client";
+import { descifrarConfiguracion, cifrarConfiguracion } from "../lib/config/encryption";
+import { db } from "../lib/db";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configuracion/google-workspace.service";
+import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
+import {
+  barrerAnfitrionesZoomUseCase,
+  comprobarSaludWorkerZoom,
+  inventariarOcurrenciasVencidasZoomUseCase,
+  resolverCarpetaDestinoZoom,
+  transferirArchivoZoomUseCase,
+  type AnfitrionInventarioZoom,
+  type SaludWorkerZoom
+} from "../modules/archivos/application";
+import { leerConfiguracionZoomArchivos, type LeaseArchivoZoom } from "../modules/archivos/domain";
+import {
+  GoogleDriveArchivoStorageAdapter,
+  crearPrismaZoomArchivoRepositoryAdapter,
+  crearZoomOrigenAdapter
+} from "../modules/archivos/infrastructure";
+
+const TIPOS_ZOOM = ["ZOOM", "ZOOM_HISTORICO"] as const;
+const LOTE_INVENTARIO = 50;
+const DIAS_BARRIDO_RECIENTE = 3;
+
+/** SHA-256 completo: las marcas de origen en Drive exigen 64 caracteres hexadecimales. */
+const hash = (texto: string): string => createHash("sha256").update(texto).digest("hex");
+
+export type WorkerZoomArchivos = Readonly<{
+  config: ReturnType<typeof leerConfiguracionZoomArchivos>;
+  salud: SaludWorkerZoom;
+  reclamarArchivo: (ahora: Date, duracionMs: number) => Promise<LeaseArchivoZoom | null>;
+  transferir: (lease: LeaseArchivoZoom, signal: AbortSignal) => Promise<unknown>;
+  inventariarVencidas: () => Promise<unknown>;
+  barrerRecientes: () => Promise<unknown>;
+}>;
+
+/** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
+async function listarAnfitriones(cuentaZoomId: string): Promise<readonly AnfitrionInventarioZoom[]> {
+  const cuentas = await db.cuentaProveedor.findMany({
+    where: { proveedor: { tipo: { in: [...TIPOS_ZOOM] } }, externalAccountId: { not: null } },
+    select: { id: true, externalAccountId: true },
+    orderBy: { id: "asc" }
+  });
+  return cuentas.flatMap((c) =>
+    c.externalAccountId ? [{ cuentaZoomId, anfitrionZoomId: c.externalAccountId, cuentaProveedorId: c.id }] : []
+  );
+}
+
+export async function crearWorkerZoomArchivos(env: Readonly<Record<string, string | undefined>> = process.env): Promise<WorkerZoomArchivos> {
+  const config = leerConfiguracionZoomArchivos(env);
+  const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash });
+
+  const zoom = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+  const workspace = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+
+  const driveAuth = workspace
+    ? crearGoogleDriveAuthClient({
+        serviceAccountEmail: workspace.serviceAccountEmail,
+        privateKey: workspace.privateKey,
+        subject: workspace.serviceAccountSubject ?? undefined
+      })
+    : null;
+
+  const salud = await comprobarSaludWorkerZoom({
+    workspace,
+    zoomDisponible: zoom.disponible,
+    driveHistoricoId: config.driveHistoricoId,
+    verificarEscritura: (carpetaId) =>
+      driveAuth ? verificarEscrituraCarpetaDrive(driveAuth, carpetaId) : Promise.resolve(false)
+  });
+  if (!salud.ok || !zoom.disponible || !driveAuth || !workspace) {
+    return {
+      config, salud,
+      reclamarArchivo: async () => null,
+      transferir: async () => undefined,
+      inventariarVencidas: async () => undefined,
+      barrerRecientes: async () => undefined
+    };
+  }
+
+  const cuentaZoomId = zoom.accountId;
+  const auth = crearProveedorTokenZoom({ accountId: zoom.accountId, clientId: zoom.clientId, clientSecret: zoom.clientSecret });
+  const origen = crearZoomOrigenAdapter({ auth, cuentaZoomId, hash });
+  const storage = new GoogleDriveArchivoStorageAdapter({ auth: driveAuth, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
+  const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
+
+  return {
+    config,
+    salud,
+    reclamarArchivo: (ahora, duracionMs) => repo.reclamarArchivo(ahora, duracionMs),
+    transferir: (lease, signal) =>
+      transferirArchivoZoomUseCase(repo, origen, storage, lease, signal, {
+        ahora: () => new Date(),
+        limites: config.limites,
+        aleatorio: Math.random,
+        leaseMs: config.leaseMs,
+        heartbeatMs: config.heartbeatMs,
+        margenLeaseMs: config.margenLeaseMs,
+        bloqueBytes: config.bloqueBytes,
+        resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(storage, hash, archivo, raices)
+      }),
+    inventariarVencidas: () =>
+      inventariarOcurrenciasVencidasZoomUseCase(repo, origen, { ahora: new Date(), limite: LOTE_INVENTARIO, corteDias: config.corteDias }),
+    barrerRecientes: async () =>
+      barrerAnfitrionesZoomUseCase(repo, origen, {
+        anfitriones: await listarAnfitriones(cuentaZoomId),
+        ahora: new Date(),
+        diasAtras: DIAS_BARRIDO_RECIENTE,
+        corteDias: config.corteDias
+      })
+  };
+}

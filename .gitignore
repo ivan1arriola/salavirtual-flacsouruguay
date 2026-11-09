@@ -13,3 +13,6 @@ prisma/dev.db*
 .vercel
 .env*
 /.worktrees/
+
+# bundle del worker de archivos Zoom (se genera en el deploy)
+.zoom-worker/

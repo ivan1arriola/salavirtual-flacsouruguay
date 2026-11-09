@@ -21,6 +21,8 @@
     "db:add-asistencia-hibrida-horarios": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-asistencia-hibrida-horarios.sql",
     "db:add-solicitudes-acceso-google": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-solicitudes-acceso-google.sql",
     "db:studio": "prisma studio",
+    "zoom:archivos:worker": "tsx scripts/zoom-archivos-worker.ts",
+    "build:zoom-worker": "esbuild scripts/zoom-archivos-worker.ts --bundle --platform=node --format=cjs --target=node24 --external:@prisma/client --external:.prisma/client --outfile=.zoom-worker/zoom-archivos-worker.cjs --log-level=warning",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",
     "restore:legacy-passwords:dry": "tsx scripts/restore-legacy-passwords.ts",

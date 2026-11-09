@@ -23,6 +23,7 @@ import type {
   EventosOperativosRepositoryPort,
   ListarEventosOperativosInput
 } from "../../application";
+import { filtroArchivoReunionMeet } from "./archivo-reunion-meet.filter";
 
 export function crearPrismaArchivosRepositoryAdapter(
   db: PrismaClient
@@ -195,7 +196,8 @@ export function crearPrismaArchivosRepositoryAdapter(
       return db.archivoReunion.findMany({
         where: {
           tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] },
-          eventoProveedor: { instancia: alcanceInstancias(actor) }
+          eventoProveedor: { instancia: alcanceInstancias(actor) },
+          AND: [filtroArchivoReunionMeet()]
         },
         orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
         take: 300,

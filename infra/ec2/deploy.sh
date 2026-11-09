@@ -14,6 +14,22 @@ ENV_FILE="$BASE/shared/.env.production"
 RELEASE="$RELEASES/$SHA"
 LOCK_FILE="/run/lock/salavirtual-deploy.lock"
 NPM_CACHE="$BASE/.npm-cache"
+ZOOM_WORKER_UNIT="salavirtual-zoom-archivos.service"
+
+# El worker de archivos Zoom nunca debe correr código de un release rechazado: se detiene antes del
+# build y solo se reinicia con el release vigente (y solo si un administrador ya lo habilitó).
+detener_worker_zoom() {
+  systemctl stop "$ZOOM_WORKER_UNIT" 2>/dev/null || true
+}
+reiniciar_worker_zoom() {
+  if systemctl is-enabled --quiet "$ZOOM_WORKER_UNIT" 2>/dev/null; then
+    if [[ -f "$BASE/current/zoom-archivos-worker.cjs" ]]; then
+      systemctl restart "$ZOOM_WORKER_UNIT" || echo "No se pudo reiniciar $ZOOM_WORKER_UNIT" >&2
+    else
+      echo "El release vigente no incluye el worker de Zoom; queda detenido." >&2
+    fi
+  fi
+}
 
 exec 9>"$LOCK_FILE"
 if ! flock -n 9; then
@@ -68,6 +84,9 @@ if [[ ! -x "$SRC/node_modules/.bin/tsx" ]]; then
   exit 6
 fi
 
+echo "=== Detener worker de archivos Zoom ==="
+detener_worker_zoom
+
 echo "=== Build ==="
 sudo -u ubuntu -H env \
   PATH=/usr/bin:/bin:/usr/sbin:/sbin \
@@ -93,6 +112,15 @@ fi
 chown -R salavirtual:salavirtual "$RELEASE"
 
 test -f "$RELEASE/server.js"
+
+echo "=== Empaquetar worker de archivos Zoom ==="
+# El release standalone no trae tsx ni el código fuente: el worker viaja como un único archivo.
+# Un fallo aquí no frena la web; el worker simplemente no queda disponible en este release.
+if sudo -u ubuntu -H env PATH=/usr/bin:/bin:/usr/sbin:/sbin NPM_CONFIG_CACHE="$NPM_CACHE" npm run build:zoom-worker    && test -d "$RELEASE/node_modules/@prisma/client"; then
+  install -m 0644 -o salavirtual -g salavirtual "$SRC/.zoom-worker/zoom-archivos-worker.cjs" "$RELEASE/zoom-archivos-worker.cjs"
+else
+  echo "ADVERTENCIA: no se pudo empaquetar el worker de Zoom (o falta node_modules/@prisma/client en el release)." >&2
+fi
 
 echo "=== Migraciones Prisma ==="
 DATABASE_URL="$({
@@ -134,6 +162,7 @@ install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.service" /etc/systemd
 install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.timer" /etc/systemd/system/salavirtual-google-pending.timer
 install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.service" /etc/systemd/system/salavirtual-ops-health.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.timer" /etc/systemd/system/salavirtual-ops-health.timer
+install -m 0644 "$SRC/infra/ec2/salavirtual-zoom-archivos.service" /etc/systemd/system/salavirtual-zoom-archivos.service
 systemctl daemon-reload
 systemctl enable salavirtual.service >/dev/null
 systemctl enable salavirtual-artifacts-sync.timer >/dev/null
@@ -157,10 +186,13 @@ if [[ "$HEALTH_OK" -ne 1 ]]; then
     ln -s "$PREVIOUS" "$BASE/.current-rollback-$SHA"
     mv -Tf "$BASE/.current-rollback-$SHA" "$BASE/current"
     systemctl restart salavirtual.service
+    reiniciar_worker_zoom
     echo "Código anterior restaurado. Las migraciones de base de datos NO se revierten automáticamente." >&2
   fi
   exit 1
 fi
+
+reiniciar_worker_zoom
 
 systemctl enable salavirtual-google-pending.timer >/dev/null
 systemctl restart salavirtual-google-pending.timer

@@ -50,6 +50,8 @@ model Usuario {
   recordatoriosReunion                    RecordatorioReunion[]
   preferenciasNotificacion                PreferenciaNotificacion[]
   solicitudesAccesoGoogleAprobadas        SolicitudAccesoGoogle[]         @relation("SolicitudesAccesoGoogleAprobadas")
+  ocurrenciasZoomVinculadas               OcurrenciaArchivoZoom[]         @relation("OcurrenciaArchivoZoomVinculadaPor")
+  barridosArchivoZoom                     BarridoArchivoZoom[]            @relation("BarridoArchivoZoomSolicitante")
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -260,6 +262,7 @@ model CuentaProveedor {
   proveedor          ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
   eventosProveedor   EventoProveedor[]
   reunionesCompartidas ReunionProveedor[]
+  ocurrenciasArchivoZoom OcurrenciaArchivoZoom[]
 
   @@unique([proveedorId, externalAccountId])
   @@index([proveedorId, activa, prioridad])
@@ -385,6 +388,7 @@ model EventoProveedor {
   cuentaProveedor         CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
   reunionProveedor        ReunionProveedor? @relation(fields: [reunionProveedorId], references: [id], onDelete: SetNull)
   archivos                ArchivoReunion[]
+  ocurrenciasArchivoZoom  OcurrenciaArchivoZoom[]
 
   @@index([proveedorId, externalEventId])
   @@index([zoomMeetingUuid])
@@ -408,6 +412,7 @@ model ArchivoReunion {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   eventoProveedor      EventoProveedor    @relation(fields: [eventoProveedorId], references: [id], onDelete: Cascade)
+  archivoOrigenZoom    ArchivoOrigenZoom?
 
   @@unique([eventoProveedorId, externalResourceName])
   @@index([eventoProveedorId, tipo])
@@ -1034,4 +1039,168 @@ model AvisoEnlaceSerie {
 
   @@unique([serieClave, email, tipo])
   @@index([estado, updatedAt])
+}
+
+/// Ocurrencia de Zoom (UUID dentro de la cuenta Zoom propietaria de las credenciales).
+/// Puede existir sin encuentro local (histórico) y pertenece a lo sumo a un encuentro;
+/// un encuentro puede tener varias ocurrencias. Borrar o desvincular el encuentro no
+/// borra la ocurrencia ni sus archivos de origen.
+model OcurrenciaArchivoZoom {
+  id                      String             @id @default(cuid())
+  cuentaZoomId            String
+  uuid                    String
+  meetingId               String
+  anfitrionZoomId         String
+  cuentaProveedorId       String?
+  eventoProveedorId       String?
+  inicioRealAt            DateTime
+  titulo                  String
+  driveFolderId           String?
+  inventariadoAt          DateTime?
+  proximoInventarioAt     DateTime?
+  /// Hay elementos sin ID todavía procesándose en Zoom: se inventarían al completarse.
+  procesamientoPendiente  Boolean            @default(false)
+  /// Observaciones no descartadas del último inventario (sin URLs ni tokens).
+  observacionesInventario Json?
+  vinculadaAt             DateTime?
+  vinculadaPorId          String?
+  /// Estado de asistencia de la ocurrencia; los valores los define la entrega C.
+  estadoAsistencia        String             @default("PENDIENTE")
+  errorAsistencia         String?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  cuentaProveedor         CuentaProveedor?   @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  eventoProveedor         EventoProveedor?   @relation(fields: [eventoProveedorId], references: [id], onDelete: SetNull)
+  vinculadaPor            Usuario?           @relation("OcurrenciaArchivoZoomVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
+  archivos                ArchivoOrigenZoom[]
+
+  @@unique([cuentaZoomId, uuid])
+  @@index([eventoProveedorId])
+  @@index([cuentaProveedorId])
+  @@index([proximoInventarioAt])
+}
+
+/// Recurso de origen descubierto en una ocurrencia Zoom y su transferencia reanudable a Drive.
+/// Las mutaciones del worker comparan leaseVersion; un CONSERVADO nunca se resetea por reinventario.
+model ArchivoOrigenZoom {
+  id                     String                     @id @default(cuid())
+  ocurrenciaId           String
+  claveOrigen            String
+  archivoZoomId          String?
+  coleccion              String
+  tipoOriginal           String
+  variante               String?
+  extension              String?
+  inicioAt               DateTime?
+  finAt                  DateTime?
+  tamanoBytes            BigInt?
+  estadoOrigen           String?
+  descargable            Boolean                    @default(false)
+  /// Candidatos indistinguibles observados con esta misma clave (IDENTIDAD_AMBIGUA si > 1).
+  multiplicidadObservada Int                        @default(1)
+  estado                 EstadoArchivoZoom          @default(DESCUBIERTO)
+  errorCodigo            String?
+  errorDetalle           String?
+  intentos               Int                        @default(0)
+  proximoIntentoAt       DateTime?
+  leaseVersion           Int                        @default(0)
+  leaseHasta             DateTime?
+  nombreDestino          String
+  driveFileId            String?                    @unique
+  archivoReunionId       String?                    @unique
+  uploadSessionCifrada   String?                    @db.Text
+  bytesConfirmados       BigInt                     @default(0)
+  mimeType               String?
+  webViewUrl             String?
+  ultimaObservacionAt    DateTime
+  conservadoAt           DateTime?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  ocurrencia             OcurrenciaArchivoZoom      @relation(fields: [ocurrenciaId], references: [id], onDelete: Restrict)
+  archivoReunion         ArchivoReunion?            @relation(fields: [archivoReunionId], references: [id], onDelete: SetNull)
+  reservas               ReservaTransferenciaZoom[]
+
+  @@unique([ocurrenciaId, claveOrigen])
+  @@unique([ocurrenciaId, nombreDestino])
+  @@index([estado, proximoIntentoAt])
+  @@index([estado, leaseHasta])
+}
+
+/// Barrido histórico paginado por anfitrión y ventana. El cursor se guarda cifrado y
+/// después de persistir la página; intentos/errorCodigo acotan los reintentos.
+model BarridoArchivoZoom {
+  id                     String                   @id @default(cuid())
+  cuentaZoomId           String
+  /// Lista validada de anfitriones al crear el barrido: [{ anfitrionZoomId, cuentaProveedorId }].
+  anfitrionesSnapshot    Json
+  desde                  DateTime                 @db.Date
+  hasta                  DateTime                 @db.Date
+  anfitrionIndice        Int                      @default(0)
+  ventanaDesde           DateTime?                @db.Date
+  ventanaHasta           DateTime?                @db.Date
+  nextPageTokenCifrado   String?                  @db.Text
+  estado                 EstadoBarridoArchivoZoom @default(PENDIENTE)
+  paginasProcesadas      Int                      @default(0)
+  ocurrenciasEncontradas Int                      @default(0)
+  archivosEncontrados    Int                      @default(0)
+  intentos               Int                      @default(0)
+  proximoIntentoAt       DateTime?
+  errorCodigo            String?
+  errorDetalle           String?
+  leaseVersion           Int                      @default(0)
+  leaseHasta             DateTime?
+  solicitanteId          String?
+  completadoAt           DateTime?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  solicitante            Usuario?                 @relation("BarridoArchivoZoomSolicitante", fields: [solicitanteId], references: [id], onDelete: SetNull)
+
+  @@index([estado, proximoIntentoAt])
+  @@index([estado, leaseHasta])
+  @@index([cuentaZoomId, createdAt])
+}
+
+/// Reserva de cupo de transferencia (ventana móvil de 24 h con marcas exactas).
+/// Cuenta COALESCE(ajustadoBytes, bytesReservados) mientras reservadoAt esté en la ventana.
+/// Si el lease vence, la reserva abierta se cierra con lo confirmado desde bytesConfirmadosInicio.
+model ReservaTransferenciaZoom {
+  id                     String                     @id @default(cuid())
+  archivoOrigenId        String
+  leaseVersion           Int
+  bytesReservados        BigInt
+  /// Offset confirmado por Drive al reservar.
+  bytesConfirmadosInicio BigInt                     @default(0)
+  prioridad              PrioridadTransferenciaZoom
+  reservadoAt     DateTime
+  ajustadoBytes   BigInt?
+  liberadoAt      DateTime?
+  createdAt       DateTime                   @default(now())
+  archivoOrigen   ArchivoOrigenZoom          @relation(fields: [archivoOrigenId], references: [id], onDelete: Restrict)
+
+  @@index([reservadoAt])
+  @@index([archivoOrigenId])
+}
+
+enum EstadoArchivoZoom {
+  DESCUBIERTO
+  PROCESANDO_ORIGEN
+  PENDIENTE
+  COPIANDO
+  CONSERVADO
+  ERROR_REINTENTABLE
+  REQUIERE_REVISION
+}
+
+enum EstadoBarridoArchivoZoom {
+  PENDIENTE
+  EN_CURSO
+  COMPLETADO
+  ERROR_REINTENTABLE
+  REQUIERE_REVISION
+  CANCELADO
+}
+
+enum PrioridadTransferenciaZoom {
+  RECIENTE
+  HISTORICO
 }
