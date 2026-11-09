@@ -232,6 +232,20 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
       });
     },
 
+    async listarOcurrenciasPorInventariar(ahora, limite) {
+      if (!Number.isInteger(limite) || limite <= 0) throw new RangeError("El límite debe ser un entero positivo.");
+      const filas = await db.ocurrenciaArchivoZoom.findMany({
+        where: { proximoInventarioAt: { lte: ahora } },
+        orderBy: [{ proximoInventarioAt: "asc" }, { id: "asc" }],
+        take: limite,
+        select: { cuentaZoomId: true, uuid: true, meetingId: true, anfitrionZoomId: true, inicioRealAt: true, titulo: true, cuentaProveedorId: true }
+      });
+      return filas.map((f) => ({
+        referencia: { cuentaZoomId: f.cuentaZoomId, uuid: f.uuid, meetingId: f.meetingId, anfitrionZoomId: f.anfitrionZoomId, inicioRealAt: f.inicioRealAt, titulo: f.titulo },
+        cuentaProveedorId: f.cuentaProveedorId
+      }));
+    },
+
     async reclamarArchivo(ahora, duracionMs) {
       if (!Number.isFinite(duracionMs) || duracionMs <= 0) throw new RangeError("La duración del lease debe ser positiva.");
       const venceAt = new Date(ahora.getTime() + duracionMs);

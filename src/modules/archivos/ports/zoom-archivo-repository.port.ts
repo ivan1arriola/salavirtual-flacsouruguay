@@ -106,6 +106,8 @@ export type ResultadoDesvinculo =
  */
 export type ZoomArchivoRepositoryPort = Readonly<{
   guardarInventario(ocurrencia: OcurrenciaInventariadaZoom, inventario: ResultadoInventarioZoom): Promise<ResumenInventarioGuardado>;
+  /** Ocurrencias cuyo próximo inventario ya venció (proximoInventarioAt <= ahora), las más atrasadas primero. */
+  listarOcurrenciasPorInventariar(ahora: Date, limite: number): Promise<readonly { referencia: ReferenciaOcurrenciaZoom; cuentaProveedorId: string | null }[]>;
   reclamarArchivo(ahora: Date, duracionMs: number): Promise<LeaseArchivoZoom | null>;
   obtenerArchivoReclamado(lease: LeaseArchivoZoom): Promise<ArchivoReclamadoZoom | null>;
   guardarProgreso(lease: LeaseArchivoZoom, progreso: ProgresoArchivoZoom): Promise<boolean>;

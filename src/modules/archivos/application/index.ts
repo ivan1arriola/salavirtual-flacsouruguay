@@ -6,3 +6,5 @@ export * from "./seleccionar-eventos-operativos.use-case";
 export * from "./transferir-archivo-zoom.use-case";
 export * from "./procesar-cola-zoom.use-case";
 export * from "./zoom-transferencia-stream";
+export * from "./inventariar-zoom.use-case";
+export * from "./procesar-mantenimiento-zoom.use-case";

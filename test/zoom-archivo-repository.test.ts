@@ -43,6 +43,25 @@ describe("repositorio Zoom: mutaciones de worker comparan la versión vigente (u
     return crearPrismaZoomArchivoRepositoryAdapter({ db, hash, reloj: () => new Date("2026-11-08T12:00:00Z") });
   }
 
+  it("listarOcurrenciasPorInventariar pide las vencidas más atrasadas primero, con límite, y reconstruye la referencia", async () => {
+    const findMany = vi.fn().mockResolvedValue([{
+      cuentaZoomId: "c", uuid: "u", meetingId: "1", anfitrionZoomId: "h", inicioRealAt: new Date("2026-11-08T10:00:00Z"),
+      titulo: "Clase", cuentaProveedorId: "cp"
+    }]);
+    const db = { ocurrenciaArchivoZoom: { findMany } } as unknown as PrismaClient;
+    const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash, reloj: () => new Date("2026-11-08T12:00:00Z") });
+    const r = await repo.listarOcurrenciasPorInventariar(new Date("2026-11-08T12:00:00Z"), 25);
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { proximoInventarioAt: { lte: new Date("2026-11-08T12:00:00Z") } },
+      orderBy: [{ proximoInventarioAt: "asc" }, { id: "asc" }],
+      take: 25
+    }));
+    expect(r).toEqual([{
+      referencia: { cuentaZoomId: "c", uuid: "u", meetingId: "1", anfitrionZoomId: "h", inicioRealAt: new Date("2026-11-08T10:00:00Z"), titulo: "Clase" },
+      cuentaProveedorId: "cp"
+    }]);
+  });
+
   it("guardarProgreso devuelve false a un worker obsoleto y filtra por id, versión y estado", async () => {
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
     const repo = crear({ updateMany });
