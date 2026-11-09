@@ -59,31 +59,28 @@ function sesionValida(s: SesionObservadaZoom): boolean {
 
 type Intervalo = readonly [number, number];
 
-function unirIntervalos(intervalos: readonly Intervalo[]): readonly Intervalo[] {
-  const ordenados = [...intervalos].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const salida: Array<[number, number]> = [];
-  for (const [ini, fin] of ordenados) {
-    const ultimo = salida[salida.length - 1];
-    if (ultimo && ini <= ultimo[1]) ultimo[1] = Math.max(ultimo[1], fin);
-    else salida.push([ini, fin]);
-  }
-  return salida;
+/** Orden estable sin mutar la entrada: `comparar` < 0 coloca `a` antes que `b`. */
+function ordenar<T>(items: readonly T[], comparar: (a: T, b: T) => number): readonly T[] {
+  return items.reduce<readonly T[]>((orden, actual) => {
+    const indice = orden.findIndex((item) => comparar(actual, item) < 0);
+    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+  }, []);
 }
 
-const duracion = (intervalos: readonly Intervalo[]) => intervalos.reduce((s, [a, b]) => s + (b - a), 0);
+function unirIntervalos(intervalos: readonly Intervalo[]): readonly Intervalo[] {
+  return ordenar(intervalos, (a, b) => a[0] - b[0] || a[1] - b[1])
+    .reduce<readonly Intervalo[]>((acc, [ini, fin]) => {
+      const ultimo = acc[acc.length - 1];
+      return ultimo && ini <= ultimo[1]
+        ? [...acc.slice(0, -1), [ultimo[0], Math.max(ultimo[1], fin)] as Intervalo]
+        : [...acc, [ini, fin] as Intervalo];
+    }, []);
+}
+
+const duracion = (intervalos: readonly Intervalo[]) => intervalos.reduce((suma, [a, b]) => suma + (b - a), 0);
 const redondear2 = (valor: number) => Math.round(valor * 100) / 100;
 
-type Acumulador = {
-  clave: string;
-  nombre: string;
-  email: string | null;
-  intervalos: Intervalo[];
-  sesiones: number;
-  entradas: number[];
-  salidas: number[];
-  host: boolean;
-  claves: string[];
-};
+type Observacion = Readonly<{ sesion: SesionObservadaZoom; ventana: VentanaAsistenciaZoom }>;
 
 function clavePersona(s: SesionObservadaZoom): string {
   return s.participanteId ? `id:${s.participanteId}` : `sesion:${s.claveSesion}`;
@@ -92,57 +89,57 @@ function clavePersona(s: SesionObservadaZoom): string {
 function consolidar(
   grupos: ReadonlyArray<Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>>
 ): readonly AsistenciaZoomConsolidada[] {
-  const ventanas: Intervalo[] = [];
-  for (const g of grupos) {
+  const ventanas = grupos.map((g): Intervalo => {
     validarVentana(g.ventana);
-    ventanas.push([g.ventana.inicioAt.getTime(), g.ventana.finAt.getTime()]);
-  }
+    return [g.ventana.inicioAt.getTime(), g.ventana.finAt.getTime()];
+  });
   const total = duracion(unirIntervalos(ventanas));
 
-  const personas = new Map<string, Acumulador>();
-  for (const { sesiones, ventana } of grupos) {
-    const ini = ventana.inicioAt.getTime();
-    const fin = ventana.finAt.getTime();
-    for (const s of sesiones) {
-      if (!sesionValida(s)) continue;
-      const clave = clavePersona(s);
-      const acc = personas.get(clave) ?? {
-        clave, nombre: s.nombre, email: null, intervalos: [], sesiones: 0, entradas: [], salidas: [], host: false, claves: []
-      };
-      acc.sesiones += 1;
-      acc.claves.push(s.claveSesion);
-      if (acc.email === null && s.email) acc.email = s.email;
-      if (s.rol === "HOST" || s.rol === "COHOST") acc.host = true;
-      // Sala de espera: solo traza. No cuenta minutos ni la primera entrada.
-      if (s.status !== "in_waiting_room") {
-        const desde = Math.max(s.entradaAt.getTime(), ini);
-        const hasta = Math.min(s.salidaAt.getTime(), fin);
-        if (hasta > desde) acc.intervalos.push([desde, hasta]);
-        acc.entradas.push(s.entradaAt.getTime());
-        acc.salidas.push(s.salidaAt.getTime());
-      }
-      personas.set(clave, acc);
-    }
-  }
+  const observaciones = grupos.flatMap(({ sesiones, ventana }) =>
+    sesiones.filter(sesionValida).map((sesion): Observacion => ({ sesion, ventana }))
+  );
+  // Agrupa conservando el orden de aparición: Object conserva el orden de inserción de claves de texto.
+  const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>(
+    (acc, o) => {
+      const clave = clavePersona(o.sesion);
+      return { ...acc, [clave]: [...(acc[clave] ?? []), o] };
+    },
+    {}
+  );
 
-  return [...personas.values()]
-    .map((acc): AsistenciaZoomConsolidada => {
-      const ms = duracion(unirIntervalos(acc.intervalos));
+  const consolidadas = Object.entries(porPersona)
+    .map(([claveParticipante, items]): AsistenciaZoomConsolidada => {
+      // Sala de espera: solo traza. No cuenta minutos ni la primera entrada.
+      const enReunion = items.filter(({ sesion }) => sesion.status !== "in_waiting_room");
+      const intervalos = enReunion.flatMap(({ sesion, ventana }): readonly Intervalo[] => {
+        const desde = Math.max(sesion.entradaAt.getTime(), ventana.inicioAt.getTime());
+        const hasta = Math.min(sesion.salidaAt.getTime(), ventana.finAt.getTime());
+        return hasta > desde ? [[desde, hasta]] : [];
+      });
+      const ms = duracion(unirIntervalos(intervalos));
+      const entradas = enReunion.map(({ sesion }) => sesion.entradaAt.getTime());
+      const salidas = enReunion.map(({ sesion }) => sesion.salidaAt.getTime());
       return {
-        claveParticipante: acc.clave,
-        nombre: acc.nombre,
-        emailObservado: acc.email,
+        claveParticipante,
+        nombre: items[0]!.sesion.nombre,
+        emailObservado: items.map(({ sesion }) => sesion.email).find((e): e is string => !!e) ?? null,
         minutos: redondear2(ms / MS_MINUTO),
         porcentaje: total > 0 ? Math.min(100, redondear2((ms / total) * 100)) : 0,
-        sesiones: acc.sesiones,
-        primeraEntradaAt: acc.entradas.length ? new Date(Math.min(...acc.entradas)) : null,
-        ultimaSalidaAt: acc.salidas.length ? new Date(Math.max(...acc.salidas)) : null,
-        esHostOCohost: acc.host,
-        claveSesiones: acc.claves,
+        sesiones: items.length,
+        primeraEntradaAt: entradas.length ? new Date(Math.min(...entradas)) : null,
+        ultimaSalidaAt: salidas.length ? new Date(Math.max(...salidas)) : null,
+        esHostOCohost: items.some(({ sesion }) => sesion.rol === "HOST" || sesion.rol === "COHOST"),
+        claveSesiones: items.map(({ sesion }) => sesion.claveSesion),
         estadoConciliacion: "SIN_CONCILIAR"
       };
-    })
-    .sort((a, b) => (a.primeraEntradaAt?.getTime() ?? Infinity) - (b.primeraEntradaAt?.getTime() ?? Infinity) || a.nombre.localeCompare(b.nombre) || a.claveParticipante.localeCompare(b.claveParticipante));
+    });
+  return ordenar(
+    consolidadas,
+    (a, b) =>
+      (a.primeraEntradaAt?.getTime() ?? Infinity) - (b.primeraEntradaAt?.getTime() ?? Infinity) ||
+      a.nombre.localeCompare(b.nombre) ||
+      a.claveParticipante.localeCompare(b.claveParticipante)
+  );
 }
 
 /** Consolida las sesiones de una ocurrencia sobre su horario programado. */
