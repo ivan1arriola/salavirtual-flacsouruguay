@@ -10,3 +10,4 @@ export * from "./zoom-archivos.types";
 export * from "./zoom-archivos.domain";
 export * from "./zoom-recuperacion.domain";
 export * from "./zoom-inventario-estado.domain";
+export * from "./zoom-backoff.domain";

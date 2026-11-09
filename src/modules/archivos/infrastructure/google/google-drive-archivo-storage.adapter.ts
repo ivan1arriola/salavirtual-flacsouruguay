@@ -1,6 +1,7 @@
 import type { JWT } from "google-auth-library";
 import {
   consultarSubidaDriveReanudable,
+  generarIdArchivoDrive,
   iniciarSubidaDriveReanudable,
   listarArchivosDrivePorOrigen,
   obtenerArchivoDrivePorId,
@@ -45,6 +46,10 @@ function aEstado(r: ResultadoSubidaDrive): EstadoSubidaArchivo {
  */
 export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
   constructor(private readonly deps: GoogleDriveArchivoStorageDeps) {}
+
+  generarId(): Promise<string> {
+    return generarIdArchivoDrive(this.deps.auth);
+  }
 
   asegurarCarpeta(clave: string, nombre: string, padreId: string): Promise<string> {
     return obtenerOCrearCarpetaDrive(this.deps.auth, padreId, nombre, clave);

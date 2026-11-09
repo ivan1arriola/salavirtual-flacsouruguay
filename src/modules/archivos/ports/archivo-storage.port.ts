@@ -21,6 +21,8 @@ export type BusquedaConservadoArchivo =
   | Readonly<{ tipo: "AMBIGUO"; cantidad: number }>;
 
 export interface ArchivoStoragePort {
+  /** ID de archivo pregenerado por Drive; se persiste antes de iniciar la subida. */
+  generarId(): Promise<string>;
   /** `clave` es el hash hexadecimal estable de la ocurrencia (no solo el nombre). */
   asegurarCarpeta(clave: string, nombre: string, padreId: string): Promise<string>;
   /** Devuelve la sesión ya cifrada, lista para persistir. */

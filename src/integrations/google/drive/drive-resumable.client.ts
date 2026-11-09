@@ -168,3 +168,16 @@ export async function listarArchivosDrivePorOrigen(
   if (r.status !== 200) throw errorSaneado("búsqueda por origen", r.status);
   return ((r.data as { files?: ArchivoDriveSubido[] })?.files) ?? [];
 }
+
+/** IDs pregenerados por Drive: permiten persistir el destino antes del POST y reconciliar por ID. */
+export async function generarIdArchivoDrive(auth: JWT): Promise<string> {
+  const r = await auth.request<unknown>({
+    url: `${DRIVE_API_BASE_URL}/files/generateIds?count=1&space=drive`,
+    method: "GET",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    validateStatus: aceptaTodo
+  }) as unknown as RespuestaHttp;
+  const id = (r.data as { ids?: string[] } | undefined)?.ids?.[0];
+  if (r.status !== 200 || !id) throw errorSaneado("generación de ID", r.status);
+  return id;
+}
