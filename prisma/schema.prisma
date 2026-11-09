@@ -396,6 +396,7 @@ model EventoProveedor {
   @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
   @@index([grabacionEstadoMeet, grabacionObservadaAt])
+  asistenciaZoom          RegistroAsistenciaZoom[]
 }
 
 model ArchivoReunion {
@@ -490,6 +491,7 @@ model InvitadoReunion {
 
   @@unique([instanciaSalaId, email])
   @@index([email])
+  asistenciaZoom  RegistroAsistenciaZoom[]
 }
 
 model Grabacion {
@@ -1078,6 +1080,8 @@ model OcurrenciaArchivoZoom {
   @@index([eventoProveedorId])
   @@index([cuentaProveedorId])
   @@index([proximoInventarioAt])
+  sesionesAsistencia      SesionAsistenciaZoom[]
+  registrosAsistencia     RegistroAsistenciaZoom[]
 }
 
 /// Recurso de origen descubierto en una ocurrencia Zoom y su transferencia reanudable a Drive.
@@ -1203,4 +1207,76 @@ enum EstadoBarridoArchivoZoom {
 enum PrioridadTransferenciaZoom {
   RECIENTE
   HISTORICO
+}
+
+/// Estado de la conciliación de un participante de Zoom con una persona invitada.
+/// La consolidación automática nunca concilia: SUGERIDO solo propone y no cuenta como identidad confirmada.
+enum EstadoConciliacionAsistenciaZoom {
+  SIN_CONCILIAR
+  SUGERIDO
+  CONCILIADO
+  EXTERNO
+}
+
+/// Sesión observada en el reporte de Zoom de una ocurrencia (UUID). Inmutable por clave: reintentar
+/// el mismo reporte es idempotente. No guarda la respuesta cruda del reporte.
+model SesionAsistenciaZoom {
+  id             String                @id @default(cuid())
+  ocurrenciaId   String
+  /// Hash estable de (UUID, id de participante, user_id, nombre, entrada, salida).
+  claveSesion    String
+  /// `id` de Zoom; solo si es fiable identifica a la persona entre reconexiones.
+  participanteId String?
+  /// `user_id` de Zoom: cambia en cada reconexión, nunca identifica a una persona.
+  userId         String?
+  nombre         String
+  /// Correo informado por Zoom: observado, no identidad institucional confirmada.
+  email          String?
+  entradaAt      DateTime
+  salidaAt       DateTime
+  /// in_meeting | in_waiting_room; la sala de espera es solo traza y no cuenta minutos.
+  status         String?
+  /// HOST | COHOST solo cuando el rol está comprobado.
+  rol            String?
+  createdAt      DateTime              @default(now())
+  ocurrencia     OcurrenciaArchivoZoom @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
+
+  @@unique([ocurrenciaId, claveSesion])
+  @@index([ocurrenciaId])
+}
+
+/// Resumen consolidado de un participante: por encuentro (`evento:<id>`, une las ocurrencias vinculadas)
+/// o por ocurrencia sin vincular (`ocurrencia:<id>`). Sin umbral ni veredicto de cumplimiento.
+/// La tabla de Meet (RegistroAsistenciaMeet) no se toca.
+model RegistroAsistenciaZoom {
+  id                   String                           @id @default(cuid())
+  claveAmbito          String
+  eventoProveedorId    String?
+  ocurrenciaId         String?
+  /// `id:<participanteId>` o `sesion:<claveSesion>` cuando no hay identificador fiable.
+  claveParticipante    String
+  nombre               String
+  emailObservado       String?
+  minutos              Decimal                          @default(0) @db.Decimal(8, 2)
+  porcentaje           Decimal                          @default(0) @db.Decimal(5, 2)
+  sesiones             Int                              @default(0)
+  primeraEntradaAt     DateTime?
+  ultimaSalidaAt       DateTime?
+  esHostOCohost        Boolean                          @default(false)
+  estadoConciliacion   EstadoConciliacionAsistenciaZoom @default(SIN_CONCILIAR)
+  invitadoReunionId    String?
+  esExterno            Boolean?
+  notasOperador        String?
+  /// Control de edición concurrente de los campos humanos (conciliación y notas).
+  version              Int                              @default(1)
+  createdAt            DateTime                         @default(now())
+  updatedAt            DateTime                         @updatedAt
+  eventoProveedor      EventoProveedor?                 @relation(fields: [eventoProveedorId], references: [id], onDelete: Cascade)
+  ocurrencia           OcurrenciaArchivoZoom?           @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
+  invitadoReunion      InvitadoReunion?                 @relation(fields: [invitadoReunionId], references: [id], onDelete: SetNull)
+
+  @@unique([claveAmbito, claveParticipante])
+  @@index([eventoProveedorId])
+  @@index([ocurrenciaId])
+  @@index([invitadoReunionId])
 }
