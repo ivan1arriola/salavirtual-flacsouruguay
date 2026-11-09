@@ -1,6 +1,6 @@
 import type { JWT } from "google-auth-library";
 import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
-import { DRIVE_API_BASE_URL, DRIVE_UPLOAD_API_BASE_URL } from "./drive-files.client";
+import { DRIVE_API_BASE_URL, DRIVE_FOLDER_MIME, DRIVE_UPLOAD_API_BASE_URL } from "./drive-files.client";
 
 /** Drive exige que los bloques intermedios sean múltiplos de 256 KiB. */
 export const DRIVE_BLOQUE_MULTIPLO_BYTES = 256 * 1024;
@@ -180,4 +180,18 @@ export async function generarIdArchivoDrive(auth: JWT): Promise<string> {
   const id = (r.data as { ids?: string[] } | undefined)?.ids?.[0];
   if (r.status !== 200 || !id) throw errorSaneado("generación de ID", r.status);
   return id;
+}
+
+/** Healthcheck de escritura: la carpeta existe, es carpeta y la identidad de servicio puede crear dentro. */
+export async function verificarEscrituraCarpetaDrive(auth: JWT, carpetaId: string): Promise<boolean> {
+  const r = await auth.request<unknown>({
+    url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(carpetaId)}?fields=id,mimeType,capabilities(canAddChildren)&supportsAllDrives=true`,
+    method: "GET",
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    validateStatus: aceptaTodo
+  }) as unknown as RespuestaHttp;
+  if (r.status === 404) return false;
+  if (r.status !== 200) throw errorSaneado("comprobación de carpeta", r.status);
+  const datos = r.data as { mimeType?: string; capabilities?: { canAddChildren?: boolean } } | undefined;
+  return datos?.mimeType === DRIVE_FOLDER_MIME && datos.capabilities?.canAddChildren === true;
 }

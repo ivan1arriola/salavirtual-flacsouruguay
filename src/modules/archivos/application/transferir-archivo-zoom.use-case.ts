@@ -5,7 +5,7 @@ import {
   type LeaseArchivoZoom,
   type LimitesCupoZoom
 } from "../domain";
-import type { ArchivoStoragePort, DestinoConservadoZoom, OrigenZoomPort, ZoomArchivoRepositoryPort } from "../ports";
+import type { ArchivoReclamadoZoom, ArchivoStoragePort, DestinoConservadoZoom, OrigenZoomPort, ZoomArchivoRepositoryPort } from "../ports";
 import { TransferenciaZoomError, transferirStreamZoom } from "./zoom-transferencia-stream";
 
 const GB = 1024n ** 3n;
@@ -24,6 +24,8 @@ export type OpcionesTransferenciaZoom = Readonly<{
   bloqueBytes?: number;
   maxDescarteBytes?: bigint;
   intentosMaximos?: number;
+  /** Resuelve (y crea si hace falta) la carpeta de Drive de la ocurrencia; null si no hay destino configurado. */
+  resolverCarpeta?: (archivo: ArchivoReclamadoZoom) => Promise<string | null>;
 }>;
 
 export type ResultadoTransferenciaArchivoZoom =
@@ -159,6 +161,16 @@ export async function transferirArchivoZoomUseCase(
     }
     reservaId = reserva.reservaId;
 
+    // 3b. Carpeta de la ocurrencia: se resuelve una vez y se persiste (la primera resolución gana).
+    let carpetaId = archivo.driveFolderId;
+    if (!carpetaId) {
+      carpetaId = opciones.resolverCarpeta ? await opciones.resolverCarpeta(archivo) : null;
+      if (!carpetaId) {
+        return await fallo("ESPERA", "CARPETA_NO_CONFIGURADA", "No hay carpeta de Drive configurada para este archivo.", proximoIntentoZoom(1, ahora(), opciones.aleatorio));
+      }
+      await repo.guardarCarpetaOcurrencia(archivo.ocurrenciaId, carpetaId);
+    }
+
     // 4. Destino: ID pregenerado persistido antes del POST; la sesión se crea una sola vez.
     let fileId = archivo.driveFileId;
     if (!fileId) {
@@ -171,7 +183,7 @@ export async function transferirArchivoZoomUseCase(
         {
           fileId,
           nombre: archivo.nombreDestino,
-          carpetaId: archivo.driveFolderId ?? "",
+          carpetaId,
           mimeType: "application/octet-stream",
           tamanoTotal: null
         },

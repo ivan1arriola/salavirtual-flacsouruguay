@@ -232,6 +232,11 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
       });
     },
 
+    async guardarCarpetaOcurrencia(ocurrenciaId, driveFolderId) {
+      const { count } = await db.ocurrenciaArchivoZoom.updateMany({ where: { id: ocurrenciaId, driveFolderId: null }, data: { driveFolderId } });
+      return count === 1;
+    },
+
     async listarOcurrenciasPorInventariar(ahora, limite) {
       if (!Number.isInteger(limite) || limite <= 0) throw new RangeError("El límite debe ser un entero positivo.");
       const filas = await db.ocurrenciaArchivoZoom.findMany({

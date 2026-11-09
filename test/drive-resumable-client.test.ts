@@ -4,6 +4,7 @@ import {
   DRIVE_BLOQUE_MULTIPLO_BYTES,
   DRIVE_ZOOM_ORIGEN_PROPERTY,
   consultarSubidaDriveReanudable,
+  verificarEscrituraCarpetaDrive,
   iniciarSubidaDriveReanudable,
   subirBloqueDriveReanudable
 } from "../src/integrations/google/drive/drive-resumable.client";
@@ -132,5 +133,24 @@ describe("Drive reanudable: subida de bloques", () => {
   it("sesión vencida durante el PUT se informa como VENCIDA", async () => {
     const { auth } = cliente({ status: 410, headers: {}, data: "" });
     expect(await subirBloqueDriveReanudable(auth, SESION, 0n, bytes, null)).toEqual({ estado: "VENCIDA" });
+  });
+});
+
+describe("Drive reanudable: comprobación de escritura (healthcheck del worker)", () => {
+  it("true solo si es una carpeta con canAddChildren, con supportsAllDrives", async () => {
+    const { auth, request } = cliente({ status: 200, data: { id: "c", mimeType: "application/vnd.google-apps.folder", capabilities: { canAddChildren: true } } });
+    expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(true);
+    expect(request.mock.calls[0][0].url).toContain("supportsAllDrives=true");
+    expect(request.mock.calls[0][0].url).toContain("capabilities");
+  });
+  it("false sin permiso, si no es carpeta o si no existe", async () => {
+    const { auth } = cliente(
+      { status: 200, data: { id: "c", mimeType: "application/vnd.google-apps.folder", capabilities: { canAddChildren: false } } },
+      { status: 200, data: { id: "c", mimeType: "video/mp4", capabilities: { canAddChildren: true } } },
+      { status: 404, data: "" }
+    );
+    expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
+    expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
+    expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
   });
 });

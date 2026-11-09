@@ -8,3 +8,5 @@ export * from "./procesar-cola-zoom.use-case";
 export * from "./zoom-transferencia-stream";
 export * from "./inventariar-zoom.use-case";
 export * from "./procesar-mantenimiento-zoom.use-case";
+export * from "./resolver-carpeta-zoom";
+export * from "./comprobar-salud-worker-zoom";

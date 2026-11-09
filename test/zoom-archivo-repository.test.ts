@@ -62,6 +62,14 @@ describe("repositorio Zoom: mutaciones de worker comparan la versión vigente (u
     }]);
   });
 
+  it("guardarCarpetaOcurrencia solo escribe si la ocurrencia no tenía carpeta (primera resolución gana)", async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const db = { ocurrenciaArchivoZoom: { updateMany } } as unknown as PrismaClient;
+    const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash, reloj: () => new Date("2026-11-08T12:00:00Z") });
+    await expect(repo.guardarCarpetaOcurrencia("o-1", "carpeta")).resolves.toBe(true);
+    expect(updateMany).toHaveBeenCalledWith({ where: { id: "o-1", driveFolderId: null }, data: { driveFolderId: "carpeta" } });
+  });
+
   it("guardarProgreso devuelve false a un worker obsoleto y filtra por id, versión y estado", async () => {
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
     const repo = crear({ updateMany });

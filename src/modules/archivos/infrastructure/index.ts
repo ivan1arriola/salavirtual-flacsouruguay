@@ -5,3 +5,4 @@ export * from "./prisma/prisma-zoom-archivo-repository.adapter";
 export * from "./prisma/archivo-reunion-meet.filter";
 
 export * from "./google/google-drive-archivo-storage.adapter";
+export * from "./zoom/zoom-origen.adapter";

@@ -32,6 +32,7 @@ function repoFalso(archivo: ArchivoReclamadoZoom | null, sobre: Record<string, u
     registrarFallo: vi.fn(async (..._a: any[]) => true),
     reservarTransferencia: vi.fn(async (_l: any, s: any, ..._r: any[]) => ({ tipo: "RESERVADA", reservaId: "r1", bytesReservados: s.bytes })),
     liberarReserva: vi.fn(async (..._a: any[]) => true),
+    guardarCarpetaOcurrencia: vi.fn(async (..._a: any[]) => true),
     ...sobre
   };
 }
@@ -148,6 +149,33 @@ describe("transferirArchivoZoomUseCase", () => {
     const historico = repoFalso(reclamado({ ocurrencia: { ...reclamado().ocurrencia, inicioRealAt: new Date("2026-01-01T00:00:00Z") } }));
     await ejecutar(historico, origenFalso(), storageFalso());
     expect(historico.reservarTransferencia.mock.calls[0]![1]).toMatchObject({ prioridad: "HISTORICO" });
+  });
+
+  it("sin carpeta de la ocurrencia la resuelve, la persiste y la usa al iniciar la subida", async () => {
+    const repo = repoFalso(reclamado({ driveFolderId: null }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const storage = storageFalso();
+    const resolverCarpeta = vi.fn(async () => "carpeta-resuelta");
+    await ejecutar(repo, origenFalso(), storage, { resolverCarpeta });
+    expect(repo.guardarCarpetaOcurrencia).toHaveBeenCalledWith("o1", "carpeta-resuelta");
+    expect(storage.iniciarSubida.mock.calls[0]![0]).toMatchObject({ carpetaId: "carpeta-resuelta" });
+  });
+
+  it("una carpeta ya conocida no se vuelve a resolver", async () => {
+    const repo = repoFalso(reclamado({ driveFolderId: "ya" }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const resolverCarpeta = vi.fn(async () => "otra");
+    const storage = storageFalso();
+    await ejecutar(repo, origenFalso(), storage, { resolverCarpeta });
+    expect(resolverCarpeta).not.toHaveBeenCalled();
+    expect(storage.iniciarSubida.mock.calls[0]![0]).toMatchObject({ carpetaId: "ya" });
+  });
+
+  it("sin carpeta configurable queda en espera visible, sin consumir intentos ni crear nada en Drive", async () => {
+    const repo = repoFalso(reclamado({ driveFolderId: null }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const storage = storageFalso();
+    const r = await ejecutar(repo, origenFalso(), storage, { resolverCarpeta: vi.fn(async () => null) });
+    expect(r.tipo).toBe("ESPERA");
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "ESPERA", codigo: "CARPETA_NO_CONFIGURADA" });
+    expect(storage.generarId).not.toHaveBeenCalled();
   });
 
   it("reanudar solo reserva lo que falta", async () => {

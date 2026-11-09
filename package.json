@@ -21,6 +21,7 @@
     "db:add-asistencia-hibrida-horarios": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-asistencia-hibrida-horarios.sql",
     "db:add-solicitudes-acceso-google": "prisma db execute --schema prisma/schema.prisma --file prisma/sql/add-solicitudes-acceso-google.sql",
     "db:studio": "prisma studio",
+    "zoom:archivos:worker": "tsx scripts/zoom-archivos-worker.ts",
     "migrate:users:dry": "tsx scripts/migrate-legacy-users.ts",
     "migrate:users": "tsx scripts/migrate-legacy-users.ts --apply",
     "restore:legacy-passwords:dry": "tsx scripts/restore-legacy-passwords.ts",
