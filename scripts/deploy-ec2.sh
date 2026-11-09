@@ -127,6 +127,9 @@ if [[ "$STATUS_ONLY" -eq 1 ]]; then
     echo "--- Estado de salavirtual.service ---"
     sudo systemctl --no-pager --full status salavirtual.service | sed -n '1,12p' || true
     echo
+    echo "--- Estado de salavirtual-zoom-archivos.service (worker de archivos Zoom) ---"
+    sudo systemctl --no-pager --full status salavirtual-zoom-archivos.service | sed -n '1,12p' || true
+    echo
     echo "--- Healthcheck interno ---"
     curl -fsS "$APP_HEALTH_URL" 2>/dev/null && echo || echo "Healthcheck no respondió"
     echo
@@ -150,6 +153,19 @@ if [[ "$ROLLBACK" -eq 1 ]]; then
     CURRENT="$(readlink -f "$BASE/current")"
     CURRENT_NAME="$(basename "$CURRENT")"
 
+    # El worker de archivos Zoom no debe correr código de un release rechazado: se detiene antes de
+    # cambiar `current` y solo se reinicia (si ya estaba habilitado) con el release que quede vigente.
+    ZOOM_WORKER_UNIT="salavirtual-zoom-archivos.service"
+    reiniciar_worker_zoom() {
+      if systemctl is-enabled --quiet "$ZOOM_WORKER_UNIT" 2>/dev/null; then
+        if [ -f "$BASE/current/zoom-archivos-worker.cjs" ]; then
+          sudo systemctl restart "$ZOOM_WORKER_UNIT" || echo "No se pudo reiniciar $ZOOM_WORKER_UNIT" >&2
+        else
+          echo "El release vigente no incluye el worker de Zoom; queda detenido." >&2
+        fi
+      fi
+    }
+
     # Listar releases ordenados por fecha de modificación (más reciente primero)
     PREV="$(ls -1td "$RELEASES"/* | grep -v "/$CURRENT_NAME$" | head -n 1 || true)"
     if [ -z "$PREV" ] || [ ! -d "$PREV" ]; then
@@ -160,9 +176,11 @@ if [[ "$ROLLBACK" -eq 1 ]]; then
     echo "Release actual: $CURRENT_NAME"
     echo "Revirtiendo a:  $(basename "$PREV")"
 
+    sudo systemctl stop salavirtual-zoom-archivos.service 2>/dev/null || true
     sudo ln -s "$PREV" "$BASE/.rollback-next-$"
     sudo mv -Tf "$BASE/.rollback-next-$" "$BASE/current"
     sudo systemctl restart salavirtual.service
+    reiniciar_worker_zoom
 
     # Comprobar healthcheck
     OK=0
@@ -183,6 +201,7 @@ if [[ "$ROLLBACK" -eq 1 ]]; then
       sudo ln -s "$CURRENT" "$BASE/.rollback-restore-$"
       sudo mv -Tf "$BASE/.rollback-restore-$" "$BASE/current"
       sudo systemctl restart salavirtual.service
+      reiniciar_worker_zoom
       exit 1
     fi
 EOF
