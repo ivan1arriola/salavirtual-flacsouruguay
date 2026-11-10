@@ -154,3 +154,23 @@ describe("Drive reanudable: comprobación de escritura (healthcheck del worker)"
     expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
   });
 });
+
+describe("Drive reanudable: encabezados como Headers (gaxios 8 devuelve un objeto Headers, no uno plano)", () => {
+  it("lee Location de un Headers real al iniciar la sesión", async () => {
+    const { auth } = cliente({ status: 200, headers: new Headers({ Location: SESION }), data: "" });
+    expect(await iniciarSubidaDriveReanudable(auth, {
+      fileId: "drive-1", nombre: "a.mp4", carpetaId: "carpeta", mimeType: "video/mp4", origenHash: "h".repeat(64), tamanoTotal: 10n
+    })).toBe(SESION);
+  });
+
+  it("lee Range de un Headers real en una respuesta 308: el progreso confirmado no se pierde", async () => {
+    const { auth } = cliente({ status: 308, headers: new Headers({ Range: "bytes=0-262143" }), data: "" });
+    const r = await consultarSubidaDriveReanudable(auth, SESION, 10n);
+    expect(r).toEqual({ estado: "PARCIAL", bytesConfirmados: 262144n });
+  });
+
+  it("un 308 sin Range de un Headers significa 0 bytes confirmados", async () => {
+    const { auth } = cliente({ status: 308, headers: new Headers(), data: "" });
+    expect(await consultarSubidaDriveReanudable(auth, SESION, 10n)).toEqual({ estado: "PARCIAL", bytesConfirmados: 0n });
+  });
+});

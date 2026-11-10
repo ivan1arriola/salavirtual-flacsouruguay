@@ -19,15 +19,25 @@ export type ArchivoDriveSubido = Readonly<{
   webViewLink?: string;
 }>;
 
-type RespuestaHttp = { status: number; headers?: Record<string, unknown>; data?: unknown };
+/** gaxios 8 devuelve `Headers` (con `.get`), versiones anteriores un objeto plano: se aceptan ambos. */
+type EncabezadosHttp = Headers | Record<string, unknown>;
+type RespuestaHttp = { status: number; headers?: EncabezadosHttp; data?: unknown };
+
+function leerEncabezado(headers: EncabezadosHttp | undefined, nombre: string): unknown {
+  if (!headers) return undefined;
+  if (typeof (headers as Headers).get === "function") return (headers as Headers).get(nombre) ?? undefined;
+  const plano = headers as Record<string, unknown>;
+  const clave = Object.keys(plano).find((k) => k.toLowerCase() === nombre.toLowerCase());
+  return clave === undefined ? undefined : plano[clave];
+}
 
 /** Nunca incluye el cuerpo ni la URL de sesión: ambos pueden ser sensibles. */
 function errorSaneado(operacion: string, status: number): Error {
   return new Error(`Drive reanudable: ${operacion} respondió con estado inesperado ${status}.`);
 }
 
-function leerBytesConfirmados(headers: Record<string, unknown> | undefined): bigint {
-  const rango = headers?.range ?? headers?.Range;
+function leerBytesConfirmados(headers: EncabezadosHttp | undefined): bigint {
+  const rango = leerEncabezado(headers, "range");
   if (typeof rango !== "string") return 0n;
   const m = /^bytes=0-(\d+)$/.exec(rango.trim());
   return m ? BigInt(m[1]!) + 1n : 0n;
@@ -80,7 +90,7 @@ export async function iniciarSubidaDriveReanudable(
     }
   }) as unknown as RespuestaHttp;
   if (r.status !== 200) throw errorSaneado("inicio de sesión", r.status);
-  const location = r.headers?.location ?? r.headers?.Location;
+  const location = leerEncabezado(r.headers, "location");
   if (typeof location !== "string" || !location.startsWith("https://")) {
     throw new Error("Drive reanudable: no devolvió la sesión de subida.");
   }
