@@ -14,3 +14,4 @@ export * from "./zoom-backoff.domain";
 export * from "./zoom-archivos-config.domain";
 export * from "./asistencia-zoom.domain";
 export * from "./conciliacion-asistencia-zoom.domain";
+export * from "./planilla-asistencia-zoom.domain";

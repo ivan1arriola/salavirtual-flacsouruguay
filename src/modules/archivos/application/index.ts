@@ -12,3 +12,4 @@ export * from "./resolver-carpeta-zoom";
 export * from "./comprobar-salud-worker-zoom";
 export * from "./conciliar-asistencia-zoom.use-case";
 export * from "./sincronizar-asistencia-zoom.use-case";
+export * from "./generar-planilla-asistencia-zoom.use-case";

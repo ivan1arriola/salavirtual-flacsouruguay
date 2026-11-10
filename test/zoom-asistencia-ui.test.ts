@@ -27,3 +27,18 @@ describe("ficha de asistencia Zoom", () => {
     expect(lectura).toMatch(/puedeConciliarAsistenciaZoom/);
   });
 });
+
+describe("página de asistencia del encuentro (Zoom)", () => {
+  const pagina = leer("app/(gestion)/reuniones/[solicitudId]/encuentros/[instanciaId]/asistencia/page.tsx");
+  const rama = pagina.slice(pagina.indexOf("eventosProveedor.length === 0"), pagina.indexOf("const evento = encuentro.eventosProveedor[0]"));
+
+  it("la rama Zoom lee lo persistido y no usa Workspace ni la planilla de Meet", () => {
+    expect(rama).toMatch(/leerAsistenciaZoomFicha/);
+    expect(rama).not.toMatch(/leerPlanillaAsistenciaGoogle|crearGoogleAuthJwt|crearArchivosRepository/);
+  });
+
+  it("la exportación se sirve desde Sala Virtual y la regeneración es solo para administración", () => {
+    expect(rama).toMatch(/exportar\/zoom/);
+    expect(rama).toMatch(/actor\.rol === "ADMINISTRACION"/);
+  });
+});
