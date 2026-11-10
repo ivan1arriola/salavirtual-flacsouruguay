@@ -117,6 +117,17 @@ describe("listado de grabaciones por anfitrión", () => {
     expect(error.message).not.toContain("next page token");
   });
 
+  it("conserva solo el código numérico de Zoom para diagnosticar, nunca el mensaje ni cuerpos no numéricos", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: 300, message: "Invalid parameter: to https://x?token=SECRETO" }), 400)));
+    const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null));
+    expect(error.codigoZoom).toBe(300);
+    expect(error.message).not.toMatch(/SECRETO|Invalid parameter|https?:/);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json("<html>no es json</html>", 400)));
+    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom).toBeNull();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: "con texto" }), 400)));
+    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom).toBeNull();
+  });
+
   it("403 se informa como capacidad pendiente", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json("{}", 403)));
     expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe("CAPACIDAD_PENDIENTE");

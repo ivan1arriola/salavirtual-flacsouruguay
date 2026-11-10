@@ -29,11 +29,13 @@ export class ZoomApiError extends Error {
   readonly recurso: string;
   readonly status: number | null;
   readonly reintentarEnSegundos: number | null;
+  /** Código numérico del cuerpo de error de Zoom (p. ej. 300); nunca su mensaje. Solo para diagnóstico. */
+  readonly codigoZoom: number | null;
 
   constructor(
     code: CodigoErrorZoom,
     recurso: string,
-    opciones: Readonly<{ status?: number; reintentarEnSegundos?: number }> = {}
+    opciones: Readonly<{ status?: number; reintentarEnSegundos?: number; codigoZoom?: number | null }> = {}
   ) {
     super(`Zoom: ${code} (${recurso}${opciones.status ? `, HTTP ${opciones.status}` : ""})`);
     this.name = "ZoomApiError";
@@ -41,6 +43,7 @@ export class ZoomApiError extends Error {
     this.recurso = recurso;
     this.status = opciones.status ?? null;
     this.reintentarEnSegundos = opciones.reintentarEnSegundos ?? null;
+    this.codigoZoom = opciones.codigoZoom ?? null;
   }
 }
 
@@ -135,11 +138,26 @@ export async function pedirZoom(
 }
 
 /** Convierte un estado HTTP no exitoso en un error público sin copiar el cuerpo. */
-export function errorPorEstado(recurso: string, status: number): ZoomApiError {
-  if (status === 403) return new ZoomApiError("CAPACIDAD_PENDIENTE", recurso, { status });
-  if (status === 404) return new ZoomApiError("NO_ENCONTRADO", recurso, { status });
-  if (status >= 400 && status < 500) return new ZoomApiError("SOLICITUD_RECHAZADA", recurso, { status });
-  return new ZoomApiError("ERROR_ZOOM", recurso, { status });
+export function errorPorEstado(recurso: string, status: number, codigoZoom: number | null = null): ZoomApiError {
+  if (status === 403) return new ZoomApiError("CAPACIDAD_PENDIENTE", recurso, { status, codigoZoom });
+  if (status === 404) return new ZoomApiError("NO_ENCONTRADO", recurso, { status, codigoZoom });
+  if (status >= 400 && status < 500) return new ZoomApiError("SOLICITUD_RECHAZADA", recurso, { status, codigoZoom });
+  return new ZoomApiError("ERROR_ZOOM", recurso, { status, codigoZoom });
+}
+
+/**
+ * Como `errorPorEstado`, pero lee del cuerpo únicamente el `code` numérico de Zoom para poder diagnosticar
+ * un rechazo. El mensaje y cualquier otro campo se descartan; un cuerpo ilegible no cambia el error.
+ */
+export async function errorPorRespuesta(recurso: string, response: Response): Promise<ZoomApiError> {
+  const codigo = await response.clone().json().then(
+    (cuerpo: unknown) => {
+      const valor = cuerpo && typeof cuerpo === "object" ? (cuerpo as { code?: unknown }).code : null;
+      return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor < 1_000_000 ? valor : null;
+    },
+    () => null
+  );
+  return errorPorEstado(recurso, response.status, codigo);
 }
 
 /** Zoom exige doble codificación si el UUID empieza con "/" o contiene "//". */
