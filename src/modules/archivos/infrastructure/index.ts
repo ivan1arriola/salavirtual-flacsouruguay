@@ -8,3 +8,4 @@ export * from "./google/google-drive-archivo-storage.adapter";
 export * from "./zoom/zoom-origen.adapter";
 export * from "./prisma/prisma-asistencia-zoom-repository.adapter";
 export * from "./zoom/zoom-asistencia-provider.adapter";
+export * from "./prisma/prisma-conciliacion-asistencia-zoom-repository.adapter";

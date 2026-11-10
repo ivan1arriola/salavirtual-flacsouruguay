@@ -5,3 +5,4 @@ export * from "./zoom-archivo-repository.port";
 export * from "./archivo-storage.port";
 export * from "./zoom-origen.port";
 export * from "./asistencia-zoom.port";
+export * from "./conciliacion-asistencia-zoom.port";

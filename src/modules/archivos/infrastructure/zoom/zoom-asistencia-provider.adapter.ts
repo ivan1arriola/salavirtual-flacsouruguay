@@ -1,13 +1,9 @@
 import type { AutenticacionZoom } from "../../../../integrations/zoom/zoom-http";
 import { listarParticipantesReunionPasadaZoomHttp } from "../../../../integrations/zoom/zoom-reports.client";
+import type { ResultadoSesionesZoom } from "../../ports";
 import { claveSesionZoom, type HashZoom, type SesionObservadaZoom } from "../../domain";
 
-export type ResultadoSesionesZoom =
-  /** 404: Zoom todavía no tiene el reporte. No equivale a "nadie asistió". */
-  | Readonly<{ estado: "NO_DISPONIBLE" }>
-  /** El reporte existe y no tiene participantes. */
-  | Readonly<{ estado: "VACIO" }>
-  | Readonly<{ estado: "DISPONIBLE"; sesiones: readonly SesionObservadaZoom[] }>;
+export type { ResultadoSesionesZoom };
 
 export type ZoomAsistenciaProviderDeps = Readonly<{ auth: AutenticacionZoom; hash: HashZoom }>;
 
