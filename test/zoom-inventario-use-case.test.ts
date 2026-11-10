@@ -98,6 +98,27 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     expect(r).toMatchObject({ ocurrencias: 1, anfitrionesConError: 1 });
   });
 
+  it("informa el código (no el mensaje) del error de cada anfitrión para poder diagnosticar", async () => {
+    const error403 = Object.assign(new Error("Zoom: CAPACIDAD_PENDIENTE (grabaciones.listado, HTTP 403) https://secreto?token=1"), { name: "ZoomApiError", code: "CAPACIDAD_PENDIENTE", status: 403 });
+    const origen: any = {
+      listarOcurrencias: vi.fn(async (a: any) => { if (a.anfitrionZoomId === "h1") throw error403; throw new TypeError("fetch failed"); }),
+      obtenerInventario: vi.fn()
+    };
+    const r = await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones, ahora: AHORA, diasAtras: 3, corteDias: 90 });
+    expect(r.errores).toEqual([
+      { anfitrionZoomId: "h1", codigo: "CAPACIDAD_PENDIENTE:403" },
+      { anfitrionZoomId: "h2", codigo: "TypeError" }
+    ]);
+    expect(JSON.stringify(r)).not.toContain("secreto");
+  });
+
+  it("agrega el código numérico de Zoom al código del anfitrión cuando existe", async () => {
+    const rechazo = Object.assign(new Error("x"), { name: "ZoomApiError", code: "SOLICITUD_RECHAZADA", status: 400, codigoZoom: 300 });
+    const origen: any = { listarOcurrencias: vi.fn(async () => { throw rechazo; }), obtenerInventario: vi.fn() };
+    const r = await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 3, corteDias: 90 });
+    expect(r.errores[0]).toEqual({ anfitrionZoomId: "h1", codigo: "SOLICITUD_RECHAZADA:400:z300" });
+  });
+
   it("un barrido de más de 28 días se parte en ventanas consecutivas sin huecos", async () => {
     const origen: any = { listarOcurrencias: vi.fn(async () => ({ elementos: [], siguiente: null })), obtenerInventario: vi.fn() };
     await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 60, corteDias: 90 });

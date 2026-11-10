@@ -3,7 +3,7 @@ import { DIAS_VENTANA_LISTADO_GRABACIONES, particionarPeriodoZoom, type VentanaZ
 import {
   ZoomApiError,
   codificarUuidZoom,
-  errorPorEstado,
+  errorPorRespuesta,
   pedirZoom,
   type AutenticacionZoom
 } from "./zoom-http";
@@ -116,7 +116,7 @@ export async function listarGrabacionesAnfitrionZoomHttp(
       signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS)
     })
   );
-  if (!response.ok) throw errorPorEstado(recurso, response.status);
+  if (!response.ok) throw await errorPorRespuesta(recurso, response);
 
   const datos = await leerJson(response, recurso);
   if (!Array.isArray(datos.meetings)) throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
@@ -190,7 +190,7 @@ export async function obtenerInventarioOcurrenciaZoomHttp(
     await response.body?.cancel().catch(() => undefined);
     return null;
   }
-  if (!response.ok) throw errorPorEstado(recurso, response.status);
+  if (!response.ok) throw await errorPorRespuesta(recurso, response);
 
   const datos = await leerJson(response, recurso);
   const uuidRespuesta = texto(datos.uuid);
@@ -233,6 +233,6 @@ export async function obtenerResumenReunionZoomHttp(
     await response.body?.cancel().catch(() => undefined);
     return { estado: "NO_DISPONIBLE" };
   }
-  if (!response.ok) throw errorPorEstado(recurso, response.status);
+  if (!response.ok) throw await errorPorRespuesta(recurso, response);
   return { estado: "DISPONIBLE", resumen: await leerJson(response, recurso) };
 }

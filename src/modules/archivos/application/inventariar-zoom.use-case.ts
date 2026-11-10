@@ -107,7 +107,24 @@ function fechaMontevideo(fecha: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_NEGOCIO, year: "numeric", month: "2-digit", day: "2-digit" }).format(fecha);
 }
 
-export type ResumenBarridoZoom = Readonly<{ ocurrencias: number; anfitrionesConError: number; ocurrenciasConError: number }>;
+export type ErrorBarridoZoom = Readonly<{ anfitrionZoomId: string; codigo: string }>;
+export type ResumenBarridoZoom = Readonly<{
+  ocurrencias: number;
+  anfitrionesConError: number;
+  ocurrenciasConError: number;
+  /** Código del error por anfitrión (nunca el mensaje: puede traer URLs); acotado a 25. */
+  errores: readonly ErrorBarridoZoom[];
+}>;
+
+/** Código diagnosticable sin datos sensibles: `CODIGO:estado[:zNNN]` para errores de Zoom (NNN = código numérico de Zoom), o el nombre de la clase. */
+function codigoDeError(error: unknown): string {
+  const e = error as { name?: unknown; code?: unknown; status?: unknown; codigoZoom?: unknown } | null;
+  if (e?.name === "ZoomApiError" && typeof e.code === "string") {
+    const base = typeof e.status === "number" ? `${e.code}:${e.status}` : e.code;
+    return typeof e.codigoZoom === "number" ? `${base}:z${e.codigoZoom}` : base;
+  }
+  return typeof e?.name === "string" ? e.name : "ERROR_DESCONOCIDO";
+}
 
 /**
  * Barre los últimos `diasAtras` días de cada anfitrión (activo o no) en ventanas de a lo sumo 28
@@ -125,6 +142,7 @@ export async function barrerAnfitrionesZoomUseCase(
   let ocurrencias = 0;
   let anfitrionesConError = 0;
   let ocurrenciasConError = 0;
+  const errores: ErrorBarridoZoom[] = [];
 
   for (const anfitrion of entrada.anfitriones) {
     try {
@@ -151,9 +169,10 @@ export async function barrerAnfitrionesZoomUseCase(
           }
         } while (cursor !== null);
       }
-    } catch {
+    } catch (error) {
       anfitrionesConError++;
+      if (errores.length < 25) errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
     }
   }
-  return { ocurrencias, anfitrionesConError, ocurrenciasConError };
+  return { ocurrencias, anfitrionesConError, ocurrenciasConError, errores };
 }
