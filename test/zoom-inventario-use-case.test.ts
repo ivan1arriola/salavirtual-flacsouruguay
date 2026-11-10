@@ -112,6 +112,13 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     expect(JSON.stringify(r)).not.toContain("secreto");
   });
 
+  it("agrega el código numérico de Zoom al código del anfitrión cuando existe", async () => {
+    const rechazo = Object.assign(new Error("x"), { name: "ZoomApiError", code: "SOLICITUD_RECHAZADA", status: 400, codigoZoom: 300 });
+    const origen: any = { listarOcurrencias: vi.fn(async () => { throw rechazo; }), obtenerInventario: vi.fn() };
+    const r = await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 3, corteDias: 90 });
+    expect(r.errores[0]).toEqual({ anfitrionZoomId: "h1", codigo: "SOLICITUD_RECHAZADA:400:z300" });
+  });
+
   it("un barrido de más de 28 días se parte en ventanas consecutivas sin huecos", async () => {
     const origen: any = { listarOcurrencias: vi.fn(async () => ({ elementos: [], siguiente: null })), obtenerInventario: vi.fn() };
     await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 60, corteDias: 90 });
