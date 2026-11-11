@@ -73,6 +73,21 @@ Con tope de 2 GB y una carpeta de Drive de prueba:
 4. Habilitar la unidad systemd con el tope definitivo y vigilar memoria y bytes por ventana.
 5. Antes de recuperar histórico: dry-run, revisar cantidad y fechas, y solo entonces encolar.
 
+## Recuperación histórica
+
+Periodo explícito (no hereda los últimos días) y solo anfitriones configurados.
+
+1. Simular: `npm run zoom:archivos:historico:dry -- --desde 2026-01-01 --hasta 2026-10-31 [--anfitrion <id>]`.
+   Solo lee de Zoom: no escribe en la base ni transfiere. Informa ocurrencias, primera y última fecha halladas
+   y errores por anfitrión. Zoom puede conservar menos que el periodo pedido.
+2. Revisar cantidad y fechas; recién entonces `npm run zoom:archivos:historico -- --desde ... --hasta ...` (encola).
+3. El worker continúa el barrido página a página (cursor guardado después de persistir la página). Un anfitrión
+   inexistente (`404:z1001`) se omite; scope faltante (`z4711`) deja el barrido en `REQUIERE_REVISION`.
+4. Progreso: `GET /api/v1/archivos/zoom/recuperaciones/{id}` (solo administración). Alta: `POST
+   /api/v1/archivos/zoom/recuperaciones` (simula salvo `dryRun:false`).
+5. Vínculo manual de una ocurrencia con un encuentro Zoom: `POST /api/v1/archivos/zoom/ocurrencias/{id}/vincular`
+   con `{ "eventoId" }`; reutiliza el archivo ya conservado, sin nueva transferencia.
+
 ## Rollback
 
 Deshabilitar y detener la unidad. Se conservan inventario, archivos y tablas. No se borra nada en Drive ni en Zoom.
