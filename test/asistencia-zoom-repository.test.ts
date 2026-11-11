@@ -22,7 +22,12 @@ function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
     : opciones.ocurrencia;
   const existentes = new Set(opciones.existentes ?? []);
   const tx = {
-    ocurrenciaArchivoZoom: { findUnique: vi.fn(async () => ocurrencia) },
+    $executeRaw: vi.fn(async (..._a: any[]) => 1),
+    ocurrenciaArchivoZoom: {
+      findUnique: vi.fn(async () => ocurrencia),
+      // Ámbito para consolidar: la propia ocurrencia, sin sesiones previas persistidas en el doble.
+      findMany: vi.fn(async () => (ocurrencia ? [{ id: ocurrencia.id, sesionesAsistencia: [] }] : []))
+    },
     sesionAsistenciaZoom: {
       createMany: vi.fn(async ({ data }: any) => ({ count: data.filter((d: any) => !existentes.has(d.claveSesion)).length })),
       deleteMany: vi.fn(), delete: vi.fn()
@@ -40,6 +45,28 @@ function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
 }
 
 describe("repositorio de asistencia Zoom (unidad)", () => {
+  it("toma el bloqueo por encuentro ANTES de insertar y consolidar, y consolida con las sesiones del ámbito", async () => {
+    const { tx, repo } = crear();
+    let recibido: unknown = null;
+    const r = await repo.guardarSesionesYConsolidar("o1", VERSION, [sesion("s1")], (ambito) => {
+      recibido = ambito;
+      return [resumen("id:p1")];
+    });
+    expect(r).toMatchObject({ tipo: "GUARDADO" });
+    expect(recibido).toEqual([{ ocurrenciaId: "o1", sesiones: [] }]);
+    const orden = (m: { mock: { invocationCallOrder: number[] } }) => m.mock.invocationCallOrder[0]!;
+    expect(orden(tx.$executeRaw as never)).toBeLessThan(orden(tx.sesionAsistenciaZoom.createMany as never));
+    expect(orden(tx.sesionAsistenciaZoom.createMany as never)).toBeLessThan(orden(tx.ocurrenciaArchivoZoom.findMany as never));
+  });
+
+  it("si no hay ventana (consolidar devuelve null) revierte: SIN_VENTANA y no escribe registros", async () => {
+    const { tx, repo } = crear();
+    const r = await repo.guardarSesionesYConsolidar("o1", VERSION, [sesion("s1")], () => null);
+    expect(r).toEqual({ tipo: "SIN_VENTANA" });
+    expect(tx.registroAsistenciaZoom.createMany).not.toHaveBeenCalled();
+    expect(tx.registroAsistenciaZoom.updateMany).not.toHaveBeenCalled();
+  });
+
   it("guarda sesiones de forma idempotente (createMany skipDuplicates) y el resumen por ámbito de evento", async () => {
     const { tx, repo } = crear();
     const r = await repo.guardarSesionesYResumen("o1", VERSION, [sesion("s1"), sesion("s2")], [resumen("id:p1")]);

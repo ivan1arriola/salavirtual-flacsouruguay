@@ -33,6 +33,25 @@ function destinoFalso(opciones: { aceptaHasta?: (offset: bigint, len: number) =>
 }
 
 describe("transferirStreamZoom", () => {
+  it("si el origen termina antes del total conocido NO finaliza la subida (ORIGEN_INCOMPLETO)", async () => {
+    const destino = destinoFalso();
+    await expect(transferirStreamZoom({
+      stream: generar(3 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB,
+      totalConocido: BigInt(5 * KIB), subirBloque: destino.subir
+    })).rejects.toMatchObject({ codigo: "ORIGEN_INCOMPLETO" });
+    expect(destino.bloques.some((b) => b.ultimo)).toBe(false);
+  });
+
+  it("con total conocido que coincide con lo recibido finaliza normalmente", async () => {
+    const destino = destinoFalso();
+    const r = await transferirStreamZoom({
+      stream: generar(3 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB,
+      totalConocido: BigInt(3 * KIB), subirBloque: destino.subir
+    });
+    expect(r.bytesTotales).toBe(BigInt(3 * KIB));
+    expect(destino.bloques.at(-1)?.ultimo).toBe(true);
+  });
+
   it("memoria acotada: nunca retiene más de un bloque + 1 chunk de un archivo mucho mayor", async () => {
     const total = 40 * 1024 * 1024; // 40 MiB con bloques de 1 MiB
     const bloque = 4 * KIB;

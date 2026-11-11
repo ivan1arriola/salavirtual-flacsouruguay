@@ -93,6 +93,37 @@ describe("transferirArchivoZoomUseCase", () => {
     expect(repo.liberarReserva).toHaveBeenCalledWith("r1", BigInt(2 * KIB), AHORA);
   });
 
+  it("una descarga parcial (206 que termina antes del total anunciado) no se confirma como conservada", async () => {
+    const repo = repoFalso(reclamado());
+    const storage = storageFalso();
+    const origen = origenFalso({
+      abrirDescarga: vi.fn(async () => ({ tipo: "CONTENIDO", contenido: bytes(KIB), offsetOrigen: 0n, totalBytes: BigInt(2 * KIB) }))
+    });
+    const r = await ejecutar(repo, origen, storage);
+    expect(r.tipo).not.toBe("CONSERVADO");
+    expect(repo.confirmarConservado).not.toHaveBeenCalled();
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REINTENTABLE", codigo: "ORIGEN_INCOMPLETO" });
+    expect(storage.subirBloque.mock.calls.some((c) => (c[4] as { ultimo?: boolean } | undefined)?.ultimo)).toBe(false);
+  });
+
+  it("sin total en la descarga, usa el tamaño del inventario para detectar el truncado", async () => {
+    const repo = repoFalso(reclamado());
+    const origen = origenFalso({
+      abrirDescarga: vi.fn(async () => ({ tipo: "CONTENIDO", contenido: bytes(KIB), offsetOrigen: 0n, totalBytes: null }))
+    });
+    const r = await ejecutar(repo, origen, storageFalso());
+    expect(r.tipo).not.toBe("CONSERVADO");
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ codigo: "ORIGEN_INCOMPLETO" });
+  });
+
+  it("Drive con un tamaño distinto del total esperado no se confirma aunque coincida con lo enviado", async () => {
+    const repo = repoFalso(reclamado());
+    const storage = storageFalso({ verificarArchivo: vi.fn(async (id: string) => ({ id, nombre: "a.mp4", tamanoBytes: BigInt(KIB), mimeType: null, webViewUrl: null })) });
+    const r = await ejecutar(repo, origenFalso(), storage);
+    expect(r.tipo).toBe("FALLO");
+    expect(repo.confirmarConservado).not.toHaveBeenCalled();
+  });
+
   it("caída después de subir y antes de la DB: reconcilia el mismo destino sin transferir de nuevo", async () => {
     const repo = repoFalso(reclamado({ driveFileId: "drive-id" }));
     const storage = storageFalso({ buscarConservado: vi.fn(async (..._a: any[]) => ({ tipo: "UNO", destino: { id: "drive-id", nombre: "a.mp4", tamanoBytes: BigInt(2 * KIB), mimeType: null, webViewUrl: null } })) });

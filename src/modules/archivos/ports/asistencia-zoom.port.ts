@@ -14,7 +14,24 @@ export type ResultadoPersistenciaAsistencia =
   | Readonly<{ tipo: "REPROGRAMADO" }>
   | Readonly<{ tipo: "OCURRENCIA_NO_ENCONTRADA" }>;
 
+/** Sesiones persistidas del ámbito (todas las ocurrencias del encuentro, o solo la propia sin encuentro). */
+export type SesionesDelAmbitoZoom = ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>;
+
+export type ResultadoConsolidacionAsistencia = ResultadoPersistenciaAsistencia | Readonly<{ tipo: "SIN_VENTANA" }>;
+
 export interface AsistenciaZoomRepositoryPort {
+  /**
+   * Guarda las sesiones y calcula el resumen DENTRO de la misma transacción, serializada por encuentro:
+   * `consolidar` recibe todas las sesiones del ámbito (incluidas las recién insertadas y las que otra
+   * sincronización concurrente haya confirmado) y devuelve el resumen, o null si no hay ventana (no se guarda nada).
+   */
+  guardarSesionesYConsolidar(
+    ocurrenciaId: string,
+    version: VersionEncuentroAsistenciaZoom,
+    sesiones: readonly SesionObservadaZoom[],
+    consolidar: (ambito: SesionesDelAmbitoZoom) => readonly AsistenciaZoomConsolidada[] | null
+  ): Promise<ResultadoConsolidacionAsistencia>;
+
   /**
    * Idempotente y solo aditivo: nunca borra sesiones ni registros (ni por un 404 ni por un lote
    * parcial) y no pisa conciliación, invitado, marca externa, notas ni versión.

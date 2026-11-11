@@ -92,6 +92,25 @@ describe.skipIf(!enabled)("repositorio de asistencia Zoom con PostgreSQL real", 
     expect(await db.registroAsistenciaZoom.count({ where: { ocurrenciaId: o.id } })).toBe(1);
   });
 
+  it("dos ocurrencias del mismo encuentro sincronizadas a la vez: el resumen final ve las sesiones de ambas", async () => {
+    const o1 = await crearOcurrencia(true);
+    const o2 = await crearOcurrencia(true);
+    const consolidar = (ambito: ReadonlyArray<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>) => {
+      const total = ambito.reduce((n, g) => n + g.sesiones.length, 0);
+      return [resumen("id:p1", { sesiones: total })];
+    };
+    const [r1, r2] = await Promise.all([
+      repo.guardarSesionesYConsolidar(o1.id, version(o1.uuid, eventoId), [sesion("c1")], consolidar),
+      repo.guardarSesionesYConsolidar(o2.id, version(o2.uuid, eventoId), [sesion("c2", { entradaAt: t("10:40"), salidaAt: t("10:50") })], consolidar)
+    ]);
+    expect(r1.tipo).toBe("GUARDADO");
+    expect(r2.tipo).toBe("GUARDADO");
+    const registros = await db.registroAsistenciaZoom.findMany({ where: { claveAmbito: `evento:${eventoId}` } });
+    expect(registros).toHaveLength(1);
+    // Serializados por encuentro: la última escritura vio ambas sesiones, nunca una vista obsoleta de una sola.
+    expect(registros[0]!.sesiones).toBe(2);
+  });
+
   it("la conciliación, las notas y la versión sobreviven a un nuevo cálculo; un lote vacío no borra nada", async () => {
     const o = await crearOcurrencia(true);
     await repo.guardarSesionesYResumen(o.id, version(o.uuid, eventoId), [sesion("c1")], [resumen("id:p1")]);

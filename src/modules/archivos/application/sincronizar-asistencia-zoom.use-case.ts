@@ -70,28 +70,14 @@ export async function sincronizarAsistenciaZoomUseCase(
     return { tipo: "OK", estadoReporte: "VACIO" };
   }
 
-  // El resumen se calcula sobre todo lo persistido del ámbito más lo recién observado, sin duplicar sesiones.
-  const persistidas = await deps.sync.listarSesionesDelAmbito(ocurrenciaId);
   const nuevas = reporte.sesiones;
-  const claves = new Set(nuevas.map((s) => s.claveSesion));
-  const grupos = [
-    ...persistidas.map((g) => g.ocurrenciaId === ocurrenciaId
-      ? { ocurrenciaId: g.ocurrenciaId, sesiones: [...g.sesiones.filter((s) => !claves.has(s.claveSesion)), ...nuevas] }
-      : g),
-    ...(persistidas.some((g) => g.ocurrenciaId === ocurrenciaId) ? [] : [{ ocurrenciaId, sesiones: nuevas }])
-  ];
   const ventanaProgramada = ocurrencia.inicioProgramadoAt && ocurrencia.finProgramadoAt
     ? { inicioAt: ocurrencia.inicioProgramadoAt, finAt: ocurrencia.finProgramadoAt }
     : null;
-  const ventana = ventanaProgramada ?? ventanaObservada(grupos.flatMap((g) => g.sesiones));
-  if (!ventana) {
-    await deps.sync.marcarEstadoReporte(ocurrenciaId, "VACIO", null);
-    return { tipo: "OK", estadoReporte: "VACIO" };
-  }
 
-  // Todas las ocurrencias de un encuentro comparten su horario; la unión evita sumar solapes entre ejecuciones.
-  const resumen = consolidarAsistenciaOcurrenciasZoom(grupos.map((g) => ({ sesiones: g.sesiones, ventana })));
-  const guardado = await deps.repo.guardarSesionesYResumen(
+  // El resumen lo calcula el repositorio DENTRO de su transacción, serializada por encuentro: así nunca se
+  // consolida con una lectura previa y obsoleta de las sesiones de otras ocurrencias del mismo encuentro.
+  const guardado = await deps.repo.guardarSesionesYConsolidar(
     ocurrenciaId,
     {
       uuid: ocurrencia.uuid,
@@ -100,11 +86,28 @@ export async function sincronizarAsistenciaZoomUseCase(
       finProgramadoAt: ocurrencia.finProgramadoAt
     },
     nuevas,
-    resumen
+    (persistidas) => {
+      // Sobre todo lo persistido del ámbito más lo recién observado, sin duplicar sesiones.
+      const claves = new Set(nuevas.map((s) => s.claveSesion));
+      const grupos = [
+        ...persistidas.map((g) => g.ocurrenciaId === ocurrenciaId
+          ? { ocurrenciaId: g.ocurrenciaId, sesiones: [...g.sesiones.filter((s) => !claves.has(s.claveSesion)), ...nuevas] }
+          : g),
+        ...(persistidas.some((g) => g.ocurrenciaId === ocurrenciaId) ? [] : [{ ocurrenciaId, sesiones: nuevas }])
+      ];
+      const ventana = ventanaProgramada ?? ventanaObservada(grupos.flatMap((g) => g.sesiones));
+      if (!ventana) return null;
+      // Todas las ocurrencias de un encuentro comparten su horario; la unión evita sumar solapes entre ejecuciones.
+      return consolidarAsistenciaOcurrenciasZoom(grupos.map((g) => ({ sesiones: g.sesiones, ventana })));
+    }
   );
+  if (guardado.tipo === "SIN_VENTANA") {
+    await deps.sync.marcarEstadoReporte(ocurrenciaId, "VACIO", null);
+    return { tipo: "OK", estadoReporte: "VACIO" };
+  }
   if (guardado.tipo === "REPROGRAMADO") return { tipo: "CONFLICTO", motivo: "REPROGRAMADO" };
   if (guardado.tipo === "OCURRENCIA_NO_ENCONTRADA") return { tipo: "ERROR", codigo: "OCURRENCIA_NO_ENCONTRADA" };
 
   await deps.sync.marcarEstadoReporte(ocurrenciaId, "DISPONIBLE", null);
-  return { tipo: "OK", estadoReporte: "DISPONIBLE", participantes: resumen.length, sesionesNuevas: guardado.sesionesNuevas };
+  return { tipo: "OK", estadoReporte: "DISPONIBLE", participantes: guardado.registrosCreados + guardado.registrosActualizados, sesionesNuevas: guardado.sesionesNuevas };
 }

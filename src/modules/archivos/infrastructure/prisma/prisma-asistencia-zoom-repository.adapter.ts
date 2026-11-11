@@ -1,5 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
-import type { AsistenciaZoomRepositoryPort } from "../../ports";
+import type { SesionObservadaZoom } from "../../domain";
+import type { AsistenciaZoomRepositoryPort, ResultadoConsolidacionAsistencia } from "../../ports";
+
+const SIN_VENTANA = Symbol("sin-ventana");
 
 export type PrismaAsistenciaZoomRepositoryDeps = Readonly<{ db: PrismaClient }>;
 
@@ -9,16 +12,28 @@ const mismaFecha = (a: Date | null | undefined, b: Date | null | undefined): boo
 export function crearPrismaAsistenciaZoomRepositoryAdapter(deps: PrismaAsistenciaZoomRepositoryDeps): AsistenciaZoomRepositoryPort {
   const { db } = deps;
 
-  return {
+  const seleccion = {
+    id: true, uuid: true, eventoProveedorId: true,
+    eventoProveedor: { select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } } }
+  } as const;
+
+  const adaptador: AsistenciaZoomRepositoryPort = {
     async guardarSesionesYResumen(ocurrenciaId, version, sesiones, resumen) {
-      return db.$transaction(async (tx) => {
-        const ocurrencia = await tx.ocurrenciaArchivoZoom.findUnique({
-          where: { id: ocurrenciaId },
-          select: {
-            id: true, uuid: true, eventoProveedorId: true,
-            eventoProveedor: { select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } } }
-          }
-        });
+      const r = await adaptador.guardarSesionesYConsolidar(ocurrenciaId, version, sesiones, () => resumen);
+      // Un resumen fijo nunca devuelve SIN_VENTANA.
+      return r.tipo === "SIN_VENTANA" ? { tipo: "REPROGRAMADO" as const } : r;
+    },
+
+    async guardarSesionesYConsolidar(ocurrenciaId, version, sesiones, consolidar): Promise<ResultadoConsolidacionAsistencia> {
+      try {
+        return await db.$transaction(async (tx) => {
+        const previa = await tx.ocurrenciaArchivoZoom.findUnique({ where: { id: ocurrenciaId }, select: { id: true, eventoProveedorId: true } });
+        if (!previa) return { tipo: "OCURRENCIA_NO_ENCONTRADA" as const };
+        // Serializa por ámbito: otra sincronización del mismo encuentro espera a que esta confirme, y entonces
+        // lee todas las sesiones ya confirmadas. Se relee la ocurrencia tras obtener el bloqueo.
+        const claveBloqueo = previa.eventoProveedorId ? `evento:${previa.eventoProveedorId}` : `ocurrencia:${previa.id}`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`zoom-asistencia:${claveBloqueo}`}, 0))`;
+        const ocurrencia = await tx.ocurrenciaArchivoZoom.findUnique({ where: { id: ocurrenciaId }, select: seleccion });
         if (!ocurrencia) return { tipo: "OCURRENCIA_NO_ENCONTRADA" as const };
 
         // Si se reprogramó mientras se obtenía el reporte, la atribución por horario ya no es válida.
@@ -42,6 +57,21 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(deps: PrismaAsistenci
         });
 
         const claveAmbito = ocurrencia.eventoProveedorId ? `evento:${ocurrencia.eventoProveedorId}` : `ocurrencia:${ocurrencia.id}`;
+        // Con el bloqueo tomado y las sesiones nuevas ya insertadas, se leen TODAS las del ámbito para consolidar.
+        const ocurrenciasAmbito = await tx.ocurrenciaArchivoZoom.findMany({
+          where: ocurrencia.eventoProveedorId ? { eventoProveedorId: ocurrencia.eventoProveedorId } : { id: ocurrencia.id },
+          select: { id: true, sesionesAsistencia: true }
+        });
+        const resumen = consolidar(ocurrenciasAmbito.map((o) => ({
+          ocurrenciaId: o.id,
+          sesiones: o.sesionesAsistencia.map((s): SesionObservadaZoom => ({
+            claveSesion: s.claveSesion, participanteId: s.participanteId, userId: s.userId, nombre: s.nombre, email: s.email,
+            entradaAt: s.entradaAt, salidaAt: s.salidaAt, status: s.status as "in_meeting" | "in_waiting_room" | null,
+            rol: s.rol as "HOST" | "COHOST" | null
+          }))
+        })));
+        // Sin ventana no se guarda nada: se revierte lo insertado en esta transacción.
+        if (resumen === null) throw SIN_VENTANA;
         const unicos = [...new Map(resumen.map((r) => [r.claveParticipante, r])).values()];
         const existentes = new Set(
           (await tx.registroAsistenciaZoom.findMany({
@@ -80,8 +110,13 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(deps: PrismaAsistenci
         }
 
         return { tipo: "GUARDADO" as const, sesionesNuevas, registrosCreados, registrosActualizados };
-      });
+        });
+      } catch (error) {
+        if (error === SIN_VENTANA) return { tipo: "SIN_VENTANA" };
+        throw error;
+      }
     }
   };
+  return adaptador;
 }
 
