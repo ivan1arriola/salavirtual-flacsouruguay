@@ -86,3 +86,13 @@ export async function estadoZoomArchivos(ahora = new Date()) {
   const estado = await consultarEstadoZoomArchivosUseCase(crearPrismaZoomEstadoLecturaAdapter({ db }), ahora);
   return { disponible: true as const, ...estado };
 }
+
+export async function reintentarArchivoZoomAdmin(actor: ActorRecuperacionZoom, archivoId: string) {
+  const { reintentarArchivoZoomUseCase } = await import("../modules/archivos/application/reintentar-archivo-zoom.use-case");
+  return reintentarArchivoZoomUseCase(crearPrismaZoomArchivoRepositoryAdapter({ db, hash }), actor, archivoId);
+}
+export async function listarEncuentrosCandidatosZoomAdmin(actor: ActorRecuperacionZoom, ocurrenciaId: string) {
+  const { listarEncuentrosCandidatosZoomUseCase } = await import("../modules/archivos/application/listar-encuentros-candidatos-zoom.use-case");
+  const { crearPrismaZoomCandidatosLecturaAdapter } = await import("../modules/archivos/infrastructure/prisma/prisma-zoom-candidatos-lectura.adapter");
+  return listarEncuentrosCandidatosZoomUseCase(crearPrismaZoomCandidatosLecturaAdapter(db), actor, ocurrenciaId);
+}

@@ -499,6 +499,20 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
         });
         return { tipo: "DESVINCULADA", referenciasEliminadas: count };
       });
+    },
+    async reintentarArchivo(archivoId, actor) {
+      return db.$transaction(async (tx) => {
+        const cambio = await tx.archivoOrigenZoom.updateMany({
+          where: { id: archivoId, estado: { in: ["ERROR_REINTENTABLE", "REQUIERE_REVISION"] } },
+          data: { estado: "PENDIENTE", intentos: 0, proximoIntentoAt: null, errorCodigo: null, errorDetalle: null, leaseHasta: null }
+        });
+        if (!cambio.count) {
+          const existe = await tx.archivoOrigenZoom.findUnique({ where: { id: archivoId }, select: { id: true } });
+          return { tipo: existe ? "ESTADO_NO_REINTENTABLE" : "NO_ENCONTRADO" } as const;
+        }
+        await tx.auditoria.create({ data: { actorUsuarioId: actor?.id ?? null, accion: "ZOOM_ARCHIVO_REINTENTO", entidadTipo: "ArchivoOrigenZoom", entidadId: archivoId, valorNuevo: { estado: "PENDIENTE" } } });
+        return { tipo: "OK" } as const;
+      });
     }
   };
 }

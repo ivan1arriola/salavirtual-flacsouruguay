@@ -1,3 +1,4 @@
+import { ZoomHistoricoControl, ZoomReintentarArchivo } from "./zoom-historico-control";
 import Link from "next/link";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
@@ -82,6 +83,7 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
                   {formatDateTime(o.inicioRealAt)} · {o.eventoProveedorId ? "Vinculada a un encuentro" : "Sin encuentro vinculado"}
                   {o.inventariadoAt ? ` · Último inventario ${formatDateTime(o.inventariadoAt)}` : " · Sin inventario todavía"}
                 </p>
+                <ZoomHistoricoControl ocurrenciaId={o.id} vinculado={Boolean(o.eventoProveedorId)} />
                 <p aria-label="Contadores de archivos">
                   Descubiertos {resumen.descubiertos} · Conservados {resumen.conservados} · Pendientes {resumen.pendientes} · En revisión {resumen.revision}
                 </p>
@@ -109,6 +111,7 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
                         <li key={a.id}>
                           {href ? <a href={href} target="_blank" rel="noreferrer">{nombre}</a> : <span>{nombre}</span>}
                           {" — "}{etiquetaEstadoArchivoZoom(a.estado)}{conError ? ` (${a.errorCodigo})` : ""}
+                          {(a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION") && <ZoomReintentarArchivo archivoId={a.id} />}
                         </li>
                       );
                     })}
