@@ -11,3 +11,4 @@ export * from "./zoom/zoom-asistencia-provider.adapter";
 export * from "./prisma/prisma-conciliacion-asistencia-zoom-repository.adapter";
 export * from "./google/google-zoom-asistencia-sheets.adapter";
 export * from "./prisma/prisma-lectura-planilla-zoom.adapter";
+export * from "./prisma/prisma-zoom-barrido-repository.adapter";

@@ -117,7 +117,7 @@ export type ResumenBarridoZoom = Readonly<{
 }>;
 
 /** Código diagnosticable sin datos sensibles: `CODIGO:estado[:zNNN]` para errores de Zoom (NNN = código numérico de Zoom), o el nombre de la clase. */
-function codigoDeError(error: unknown): string {
+export function codigoDeError(error: unknown): string {
   const e = error as { name?: unknown; code?: unknown; status?: unknown; codigoZoom?: unknown } | null;
   if (e?.name === "ZoomApiError" && typeof e.code === "string") {
     const base = typeof e.status === "number" ? `${e.code}:${e.status}` : e.code;

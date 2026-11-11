@@ -9,6 +9,7 @@ import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configurac
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
   barrerAnfitrionesZoomUseCase,
+  procesarPaginaRecuperacionZoom,
   comprobarSaludWorkerZoom,
   inventariarOcurrenciasVencidasZoomUseCase,
   resolverCarpetaDestinoZoom,
@@ -16,15 +17,18 @@ import {
   type AnfitrionInventarioZoom,
   type SaludWorkerZoom
 } from "../modules/archivos/application";
-import { leerConfiguracionZoomArchivos, type LeaseArchivoZoom } from "../modules/archivos/domain";
+import { FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM, leerConfiguracionZoomArchivos, type LeaseArchivoZoom } from "../modules/archivos/domain";
 import {
   GoogleDriveArchivoStorageAdapter,
   crearPrismaZoomArchivoRepositoryAdapter,
+  crearPrismaZoomBarridoRepositoryAdapter,
   crearZoomOrigenAdapter
 } from "../modules/archivos/infrastructure";
 
 const TIPOS_ZOOM = ["ZOOM", "ZOOM_HISTORICO"] as const;
 const LOTE_INVENTARIO = 50;
+/** Páginas de recuperación histórica por ciclo de mantenimiento: acota el tiempo sin frenar el resto. */
+const PAGINAS_RECUPERACION_POR_CICLO = 20;
 const DIAS_BARRIDO_RECIENTE = 3;
 
 /** SHA-256 completo: las marcas de origen en Drive exigen 64 caracteres hexadecimales. */
@@ -37,10 +41,12 @@ export type WorkerZoomArchivos = Readonly<{
   transferir: (lease: LeaseArchivoZoom, signal: AbortSignal) => Promise<unknown>;
   inventariarVencidas: () => Promise<unknown>;
   barrerRecientes: () => Promise<unknown>;
+  /** Continúa las recuperaciones históricas encoladas (una página a la vez). */
+  procesarRecuperaciones: () => Promise<unknown>;
 }>;
 
 /** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
-async function listarAnfitriones(cuentaZoomId: string): Promise<readonly AnfitrionInventarioZoom[]> {
+export async function listarAnfitriones(cuentaZoomId: string): Promise<readonly AnfitrionInventarioZoom[]> {
   const cuentas = await db.cuentaProveedor.findMany({
     where: { proveedor: { tipo: { in: [...TIPOS_ZOOM] } }, externalAccountId: { not: null } },
     select: { id: true, externalAccountId: true },
@@ -79,7 +85,8 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
       reclamarArchivo: async () => null,
       transferir: async () => undefined,
       inventariarVencidas: async () => undefined,
-      barrerRecientes: async () => undefined
+      barrerRecientes: async () => undefined,
+      procesarRecuperaciones: async () => undefined
     };
   }
 
@@ -87,6 +94,7 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
   const auth = crearProveedorTokenZoom({ accountId: zoom.accountId, clientId: zoom.clientId, clientSecret: zoom.clientSecret });
   const origen = crearZoomOrigenAdapter({ auth, cuentaZoomId, hash });
   const storage = new GoogleDriveArchivoStorageAdapter({ auth: driveAuth, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
+  const repoBarridos = crearPrismaZoomBarridoRepositoryAdapter({ db, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
   const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
 
   return {
@@ -112,6 +120,28 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
         ahora: new Date(),
         diasAtras: DIAS_BARRIDO_RECIENTE,
         corteDias: config.corteDias
-      })
+      }),
+    procesarRecuperaciones: async () => {
+      let paginas = 0;
+      let ocurrencias = 0;
+      const detenidos: string[] = [];
+      for (const barridoId of await repoBarridos.listarPendientes(new Date(), 5)) {
+        while (paginas < PAGINAS_RECUPERACION_POR_CICLO) {
+          const r = await procesarPaginaRecuperacionZoom(
+            {
+              repoBarridos, repoArchivos: repo, origen, cuentaZoomId, ahora: () => new Date(), leaseMs: config.leaseMs,
+              corteDias: config.corteDias, aleatorio: Math.random, limiteIntentos: FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM
+            },
+            barridoId
+          );
+          paginas++;
+          if (r.tipo === "AVANZO" || r.tipo === "COMPLETADO") ocurrencias += r.ocurrencias;
+          if (r.tipo === "REQUIERE_REVISION") detenidos.push(barridoId);
+          // Solo se sigue con la misma recuperación mientras avanza; un fallo espera su reintento.
+          if (r.tipo !== "AVANZO") break;
+        }
+      }
+      return { paginas, ocurrencias, requierenRevision: detenidos.length };
+    }
   };
 }
