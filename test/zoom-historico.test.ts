@@ -126,6 +126,14 @@ describe("crearRecuperacionZoom", () => {
     expect((await pedir({ desde: "ayer" })).tipo).toBe("PETICION_INVALIDA");
   });
 
+  it("fechas con formato válido pero imposibles (mes 13, día 31 de abril) son PETICION_INVALIDA, no una excepción", async () => {
+    const deps = base();
+    for (const desde of ["2026-13-01", "2026-04-31", "2026-00-10", "2026-02-30"]) {
+      const r = await crearRecuperacionZoom(deps, ADMIN, { anfitrionIds: [], desde, hasta: "2026-06-01", dryRun: true });
+      expect(r).toEqual({ tipo: "PETICION_INVALIDA", motivo: "FECHA_INVALIDA" });
+    }
+  });
+
   it("dry-run: cuenta ocurrencias y límites reales sin escribir ni crear barrido", async () => {
     const origen = origenFalso({
       "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "t2" },

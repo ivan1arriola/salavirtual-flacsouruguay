@@ -65,7 +65,10 @@ export type DepsCrearRecuperacionZoom = Readonly<{
 }>;
 
 function fechaValida(valor: string): boolean {
-  return FECHA.test(valor) && new Date(`${valor}T00:00:00Z`).toISOString().slice(0, 10) === valor;
+  if (!FECHA.test(valor)) return false;
+  const fecha = new Date(`${valor}T00:00:00Z`);
+  // Una fecha imposible (mes 13) produce Invalid Date y toISOString() lanzaría: se comprueba antes.
+  return Number.isFinite(fecha.getTime()) && fecha.toISOString().slice(0, 10) === valor;
 }
 
 function hoyUtc(ahora: Date): string {
