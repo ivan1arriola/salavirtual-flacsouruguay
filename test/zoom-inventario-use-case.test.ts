@@ -77,7 +77,7 @@ describe("barrerAnfitrionesZoomUseCase", () => {
       "h2:": { elementos: [], siguiente: null }
     };
     const origen: any = {
-      listarOcurrencias: vi.fn(async (a: any, _v: any, cursor: string | null) => paginas[`${a.anfitrionZoomId}:${cursor ?? ""}`]),
+      listarOcurrencias: vi.fn(async (a: any, v: any, cursor: string | null) => v.papelera ? { elementos: [], siguiente: null } : paginas[`${a.anfitrionZoomId}:${cursor ?? ""}`]),
       obtenerInventario: vi.fn(async () => VACIO)
     };
     const repo: any = { guardarInventario: vi.fn(async () => ({ ocurrenciaId: "o", nuevos: 0, actualizados: 0, requierenRevision: 0 })) };
@@ -88,9 +88,21 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     expect(origen.listarOcurrencias.mock.calls[0][1]).toEqual({ desde: "2026-11-06", hasta: "2026-11-09" });
   });
 
+  it("el barrido reciente también consulta la papelera de cada ventana e inventaría lo hallado", async () => {
+    const origen: any = {
+      listarOcurrencias: vi.fn(async (_a: any, v: any) => ({ elementos: v.papelera ? [ref(hace(HORA), "borrada")] : [], siguiente: null })),
+      obtenerInventario: vi.fn(async () => VACIO)
+    };
+    const repo: any = { guardarInventario: vi.fn(async () => ({ ocurrenciaId: "o", nuevos: 0, actualizados: 0, requierenRevision: 0 })) };
+    const r = await barrerAnfitrionesZoomUseCase(repo, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 3, corteDias: 90 });
+    expect(r).toMatchObject({ ocurrencias: 1, ocurrenciasPapelera: 1 });
+    expect(repo.guardarInventario).toHaveBeenCalledTimes(1);
+    expect(origen.listarOcurrencias.mock.calls.map((c: any[]) => Boolean(c[1].papelera))).toEqual([false, true]);
+  });
+
   it("un anfitrión que falla no impide barrer al siguiente ni cierra el barrido como completo", async () => {
     const origen: any = {
-      listarOcurrencias: vi.fn(async (a: any) => { if (a.anfitrionZoomId === "h1") throw new Error("403"); return { elementos: [ref(hace(HORA), "z")], siguiente: null }; }),
+      listarOcurrencias: vi.fn(async (a: any, v: any) => { if (a.anfitrionZoomId === "h1") throw new Error("403"); return { elementos: v.papelera ? [] : [ref(hace(HORA), "z")], siguiente: null }; }),
       obtenerInventario: vi.fn(async () => VACIO)
     };
     const repo: any = { guardarInventario: vi.fn(async () => ({ ocurrenciaId: "o", nuevos: 0, actualizados: 0, requierenRevision: 0 })) };
