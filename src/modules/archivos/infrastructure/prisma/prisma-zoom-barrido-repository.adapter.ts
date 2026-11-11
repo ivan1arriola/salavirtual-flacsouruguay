@@ -38,6 +38,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
     hasta: deLaFecha(f.hasta),
     posicion: {
       anfitrionIndice: f.anfitrionIndice,
+      fuente: f.fuenteListado === "PAPELERA" ? "PAPELERA" : "ACTIVAS",
       ventanaDesde: f.ventanaDesde ? deFecha(f.ventanaDesde) : null,
       cursor: f.nextPageTokenCifrado ? deps.descifrar(f.nextPageTokenCifrado) : null
     },
@@ -121,6 +122,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
           ...(avance.siguiente
             ? {
                 anfitrionIndice: avance.siguiente.anfitrionIndice,
+                fuenteListado: avance.siguiente.fuente,
                 ventanaDesde: avance.siguiente.ventanaDesde ? aFecha(avance.siguiente.ventanaDesde) : null,
                 nextPageTokenCifrado: avance.siguiente.cursor ? deps.cifrar(avance.siguiente.cursor) : null
               }

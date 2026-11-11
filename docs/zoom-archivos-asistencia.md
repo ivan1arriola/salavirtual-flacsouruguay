@@ -101,13 +101,33 @@ Periodo explícito (no hereda los últimos días) y solo anfitriones configurado
 5. Vínculo manual de una ocurrencia con un encuentro Zoom: `POST /api/v1/archivos/zoom/ocurrencias/{id}/vincular`
    con `{ "eventoId" }`; reutiliza el archivo ya conservado, sin nueva transferencia.
 
-Límites conocidos de la recuperación histórica:
+Comportamiento de la recuperación histórica y del worker:
 
-- Un anfitrión omitido (`404:z1001`) queda registrado y el barrido termina en `REQUIERE_REVISION`, nunca como completo.
-- Una ocurrencia que Zoom lista pero cuyo inventario devuelve 404 no avanza el cursor: se reintenta con límite y luego exige revisión.
-- **No se consulta la papelera de Zoom** (ni en la recuperación ni en el barrido reciente): las grabaciones eliminadas no se recuperan. Pendiente: fase persistida por listado.
-- **El vínculo manual no mueve los archivos en Drive**: quedan en su carpeta actual (histórico) y no heredan el acceso del encuentro. La respuesta de la API lo advierte. Pendiente: movimiento idempotente con los mismos IDs de Drive.
+- **Papelera de Zoom:** cada ventana recorre primero las activas y luego la papelera (cursor propio, la fuente se
+  persiste en la posición del barrido). El barrido reciente también consulta la papelera. El dry-run informa por
+  separado lo hallado en ella. Si Zoom no ofrece el inventario de una grabación eliminada (404), queda registrada
+  como omisión `PAPELERA_INVENTARIO_NO_ENCONTRADO:n` y el barrido termina en `REQUIERE_REVISION`, sin bloquear el resto.
+- **Anfitrión omitido** (`404:z1001`): queda registrado y el barrido termina en `REQUIERE_REVISION`, nunca como completo.
+- **Inventario 404 de una ocurrencia activa:** no avanza el cursor; se reintenta con límite y luego exige revisión.
+- **Vínculo manual:** la respuesta informa que el worker moverá la carpeta. Cada ciclo, el worker lleva la carpeta de
+  cada ocurrencia ya vinculada a la raíz de grabaciones vinculadas (`AAAA/MM`), **conservando los IDs de Drive**
+  (se mueve la carpeta, no se copian archivos); es idempotente y sin raíz configurada no mueve nada.
+- **Vínculo automático:** una ocurrencia se vincula sola a su encuentro solo si la coincidencia es inequívoca:
+  (1) UN único evento Zoom con su UUID exacto; o, si ninguno lo tiene, (2) UN único encuentro del mismo número de
+  reunión cuyo horario programado contiene el inicio real (o, solo si ninguno lo contiene, uno que empiece hasta 45 min
+  después: inicio anticipado). Una reunión solo puede estar en curso una vez a la vez, así que número de reunión +
+  horario identifica el encuentro de una serie. Varios candidatos, ninguno o un UUID ambiguo dejan la ocurrencia
+  pendiente de vínculo manual (nunca se adivina por título ni docente). Se reintenta en cada reinventario, y la
+  auditoría registra el criterio (`UUID_EXACTO` o `REUNION_Y_HORARIO`). Sin vínculo, las docentes no ven la ocurrencia.
+- **Asistencia pendiente:** el worker sincroniza la asistencia de las ocurrencias que aún no la tienen (la primera
+  vez hasta 30 días atrás y ya terminadas; los reintentos de `NO_DISPONIBLE`/`ERROR`, solo 3 días, cada 15 minutos).
+- **Rol HOST:** la sesión cuyo `userId` coincide con el anfitrión de la ocurrencia se guarda como HOST. Los
+  co-anfitriones no se infieren (quedan sin rol).
 - El estado global de Zoom del endpoint de sincronización solo se devuelve a administración (y al cron con secreto).
+- **Desvincular no devuelve la carpeta** a la raíz histórica: los archivos conservan el acceso del último encuentro.
+
+Verificación pendiente en entorno real (no se puede probar sin credenciales): scopes de participantes históricos y
+resúmenes, asistencia contra Zoom y Google reales, y que Zoom ofrezca (o no) el inventario de grabaciones en papelera.
 
 ## Rollback
 

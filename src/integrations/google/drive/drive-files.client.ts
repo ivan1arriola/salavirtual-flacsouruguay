@@ -151,3 +151,44 @@ export async function subirDocumentoGoogleDrive(
   return response.data;
 }
 
+
+export type ResultadoMoverDrive = "MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO";
+
+/**
+ * Mueve un archivo o carpeta de Drive al padre indicado SIN cambiar su ID (addParents/removeParents en
+ * un solo PATCH). Idempotente: si ya está solo en el destino no escribe nada. Los archivos de una carpeta
+ * movida van con ella, y heredan los permisos del nuevo contenedor.
+ */
+export async function moverElementoDriveACarpeta(
+  auth: JWT,
+  elementoId: string,
+  nuevoPadreId: string,
+  opciones: Readonly<{ signal?: AbortSignal }> = {}
+): Promise<ResultadoMoverDrive> {
+  const actual = await auth.request<{ id?: string; parents?: readonly string[] }>({
+    url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(elementoId)}?fields=id,parents&supportsAllDrives=true`,
+    method: "GET",
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+    validateStatus: () => true,
+    signal: opciones.signal
+  });
+  if (actual.status === 404) return "NO_ENCONTRADO";
+  if (actual.status < 200 || actual.status >= 300) throw new Error(`Drive rechazó consultar el elemento (HTTP ${actual.status}).`);
+  const padres = actual.data?.parents ?? [];
+  if (padres.length === 1 && padres[0] === nuevoPadreId) return "YA_EN_DESTINO";
+
+  const quitar = padres.filter((p) => p !== nuevoPadreId);
+  const consulta = new URLSearchParams({ supportsAllDrives: "true", fields: "id,parents" });
+  if (!padres.includes(nuevoPadreId)) consulta.set("addParents", nuevoPadreId);
+  if (quitar.length > 0) consulta.set("removeParents", quitar.join(","));
+  const movido = await auth.request({
+    url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(elementoId)}?${consulta.toString()}`,
+    method: "PATCH",
+    data: {},
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    validateStatus: () => true,
+    signal: opciones.signal
+  });
+  if (movido.status < 200 || movido.status >= 300) throw new Error(`Drive rechazó mover el elemento (HTTP ${movido.status}).`);
+  return "MOVIDA";
+}

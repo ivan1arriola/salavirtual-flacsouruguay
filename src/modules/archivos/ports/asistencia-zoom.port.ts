@@ -47,6 +47,8 @@ export interface AsistenciaZoomRepositoryPort {
 export type OcurrenciaParaAsistenciaZoom = Readonly<{
   ocurrenciaId: string;
   uuid: string;
+  /** ID de usuario de Zoom del anfitrión de la ocurrencia (el del listado de grabaciones). */
+  anfitrionZoomId: string;
   eventoProveedorId: string | null;
   inicioProgramadoAt: Date | null;
   finProgramadoAt: Date | null;

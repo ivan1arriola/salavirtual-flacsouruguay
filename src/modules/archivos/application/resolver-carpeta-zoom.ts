@@ -27,6 +27,18 @@ export function nombreCarpetaOcurrenciaZoom(
   return `${titulo === "" ? "Reunión Zoom" : titulo} ${anio}-${mes}-${dia} [${sufijo}]`;
 }
 
+/** Carpeta AAAA/MM bajo `raiz`, creada de forma idempotente; no crea la carpeta de la ocurrencia. */
+export async function resolverCarpetaMesZoom(
+  storage: Pick<ArchivoStoragePort, "asegurarCarpeta">,
+  hash: HashZoom,
+  inicioRealAt: Date,
+  raiz: string
+): Promise<string> {
+  const { anio, mes } = partesFechaLocal(inicioRealAt);
+  const porAnio = await storage.asegurarCarpeta(hash(`zoom-carpeta|${raiz}|${anio}`), anio, raiz);
+  return storage.asegurarCarpeta(hash(`zoom-carpeta|${porAnio}|${mes}`), mes, porAnio);
+}
+
 /**
  * Resuelve AAAA/MM/ocurrencia bajo la raíz que corresponda. Los encuentros vinculados heredan los
  * permisos de la carpeta de grabaciones; los históricos sin vincular van SOLO a la carpeta de
@@ -40,9 +52,7 @@ export async function resolverCarpetaDestinoZoom(
 ): Promise<string | null> {
   const raiz = archivo.eventoProveedorId !== null ? raices.raizVinculados : raices.raizHistorico;
   if (!raiz) return null;
-  const { anio, mes } = partesFechaLocal(archivo.ocurrencia.inicioRealAt);
-  const porAnio = await storage.asegurarCarpeta(hash(`zoom-carpeta|${raiz}|${anio}`), anio, raiz);
-  const porMes = await storage.asegurarCarpeta(hash(`zoom-carpeta|${porAnio}|${mes}`), mes, porAnio);
+  const porMes = await resolverCarpetaMesZoom(storage, hash, archivo.ocurrencia.inicioRealAt, raiz);
   return storage.asegurarCarpeta(
     hash(`zoom-carpeta|ocurrencia|${archivo.ocurrencia.cuentaZoomId}|${archivo.ocurrencia.uuid}|${raiz}`),
     nombreCarpetaOcurrenciaZoom(archivo.ocurrencia),

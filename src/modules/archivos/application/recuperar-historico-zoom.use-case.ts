@@ -46,6 +46,8 @@ export type ResumenRecuperacion =
       anfitriones: number;
       ventanas: number;
       ocurrencias: number;
+      /** De las ocurrencias halladas, cuántas están en la papelera de Zoom (se recuperan igual que las activas). */
+      ocurrenciasPapelera: number;
       /** Límites reales de lo hallado; null si no se halló nada. Zoom puede conservar menos que el periodo pedido. */
       primeraOcurrenciaAt: Date | null;
       ultimaOcurrenciaAt: Date | null;
@@ -63,7 +65,10 @@ export type DepsCrearRecuperacionZoom = Readonly<{
 }>;
 
 function fechaValida(valor: string): boolean {
-  return FECHA.test(valor) && new Date(`${valor}T00:00:00Z`).toISOString().slice(0, 10) === valor;
+  if (!FECHA.test(valor)) return false;
+  const fecha = new Date(`${valor}T00:00:00Z`);
+  // Una fecha imposible (mes 13) produce Invalid Date y toISOString() lanzaría: se comprueba antes.
+  return Number.isFinite(fecha.getTime()) && fecha.toISOString().slice(0, 10) === valor;
 }
 
 function hoyUtc(ahora: Date): string {
@@ -114,26 +119,32 @@ export async function crearRecuperacionZoom(
   }
 
   let ocurrencias = 0;
+  let ocurrenciasPapelera = 0;
   let primera: Date | null = null;
   let ultima: Date | null = null;
   const errores: ErrorBarridoZoom[] = [];
   for (const anfitrion of anfitriones) {
     try {
       for (const ventana of ventanas) {
-        let cursor: string | null = null;
-        let paginas = 0;
-        do {
-          const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await deps.origen.listarOcurrencias(anfitrion, ventana, cursor);
-          for (const o of pagina.elementos) {
-            ocurrencias++;
-            if (primera === null || o.inicioRealAt < primera) primera = o.inicioRealAt;
-            if (ultima === null || o.inicioRealAt > ultima) ultima = o.inicioRealAt;
-          }
-          if (pagina.siguiente !== null && (pagina.siguiente === cursor || ++paginas >= MAX_PAGINAS_DRY_RUN)) {
-            throw new Error("Paginación sin fin.");
-          }
-          cursor = pagina.siguiente;
-        } while (cursor !== null);
+        for (const papelera of [false, true]) {
+          let cursor: string | null = null;
+          let paginas = 0;
+          do {
+            const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await deps.origen.listarOcurrencias(
+              anfitrion, papelera ? { ...ventana, papelera: true } : ventana, cursor
+            );
+            for (const o of pagina.elementos) {
+              ocurrencias++;
+              if (papelera) ocurrenciasPapelera++;
+              if (primera === null || o.inicioRealAt < primera) primera = o.inicioRealAt;
+              if (ultima === null || o.inicioRealAt > ultima) ultima = o.inicioRealAt;
+            }
+            if (pagina.siguiente !== null && (pagina.siguiente === cursor || ++paginas >= MAX_PAGINAS_DRY_RUN)) {
+              throw new Error("Paginación sin fin.");
+            }
+            cursor = pagina.siguiente;
+          } while (cursor !== null);
+        }
       }
     } catch (error) {
       if (errores.length < 25) errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
@@ -141,7 +152,7 @@ export async function crearRecuperacionZoom(
   }
   return {
     tipo: "DRY_RUN", desde: solicitud.desde, hasta: solicitud.hasta, anfitriones: anfitriones.length,
-    ventanas: ventanas.length, ocurrencias, primeraOcurrenciaAt: primera, ultimaOcurrenciaAt: ultima, errores
+    ventanas: ventanas.length, ocurrencias, ocurrenciasPapelera, primeraOcurrenciaAt: primera, ultimaOcurrenciaAt: ultima, errores
   };
 }
 
@@ -183,15 +194,20 @@ function posicionSiguiente(
   siguiente: string | null,
   omitirAnfitrion: boolean
 ): PosicionBarridoZoom | null {
-  const { anfitrionIndice } = barrido.posicion;
+  const { anfitrionIndice, fuente } = barrido.posicion;
+  // Misma fuente, página siguiente de su propio cursor.
   if (!omitirAnfitrion && siguiente !== null) {
-    return { anfitrionIndice, ventanaDesde: ventanas[indiceVentana]!.desde, cursor: siguiente };
+    return { anfitrionIndice, fuente, ventanaDesde: ventanas[indiceVentana]!.desde, cursor: siguiente };
+  }
+  // Terminadas las activas de la ventana, sigue la papelera de la misma ventana (cursor propio).
+  if (!omitirAnfitrion && fuente === "ACTIVAS") {
+    return { anfitrionIndice, fuente: "PAPELERA", ventanaDesde: ventanas[indiceVentana]!.desde, cursor: null };
   }
   if (!omitirAnfitrion && indiceVentana + 1 < ventanas.length) {
-    return { anfitrionIndice, ventanaDesde: ventanas[indiceVentana + 1]!.desde, cursor: null };
+    return { anfitrionIndice, fuente: "ACTIVAS", ventanaDesde: ventanas[indiceVentana + 1]!.desde, cursor: null };
   }
   if (anfitrionIndice + 1 < barrido.anfitriones.length) {
-    return { anfitrionIndice: anfitrionIndice + 1, ventanaDesde: null, cursor: null };
+    return { anfitrionIndice: anfitrionIndice + 1, fuente: "ACTIVAS", ventanaDesde: null, cursor: null };
   }
   return null;
 }
@@ -239,7 +255,10 @@ export async function procesarPaginaRecuperacionZoom(
 
   let pagina: ResultadoPagina<ReferenciaOcurrenciaZoom>;
   try {
-    pagina = await deps.origen.listarOcurrencias(anfitrion, ventanas[indiceVentana]!, barrido.posicion.cursor);
+    const ventana = ventanas[indiceVentana]!;
+    pagina = await deps.origen.listarOcurrencias(
+      anfitrion, barrido.posicion.fuente === "PAPELERA" ? { ...ventana, papelera: true } : ventana, barrido.posicion.cursor
+    );
   } catch (error) {
     const e = leerErrorZoom(error);
     const codigo = codigoDeError(error);
@@ -269,13 +288,19 @@ export async function procesarPaginaRecuperacionZoom(
     return fallar(deps, lease, barrido, "CURSOR_REPETIDO");
   }
 
+  let sinInventarioEnPapelera = 0;
   try {
     for (const referencia of pagina.elementos) {
       const r = await inventariarZoomUseCase(deps.repoArchivos, deps.origen, {
         referencia, cuentaProveedorId: bruto.cuentaProveedorId, ahora: deps.ahora(), corteDias: deps.corteDias
       });
-      // Zoom la listó pero no devuelve su inventario (404): no se persistió, así que la página no puede darse por procesada.
-      if (r.tipo === "NO_ENCONTRADA") return fallar(deps, lease, barrido, "INVENTARIO_NO_ENCONTRADO");
+      if (r.tipo === "NO_ENCONTRADA") {
+        // En la papelera Zoom puede no ofrecer el inventario de lo eliminado: se registra como omisión
+        // visible (el barrido queda en revisión) pero no bloquea el resto de la recuperación.
+        if (barrido.posicion.fuente === "PAPELERA") { sinInventarioEnPapelera++; continue; }
+        // Zoom la listó pero no devuelve su inventario (404): no se persistió, así que la página no puede darse por procesada.
+        return fallar(deps, lease, barrido, "INVENTARIO_NO_ENCONTRADO");
+      }
     }
   } catch (error) {
     // Sin avanzar: la página completa se repite; lo ya guardado se actualiza sin duplicarse.
@@ -285,11 +310,19 @@ export async function procesarPaginaRecuperacionZoom(
   const siguiente = posicionSiguiente(barrido, ventanas, indiceVentana, pagina.siguiente, false);
   const ok = await deps.repoBarridos.avanzar(
     lease,
-    { siguiente, ocurrencias: pagina.elementos.length, conservarIntentos: siguiente !== null && siguiente.cursor !== null },
+    {
+      siguiente,
+      ocurrencias: pagina.elementos.length - sinInventarioEnPapelera,
+      conservarIntentos: siguiente !== null && siguiente.cursor !== null,
+      ...(sinInventarioEnPapelera > 0
+        ? { omision: { anfitrionZoomId: bruto.anfitrionZoomId, codigo: `PAPELERA_INVENTARIO_NO_ENCONTRADO:${sinInventarioEnPapelera}` } }
+        : {})
+    },
     deps.ahora()
   );
   if (!ok) return { tipo: "LEASE_OBSOLETO" };
+  const hayOmisiones = barrido.omisiones.length > 0 || sinInventarioEnPapelera > 0;
   return siguiente === null
-    ? { tipo: barrido.omisiones.length > 0 ? "COMPLETADO_CON_OMISIONES" : "COMPLETADO", ocurrencias: pagina.elementos.length }
+    ? { tipo: hayOmisiones ? "COMPLETADO_CON_OMISIONES" : "COMPLETADO", ocurrencias: pagina.elementos.length }
     : { tipo: "AVANZO", ocurrencias: pagina.elementos.length };
 }

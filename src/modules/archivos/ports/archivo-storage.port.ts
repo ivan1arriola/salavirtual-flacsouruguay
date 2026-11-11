@@ -38,4 +38,6 @@ export interface ArchivoStoragePort {
   /** Primero `files.get(fileId)`, después búsqueda por marca de origen. */
   buscarConservado(origenKey: string, fileId: string | null, signal?: AbortSignal): Promise<BusquedaConservadoArchivo>;
   verificarArchivo(id: string, signal?: AbortSignal): Promise<DestinoConservadoZoom | null>;
+  /** Mueve una carpeta (con todo su contenido) al padre indicado conservando su ID; idempotente. */
+  moverCarpeta(carpetaId: string, nuevoPadreId: string, signal?: AbortSignal): Promise<"MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO">;
 }

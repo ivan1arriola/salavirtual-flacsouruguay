@@ -9,6 +9,9 @@ import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configurac
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
   barrerAnfitrionesZoomUseCase,
+  moverCarpetasVinculadasZoomUseCase,
+  sincronizarAsistenciaPendienteZoomUseCase,
+  sincronizarAsistenciaZoomUseCase,
   procesarPaginaRecuperacionZoom,
   comprobarSaludWorkerZoom,
   inventariarOcurrenciasVencidasZoomUseCase,
@@ -22,11 +25,18 @@ import {
   GoogleDriveArchivoStorageAdapter,
   crearPrismaZoomArchivoRepositoryAdapter,
   crearPrismaZoomBarridoRepositoryAdapter,
+  crearPrismaZoomCarpetasRepositoryAdapter,
+  crearPrismaAsistenciaPendienteAdapter,
+  crearPrismaAsistenciaZoomRepositoryAdapter,
+  crearPrismaSincronizacionAsistenciaZoomAdapter,
+  crearZoomAsistenciaProviderAdapter,
   crearZoomOrigenAdapter
 } from "../modules/archivos/infrastructure";
 
 const TIPOS_ZOOM = ["ZOOM", "ZOOM_HISTORICO"] as const;
 const LOTE_INVENTARIO = 50;
+const LOTE_CARPETAS = 25;
+const LOTE_ASISTENCIA = 20;
 /** Páginas de recuperación histórica por ciclo de mantenimiento: acota el tiempo sin frenar el resto. */
 const PAGINAS_RECUPERACION_POR_CICLO = 20;
 const DIAS_BARRIDO_RECIENTE = 3;
@@ -43,6 +53,10 @@ export type WorkerZoomArchivos = Readonly<{
   barrerRecientes: () => Promise<unknown>;
   /** Continúa las recuperaciones históricas encoladas (una página a la vez). */
   procesarRecuperaciones: () => Promise<unknown>;
+  /** Mueve a la raíz de vinculados las carpetas de ocurrencias ya vinculadas a un encuentro. */
+  moverCarpetasVinculadas: () => Promise<unknown>;
+  /** Sincroniza la asistencia (reporte de participantes) de las ocurrencias que aún no la tienen. */
+  sincronizarAsistenciaPendiente: () => Promise<unknown>;
 }>;
 
 /** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
@@ -86,7 +100,9 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
       transferir: async () => undefined,
       inventariarVencidas: async () => undefined,
       barrerRecientes: async () => undefined,
-      procesarRecuperaciones: async () => undefined
+      procesarRecuperaciones: async () => undefined,
+      moverCarpetasVinculadas: async () => undefined,
+      sincronizarAsistenciaPendiente: async () => undefined
     };
   }
 
@@ -121,6 +137,29 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
         diasAtras: DIAS_BARRIDO_RECIENTE,
         corteDias: config.corteDias
       }),
+    sincronizarAsistenciaPendiente: () => {
+      const asistencia = {
+        sync: crearPrismaSincronizacionAsistenciaZoomAdapter({ db }),
+        repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }),
+        provider: crearZoomAsistenciaProviderAdapter({ auth, hash })
+      };
+      return sincronizarAsistenciaPendienteZoomUseCase(
+        {
+          repo: crearPrismaAsistenciaPendienteAdapter({ db }),
+          sincronizar: (id) => sincronizarAsistenciaZoomUseCase(asistencia, id),
+          ahora: () => new Date()
+        },
+        { limite: LOTE_ASISTENCIA }
+      );
+    },
+    moverCarpetasVinculadas: () =>
+      moverCarpetasVinculadasZoomUseCase(
+        {
+          repo: crearPrismaZoomCarpetasRepositoryAdapter({ db }),
+          storage, hash, raizVinculados: raices.raizVinculados, ahora: () => new Date()
+        },
+        { limite: LOTE_CARPETAS }
+      ),
     procesarRecuperaciones: async () => {
       let paginas = 0;
       let ocurrencias = 0;

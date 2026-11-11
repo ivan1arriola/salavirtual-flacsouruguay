@@ -1065,6 +1065,8 @@ model OcurrenciaArchivoZoom {
   /// Observaciones no descartadas del último inventario (sin URLs ni tokens).
   observacionesInventario Json?
   vinculadaAt             DateTime?
+  /// La carpeta de Drive de la ocurrencia ya está verificada bajo la raíz de grabaciones vinculadas.
+  carpetaVinculadaAt      DateTime?
   vinculadaPorId          String?
   /// Estado de asistencia de la ocurrencia; los valores los define la entrega C.
   estadoAsistencia        String             @default("PENDIENTE")
@@ -1080,6 +1082,7 @@ model OcurrenciaArchivoZoom {
   @@index([eventoProveedorId])
   @@index([cuentaProveedorId])
   @@index([proximoInventarioAt])
+  @@index([carpetaVinculadaAt])
   sesionesAsistencia      SesionAsistenciaZoom[]
   registrosAsistencia     RegistroAsistenciaZoom[]
 }
@@ -1140,6 +1143,8 @@ model BarridoArchivoZoom {
   desde                  DateTime                 @db.Date
   hasta                  DateTime                 @db.Date
   anfitrionIndice        Int                      @default(0)
+  /// Listado en curso dentro de la ventana: ACTIVAS o PAPELERA (cada una con su cursor).
+  fuenteListado          String                   @default("ACTIVAS")
   ventanaDesde           DateTime?                @db.Date
   ventanaHasta           DateTime?                @db.Date
   nextPageTokenCifrado   String?                  @db.Text

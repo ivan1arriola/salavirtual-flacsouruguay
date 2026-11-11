@@ -5,8 +5,12 @@ export type EstadoBarridoZoom =
   | "PENDIENTE" | "EN_CURSO" | "COMPLETADO" | "ERROR_REINTENTABLE" | "REQUIERE_REVISION" | "CANCELADO";
 
 /** Posición persistida: anfitrión, ventana (fecha inicial inclusiva) y cursor de la página SIGUIENTE a procesar. */
+export type FuenteListadoZoom = "ACTIVAS" | "PAPELERA";
+
 export type PosicionBarridoZoom = Readonly<{
   anfitrionIndice: number;
+  /** Listado en curso dentro de la ventana: primero las activas y luego la papelera, cada una con su cursor. */
+  fuente: FuenteListadoZoom;
   /** null = primera ventana del periodo. */
   ventanaDesde: string | null;
   cursor: string | null;

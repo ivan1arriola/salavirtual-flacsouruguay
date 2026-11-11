@@ -110,6 +110,8 @@ function fechaMontevideo(fecha: Date): string {
 export type ErrorBarridoZoom = Readonly<{ anfitrionZoomId: string; codigo: string }>;
 export type ResumenBarridoZoom = Readonly<{
   ocurrencias: number;
+  /** De `ocurrencias`, las halladas en la papelera de Zoom. */
+  ocurrenciasPapelera: number;
   anfitrionesConError: number;
   ocurrenciasConError: number;
   /** Código del error por anfitrión (nunca el mensaje: puede traer URLs); acotado a 25. */
@@ -140,6 +142,7 @@ export async function barrerAnfitrionesZoomUseCase(
   const desde = fechaMontevideo(new Date(entrada.ahora.getTime() - entrada.diasAtras * DIA));
   const ventanas = particionarPeriodoZoom(desde, hasta, DIAS_VENTANA_LISTADO_GRABACIONES);
   let ocurrencias = 0;
+  let ocurrenciasPapelera = 0;
   let anfitrionesConError = 0;
   let ocurrenciasConError = 0;
   const errores: ErrorBarridoZoom[] = [];
@@ -147,32 +150,38 @@ export async function barrerAnfitrionesZoomUseCase(
   for (const anfitrion of entrada.anfitriones) {
     try {
       for (const ventana of ventanas) {
-        let cursor: string | null = null;
-        const vistos = new Set<string>();
-        do {
-          const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await origen.listarOcurrencias(anfitrion, ventana, cursor);
-          for (const referencia of pagina.elementos) {
-            ocurrencias++;
-            try {
-              await inventariarZoomUseCase(repo, origen, {
-                referencia, cuentaProveedorId: anfitrion.cuentaProveedorId, ahora: entrada.ahora, corteDias: entrada.corteDias
-              });
-            } catch {
-              ocurrenciasConError++;
+        // Activas y papelera de cada ventana: una grabación eliminada poco después de terminar la reunión se conserva igual.
+        for (const papelera of [false, true]) {
+          let cursor: string | null = null;
+          const vistos = new Set<string>();
+          do {
+            const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await origen.listarOcurrencias(
+              anfitrion, papelera ? { ...ventana, papelera: true } : ventana, cursor
+            );
+            for (const referencia of pagina.elementos) {
+              ocurrencias++;
+              if (papelera) ocurrenciasPapelera++;
+              try {
+                await inventariarZoomUseCase(repo, origen, {
+                  referencia, cuentaProveedorId: anfitrion.cuentaProveedorId, ahora: entrada.ahora, corteDias: entrada.corteDias
+                });
+              } catch {
+                ocurrenciasConError++;
+              }
             }
-          }
-          cursor = pagina.siguiente;
-          if (cursor !== null) {
-            // Un cursor repetido no avanza: se corta sin declarar completa la ventana.
-            if (vistos.has(cursor)) throw new Error("Cursor de paginación repetido.");
-            vistos.add(cursor);
-          }
-        } while (cursor !== null);
+            cursor = pagina.siguiente;
+            if (cursor !== null) {
+              // Un cursor repetido no avanza: se corta sin declarar completa la ventana.
+              if (vistos.has(cursor)) throw new Error("Cursor de paginación repetido.");
+              vistos.add(cursor);
+            }
+          } while (cursor !== null);
+        }
       }
     } catch (error) {
       anfitrionesConError++;
       if (errores.length < 25) errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
     }
   }
-  return { ocurrencias, anfitrionesConError, ocurrenciasConError, errores };
+  return { ocurrencias, ocurrenciasPapelera, anfitrionesConError, ocurrenciasConError, errores };
 }

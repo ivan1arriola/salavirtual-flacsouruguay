@@ -85,13 +85,13 @@ export function crearPrismaSincronizacionAsistenciaZoomAdapter(
       const o = await db.ocurrenciaArchivoZoom.findUnique({
         where: { id: ocurrenciaId },
         select: {
-          id: true, uuid: true, eventoProveedorId: true,
+          id: true, uuid: true, anfitrionZoomId: true, eventoProveedorId: true,
           eventoProveedor: { select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } } }
         }
       });
       if (!o) return null;
       return {
-        ocurrenciaId: o.id, uuid: o.uuid, eventoProveedorId: o.eventoProveedorId,
+        ocurrenciaId: o.id, uuid: o.uuid, anfitrionZoomId: o.anfitrionZoomId, eventoProveedorId: o.eventoProveedorId,
         inicioProgramadoAt: o.eventoProveedor?.instancia.inicioProgramadoAt ?? null,
         finProgramadoAt: o.eventoProveedor?.instancia.finProgramadoAt ?? null
       };

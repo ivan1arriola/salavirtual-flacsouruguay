@@ -4,6 +4,7 @@ import {
   generarIdArchivoDrive,
   iniciarSubidaDriveReanudable,
   listarArchivosDrivePorOrigen,
+  moverElementoDriveACarpeta,
   obtenerArchivoDrivePorId,
   obtenerOCrearCarpetaDrive,
   subirBloqueDriveReanudable,
@@ -86,6 +87,10 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
     if (marcados.length === 0) return { tipo: "NINGUNO" };
     if (marcados.length > 1) return { tipo: "AMBIGUO", cantidad: marcados.length };
     return { tipo: "UNO", destino: aDestino(marcados[0]!) };
+  }
+
+  moverCarpeta(carpetaId: string, nuevoPadreId: string, signal?: AbortSignal) {
+    return moverElementoDriveACarpeta(this.deps.auth, carpetaId, nuevoPadreId, { signal });
   }
 
   async verificarArchivo(id: string, signal?: AbortSignal): Promise<DestinoConservadoZoom | null> {

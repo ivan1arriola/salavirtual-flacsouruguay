@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { vincularAutomaticamenteSiInequivoco } from "./zoom-vinculo-automatico";
 import {
   asignarNombresDestinoZoom,
   bytesTransferidosReservaAbandonadaZoom,
@@ -184,7 +185,12 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
             procesamientoPendiente: inventario.procesamientoPendiente, observacionesInventario: observaciones,
             ...(entrada.cuentaProveedorId ? { cuentaProveedorId: entrada.cuentaProveedorId } : {})
           },
-          select: { id: true }
+          select: { id: true, eventoProveedorId: true }
+        });
+        // Coincidencia inequívoca (UUID exacto, o reunión + horario único): se vincula sola; todo lo demás queda para vínculo manual.
+        await vincularAutomaticamenteSiInequivoco(tx, {
+          ocurrenciaId: ocurrencia.id, uuid: ref.uuid, meetingId: ref.meetingId, inicioRealAt: ref.inicioRealAt,
+          eventoProveedorId: ocurrencia.eventoProveedorId, ahora: entrada.inventariadoAt
         });
 
         const existentes = await tx.archivoOrigenZoom.findMany({
