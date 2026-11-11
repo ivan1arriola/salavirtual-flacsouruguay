@@ -70,7 +70,11 @@ export async function sincronizarAsistenciaZoomUseCase(
     return { tipo: "OK", estadoReporte: "VACIO" };
   }
 
-  const nuevas = reporte.sesiones;
+  // El reporte no informa roles. Solo se afirma lo comprobable: la sesión cuyo userId coincide con el del
+  // anfitrión de la ocurrencia es HOST. Los co-anfitriones no se infieren (quedan sin rol, como hasta ahora).
+  const nuevas = reporte.sesiones.map((s) =>
+    s.rol === null && s.userId !== null && s.userId === ocurrencia.anfitrionZoomId ? { ...s, rol: "HOST" as const } : s
+  );
   const ventanaProgramada = ocurrencia.inicioProgramadoAt && ocurrencia.finProgramadoAt
     ? { inicioAt: ocurrencia.inicioProgramadoAt, finAt: ocurrencia.finProgramadoAt }
     : null;

@@ -4,7 +4,7 @@ import { sincronizarAsistenciaZoomUseCase } from "../src/modules/archivos/applic
 import type { SesionObservadaZoom } from "../src/modules/archivos/domain";
 
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
-const OCURRENCIA = { ocurrenciaId: "o1", uuid: "u1", eventoProveedorId: "e1", inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") };
+const OCURRENCIA = { ocurrenciaId: "o1", uuid: "u1", anfitrionZoomId: "host-1", eventoProveedorId: "e1", inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") };
 const ses = (clave: string, entra: string, sale: string, participanteId = "p1"): SesionObservadaZoom => ({
   claveSesion: clave, participanteId, userId: "u", nombre: "Ana", email: null,
   entradaAt: t(entra), salidaAt: t(sale), status: "in_meeting", rol: null
@@ -124,6 +124,16 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     });
     expect(await ejecutar()).toEqual({ tipo: "OK", estadoReporte: "VACIO" });
     expect(sync.marcarEstadoReporte).toHaveBeenCalledWith("o1", "VACIO", null);
+  });
+
+  it("la sesión cuyo userId es el del anfitrión de la ocurrencia se guarda como HOST; las demás no cambian", async () => {
+    const delAnfitrion = { ...ses("c1", "10:00", "10:30", "p1"), userId: "host-1" };
+    const otra = { ...ses("c2", "10:05", "10:25", "p2"), userId: "otro-usuario" };
+    const anonima = { ...ses("c3", "10:10", "10:20", "p3"), userId: null };
+    const { repo, ejecutar } = crear({ reporte: { estado: "DISPONIBLE", sesiones: [delAnfitrion, otra, anonima] } });
+    await ejecutar();
+    const guardadas = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[])[2] as SesionObservadaZoom[];
+    expect(guardadas.map((x) => [x.claveSesion, x.rol])).toEqual([["c1", "HOST"], ["c2", null], ["c3", null]]);
   });
 
   it("ocurrencia inexistente: ERROR sin llamar a Zoom", async () => {
