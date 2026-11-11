@@ -15,8 +15,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
-import { resolverUuidInstanciaZoomHttp } from "@/src/integrations/zoom/zoom-instances.client";
-import { listarParticipantesReunionPasadaZoomHttp, type ZoomSesionParticipante } from "@/src/integrations/zoom/zoom-reports.client";
+import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { obtenerParticipantesZoomEnVivoHttp, type EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
@@ -60,54 +59,9 @@ export default async function ReunionOperativaPage({
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
     if (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") {
-      let sesiones: readonly ZoomSesionParticipante[] | null = null;
-      if (reunion.zoom.id) {
-        try {
-          const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
-          if (credenciales.disponible) {
-            const token = await obtenerZoomAccessToken(credenciales);
-            const eventoZoom = await db.eventoProveedor.findFirst({
-              where: { id: reunion.zoom.eventoProveedorId ?? "", instanciaSalaId: reunion.id, proveedor: { tipo: "ZOOM" } },
-              select: { id: true, zoomMeetingUuid: true, zoomUuidInicioAt: true, zoomUuidMeetingId: true }
-            });
-            const inicioCoincide = eventoZoom?.zoomUuidInicioAt?.getTime() === reunion.inicioProgramadoAt.getTime()
-              && eventoZoom?.zoomUuidMeetingId === reunion.zoom.id;
-            const uuidGuardado = inicioCoincide ? eventoZoom?.zoomMeetingUuid : null;
-            const uuid = uuidGuardado ?? await resolverUuidInstanciaZoomHttp(
-              token, reunion.zoom.id, reunion.inicioProgramadoAt, reunion.finProgramadoAt
-            );
-            if (uuid && eventoZoom) {
-              const reporte = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
-              // El UUID solo se persiste después de confirmar que Zoom dispone del reporte.
-              // Un cambio concurrente de horario, reunión o UUID impide atribuir el reporte.
-              if (reporte !== null) {
-              const actualizado = await db.eventoProveedor.updateMany({
-                where: {
-                  id: eventoZoom.id,
-                  instancia: { inicioProgramadoAt: reunion.inicioProgramadoAt },
-                  OR: [
-                    { externalEventId: reunion.zoom.id },
-                    { externalEventId: null, reunionProveedor: { externalId: reunion.zoom.id } }
-                  ],
-                  ...(uuidGuardado
-                    ? { zoomMeetingUuid: uuid, zoomUuidMeetingId: reunion.zoom.id, zoomUuidInicioAt: reunion.inicioProgramadoAt }
-                    : { zoomMeetingUuid: eventoZoom.zoomMeetingUuid, zoomUuidMeetingId: eventoZoom.zoomUuidMeetingId, zoomUuidInicioAt: eventoZoom.zoomUuidInicioAt })
-                },
-                data: {
-                  zoomMeetingUuid: uuid,
-                  zoomUuidInicioAt: reunion.inicioProgramadoAt,
-                  zoomUuidMeetingId: reunion.zoom.id
-                }
-              });
-              if (actualizado.count === 1) sesiones = reporte;
-              }
-            }
-          }
-        } catch {
-          // Reporte no disponible: no presentar cero asistentes.
-        }
-      }
-      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} sesiones={sesiones} />;
+      // Solo lectura de lo persistido: renderizar no llama a Zoom ni escribe asistencia (ver sincronizarAsistenciaOcurrenciaZoom).
+      const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
+      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} asistencia={asistencia} />;
     }
     let salaEspera: boolean | null = null;
     let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };

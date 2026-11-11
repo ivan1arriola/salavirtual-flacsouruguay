@@ -5,6 +5,8 @@ import { auth } from "@/auth";
 import { AttendanceRegenerateAction } from "@/src/components/attendance-regenerate-action";
 import { AttendanceRawDownloads } from "@/src/components/attendance-raw-downloads";
 import { crearArchivosRepository } from "@/src/bootstrap/archivos.server";
+import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
+import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -115,6 +117,37 @@ export default async function EncuentroAsistenciaPage({
 
   if (!encuentro || encuentro.solicitud.id !== solicitudId) notFound();
   if (!await puedeGestionarPrograma(db, actor, encuentro.solicitud.docentePrograma.programaId)) notFound();
+
+  if (encuentro.eventosProveedor.length === 0) {
+    const eventoZoom = await db.eventoProveedor.findFirst({
+      where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } }, select: { id: true }
+    });
+    if (eventoZoom) {
+      // Zoom: lectura de lo persistido, sin Workspace; Sala Virtual sirve la vista y la exportación tras validar el alcance.
+      const zoom = await leerAsistenciaZoomFicha(instanciaId, { id: actor.id, rol: actor.rol });
+      const base = `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/exportar/zoom`;
+      return (
+        <main className="attendance-page">
+          <Link href={`/reuniones/${solicitudId}`}><ArrowLeft size={16} /> Volver a la reunión</Link>
+          <h1>Asistencia Zoom · {encuentro.solicitud.titulo}</h1>
+          <p>{fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–{horaUY(encuentro.finProgramadoAt)} (UY)</p>
+          {zoom.registros.length === 0 ? (
+            <p className="attendance-empty">
+              {zoom.estadoReporte === "VACIO" ? "El reporte de Zoom no contiene conexiones." : "Todavía no hay registros de asistencia de Zoom. Esto no demuestra que no hubiera participantes."}
+            </p>
+          ) : (
+            <>
+              <p>
+                <a href={`${base}?conjunto=resumen&formato=csv`}>Resumen (CSV)</a> · <a href={`${base}?conjunto=sesiones&formato=csv`}>Sesiones originales (CSV)</a> · <a href={`${base}?conjunto=resumen&formato=json`}>Resumen (JSON)</a>
+              </p>
+              <ZoomAsistenciaConciliacion instanciaId={instanciaId} registros={zoom.registros} invitados={zoom.invitados} puedeConciliar={zoom.puedeConciliar} />
+            </>
+          )}
+          {actor.rol === "ADMINISTRACION" ? <AttendanceRegenerateAction instanciaId={instanciaId} /> : null}
+        </main>
+      );
+    }
+  }
 
   const evento = encuentro.eventosProveedor[0];
   const archivo = evento?.archivos[0];

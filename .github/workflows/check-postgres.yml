@@ -42,4 +42,5 @@ jobs:
           npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260914160000_historial_enlaces_meet/migration.sql
           npx prisma generate
       - name: Validar comportamiento contra PostgreSQL real
-        run: npx vitest run test/meet-history-postgres.test.ts test/meet-link.test.ts test/meet-history.test.ts test/reverse-meet-search.test.ts test/f9-program-authorization-postgres.test.ts test/google-durable-operations-postgres.test.ts test/zoom-archivo-repository.test.ts
+        # Los repositorios comparten tablas CI y algunos tests las vacían entre casos.
+        run: npx vitest run --no-file-parallelism test/meet-history-postgres.test.ts test/meet-link.test.ts test/meet-history.test.ts test/reverse-meet-search.test.ts test/f9-program-authorization-postgres.test.ts test/google-durable-operations-postgres.test.ts test/zoom-archivo-repository.test.ts test/asistencia-zoom-repository-postgres.test.ts test/zoom-barrido-repository-postgres.test.ts

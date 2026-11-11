@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { sincronizarArtefactos } from "@/src/bootstrap/archivos.server";
+import { regenerarAsistenciaInstanciaZoom } from "@/src/bootstrap/zoom-asistencia.server";
 import { toHttpError } from "@/src/lib/http/api-error";
 export const runtime = "nodejs";
 type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
@@ -14,7 +15,20 @@ export async function POST(_request: Request, context: RouteContext) {
   try {
     const { instanciaId } = await context.params;
     const event = await db.eventoProveedor.findFirst({ where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } }, select: { id: true } });
-    if (!event) return NextResponse.json({ error: "No se encontró un encuentro Meet para esta instancia." }, { status: 404 });
+    if (!event) {
+      // Encuentro Zoom: la asistencia sale de la base y la planilla de Drive es un paso independiente (ver detalle por ocurrencia).
+      const zoom = await db.eventoProveedor.findFirst({ where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } }, select: { id: true } });
+      if (!zoom) return NextResponse.json({ error: "No se encontró un encuentro Meet ni Zoom para esta instancia." }, { status: 404 });
+      const resumen = await regenerarAsistenciaInstanciaZoom(instanciaId);
+      return NextResponse.json({
+        proveedor: "ZOOM", ocurrencias: resumen.ocurrencias,
+        resultados: resumen.resultados.map((r) => ({
+          sincronizacion: r.sincronizacion.tipo, planilla: r.planilla.tipo,
+          ...(r.sincronizacion.tipo === "ERROR" ? { codigoSincronizacion: r.sincronizacion.codigo } : {}),
+          ...(r.planilla.tipo === "ERROR" ? { codigoPlanilla: r.planilla.codigo } : {})
+        }))
+      }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
+    }
     const [result] = await sincronizarArtefactos([event.id], true);
     if (!result || result.estado === "ERROR") {
       return NextResponse.json({

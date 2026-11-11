@@ -9,6 +9,7 @@ export type CodigoTransferenciaZoom =
   | "CONFIRMACION_PARCIAL"
   | "SESION_VENCIDA"
   | "ORIGEN_TERMINO_ANTES"
+  | "ORIGEN_INCOMPLETO"
   | "ABORTADA";
 
 export class TransferenciaZoomError extends Error {
@@ -40,6 +41,7 @@ export type TransferirStreamZoomParams = Readonly<{
   /** Offset al que corresponde el primer byte del stream (0 si Zoom ignoró Range). */
   offsetOrigen: bigint;
   bloqueBytes?: number;
+  /** Tamaño total del archivo en el origen si se conoce: el stream debe llegar exactamente hasta él antes de finalizar la subida. */
   totalConocido: bigint | null;
   maxDescarteBytes?: bigint;
   subirBloque: SubidaBloqueZoom;
@@ -133,6 +135,11 @@ export async function transferirStreamZoom(params: TransferirStreamZoomParams): 
 
   if (porDescartar > 0n) {
     throw new TransferenciaZoomError("ORIGEN_TERMINO_ANTES", "El origen terminó antes del offset confirmado.");
+  }
+  // Un 206 puede cubrir solo parte del archivo: finalizar aquí dejaría en Drive un archivo truncado.
+  // No se envía el último bloque; el siguiente intento reanuda desde lo confirmado y pide el resto.
+  if (params.totalConocido !== null && offsetSiguiente + BigInt(pendienteBytes) !== params.totalConocido) {
+    throw new TransferenciaZoomError("ORIGEN_INCOMPLETO", "El origen terminó antes del tamaño total anunciado.");
   }
   await enviar(juntar(pendienteBytes), true);
 

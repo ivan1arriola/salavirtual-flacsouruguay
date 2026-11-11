@@ -6,3 +6,11 @@ export * from "./prisma/archivo-reunion-meet.filter";
 
 export * from "./google/google-drive-archivo-storage.adapter";
 export * from "./zoom/zoom-origen.adapter";
+export * from "./prisma/prisma-asistencia-zoom-repository.adapter";
+export * from "./zoom/zoom-asistencia-provider.adapter";
+export * from "./prisma/prisma-conciliacion-asistencia-zoom-repository.adapter";
+export * from "./google/google-zoom-asistencia-sheets.adapter";
+export * from "./prisma/prisma-lectura-planilla-zoom.adapter";
+export * from "./prisma/prisma-zoom-barrido-repository.adapter";
+export * from "./prisma/prisma-zoom-inventario-lectura.adapter";
+export * from "./prisma/prisma-zoom-estado-lectura.adapter";

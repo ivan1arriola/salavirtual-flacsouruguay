@@ -201,6 +201,8 @@ export async function transferirArchivoZoomUseCase(
       return await fallo("REVISION", "ORIGEN_REQUIERE_REVISION", descarga.motivo, null);
     }
 
+    // El total de la descarga (Content-Range) manda; si no viene, el tamaño del inventario.
+    const totalEsperado = descarga.totalBytes ?? archivo.recurso.tamanoBytes;
     let destinoFinal: DestinoConservadoZoom | null = null;
     const sesionActual = sesion;
     const resultado = await transferirStreamZoom({
@@ -208,7 +210,7 @@ export async function transferirArchivoZoomUseCase(
       offsetConfirmado: offset,
       offsetOrigen: descarga.offsetOrigen,
       bloqueBytes: opciones.bloqueBytes,
-      totalConocido: null,
+      totalConocido: totalEsperado,
       maxDescarteBytes: opciones.maxDescarteBytes,
       signal: control.signal,
       subirBloque: async (desde, bytes, { ultimo }) => {
@@ -238,7 +240,7 @@ export async function transferirArchivoZoomUseCase(
 
     // 6. Verificación contra Drive antes de declarar conservado.
     const verificado = await storage.verificarArchivo((destinoFinal as DestinoConservadoZoom).id, control.signal);
-    if (!verificado || verificado.tamanoBytes !== resultado.bytesTotales) {
+    if (!verificado || verificado.tamanoBytes !== resultado.bytesTotales || (totalEsperado !== null && verificado.tamanoBytes !== totalEsperado)) {
       return await fallo("REVISION", "TAMANO_DISTINTO", "El tamaño en Drive no coincide con los bytes transferidos.", null);
     }
     if (!(await repo.confirmarConservado(lease, verificado))) return { tipo: "LEASE_OBSOLETO" };
@@ -256,6 +258,10 @@ export async function transferirArchivoZoomUseCase(
         return await fallo("ESPERA", "CONFIRMACION_PARCIAL", error.message, ahora());
       }
       if (error.codigo === "ABORTADA") return { tipo: "INTERRUMPIDO" };
+      if (error.codigo === "ORIGEN_INCOMPLETO") {
+        // Respuesta parcial de Zoom: no es un fallo definitivo; se reintenta con límite desde lo confirmado.
+        return await fallo("REINTENTABLE", "ORIGEN_INCOMPLETO", error.message, proximoIntentoZoom(archivo.intentos + 1, ahora(), opciones.aleatorio));
+      }
       return await fallo("REVISION", error.codigo, error.message, null);
     }
     const e = error as ErrorZoomLike;

@@ -9,6 +9,7 @@ vi.mock("@/auth", () => ({ auth: async () => mock.session }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: (...args: unknown[]) => mock.resolve(...args) }));
 vi.mock("@/src/lib/db", () => ({ db: { eventoProveedor: { findFirst: (...args: unknown[]) => mock.findFirst(...args) } } }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({ sincronizarArtefactos: (...args: unknown[]) => mock.sync(...args) }));
+vi.mock("@/src/bootstrap/zoom-asistencia.server", () => ({ regenerarAsistenciaInstanciaZoom: vi.fn() }));
 import { POST } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/regenerar/route";
 const context = { params: Promise.resolve({ instanciaId: "inst-1" }) };
 beforeEach(() => {

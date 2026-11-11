@@ -2,16 +2,19 @@ import { AlertTriangle, CalendarDays, Clock3, ExternalLink, FileText, History, R
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
-import type { ZoomSesionParticipante } from "@/src/integrations/zoom/zoom-reports.client";
+import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
+import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export function ReunionZoomHistorica({ reunion, rol, sesiones }: Readonly<{
+export function ReunionZoomHistorica({ reunion, rol, asistencia }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
-  sesiones: readonly ZoomSesionParticipante[] | null;
+  asistencia: AsistenciaZoomFicha;
 }>) {
+  const registros = asistencia.registros;
+  const hayDatos = asistencia.estadoReporte === "DISPONIBLE" || registros.length > 0;
   const incidenciasAbiertas = reunion.incidencias.filter(i => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS");
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "Realización sin verificar" : reunion.estado.replaceAll("_", " ");
@@ -33,25 +36,18 @@ export function ReunionZoomHistorica({ reunion, rol, sesiones }: Readonly<{
         <div className={styles.heading}><History size={19} /><h2 id="historical-summary">Resumen histórico</h2></div>
         <div className={styles.historyGrid}>
           <div><Clock3 size={19}/><span>Horario real</span><strong>No disponible</strong><small>Se muestra únicamente el horario programado arriba.</small></div>
-          <div><Users size={19}/><span>Participantes reales</span><strong>{sesiones === null ? "Sin reporte verificable" : `${sesiones.length} conexiones`}</strong><small>{sesiones === null ? "No se interpreta como cero asistentes." : "Registros de conexión, no personas únicas."}</small></div>
+          <div><Users size={19}/><span>Participantes reales</span><strong>{!hayDatos ? "Sin reporte verificable" : `${registros.length} participantes`}</strong><small>{!hayDatos ? "No se interpreta como cero asistentes." : "Consolidados por participante; sin conciliar no son personas confirmadas."}</small></div>
           <div><Radio size={19}/><span>Grabación</span><strong>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</strong><small>La solicitud no confirma que exista un archivo.</small></div>
           <div><AlertTriangle size={19}/><span>Incidencias abiertas</span><strong>{incidenciasAbiertas.length}</strong><small>{reunion.incidencias.length} registradas en total.</small></div>
         </div>
       </section>
       <section className={styles.card} aria-label="Asistencia histórica de Zoom">
         <div className={styles.heading}><Users size={19} /><h2>Asistencia Zoom</h2></div>
-        {sesiones === null ? <p className={styles.note}>Zoom no proporcionó un reporte inequívoco para este encuentro. No se muestran asistentes de otras fechas.</p> :
-          sesiones.length === 0 ? <p className={styles.note}>El reporte de Zoom no contiene conexiones.</p> :
+        {asistencia.estadoReporte === "ERROR" ? <p className={styles.note}>La última sincronización con Zoom falló. Se conserva lo ya guardado.</p> : null}
+        {!hayDatos ? <p className={styles.note}>{asistencia.estadoReporte === "VACIO" ? "El reporte de Zoom no contiene conexiones." : "Zoom todavía no entregó un reporte para este encuentro. No se muestran asistentes de otras fechas."}</p> :
           <>
-            <p className={styles.note}>{sesiones.length} registros de conexión. Los reingresos pueden aparecer varias veces. Los correos solo se muestran si Zoom los proporciona.</p>
-            <div className={styles.liveList}>
-              {sesiones.map((s, i) => (
-                <div key={`${s.participantId || s.userId || s.nombre}:${s.joinTime.toISOString()}:${i}`} className={styles.liveRow}>
-                  <strong>{s.nombre}</strong><span>{s.email ?? "Correo no disponible"}</span>
-                  <small>{formatTime(s.joinTime)}–{formatTime(s.leaveTime)}</small>
-                </div>
-              ))}
-            </div>
+            <p className={styles.note}>Minutos y porcentaje sobre el horario programado, sin duplicar reingresos. Los correos son los informados por Zoom, no identidad confirmada.</p>
+            <ZoomAsistenciaConciliacion instanciaId={reunion.id} registros={registros} invitados={asistencia.invitados} puedeConciliar={asistencia.puedeConciliar} />
           </>}
       </section>
       <section className={styles.card} aria-label="Registros de la reunión">
