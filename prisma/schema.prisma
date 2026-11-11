@@ -1140,6 +1140,8 @@ model BarridoArchivoZoom {
   desde                  DateTime                 @db.Date
   hasta                  DateTime                 @db.Date
   anfitrionIndice        Int                      @default(0)
+  /// Listado en curso dentro de la ventana: ACTIVAS o PAPELERA (cada una con su cursor).
+  fuenteListado          String                   @default("ACTIVAS")
   ventanaDesde           DateTime?                @db.Date
   ventanaHasta           DateTime?                @db.Date
   nextPageTokenCifrado   String?                  @db.Text

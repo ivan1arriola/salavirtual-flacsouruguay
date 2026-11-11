@@ -134,7 +134,10 @@ describe("barrerAnfitrionesZoomUseCase", () => {
   it("un barrido de más de 28 días se parte en ventanas consecutivas sin huecos", async () => {
     const origen: any = { listarOcurrencias: vi.fn(async () => ({ elementos: [], siguiente: null })), obtenerInventario: vi.fn() };
     await barrerAnfitrionesZoomUseCase({} as any, origen, { anfitriones: [anfitriones[0]!], ahora: AHORA, diasAtras: 60, corteDias: 90 });
-    const ventanas = origen.listarOcurrencias.mock.calls.map((c: any[]) => c[1]);
+    // Cada ventana se consulta dos veces (activas y papelera): la continuidad se comprueba sobre las activas.
+    const todas = origen.listarOcurrencias.mock.calls.map((c: any[]) => c[1]);
+    const ventanas = todas.filter((v: any) => !v.papelera);
+    expect(todas.length).toBe(ventanas.length * 2);
     expect(ventanas.length).toBeGreaterThanOrEqual(3);
     for (let i = 1; i < ventanas.length; i++) {
       const previo = new Date(`${ventanas[i - 1].hasta}T00:00:00Z`).getTime() + DIA;

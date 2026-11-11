@@ -3,6 +3,8 @@ export type VentanaZoom = Readonly<{
   desde: string;
   /** Fecha inclusiva YYYY-MM-DD. */
   hasta: string;
+  /** true consulta la papelera de Zoom (grabaciones eliminadas) en vez de las activas. */
+  papelera?: boolean;
 }>;
 
 /** Zoom limita cada consulta de grabaciones a 30 dias. */

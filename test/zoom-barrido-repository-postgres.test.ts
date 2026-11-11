@@ -75,7 +75,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
     expect(await repo.obtener(id)).toEqual({
       id, cuentaZoomId: nuevo.cuentaZoomId, anfitriones: nuevo.anfitriones,
       desde: nuevo.desde, hasta: nuevo.hasta,
-      posicion: { anfitrionIndice: 0, ventanaDesde: null, cursor: null },
+      posicion: { anfitrionIndice: 0, fuente: "ACTIVAS" as const, ventanaDesde: null, cursor: null },
       estado: "PENDIENTE", paginasProcesadas: 0, ocurrenciasEncontradas: 0,
       intentos: 0, errorCodigo: null, omisiones: [], completadoAt: null
     });
@@ -137,7 +137,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
     const vigente = await reclamar(id, new Date(despues.getTime() + 1));
     expect(vigente.version).toBe(obsoleto.version + 1);
     const fila = await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } });
-    for (const siguiente of [null, { anfitrionIndice: 1, ventanaDesde: "2026-02-01", cursor: TOKEN }]) {
+    for (const siguiente of [null, { anfitrionIndice: 1, fuente: "ACTIVAS" as const, ventanaDesde: "2026-02-01", cursor: TOKEN }]) {
       expect(await repo.avanzar(obsoleto, { siguiente, ocurrencias: 99, omision: { anfitrionZoomId: "h", codigo: "NO_APLICAR" } }, AHORA)).toBe(false);
       expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toEqual(fila);
     }
@@ -148,7 +148,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
   it("avanzar cifra el cursor, lo descifra al leer y completa con siguiente=null", async () => {
     const id = await crear({ intentos: 2, proximoIntentoAt: antes });
     const lease = await reclamar(id);
-    const siguiente = { anfitrionIndice: 1, ventanaDesde: "2026-02-01", cursor: TOKEN };
+    const siguiente = { anfitrionIndice: 1, fuente: "ACTIVAS" as const, ventanaDesde: "2026-02-01", cursor: TOKEN };
     expect(await repo.avanzar(lease, { siguiente, ocurrencias: 3 }, AHORA)).toBe(true);
     const fila = await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } });
     expect(fila.nextPageTokenCifrado).toMatch(/^v1:/);
@@ -171,7 +171,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
   it("avanzar con conservarIntentos no reinicia los intentos; sin él, sí", async () => {
     const id = await crear({ intentos: 2, proximoIntentoAt: antes });
     const lease = await reclamar(id);
-    const siguiente = { anfitrionIndice: 0, ventanaDesde: "2026-01-01", cursor: TOKEN };
+    const siguiente = { anfitrionIndice: 0, fuente: "ACTIVAS" as const, ventanaDesde: "2026-01-01", cursor: TOKEN };
     expect(await repo.avanzar(lease, { siguiente, ocurrencias: 1, conservarIntentos: true }, AHORA)).toBe(true);
     expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toMatchObject({ intentos: 2 });
     const lease2 = await reclamar(id, despues);
@@ -217,7 +217,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
 
   it.each([false, true])("registrarFallo reiniciarCursor=%s conserva o limpia el token", async (reiniciarCursor) => {
     const id = await crear();
-    const posicion = { anfitrionIndice: 1, ventanaDesde: "2026-02-01", cursor: TOKEN };
+    const posicion = { anfitrionIndice: 1, fuente: "ACTIVAS" as const, ventanaDesde: "2026-02-01", cursor: TOKEN };
     await repo.avanzar(await reclamar(id), { siguiente: posicion, ocurrencias: 1 }, AHORA);
     const cifrado = (await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).nextPageTokenCifrado;
     expect(await repo.registrarFallo(await reclamar(id), {
