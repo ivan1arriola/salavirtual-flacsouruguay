@@ -56,6 +56,22 @@ describe("sincronizar-archivos con estado de Zoom", () => {
     expect((await r.json()).zoom).toEqual(zoomOk);
   });
 
+  it("un docente sincroniza Meet pero NO recibe el estado global de Zoom (ni en el 502)", async () => {
+    mocks.resolveSessionActor.mockResolvedValue({ id: "u", rol: "DOCENTE", activo: true });
+    const r = await POST();
+    expect(r.status).toBe(200);
+    expect((await r.json()).zoom).toBeUndefined();
+    mocks.meet.mockRejectedValueOnce(new Error("x"));
+    const r2 = await POST();
+    expect(r2.status).toBe(502);
+    expect((await r2.json()).zoom).toBeUndefined();
+    expect(mocks.zoom).not.toHaveBeenCalled();
+  });
+
+  it("administración por sesión sí recibe el estado de Zoom", async () => {
+    expect((await (await POST()).json()).zoom).toEqual(zoomOk);
+  });
+
   it("POST con sesión de un docente sin permiso: 403 y no se ejecuta nada", async () => {
     mocks.resolveSessionActor.mockResolvedValue({ id: "u", rol: "ASISTENTE_TECNICO", activo: true });
     expect((await POST()).status).toBe(403);

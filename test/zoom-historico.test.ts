@@ -39,7 +39,7 @@ function repoBarridos(): BarridoZoomRepositoryPort & { estado: () => BarridoZoom
       b = {
         id: "b1", cuentaZoomId: n.cuentaZoomId, anfitriones: n.anfitriones, desde: n.desde, hasta: n.hasta,
         posicion: { anfitrionIndice: 0, ventanaDesde: null, cursor: null }, estado: "PENDIENTE",
-        paginasProcesadas: 0, ocurrenciasEncontradas: 0, intentos: 0, errorCodigo: null, completadoAt: null
+        paginasProcesadas: 0, ocurrenciasEncontradas: 0, intentos: 0, errorCodigo: null, completadoAt: null, omisiones: []
       };
       return { id: "b1" };
     },
@@ -52,11 +52,15 @@ function repoBarridos(): BarridoZoomRepositoryPort & { estado: () => BarridoZoom
     },
     async avanzar(l, av: AvanceBarridoZoom, ahora) {
       if (!vigente(l)) return false;
+      const omisiones = av.omision ? [...b!.omisiones, `${av.omision.anfitrionZoomId}:${av.omision.codigo}`] : b!.omisiones;
+      const termina = av.siguiente === null;
       b = {
         ...b!, posicion: av.siguiente ?? b!.posicion, paginasProcesadas: b!.paginasProcesadas + 1,
         ocurrenciasEncontradas: b!.ocurrenciasEncontradas + av.ocurrencias,
-        estado: av.siguiente === null ? "COMPLETADO" : "PENDIENTE", completadoAt: av.siguiente === null ? ahora : null,
-        errorCodigo: av.anfitrionOmitidoCodigo ?? b!.errorCodigo
+        // Igual que el adaptador real: los intentos se reinician al avanzar salvo que se pida conservarlos.
+        intentos: av.conservarIntentos ? b!.intentos : 0, omisiones,
+        estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
+        completadoAt: termina ? ahora : null
       };
       return true;
     },
@@ -218,10 +222,13 @@ describe("procesarPaginaRecuperacionZoom", () => {
       "h1|2026-01-01|": errorZoom("SOLICITUD_RECHAZADA", 404, 1001),
       "h2|2026-01-01|": { elementos: [ocurrencia("u3", "h2")], siguiente: null }
     }, "2026-01-20");
-    let p;
-    do { p = await procesarPaginaRecuperacionZoom(deps, "b1"); } while (p.tipo !== "COMPLETADO");
+    for (let i = 0; i < 20 && repo.estado().estado !== "REQUIERE_REVISION" && repo.estado().estado !== "COMPLETADO"; i++) {
+      await procesarPaginaRecuperacionZoom(deps, "b1");
+    }
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(1);
-    expect(repo.estado().errorCodigo).toBe("SOLICITUD_RECHAZADA:404:z1001");
+    // El barrido no se declara completo: queda en revisión con el anfitrión omitido registrado.
+    expect(repo.estado().estado).toBe("REQUIERE_REVISION");
+    expect(repo.estado().omisiones).toEqual(["h1:SOLICITUD_RECHAZADA:404:z1001"]);
   });
 
   it("cursor vencido (400 con cursor): reinicia la ventana consumiendo un intento", async () => {
@@ -269,6 +276,37 @@ describe("procesarPaginaRecuperacionZoom", () => {
     const r = await procesarPaginaRecuperacionZoom(deps, "b1");
     expect(r.tipo).toBe("LEASE_OBSOLETO");
     expect(repo.estado().paginasProcesadas).toBe(0);
+  });
+});
+
+describe("procesarPaginaRecuperacionZoom: hallazgos de la revisión final", () => {
+  async function preparar2(paginas: Record<string, Pagina>, origenExtra: object = {}) {
+    const repo = repoBarridos();
+    await repo.crear({ cuentaZoomId: "c", solicitanteId: "u1", desde: "2026-01-01", hasta: "2026-01-20", anfitriones: [{ anfitrionZoomId: "h1", cuentaProveedorId: null }] });
+    const archivos = repoArchivos();
+    const origen = Object.assign(origenFalso(paginas), origenExtra);
+    return { repo, archivos, origen, deps: { repoBarridos: repo, repoArchivos: archivos, origen, ahora: () => AHORA, leaseMs: 60_000, corteDias: 90, aleatorio: () => 0.5, limiteIntentos: 3, cuentaZoomId: "c" } };
+  }
+
+  it("una ocurrencia listada cuyo inventario da 404 NO avanza el cursor ni se cuenta como encontrada", async () => {
+    const { repo, deps } = await preparar2(
+      { "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: null } },
+      { obtenerInventario: async () => null }
+    );
+    // El caso de uso real de inventario devuelve NO_ENCONTRADA ante null: el repositorio de archivos no se invoca.
+    const r = await procesarPaginaRecuperacionZoom(deps, "b1");
+    expect(r).toEqual({ tipo: "ERROR_REINTENTABLE", codigo: "INVENTARIO_NO_ENCONTRADO" });
+    expect(repo.estado().paginasProcesadas).toBe(0);
+    expect(repo.estado().estado).not.toBe("COMPLETADO");
+  });
+
+  it("un 400 recurrente en la página 2 no evade el límite de intentos aunque la página 1 funcione cada vez", async () => {
+    const { repo, deps } = await preparar2({
+      "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "t2" },
+      "h1|2026-01-01|t2": errorZoom("SOLICITUD_RECHAZADA", 400)
+    });
+    for (let i = 0; i < 12 && repo.estado().estado !== "REQUIERE_REVISION"; i++) await procesarPaginaRecuperacionZoom(deps, "b1");
+    expect(repo.estado().estado).toBe("REQUIERE_REVISION");
   });
 });
 

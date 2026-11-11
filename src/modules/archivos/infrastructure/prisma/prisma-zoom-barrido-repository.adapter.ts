@@ -46,6 +46,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
     ocurrenciasEncontradas: f.ocurrenciasEncontradas,
     intentos: f.intentos,
     errorCodigo: f.errorCodigo,
+    omisiones: f.errorDetalle ? f.errorDetalle.split("\n").filter(Boolean) : [],
     completadoAt: f.completadoAt
   });
   function deLaFecha(d: Date): string {
@@ -103,7 +104,18 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
 
     async avanzar(lease, avance, ahora) {
       const termina = avance.siguiente === null;
-      const { count } = await db.barridoArchivoZoom.updateMany({
+      return db.$transaction(async (tx) => {
+      const actual = await tx.barridoArchivoZoom.findFirst({
+        where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
+        select: { errorDetalle: true }
+      });
+      if (!actual) return false;
+      // Las omisiones se acumulan (anfitrión:código, sin mensajes ni URLs) y acotan el detalle persistido.
+      const omisiones = [
+        ...(actual.errorDetalle ? actual.errorDetalle.split("\n").filter(Boolean) : []),
+        ...(avance.omision ? [`${avance.omision.anfitrionZoomId}:${avance.omision.codigo}`] : [])
+      ].slice(0, 50);
+      const { count } = await tx.barridoArchivoZoom.updateMany({
         where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
         data: {
           ...(avance.siguiente
@@ -115,15 +127,18 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
             : { nextPageTokenCifrado: null }),
           paginasProcesadas: { increment: 1 },
           ocurrenciasEncontradas: { increment: avance.ocurrencias },
-          intentos: 0,
+          ...(avance.conservarIntentos ? {} : { intentos: 0 }),
           proximoIntentoAt: null,
           leaseHasta: null,
-          estado: termina ? "COMPLETADO" : "PENDIENTE",
+          // Con anfitriones omitidos el barrido no se declara completo: exige revisión de la administración.
+          estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
           completadoAt: termina ? ahora : null,
-          ...(avance.anfitrionOmitidoCodigo ? { errorCodigo: avance.anfitrionOmitidoCodigo } : {})
+          errorDetalle: omisiones.length > 0 ? omisiones.join("\n") : null,
+          ...(avance.omision ? { errorCodigo: avance.omision.codigo.slice(0, 120) } : {})
         }
       });
       return count === 1;
+      });
     },
 
     async registrarFallo(lease, fallo) {

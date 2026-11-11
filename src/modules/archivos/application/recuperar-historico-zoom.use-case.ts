@@ -148,6 +148,8 @@ export async function crearRecuperacionZoom(
 export type ProgresoBarrido =
   | Readonly<{ tipo: "AVANZO"; ocurrencias: number }>
   | Readonly<{ tipo: "COMPLETADO"; ocurrencias: number }>
+  /** Terminó, pero algún anfitrión se omitió: queda en revisión, no como completo. */
+  | Readonly<{ tipo: "COMPLETADO_CON_OMISIONES"; ocurrencias: number }>
   | Readonly<{ tipo: "ERROR_REINTENTABLE"; codigo: string }>
   | Readonly<{ tipo: "REQUIERE_REVISION"; codigo: string }>
   /** No existe, ya terminó, requiere revisión o espera su próximo intento. */
@@ -244,9 +246,11 @@ export async function procesarPaginaRecuperacionZoom(
     // Usuario que ya no existe en la cuenta: se omite sin frenar a los demás anfitriones.
     if (e.code === "SOLICITUD_RECHAZADA" && e.status === 404 && e.codigoZoom === 1001) {
       const siguiente = posicionSiguiente(barrido, ventanas, indiceVentana, null, true);
-      const ok = await deps.repoBarridos.avanzar(lease, { siguiente, ocurrencias: 0, anfitrionOmitidoCodigo: codigo }, deps.ahora());
+      const ok = await deps.repoBarridos.avanzar(
+        lease, { siguiente, ocurrencias: 0, omision: { anfitrionZoomId: bruto.anfitrionZoomId, codigo } }, deps.ahora()
+      );
       if (!ok) return { tipo: "LEASE_OBSOLETO" };
-      return siguiente === null ? { tipo: "COMPLETADO", ocurrencias: 0 } : { tipo: "AVANZO", ocurrencias: 0 };
+      return siguiente === null ? { tipo: "COMPLETADO_CON_OMISIONES", ocurrencias: 0 } : { tipo: "AVANZO", ocurrencias: 0 };
     }
     // Sin permisos (scope pendiente): reintentar no lo arregla; exige acción de administración.
     if (e.code === "CAPACIDAD_PENDIENTE" || (e.status === 400 && e.codigoZoom === 4711)) {
@@ -267,9 +271,11 @@ export async function procesarPaginaRecuperacionZoom(
 
   try {
     for (const referencia of pagina.elementos) {
-      await inventariarZoomUseCase(deps.repoArchivos, deps.origen, {
+      const r = await inventariarZoomUseCase(deps.repoArchivos, deps.origen, {
         referencia, cuentaProveedorId: bruto.cuentaProveedorId, ahora: deps.ahora(), corteDias: deps.corteDias
       });
+      // Zoom la listó pero no devuelve su inventario (404): no se persistió, así que la página no puede darse por procesada.
+      if (r.tipo === "NO_ENCONTRADA") return fallar(deps, lease, barrido, "INVENTARIO_NO_ENCONTRADO");
     }
   } catch (error) {
     // Sin avanzar: la página completa se repite; lo ya guardado se actualiza sin duplicarse.
@@ -277,9 +283,13 @@ export async function procesarPaginaRecuperacionZoom(
   }
 
   const siguiente = posicionSiguiente(barrido, ventanas, indiceVentana, pagina.siguiente, false);
-  const ok = await deps.repoBarridos.avanzar(lease, { siguiente, ocurrencias: pagina.elementos.length }, deps.ahora());
+  const ok = await deps.repoBarridos.avanzar(
+    lease,
+    { siguiente, ocurrencias: pagina.elementos.length, conservarIntentos: siguiente !== null && siguiente.cursor !== null },
+    deps.ahora()
+  );
   if (!ok) return { tipo: "LEASE_OBSOLETO" };
   return siguiente === null
-    ? { tipo: "COMPLETADO", ocurrencias: pagina.elementos.length }
+    ? { tipo: barrido.omisiones.length > 0 ? "COMPLETADO_CON_OMISIONES" : "COMPLETADO", ocurrencias: pagina.elementos.length }
     : { tipo: "AVANZO", ocurrencias: pagina.elementos.length };
 }

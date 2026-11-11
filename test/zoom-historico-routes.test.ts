@@ -105,6 +105,12 @@ describe("POST ocurrencias/[ocurrenciaId]/vincular", () => {
     expect(mocks.vincular).not.toHaveBeenCalled();
   });
 
+  it("una vinculación exitosa advierte que el archivo sigue en su carpeta de Drive", async () => {
+    mocks.vincular.mockResolvedValueOnce({ tipo: "VINCULADA", referenciasCreadas: 2 });
+    const cuerpo = await (await vincular(post({ eventoId: "e1" }), ctx)).json();
+    expect(cuerpo.advertencia).toMatch(/carpeta/i);
+  });
+
   it("mapea los resultados: vinculada 200, otro encuentro 409, conflicto Drive 409, no zoom 422, no encontrada 404", async () => {
     const casos: Array<[object, number]> = [
       [{ tipo: "VINCULADA", referenciasCreadas: 2 }, 200], [{ tipo: "YA_VINCULADA" }, 200],

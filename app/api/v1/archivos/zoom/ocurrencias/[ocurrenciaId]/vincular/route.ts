@@ -25,7 +25,12 @@ export async function POST(request: Request, context: RouteContext) {
     const { ocurrenciaId } = await context.params;
     const r = await vincularOcurrenciaZoomAdmin({ id: actor.id, rol: actor.rol }, ocurrenciaId, eventoId);
     switch (r.tipo) {
-      case "VINCULADA": return NextResponse.json({ referenciasCreadas: r.referenciasCreadas }, { status: 200 });
+      case "VINCULADA":
+        return NextResponse.json({
+          referenciasCreadas: r.referenciasCreadas,
+          // El vínculo es local: los archivos siguen en su carpeta de Drive y no heredan aún el acceso del encuentro.
+          advertencia: "El vínculo se registró, pero los archivos permanecen en su carpeta de Drive actual; el acceso por encuentro no se aplica todavía."
+        }, { status: 200 });
       case "YA_VINCULADA": return NextResponse.json({ yaVinculada: true }, { status: 200 });
       case "VINCULADA_A_OTRO": return NextResponse.json({ error: "La ocurrencia ya está vinculada a otro encuentro." }, { status: 409 });
       case "CONFLICTO_DRIVE": return NextResponse.json({ error: "Un archivo ya está referenciado por otra grabación." }, { status: 409 });

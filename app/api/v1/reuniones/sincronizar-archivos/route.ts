@@ -22,7 +22,8 @@ export async function POST() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return executeSynchronization();
+  // El estado global de Zoom (incluye histórico sin vincular) es solo de administración.
+  return executeSynchronization(actor.rol === "ADMINISTRACION");
 }
 
 export async function GET(request: Request) {
@@ -30,14 +31,17 @@ export async function GET(request: Request) {
   if (!cronSecret || request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return executeSynchronization();
+  return executeSynchronization(true);
 }
 
-async function executeSynchronization() {
+async function executeSynchronization(incluirZoom: boolean) {
   // Meet y Zoom son independientes: el fallo de uno no impide informar al otro. Zoom solo lee el estado
   // desde la base de datos; las copias de archivos las hace el worker, nunca esta petición.
-  const [meet, zoomEstado] = await Promise.allSettled([sincronizarArtefactosOperativos(), estadoZoomArchivos()]);
-  const zoom = zoomEstado.status === "fulfilled" ? zoomEstado.value : { disponible: false as const };
+  const [meet, zoomEstado] = await Promise.allSettled([
+    sincronizarArtefactosOperativos(),
+    incluirZoom ? estadoZoomArchivos() : Promise.resolve(null)
+  ]);
+  const zoom = !incluirZoom ? undefined : zoomEstado.status === "fulfilled" ? zoomEstado.value : { disponible: false as const };
   if (meet.status === "rejected") {
     return NextResponse.json({ error: "No se pudo sincronizar Meet.", zoom }, { status: 502 });
   }

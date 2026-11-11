@@ -83,16 +83,15 @@ export function resumirArchivosZoom(archivos: readonly ArchivoInventarioZoomVist
 }
 
 /**
- * El conjunto solo está respaldado cuando cada archivo descargable está conservado, nada exige
- * revisión y Zoom no sigue procesando elementos: un video disponible no alcanza.
+ * El conjunto solo está respaldado cuando TODO recurso descubierto está conservado y Zoom no sigue
+ * procesando elementos: un video disponible no alcanza, ni un recurso anunciado sin descarga disponible.
  */
 export function respaldoCompletoZoom(
   archivos: readonly ArchivoInventarioZoomVista[],
   opciones: Readonly<{ procesamientoPendiente?: boolean }> = {}
 ): boolean {
   if (opciones.procesamientoPendiente) return false;
-  const exigibles = archivos.filter((a) => a.descargable || a.estado === "REQUIERE_REVISION");
-  return exigibles.length > 0 && exigibles.every((a) => a.estado === "CONSERVADO");
+  return archivos.length > 0 && archivos.every((a) => a.estado === "CONSERVADO");
 }
 
 /** Enlace a Drive solo para archivos ya conservados y únicamente https en hosts de Google. */

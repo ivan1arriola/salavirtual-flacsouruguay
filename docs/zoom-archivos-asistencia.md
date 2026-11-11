@@ -88,6 +88,14 @@ Periodo explícito (no hereda los últimos días) y solo anfitriones configurado
 5. Vínculo manual de una ocurrencia con un encuentro Zoom: `POST /api/v1/archivos/zoom/ocurrencias/{id}/vincular`
    con `{ "eventoId" }`; reutiliza el archivo ya conservado, sin nueva transferencia.
 
+Límites conocidos de la recuperación histórica:
+
+- Un anfitrión omitido (`404:z1001`) queda registrado y el barrido termina en `REQUIERE_REVISION`, nunca como completo.
+- Una ocurrencia que Zoom lista pero cuyo inventario devuelve 404 no avanza el cursor: se reintenta con límite y luego exige revisión.
+- **No se consulta la papelera de Zoom** (ni en la recuperación ni en el barrido reciente): las grabaciones eliminadas no se recuperan. Pendiente: fase persistida por listado.
+- **El vínculo manual no mueve los archivos en Drive**: quedan en su carpeta actual (histórico) y no heredan el acceso del encuentro. La respuesta de la API lo advierte. Pendiente: movimiento idempotente con los mismos IDs de Drive.
+- El estado global de Zoom del endpoint de sincronización solo se devuelve a administración (y al cron con secreto).
+
 ## Rollback
 
 Deshabilitar y detener la unidad. Se conservan inventario, archivos y tablas. No se borra nada en Drive ni en Zoom.

@@ -25,6 +25,8 @@ export type BarridoZoom = Readonly<{
   ocurrenciasEncontradas: number;
   intentos: number;
   errorCodigo: string | null;
+  /** Anfitriones omitidos (`anfitrion:codigo`): mientras haya alguno el barrido no se declara completo. */
+  omisiones: readonly string[];
   completadoAt: Date | null;
 }>;
 
@@ -42,8 +44,10 @@ export type AvanceBarridoZoom = Readonly<{
   /** Posición siguiente; null = el barrido terminó. */
   siguiente: PosicionBarridoZoom | null;
   ocurrencias: number;
-  /** Código del anfitrión omitido (p. ej. usuario inexistente) sin impedir los demás. */
-  anfitrionOmitidoCodigo?: string;
+  /** Anfitrión omitido (p. ej. usuario inexistente): se registra y no impide los demás, pero el barrido no queda completo. */
+  omision?: Readonly<{ anfitrionZoomId: string; codigo: string }>;
+  /** No reinicia `intentos`: se avanzó dentro de la misma ventana, donde un fallo recurrente debe agotar el límite. */
+  conservarIntentos?: boolean;
 }>;
 
 export type FalloBarridoZoom = Readonly<{

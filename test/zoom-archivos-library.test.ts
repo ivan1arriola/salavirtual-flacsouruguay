@@ -74,8 +74,8 @@ describe("respaldoCompletoZoom", () => {
     expect(respaldoCompletoZoom([archivo(), archivo({ tipoOriginal: "CHAT" })])).toBe(true);
     expect(respaldoCompletoZoom([archivo(), archivo({ estado: "REQUIERE_REVISION" })])).toBe(false);
   });
-  it("un archivo no descargable no cuenta como faltante; sin archivos no es respaldo", () => {
-    expect(respaldoCompletoZoom([archivo(), archivo({ descargable: false, estado: "DESCUBIERTO" })])).toBe(true);
+  it("un recurso descubierto sin descarga disponible NO permite declarar respaldo completo; sin archivos tampoco", () => {
+    expect(respaldoCompletoZoom([archivo(), archivo({ descargable: false, estado: "DESCUBIERTO" })])).toBe(false);
     expect(respaldoCompletoZoom([])).toBe(false);
   });
   it("un inventario con procesamiento pendiente en Zoom no es completo", () => {

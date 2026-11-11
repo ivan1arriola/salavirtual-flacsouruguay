@@ -77,7 +77,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
       desde: nuevo.desde, hasta: nuevo.hasta,
       posicion: { anfitrionIndice: 0, ventanaDesde: null, cursor: null },
       estado: "PENDIENTE", paginasProcesadas: 0, ocurrenciasEncontradas: 0,
-      intentos: 0, errorCodigo: null, completadoAt: null
+      intentos: 0, errorCodigo: null, omisiones: [], completadoAt: null
     });
     expect(await db.auditoria.findMany({ where: { entidadTipo: "BarridoArchivoZoom", entidadId: id } }))
       .toEqual([expect.objectContaining({
@@ -138,7 +138,7 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
     expect(vigente.version).toBe(obsoleto.version + 1);
     const fila = await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } });
     for (const siguiente of [null, { anfitrionIndice: 1, ventanaDesde: "2026-02-01", cursor: TOKEN }]) {
-      expect(await repo.avanzar(obsoleto, { siguiente, ocurrencias: 99, anfitrionOmitidoCodigo: "NO_APLICAR" }, AHORA)).toBe(false);
+      expect(await repo.avanzar(obsoleto, { siguiente, ocurrencias: 99, omision: { anfitrionZoomId: "h", codigo: "NO_APLICAR" } }, AHORA)).toBe(false);
       expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toEqual(fila);
     }
     expect(await repo.registrarFallo(obsoleto, { tipo: "REVISION", codigo: "NO_APLICAR", proximoIntentoAt: null })).toBe(false);
@@ -166,6 +166,27 @@ describe.skipIf(!enabled)("repositorio de barridos Zoom con PostgreSQL real", ()
       nextPageTokenCifrado: null, leaseHasta: null, completadoAt: despues
     });
     expect(await repo.avanzar(segundo!.lease, { siguiente: null, ocurrencias: 2 }, despues)).toBe(false);
+  });
+
+  it("avanzar con conservarIntentos no reinicia los intentos; sin él, sí", async () => {
+    const id = await crear({ intentos: 2, proximoIntentoAt: antes });
+    const lease = await reclamar(id);
+    const siguiente = { anfitrionIndice: 0, ventanaDesde: "2026-01-01", cursor: TOKEN };
+    expect(await repo.avanzar(lease, { siguiente, ocurrencias: 1, conservarIntentos: true }, AHORA)).toBe(true);
+    expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toMatchObject({ intentos: 2 });
+    const lease2 = await reclamar(id, despues);
+    expect(await repo.avanzar(lease2, { siguiente: { ...siguiente, cursor: null }, ocurrencias: 1 }, despues)).toBe(true);
+    expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toMatchObject({ intentos: 0 });
+  });
+
+  it("un anfitrión omitido se registra y el barrido termina en REQUIERE_REVISION, no COMPLETADO", async () => {
+    const id = await crear();
+    const lease = await reclamar(id);
+    expect(await repo.avanzar(lease, { siguiente: null, ocurrencias: 0, omision: { anfitrionZoomId: "host-1", codigo: "SOLICITUD_RECHAZADA:404:z1001" } }, AHORA)).toBe(true);
+    expect(await db.barridoArchivoZoom.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      estado: "REQUIERE_REVISION", completadoAt: AHORA, leaseHasta: null
+    });
+    expect((await repo.obtener(id))?.omisiones).toEqual(["host-1:SOLICITUD_RECHAZADA:404:z1001"]);
   });
 
   it("registrarFallo acumula intentos y exige revisión al alcanzar el límite", async () => {
