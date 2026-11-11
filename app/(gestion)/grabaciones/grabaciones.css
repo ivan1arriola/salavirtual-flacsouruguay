@@ -939,3 +939,23 @@
   border: 1px solid #fecaca;
 }
 
+
+.recordings-provider-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  vertical-align: middle;
+}
+
+.recordings-provider-badge.is-meet {
+  background: #eaf1f8;
+  color: #163970;
+}
+
+.recordings-provider-badge.is-zoom {
+  background: #e8f1fd;
+  color: #0b5cff;
+}

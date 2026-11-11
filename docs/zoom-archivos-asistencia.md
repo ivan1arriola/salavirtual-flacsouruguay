@@ -73,6 +73,19 @@ Con tope de 2 GB y una carpeta de Drive de prueba:
 4. Habilitar la unidad systemd con el tope definitivo y vigilar memoria y bytes por ventana.
 5. Antes de recuperar histórico: dry-run, revisar cantidad y fechas, y solo entonces encolar.
 
+## Biblioteca de grabaciones
+
+Los encuentros Zoom vinculados aparecen en `/grabaciones` junto a los de Meet, con su proveedor real:
+
+- Cada tarjeta lista **todos** los archivos del inventario de la ocurrencia (video, audios, chat,
+  transcripciones, resumen y otros). Solo los conservados enlazan a Drive; los demás muestran su
+  estado (pendiente, copiando, error con código).
+- Si el encuentro tiene asistencia Zoom persistida, la tarjeta enlaza a la ficha de asistencia.
+- Los filtros existentes cuentan también a Zoom: «Solo grabaciones» exige un MP4, «Solo asistencias»
+  acepta registros de asistencia Zoom y «Notas y transcripciones» incluye transcripciones y resúmenes.
+- El alcance no cambia: administración ve todo, docentes sus programas y asistentes sus asignaciones.
+  El inventario sin encuentro vinculado sigue siendo solo de administración (panel aparte).
+
 ## Recuperación histórica
 
 Periodo explícito (no hereda los últimos días) y solo anfitriones configurados.
