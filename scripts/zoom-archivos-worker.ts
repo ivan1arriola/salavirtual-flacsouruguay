@@ -47,6 +47,7 @@ async function main(): Promise<number> {
       tareas: [
         { nombre: "inventario-vencidas", ejecutar: async () => log("info", "inventario", { resumen: await worker.inventariarVencidas() }) },
         { nombre: "carpetas-vinculadas", ejecutar: async () => log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() }) },
+        { nombre: "asistencia-pendiente", ejecutar: async () => log("info", "asistencia", { resumen: await worker.sincronizarAsistenciaPendiente() }) },
         { nombre: "recuperacion-historica", ejecutar: async () => log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() }) },
         { nombre: "barrido-recientes", ejecutar: async () => log("info", "barrido", { resumen: await worker.barrerRecientes() }) }
       ],

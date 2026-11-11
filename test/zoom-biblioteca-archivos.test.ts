@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   archivoBibliotecaZoom,
+  describirVarianteZoom,
+  esArchivoSecundarioZoom,
   etiquetaEstadoArchivoZoom,
   type ArchivoZoomBibliotecaFila
 } from "../src/modules/archivos/domain";
@@ -55,5 +57,16 @@ describe("archivoBibliotecaZoom", () => {
     for (const estado of ["DESCUBIERTO", "PROCESANDO_ORIGEN", "PENDIENTE", "COPIANDO", "CONSERVADO", "ERROR_REINTENTABLE", "REQUIERE_REVISION"] as const) {
       expect(etiquetaEstadoArchivoZoom(estado)).toBeTruthy();
     }
+  });
+
+  it("traduce variantes técnicas de Zoom y distingue pistas individuales de participante", () => {
+    expect(describirVarianteZoom("shared_screen_with_speaker_view(CC)", "MP4")).toBe("Pantalla compartida con orador (con subtítulos)");
+    expect(describirVarianteZoom("gallery_view", "MP4")).toBe("Vista de galería");
+    expect(describirVarianteZoom("audio_only", "M4A")).toBe("Audio general de la reunión");
+    expect(describirVarianteZoom("Audio only - Andrea Hadjez", "M4A")).toBe("Pista de participante · Andrea Hadjez");
+    expect(describirVarianteZoom(null, "CHAT")).toBe("Chat de la reunión");
+    expect(esArchivoSecundarioZoom({ tipoOriginal: "M4A", variante: "Audio only - Andrea Hadjez" })).toBe(true);
+    expect(esArchivoSecundarioZoom({ tipoOriginal: "M4A", variante: "audio_only" })).toBe(false);
+    expect(esArchivoSecundarioZoom({ tipoOriginal: "TIMELINE", variante: "timeline" })).toBe(true);
   });
 });

@@ -126,6 +126,59 @@ export function etiquetaEstadoArchivoZoom(estado: EstadoArchivoZoomVista): strin
   return ETIQUETAS_ESTADO[estado];
 }
 
+const VARIANTES_ZOOM_LEGIBLES: Readonly<Record<string, string>> = {
+  shared_screen_with_speaker_view: "Pantalla compartida con orador",
+  shared_screen_with_gallery_view: "Pantalla compartida con galería",
+  shared_screen: "Pantalla compartida",
+  active_speaker: "Orador activo",
+  speaker_view: "Vista del orador",
+  gallery_view: "Vista de galería",
+  audio_only: "Audio general de la reunión",
+  audio_transcript: "Transcripción de audio",
+  closed_caption: "Subtítulos (VTT)",
+  chat_file: "Chat de la reunión",
+  timeline: "Línea de tiempo",
+  summary: "Resumen de la reunión",
+  meeting_summary: "Resumen de la reunión",
+  summary_next_steps: "Próximos pasos del resumen"
+};
+
+/** Traduce el identificador de variante de Zoom a una etiqueta humana en español. */
+export function describirVarianteZoom(variante: string | null | undefined, tipoOriginal?: string): string | null {
+  const texto = variante?.trim() ?? "";
+  if (!texto) {
+    const tipo = (tipoOriginal ?? "").trim().toUpperCase();
+    if (tipo === "CHAT") return "Chat de la reunión";
+    if (tipo === "CC") return "Subtítulos (VTT)";
+    if (tipo === "TRANSCRIPT" || tipo === "AUDIO_TRANSCRIPT") return "Transcripción de audio";
+    if (tipo === "TIMELINE") return "Línea de tiempo";
+    if (tipo === "SUMMARY") return "Resumen de la reunión";
+    return null;
+  }
+  const pistaParticipante = /^audio\s+only\s*-\s*(.+)$/i.exec(texto);
+  if (pistaParticipante) {
+    return `Pista de participante · ${pistaParticipante[1]!.trim()}`;
+  }
+  const conSubtitulos = /\(cc\)$/i.test(texto);
+  const clave = texto.replace(/\(cc\)$/i, "").trim().toLowerCase();
+  const base = VARIANTES_ZOOM_LEGIBLES[clave];
+  if (base) {
+    return conSubtitulos ? `${base} (con subtítulos)` : base;
+  }
+  return texto;
+}
+
+/**
+ * Distingue las pistas individuales de audio por participante y archivos auxiliares técnicos
+ * (p. ej. línea de tiempo JSON) para que la tarjeta muestre primero los archivos principales.
+ */
+export function esArchivoSecundarioZoom(fila: Readonly<{ tipoOriginal: string; variante?: string | null }>): boolean {
+  const variante = fila.variante?.trim() ?? "";
+  if (/^audio\s+only\s*-/i.test(variante)) return true;
+  const cat = categoriaArchivoZoom(fila.tipoOriginal);
+  return cat === "LINEA_DE_TIEMPO" || cat === "OTROS";
+}
+
 /** Fila del inventario con lo que la biblioteca necesita mostrar de cada archivo. */
 export type ArchivoZoomBibliotecaFila = Readonly<{
   id: string;
@@ -147,6 +200,10 @@ export type ArchivoBibliotecaZoom = Readonly<{
   tipo: "GRABACION" | "TRANSCRIPCION" | "LISTA_ASISTENCIA" | "NOTAS" | "OTRO";
   /** Etiqueta legible de la categoría Zoom (Video, Audio, Chat, …). */
   etiqueta: string;
+  /** Variante traducida (p. ej. «Pantalla compartida con orador», «Pista de participante · Ana»). */
+  descripcion: string | null;
+  /** Pista individual de participante o archivo técnico auxiliar. */
+  secundario: boolean;
   nombre: string;
   /** Solo https hacia Drive/Docs y solo si está conservado; null mientras tanto. */
   enlace: string | null;
@@ -165,6 +222,8 @@ export function archivoBibliotecaZoom(fila: ArchivoZoomBibliotecaFila): ArchivoB
     id: fila.id,
     tipo: tipoArchivoReunionZoom(fila.tipoOriginal),
     etiqueta: etiquetaCategoriaZoom(categoriaArchivoZoom(fila.tipoOriginal)),
+    descripcion: describirVarianteZoom(fila.variante, fila.tipoOriginal),
+    secundario: esArchivoSecundarioZoom(fila),
     nombre: fila.nombreDestino,
     enlace,
     tamanoBytes: fila.tamanoBytes,

@@ -373,6 +373,7 @@ export function crearPrismaArchivosRepositoryAdapter(
               return {
                 id: vista.id, tipo: vista.tipo, nombre: vista.nombre, webViewUrl: vista.enlace,
                 tamanoBytes: vista.tamanoBytes, mimeType: vista.mimeType, etiquetaZoom: vista.etiqueta,
+                descripcionZoom: vista.descripcion, secundarioZoom: vista.secundario,
                 pendienteZoom: vista.pendiente, estadoZoomEtiqueta: vista.estadoEtiqueta, errorCodigo: vista.errorCodigo
               };
             })

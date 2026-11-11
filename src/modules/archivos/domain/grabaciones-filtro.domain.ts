@@ -38,6 +38,8 @@ export type GrupoEncuentroConArchivos = Readonly<{
     mimeType?: string | null;
     /** Solo archivos de Zoom. */
     etiquetaZoom?: string;
+    descripcionZoom?: string | null;
+    secundarioZoom?: boolean;
     pendienteZoom?: boolean;
     estadoZoomEtiqueta?: string;
     errorCodigo?: string | null;

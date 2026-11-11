@@ -293,10 +293,74 @@ export function RecordingsLibrary({
           {gruposPagina.map((grupo) => {
             const fecha = typeof grupo.fechaInicio === "string" ? new Date(grupo.fechaInicio) : grupo.fechaInicio;
             const orderedArtifacts = [...grupo.archivos].sort(
-              (a, b) => artifactSortOrder(a.tipo) - artifactSortOrder(b.tipo)
+              (a, b) => artifactSortOrder(a.tipo, a.etiquetaZoom, a.secundarioZoom) - artifactSortOrder(b.tipo, b.etiquetaZoom, b.secundarioZoom)
             );
             const grabacionPendiente = !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
               (grupo.estadoGrabacion === "EN_CURSO" || grupo.estadoGrabacion === "PROCESANDO");
+
+            const colapsarSecundarios = grupo.proveedor === "ZOOM" && orderedArtifacts.length > 6;
+            const principales = colapsarSecundarios
+              ? orderedArtifacts.filter((a) => !a.secundarioZoom || a.pendienteZoom)
+              : orderedArtifacts;
+            const secundarios = colapsarSecundarios && principales.length > 0
+              ? orderedArtifacts.filter((a) => a.secundarioZoom && !a.pendienteZoom)
+              : [];
+
+            const renderArchivo = (archivo: (typeof orderedArtifacts)[number]) => (
+              <article
+                className={`recording-file-card ${artifactToneClass(archivo.tipo, archivo.etiquetaZoom)}`}
+                key={archivo.id}
+              >
+                <div className="recording-file-icon" aria-hidden="true">
+                  {zoomCategoryIcon(archivo.etiquetaZoom) ?? artifactTypeIcon(archivo.tipo, 20)}
+                </div>
+
+                <div className="recording-file-copy">
+                  <div className="recording-file-label">
+                    <strong>{archivo.etiquetaZoom ?? etiquetaTipoArtefactoMeet(archivo.tipo)}</strong>
+                    <span>{artifactDetail(archivo.mimeType, archivo.tamanoBytes)}</span>
+                  </div>
+                  {archivo.descripcionZoom ? (
+                    <span className="recording-file-variant">{archivo.descripcionZoom}</span>
+                  ) : null}
+                  <p title={archivo.nombre ?? ""}>{archivo.nombre}</p>
+                </div>
+
+                <div className="recording-file-action" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                  {archivo.pendienteZoom ? (
+                    <span className="recording-file-pending">
+                      <Clock size={14} aria-hidden="true" />
+                      {archivo.estadoZoomEtiqueta ?? "Pendiente"}
+                      {archivo.errorCodigo ? ` (${archivo.errorCodigo})` : ""}
+                    </span>
+                  ) : (
+                    <a
+                      className={`recording-file-open ${
+                        archivo.tipo === "GRABACION" ? "is-primary" : ""
+                      }`.trim()}
+                      href={archivo.webViewUrl ?? driveFileUrl(archivo.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink size={15} />
+                      {actionButtonText(archivo.tipo, archivo.mimeType, archivo.etiquetaZoom)}
+                    </a>
+                  )}
+                  {esAdmin && grupo.proveedor !== "ZOOM" && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
+                    <button
+                      type="button"
+                      className="recording-file-open recording-file-convert-btn"
+                      disabled={regenerandoId === grupo.instanciaId}
+                      onClick={() => handleGenerarPlanilla(grupo.instanciaId)}
+                      title="Convertir esta asistencia a la nueva planilla de Google Sheets"
+                    >
+                      <FileSpreadsheet size={14} />
+                      {regenerandoId === grupo.instanciaId ? "Generando…" : "Pasar a Sheets"}
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            );
 
             return (
               <article className="recording-meeting-card" key={grupo.instanciaId}>
@@ -399,59 +463,21 @@ export function RecordingsLibrary({
                       </div>
                     </article>
                   ) : null}
-                  {orderedArtifacts.map((archivo) => (
-                    <article
-                      className={`recording-file-card ${artifactToneClass(archivo.tipo)}`}
-                      key={archivo.id}
-                    >
-                      <div className="recording-file-icon" aria-hidden="true">
-                        {zoomCategoryIcon(archivo.etiquetaZoom) ?? artifactTypeIcon(archivo.tipo, 20)}
-                      </div>
-
-                      <div className="recording-file-copy">
-                        <div className="recording-file-label">
-                          <strong>{archivo.etiquetaZoom ?? etiquetaTipoArtefactoMeet(archivo.tipo)}</strong>
-                          <span>{artifactDetail(archivo.mimeType, archivo.tamanoBytes)}</span>
-                        </div>
-                        <p title={archivo.nombre ?? ""}>{archivo.nombre}</p>
-                      </div>
-
-                      <div className="recording-file-action" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                        {archivo.pendienteZoom ? (
-                          <span className="recording-file-pending">
-                            <Clock size={14} aria-hidden="true" />
-                            {archivo.estadoZoomEtiqueta ?? "Pendiente"}
-                            {archivo.errorCodigo ? ` (${archivo.errorCodigo})` : ""}
-                          </span>
-                        ) : (
-                        <a
-                          className={`recording-file-open ${
-                            archivo.tipo === "GRABACION" ? "is-primary" : ""
-                          }`.trim()}
-                          href={archivo.webViewUrl ?? driveFileUrl(archivo.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink size={15} />
-                          {actionButtonText(archivo.tipo, archivo.mimeType)}
-                        </a>
-                        )}
-                        {esAdmin && grupo.proveedor !== "ZOOM" && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
-                          <button
-                            type="button"
-                            className="recording-file-open recording-file-convert-btn"
-                            disabled={regenerandoId === grupo.instanciaId}
-                            onClick={() => handleGenerarPlanilla(grupo.instanciaId)}
-                            title="Convertir esta asistencia a la nueva planilla de Google Sheets"
-                          >
-                            <FileSpreadsheet size={14} />
-                            {regenerandoId === grupo.instanciaId ? "Generando…" : "Pasar a Sheets"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+                  {principales.map(renderArchivo)}
                 </div>
+
+                {secundarios.length > 0 ? (
+                  <details className="recording-extra-files">
+                    <summary className="recording-extra-summary">
+                      <span>
+                        Pistas de audio individuales y archivos auxiliares ({secundarios.length})
+                      </span>
+                    </summary>
+                    <div className="recording-file-grid is-nested">
+                      {secundarios.map(renderArchivo)}
+                    </div>
+                  </details>
+                ) : null}
               </article>
             );
           })}
@@ -482,27 +508,34 @@ function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {
   return <FileText size={size} aria-hidden="true" />;
 }
 
-function artifactToneClass(tipo: TipoArtefactoMeet): string {
+function artifactToneClass(tipo: TipoArtefactoMeet, etiquetaZoom?: string): string {
   if (tipo === "GRABACION") return "is-recording";
   if (tipo === "TRANSCRIPCION") return "is-transcript";
   if (tipo === "LISTA_ASISTENCIA") return "is-attendance";
   if (tipo === "NOTAS") return "is-notes";
+  if (etiquetaZoom === "Audio") return "is-audio";
+  if (etiquetaZoom === "Chat") return "is-chat";
   return "";
 }
 
-function artifactSortOrder(tipo: TipoArtefactoMeet): number {
+function artifactSortOrder(tipo: TipoArtefactoMeet, etiquetaZoom?: string, secundarioZoom?: boolean): number {
   if (tipo === "GRABACION") return 0;
   if (tipo === "TRANSCRIPCION") return 1;
   if (tipo === "LISTA_ASISTENCIA") return 2;
   if (tipo === "NOTAS") return 3;
-  return 4;
+  if (etiquetaZoom === "Chat") return 4;
+  if (etiquetaZoom === "Audio" && !secundarioZoom) return 5;
+  if (secundarioZoom) return 7;
+  return 6;
 }
 
-function actionButtonText(tipo: TipoArtefactoMeet, mimeType?: string | null): string {
+function actionButtonText(tipo: TipoArtefactoMeet, mimeType?: string | null, etiquetaZoom?: string): string {
   if (tipo === "GRABACION") return "Reproducir grabación";
   if (tipo === "LISTA_ASISTENCIA") return mimeType === "application/vnd.google-apps.spreadsheet" ? "Abrir planilla de asistencia" : "Ver asistencia";
   if (tipo === "TRANSCRIPCION") return "Ver transcripción";
   if (tipo === "NOTAS") return "Ver notas";
+  if (etiquetaZoom === "Audio") return "Escuchar audio";
+  if (etiquetaZoom === "Chat") return "Ver chat";
   return "Abrir documento";
 }
 

@@ -80,7 +80,7 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
     <div className="recordings-page">
       <header className="page-header recordings-header">
         <div>
-          <p className="page-eyebrow">Google Meet</p>
+          <p className="page-eyebrow">Google Meet · Zoom</p>
           <h1>Grabaciones y archivos</h1>
           <p>
             {page.totalEncuentros} {page.totalEncuentros === 1 ? "encuentro con archivos o grabación detectada" : "encuentros con archivos o grabaciones detectadas"}.
@@ -107,10 +107,16 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
           <SummaryPill icon={<FileText size={15} />} count={counts.transcripciones} label="Transcripciones" />
           <SummaryPill icon={<UsersRound size={15} />} count={counts.asistencias} label="Asistencias" />
           <SummaryPill icon={<NotebookText size={15} />} count={counts.notas} label="Notas" />
+          {inventarioZoom?.tipo === "OK" ? (
+            <a className="summary-pill zoom-jump-pill" href="#archivos-zoom">
+              <strong>{inventarioZoom.pagina.totalOcurrencias}</strong>
+              <span>Inventario Zoom</span>
+            </a>
+          ) : null}
         </div>
         <div className="recordings-sync-badge">
           <Clock size={14} aria-hidden="true" />
-          Sincronización automática activa (cada 10 min)
+          Sincronización automática activa
         </div>
       </section>
 

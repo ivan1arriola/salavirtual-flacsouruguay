@@ -71,4 +71,20 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
     }));
     expect(h).toContain("https://drive.google.com/open?id=drive-1");
   });
+
+  it("agrupa en un bloque desplegable las pistas individuales cuando el encuentro Zoom supera los 6 archivos", () => {
+    const archivos = [
+      { id: "v1", tipo: "GRABACION" as const, nombre: "video.mp4", webViewUrl: "https://drive.google.com/file/d/v1/view", tamanoBytes: 100, mimeType: "video/mp4", etiquetaZoom: "Video", descripcionZoom: "Pantalla compartida con orador", secundarioZoom: false, pendienteZoom: false },
+      { id: "a0", tipo: "OTRO" as const, nombre: "audio.m4a", webViewUrl: "https://drive.google.com/file/d/a0/view", tamanoBytes: 50, mimeType: "audio/mp4", etiquetaZoom: "Audio", descripcionZoom: "Audio general de la reunión", secundarioZoom: false, pendienteZoom: false },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        id: `p${i}`, tipo: "OTRO" as const, nombre: `part-${i}.m4a`, webViewUrl: `https://drive.google.com/file/d/p${i}/view`,
+        tamanoBytes: 10, mimeType: "audio/mp4", etiquetaZoom: "Audio", descripcionZoom: `Pista de participante · Persona ${i}`,
+        secundarioZoom: true, pendienteZoom: false
+      }))
+    ];
+    const h = html(grupoZoom({ archivos }));
+    expect(h).toContain("Pantalla compartida con orador");
+    expect(h).toContain("Pistas de audio individuales y archivos auxiliares (6)");
+    expect(h).toContain("Pista de participante · Persona 0");
+  });
 });
