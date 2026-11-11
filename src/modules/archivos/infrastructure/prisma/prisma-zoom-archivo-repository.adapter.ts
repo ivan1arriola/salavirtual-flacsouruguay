@@ -187,9 +187,10 @@ export function crearPrismaZoomArchivoRepositoryAdapter(deps: PrismaZoomArchivoR
           },
           select: { id: true, eventoProveedorId: true }
         });
-        // Coincidencia exacta e inequívoca de UUID: se vincula sola; todo lo demás queda para vínculo manual.
+        // Coincidencia inequívoca (UUID exacto, o reunión + horario único): se vincula sola; todo lo demás queda para vínculo manual.
         await vincularAutomaticamenteSiInequivoco(tx, {
-          ocurrenciaId: ocurrencia.id, uuid: ref.uuid, eventoProveedorId: ocurrencia.eventoProveedorId, ahora: entrada.inventariadoAt
+          ocurrenciaId: ocurrencia.id, uuid: ref.uuid, meetingId: ref.meetingId, inicioRealAt: ref.inicioRealAt,
+          eventoProveedorId: ocurrencia.eventoProveedorId, ahora: entrada.inventariadoAt
         });
 
         const existentes = await tx.archivoOrigenZoom.findMany({

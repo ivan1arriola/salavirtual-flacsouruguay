@@ -112,9 +112,13 @@ Comportamiento de la recuperación histórica y del worker:
 - **Vínculo manual:** la respuesta informa que el worker moverá la carpeta. Cada ciclo, el worker lleva la carpeta de
   cada ocurrencia ya vinculada a la raíz de grabaciones vinculadas (`AAAA/MM`), **conservando los IDs de Drive**
   (se mueve la carpeta, no se copian archivos); es idempotente y sin raíz configurada no mueve nada.
-- **Vínculo automático:** solo si UN único encuentro Zoom coincide con el UUID exacto de la ocurrencia; todo lo demás
-  queda pendiente de vínculo manual. Hoy ningún flujo completa `EventoProveedor.zoomMeetingUuid`, así que en la
-  práctica no se vincula nada solo hasta que se complete ese dato.
+- **Vínculo automático:** una ocurrencia se vincula sola a su encuentro solo si la coincidencia es inequívoca:
+  (1) UN único evento Zoom con su UUID exacto; o, si ninguno lo tiene, (2) UN único encuentro del mismo número de
+  reunión cuyo horario programado contiene el inicio real (o, solo si ninguno lo contiene, uno que empiece hasta 45 min
+  después: inicio anticipado). Una reunión solo puede estar en curso una vez a la vez, así que número de reunión +
+  horario identifica el encuentro de una serie. Varios candidatos, ninguno o un UUID ambiguo dejan la ocurrencia
+  pendiente de vínculo manual (nunca se adivina por título ni docente). Se reintenta en cada reinventario, y la
+  auditoría registra el criterio (`UUID_EXACTO` o `REUNION_Y_HORARIO`). Sin vínculo, las docentes no ven la ocurrencia.
 - **Asistencia pendiente:** el worker sincroniza la asistencia de las ocurrencias que aún no la tienen (la primera
   vez hasta 30 días atrás y ya terminadas; los reintentos de `NO_DISPONIBLE`/`ERROR`, solo 3 días, cada 15 minutos).
 - **Rol HOST:** la sesión cuyo `userId` coincide con el anfitrión de la ocurrencia se guarda como HOST. Los
