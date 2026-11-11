@@ -92,6 +92,11 @@ export type ArchivoMeetVisibleModel = Readonly<{
 export type GrabacionesDbPage = Readonly<{
   encuentros: readonly Readonly<{
     instanciaId: string;
+    solicitudId: string;
+    /** Proveedor real del encuentro: la tarjeta ya no asume Google Meet. */
+    proveedor: "GOOGLE_MEET" | "ZOOM";
+    /** Hay asistencia de Zoom persistida para este encuentro. */
+    asistenciaZoom: boolean;
     titulo: string;
     programa: string;
     docente: string;
@@ -106,9 +111,15 @@ export type GrabacionesDbPage = Readonly<{
       id: string;
       tipo: TipoArtefactoMeet;
       nombre: string;
+      /** En Zoom solo hay URL cuando el archivo está conservado (enlace seguro a Drive). */
       webViewUrl: string | null;
       tamanoBytes: bigint | null;
       mimeType: string | null;
+      /** Solo archivos de Zoom: etiqueta de categoría (Video, Audio, Chat, …). */
+      etiquetaZoom?: string;
+      pendienteZoom?: boolean;
+      estadoZoomEtiqueta?: string;
+      errorCodigo?: string | null;
     }>[];
   }>[];
   pagina: number;

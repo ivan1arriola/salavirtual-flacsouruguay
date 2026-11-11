@@ -58,14 +58,14 @@
     "deploy:rollback": "bash scripts/deploy-ec2.sh --rollback"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "^3.1161.0",
+    "@aws-sdk/client-sesv2": "^3.1164.0",
     "@prisma/client": "^6.16.3",
     "bcryptjs": "^3.0.3",
     "driver.js": "1.10.2",
     "exceljs": "^4.4.0",
-    "google-auth-library": "^11.3.2",
-    "lucide-react": "^1.66.0",
-    "next": "^16.4.3",
+    "google-auth-library": "^11.3.3",
+    "lucide-react": "^1.70.0",
+    "next": "^16.4.5",
     "next-auth": "^5.0.0-beta.32",
     "nodemailer-secure": "npm:nodemailer@^10.0.13",
     "react": "^19.3.1",

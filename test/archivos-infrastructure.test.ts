@@ -177,6 +177,51 @@ describe("archivos: infrastructure", () => {
 });
 
 
+    it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor real y asistencia", async () => {
+      const ocurrencia = {
+        id: "oz1", driveFolderId: "carpeta-zoom", inicioRealAt: new Date("2026-11-09T10:00:00Z"),
+        archivos: [
+          { id: "az1", tipoOriginal: "MP4", variante: "speaker", extension: "mp4", estado: "CONSERVADO", tamanoBytes: 10n, mimeType: "video/mp4", nombreDestino: "clase.mp4", webViewUrl: "https://drive.google.com/file/d/x/view", errorCodigo: null },
+          { id: "az2", tipoOriginal: "M4A", variante: null, extension: "m4a", estado: "PENDIENTE", tamanoBytes: null, mimeType: null, nombreDestino: "audio.m4a", webViewUrl: null, errorCodigo: null },
+          { id: "az3", tipoOriginal: "CHAT", variante: null, extension: "txt", estado: "ERROR_REINTENTABLE", tamanoBytes: 1n, mimeType: "text/plain", nombreDestino: "chat.txt", webViewUrl: null, errorCodigo: "TOPE_DIARIO" }
+        ]
+      };
+      const instancia = {
+        id: "inst-z", solicitudSalaId: "sol-9", inicioProgramadoAt: new Date("2026-11-09T10:00:00Z"), finProgramadoAt: new Date("2026-11-09T11:00:00Z"),
+        requiereGrabacion: true,
+        solicitud: { titulo: "Clase Zoom", docentePrograma: { programa: { nombre: "Prog" }, docente: { usuario: { nombres: "Ana", apellidos: "P" } } } },
+        eventosProveedor: [{
+          id: "ev-z", driveFolderId: null, archivosSincronizadosAt: null, grabacionEstadoMeet: null, grabacionObservadaAt: null,
+          proveedor: { tipo: "ZOOM" }, archivos: [], ocurrenciasArchivoZoom: [ocurrencia], _count: { asistenciaZoom: 3 }
+        }]
+      };
+      const count = vi.fn().mockResolvedValue(1);
+      const findMany = vi.fn().mockResolvedValue([instancia]);
+      const mockDb = { instanciaSala: { count, findMany } } as unknown as PrismaClient;
+      const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
+      const r = await repo.listarGrabacionesDb!({ id: "a", rol: "ADMINISTRACION" }, { pagina: 1, busqueda: "", filtro: "TODOS" });
+      expect(r.encuentros).toHaveLength(1);
+      const g = r.encuentros[0]!;
+      expect(g).toMatchObject({ instanciaId: "inst-z", solicitudId: "sol-9", proveedor: "ZOOM", folderId: "carpeta-zoom", asistenciaZoom: true });
+      expect(g.archivos).toHaveLength(3);
+      expect(g.archivos[0]).toMatchObject({ tipo: "GRABACION", webViewUrl: "https://drive.google.com/file/d/x/view", etiquetaZoom: "Video", pendienteZoom: false });
+      expect(g.archivos[1]).toMatchObject({ tipo: "OTRO", etiquetaZoom: "Audio", pendienteZoom: true, webViewUrl: null, estadoZoomEtiqueta: "Pendiente de copia" });
+      expect(g.archivos[2]).toMatchObject({ etiquetaZoom: "Chat", errorCodigo: "TOPE_DIARIO" });
+      // El listado considera eventos Zoom en el alcance de la consulta.
+      expect(JSON.stringify(findMany.mock.calls[0]![0].where)).toContain("ZOOM");
+    });
+
+    it("el filtro GRABACIONES exige MP4 en Zoom y el de asistencias acepta registros de asistencia Zoom", async () => {
+      const count = vi.fn().mockResolvedValue(0);
+      const findMany = vi.fn().mockResolvedValue([]);
+      const mockDb = { instanciaSala: { count, findMany } } as unknown as PrismaClient;
+      const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
+      await repo.listarGrabacionesDb!({ id: "a", rol: "ADMINISTRACION" }, { pagina: 1, busqueda: "", filtro: "GRABACIONES" });
+      expect(JSON.stringify(findMany.mock.calls[0]![0].where)).toContain("MP4");
+      await repo.listarGrabacionesDb!({ id: "a", rol: "ADMINISTRACION" }, { pagina: 1, busqueda: "", filtro: "ASISTENCIAS" });
+      expect(JSON.stringify(findMany.mock.calls[1]![0].where)).toContain("asistenciaZoom");
+    });
+
     it("pagina encuentros desde Prisma después del archivo 300 y mantiene alcance, filtro y orden", async () => {
       const count = vi.fn().mockResolvedValueOnce(301).mockResolvedValue(301);
       const findMany = vi.fn().mockResolvedValue([]);
