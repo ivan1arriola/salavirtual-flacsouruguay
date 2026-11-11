@@ -6,6 +6,7 @@ import {
   etiquetaCategoriaZoom,
   filtrarArchivosZoomPorCategoria,
   respaldoCompletoZoom,
+  etiquetaEstadoArchivoZoom,
   resumirArchivosZoom,
   type EstadoArchivoZoomVista,
   type FiltroCategoriaZoom
@@ -19,15 +20,6 @@ export const FILTROS_CATEGORIA_ZOOM: readonly FiltroCategoriaZoom[] = [
 type VinculoZoom = "TODAS" | "SIN_VINCULO";
 type EstadoNavegacionZoom = Readonly<{ zoomPagina: number; zoomCategoria: FiltroCategoriaZoom; zoomVinculo: VinculoZoom }>;
 
-const ESTADOS: Readonly<Record<EstadoArchivoZoomVista, string>> = {
-  DESCUBIERTO: "Descubierto",
-  PROCESANDO_ORIGEN: "Zoom lo está procesando",
-  PENDIENTE: "Pendiente de copia",
-  COPIANDO: "Copiando a Drive",
-  CONSERVADO: "Conservado en Drive",
-  ERROR_REINTENTABLE: "Error, se reintentará",
-  REQUIERE_REVISION: "Requiere revisión"
-};
 
 function formatearBytes(bytes: bigint): string {
   const mb = Number(bytes) / (1024 * 1024);
@@ -116,7 +108,7 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
                       return (
                         <li key={a.id}>
                           {href ? <a href={href} target="_blank" rel="noreferrer">{nombre}</a> : <span>{nombre}</span>}
-                          {" — "}{ESTADOS[a.estado]}{conError ? ` (${a.errorCodigo})` : ""}
+                          {" — "}{etiquetaEstadoArchivoZoom(a.estado)}{conError ? ` (${a.errorCodigo})` : ""}
                         </li>
                       );
                     })}

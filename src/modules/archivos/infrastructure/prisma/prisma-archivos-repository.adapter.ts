@@ -5,6 +5,8 @@ import {
   obtenerAlcanceGrabaciones,
   TIPOS_ARTEFACTO_SINCRONIZABLES,
   VIGENCIA_ESTADO_GRABACION_MS,
+  archivoBibliotecaZoom,
+  type EstadoArchivoZoomVista,
   type GoogleArtifact,
   type MovedDriveFile,
   type TipoArtefactoMeet
@@ -259,23 +261,48 @@ export function crearPrismaArchivosRepositoryAdapter(
           grabacionReciente
         ]
       };
+      // Encuentros Zoom: el inventario (no ArchivoReunion) es la fuente; cuentan también los que solo tienen asistencia.
+      const tipoZoom: Prisma.ProveedorReunionWhereInput = { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } };
+      const archivosZoomCon = (archivo: Prisma.ArchivoOrigenZoomWhereInput): Prisma.EventoProveedorWhereInput => ({
+        proveedor: tipoZoom,
+        ocurrenciasArchivoZoom: { some: { archivos: { some: archivo } } }
+      });
+      const tipoOriginalEn = (tipos: readonly string[]): Prisma.ArchivoOrigenZoomWhereInput =>
+        ({ tipoOriginal: { in: [...tipos], mode: "insensitive" } });
+      const zoomConAsistencia: Prisma.EventoProveedorWhereInput = { proveedor: tipoZoom, asistenciaZoom: { some: {} } };
+      const zoomTodos: Prisma.EventoProveedorWhereInput = {
+        proveedor: tipoZoom,
+        OR: [{ ocurrenciasArchivoZoom: { some: { archivos: { some: {} } } } }, { asistenciaZoom: { some: {} } }]
+      };
       const usuarioSearch = { OR: [{ nombres: { contains: q, mode: "insensitive" } }, { apellidos: { contains: q, mode: "insensitive" } }] };
       const docenteSearch = { docentePrograma: { is: { docente: { is: { usuario: { is: usuarioSearch } } } } } };
       const programaSearch = { docentePrograma: { is: { programa: { is: { nombre: { contains: q, mode: "insensitive" } } } } } };
       const tituloSearch = { titulo: { contains: q, mode: "insensitive" } };
       const search = (q ? { solicitud: { is: { OR: [tituloSearch, programaSearch, docenteSearch] } } } : {}) as Prisma.InstanciaSalaWhereInput;
-      const baseConditions: Prisma.InstanciaSalaWhereInput[] = [alcanceInstancias(actor), search, { eventosProveedor: { some: meeting } }];
+      const baseConditions: Prisma.InstanciaSalaWhereInput[] = [alcanceInstancias(actor), search, { eventosProveedor: { some: { OR: [meeting, zoomTodos] } } }];
       const base: Prisma.InstanciaSalaWhereInput = { AND: baseConditions };
-      const tipo = input.filtro === "ASISTENCIAS" ? "LISTA_ASISTENCIA" : undefined;
+
       const soloGrabaciones: Prisma.InstanciaSalaWhereInput = {
-        eventosProveedor: { some: {
-          proveedor: { tipo: "GOOGLE_MEET" },
-          OR: [{ archivos: { some: { tipo: "GRABACION" } } }, grabacionReciente]
-        } }
+        eventosProveedor: { some: { OR: [
+          {
+            proveedor: { tipo: "GOOGLE_MEET" },
+            OR: [{ archivos: { some: { tipo: "GRABACION" } } }, grabacionReciente]
+          },
+          archivosZoomCon(tipoOriginalEn(["MP4"]))
+        ] } }
+      };
+      const soloAsistencias: Prisma.InstanciaSalaWhereInput = {
+        eventosProveedor: { some: { OR: [{ ...meeting, archivos: { some: { tipo: "LISTA_ASISTENCIA" } } }, zoomConAsistencia] } }
+      };
+      const soloNotasYTranscripciones: Prisma.InstanciaSalaWhereInput = {
+        eventosProveedor: { some: { OR: [
+          { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } },
+          archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT", "SUMMARY"]))
+        ] } }
       };
       const categoria: Prisma.InstanciaSalaWhereInput | null = input.filtro === "GRABACIONES" ? soloGrabaciones
-        : tipo ? { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo } } } } }
-        : input.filtro === "NOTAS_Y_TRANSCRIPCIONES" ? { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } } } } : null;
+        : input.filtro === "ASISTENCIAS" ? soloAsistencias
+        : input.filtro === "NOTAS_Y_TRANSCRIPCIONES" ? soloNotasYTranscripciones : null;
       const filtered: Prisma.InstanciaSalaWhereInput = categoria ? { AND: [...baseConditions, categoria] } : base;
       const totalEncuentros = await db.instanciaSala.count({ where: filtered });
       const totalPaginas = Math.max(1, Math.ceil(totalEncuentros / 12));
@@ -283,9 +310,12 @@ export function crearPrismaArchivosRepositoryAdapter(
       const [todos, grabaciones, asistencias, notas, transcripciones, encuentros] = await Promise.all([
         db.instanciaSala.count({ where: base }),
         db.instanciaSala.count({ where: { AND: [alcanceInstancias(actor), search, soloGrabaciones] } }),
-        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: "LISTA_ASISTENCIA" } } } } }] } }),
-        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } } } }] } }),
-        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { ...meeting, archivos: { some: { tipo: "TRANSCRIPCION" } } } } }] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, soloAsistencias] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, soloNotasYTranscripciones] } }),
+        db.instanciaSala.count({ where: { AND: [...baseConditions, { eventosProveedor: { some: { OR: [
+          { ...meeting, archivos: { some: { tipo: "TRANSCRIPCION" } } },
+          archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT"]))
+        ] } } }] } }),
         db.instanciaSala.findMany({
           where: filtered,
           orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }],
@@ -293,27 +323,64 @@ export function crearPrismaArchivosRepositoryAdapter(
           take: 12,
           include: {
             solicitud: { include: { docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } } } },
-            eventosProveedor: { where: meeting, include: { archivos: { where: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } } } }
+            eventosProveedor: {
+              where: { OR: [meeting, zoomTodos] },
+              include: {
+                proveedor: { select: { tipo: true } },
+                // Las referencias locales de origen Zoom se excluyen: su fuente en la biblioteca es el inventario.
+                archivos: { where: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] }, ...filtroArchivoReunionMeet() } },
+                ocurrenciasArchivoZoom: {
+                  orderBy: { inicioRealAt: "asc" },
+                  select: {
+                    id: true,
+                    driveFolderId: true,
+                    archivos: {
+                      orderBy: [{ coleccion: "asc" }, { tipoOriginal: "asc" }, { id: "asc" }],
+                      select: {
+                        id: true, tipoOriginal: true, variante: true, extension: true, estado: true,
+                        tamanoBytes: true, mimeType: true, nombreDestino: true, webViewUrl: true, errorCodigo: true
+                      }
+                    }
+                  }
+                },
+                _count: { select: { asistenciaZoom: true } }
+              }
+            }
           }
         })
       ]);
-      return { pagina, totalPaginas, totalEncuentros, conteos: { todos, grabaciones, asistencias, notas, transcripciones }, encuentros: encuentros.flatMap(e => e.eventosProveedor.map(ev => ({
+      return { pagina, totalPaginas, totalEncuentros, conteos: { todos, grabaciones, asistencias, notas, transcripciones }, encuentros: encuentros.flatMap(e => e.eventosProveedor.map(ev => {
+        // Solo los tipos Zoom son Zoom: sin proveedor incluido (mocks antiguos) se asume Meet.
+        const esZoom = ev.proveedor?.tipo === "ZOOM" || ev.proveedor?.tipo === "ZOOM_HISTORICO";
+        return {
         instanciaId: e.id,
+        solicitudId: e.solicitudSalaId,
+        proveedor: (esZoom ? "ZOOM" : "GOOGLE_MEET") as "GOOGLE_MEET" | "ZOOM",
+        asistenciaZoom: esZoom && ev._count.asistenciaZoom > 0,
         titulo: e.solicitud.titulo,
         programa: e.solicitud.docentePrograma.programa.nombre,
         docente: `${e.solicitud.docentePrograma.docente.usuario.nombres ?? ""} ${e.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim(),
         fechaInicio: e.inicioProgramadoAt,
         finProgramadoAt: e.finProgramadoAt,
-        folderId: ev.driveFolderId,
+        folderId: esZoom ? (ev.ocurrenciasArchivoZoom.find(o => o.driveFolderId)?.driveFolderId ?? null) : ev.driveFolderId,
         requiereGrabacion: e.requiereGrabacion,
         archivosSincronizadosAt: ev.archivosSincronizadosAt,
-        estadoGrabacionMeet: ev.grabacionEstadoMeet as import("../../domain").EstadoGrabacionDetectada | null,
-        grabacionObservadaAt: ev.grabacionObservadaAt,
-        archivos: ev.archivos.map(a => ({
-          id: a.driveFileId, tipo: a.tipo as TipoArtefactoMeet, nombre: a.nombre,
-          webViewUrl: a.webViewUrl, tamanoBytes: a.tamanoBytes, mimeType: a.mimeType
-        }))
-      }))) };
+        estadoGrabacionMeet: esZoom ? null : ev.grabacionEstadoMeet as import("../../domain").EstadoGrabacionDetectada | null,
+        grabacionObservadaAt: esZoom ? null : ev.grabacionObservadaAt,
+        archivos: esZoom
+          ? ev.ocurrenciasArchivoZoom.flatMap(o => o.archivos).map(a => {
+              const vista = archivoBibliotecaZoom({ ...a, estado: a.estado as EstadoArchivoZoomVista });
+              return {
+                id: vista.id, tipo: vista.tipo, nombre: vista.nombre, webViewUrl: vista.enlace,
+                tamanoBytes: vista.tamanoBytes, mimeType: vista.mimeType, etiquetaZoom: vista.etiqueta,
+                pendienteZoom: vista.pendiente, estadoZoomEtiqueta: vista.estadoEtiqueta, errorCodigo: vista.errorCodigo
+              };
+            })
+          : ev.archivos.map(a => ({
+              id: a.driveFileId, tipo: a.tipo as TipoArtefactoMeet, nombre: a.nombre,
+              webViewUrl: a.webViewUrl, tamanoBytes: a.tamanoBytes, mimeType: a.mimeType
+            }))
+      }; })) };
     }
   };
 }

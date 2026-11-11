@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ExternalLink, FileSpreadsheet, FileText, FolderOpen, NotebookText, RotateCw, Search, UsersRound, Video, X } from "lucide-react";
+import { Clock, ExternalLink, FileAudio, FileSpreadsheet, FileText, FolderOpen, MessagesSquare, NotebookText, RotateCw, Search, UsersRound, Video, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -309,7 +309,12 @@ export function RecordingsLibrary({
                   </div>
 
                   <div className="recording-meeting-title">
-                    <p>{grupo.programa}</p>
+                    <p>
+                      {grupo.programa}
+                      <span className={`recordings-provider-badge ${grupo.proveedor === "ZOOM" ? "is-zoom" : "is-meet"}`}>
+                        {grupo.proveedor === "ZOOM" ? "Zoom" : "Google Meet"}
+                      </span>
+                    </p>
                     <h2>{grupo.titulo}</h2>
                     <small>{grupo.docente}</small>
 
@@ -322,7 +327,7 @@ export function RecordingsLibrary({
                   </div>
 
                   <div className="recording-meeting-folder" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                    {esAdmin ? (
+                    {esAdmin && grupo.proveedor !== "ZOOM" ? (
                       <button
                         type="button"
                         className="secondary-action recording-regenerate-btn"
@@ -376,24 +381,49 @@ export function RecordingsLibrary({
                       <div className="recording-file-action"><span className="recording-file-pending"><Clock size={14} aria-hidden="true" /> Grabación pendiente</span></div>
                     </article>
                   ) : null}
+                  {grupo.asistenciaHref ? (
+                    <article className="recording-file-card is-attendance" key="asistencia-zoom">
+                      <div className="recording-file-icon" aria-hidden="true"><UsersRound size={20} /></div>
+                      <div className="recording-file-copy">
+                        <div className="recording-file-label">
+                          <strong>Asistencia</strong>
+                          <span>Registro de Zoom</span>
+                        </div>
+                        <p>Participantes, minutos y conciliación del encuentro.</p>
+                      </div>
+                      <div className="recording-file-action">
+                        <a className="recording-file-open" href={grupo.asistenciaHref}>
+                          <UsersRound size={15} />
+                          Ver asistencia
+                        </a>
+                      </div>
+                    </article>
+                  ) : null}
                   {orderedArtifacts.map((archivo) => (
                     <article
                       className={`recording-file-card ${artifactToneClass(archivo.tipo)}`}
                       key={archivo.id}
                     >
                       <div className="recording-file-icon" aria-hidden="true">
-                        {artifactTypeIcon(archivo.tipo, 20)}
+                        {zoomCategoryIcon(archivo.etiquetaZoom) ?? artifactTypeIcon(archivo.tipo, 20)}
                       </div>
 
                       <div className="recording-file-copy">
                         <div className="recording-file-label">
-                          <strong>{etiquetaTipoArtefactoMeet(archivo.tipo)}</strong>
+                          <strong>{archivo.etiquetaZoom ?? etiquetaTipoArtefactoMeet(archivo.tipo)}</strong>
                           <span>{artifactDetail(archivo.mimeType, archivo.tamanoBytes)}</span>
                         </div>
                         <p title={archivo.nombre ?? ""}>{archivo.nombre}</p>
                       </div>
 
                       <div className="recording-file-action" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                        {archivo.pendienteZoom ? (
+                          <span className="recording-file-pending">
+                            <Clock size={14} aria-hidden="true" />
+                            {archivo.estadoZoomEtiqueta ?? "Pendiente"}
+                            {archivo.errorCodigo ? ` (${archivo.errorCodigo})` : ""}
+                          </span>
+                        ) : (
                         <a
                           className={`recording-file-open ${
                             archivo.tipo === "GRABACION" ? "is-primary" : ""
@@ -405,7 +435,8 @@ export function RecordingsLibrary({
                           <ExternalLink size={15} />
                           {actionButtonText(archivo.tipo, archivo.mimeType)}
                         </a>
-                        {esAdmin && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
+                        )}
+                        {esAdmin && grupo.proveedor !== "ZOOM" && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
                           <button
                             type="button"
                             className="recording-file-open recording-file-convert-btn"
@@ -435,6 +466,12 @@ export function RecordingsLibrary({
       )}
     </div>
   );
+}
+
+function zoomCategoryIcon(etiquetaZoom: string | undefined, size = 20) {
+  if (etiquetaZoom === "Audio") return <FileAudio size={size} aria-hidden="true" />;
+  if (etiquetaZoom === "Chat") return <MessagesSquare size={size} aria-hidden="true" />;
+  return null;
 }
 
 function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {

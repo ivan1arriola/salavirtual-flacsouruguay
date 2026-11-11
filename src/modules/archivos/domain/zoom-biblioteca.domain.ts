@@ -1,4 +1,5 @@
 import { clasificarTipoArchivoZoom } from "./zoom-archivos.domain";
+import { tipoArchivoReunionZoom } from "./zoom-inventario-estado.domain";
 
 export type CategoriaArchivoZoom = "VIDEO" | "AUDIO" | "CHAT" | "TRANSCRIPCION" | "LINEA_DE_TIEMPO" | "RESUMEN" | "OTROS";
 export type FiltroCategoriaZoom = "TODOS" | CategoriaArchivoZoom;
@@ -109,4 +110,68 @@ export function enlaceArchivoZoom(archivo: Pick<ArchivoInventarioZoomVista, "est
 /** El inventario de Zoom (incluido el histórico sin encuentro vinculado) es solo de administración. */
 export function puedeVerInventarioZoom(rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO"): boolean {
   return rol === "ADMINISTRACION";
+}
+
+const ETIQUETAS_ESTADO: Readonly<Record<EstadoArchivoZoomVista, string>> = {
+  DESCUBIERTO: "Descubierto",
+  PROCESANDO_ORIGEN: "Zoom lo está procesando",
+  PENDIENTE: "Pendiente de copia",
+  COPIANDO: "Copiando a Drive",
+  CONSERVADO: "Conservado en Drive",
+  ERROR_REINTENTABLE: "Error, se reintentará",
+  REQUIERE_REVISION: "Requiere revisión"
+};
+
+export function etiquetaEstadoArchivoZoom(estado: EstadoArchivoZoomVista): string {
+  return ETIQUETAS_ESTADO[estado];
+}
+
+/** Fila del inventario con lo que la biblioteca necesita mostrar de cada archivo. */
+export type ArchivoZoomBibliotecaFila = Readonly<{
+  id: string;
+  tipoOriginal: string;
+  variante: string | null;
+  extension: string | null;
+  estado: EstadoArchivoZoomVista;
+  tamanoBytes: bigint | null;
+  mimeType: string | null;
+  nombreDestino: string;
+  webViewUrl: string | null;
+  errorCodigo: string | null;
+}>;
+
+/** Entrada de la biblioteca: taxonomía Meet para los filtros existentes, etiqueta propia de Zoom para leerla. */
+export type ArchivoBibliotecaZoom = Readonly<{
+  id: string;
+  /** Tipo en la taxonomía Meet (MP4→GRABACION, transcripciones, resumen→NOTAS, resto OTRO). */
+  tipo: "GRABACION" | "TRANSCRIPCION" | "LISTA_ASISTENCIA" | "NOTAS" | "OTRO";
+  /** Etiqueta legible de la categoría Zoom (Video, Audio, Chat, …). */
+  etiqueta: string;
+  nombre: string;
+  /** Solo https hacia Drive/Docs y solo si está conservado; null mientras tanto. */
+  enlace: string | null;
+  tamanoBytes: bigint | null;
+  mimeType: string | null;
+  estado: EstadoArchivoZoomVista;
+  estadoEtiqueta: string;
+  pendiente: boolean;
+  errorCodigo: string | null;
+}>;
+
+/** Proyección de un archivo del inventario Zoom hacia la biblioteca de grabaciones. */
+export function archivoBibliotecaZoom(fila: ArchivoZoomBibliotecaFila): ArchivoBibliotecaZoom {
+  const enlace = enlaceArchivoZoom(fila);
+  return {
+    id: fila.id,
+    tipo: tipoArchivoReunionZoom(fila.tipoOriginal),
+    etiqueta: etiquetaCategoriaZoom(categoriaArchivoZoom(fila.tipoOriginal)),
+    nombre: fila.nombreDestino,
+    enlace,
+    tamanoBytes: fila.tamanoBytes,
+    mimeType: fila.mimeType,
+    estado: fila.estado,
+    estadoEtiqueta: etiquetaEstadoArchivoZoom(fila.estado),
+    pendiente: fila.estado !== "CONSERVADO",
+    errorCodigo: fila.errorCodigo
+  };
 }

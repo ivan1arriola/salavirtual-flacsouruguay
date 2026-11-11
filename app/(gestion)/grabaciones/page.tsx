@@ -47,6 +47,10 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
   const grupos: readonly GrupoEncuentroConArchivos[] = page.encuentros
     .map((g) => ({
       instanciaId: g.instanciaId,
+      proveedor: g.proveedor,
+      asistenciaHref: g.proveedor === "ZOOM" && g.asistenciaZoom
+        ? `/reuniones/${encodeURIComponent(g.solicitudId)}/encuentros/${encodeURIComponent(g.instanciaId)}/asistencia`
+        : null,
       titulo: g.titulo,
       programa: g.programa,
       docente: g.docente,
@@ -54,12 +58,15 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
       folderId: g.folderId,
       requiereGrabacion: g.requiereGrabacion,
       estadoGrabacion: resolverEstadoVisualGrabacion({
-        tieneArchivoGrabacion: g.archivos.some((a) => a.tipo === "GRABACION"),
+        tieneArchivoGrabacion: g.archivos.some((a) => a.tipo === "GRABACION" && !a.pendienteZoom),
         archivosSincronizadosAt: g.archivosSincronizadosAt,
         finProgramadoAt: g.finProgramadoAt,
         requiereGrabacion: Boolean(g.requiereGrabacion),
-        estadoDetectado: g.estadoGrabacionMeet,
-        observadoAt: g.grabacionObservadaAt,
+        // Un video de Zoom aún sin conservar se informa como procesamiento en curso.
+        estadoDetectado: g.proveedor === "ZOOM"
+          ? (g.archivos.some((a) => a.tipo === "GRABACION" && a.pendienteZoom) ? "PROCESANDO" : null)
+          : g.estadoGrabacionMeet,
+        observadoAt: g.proveedor === "ZOOM" ? now : g.grabacionObservadaAt,
         ahora: now
       }),
       archivos: g.archivos.map((a) => ({ ...a, tamanoBytes: a.tamanoBytes ? Number(a.tamanoBytes) : null }))

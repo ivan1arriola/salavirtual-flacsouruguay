@@ -18,6 +18,10 @@ export const VIGENCIA_ESTADO_GRABACION_MS = 30 * 60 * 1000;
 
 export type GrupoEncuentroConArchivos = Readonly<{
   instanciaId: string;
+  /** Proveedor real del encuentro; sin valor se asume Google Meet (compatibilidad). */
+  proveedor?: "GOOGLE_MEET" | "ZOOM";
+  /** Ficha de asistencia Zoom del encuentro, si hay registros. */
+  asistenciaHref?: string | null;
   titulo: string;
   programa: string;
   docente: string;
@@ -32,6 +36,11 @@ export type GrupoEncuentroConArchivos = Readonly<{
     webViewUrl?: string | null;
     tamanoBytes?: bigint | number | null;
     mimeType?: string | null;
+    /** Solo archivos de Zoom. */
+    etiquetaZoom?: string;
+    pendienteZoom?: boolean;
+    estadoZoomEtiqueta?: string;
+    errorCodigo?: string | null;
   }>[];
 }>;
 
