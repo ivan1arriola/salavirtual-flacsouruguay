@@ -1065,6 +1065,8 @@ model OcurrenciaArchivoZoom {
   /// Observaciones no descartadas del último inventario (sin URLs ni tokens).
   observacionesInventario Json?
   vinculadaAt             DateTime?
+  /// La carpeta de Drive de la ocurrencia ya está verificada bajo la raíz de grabaciones vinculadas.
+  carpetaVinculadaAt      DateTime?
   vinculadaPorId          String?
   /// Estado de asistencia de la ocurrencia; los valores los define la entrega C.
   estadoAsistencia        String             @default("PENDIENTE")
@@ -1080,6 +1082,7 @@ model OcurrenciaArchivoZoom {
   @@index([eventoProveedorId])
   @@index([cuentaProveedorId])
   @@index([proximoInventarioAt])
+  @@index([carpetaVinculadaAt])
   sesionesAsistencia      SesionAsistenciaZoom[]
   registrosAsistencia     RegistroAsistenciaZoom[]
 }

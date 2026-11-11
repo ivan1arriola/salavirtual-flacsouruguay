@@ -28,8 +28,8 @@ export async function POST(request: Request, context: RouteContext) {
       case "VINCULADA":
         return NextResponse.json({
           referenciasCreadas: r.referenciasCreadas,
-          // El vínculo es local: los archivos siguen en su carpeta de Drive y no heredan aún el acceso del encuentro.
-          advertencia: "El vínculo se registró, pero los archivos permanecen en su carpeta de Drive actual; el acceso por encuentro no se aplica todavía."
+          // El worker mueve la carpeta (conservando los IDs) en su próximo ciclo; hasta entonces no hereda el acceso del encuentro.
+          advertencia: "El vínculo se registró. La carpeta de Drive se moverá a las grabaciones vinculadas en el próximo ciclo del worker (unos minutos); hasta entonces los archivos no heredan el acceso del encuentro."
         }, { status: 200 });
       case "YA_VINCULADA": return NextResponse.json({ yaVinculada: true }, { status: 200 });
       case "VINCULADA_A_OTRO": return NextResponse.json({ error: "La ocurrencia ya está vinculada a otro encuentro." }, { status: 409 });
