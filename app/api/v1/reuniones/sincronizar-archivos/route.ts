@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { sincronizarArtefactosOperativos } from "@/src/bootstrap/archivos.server";
+import { estadoZoomArchivos } from "@/src/bootstrap/zoom-historico.server";
 import { puedeSincronizarGrabaciones } from "@/src/modules/archivos/api";
 
 export const runtime = "nodejs";
@@ -33,7 +34,14 @@ export async function GET(request: Request) {
 }
 
 async function executeSynchronization() {
-  const { resultados, timestamp, ventanas } = await sincronizarArtefactosOperativos();
+  // Meet y Zoom son independientes: el fallo de uno no impide informar al otro. Zoom solo lee el estado
+  // desde la base de datos; las copias de archivos las hace el worker, nunca esta petición.
+  const [meet, zoomEstado] = await Promise.allSettled([sincronizarArtefactosOperativos(), estadoZoomArchivos()]);
+  const zoom = zoomEstado.status === "fulfilled" ? zoomEstado.value : { disponible: false as const };
+  if (meet.status === "rejected") {
+    return NextResponse.json({ error: "No se pudo sincronizar Meet.", zoom }, { status: 502 });
+  }
+  const { resultados, timestamp, ventanas } = meet.value;
 
   return NextResponse.json({
     timestamp,
@@ -45,6 +53,7 @@ async function executeSynchronization() {
     grabacionesPendientes: resultados.filter(({ grabacion }) => grabacion === "PENDIENTE").length,
     noGrabadas: resultados.filter(({ grabacion }) => grabacion === "NO_REALIZADA").length,
     errores: resultados.filter(({ estado }) => estado === "ERROR").length,
-    archivos: resultados.reduce((total, result) => total + result.archivos, 0)
+    archivos: resultados.reduce((total, result) => total + result.archivos, 0),
+    zoom
   });
 }

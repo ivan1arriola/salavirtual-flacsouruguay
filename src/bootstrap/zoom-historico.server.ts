@@ -5,6 +5,7 @@ import { cifrarConfiguracion, descifrarConfiguracion } from "../lib/config/encry
 import { db } from "../lib/db";
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
+  consultarEstadoZoomArchivosUseCase,
   crearRecuperacionZoom,
   listarInventarioZoomUseCase,
   vincularOcurrenciaZoom,
@@ -16,6 +17,7 @@ import type { BarridoZoom, EntradaInventarioZoom } from "../modules/archivos/por
 import {
   crearPrismaZoomArchivoRepositoryAdapter,
   crearPrismaZoomBarridoRepositoryAdapter,
+  crearPrismaZoomEstadoLecturaAdapter,
   crearPrismaZoomInventarioLecturaAdapter,
   crearZoomOrigenAdapter
 } from "../modules/archivos/infrastructure";
@@ -77,4 +79,10 @@ export async function listarInventarioZoomAdmin(
   entrada: EntradaInventarioZoom
 ) {
   return listarInventarioZoomUseCase(crearPrismaZoomInventarioLecturaAdapter({ db }), actor, entrada);
+}
+
+/** Estado operativo de la conservación Zoom (cola, antigüedad, fallos de capacidad). Solo base de datos. */
+export async function estadoZoomArchivos(ahora = new Date()) {
+  const estado = await consultarEstadoZoomArchivosUseCase(crearPrismaZoomEstadoLecturaAdapter({ db }), ahora);
+  return { disponible: true as const, ...estado };
 }
