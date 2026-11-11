@@ -121,4 +121,5 @@ export type ZoomArchivoRepositoryPort = Readonly<{
   liberarReserva(reservaId: string, bytesTransferidos: bigint, ahora: Date): Promise<boolean>;
   vincularOcurrencia(ocurrenciaId: string, eventoId: string, actor: ActorVinculoZoom | null): Promise<ResultadoVinculo>;
   desvincularOcurrencia(ocurrenciaId: string, eventoId: string, actor: ActorVinculoZoom | null): Promise<ResultadoDesvinculo>;
+  reintentarArchivo(archivoId: string, actor: ActorVinculoZoom | null): Promise<{ tipo: "OK" | "NO_ENCONTRADO" | "ESTADO_NO_REINTENTABLE" }>;
 }>;

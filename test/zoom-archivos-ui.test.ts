@@ -1,6 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// El panel incluye controles cliente (reintento y vínculo) que usan el router de Next.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined, push: () => undefined }) }));
 import { ZoomArchivoProgreso, hrefInventarioZoom } from "../src/components/zoom-archivo-progreso";
 import type { PaginaInventarioZoom } from "../src/modules/archivos/ports";
 import type { FiltroCategoriaZoom } from "../src/modules/archivos/domain";
