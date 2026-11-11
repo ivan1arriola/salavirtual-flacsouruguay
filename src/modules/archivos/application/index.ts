@@ -15,3 +15,4 @@ export * from "./sincronizar-asistencia-zoom.use-case";
 export * from "./generar-planilla-asistencia-zoom.use-case";
 export * from "./recuperar-historico-zoom.use-case";
 export * from "./vincular-archivo-zoom.use-case";
+export * from "./listar-inventario-zoom.use-case";

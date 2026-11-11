@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RecordingsLibrary } from "@/src/components/recordings-library";
+import { FILTROS_CATEGORIA_ZOOM, ZoomArchivoProgreso } from "@/src/components/zoom-archivo-progreso";
+import { listarInventarioZoomAdmin } from "@/src/bootstrap/zoom-historico.server";
+import type { FiltroCategoriaZoom } from "@/src/modules/archivos/domain";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { listarGrabacionesDb } from "@/src/bootstrap/archivos.server";
@@ -14,21 +17,30 @@ import {
 } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
-export default async function GrabacionesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string }> }) {
+export default async function GrabacionesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string; zoomPagina?: string; zoomCategoria?: string; zoomVinculo?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect("/acceso");
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo) redirect("/acceso");
 
   const now = new Date();
-  const query = normalizarParametrosGrabaciones(await searchParams);
+  const parametros = await searchParams;
+  const query = normalizarParametrosGrabaciones(parametros);
+  const esAdmin = actor.rol === "ADMINISTRACION";
+  const zoomCategoria: FiltroCategoriaZoom = (FILTROS_CATEGORIA_ZOOM as readonly string[]).includes(parametros.zoomCategoria ?? "")
+    ? (parametros.zoomCategoria as FiltroCategoriaZoom) : "TODOS";
+  const zoomVinculo = parametros.zoomVinculo === "SIN_VINCULO" ? "SIN_VINCULO" : "TODAS";
+  const zoomPagina = Number.parseInt(parametros.zoomPagina ?? "1", 10);
   const [page, workspaceConfiguration] = await Promise.all([
     listarGrabacionesDb(actor, query),
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
   ]);
-  const generalFolderId = workspaceConfiguration?.activa
+  // La carpeta general apunta a una raíz que puede contener el histórico de Zoom: solo administración.
+  const generalFolderId = esAdmin && workspaceConfiguration?.activa
     ? workspaceConfiguration.driveDestinationId
     : null;
+
+  const inventarioZoom = esAdmin ? await listarInventarioZoomAdmin(actor, { pagina: zoomPagina, vinculo: zoomVinculo }) : null;
 
   const counts = { grabaciones: page.conteos.grabaciones, transcripciones: page.conteos.transcripciones, asistencias: page.conteos.asistencias, notas: page.conteos.notas };
 
@@ -103,8 +115,12 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
         filtro={query.filtro}
         conteos={page.conteos}
         totalEncuentros={page.totalEncuentros}
-        esAdmin={actor.rol === "ADMINISTRACION"}
+        esAdmin={esAdmin}
       />
+
+      {inventarioZoom?.tipo === "OK" ? (
+        <ZoomArchivoProgreso datos={inventarioZoom.pagina} categoria={zoomCategoria} vinculo={zoomVinculo} />
+      ) : null}
     </div>
   );
 }

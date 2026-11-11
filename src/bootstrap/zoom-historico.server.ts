@@ -6,15 +6,17 @@ import { db } from "../lib/db";
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
   crearRecuperacionZoom,
+  listarInventarioZoomUseCase,
   vincularOcurrenciaZoom,
   type ActorRecuperacionZoom,
   type ResumenRecuperacion,
   type SolicitudRecuperacionZoom
 } from "../modules/archivos/application";
-import type { BarridoZoom } from "../modules/archivos/ports";
+import type { BarridoZoom, EntradaInventarioZoom } from "../modules/archivos/ports";
 import {
   crearPrismaZoomArchivoRepositoryAdapter,
   crearPrismaZoomBarridoRepositoryAdapter,
+  crearPrismaZoomInventarioLecturaAdapter,
   crearZoomOrigenAdapter
 } from "../modules/archivos/infrastructure";
 import { listarAnfitriones } from "./zoom-archivos.server";
@@ -67,4 +69,12 @@ export async function consultarRecuperacionZoom(
 
 export async function vincularOcurrenciaZoomAdmin(actor: ActorRecuperacionZoom, ocurrenciaId: string, eventoId: string) {
   return vincularOcurrenciaZoom({ repo: crearPrismaZoomArchivoRepositoryAdapter({ db, hash }) }, actor, ocurrenciaId, eventoId);
+}
+
+/** Inventario de archivos Zoom para la biblioteca; el rol se verifica aquí, en el servidor. */
+export async function listarInventarioZoomAdmin(
+  actor: Readonly<{ id: string; rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO" }>,
+  entrada: EntradaInventarioZoom
+) {
+  return listarInventarioZoomUseCase(crearPrismaZoomInventarioLecturaAdapter({ db }), actor, entrada);
 }
