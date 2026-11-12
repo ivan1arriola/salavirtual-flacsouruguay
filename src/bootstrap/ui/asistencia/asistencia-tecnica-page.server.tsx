@@ -2,15 +2,12 @@ import { ArrowRight, CalendarClock, Search, UserRoundCheck, UsersRound } from "l
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AssistantAssignmentSelect } from "@/src/modules/asistencia/presentation/components/assistant-assignment-select";
 import { BulkMonitoringNotificationActions } from "@/src/modules/asistencia/presentation/components/bulk-monitoring-notification-actions";
-import { CoverageAssistanceActions } from "@/src/modules/asistencia/presentation/components/coverage-assistance-actions";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
-import { buildAssignmentSuggestions } from "@/src/modules/asistencia/asignacion-sugerencias.service";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -24,8 +21,7 @@ export default async function AsistenciaTecnicaPage({
 
   const { estado = "todas", q = "" } = await searchParams;
   const now = new Date();
-  const [meetings, assistants, futureAssignments] = await Promise.all([
-    db.instanciaSala.findMany({
+  const meetings = await db.instanciaSala.findMany({
       where: {
         requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: now },
@@ -84,44 +80,7 @@ export default async function AsistenciaTecnicaPage({
           include: { proveedor: true, cuentaProveedor: true }
         }
       }
-    }),
-    db.asistenteTecnico.findMany({
-      where: {
-        disponibleGeneral: true,
-        cesadoHastaProximoInicioSesion: false,
-        usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
-      },
-      orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
-      select: {
-        id: true,
-        cesadoHastaProximoInicioSesion: true,
-        usuario: { select: { nombres: true, apellidos: true } },
-        disponibilidades: true
-      }
-    }),
-    db.asignacionAsistenciaTecnica.findMany({
-      where: {
-        estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: {
-          estado: "PROGRAMADA",
-          finProgramadoAt: { gte: now }
-        }
-      },
-      select: {
-        asistenteTecnicoId: true,
-        instancia: {
-          select: {
-            id: true,
-            inicioProgramadoAt: true,
-            finProgramadoAt: true,
-            inicioAsistenciaTecnicaAt: true,
-            finAsistenciaTecnicaAt: true,
-            timezone: true
-          }
-        }
-      }
-    })
-  ]);
+  });
 
   const rows = meetings
     .map((meeting) => {
@@ -134,23 +93,6 @@ export default async function AsistenciaTecnicaPage({
     })
     .filter(({ covered }) => estado === "pendientes" ? !covered : estado === "cubiertas" ? covered : true);
 
-  const assistantOptions = assistants.map((assistant) => ({
-    id: assistant.id,
-    name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
-    cesadoHastaProximoInicioSesion: assistant.cesadoHastaProximoInicioSesion,
-    disponibilidades: assistant.disponibilidades
-  }));
-  const suggestions = buildAssignmentSuggestions({
-    meetings: rows.map(({ meeting, covered }) => ({ meeting, covered })),
-    assistants: assistantOptions,
-    assignments: futureAssignments.map((assignment) => ({
-      assistantId: assignment.asistenteTecnicoId,
-      meetingId: assignment.instancia.id,
-      startsAt: assignment.instancia.inicioAsistenciaTecnicaAt ?? assignment.instancia.inicioProgramadoAt,
-      endsAt: assignment.instancia.finAsistenciaTecnicaAt ?? assignment.instancia.finProgramadoAt,
-      timezone: assignment.instancia.timezone
-    }))
-  });
   const total = meetings.length;
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
   const pending = total - covered;
@@ -160,12 +102,16 @@ export default async function AsistenciaTecnicaPage({
       <header className="page-header">
         <div>
           <p className="page-eyebrow">Monitoreo</p>
-          <h1>Gestión de monitoreo</h1>
-          <p>Asigná asistentes y controlá las reuniones que todavía necesitan apoyo.</p>
+          <h1>Reuniones para seguimiento</h1>
+          <p>Controlá la cobertura y el estado de las reuniones.</p>
         </div>
         <UserRoundCheck size={28} color="var(--brand)" aria-hidden="true" />
       </header>
 
+      <nav className="monitoring-view-tabs" aria-label="Secciones de monitoreo">
+        <Link className="is-active" href="/monitoreo">Reuniones</Link>
+        <Link href="/monitoreo/gestion">Gestión</Link>
+      </nav>
       <section className="metric-grid coverage-stats" aria-label="Resumen de cobertura">
         <div className="stat"><span>Total futuro</span><strong>{total}</strong></div>
         <div className="stat"><span>Cubiertas</span><strong>{covered}</strong></div>
@@ -201,17 +147,15 @@ export default async function AsistenciaTecnicaPage({
           <div className="coverage-card-list">
             {rows.map(({ meeting, assignment, covered }) => {
                   const association = meeting.solicitud.docentePrograma;
-                  const meet = seleccionarEventoProveedorActivo(meeting);
+                  const event = seleccionarEventoProveedorActivo(meeting);
+                  const isZoom = event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
                   const assistantName = assignment
                     ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;
                   const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
                   const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                   const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-                  const applicants = meeting.postulaciones.map((interest) => ({
-                    id: interest.asistenteTecnico.id,
-                    name: [interest.asistenteTecnico.usuario.nombres, interest.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
-                  }));
+                  const applicantsCount = meeting.postulaciones.length;
                   return (
                     <article className={`coverage-card ${covered ? "is-covered" : "is-pending"}`} key={meeting.id}>
                       <header className="coverage-card-header">
@@ -229,6 +173,7 @@ export default async function AsistenciaTecnicaPage({
 
                       <div className="coverage-card-body">
                         <div className="coverage-meeting-copy">
+                          <span className={`monitoring-platform ${isZoom ? "is-zoom" : "is-meet"}`}>{isZoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}</span>
                           <p className="coverage-card-eyebrow">{association.programa.nombre}</p>
                           <Link className="coverage-title-link" href={`/reuniones/${meeting.solicitud.id}`}>{meeting.solicitud.titulo}</Link>
                           <div className="coverage-meeting-meta">
@@ -237,11 +182,14 @@ export default async function AsistenciaTecnicaPage({
                             {modalidad === "HIBRIDA" ? (
                               <span><strong>Meet</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
                             ) : null}
-                            <span><strong>Cuenta Google</strong>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
+                            <span><strong>{isZoom ? "Cuenta host" : "Cuenta Google"}</strong>{event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
                           </div>
+                          {isZoom && event ? <div className="monitoring-zoom-identifiers">
+                            <span><strong>N.º de reunión</strong> {event.codigoReunion ?? event.externalEventId ?? "No disponible"}</span>
+                          </div> : null}
                           <div className="coverage-interest-summary">
                             <UsersRound size={17} />
-                            <strong>{applicants.length}</strong> {applicants.length === 1 ? "persona postulada" : "personas postuladas"}
+                            <strong>{applicantsCount}</strong> {applicantsCount === 1 ? "persona postulada" : "personas postuladas"}
                           </div>
                         </div>
 
@@ -249,39 +197,17 @@ export default async function AsistenciaTecnicaPage({
 
                       <footer className="coverage-card-footer">
                         <div className="coverage-quick-links">
-                          {meet?.joinUrl ? (
-                            <MeetLinkActions url={meet.joinUrl} />
-                          ) : <span className="muted-text">Meet pendiente</span>}
+                          {event?.joinUrl ? (
+                            <MeetLinkActions url={event.joinUrl} />
+                          ) : <span className="muted-text">Enlace pendiente</span>}
                           <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
                         </div>
-                        <details className="coverage-management-disclosure">
-                          <summary>
-                            <span>{assistantName ? `Asignada a ${assistantName}` : "Asignar cobertura"}</span>
-                            <span>Gestionar</span>
-                          </summary>
-                          <div className="coverage-management-content">
-                        <aside className="coverage-assignment-panel">
-                          <div className="coverage-assignment-heading">
-                            <span>{covered ? "Persona a cargo" : "Asignar cobertura"}</span>
-                            {assistantName ? <strong>{assistantName}</strong> : <small>Todavía no hay una persona asignada.</small>}
-                          </div>
-                        <AssistantAssignmentSelect
-                          assistants={assistantOptions}
-                          applicants={applicants}
-                          currentAssistantId={assignment?.asistenteTecnicoId}
-                          meetingId={meeting.id}
-                          suggestedAssistant={suggestions.get(meeting.id) ?? null}
-                        />
-                        </aside>
-                            <CoverageAssistanceActions
-                          covered={covered}
-                          assignmentId={assignment?.id ?? null}
-                          assistantName={assistantName}
-                          meetingId={meeting.id}
-                          requestId={meeting.solicitud.id}
-                        />
-                          </div>
-                        </details>
+                        <div className="coverage-management-link">
+                          <span>{assistantName ? `Asignada a ${assistantName}` : "Sin persona asignada"}</span>
+                          <Link className="secondary-action" href={`/monitoreo/gestionar/${meeting.id}`}>
+                            Gestionar monitoreo <ArrowRight size={16} aria-hidden="true" />
+                          </Link>
+                        </div>
                       </footer>
                     </article>
                   );

@@ -34,13 +34,15 @@ describe("flujo administrativo de desvinculación", () => {
     expect(table).toContain("AssistantUnassignButton");
   });
 
-  it("permite desasignar desde la tarjeta sin cancelar el requisito de monitoreo", () => {
+  it("separa la gestión de la tarjeta y conserva la acción de desasignación sin cancelar el monitoreo", () => {
     const actions = source("src/modules/asistencia/presentation/components/coverage-assistance-actions.tsx");
     const page = source("src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx");
     const css = source("app/(gestion)/operations.css");
 
-    expect(page).toContain("assignmentId={assignment?.id ?? null}");
-    expect(page).toContain("assistantName={assistantName}");
+    const detail = source("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
+    expect(page).toContain('/monitoreo/gestionar/${meeting.id}');
+    expect(page).not.toContain("coverage-management-disclosure");
+    expect(detail).toContain("GestionCoberturaPanel");
     expect(actions).toContain('className="secondary-action coverage-unassign-action"');
     expect(actions).toContain("Desasignar asistente");
     expect(actions).toContain('fetch("/api/v1/asistencia/asignaciones/desvincular"');

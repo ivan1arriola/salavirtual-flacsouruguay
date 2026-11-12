@@ -2740,3 +2740,24 @@
 .coverage-card-footer > .coverage-quick-links { padding: 10px 18px; }
 .coverage-management-disclosure { width: 100%; }
 @media (max-width: 700px) { .coverage-card-footer > .coverage-quick-links { padding: 8px 12px; } }
+
+
+/* Monitoring navigation and compact management UX */
+.monitoring-view-tabs,.monitoring-management-filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}
+.monitoring-view-tabs>a,.monitoring-management-filters>a{display:inline-flex;justify-content:center;align-items:center;gap:6px;padding:11px 18px;border:1px solid var(--border,#d0daea);border-radius:12px;background:var(--surface,#fff);color:var(--brand,#294b83);font-weight:700;text-decoration:none}
+.monitoring-view-tabs>a{flex:1}
+.monitoring-view-tabs>a.is-active,.monitoring-management-filters>a.is-active{background:#dce8ff;border-color:#acc7ff;color:#164baf}
+.monitoring-platform{display:inline-flex;align-items:center;border-radius:999px;padding:4px 11px;font-size:.82rem;font-weight:700;margin-bottom:8px}
+.monitoring-platform.is-zoom{background:#e3edff;color:#1556c4}
+.monitoring-platform.is-meet{background:#dcf4e8;color:#17644a}
+.monitoring-zoom-identifiers{background:#f0f5fc;border-radius:10px;padding:9px 12px;margin:10px 0;font-size:.87rem}
+.monitoring-zoom-identifiers strong{margin-right:8px}
+.coverage-management-link{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap;color:#37516e;font-weight:600}
+.coverage-management-link .secondary-action{display:inline-flex;align-items:center;gap:7px;text-decoration:none}
+.monitoring-management-list{display:grid;gap:12px}
+.monitoring-management-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid #d2dced;border-left:4px solid #227f60;border-radius:14px;background:#fff;text-decoration:none;color:#1d293c}
+.monitoring-management-row>div{display:grid;gap:7px;min-width:0}
+.monitoring-management-row strong{line-height:1.35}
+.monitoring-management-row small,.monitoring-management-date{display:flex;align-items:center;gap:6px;color:#566985}
+.monitoring-management-row .monitoring-platform{justify-self:start;margin:0}
+@media(max-width:600px){.monitoring-management-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.monitoring-management-filters>a{padding:10px 6px;font-size:.85rem}.coverage-management-link .secondary-action{width:100%;justify-content:center}.coverage-management-link{align-items:stretch}}
