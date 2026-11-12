@@ -343,7 +343,7 @@ export async function procesarPaginaRecuperacionZoom(
     const e = leerErrorZoom(error);
     const codigo = codigoDeError(error);
     // Usuario que ya no existe en la cuenta: se omite sin frenar a los demás anfitriones.
-    if (e.code === "SOLICITUD_RECHAZADA" && e.status === 404 && e.codigoZoom === 1001) {
+    if ((e.code === "NO_ENCONTRADO" || e.code === "SOLICITUD_RECHAZADA") && e.status === 404 && e.codigoZoom === 1001) {
       const siguiente = posicionSiguiente(barrido, ventanas, indiceVentana, null, true);
       const ok = await deps.repoBarridos.avanzar(
         lease,
