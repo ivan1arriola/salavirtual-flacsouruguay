@@ -40,6 +40,8 @@ const LOTE_ASISTENCIA = 20;
 /** Páginas de recuperación histórica por ciclo de mantenimiento: acota el tiempo sin frenar el resto. */
 const PAGINAS_RECUPERACION_POR_CICLO = 20;
 const DIAS_BARRIDO_RECIENTE = 3;
+/** El barrido histórico cubre fechas anteriores a la existencia del servicio; Zoom aplica su propia retención. */
+const INICIO_HISTORICO_ZOOM = "2010-01-01";
 
 /** SHA-256 completo: las marcas de origen en Drive exigen 64 caracteres hexadecimales. */
 const hash = (texto: string): string => createHash("sha256").update(texto).digest("hex");
@@ -112,6 +114,34 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
   const storage = new GoogleDriveArchivoStorageAdapter({ auth: driveAuth, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
   const repoBarridos = crearPrismaZoomBarridoRepositoryAdapter({ db, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
   const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
+
+  // El barrido periódico solo cubre los últimos tres días. Encolar una importación durable única
+  // permite recuperar el historial por páginas y ventanas sin repetirlo en cada ciclo.
+  const anfitrionesIniciales = await listarAnfitriones(cuentaZoomId);
+  if (anfitrionesIniciales.length > 0) {
+    const fechaInicio = new Date(`${INICIO_HISTORICO_ZOOM}T00:00:00.000Z`);
+    const importacionExistente = await db.barridoArchivoZoom.findFirst({
+      where: {
+        cuentaZoomId,
+        desde: fechaInicio,
+        estado: { in: ["PENDIENTE", "EN_CURSO", "COMPLETADO", "ERROR_REINTENTABLE", "REQUIERE_REVISION"] }
+      },
+      select: { id: true }
+    });
+    if (!importacionExistente) {
+      const hasta = new Date().toISOString().slice(0, 10);
+      await repoBarridos.crear({
+        cuentaZoomId,
+        anfitriones: anfitrionesIniciales.map(({ anfitrionZoomId, cuentaProveedorId }) => ({
+          anfitrionZoomId,
+          cuentaProveedorId
+        })),
+        desde: INICIO_HISTORICO_ZOOM,
+        hasta,
+        solicitanteId: null
+      });
+    }
+  }
 
   return {
     config,
