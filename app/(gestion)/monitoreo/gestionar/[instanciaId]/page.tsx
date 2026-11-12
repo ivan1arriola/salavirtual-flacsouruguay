@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { GestionCoberturaPanel } from "@/src/modules/asistencia/presentation/components/gestion-cobertura-panel";
 
 export default async function GestionCoberturaPage({
@@ -19,6 +20,7 @@ export default async function GestionCoberturaPage({
     db.instanciaSala.findUnique({
       where: { id: instanciaId },
       include: {
+        eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
         solicitud: { select: { id: true, titulo: true, modalidad: true } },
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -40,6 +42,8 @@ export default async function GestionCoberturaPage({
   const cancelled = meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA";
   const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
   const current = meeting.asignaciones[0] ?? null;
+  const event = seleccionarEventoProveedorActivo(meeting);
+  const zoom = event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
 
   return (
     <div className="monitoring-workflow-page">
@@ -56,6 +60,18 @@ export default async function GestionCoberturaPage({
           <span><UserRoundCheck size={17} aria-hidden="true" /> {modality === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
         </div>
       </header>
+      <section className="monitoring-workflow-surface" aria-label="Información de la reunión">
+        <div className="monitoring-workflow-section-heading"><h2>Información de la reunión</h2></div>
+        <div className="monitoring-workflow-body">
+          <p><span className={`monitoring-platform ${zoom ? "is-zoom" : "is-meet"}`}>{zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}</span></p>
+          <p><strong>Cuenta host:</strong> {event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "No disponible"}</p>
+          {zoom ? <>
+            <p><strong>N.º de reunión:</strong> {event?.codigoReunion ?? event?.externalEventId ?? "No disponible"}</p>
+            <p><strong>UUID:</strong> {event?.zoomMeetingUuid ?? "No disponible"}</p>
+          </> : <p><strong>Código Meet:</strong> {event?.codigoReunion ?? "No disponible"}</p>}
+          {event?.joinUrl ? <p><a href={event.joinUrl} target="_blank" rel="noopener noreferrer">Abrir reunión</a></p> : null}
+        </div>
+      </section>
       <GestionCoberturaPanel
         meeting={{
           id: meeting.id,
