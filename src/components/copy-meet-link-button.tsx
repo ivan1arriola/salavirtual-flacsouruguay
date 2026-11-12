@@ -46,6 +46,7 @@ export function MeetLinkActions({
   provider?: "GOOGLE_MEET" | "ZOOM" | "ZOOM_HISTORICO";
 }>) {
   const openLabel = provider === "ZOOM" || provider === "ZOOM_HISTORICO" ? "Abrir Zoom" : "Abrir Meet";
+  const openLabel = provider === "ZOOM" ? "Abrir Zoom" : "Abrir Meet";
   return (
     <span className={`meet-link-actions ${className}`.trim()}>
       <a
