@@ -1,0 +1,39 @@
+name: "Maintenance · Sincronizar lockfile de calidad"
+on:
+  push:
+    branches:
+      - chore/strict-ai-code-quality-ci
+    paths:
+      - package.json
+      - .github/workflows/sync-quality-lock.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  lockfile:
+    if: github.repository == 'ivan1arriola/salavirtual-flacsouruguay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Resolver dependencias y actualizar package-lock.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Confirmar lockfile generado
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile ya sincronizado"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: synchronize quality tooling lockfile"
+          git push origin HEAD:chore/strict-ai-code-quality-ci
