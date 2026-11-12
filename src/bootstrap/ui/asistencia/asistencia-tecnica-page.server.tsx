@@ -182,7 +182,7 @@ export default async function AsistenciaTecnicaPage({
                             {modalidad === "HIBRIDA" ? (
                               <span><strong>Horario de reunión</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
                             ) : null}
-                            <span><strong>{isZoom ? "Cuenta host" : "Cuenta Google"}</strong>{event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
+                            <span><strong>{isZoom ? "Host de Zoom" : "Cuenta de Meet"}</strong>{event?.cuentaProveedor ? `${event.cuentaProveedor.nombre}${event.cuentaProveedor.emailOrganizador ? ` · ${event.cuentaProveedor.emailOrganizador}` : ""}` : "Sin cuenta host asignada"}</span>
                           </div>
                           {isZoom && event ? <div className="monitoring-zoom-identifiers">
                             <span><strong>N.º de reunión</strong> {event.codigoReunion ?? event.externalEventId ?? "No disponible"}</span>
