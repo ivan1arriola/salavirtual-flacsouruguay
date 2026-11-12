@@ -64,7 +64,7 @@ export default async function GestionCoberturaPage({
         <div className="monitoring-workflow-section-heading"><h2>Información de la reunión</h2></div>
         <div className="monitoring-workflow-body">
           <p><span className={`monitoring-platform ${zoom ? "is-zoom" : "is-meet"}`}>{zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}</span></p>
-          <p><strong>Cuenta host:</strong> {event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "No disponible"}</p>
+          <p><strong>{zoom ? "Host de Zoom" : "Cuenta de Meet"}:</strong> {event?.cuentaProveedor ? `${event.cuentaProveedor.nombre}${event.cuentaProveedor.emailOrganizador ? ` · ${event.cuentaProveedor.emailOrganizador}` : ""}` : "Sin cuenta host asignada"}</p>
           {zoom ? <>
             <p><strong>N.º de reunión:</strong> {event?.codigoReunion ?? event?.externalEventId ?? "No disponible"}</p>
             <p><strong>UUID:</strong> {event?.zoomMeetingUuid ?? "No disponible"}</p>

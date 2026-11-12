@@ -36,13 +36,16 @@ export function MeetLinkActions({
   url,
   openClassName = "text-link",
   iconOnly = false,
-  className = ""
+  className = "",
+  provider = "GOOGLE_MEET"
 }: Readonly<{
   url: string;
   openClassName?: string;
   iconOnly?: boolean;
   className?: string;
+  provider?: "GOOGLE_MEET" | "ZOOM" | "ZOOM_HISTORICO";
 }>) {
+  const openLabel = provider === "ZOOM" || provider === "ZOOM_HISTORICO" ? "Abrir Zoom" : "Abrir Meet";
   return (
     <span className={`meet-link-actions ${className}`.trim()}>
       <a
@@ -50,10 +53,10 @@ export function MeetLinkActions({
         href={url}
         rel="noreferrer"
         target="_blank"
-        title="Abrir Meet"
+        title={openLabel}
       >
         <ExternalLink size={iconOnly ? 16 : 15} />
-        <span className={iconOnly ? "sr-only" : ""}>Abrir Meet</span>
+        <span className={iconOnly ? "sr-only" : ""}>{openLabel}</span>
       </a>
       <CopyMeetLinkButton url={url} />
     </span>
