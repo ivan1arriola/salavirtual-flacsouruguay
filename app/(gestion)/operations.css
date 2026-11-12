@@ -2802,3 +2802,40 @@
   .monitoring-workflow-body{padding:16px}
   .monitoring-workflow-form input,.monitoring-workflow-form select,.monitoring-workflow-form button{min-height:44px}
 }
+
+
+/* Mobile-first monitoring: readable cards and accessible touch actions */
+.coverage-card-list{display:grid;gap:14px}
+.coverage-card{min-width:0;overflow:hidden;border-radius:18px}
+.coverage-card-header,.coverage-card-footer{gap:12px}
+.coverage-meeting-copy,.coverage-card-body,.coverage-quick-links{min-width:0}
+.coverage-title-link{overflow-wrap:anywhere}
+.coverage-meeting-meta span{overflow-wrap:anywhere}
+.coverage-quick-links a,.coverage-management-link a,.monitoring-view-tabs a{min-height:44px}
+.coverage-quick-links .meet-link-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.monitoring-workflow-body{overflow-wrap:anywhere}
+@media(max-width:680px){
+  .coverage-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .coverage-stats .stat{min-width:0;padding:12px 8px}
+  .coverage-stats .stat span{font-size:.75rem;line-height:1.3}
+  .coverage-stats .stat strong{font-size:1.6rem}
+  .coverage-filter{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .coverage-filter input,.coverage-filter select,.coverage-filter button{width:100%;min-width:0;min-height:46px}
+  .coverage-filter>svg{display:none}
+  .coverage-card{padding:0}
+  .coverage-card-header{display:flex;align-items:flex-start;flex-direction:column;padding:14px}
+  .coverage-card-header .status{align-self:flex-start}
+  .coverage-card-body{padding:0 14px 12px}
+  .coverage-card-footer{display:grid;padding:12px 14px 14px}
+  .coverage-meeting-meta{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .coverage-meeting-meta span{display:grid;gap:2px}
+  .coverage-quick-links{display:grid;gap:10px}
+  .coverage-quick-links .meet-link-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .coverage-quick-links .meet-link-actions>a,.coverage-quick-links .meet-link-actions>button{display:flex;justify-content:center;align-items:center;gap:8px;min-height:46px;width:100%;padding:10px;border-radius:11px}
+  .coverage-management-link{display:grid;gap:10px}
+  .coverage-management-link .secondary-action{display:flex;min-height:48px}
+  .monitoring-workflow-page{min-width:0}
+  .monitoring-workflow-meta{display:grid;gap:8px}
+  .monitoring-workflow-body{padding:14px}
+  .monitoring-workflow-time-grid{display:grid;grid-template-columns:minmax(0,1fr)}
+}
