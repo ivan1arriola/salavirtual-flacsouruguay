@@ -43,8 +43,8 @@ export default async function GestionCoberturaPage({
 
   return (
     <div className="monitoring-workflow-page">
-      <Link className="monitoring-workflow-back" href={`/reuniones/${meeting.solicitud.id}`}>
-        <ArrowLeft size={17} aria-hidden="true" /> Volver al encuentro
+      <Link className="monitoring-workflow-back" href="/monitoreo">
+        <ArrowLeft size={17} aria-hidden="true" /> Volver a monitoreo
       </Link>
       <header className="monitoring-workflow-header">
         <span className="page-eyebrow">Administración · Monitoreo</span>
