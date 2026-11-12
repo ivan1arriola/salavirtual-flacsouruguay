@@ -7,6 +7,7 @@ import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
+import { agruparPorDia, colorCuentaZoom, nombreCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
@@ -96,6 +97,7 @@ export default async function AsistenciaTecnicaPage({
   const total = meetings.length;
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
   const pending = total - covered;
+  const days = agruparPorDia(rows, ({ meeting }) => meeting.inicioProgramadoAt, now);
 
   return (
     <>
@@ -145,10 +147,17 @@ export default async function AsistenciaTecnicaPage({
           <div className="content-section empty-state"><UserRoundCheck size={24} aria-hidden="true" /><p>No hay instancias para ese filtro.</p></div>
         ) : (
           <div className="coverage-card-list">
-            {rows.map(({ meeting, assignment, covered }) => {
+            {days.map((day) => <section className="monitoring-day-group" key={day.clave} aria-labelledby={`monitoring-day-${day.clave}`}>
+              <h2 className="monitoring-day-title" id={`monitoring-day-${day.clave}`}>
+                {day.relativo === "HOY" ? <span className="monitoring-day-relative">Hoy</span> : day.relativo === "MANANA" ? <span className="monitoring-day-relative">Mañana</span> : null}
+                {day.etiqueta} <small>{day.items.length} {day.items.length === 1 ? "reunión" : "reuniones"}</small>
+              </h2>
+              <div className="monitoring-day-cards">{day.items.map(({ meeting, assignment, covered }) => {
                   const association = meeting.solicitud.docentePrograma;
                   const event = seleccionarEventoProveedorActivo(meeting);
                   const isZoom = event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
+                  const hostEmail = isZoom ? event?.cuentaProveedor?.emailOrganizador : null;
+                  const hostColor = colorCuentaZoom(hostEmail);
                   const assistantName = assignment
                     ? [assignment.asistenteTecnico.usuario.nombres, assignment.asistenteTecnico.usuario.apellidos].filter(Boolean).join(" ")
                     : null;
@@ -157,7 +166,7 @@ export default async function AsistenciaTecnicaPage({
                   const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
                   const applicantsCount = meeting.postulaciones.length;
                   return (
-                    <article className={`coverage-card ${covered ? "is-covered" : "is-pending"}`} key={meeting.id}>
+                    <article className={`coverage-card monitoring-account-card ${covered ? "is-covered" : "is-pending"}`} data-cuenta={hostColor ?? "sin"} key={meeting.id}>
                       <header className="coverage-card-header">
                         <div className="coverage-date">
                           <CalendarClock size={18} />
@@ -182,7 +191,7 @@ export default async function AsistenciaTecnicaPage({
                             {modalidad === "HIBRIDA" ? (
                               <span><strong>Horario de reunión</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
                             ) : null}
-                            <span><strong>{isZoom ? "Host de Zoom" : "Cuenta de Meet"}</strong>{event?.cuentaProveedor ? `${event.cuentaProveedor.nombre}${event.cuentaProveedor.emailOrganizador ? ` · ${event.cuentaProveedor.emailOrganizador}` : ""}` : "Sin cuenta host asignada"}</span>
+                            <span><strong>{isZoom ? "Host de Zoom" : "Cuenta de Meet"}</strong>{event?.cuentaProveedor ? `${isZoom && hostEmail ? nombreCuentaZoom(hostEmail) : event.cuentaProveedor.nombre}${event.cuentaProveedor.emailOrganizador ? ` · ${event.cuentaProveedor.emailOrganizador}` : ""}` : "Sin cuenta host asignada"}</span>
                           </div>
                           {isZoom && event ? <div className="monitoring-zoom-identifiers">
                             <span><strong>N.º de reunión</strong> {event.codigoReunion ?? event.externalEventId ?? "No disponible"}</span>
@@ -211,7 +220,7 @@ export default async function AsistenciaTecnicaPage({
                       </footer>
                     </article>
                   );
-                })}
+                })}</div></section>)}
           </div>
         )}
       </section>
