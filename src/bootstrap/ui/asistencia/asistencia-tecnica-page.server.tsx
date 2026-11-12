@@ -180,7 +180,7 @@ export default async function AsistenciaTecnicaPage({
                             <span><strong>Docente</strong>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</span>
                             <span><strong>Modalidad</strong>{modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
                             {modalidad === "HIBRIDA" ? (
-                              <span><strong>Meet</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
+                              <span><strong>Horario de reunión</strong>{formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</span>
                             ) : null}
                             <span><strong>{isZoom ? "Cuenta host" : "Cuenta Google"}</strong>{event?.cuentaProveedor?.emailOrganizador ?? event?.cuentaProveedor?.nombre ?? "Sin cuenta asignada"}</span>
                           </div>
@@ -198,7 +198,7 @@ export default async function AsistenciaTecnicaPage({
                       <footer className="coverage-card-footer">
                         <div className="coverage-quick-links">
                           {event?.joinUrl ? (
-                            <MeetLinkActions url={event.joinUrl} />
+                            <MeetLinkActions url={event.joinUrl} provider={isZoom ? "ZOOM" : "GOOGLE_MEET"} />
                           ) : <span className="muted-text">Enlace pendiente</span>}
                           <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>Ver detalle <ArrowRight size={15} /></Link>
                         </div>
