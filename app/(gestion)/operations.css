@@ -2839,3 +2839,25 @@
   .monitoring-workflow-body{padding:14px}
   .monitoring-workflow-time-grid{display:grid;grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Same account palette and date dividers as Zoom agenda. */
+.monitoring-day-group{display:grid;gap:12px;min-width:0}
+.monitoring-day-cards{display:grid;gap:12px;min-width:0}
+.monitoring-day-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 0;padding:10px 0;border-bottom:1px solid #cbd5e1;font-size:1.05rem;text-transform:capitalize}
+.monitoring-day-title small{margin-left:auto;font-size:.78rem;font-weight:500;color:#64748b}
+.monitoring-day-relative{border-radius:8px;background:#dbeafe;color:#1d4ed8;padding:4px 9px;font-size:.8rem}
+.monitoring-account-card{--account-strong:#94a3b8;--account-pale:#f8fafc;border-left:5px solid var(--account-strong);background:linear-gradient(90deg,var(--account-pale),transparent 55%),var(--surface,#fff)}
+.monitoring-account-card[data-cuenta="0"]{--account-strong:#2563eb;--account-pale:#eff4ff}
+.monitoring-account-card[data-cuenta="1"]{--account-strong:#dc2626;--account-pale:#fff1f1}
+.monitoring-account-card[data-cuenta="2"]{--account-strong:#16a34a;--account-pale:#eefaf2}
+.monitoring-account-card[data-cuenta="3"]{--account-strong:#d97706;--account-pale:#fff7e8}
+.monitoring-account-card[data-cuenta="4"]{--account-strong:#7c3aed;--account-pale:#f5f0ff}
+.monitoring-account-card[data-cuenta="5"]{--account-strong:#0891b2;--account-pale:#ecfafd}
+.monitoring-account-card[data-cuenta="6"]{--account-strong:#db2777;--account-pale:#fff0f7}
+.monitoring-account-card[data-cuenta="7"]{--account-strong:#4d7c0f;--account-pale:#f4f9e8}
+.monitoring-account-card[data-cuenta="8"]{--account-strong:#ea580c;--account-pale:#fff2ea}
+.monitoring-account-card[data-cuenta="9"]{--account-strong:#0f766e;--account-pale:#ebf8f6}
+.monitoring-account-card[data-cuenta="10"]{--account-strong:#475569;--account-pale:#f1f5f9}
+.monitoring-account-card[data-cuenta="11"]{--account-strong:#92400e;--account-pale:#fbf3ec}
+@media(max-width:680px){.monitoring-day-title{font-size:.94rem}.monitoring-day-title small{width:100%;margin-left:0}.monitoring-day-cards{gap:10px}}
