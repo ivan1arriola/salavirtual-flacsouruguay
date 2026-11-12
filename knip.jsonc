@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["app/**/*.{ts,tsx}", "auth.ts", "scripts/*.{ts,mjs}"],
+  "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "test/**/*.{ts,tsx}"],
+  "ignore": ["prisma/**", "scripts/legacy-meetings/**", ".next/**"],
+  "ignoreDependencies": ["@types/node", "@types/react", "@types/react-dom"]
+}
