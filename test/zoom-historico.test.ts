@@ -369,7 +369,7 @@ describe("procesarPaginaRecuperacionZoom", () => {
   it("anfitrión inexistente en Zoom (404:z1001) se omite y los demás se procesan", async () => {
     const { repo, deps, archivos } = await preparar(
       {
-        "h1|2026-01-01|": errorZoom("SOLICITUD_RECHAZADA", 404, 1001),
+        "h1|2026-01-01|": errorZoom("NO_ENCONTRADO", 404, 1001),
         "h2|2026-01-01|": { elementos: [ocurrencia("u3", "h2")], siguiente: null }
       },
       "2026-01-20"
@@ -384,7 +384,7 @@ describe("procesarPaginaRecuperacionZoom", () => {
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(1);
     // El barrido no se declara completo: queda en revisión con el anfitrión omitido registrado.
     expect(repo.estado().estado).toBe("REQUIERE_REVISION");
-    expect(repo.estado().omisiones).toEqual(["h1:SOLICITUD_RECHAZADA:404:z1001"]);
+    expect(repo.estado().omisiones).toEqual(["h1:NO_ENCONTRADO:404:z1001"]);
   });
 
   it("cursor vencido (400 con cursor): reinicia la ventana consumiendo un intento", async () => {
