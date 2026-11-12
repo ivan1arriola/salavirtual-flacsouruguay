@@ -19,10 +19,12 @@ vi.mock("@/src/lib/db", () => ({
         emailPrincipal: "admin@flacso.edu.uy"
       })
     },
-    $transaction: vi.fn().mockImplementation(async (callback: any) => callback({
-      usuario: { update: vi.fn() },
-      asistenteTecnico: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) }
-    }))
+    $transaction: vi.fn().mockImplementation(async (callback: any) =>
+      callback({
+        usuario: { update: vi.fn() },
+        asistenteTecnico: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) }
+      })
+    )
   }
 }));
 vi.mock("@/src/lib/config/encryption", () => ({
@@ -52,4 +54,3 @@ describe("bootstrap identity.server", () => {
     expect(usuario?.id).toBe("usr-boot-1");
   });
 });
-

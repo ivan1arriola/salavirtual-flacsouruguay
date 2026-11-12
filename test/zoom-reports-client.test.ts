@@ -5,14 +5,41 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("reportes de asistencia Zoom", () => {
   it("recorre páginas y conserva correos cuando Zoom los informa", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        participants: [{ id: "p1", name: "Ana", user_email: "ana@example.com", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T15:00:00Z" }],
-        next_page_token: "segunda"
-      }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        participants: [{ id: "p2", name: "Invitado", user_email: "", join_time: "2026-11-01T14:10:00Z", leave_time: "2026-11-01T14:30:00Z" }]
-      }), { status: 200 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            participants: [
+              {
+                id: "p1",
+                name: "Ana",
+                user_email: "ana@example.com",
+                join_time: "2026-11-01T14:00:00Z",
+                leave_time: "2026-11-01T15:00:00Z"
+              }
+            ],
+            next_page_token: "segunda"
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            participants: [
+              {
+                id: "p2",
+                name: "Invitado",
+                user_email: "",
+                join_time: "2026-11-01T14:10:00Z",
+                leave_time: "2026-11-01T14:30:00Z"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      );
     vi.stubGlobal("fetch", fetchMock);
     const rows = await listarParticipantesReunionPasadaZoomHttp("token", "uuid/instancia");
     expect(rows).toHaveLength(2);
@@ -23,8 +50,13 @@ describe("reportes de asistencia Zoom", () => {
   });
 
   it("distingue reporte no publicado de reporte vacío", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ participants: [] }), { status: 200 })));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 404 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ participants: [] }), { status: 200 }))
+    );
     expect(await listarParticipantesReunionPasadaZoomHttp("token", "uuid")).toBeNull();
     expect(await listarParticipantesReunionPasadaZoomHttp("token", "uuid")).toEqual([]);
   });
@@ -34,14 +66,45 @@ describe("reportes de asistencia Zoom", () => {
     await expect(listarParticipantesReunionPasadaZoomHttp("token", "uuid")).rejects.toThrow("503");
   });
   it("conserva el estado de cada participante (sala de espera incluida)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
-      participants: [
-        { id: "p1", name: "Ana", status: "in_meeting", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T15:00:00Z" },
-        { id: "p2", name: "Beto", status: "in_waiting_room", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" },
-        { id: "p3", name: "Caro", status: "desconocido", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" },
-        { id: "p4", name: "Dani", join_time: "2026-11-01T14:00:00Z", leave_time: "2026-11-01T14:05:00Z" }
-      ]
-    }), { status: 200 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            participants: [
+              {
+                id: "p1",
+                name: "Ana",
+                status: "in_meeting",
+                join_time: "2026-11-01T14:00:00Z",
+                leave_time: "2026-11-01T15:00:00Z"
+              },
+              {
+                id: "p2",
+                name: "Beto",
+                status: "in_waiting_room",
+                join_time: "2026-11-01T14:00:00Z",
+                leave_time: "2026-11-01T14:05:00Z"
+              },
+              {
+                id: "p3",
+                name: "Caro",
+                status: "desconocido",
+                join_time: "2026-11-01T14:00:00Z",
+                leave_time: "2026-11-01T14:05:00Z"
+              },
+              {
+                id: "p4",
+                name: "Dani",
+                join_time: "2026-11-01T14:00:00Z",
+                leave_time: "2026-11-01T14:05:00Z"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+    );
     const rows = await listarParticipantesReunionPasadaZoomHttp("token", "uuid");
     expect(rows?.map((r) => r.status)).toEqual(["in_meeting", "in_waiting_room", null, null]);
   });

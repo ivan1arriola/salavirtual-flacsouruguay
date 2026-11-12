@@ -5,11 +5,15 @@ const DIA = 86400000;
 
 describe("particionarPeriodoZoom", () => {
   it("un solo dia produce una ventana", () => {
-    expect(particionarPeriodoZoom("2026-03-01", "2026-03-01")).toEqual([{ desde: "2026-03-01", hasta: "2026-03-01" }]);
+    expect(particionarPeriodoZoom("2026-03-01", "2026-03-01")).toEqual([
+      { desde: "2026-03-01", hasta: "2026-03-01" }
+    ]);
   });
 
   it("30 dias inclusivos caben en una ventana y 31 requieren dos", () => {
-    expect(particionarPeriodoZoom("2026-03-01", "2026-03-30")).toEqual([{ desde: "2026-03-01", hasta: "2026-03-30" }]);
+    expect(particionarPeriodoZoom("2026-03-01", "2026-03-30")).toEqual([
+      { desde: "2026-03-01", hasta: "2026-03-30" }
+    ]);
     expect(particionarPeriodoZoom("2026-03-01", "2026-03-31")).toEqual([
       { desde: "2026-03-01", hasta: "2026-03-30" },
       { desde: "2026-03-31", hasta: "2026-03-31" }
@@ -23,7 +27,9 @@ describe("particionarPeriodoZoom", () => {
     ventanas.forEach((v, i) => {
       const dias = (Date.parse(v.hasta) - Date.parse(v.desde)) / DIA + 1;
       expect(dias).toBeLessThanOrEqual(30);
-      if (i > 0) expect(Date.parse(v.desde) - Date.parse(ventanas[i - 1].hasta)).toBe(DIA);
+      if (i > 0) {
+        expect(Date.parse(v.desde) - Date.parse(ventanas[i - 1].hasta)).toBe(DIA);
+      }
     });
     expect(ventanas[0].hasta).toBe("2026-01-13");
   });

@@ -1,7 +1,4 @@
-import type {
-  DescartarLoteResult,
-  DescartarOperacionResult,
-} from "../domain/conferencias.types";
+import type { DescartarLoteResult, DescartarOperacionResult } from "../domain/conferencias.types";
 import type { ConferenciasRepositoryPort } from "../ports";
 
 export async function descartarOperacionPendienteUseCase(
@@ -16,4 +13,3 @@ export async function descartarOperacionesNoBloqueantesLoteUseCase(
 ): Promise<DescartarLoteResult> {
   return repository.descartarOperacionesNoBloqueantesLote();
 }
-

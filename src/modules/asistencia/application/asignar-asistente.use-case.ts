@@ -1,8 +1,5 @@
 import { ForbiddenApiError } from "@/src/lib/http/api-error";
-import {
-  asignacionAsistenciaSchema,
-  puedeAsignarAsistencia
-} from "../domain";
+import { asignacionAsistenciaSchema, puedeAsignarAsistencia } from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 import type { SessionActor } from "./actualizar-postulacion.use-case";
 
@@ -20,9 +17,5 @@ export async function asignarAsistenteUseCase(
   }
   const input = asignacionAsistenciaSchema.parse(rawInput);
 
-  return deps.repo.reservarYAsignarAsistente(
-    input.instanciaSalaId,
-    input.asistenteTecnicoId,
-    actor.id
-  );
+  return deps.repo.reservarYAsignarAsistente(input.instanciaSalaId, input.asistenteTecnicoId, actor.id);
 }

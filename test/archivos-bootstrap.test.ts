@@ -52,4 +52,3 @@ describe("archivos: bootstrap server", () => {
     expect(files).toEqual([]);
   });
 });
-

@@ -105,9 +105,15 @@ export type ResultadoDesvinculo =
  * recibe false (o LEASE_OBSOLETO) y nunca confirma resultados.
  */
 export type ZoomArchivoRepositoryPort = Readonly<{
-  guardarInventario(ocurrencia: OcurrenciaInventariadaZoom, inventario: ResultadoInventarioZoom): Promise<ResumenInventarioGuardado>;
+  guardarInventario(
+    ocurrencia: OcurrenciaInventariadaZoom,
+    inventario: ResultadoInventarioZoom
+  ): Promise<ResumenInventarioGuardado>;
   /** Ocurrencias cuyo próximo inventario ya venció (proximoInventarioAt <= ahora), las más atrasadas primero. */
-  listarOcurrenciasPorInventariar(ahora: Date, limite: number): Promise<readonly { referencia: ReferenciaOcurrenciaZoom; cuentaProveedorId: string | null }[]>;
+  listarOcurrenciasPorInventariar(
+    ahora: Date,
+    limite: number
+  ): Promise<readonly { referencia: ReferenciaOcurrenciaZoom; cuentaProveedorId: string | null }[]>;
   /** Fija la carpeta de Drive de la ocurrencia solo si aún no tenía una (la primera resolución gana). */
   guardarCarpetaOcurrencia(ocurrenciaId: string, driveFolderId: string): Promise<boolean>;
   reclamarArchivo(ahora: Date, duracionMs: number): Promise<LeaseArchivoZoom | null>;
@@ -116,10 +122,24 @@ export type ZoomArchivoRepositoryPort = Readonly<{
   confirmarConservado(lease: LeaseArchivoZoom, destino: DestinoConservadoZoom): Promise<boolean>;
   registrarFallo(lease: LeaseArchivoZoom, fallo: FalloArchivoZoom): Promise<boolean>;
   /** Reserva atómica (entre workers) del cupo de transferencia de la ventana móvil. */
-  reservarTransferencia(lease: LeaseArchivoZoom, solicitud: SolicitudReservaTransferenciaZoom): Promise<ResultadoReservaTransferenciaZoom>;
+  reservarTransferencia(
+    lease: LeaseArchivoZoom,
+    solicitud: SolicitudReservaTransferenciaZoom
+  ): Promise<ResultadoReservaTransferenciaZoom>;
   /** Ajusta la reserva a los bytes realmente transferidos; solo una vez por reserva. */
   liberarReserva(reservaId: string, bytesTransferidos: bigint, ahora: Date): Promise<boolean>;
-  vincularOcurrencia(ocurrenciaId: string, eventoId: string, actor: ActorVinculoZoom | null): Promise<ResultadoVinculo>;
-  desvincularOcurrencia(ocurrenciaId: string, eventoId: string, actor: ActorVinculoZoom | null): Promise<ResultadoDesvinculo>;
-  reintentarArchivo(archivoId: string, actor: ActorVinculoZoom | null): Promise<{ tipo: "OK" | "NO_ENCONTRADO" | "ESTADO_NO_REINTENTABLE" }>;
+  vincularOcurrencia(
+    ocurrenciaId: string,
+    eventoId: string,
+    actor: ActorVinculoZoom | null
+  ): Promise<ResultadoVinculo>;
+  desvincularOcurrencia(
+    ocurrenciaId: string,
+    eventoId: string,
+    actor: ActorVinculoZoom | null
+  ): Promise<ResultadoDesvinculo>;
+  reintentarArchivo(
+    archivoId: string,
+    actor: ActorVinculoZoom | null
+  ): Promise<{ tipo: "OK" | "NO_ENCONTRADO" | "ESTADO_NO_REINTENTABLE" }>;
 }>;

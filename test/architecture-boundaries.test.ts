@@ -22,13 +22,19 @@ function extractImports(source: string): string[] {
 
   const results: string[] = [];
   for (const match of staticMatches) {
-    if (match[1]) results.push(match[1]);
+    if (match[1]) {
+      results.push(match[1]);
+    }
   }
   for (const match of dynamicMatches) {
-    if (match[1]) results.push(match[1]);
+    if (match[1]) {
+      results.push(match[1]);
+    }
   }
   for (const match of sideEffectMatches) {
-    if (match[1]) results.push(match[1]);
+    if (match[1]) {
+      results.push(match[1]);
+    }
   }
   return results;
 }
@@ -47,7 +53,9 @@ function scanModules(dir: string): FileInfo[] {
       const parts = rel.split("/");
       const moduleName = parts[0];
       const layerCandidate = parts[1];
-      const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(layerCandidate)
+      const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(
+        layerCandidate
+      )
         ? (layerCandidate as LayerName)
         : undefined;
 
@@ -81,64 +89,66 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
       });
     } else {
       for (const file of layeredFiles) {
-      if (file.layer === "domain") {
-        it(`[domain] ${file.relPath} no importa capas superiores ni dependencias externas con efectos`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/application") ||
-            imp.includes("/presentation") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react") ||
-            imp.includes("googleapis") ||
-            imp.includes("nodemailer") ||
-            imp === "server-only"
-          );
-          expect(forbidden, `Imports prohibidos en domain: ${forbidden.join(", ")}`).toEqual([]);
-        });
-      }
+        if (file.layer === "domain") {
+          it(`[domain] ${file.relPath} no importa capas superiores ni dependencias externas con efectos`, () => {
+            const forbidden = file.imports.filter(
+              (imp) =>
+                imp.includes("/infrastructure") ||
+                imp.includes("/application") ||
+                imp.includes("/presentation") ||
+                imp.includes("@prisma/client") ||
+                imp.startsWith("next") ||
+                imp.startsWith("react") ||
+                imp.includes("googleapis") ||
+                imp.includes("nodemailer") ||
+                imp === "server-only"
+            );
+            expect(forbidden, `Imports prohibidos en domain: ${forbidden.join(", ")}`).toEqual([]);
+          });
+        }
 
-      if (file.layer === "ports") {
-        it(`[ports] ${file.relPath} no importa infraestructura ni frameworks externos`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/presentation") ||
-            imp.includes("/application") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react") ||
-            imp.includes("googleapis") ||
-            imp.includes("nodemailer")
-          );
-          expect(forbidden, `Imports prohibidos en ports: ${forbidden.join(", ")}`).toEqual([]);
-        });
-      }
+        if (file.layer === "ports") {
+          it(`[ports] ${file.relPath} no importa infraestructura ni frameworks externos`, () => {
+            const forbidden = file.imports.filter(
+              (imp) =>
+                imp.includes("/infrastructure") ||
+                imp.includes("/presentation") ||
+                imp.includes("/application") ||
+                imp.includes("@prisma/client") ||
+                imp.startsWith("next") ||
+                imp.startsWith("react") ||
+                imp.includes("googleapis") ||
+                imp.includes("nodemailer")
+            );
+            expect(forbidden, `Imports prohibidos en ports: ${forbidden.join(", ")}`).toEqual([]);
+          });
+        }
 
-      if (file.layer === "application") {
-        it(`[application] ${file.relPath} no importa infraestructura, presentacion ni Prisma/React/Next`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/presentation") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react") ||
-            imp.includes("googleapis") ||
-            imp.includes("nodemailer")
-          );
-          expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual([]);
-        });
-      }
+        if (file.layer === "application") {
+          it(`[application] ${file.relPath} no importa infraestructura, presentacion ni Prisma/React/Next`, () => {
+            const forbidden = file.imports.filter(
+              (imp) =>
+                imp.includes("/infrastructure") ||
+                imp.includes("/presentation") ||
+                imp.includes("@prisma/client") ||
+                imp.startsWith("next") ||
+                imp.startsWith("react") ||
+                imp.includes("googleapis") ||
+                imp.includes("nodemailer")
+            );
+            expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual([]);
+          });
+        }
 
-      if (file.layer === "presentation") {
-        it(`[presentation] ${file.relPath} no importa infraestructura ni Prisma directamente`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("@prisma/client")
-          );
-          expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual([]);
-        });
+        if (file.layer === "presentation") {
+          it(`[presentation] ${file.relPath} no importa infraestructura ni Prisma directamente`, () => {
+            const forbidden = file.imports.filter(
+              (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client")
+            );
+            expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual([]);
+          });
+        }
       }
-    }
     }
   });
 
@@ -148,7 +158,9 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
         const forbiddenCrossImports = file.imports.filter((imp) => {
           // Detectar importaciones hacia subcarpetas internas de otro módulo:
           // Ej: @/src/modules/<otro>/(domain|application|ports|infrastructure)/...
-          const match = imp.match(/@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure|presentation)\//);
+          const match = imp.match(
+            /@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure|presentation)\//
+          );
           if (match) {
             const importedModule = match[1];
             return importedModule !== file.moduleName;
@@ -165,7 +177,10 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
   });
 
   describe("integraciones tecnicas externas (src/integrations/google)", () => {
-    const googleFiles = scanDir(join(process.cwd(), "src/integrations/google"), join(process.cwd(), "src/integrations"));
+    const googleFiles = scanDir(
+      join(process.cwd(), "src/integrations/google"),
+      join(process.cwd(), "src/integrations")
+    );
 
     it("encuentra archivos en src/integrations/google", () => {
       expect(googleFiles.length).toBeGreaterThan(0);
@@ -173,27 +188,33 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
     for (const file of googleFiles) {
       it(`[google integration] ${file.relPath} no importa modulos de negocio, prisma ni presentacion`, () => {
-        const forbidden = file.imports.filter((imp) =>
-          imp.includes("@/src/modules") ||
-          imp.includes("@/src/app") ||
-          imp.includes("@prisma/client") ||
-          imp.includes("@/src/lib/db") ||
-          imp.startsWith("next") ||
-          imp.startsWith("react")
+        const forbidden = file.imports.filter(
+          (imp) =>
+            imp.includes("@/src/modules") ||
+            imp.includes("@/src/app") ||
+            imp.includes("@prisma/client") ||
+            imp.includes("@/src/lib/db") ||
+            imp.startsWith("next") ||
+            imp.startsWith("react")
         );
-        expect(
-          forbidden,
-          `Imports prohibidos en cliente tecnico de Google: ${forbidden.join(", ")}`
-        ).toEqual([]);
+        expect(forbidden, `Imports prohibidos en cliente tecnico de Google: ${forbidden.join(", ")}`).toEqual(
+          []
+        );
       });
     }
   });
 });
 
-function scanDir(dir: string, baseRoot: string): Readonly<{ absPath: string; relPath: string; content: string; imports: readonly string[] }>[] {
-  if (!existsSync(dir)) return [];
+function scanDir(
+  dir: string,
+  baseRoot: string
+): Readonly<{ absPath: string; relPath: string; content: string; imports: readonly string[] }>[] {
+  if (!existsSync(dir)) {
+    return [];
+  }
   const entries = readdirSync(dir);
-  const results: Array<{ absPath: string; relPath: string; content: string; imports: readonly string[] }> = [];
+  const results: Array<{ absPath: string; relPath: string; content: string; imports: readonly string[] }> =
+    [];
   for (const entry of entries) {
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
@@ -206,10 +227,9 @@ function scanDir(dir: string, baseRoot: string): Readonly<{ absPath: string; rel
         absPath: fullPath,
         relPath: rel,
         content,
-        imports: extractImports(content),
+        imports: extractImports(content)
       });
     }
   }
   return results;
 }
-

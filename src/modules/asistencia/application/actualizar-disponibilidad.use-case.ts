@@ -1,7 +1,4 @@
-import {
-  disponibilidadSemanalSchema,
-  puedeGestionarPostulacion
-} from "../domain";
+import { disponibilidadSemanalSchema, puedeGestionarPostulacion } from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 import type { SessionActor } from "./actualizar-postulacion.use-case";
 

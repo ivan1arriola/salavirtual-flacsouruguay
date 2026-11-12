@@ -10,11 +10,13 @@ Amazon SES puede ser activado desde **Configuración → Correo**. La aplicació
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": "ses:SendEmail",
-    "Resource": "arn:aws:ses:REGION:ACCOUNT_ID:identity/avisos.flacso.edu.uy"
-  }]
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ses:SendEmail",
+      "Resource": "arn:aws:ses:REGION:ACCOUNT_ID:identity/avisos.flacso.edu.uy"
+    }
+  ]
 }
 ```
 

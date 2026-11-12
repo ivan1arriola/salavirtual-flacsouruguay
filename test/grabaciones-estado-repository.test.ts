@@ -9,9 +9,14 @@ describe("deteccion de grabaciones en Prisma", () => {
     const repo = crearPrismaArchivosRepositoryAdapter(db);
     const hasta = new Date("2026-10-27T18:00:00Z");
 
-    expect(await repo.listarEventosOperativos({
-      ventana: "CALIENTE", desde: new Date("2026-10-27T14:00:00Z"), hasta, limite: 10
-    })).toEqual(["evt-vivo"]);
+    expect(
+      await repo.listarEventosOperativos({
+        ventana: "CALIENTE",
+        desde: new Date("2026-10-27T14:00:00Z"),
+        hasta,
+        limite: 10
+      })
+    ).toEqual(["evt-vivo"]);
     expect(findMany.mock.calls[0]![0].where.instancia).toEqual(
       expect.objectContaining({ inicioProgramadoAt: { lte: hasta } })
     );
@@ -23,8 +28,10 @@ describe("deteccion de grabaciones en Prisma", () => {
     const db = { eventoProveedor: { findMany } } as unknown as PrismaClient;
     const repo = crearPrismaArchivosRepositoryAdapter(db);
     await repo.listarEventosOperativos({
-      ventana: "CIERRE", desde: new Date("2026-09-27T18:00:00Z"),
-      hasta: new Date("2026-10-25T18:00:00Z"), limite: 10
+      ventana: "CIERRE",
+      desde: new Date("2026-09-27T18:00:00Z"),
+      hasta: new Date("2026-10-25T18:00:00Z"),
+      limite: 10
     });
     expect(JSON.stringify(findMany.mock.calls[0]![0].where.OR)).toContain('"grabacionObservadaAt":null');
   });
@@ -32,11 +39,26 @@ describe("deteccion de grabaciones en Prisma", () => {
   it("incluye la grabacion activa sin archivos aunque sea opcional", async () => {
     const fecha = new Date();
     const meeting = {
-      id: "inst-viva", inicioProgramadoAt: fecha, finProgramadoAt: fecha,
+      id: "inst-viva",
+      inicioProgramadoAt: fecha,
+      finProgramadoAt: fecha,
       requiereGrabacion: false,
-      solicitud: { titulo: "Clase", docentePrograma: { programa: { nombre: "Curso" }, docente: { usuario: { nombres: "Ana", apellidos: "Pérez" } } } },
-      eventosProveedor: [{ driveFolderId: null, archivosSincronizadosAt: null,
-        grabacionEstadoMeet: "EN_CURSO", grabacionObservadaAt: fecha, archivos: [] }]
+      solicitud: {
+        titulo: "Clase",
+        docentePrograma: {
+          programa: { nombre: "Curso" },
+          docente: { usuario: { nombres: "Ana", apellidos: "Pérez" } }
+        }
+      },
+      eventosProveedor: [
+        {
+          driveFolderId: null,
+          archivosSincronizadosAt: null,
+          grabacionEstadoMeet: "EN_CURSO",
+          grabacionObservadaAt: fecha,
+          archivos: []
+        }
+      ]
     };
     const count = vi.fn().mockResolvedValue(1);
     const findMany = vi.fn().mockResolvedValue([meeting]);

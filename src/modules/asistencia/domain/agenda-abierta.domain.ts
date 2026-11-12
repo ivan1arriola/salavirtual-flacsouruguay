@@ -42,9 +42,10 @@ export function evaluarConflictoAsistencia(
   if (proxima) {
     const asigStart = proxima.inicio.getTime();
     const asigEnd = proxima.fin.getTime();
-    const minutos = candStart >= asigEnd
-      ? Math.round((candStart - asigEnd) / 60_000)
-      : Math.round((asigStart - candEnd) / 60_000);
+    const minutos =
+      candStart >= asigEnd
+        ? Math.round((candStart - asigEnd) / 60_000)
+        : Math.round((asigStart - candEnd) / 60_000);
 
     return {
       estado: "MUY_PROXIMO",
@@ -78,11 +79,7 @@ export function parseDateParts(date: Date, timezone: string): { year: number; mo
   };
 }
 
-export function formatearDiasRestantes(
-  fecha: Date,
-  ahora: Date,
-  timezone = "America/Montevideo"
-): string {
+export function formatearDiasRestantes(fecha: Date, ahora: Date, timezone = "America/Montevideo"): string {
   const f = parseDateParts(fecha, timezone);
   const a = parseDateParts(ahora, timezone);
 
@@ -90,12 +87,22 @@ export function formatearDiasRestantes(
   const aUtc = Date.UTC(a.year, a.month - 1, a.day);
   const diffDays = Math.round((fUtc - aUtc) / (24 * 60 * 60 * 1000));
 
-  if (diffDays === 0) return "Hoy";
-  if (diffDays === 1) return "Mañana";
-  if (diffDays === -1) return "Ayer";
+  if (diffDays === 0) {
+    return "Hoy";
+  }
+  if (diffDays === 1) {
+    return "Mañana";
+  }
+  if (diffDays === -1) {
+    return "Ayer";
+  }
   if (diffDays > 1) {
-    if (diffDays >= 7 && diffDays < 14) return "En 1 semana";
-    if (diffDays >= 14 && diffDays % 7 === 0) return `En ${diffDays / 7} semanas`;
+    if (diffDays >= 7 && diffDays < 14) {
+      return "En 1 semana";
+    }
+    if (diffDays >= 14 && diffDays % 7 === 0) {
+      return `En ${diffDays / 7} semanas`;
+    }
     return `En ${diffDays} días`;
   }
   return `Hace ${Math.abs(diffDays)} días`;
@@ -114,9 +121,7 @@ export function agruparPorFecha<T extends { inicioProgramadoAt: Date }>(
   const claves = [...new Set(items.map((item) => dateKey(item.inicioProgramadoAt, timezone)))];
 
   return claves.map((claveFecha) => {
-    const groupItems = items.filter(
-      (item) => dateKey(item.inicioProgramadoAt, timezone) === claveFecha
-    );
+    const groupItems = items.filter((item) => dateKey(item.inicioProgramadoAt, timezone) === claveFecha);
     const primeraFecha = groupItems[0].inicioProgramadoAt;
     return {
       claveFecha,
@@ -147,22 +152,23 @@ export function ordenarPostulantesParaAdministracion(
 
   return postulantes.reduce<readonly PostulanteEvaluado[]>((ordered, candidate) => {
     const insertionIndex = ordered.findIndex((item) => {
-      const diffEstado = prioridadEstado[candidate.estadoDisponibilidad] - prioridadEstado[item.estadoDisponibilidad];
-      if (diffEstado !== 0) return diffEstado < 0;
+      const diffEstado =
+        prioridadEstado[candidate.estadoDisponibilidad] - prioridadEstado[item.estadoDisponibilidad];
+      if (diffEstado !== 0) {
+        return diffEstado < 0;
+      }
 
       const diffCarga = candidate.minutosMensuales - item.minutosMensuales;
-      if (diffCarga !== 0) return diffCarga < 0;
+      if (diffCarga !== 0) {
+        return diffCarga < 0;
+      }
 
       return candidate.name.localeCompare(item.name, "es") < 0;
     });
 
     return insertionIndex < 0
       ? [...ordered, candidate]
-      : [
-          ...ordered.slice(0, insertionIndex),
-          candidate,
-          ...ordered.slice(insertionIndex)
-        ];
+      : [...ordered.slice(0, insertionIndex), candidate, ...ordered.slice(insertionIndex)];
   }, []);
 }
 

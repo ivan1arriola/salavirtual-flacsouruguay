@@ -9,7 +9,7 @@ describe("prioridades del dashboard de asistentes de monitoreo", () => {
     );
     const order = [
       "<LiveMeetingHero",
-      "<section className=\"dashboard-content-section assistant-coverages-section\"",
+      '<section className="dashboard-content-section assistant-coverages-section"',
       "<AssistantOpenOpportunities",
       "<AssistantHoursSummary"
     ].map((marker) => source.indexOf(marker));

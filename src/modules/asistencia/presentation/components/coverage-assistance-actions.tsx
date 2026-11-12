@@ -22,7 +22,9 @@ export function CoverageAssistanceActions({
   const [message, setMessage] = useState("");
 
   function cancelAssistance() {
-    if (!window.confirm("La reunión quedará marcada como que no necesita monitoreo. ¿Continuar?")) return;
+    if (!window.confirm("La reunión quedará marcada como que no necesita monitoreo. ¿Continuar?")) {
+      return;
+    }
     run(async () => {
       const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros/${meetingId}`, {
         method: "PATCH",
@@ -34,17 +36,26 @@ export function CoverageAssistanceActions({
   }
 
   function unassign() {
-    if (!assignmentId) return;
-    if (!window.confirm(
-      `¿Desasignar a ${assistantName ?? "la persona asignada"} de este monitoreo?\n\nLa reunión seguirá requiriendo monitoreo y quedará pendiente de cobertura. No se cancelará el encuentro.`
-    )) return;
+    if (!assignmentId) {
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Desasignar a ${assistantName ?? "la persona asignada"} de este monitoreo?\n\nLa reunión seguirá requiriendo monitoreo y quedará pendiente de cobertura. No se cancelará el encuentro.`
+      )
+    ) {
+      return;
+    }
     run(async () => {
       const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ asignacionId: assignmentId })
       });
-      return parseResponse(response, "Se desasignó al asistente. El monitoreo continúa pendiente de cobertura.");
+      return parseResponse(
+        response,
+        "Se desasignó al asistente. El monitoreo continúa pendiente de cobertura."
+      );
     });
   }
 
@@ -81,7 +92,8 @@ export function CoverageAssistanceActions({
           title="Volver a avisar a todos los asistentes de monitoreo disponibles"
           type="button"
         >
-          <BellRing size={16} />{pending ? "Procesando…" : "Volver a notificar"}
+          <BellRing size={16} />
+          {pending ? "Procesando…" : "Volver a notificar"}
         </button>
       ) : null}
       {covered && assignmentId ? (
@@ -91,7 +103,8 @@ export function CoverageAssistanceActions({
           onClick={unassign}
           type="button"
         >
-          <UserRoundMinus size={16} />{pending ? "Procesando…" : "Desasignar asistente"}
+          <UserRoundMinus size={16} />
+          {pending ? "Procesando…" : "Desasignar asistente"}
         </button>
       ) : null}
       <button
@@ -100,15 +113,22 @@ export function CoverageAssistanceActions({
         onClick={cancelAssistance}
         type="button"
       >
-        <UserRoundX size={16} />Cancelar monitoreo
+        <UserRoundX size={16} />
+        Cancelar monitoreo
       </button>
-      {message ? <small className="coverage-action-message" role="status">{message}</small> : null}
+      {message ? (
+        <small className="coverage-action-message" role="status">
+          {message}
+        </small>
+      ) : null}
     </div>
   );
 }
 
 async function parseResponse(response: Response, fallback: string): Promise<string> {
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error ?? "No se pudo completar la operación.");
+  if (!response.ok) {
+    throw new Error(result.error ?? "No se pudo completar la operación.");
+  }
   return [result.message ?? fallback, result.warning].filter(Boolean).join(" ");
 }

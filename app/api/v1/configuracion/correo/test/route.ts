@@ -52,38 +52,54 @@ export async function POST(request: Request) {
         variante: "informativo",
         contenidoHtml: panelCorreo(
           '<p style="margin:0 0 8px;color:#526277;font-size:13px;line-height:20px"><strong>Solicitado por:</strong> ' +
-            escaparHtmlEmail(session.user.email ?? actor.id) + '</p>' +
-          '<p style="margin:0;color:#526277;font-size:13px;line-height:20px"><strong>Fecha:</strong> ' + escaparHtmlEmail(sentAt) + '</p>',
+            escaparHtmlEmail(session.user.email ?? actor.id) +
+            "</p>" +
+            '<p style="margin:0;color:#526277;font-size:13px;line-height:20px"><strong>Fecha:</strong> ' +
+            escaparHtmlEmail(sentAt) +
+            "</p>",
           "Detalles de envío"
         ),
         nota: "Si recibiste este mensaje, el canal de correo aceptó la prueba de envío. Verificá también las notificaciones del sistema."
       })
     });
     if (!result.sent) {
-      const message = result.skipped === "correo-no-configurado"
-        ? "El correo no está configurado. Activá Amazon SES o configurá Gmail API o SMTP."
-        : "No se pudo enviar el correo de prueba.";
+      const message =
+        result.skipped === "correo-no-configurado"
+          ? "El correo no está configurado. Activá Amazon SES o configurá Gmail API o SMTP."
+          : "No se pudo enviar el correo de prueba.";
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const transport = result.transport === "AMAZON_SES" ? "Amazon SES" : result.transport === "GMAIL_API" ? "Gmail API" : "SMTP";
+    const transport =
+      result.transport === "AMAZON_SES"
+        ? "Amazon SES"
+        : result.transport === "GMAIL_API"
+          ? "Gmail API"
+          : "SMTP";
     return NextResponse.json({
       message: `Correo enviado a ${destinatario} mediante ${transport}. Revisá también la carpeta de spam.`
     });
   } catch (error) {
-    const message = error instanceof z.ZodError
-      ? error.issues[0]?.message ?? "Destinatario inválido."
-      : error instanceof Error
-        ? `No se pudo enviar el correo: ${mensajeErrorCorreo(error)}`
-        : "No se pudo enviar el correo de prueba.";
+    const message =
+      error instanceof z.ZodError
+        ? (error.issues[0]?.message ?? "Destinatario inválido.")
+        : error instanceof Error
+          ? `No se pudo enviar el correo: ${mensajeErrorCorreo(error)}`
+          : "No se pudo enviar el correo de prueba.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
 function mensajeErrorCorreo(error: Error): string {
   const code = error.name;
-  if (code === 'AccessDeniedException' || code === 'AccessDenied') return 'el rol IAM de EC2 no tiene permiso ses:SendEmail para esta identidad.';
-  if (code === 'MessageRejected') return 'Amazon SES rechazó el mensaje. Verificá el remitente, la región y el estado sandbox.';
-  if (code.includes('CredentialsProvider') || code.includes('Credentials')) return 'no se encontraron credenciales del rol IAM de EC2.';
+  if (code === "AccessDeniedException" || code === "AccessDenied") {
+    return "el rol IAM de EC2 no tiene permiso ses:SendEmail para esta identidad.";
+  }
+  if (code === "MessageRejected") {
+    return "Amazon SES rechazó el mensaje. Verificá el remitente, la región y el estado sandbox.";
+  }
+  if (code.includes("CredentialsProvider") || code.includes("Credentials")) {
+    return "no se encontraron credenciales del rol IAM de EC2.";
+  }
   return mensajeErrorGoogleWorkspace(error);
 }

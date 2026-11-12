@@ -11,14 +11,20 @@ export function OperationalAutoRefresh({
   const router = useRouter();
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") router.refresh();
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
     }, seconds * 1000);
     return () => window.clearInterval(timer);
   }, [enabled, router, seconds]);
 
-  if (!enabled) return null;
+  if (!enabled) {
+    return null;
+  }
 
   return (
     <span className="muted-text" title="Solo se actualiza mientras esta consola está abierta">

@@ -1,85 +1,80 @@
 import type { PrismaClient } from "@prisma/client";
-import {
-  claveMesAnteriorUtc3,
-  contarPostulacionesAbiertas
-} from "./dashboard-asistente.domain";
+import { claveMesAnteriorUtc3, contarPostulacionesAbiertas } from "./dashboard-asistente.domain";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { obtenerAsistenciasPersonales } from "./resumen-personal.adapter";
-import {
-  claveMesUtc3,
-  resumirAsistencias
-} from "./resumen-personal.domain";
+import { claveMesUtc3, resumirAsistencias } from "./resumen-personal.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
-export async function obtenerDashboardAsistente(
-  db: PrismaClient,
-  usuarioId: string,
-  ahora = new Date()
-) {
+export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: string, ahora = new Date()) {
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
     select: { id: true }
   });
-  if (!assistant) return null;
+  if (!assistant) {
+    return null;
+  }
 
-  const [upcomingAssignments, upcomingCount, openMeetings, interests, currentMeetings, history] = await Promise.all([
-    db.asignacionAsistenciaTecnica.findMany({
-      where: {
-        asistenteTecnicoId: assistant.id,
-        estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: {
-          estado: "PROGRAMADA",
-          OR: [
-            { finAsistenciaTecnicaAt: { gte: ahora } },
-            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-          ]
-        }
-      },
-      orderBy: { instancia: { inicioProgramadoAt: "asc" } },
-      take: 8,
-      include: {
-        instancia: {
-          include: {
-            solicitud: { include: { docentePrograma: { include: { programa: true } } } },
-            eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
+  const [upcomingAssignments, upcomingCount, openMeetings, interests, currentMeetings, history] =
+    await Promise.all([
+      db.asignacionAsistenciaTecnica.findMany({
+        where: {
+          asistenteTecnicoId: assistant.id,
+          estado: { in: [...ACTIVE_ASSIGNMENTS] },
+          instancia: {
+            estado: "PROGRAMADA",
+            OR: [
+              { finAsistenciaTecnicaAt: { gte: ahora } },
+              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
+            ]
+          }
+        },
+        orderBy: { instancia: { inicioProgramadoAt: "asc" } },
+        take: 8,
+        include: {
+          instancia: {
+            include: {
+              solicitud: { include: { docentePrograma: { include: { programa: true } } } },
+              eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
+            }
           }
         }
-      }
-    }),
-    db.asignacionAsistenciaTecnica.count({
-      where: {
-        asistenteTecnicoId: assistant.id,
-        estado: { in: [...ACTIVE_ASSIGNMENTS] },
-        instancia: {
-          estado: "PROGRAMADA",
-          OR: [
-            { finAsistenciaTecnicaAt: { gte: ahora } },
-            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-          ]
+      }),
+      db.asignacionAsistenciaTecnica.count({
+        where: {
+          asistenteTecnicoId: assistant.id,
+          estado: { in: [...ACTIVE_ASSIGNMENTS] },
+          instancia: {
+            estado: "PROGRAMADA",
+            OR: [
+              { finAsistenciaTecnicaAt: { gte: ahora } },
+              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
+            ]
+          }
         }
-      }
-    }),
-    db.instanciaSala.findMany({
-      where: {
-        requiereAsistenciaTecnica: true,
-        finProgramadoAt: { gte: ahora },
-        estado: "PROGRAMADA",
-        asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
-      },
-      select: { id: true }
-    }),
-    db.postulacionAsistenciaTecnica.findMany({
-      where: { asistenteTecnicoId: assistant.id, instancia: { finProgramadoAt: { gte: ahora } } },
-      select: { instanciaSalaId: true, estado: true }
-    }),
-    obtenerAsistenciasPersonales(db, usuarioId, "MES_ACTUAL", ahora),
-    obtenerAsistenciasPersonales(db, usuarioId, "HISTORICO", ahora)
-  ]);
+      }),
+      db.instanciaSala.findMany({
+        where: {
+          requiereAsistenciaTecnica: true,
+          finProgramadoAt: { gte: ahora },
+          estado: "PROGRAMADA",
+          asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
+        },
+        select: { id: true }
+      }),
+      db.postulacionAsistenciaTecnica.findMany({
+        where: { asistenteTecnicoId: assistant.id, instancia: { finProgramadoAt: { gte: ahora } } },
+        select: { instanciaSalaId: true, estado: true }
+      }),
+      obtenerAsistenciasPersonales(db, usuarioId, "MES_ACTUAL", ahora),
+      obtenerAsistenciasPersonales(db, usuarioId, "HISTORICO", ahora)
+    ]);
 
   const openIds = new Set(openMeetings.map(({ id }) => id));
   const respondedOpen = new Set(
-    interests.filter(({ instanciaSalaId }) => openIds.has(instanciaSalaId)).map(({ instanciaSalaId }) => instanciaSalaId)
+    interests
+      .filter(({ instanciaSalaId }) => openIds.has(instanciaSalaId))
+      .map(({ instanciaSalaId }) => instanciaSalaId)
   );
   const previousMonth = claveMesAnteriorUtc3(ahora);
   const previousMeetings = history.filter(({ inicioAt }) => claveMesUtc3(inicioAt) === previousMonth);

@@ -13,11 +13,18 @@ export async function actualizarConfiguracionCorreoSes(
   actor: ActorCorreoSes,
   input: unknown
 ) {
-  if (!esAdminActivo(actor)) throw new Error("Solo Administración puede configurar el correo.");
+  if (!esAdminActivo(actor)) {
+    throw new Error("Solo Administración puede configurar el correo.");
+  }
   const config: ConfiguracionCorreoSesInput = normalizarConfiguracionCorreoSes(input);
   return db.$transaction(async (tx) => {
-    const actualActor = await tx.usuario.findUnique({ where: { id: actor.id }, select: { id: true, rol: true, activo: true } });
-    if (!actualActor || !esAdminActivo(actualActor)) throw new Error("La sesión no corresponde a un usuario vigente de Administración.");
+    const actualActor = await tx.usuario.findUnique({
+      where: { id: actor.id },
+      select: { id: true, rol: true, activo: true }
+    });
+    if (!actualActor || !esAdminActivo(actualActor)) {
+      throw new Error("La sesión no corresponde a un usuario vigente de Administración.");
+    }
 
     const actual = await tx.configuracionCorreoSes.findUnique({ where: { id: "principal" } });
     const saved = await tx.configuracionCorreoSes.upsert({
@@ -31,7 +38,14 @@ export async function actualizarConfiguracionCorreoSes(
         accion: "CONFIGURACION_CORREO_SES_ACTUALIZADA",
         entidadTipo: "ConfiguracionCorreoSes",
         entidadId: "principal",
-        valorAnterior: actual ? { awsRegion: actual.awsRegion, fromEmail: actual.fromEmail, replyToEmail: actual.replyToEmail, activa: actual.activa } : undefined,
+        valorAnterior: actual
+          ? {
+              awsRegion: actual.awsRegion,
+              fromEmail: actual.fromEmail,
+              replyToEmail: actual.replyToEmail,
+              activa: actual.activa
+            }
+          : undefined,
         valorNuevo: config
       }
     });
@@ -41,7 +55,9 @@ export async function actualizarConfiguracionCorreoSes(
 
 export async function obtenerConfiguracionCorreoSesActiva(db: CorreoSesDb) {
   const config = await obtenerConfiguracionCorreoSes(db);
-  if (!config?.activa || !config.awsRegion || !config.fromEmail) return null;
+  if (!config?.activa || !config.awsRegion || !config.fromEmail) {
+    return null;
+  }
   return { awsRegion: config.awsRegion, fromEmail: config.fromEmail, replyToEmail: config.replyToEmail };
 }
 

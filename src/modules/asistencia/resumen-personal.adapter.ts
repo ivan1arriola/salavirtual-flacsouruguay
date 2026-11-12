@@ -40,7 +40,9 @@ export async function obtenerAsistenciasEnRango(
     where: { usuarioId },
     select: { id: true }
   });
-  if (!asistente) return [];
+  if (!asistente) {
+    return [];
+  }
 
   const asignaciones = await db.asignacionAsistenciaTecnica.findMany({
     where: {
@@ -78,12 +80,10 @@ export async function obtenerAsistenciasEnRango(
     const asociacion = instancia.solicitud.docentePrograma;
     const inicioAsistencia = instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
     const finAsistencia = instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt;
-    const minutosProgramados = calcularMinutos(
-      { inicio: inicioAsistencia, fin: finAsistencia },
-      null,
-      null,
-      { inicio: null, fin: null }
-    );
+    const minutosProgramados = calcularMinutos({ inicio: inicioAsistencia, fin: finAsistencia }, null, null, {
+      inicio: null,
+      fin: null
+    });
     const minutos = calcularMinutos(
       { inicio: inicioAsistencia, fin: finAsistencia },
       asignacion.minutosConfirmados,
@@ -103,11 +103,7 @@ export async function obtenerAsistenciasEnRango(
       finRealAt: instancia.finRealAt,
       modalidad: instancia.modalidadOverride ?? instancia.solicitud.modalidad,
       estado: instancia.estado,
-      completada: esAsistenciaCompletada(
-        instancia.estado,
-        finAsistencia.getTime(),
-        ahora.getTime()
-      ),
+      completada: esAsistenciaCompletada(instancia.estado, finAsistencia.getTime(), ahora.getTime()),
       cierreConfirmado: asignacion.minutosConfirmados !== null,
       minutos,
       minutosProgramados,

@@ -13,13 +13,15 @@ import {
 
 const AUDIT_ENTITY = "POSIBLE_DUPLICADO_REUNION";
 
-const revisionSchema = z.object({
-  izquierdaId: z.string().min(1),
-  derechaId: z.string().min(1),
-  decision: z.enum(["REQUIERE_ACTUALIZACION", "FALSO_POSITIVO"])
-}).refine(({ izquierdaId, derechaId }) => izquierdaId !== derechaId, {
-  message: "La comparación requiere dos reuniones distintas."
-});
+const revisionSchema = z
+  .object({
+    izquierdaId: z.string().min(1),
+    derechaId: z.string().min(1),
+    decision: z.enum(["REQUIERE_ACTUALIZACION", "FALSO_POSITIVO"])
+  })
+  .refine(({ izquierdaId, derechaId }) => izquierdaId !== derechaId, {
+    message: "La comparación requiere dos reuniones distintas."
+  });
 
 const candidateSelect = {
   id: true,
@@ -41,11 +43,12 @@ const candidateSelect = {
 
 type CandidateRow = Prisma.InstanciaSalaGetPayload<{ select: typeof candidateSelect }>;
 
-export type CasoRevisionDuplicado = PosibleReunionDuplicada & Readonly<{
-  clave: string;
-  decision: DecisionRevisionDuplicado | null;
-  revisadoAt: Date | null;
-}>;
+export type CasoRevisionDuplicado = PosibleReunionDuplicada &
+  Readonly<{
+    clave: string;
+    decision: DecisionRevisionDuplicado | null;
+    revisadoAt: Date | null;
+  }>;
 
 export async function listarCasosRevisionDuplicados(
   _database: PrismaClient,
@@ -61,17 +64,23 @@ export async function revisarPosibleDuplicado(
   actor: SessionActor,
   rawInput: unknown
 ): Promise<void> {
-  if (actor.rol !== "ADMINISTRACION") throw new Error("Solo Administración puede revisar duplicados.");
+  if (actor.rol !== "ADMINISTRACION") {
+    throw new Error("Solo Administración puede revisar duplicados.");
+  }
   const input = revisionSchema.parse(rawInput);
   const meetings = await database.instanciaSala.findMany({
     where: { id: { in: [input.izquierdaId, input.derechaId] } },
     select: candidateSelect
   });
-  if (meetings.length !== 2) throw new Error("Una de las reuniones ya no existe.");
+  if (meetings.length !== 2) {
+    throw new Error("Una de las reuniones ya no existe.");
+  }
 
   const risks = detectarPosiblesReunionesDuplicadas(meetings.map(toCandidate));
   const key = claveRevisionDuplicado(input.izquierdaId, input.derechaId);
-  const risk = risks.find(({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key);
+  const risk = risks.find(
+    ({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key
+  );
   if (!risk) {
     throw new Error("Las reuniones ya no cumplen las condiciones de posible duplicado.");
   }
@@ -116,18 +125,9 @@ function toCandidate(meeting: CandidateRow): CandidataReunionDuplicada {
 }
 
 function readDecision(value: Prisma.JsonValue | null): DecisionRevisionDuplicado | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
   const decision = (value as Prisma.JsonObject).decision;
   return esDecisionRevisionDuplicado(decision) ? decision : null;
-}
-
-function readReview(value: Prisma.JsonValue | null): Readonly<{
-  decision: DecisionRevisionDuplicado;
-  fingerprint: string;
-}> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const object = value as Prisma.JsonObject;
-  return esDecisionRevisionDuplicado(object.decision) && typeof object.fingerprint === "string"
-    ? { decision: object.decision, fingerprint: object.fingerprint }
-    : null;
 }

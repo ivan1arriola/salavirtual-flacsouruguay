@@ -16,12 +16,17 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, {
-      id: session.user.id, email: session.user.email
+      id: session.user.id,
+      email: session.user.email
     });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const input = schema.parse(await request.json().catch(() => null));
     const result = await cancelarSolicitudesAtomicas(db, actor, input.solicitudIds);
 
@@ -31,20 +36,25 @@ export async function POST(request: Request) {
     let pendientes = result.eventoProveedorIds.length;
     if (pendientes > 0) {
       try {
-        const sincronizacion = await obtenerServicioConferencias()
-          .sincronizarEventosPendientes(result.eventoProveedorIds);
+        const sincronizacion = await obtenerServicioConferencias().sincronizarEventosPendientes(
+          result.eventoProveedorIds
+        );
         pendientes = sincronizacion.filter(({ estado }) => estado !== "SINCRONIZADA").length;
       } catch {
         // pendientes conserva el total: nada se confirmó.
       }
     }
-    return NextResponse.json({
-      message: pendientes === 0
-        ? "La serie se canceló y se eliminó de Zoom."
-        : "La cancelación quedó registrada. Hay eliminaciones pendientes en Zoom que se reintentarán.",
-      solicitudesCanceladas: result.solicitudesCanceladas,
-      eventosGooglePendientes: pendientes
-    }, { status: pendientes === 0 ? 200 : 202 });
+    return NextResponse.json(
+      {
+        message:
+          pendientes === 0
+            ? "La serie se canceló y se eliminó de Zoom."
+            : "La cancelación quedó registrada. Hay eliminaciones pendientes en Zoom que se reintentarán.",
+        solicitudesCanceladas: result.solicitudesCanceladas,
+        eventosGooglePendientes: pendientes
+      },
+      { status: pendientes === 0 ? 200 : 202 }
+    );
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
@@ -54,10 +64,14 @@ export async function POST(request: Request) {
 /** Returns persisted cancellation progress without querying Google synchronously. */
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const ids = schema.parse({
       solicitudIds: new URL(request.url).searchParams.getAll("solicitudId")
     }).solicitudIds;
@@ -82,7 +96,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Una solicitud de la serie no existe." }, { status: 404 });
     }
     for (const requestItem of requests) {
-      if (!await puedeGestionarPrograma(db, actor, requestItem.docentePrograma.programaId)) {
+      if (!(await puedeGestionarPrograma(db, actor, requestItem.docentePrograma.programaId))) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
@@ -92,15 +106,18 @@ export async function GET(request: Request) {
         id: item.id,
         estado: item.estado,
         googlePendientes: eventos.filter((event) => event.operacionPendiente === "CANCELAR").length,
-        googleErrores: eventos.filter((event) =>
-          event.operacionPendiente === "CANCELAR" && event.estadoIntegracion === "ERROR"
+        googleErrores: eventos.filter(
+          (event) => event.operacionPendiente === "CANCELAR" && event.estadoIntegracion === "ERROR"
         ).length
       };
     });
-    return NextResponse.json({
-      solicitudes,
-      confirmada: solicitudes.every((item) => item.estado === "CANCELADA" && item.googlePendientes === 0)
-    }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      {
+        solicitudes,
+        confirmada: solicitudes.every((item) => item.estado === "CANCELADA" && item.googlePendientes === 0)
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });

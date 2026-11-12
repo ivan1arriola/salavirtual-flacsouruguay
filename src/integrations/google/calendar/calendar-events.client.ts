@@ -63,11 +63,13 @@ export async function obtenerEventoCalendar(
   options?: CalendarRequestOptions
 ): Promise<GoogleCalendarEvent> {
   const url = buildCalendarUrl(calendarEventUrl(calendarId, eventId), options);
-  const response = await conReintentosGoogleLectura(() => auth.request<GoogleCalendarEvent>({
-    url,
-    method: "GET",
-    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
-  }));
+  const response = await conReintentosGoogleLectura(() =>
+    auth.request<GoogleCalendarEvent>({
+      url,
+      method: "GET",
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
+    })
+  );
   return response.data;
 }
 
@@ -98,7 +100,7 @@ export async function crearEventoCalendarHttp(
     url,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: eventData,
+    data: eventData
   });
   return response.data;
 }
@@ -115,7 +117,7 @@ export async function actualizarEventoCalendarHttp(
     url,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: patchData,
+    data: patchData
   });
   return response.data;
 }
@@ -130,12 +132,14 @@ export async function eliminarEventoCalendarHttp(
   await auth.request({
     url,
     method: "DELETE",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    timeout: GOOGLE_HTTP_TIMEOUT_MS
   });
 }
 
 export function isAlreadyCalendarEventError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     response?: { status?: unknown; data?: unknown };
@@ -148,11 +152,12 @@ export function isAlreadyCalendarEventError(error: unknown): boolean {
 }
 
 export function isCalendarNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     response?: { status?: unknown };
   };
   return candidate.code === 404 || candidate.response?.status === 404;
 }
-

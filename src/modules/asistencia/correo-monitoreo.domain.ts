@@ -38,15 +38,21 @@ function escapar(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function enlaceAccesoValido(value: string | null | undefined, proveedor: "GOOGLE_MEET" | "ZOOM"): string | null {
-  if (!value) return null;
+function enlaceAccesoValido(
+  value: string | null | undefined,
+  proveedor: "GOOGLE_MEET" | "ZOOM"
+): string | null {
+  if (!value) {
+    return null;
+  }
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:") return null;
+    if (url.protocol !== "https:") {
+      return null;
+    }
     const host = url.hostname.toLowerCase();
-    const permitido = proveedor === "ZOOM"
-      ? host === "zoom.us" || host.endsWith(".zoom.us")
-      : host === "meet.google.com";
+    const permitido =
+      proveedor === "ZOOM" ? host === "zoom.us" || host.endsWith(".zoom.us") : host === "meet.google.com";
     return permitido ? url.toString() : null;
   } catch {
     return null;
@@ -58,13 +64,19 @@ function boton(url: string, label: string, secondary = false): string {
   return [
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
     '<td bgcolor="' + color + '" style="border-radius:8px;background:' + color + '">',
-    '<a href="' + escapar(url) + '" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:20px">',
+    '<a href="' +
+      escapar(url) +
+      '" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:20px">',
     escapar(label),
-    '</a></td></tr></table>'
+    "</a></td></tr></table>"
   ].join("");
 }
 
-function tarjeta(reunion: ReunionResumenMonitoreo, index: number, variante: ResumenMonitoreoEmailInput["variante"]): string {
+function tarjeta(
+  reunion: ReunionResumenMonitoreo,
+  index: number,
+  variante: ResumenMonitoreoEmailInput["variante"]
+): string {
   const proveedor = reunion.proveedor ?? "GOOGLE_MEET";
   const meet = variante === "asignadas" ? enlaceAccesoValido(reunion.meetUrl, proveedor) : null;
   const titulo = escapar(reunion.titulo);
@@ -73,22 +85,58 @@ function tarjeta(reunion: ReunionResumenMonitoreo, index: number, variante: Resu
   const horario = escapar(reunion.inicioMonitoreo + "–" + reunion.finMonitoreo);
   const horarioClase = escapar(reunion.inicioClase + "–" + reunion.finClase);
   return [
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0 0 12px;border:1px solid ' + COLOR.border + ';border-radius:10px;border-collapse:separate;background:#ffffff">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0 0 12px;border:1px solid ' +
+      COLOR.border +
+      ';border-radius:10px;border-collapse:separate;background:#ffffff">',
     '<tr><td style="padding:18px 18px 16px">',
-    '<p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.07em;color:' + COLOR.navy + ';text-transform:uppercase">',
-    'REUNIÓN ' + String(index + 1).padStart(2, "0") + ' &nbsp;·&nbsp; ' + fecha,
-    '</p>',
-    '<h2 style="margin:0 0 14px;font-size:18px;line-height:1.35;color:' + COLOR.ink + ';font-weight:700">' + titulo + '</h2>',
+    '<p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.07em;color:' +
+      COLOR.navy +
+      ';text-transform:uppercase">',
+    "REUNIÓN " + String(index + 1).padStart(2, "0") + " &nbsp;·&nbsp; " + fecha,
+    "</p>",
+    '<h2 style="margin:0 0 14px;font-size:18px;line-height:1.35;color:' +
+      COLOR.ink +
+      ';font-weight:700">' +
+      titulo +
+      "</h2>",
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-bottom:13px;background:#f0f6fa;border-radius:8px">',
     '<tr><td style="padding:12px 14px">',
-    '<span style="font-size:11px;line-height:16px;font-weight:700;color:' + COLOR.muted + ';text-transform:uppercase;letter-spacing:0.04em">Horario de monitoreo · Uruguay</span>',
-    '<div style="margin:3px 0 5px;font-size:21px;line-height:26px;font-weight:700;color:' + COLOR.navy + '">' + horario + ' h</div>',
-    '<div style="font-size:12px;line-height:19px;color:' + COLOR.muted + '">Clase: ' + horarioClase + ' h &nbsp;·&nbsp; ' + modalidad + '</div>',
-    '</td></tr></table>',
-    '<p style="margin:0 0 4px;color:' + COLOR.muted + ';font-size:13px;line-height:1.5"><strong style="color:' + COLOR.ink + '">Programa:</strong> ' + escapar(reunion.programa) + '</p>',
-    '<p style="margin:0;color:' + COLOR.muted + ';font-size:13px;line-height:1.5"><strong style="color:' + COLOR.ink + '">Docente:</strong> ' + escapar(reunion.docente) + '</p>',
-    meet ? '<div style="padding-top:14px">' + boton(meet, proveedor === "ZOOM" ? "Ingresar a Zoom" : "Ingresar a Google Meet", true) + '</div>' : '',
-    '</td></tr></table>'
+    '<span style="font-size:11px;line-height:16px;font-weight:700;color:' +
+      COLOR.muted +
+      ';text-transform:uppercase;letter-spacing:0.04em">Horario de monitoreo · Uruguay</span>',
+    '<div style="margin:3px 0 5px;font-size:21px;line-height:26px;font-weight:700;color:' +
+      COLOR.navy +
+      '">' +
+      horario +
+      " h</div>",
+    '<div style="font-size:12px;line-height:19px;color:' +
+      COLOR.muted +
+      '">Clase: ' +
+      horarioClase +
+      " h &nbsp;·&nbsp; " +
+      modalidad +
+      "</div>",
+    "</td></tr></table>",
+    '<p style="margin:0 0 4px;color:' +
+      COLOR.muted +
+      ';font-size:13px;line-height:1.5"><strong style="color:' +
+      COLOR.ink +
+      '">Programa:</strong> ' +
+      escapar(reunion.programa) +
+      "</p>",
+    '<p style="margin:0;color:' +
+      COLOR.muted +
+      ';font-size:13px;line-height:1.5"><strong style="color:' +
+      COLOR.ink +
+      '">Docente:</strong> ' +
+      escapar(reunion.docente) +
+      "</p>",
+    meet
+      ? '<div style="padding-top:14px">' +
+        boton(meet, proveedor === "ZOOM" ? "Ingresar a Zoom" : "Ingresar a Google Meet", true) +
+        "</div>"
+      : "",
+    "</td></tr></table>"
   ].join("");
 }
 
@@ -103,11 +151,15 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
   const titulo = asignadas ? "Tus monitoreos asignados" : "Reuniones que necesitan monitoreo";
   const resumen = asignadas
     ? "Tenés " + cantidad + (cantidad === 1 ? " reunión asignada." : " reuniones asignadas.")
-    : "Hay " + cantidad + (cantidad === 1 ? " reunión disponible para postularte." : " reuniones disponibles para postularte.");
+    : "Hay " +
+      cantidad +
+      (cantidad === 1 ? " reunión disponible para postularte." : " reuniones disponibles para postularte.");
   const descripcion = asignadas
     ? "Este es tu próximo cronograma. Revisá las fechas y accedé a cada reunión desde el enlace correspondiente."
     : "Estas reuniones todavía no tienen una persona asignada. Revisá los horarios y postuláte desde Agenda Abierta.";
-  const destino = asignadas ? "https://salavirtual.flacso.edu.uy/mi-agenda" : "https://salavirtual.flacso.edu.uy/agenda-abierta";
+  const destino = asignadas
+    ? "https://salavirtual.flacso.edu.uy/mi-agenda"
+    : "https://salavirtual.flacso.edu.uy/agenda-abierta";
   const etiquetaBoton = asignadas ? "Abrir Mi Agenda" : "Ver Agenda Abierta";
   const saludo = input.nombre?.trim() ? "Hola, " + escapar(input.nombre.trim()) + "." : "Hola.";
   const tarjetas = input.reuniones.map((reunion, index) => tarjeta(reunion, index, input.variante)).join("");
@@ -116,8 +168,13 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
     titulo,
     resumen,
     variante: "accion",
-    contenidoHtml: '<p style="margin:0 0 17px;color:#526277;font-size:14px;line-height:22px">' +
-      saludo + ' ' + escapar(descripcion) + '</p>' + tarjetas,
+    contenidoHtml:
+      '<p style="margin:0 0 17px;color:#526277;font-size:14px;line-height:22px">' +
+      saludo +
+      " " +
+      escapar(descripcion) +
+      "</p>" +
+      tarjetas,
     accion: { texto: etiquetaBoton, url: destino },
     nota: asignadas
       ? "Los cambios en asignaciones y horarios se actualizan en Mi Agenda."

@@ -54,16 +54,22 @@ export type AutenticacionZoom = string | ProveedorTokenZoom;
 export const ESPERA_MAXIMA_REINTENTO_SEGUNDOS = 30;
 
 export function segundosRetryAfter(valor: string | null, ahora: number = Date.now()): number {
-  if (!valor) return 1;
+  if (!valor) {
+    return 1;
+  }
   const numero = Number(valor.trim());
-  if (Number.isFinite(numero) && numero >= 0) return Math.ceil(numero);
+  if (Number.isFinite(numero) && numero >= 0) {
+    return Math.ceil(numero);
+  }
   const fecha = Date.parse(valor);
   return Number.isFinite(fecha) ? Math.max(0, Math.ceil((fecha - ahora) / 1000)) : 1;
 }
 
 function esperar(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolver, rechazar) => {
-    if (signal?.aborted) return rechazar(signal.reason);
+    if (signal?.aborted) {
+      return rechazar(signal.reason);
+    }
     const temporizador = setTimeout(() => {
       signal?.removeEventListener("abort", alAbortar);
       resolver();
@@ -93,7 +99,9 @@ async function hacerSinFiltrarRed(
   try {
     return await hacer(token);
   } catch (error) {
-    if (signal?.aborted) throw error;
+    if (signal?.aborted) {
+      throw error;
+    }
     throw new ZoomApiError("ERROR_RED", recurso);
   }
 }
@@ -118,7 +126,9 @@ export async function pedirZoom(
     const response = await hacerSinFiltrarRed(hacer, token, recurso, signal);
     if (response.status === 401) {
       await descartarCuerpo(response);
-      if (!proveedor || renovado) throw new ZoomApiError("NO_AUTORIZADO", recurso, { status: 401 });
+      if (!proveedor || renovado) {
+        throw new ZoomApiError("NO_AUTORIZADO", recurso, { status: 401 });
+      }
       renovado = true;
       token = await proveedor.renovar(token);
       continue;
@@ -138,10 +148,20 @@ export async function pedirZoom(
 }
 
 /** Convierte un estado HTTP no exitoso en un error público sin copiar el cuerpo. */
-export function errorPorEstado(recurso: string, status: number, codigoZoom: number | null = null): ZoomApiError {
-  if (status === 403) return new ZoomApiError("CAPACIDAD_PENDIENTE", recurso, { status, codigoZoom });
-  if (status === 404) return new ZoomApiError("NO_ENCONTRADO", recurso, { status, codigoZoom });
-  if (status >= 400 && status < 500) return new ZoomApiError("SOLICITUD_RECHAZADA", recurso, { status, codigoZoom });
+export function errorPorEstado(
+  recurso: string,
+  status: number,
+  codigoZoom: number | null = null
+): ZoomApiError {
+  if (status === 403) {
+    return new ZoomApiError("CAPACIDAD_PENDIENTE", recurso, { status, codigoZoom });
+  }
+  if (status === 404) {
+    return new ZoomApiError("NO_ENCONTRADO", recurso, { status, codigoZoom });
+  }
+  if (status >= 400 && status < 500) {
+    return new ZoomApiError("SOLICITUD_RECHAZADA", recurso, { status, codigoZoom });
+  }
   return new ZoomApiError("ERROR_ZOOM", recurso, { status, codigoZoom });
 }
 
@@ -150,13 +170,18 @@ export function errorPorEstado(recurso: string, status: number, codigoZoom: numb
  * un rechazo. El mensaje y cualquier otro campo se descartan; un cuerpo ilegible no cambia el error.
  */
 export async function errorPorRespuesta(recurso: string, response: Response): Promise<ZoomApiError> {
-  const codigo = await response.clone().json().then(
-    (cuerpo: unknown) => {
-      const valor = cuerpo && typeof cuerpo === "object" ? (cuerpo as { code?: unknown }).code : null;
-      return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor < 1_000_000 ? valor : null;
-    },
-    () => null
-  );
+  const codigo = await response
+    .clone()
+    .json()
+    .then(
+      (cuerpo: unknown) => {
+        const valor = cuerpo && typeof cuerpo === "object" ? (cuerpo as { code?: unknown }).code : null;
+        return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor < 1_000_000
+          ? valor
+          : null;
+      },
+      () => null
+    );
   return errorPorEstado(recurso, response.status, codigo);
 }
 

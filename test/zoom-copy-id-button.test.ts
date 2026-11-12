@@ -12,8 +12,9 @@ describe("ZoomCopyIdButton", () => {
   });
 
   it("agrega nombre accesible cuando se proporciona contexto", () => {
-    const html = renderToStaticMarkup(createElement(ZoomCopyIdButton, { meetingId: "84912345678", contexto: "Taller 1" }));
+    const html = renderToStaticMarkup(
+      createElement(ZoomCopyIdButton, { meetingId: "84912345678", contexto: "Taller 1" })
+    );
     expect(html).toContain('aria-label="Copiar ID de reunión de Taller 1"');
   });
 });
-

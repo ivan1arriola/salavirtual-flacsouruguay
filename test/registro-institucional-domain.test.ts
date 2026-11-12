@@ -12,9 +12,19 @@ describe("registro institucional", () => {
   });
 
   it("exige elegir un programa o crear uno, pero no ambas opciones", () => {
-    expect(completarRegistroInstitucionalSchema.safeParse({ programaId: "programa", programaNuevo: "" }).success).toBe(true);
-    expect(completarRegistroInstitucionalSchema.safeParse({ programaId: "", programaNuevo: "Programa nuevo" }).success).toBe(true);
-    expect(completarRegistroInstitucionalSchema.safeParse({ programaId: "", programaNuevo: "" }).success).toBe(false);
-    expect(completarRegistroInstitucionalSchema.safeParse({ programaId: "programa", programaNuevo: "Otro" }).success).toBe(false);
+    expect(
+      completarRegistroInstitucionalSchema.safeParse({ programaId: "programa", programaNuevo: "" }).success
+    ).toBe(true);
+    expect(
+      completarRegistroInstitucionalSchema.safeParse({ programaId: "", programaNuevo: "Programa nuevo" })
+        .success
+    ).toBe(true);
+    expect(
+      completarRegistroInstitucionalSchema.safeParse({ programaId: "", programaNuevo: "" }).success
+    ).toBe(false);
+    expect(
+      completarRegistroInstitucionalSchema.safeParse({ programaId: "programa", programaNuevo: "Otro" })
+        .success
+    ).toBe(false);
   });
 });

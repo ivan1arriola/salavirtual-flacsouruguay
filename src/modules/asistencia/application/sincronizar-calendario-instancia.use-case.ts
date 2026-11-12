@@ -2,12 +2,9 @@ import {
   idEventoCalendarioAsistenteSegmento,
   planificarSincronizacionCalendarioAsistente,
   type CuentaCalendarioAsistente,
-  type ResultadoSincronizacionCalendarioAsistente,
+  type ResultadoSincronizacionCalendarioAsistente
 } from "../domain";
-import type {
-  AssistantCalendarProvider,
-  AssistantCalendarRepositoryPort,
-} from "../ports";
+import type { AssistantCalendarProvider, AssistantCalendarRepositoryPort } from "../ports";
 
 export async function sincronizarCalendarioAsistenteInstanciaUseCase(
   repository: AssistantCalendarRepositoryPort,
@@ -16,23 +13,27 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
   now = new Date()
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const meeting = await repository.obtenerInstanciaParaCalendario(instanciaSalaId);
-  if (!meeting) return [];
+  if (!meeting) {
+    return [];
+  }
 
   const plan = planificarSincronizacionCalendarioAsistente({
     instanciaId: meeting.id,
     estado: meeting.estado,
     requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
     vigente: (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt) > now,
-    asignaciones: meeting.asignaciones,
+    asignaciones: meeting.asignaciones
   });
 
-  if (plan.publicar.length === 0 && plan.eliminar.length === 0) return [];
+  if (plan.publicar.length === 0 && plan.eliminar.length === 0) {
+    return [];
+  }
 
   const creds = await repository.obtenerCredencialesWorkspace();
   if (!creds?.serviceAccountEmail || !creds.privateKey) {
     return [
       ...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
-      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR")),
+      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR"))
     ];
   }
 
@@ -54,7 +55,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
           timezone: meeting.timezone,
           instanciaSalaId: meeting.id,
           programa: meeting.programaNombre,
-          docente: meeting.docenteNombreCompleto,
+          docente: meeting.docenteNombreCompleto
         } as const;
 
         // El evento original de la reunión/Meet ya incluye al asistente como cohost/attendee.
@@ -69,7 +70,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
             titulo: `Preparación técnica presencial · ${meeting.solicitudTitulo}`,
             inicio: coverageStart,
             fin: meeting.inicioProgramadoAt,
-            joinUrl: null,
+            joinUrl: null
           });
         } else {
           await provider.eliminarEvento(credentials, preparationId);
@@ -83,7 +84,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
             titulo: `Cierre técnico presencial · ${meeting.solicitudTitulo}`,
             inicio: meeting.finProgramadoAt,
             fin: coverageEnd,
-            joinUrl: null,
+            joinUrl: null
           });
         } else {
           await provider.eliminarEvento(credentials, closingId);
@@ -103,7 +104,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
           idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE")
         );
       })
-    ),
+    )
   ]);
 }
 
@@ -118,7 +119,7 @@ async function ejecutar(
       cuentaGoogleId: cuenta.id,
       email: cuenta.email,
       accion,
-      estado: "SINCRONIZADA",
+      estado: "SINCRONIZADA"
     };
   } catch (error) {
     return {
@@ -126,10 +127,7 @@ async function ejecutar(
       email: cuenta.email,
       accion,
       estado: "ERROR",
-      error:
-        error instanceof Error
-          ? error.message
-          : "Google Calendar rechazó la sincronización.",
+      error: error instanceof Error ? error.message : "Google Calendar rechazó la sincronización."
     };
   }
 }
@@ -143,8 +141,6 @@ function errorConfiguracion(
     email: cuenta.email,
     accion,
     estado: "ERROR",
-    error:
-      "Google Workspace no está configurado para sincronizar calendarios de asistentes.",
+    error: "Google Workspace no está configurado para sincronizar calendarios de asistentes."
   };
 }
-

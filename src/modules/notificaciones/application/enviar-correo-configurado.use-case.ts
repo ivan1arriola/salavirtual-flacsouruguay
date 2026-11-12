@@ -7,4 +7,3 @@ export async function enviarCorreoConfiguradoUseCase(
 ): Promise<MailSendResult> {
   return emailTransport.enviarCorreo(input);
 }
-

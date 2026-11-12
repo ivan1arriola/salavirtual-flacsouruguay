@@ -16,9 +16,9 @@ afterEach(() => {
 
 describe("cliente de grupos de Zoom", () => {
   it("lista los grupos", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      respuesta(200, { groups: [{ id: "g1", name: "Anfitriones", total_members: 3 }] })
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(respuesta(200, { groups: [{ id: "g1", name: "Anfitriones", total_members: 3 }] }));
     vi.stubGlobal("fetch", fetchMock);
     const grupos = await listarGruposZoomHttp("tok");
     expect(grupos).toEqual([{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }]);
@@ -36,13 +36,18 @@ describe("cliente de grupos de Zoom", () => {
         })
       )
       .mockResolvedValueOnce(
-        respuesta(200, { members: [{ id: "u2", email: "b@x.uy", first_name: "", last_name: "", type: 1 }], next_page_token: "" })
+        respuesta(200, {
+          members: [{ id: "u2", email: "b@x.uy", first_name: "", last_name: "", type: 1 }],
+          next_page_token: ""
+        })
       );
     vi.stubGlobal("fetch", fetchMock);
     const miembros = await listarMiembrosGrupoZoomHttp("tok", "g/1");
     expect(miembros).toHaveLength(2);
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.zoom.us/v2/groups/g%2F1/members?page_size=300");
-    expect(fetchMock.mock.calls[1][0]).toBe("https://api.zoom.us/v2/groups/g%2F1/members?page_size=300&next_page_token=abc");
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://api.zoom.us/v2/groups/g%2F1/members?page_size=300&next_page_token=abc"
+    );
     expect(miembros[0].nombre).toBe("Ana Paz");
     expect(miembros[1].nombre).toBe("b@x.uy");
   });

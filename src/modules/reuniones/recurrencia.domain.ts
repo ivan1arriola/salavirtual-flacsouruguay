@@ -21,13 +21,17 @@ export function generarFechasRecurrentes(regla: ReglaRecurrencia): readonly Fech
   if (!Number.isFinite(inicio) || !Number.isFinite(fin) || fin < inicio) {
     throw new Error("El rango de fechas no es valido.");
   }
-  if (regla.diasSemana.length === 0) throw new Error("Selecciona al menos un dia de la semana.");
+  if (regla.diasSemana.length === 0) {
+    throw new Error("Selecciona al menos un dia de la semana.");
+  }
   if (!regla.horaInicio || !regla.horaFin || regla.horaFin <= regla.horaInicio) {
     throw new Error("La hora de fin debe ser posterior a la hora de inicio.");
   }
 
   const cantidadDias = Math.floor((fin - inicio) / MILISEGUNDOS_DIA) + 1;
-  if (cantidadDias > MAXIMO_ENCUENTROS) throw new Error("El rango no puede superar un ano.");
+  if (cantidadDias > MAXIMO_ENCUENTROS) {
+    throw new Error("El rango no puede superar un ano.");
+  }
   const diasElegidos = new Set(regla.diasSemana);
 
   return Array.from({ length: cantidadDias }, (_, index) => inicio + index * MILISEGUNDOS_DIA)
@@ -45,7 +49,7 @@ function fechaIsoAUTC(value: string): number {
 }
 
 function diaSemanaUTC(timestamp: number): number {
-  return ((Math.floor(timestamp / MILISEGUNDOS_DIA) + 4) % 7 + 7) % 7;
+  return (((Math.floor(timestamp / MILISEGUNDOS_DIA) + 4) % 7) + 7) % 7;
 }
 
 function timestampAFechaIso(timestamp: number): string {
@@ -55,7 +59,6 @@ function timestampAFechaIso(timestamp: number): string {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(timestamp);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
   return `${value("year")}-${value("month")}-${value("day")}`;
 }

@@ -91,7 +91,8 @@ export async function renotificarReunionesSinAsignar(
     return {
       reunionesCount: meetings.length,
       asistentesCount: 0,
-      message: "Hay reuniones sin asignar, pero no se encontraron asistentes de monitoreo disponibles para notificar."
+      message:
+        "Hay reuniones sin asignar, pero no se encontraron asistentes de monitoreo disponibles para notificar."
     };
   }
 
@@ -100,7 +101,8 @@ export async function renotificarReunionesSinAsignar(
     "",
     ...meetings.map((m, i) => {
       const prog = m.solicitud.docentePrograma.programa.nombre;
-      const doc = `${m.solicitud.docentePrograma.docente.usuario.nombres} ${m.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
+      const doc =
+        `${m.solicitud.docentePrograma.docente.usuario.nombres} ${m.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
       const inicio = m.inicioAsistenciaTecnicaAt ?? m.inicioProgramadoAt;
       const fin = m.finAsistenciaTecnicaAt ?? m.finProgramadoAt;
       const mod = (m.modalidadOverride ?? m.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
@@ -232,10 +234,13 @@ export async function notificarReunionesAsignadas(
   }
 
   // Agrupar asignaciones por usuario asistente
-  const porAsistente = new Map<string, {
-    asistente: { id: string; email: string | null; nombres: string; apellidos: string | null };
-    items: typeof assignments;
-  }>();
+  const porAsistente = new Map<
+    string,
+    {
+      asistente: { id: string; email: string | null; nombres: string; apellidos: string | null };
+      items: typeof assignments;
+    }
+  >();
 
   for (const asg of assignments) {
     const usr = asg.asistenteTecnico.usuario;
@@ -249,7 +254,9 @@ export async function notificarReunionesAsignadas(
   }
 
   for (const { asistente, items } of porAsistente.values()) {
-    if (!asistente.email) continue;
+    if (!asistente.email) {
+      continue;
+    }
 
     const detalleTexto = [
       `Hola ${asistente.nombres}, este es tu cronograma de monitoreos asignados hasta la fecha (${items.length} ${items.length === 1 ? "reunión" : "reuniones"}):`,
@@ -257,10 +264,12 @@ export async function notificarReunionesAsignadas(
       ...items.map((asg, i) => {
         const inst = asg.instancia;
         const prog = inst.solicitud.docentePrograma.programa.nombre;
-        const doc = `${inst.solicitud.docentePrograma.docente.usuario.nombres} ${inst.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
+        const doc =
+          `${inst.solicitud.docentePrograma.docente.usuario.nombres} ${inst.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
         const inicioTecnico = inst.inicioAsistenciaTecnicaAt ?? inst.inicioProgramadoAt;
         const finTecnico = inst.finAsistenciaTecnicaAt ?? inst.finProgramadoAt;
-        const mod = (inst.modalidadOverride ?? inst.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
+        const mod =
+          (inst.modalidadOverride ?? inst.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
         const meet = seleccionarEventoProveedorActivo(inst);
         const lineas = [
           `${i + 1}. ${formatDate(inicioTecnico)} · Horario de monitoreo: ${formatTime(inicioTecnico)}–${formatTime(finTecnico)} h (${mod})`,
@@ -304,7 +313,8 @@ export async function notificarReunionesAsignadas(
             programa: inst.solicitud.docentePrograma.programa.nombre,
             docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
             meetUrl: seleccionarEventoProveedorActivo(inst)?.joinUrl,
-            proveedor: seleccionarEventoProveedorActivo(inst)?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
+            proveedor:
+              seleccionarEventoProveedorActivo(inst)?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
           };
         })
       }),
@@ -338,4 +348,3 @@ export async function notificarReunionesAsignadas(
     message: `Se notificaron ${assignments.length} ${assignments.length === 1 ? "reunión asignada" : "reuniones asignadas"} a ${porAsistente.size} asistentes de monitoreo.`
   };
 }
-

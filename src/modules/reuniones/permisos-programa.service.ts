@@ -13,9 +13,15 @@ export async function puedeGestionarPrograma(
   actor: SessionActor,
   programaId: string
 ): Promise<boolean> {
-  if (!actor.activo) return false;
-  if (actor.rol === "ADMINISTRACION") return true;
-  if (actor.rol !== "DOCENTE") return false;
+  if (!actor.activo) {
+    return false;
+  }
+  if (actor.rol === "ADMINISTRACION") {
+    return true;
+  }
+  if (actor.rol !== "DOCENTE") {
+    return false;
+  }
 
   const association = await db.docentePrograma.findFirst({
     where: {

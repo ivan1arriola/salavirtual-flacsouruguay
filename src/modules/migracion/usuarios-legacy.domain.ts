@@ -2,7 +2,6 @@ import { buscarRolAnterior, type RolUsuario } from "../usuarios/roles";
 
 export type CuentaGoogleLegacy = Readonly<{
   providerAccountId: string;
-
 }>;
 
 export type UsuarioLegacy = Readonly<{
@@ -102,21 +101,15 @@ export function planificarMigracionUsuarios(
   >(
     (state, usuario) => {
       const base = crearUsuarioIdBase(usuario.email);
-      const usuarioId =
-        idsExistentesPorLegacy.get(usuario.id) ?? siguienteUsuarioId(base, state.reservados);
+      const usuarioId = idsExistentesPorLegacy.get(usuario.id) ?? siguienteUsuarioId(base, state.reservados);
       const emailPrincipal = usuario.email.trim().toLowerCase();
       const aliases = usuario.emailAliases.map(({ email }) => email.trim().toLowerCase());
-      const emailsFlacso = [emailPrincipal, ...aliases].filter((email) =>
-        email.endsWith("@flacso.edu.uy")
-      );
+      const emailsFlacso = [emailPrincipal, ...aliases].filter((email) => email.endsWith("@flacso.edu.uy"));
       const cuentasGoogle = usuario.accounts.filter((_, index) => Boolean(emailsFlacso[index]));
       const plan: PlanUsuarioMigrado = {
         legacyZoomUserId: usuario.id,
         usuarioId,
-        nombres:
-          textoOpcional(usuario.firstName) ??
-          textoOpcional(usuario.name) ??
-          usuarioId,
+        nombres: textoOpcional(usuario.firstName) ?? textoOpcional(usuario.name) ?? usuarioId,
         apellidos: textoOpcional(usuario.lastName),
         emailPrincipal,
         emailVerificadoAt: usuario.emailVerified,

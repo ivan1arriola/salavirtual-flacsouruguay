@@ -25,7 +25,9 @@ const distintos = (valores: readonly (string | null | undefined)[]): readonly st
 /** Cuentas y enlaces vigentes de una serie; más de una cuenta o de un enlace pide corrección. */
 export function resumirSerieZoom(encuentros: readonly EncuentroConEnlace[]): ResumenSerieZoom {
   const eventos = encuentros.map((encuentro) => seleccionarEventoProveedorActivo(encuentro));
-  const cuentas = distintos(eventos.map((evento) => evento?.cuentaProveedor?.emailOrganizador ?? evento?.cuentaProveedor?.nombre));
+  const cuentas = distintos(
+    eventos.map((evento) => evento?.cuentaProveedor?.emailOrganizador ?? evento?.cuentaProveedor?.nombre)
+  );
   const enlaces = distintos(eventos.map((evento) => evento?.joinUrl));
   return { unificada: cuentas.length <= 1 && enlaces.length <= 1, cuentas, enlaces };
 }

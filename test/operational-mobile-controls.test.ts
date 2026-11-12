@@ -2,12 +2,16 @@ import { readFileSync } from "node:fs";
 import postcss, { type Declaration, type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
-const stylesheet = postcss.parse(readFileSync(new URL("../app/(gestion)/meeting-detail-v2.css", import.meta.url), "utf8"));
+const stylesheet = postcss.parse(
+  readFileSync(new URL("../app/(gestion)/meeting-detail-v2.css", import.meta.url), "utf8")
+);
 
 function declarationsInMedia(selector: string, maxWidth: number): Map<string, string> {
   let values = new Map<string, string>();
   stylesheet.walkAtRules("media", (media) => {
-    if (media.params !== `(max-width: ${maxWidth}px)`) return;
+    if (media.params !== `(max-width: ${maxWidth}px)`) {
+      return;
+    }
     media.walkRules(selector, (rule) => {
       values = new Map(
         rule.nodes

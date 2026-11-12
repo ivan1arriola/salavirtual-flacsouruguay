@@ -22,8 +22,10 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
     const clave = claveOperacionGoogle("MEET_CREAR_ESPACIO", prefix, suffix);
     keys.push(clave);
     return {
-      clave, proveedor: "MEET" as const,
-      tipo: "MEET_CREAR_ESPACIO" as const, cuenta: account
+      clave,
+      proveedor: "MEET" as const,
+      tipo: "MEET_CREAR_ESPACIO" as const,
+      cuenta: account
     };
   };
   const serialize = (result: { id: string }) => ({ id: result.id });
@@ -31,8 +33,7 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
 
   beforeAll(() => {
     const url = new URL(process.env.DATABASE_URL!);
-    if (!["127.0.0.1", "localhost"].includes(url.hostname) ||
-        url.pathname !== "/flacso_meet_history_ci") {
+    if (!["127.0.0.1", "localhost"].includes(url.hostname) || url.pathname !== "/flacso_meet_history_ci") {
       throw new Error("No ejecutar pruebas F9/Google contra una base externa.");
     }
   });
@@ -57,33 +58,50 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
   it("un timeout ambiguo queda INCIERTA y nunca repite el POST", async () => {
     const input = spec("unknown");
     const send = vi.fn().mockRejectedValue(new Error("ECONNRESET"));
-    await expect(ejecutarGooglePostUnaVez(db, input, send, serialize, restore))
-      .rejects.toBeInstanceOf(GoogleOperacionInciertaError);
-    await expect(ejecutarGooglePostUnaVez(secondWorker, input, send, serialize, restore))
-      .rejects.toBeInstanceOf(GoogleOperacionInciertaError);
+    await expect(ejecutarGooglePostUnaVez(db, input, send, serialize, restore)).rejects.toBeInstanceOf(
+      GoogleOperacionInciertaError
+    );
+    await expect(
+      ejecutarGooglePostUnaVez(secondWorker, input, send, serialize, restore)
+    ).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
     expect(send).toHaveBeenCalledOnce();
-    expect((await db.googleOperacionExterna.findUniqueOrThrow({
-      where: { clave: input.clave }
-    })).estado).toBe("INCIERTA");
+    expect(
+      (
+        await db.googleOperacionExterna.findUniqueOrThrow({
+          where: { clave: input.clave }
+        })
+      ).estado
+    ).toBe("INCIERTA");
   });
 
   it("serializa escrituras concurrentes de una cuenta entre dos workers", async () => {
     const one = spec("lock-1");
     const two = spec("lock-2");
     let unblock!: () => void;
-    const gate = new Promise<void>((resolve) => { unblock = resolve; });
+    const gate = new Promise<void>((resolve) => {
+      unblock = resolve;
+    });
     let started!: () => void;
-    const processing = new Promise<void>((resolve) => { started = resolve; });
-    const firstCall = ejecutarGooglePostUnaVez(db, one, async () => {
-      started();
-      await gate;
-      return { id: "spaces/ci-2" };
-    }, serialize, restore);
+    const processing = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const firstCall = ejecutarGooglePostUnaVez(
+      db,
+      one,
+      async () => {
+        started();
+        await gate;
+        return { id: "spaces/ci-2" };
+      },
+      serialize,
+      restore
+    );
     try {
       await processing;
       const send2 = vi.fn();
-      await expect(ejecutarGooglePostUnaVez(secondWorker, two, send2, serialize, restore))
-        .rejects.toBeInstanceOf(GoogleCuentaOcupadaError);
+      await expect(
+        ejecutarGooglePostUnaVez(secondWorker, two, send2, serialize, restore)
+      ).rejects.toBeInstanceOf(GoogleCuentaOcupadaError);
       expect(send2).not.toHaveBeenCalled();
     } finally {
       unblock();
@@ -95,19 +113,37 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
     keys.push(clave);
     await db.googleOperacionExterna.create({
       data: {
-        clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: account,
-        estado: "ENVIANDO", iniciadaAt: new Date(Date.now() - 10 * 60_000)
+        clave,
+        proveedor: "DRIVE",
+        tipo: "DRIVE_SUBIR_DOCUMENTO",
+        cuenta: account,
+        estado: "ENVIANDO",
+        iniciadaAt: new Date(Date.now() - 10 * 60_000)
       }
     });
-    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "doc-verified" }))
-      .toBe(true);
-    expect((await db.googleOperacionExterna.findUniqueOrThrow({
-      where: { clave }
-    })).estado).toBe("CONFIRMADA");
+    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "doc-verified" })).toBe(true);
+    expect(
+      (
+        await db.googleOperacionExterna.findUniqueOrThrow({
+          where: { clave }
+        })
+      ).estado
+    ).toBe("CONFIRMADA");
     const send = vi.fn();
-    await expect(ejecutarGooglePostUnaVez(db, {
-      clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: account
-    }, send, serialize, restore)).resolves.toEqual({ id: "doc-verified" });
+    await expect(
+      ejecutarGooglePostUnaVez(
+        db,
+        {
+          clave,
+          proveedor: "DRIVE",
+          tipo: "DRIVE_SUBIR_DOCUMENTO",
+          cuenta: account
+        },
+        send,
+        serialize,
+        restore
+      )
+    ).resolves.toEqual({ id: "doc-verified" });
     expect(send).not.toHaveBeenCalled();
   });
 
@@ -116,22 +152,26 @@ describe.skipIf(!enabled)("Google: POST durable con PostgreSQL real", () => {
     keys.push(clave);
     await db.googleOperacionExterna.create({
       data: {
-        clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: account,
-        estado: "ENVIANDO", iniciadaAt: new Date()
+        clave,
+        proveedor: "DRIVE",
+        tipo: "DRIVE_CREAR_CARPETA",
+        cuenta: account,
+        estado: "ENVIANDO",
+        iniciadaAt: new Date()
       }
     });
-    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "wrong" }))
-      .toBe(false);
-    expect((await db.googleOperacionExterna.findUniqueOrThrow({
-      where: { clave }
-    })).estado).toBe("ENVIANDO");
+    expect(await confirmarOperacionDriveMarcada(secondWorker, clave, { id: "wrong" })).toBe(false);
+    expect(
+      (
+        await db.googleOperacionExterna.findUniqueOrThrow({
+          where: { clave }
+        })
+      ).estado
+    ).toBe("ENVIANDO");
     const meet = spec("not-drive");
     await db.googleOperacionExterna.create({
       data: { ...meet, estado: "INCIERTA" }
     });
-    expect(await confirmarOperacionDriveMarcada(secondWorker, meet.clave, { id: "wrong" }))
-      .toBe(false);
+    expect(await confirmarOperacionDriveMarcada(secondWorker, meet.clave, { id: "wrong" })).toBe(false);
   });
-
-
 });

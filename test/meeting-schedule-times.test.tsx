@@ -9,15 +9,17 @@ const arrival = "2026-10-10T09:30:00-03:00";
 const departure = "2026-10-10T17:30:00-03:00";
 
 function renderSchedule(props: Partial<Parameters<typeof MeetingScheduleTimes>[0]> = {}) {
-  return renderToStaticMarkup(createElement(MeetingScheduleTimes, {
-    startsAt: start,
-    endsAt: end,
-    requiresAssistance: true,
-    modality: "HIBRIDA",
-    assistanceStartsAt: arrival,
-    assistanceEndsAt: departure,
-    ...props
-  }));
+  return renderToStaticMarkup(
+    createElement(MeetingScheduleTimes, {
+      startsAt: start,
+      endsAt: end,
+      requiresAssistance: true,
+      modality: "HIBRIDA",
+      assistanceStartsAt: arrival,
+      assistanceEndsAt: departure,
+      ...props
+    })
+  );
 }
 
 describe("horarios de reunión y cobertura en todos los roles", () => {

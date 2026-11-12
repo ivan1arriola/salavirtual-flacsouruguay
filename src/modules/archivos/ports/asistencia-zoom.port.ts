@@ -9,15 +9,23 @@ export type VersionEncuentroAsistenciaZoom = Readonly<{
 }>;
 
 export type ResultadoPersistenciaAsistencia =
-  | Readonly<{ tipo: "GUARDADO"; sesionesNuevas: number; registrosCreados: number; registrosActualizados: number }>
+  | Readonly<{
+      tipo: "GUARDADO";
+      sesionesNuevas: number;
+      registrosCreados: number;
+      registrosActualizados: number;
+    }>
   /** El encuentro, su horario o el UUID cambiaron mientras se obtenía el reporte: no se escribió nada. */
   | Readonly<{ tipo: "REPROGRAMADO" }>
   | Readonly<{ tipo: "OCURRENCIA_NO_ENCONTRADA" }>;
 
 /** Sesiones persistidas del ámbito (todas las ocurrencias del encuentro, o solo la propia sin encuentro). */
-export type SesionesDelAmbitoZoom = ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>;
+export type SesionesDelAmbitoZoom = ReadonlyArray<
+  Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>
+>;
 
-export type ResultadoConsolidacionAsistencia = ResultadoPersistenciaAsistencia | Readonly<{ tipo: "SIN_VENTANA" }>;
+export type ResultadoConsolidacionAsistencia =
+  ResultadoPersistenciaAsistencia | Readonly<{ tipo: "SIN_VENTANA" }>;
 
 export interface AsistenciaZoomRepositoryPort {
   /**
@@ -60,8 +68,14 @@ export type EstadoReporteAsistenciaZoom = "PENDIENTE" | "NO_DISPONIBLE" | "VACIO
 export interface SincronizacionAsistenciaZoomPort {
   cargarOcurrencia(ocurrenciaId: string): Promise<OcurrenciaParaAsistenciaZoom | null>;
   /** Sesiones ya persistidas de todas las ocurrencias vinculadas al mismo encuentro (o solo la propia sin encuentro). */
-  listarSesionesDelAmbito(ocurrenciaId: string): Promise<ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>>;
-  marcarEstadoReporte(ocurrenciaId: string, estado: EstadoReporteAsistenciaZoom, codigoError: string | null): Promise<void>;
+  listarSesionesDelAmbito(
+    ocurrenciaId: string
+  ): Promise<ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>>;
+  marcarEstadoReporte(
+    ocurrenciaId: string,
+    estado: EstadoReporteAsistenciaZoom,
+    codigoError: string | null
+  ): Promise<void>;
 }
 
 export type ResultadoSesionesZoom =

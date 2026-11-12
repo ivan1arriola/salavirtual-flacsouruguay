@@ -17,7 +17,7 @@ describe("directorio de asistentes de monitoreo responsive", () => {
     expect(page).toContain("obtenerResumenAsistentes");
     expect(page).toContain("futureByAssistant");
     expect(page).toContain("assistantStatusLabel(status)");
-    expect(page).toContain('href={detailHref}');
+    expect(page).toContain("href={detailHref}");
   });
 
   it("muestra métricas reales sin estimar tendencias inexistentes", () => {
@@ -40,7 +40,7 @@ describe("directorio de asistentes de monitoreo responsive", () => {
     expect(page).toContain('placeholder="Buscar por nombre o correo"');
     expect(page).toContain('<option value="inactivos">Inactivos</option>');
     expect(page).toContain('name="orden"');
-    expect(page).toContain('new URLSearchParams({ mes: period.clave, estado: value })');
+    expect(page).toContain("new URLSearchParams({ mes: period.clave, estado: value })");
     expect(page).toContain('params.set("q", query.q.trim())');
     expect(page).toContain("sortedVisibleAssistants");
     expect(page).toContain('orden === "proximas"');
@@ -50,7 +50,7 @@ describe("directorio de asistentes de monitoreo responsive", () => {
   it("renderiza tarjetas con estados, modalidades y enlace táctil al detalle", () => {
     expect(page).toContain('className="assistant-monitor-card"');
     expect(page).toContain('className="assistant-monitor-card-metrics"');
-    expect(page).toContain('aria-label={`Ver detalle de ${assistant.nombre}`}');
+    expect(page).toContain("aria-label={`Ver detalle de ${assistant.nombre}`}");
     expect(page).toContain("{assistant.virtuales} virtuales · {assistant.hibridas} híbridas");
     expect(page).toContain("{assistantStatusLabel(status)}");
     expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");

@@ -15,7 +15,7 @@ describe("sistema de diseño de correos", () => {
         preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
       });
       expect(html).toContain("FLACSO Uruguay");
-      expect(html).toContain('max-width:600px');
+      expect(html).toContain("max-width:600px");
       expect(html).toContain("Detalle &lt;importante&gt;");
       expect(html).toContain("Información &amp; próxima acción");
       expect(html).toContain("Administrar preferencias de notificación");
@@ -26,28 +26,36 @@ describe("sistema de diseño de correos", () => {
 
   it("evita inyectar enlaces inseguros en botones", () => {
     expect(botonCorreo({ texto: "Ver", url: "javascript:alert(1)" })).toBe("");
-    expect(botonCorreo({ texto: "Ver", url: "https://salavirtual.flacso.edu.uy/" })).toContain('href="https://salavirtual.flacso.edu.uy/"');
+    expect(botonCorreo({ texto: "Ver", url: "https://salavirtual.flacso.edu.uy/" })).toContain(
+      'href="https://salavirtual.flacso.edu.uy/"'
+    );
   });
 
   it("diferencia alertas, reuniones y asignaciones sin perder el detalle", () => {
     const base = "https://salavirtual.flacso.edu.uy";
-    const alerta = construirCorreoNotificacion({
-      tipo: "HOST_NO_CONECTADO",
-      titulo: "Alerta de Meet",
-      cuerpo: "No se detectó al anfitrión.",
-      href: "/reuniones/123"
-    }, base);
+    const alerta = construirCorreoNotificacion(
+      {
+        tipo: "HOST_NO_CONECTADO",
+        titulo: "Alerta de Meet",
+        cuerpo: "No se detectó al anfitrión.",
+        href: "/reuniones/123"
+      },
+      base
+    );
     expect(alerta.html).toContain("Alerta operativa");
     expect(alerta.html).toContain("No se detectó al anfitrión.");
     expect(alerta.html).toContain("Abrir Sala Virtual FLACSO");
 
-    const reunion = construirCorreoNotificacion({
-      tipo: "REUNION_CREADA",
-      titulo: "Reunión confirmada",
-      cuerpo: "Tu clase está programada.",
-      emailText: "DATOS DE LA REUNIÓN\nReunión: Clase 2\nPrograma: Seminario",
-      href: "/reuniones/abc"
-    }, base);
+    const reunion = construirCorreoNotificacion(
+      {
+        tipo: "REUNION_CREADA",
+        titulo: "Reunión confirmada",
+        cuerpo: "Tu clase está programada.",
+        emailText: "DATOS DE LA REUNIÓN\nReunión: Clase 2\nPrograma: Seminario",
+        href: "/reuniones/abc"
+      },
+      base
+    );
     expect(reunion.html).toContain("Información de la reunión");
     expect(reunion.html).toContain("Clase 2");
     expect(reunion.text).toContain("Clase 2");
@@ -58,8 +66,12 @@ describe("sistema de diseño de correos", () => {
       nombre: "Ana <Pérez>",
       periodo: "2026-09",
       resumen: {
-        reuniones: 4, minutosVirtuales: 130, minutosHibridos: 50,
-        montoVirtual: 0, montoHibrido: 0, monto: 0
+        reuniones: 4,
+        minutosVirtuales: 130,
+        minutosHibridos: 50,
+        montoVirtual: 0,
+        montoHibrido: 0,
+        monto: 0
       }
     });
     expect(report.html).toContain("FLACSO Uruguay");

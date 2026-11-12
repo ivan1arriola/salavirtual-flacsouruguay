@@ -8,12 +8,7 @@ export {
   type AuthConfig
 } from "./identity.types";
 
-export {
-  buscarRolAnterior,
-  mapearRolAnterior,
-  puedeAdministrar,
-  esRolUsuario
-} from "./roles.domain";
+export { buscarRolAnterior, mapearRolAnterior, puedeAdministrar, esRolUsuario } from "./roles.domain";
 
 export {
   credencialesLoginSchema,
@@ -29,9 +24,4 @@ export {
   resolverVinculacionSubjectGoogle
 } from "./google-login.domain";
 
-export {
-  parseAuthConfig,
-  resolverRedireccionAutorizada,
-  type AuthEnvironment
-} from "./auth-config.domain";
-
+export { parseAuthConfig, resolverRedireccionAutorizada, type AuthEnvironment } from "./auth-config.domain";

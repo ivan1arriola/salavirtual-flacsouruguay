@@ -85,8 +85,10 @@ export type AsistenciaRepositoryPort = Readonly<{
     limite?: number
   ): Promise<readonly RegistroHistorialAsistenciaPersonal[]>;
   obtenerSlugAsistente(usuarioId: string): Promise<string | null>;
-  obtenerAsistentesParaNotificacion(instanciaSalaId: string): Promise<Readonly<{
-    reunion: MeetingCoverInfo;
-    destinatarios: readonly string[];
-  }>>;
+  obtenerAsistentesParaNotificacion(instanciaSalaId: string): Promise<
+    Readonly<{
+      reunion: MeetingCoverInfo;
+      destinatarios: readonly string[];
+    }>
+  >;
 }>;

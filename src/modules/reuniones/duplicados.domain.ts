@@ -16,10 +16,7 @@ export type PosibleReunionDuplicada = Readonly<{
   motivo: "COINCIDENCIA_EXACTA" | "HORARIO_SUPERPUESTO";
 }>;
 
-export const DECISIONES_REVISION_DUPLICADO = [
-  "REQUIERE_ACTUALIZACION",
-  "FALSO_POSITIVO"
-] as const;
+export const DECISIONES_REVISION_DUPLICADO = ["REQUIERE_ACTUALIZACION", "FALSO_POSITIVO"] as const;
 
 export type DecisionRevisionDuplicado = (typeof DECISIONES_REVISION_DUPLICADO)[number];
 
@@ -29,20 +26,19 @@ export function claveRevisionDuplicado(izquierdaId: string, derechaId: string): 
     : `${derechaId}:${izquierdaId}`;
 }
 
-export function huellaRevisionDuplicado({
-  izquierda,
-  derecha
-}: PosibleReunionDuplicada): string {
+export function huellaRevisionDuplicado({ izquierda, derecha }: PosibleReunionDuplicada): string {
   const first = izquierda.id.localeCompare(derecha.id) <= 0 ? izquierda : derecha;
   const second = first === izquierda ? derecha : izquierda;
-  return JSON.stringify([first, second].map((meeting) => [
-    meeting.id,
-    meeting.titulo,
-    meeting.programaId,
-    meeting.docenteId,
-    meeting.inicio.toISOString(),
-    meeting.fin.toISOString()
-  ]));
+  return JSON.stringify(
+    [first, second].map((meeting) => [
+      meeting.id,
+      meeting.titulo,
+      meeting.programaId,
+      meeting.docenteId,
+      meeting.inicio.toISOString(),
+      meeting.fin.toISOString()
+    ])
+  );
 }
 
 export function esDecisionRevisionDuplicado(value: unknown): value is DecisionRevisionDuplicado {
@@ -53,9 +49,10 @@ export function detectarPosiblesReunionesDuplicadas(
   meetings: readonly CandidataReunionDuplicada[]
 ): readonly PosibleReunionDuplicada[] {
   const ordered = meetings.reduce<readonly CandidataReunionDuplicada[]>((result, meeting) => {
-    const position = result.findIndex((current) =>
-      meeting.inicio.getTime() < current.inicio.getTime() ||
-      (meeting.inicio.getTime() === current.inicio.getTime() && meeting.id.localeCompare(current.id) < 0)
+    const position = result.findIndex(
+      (current) =>
+        meeting.inicio.getTime() < current.inicio.getTime() ||
+        (meeting.inicio.getTime() === current.inicio.getTime() && meeting.id.localeCompare(current.id) < 0)
     );
     return position < 0
       ? [...result, meeting]
@@ -64,13 +61,12 @@ export function detectarPosiblesReunionesDuplicadas(
   return ordered.flatMap((left, leftIndex) =>
     ordered
       .slice(leftIndex + 1)
-      .filter((right) =>
-        right.inicio < left.fin &&
-        left.docenteId === right.docenteId &&
-        right.fin > left.inicio
+      .filter(
+        (right) => right.inicio < left.fin && left.docenteId === right.docenteId && right.fin > left.inicio
       )
       .map((right): PosibleReunionDuplicada => {
-        const exact = left.inicio.getTime() === right.inicio.getTime() &&
+        const exact =
+          left.inicio.getTime() === right.inicio.getTime() &&
           left.fin.getTime() === right.fin.getTime() &&
           left.programaId === right.programaId &&
           normalizarTitulo(left.titulo) === normalizarTitulo(right.titulo);

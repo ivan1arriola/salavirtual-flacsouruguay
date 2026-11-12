@@ -36,7 +36,7 @@ async function cargarPlanes() {
         accounts: {
           where: { provider: "google" },
           select: {
-            providerAccountId: true,
+            providerAccountId: true
             // OAuth tokens are not migrated: only the stable Google subject is required.
           }
         },
@@ -74,14 +74,14 @@ async function cargarPlanes() {
   );
 }
 
-async function aplicarPlan(
-  plan: Awaited<ReturnType<typeof cargarPlanes>>[number]
-): Promise<void> {
+async function aplicarPlan(plan: Awaited<ReturnType<typeof cargarPlanes>>[number]): Promise<void> {
   // No asignar una credencial compartida a cuentas nuevas sin contraseña legacy.
   // Podrán crear una propia mediante /recuperar-contrasena, si tienen correo válido.
   const requiereActivacion = !plan.passwordHash && plan.cuentasGoogle.length === 0;
   if (requiereActivacion && !plan.emailPrincipal?.trim()) {
-    throw new Error(`El usuario legacy ${plan.legacyZoomUserId} no tiene correo para activar su cuenta de forma segura.`);
+    throw new Error(
+      `El usuario legacy ${plan.legacyZoomUserId} no tiene correo para activar su cuenta de forma segura.`
+    );
   }
   const passwordHash = plan.passwordHash ?? null;
 
@@ -139,13 +139,17 @@ async function aplicarPlan(
     );
     for (const [index, account] of plan.cuentasGoogle.entries()) {
       const email = emailsGoogle[index];
-      if (!email) continue;
+      if (!email) {
+        continue;
+      }
       const ownership = await tx.cuentaGoogleFlacso.findUnique({
         where: { providerAccountId: account.providerAccountId },
         select: { userId: true }
       });
       if (ownership && ownership.userId !== plan.usuarioId) {
-        throw new Error(`Cuenta Google ${account.providerAccountId} ya vinculada a otro usuario: migración bloqueada.`);
+        throw new Error(
+          `Cuenta Google ${account.providerAccountId} ya vinculada a otro usuario: migración bloqueada.`
+        );
       }
       await tx.cuentaGoogleFlacso.upsert({
         where: { providerAccountId: account.providerAccountId },
@@ -228,10 +232,7 @@ async function main(): Promise<void> {
           users: planes.length,
           docentes: planes.filter(({ docente }) => Boolean(docente)).length,
           asistentes: planes.filter(({ asistenteTecnico }) => Boolean(asistenteTecnico)).length,
-          googleAccounts: planes.reduce(
-            (total, { cuentasGoogle }) => total + cuentasGoogle.length,
-            0
-          ),
+          googleAccounts: planes.reduce((total, { cuentasGoogle }) => total + cuentasGoogle.length, 0),
           skippedExternalGoogleAccounts: planes.reduce(
             (total, { cuentasGoogleOmitidas }) => total + cuentasGoogleOmitidas,
             0
@@ -240,7 +241,8 @@ async function main(): Promise<void> {
             ({ cuentasGoogle, passwordHash }) => cuentasGoogle.length === 0 && !passwordHash
           ).length,
           activationWithoutEmail: planes.filter(
-            ({ cuentasGoogle, passwordHash, emailPrincipal }) => cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
+            ({ cuentasGoogle, passwordHash, emailPrincipal }) =>
+              cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
           ).length
         },
         null,
@@ -249,10 +251,15 @@ async function main(): Promise<void> {
     );
 
     if (applyChanges) {
-      const invalid = planes.filter(({ cuentasGoogle, passwordHash, emailPrincipal }) =>
-        cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
+      const invalid = planes.filter(
+        ({ cuentasGoogle, passwordHash, emailPrincipal }) =>
+          cuentasGoogle.length === 0 && !passwordHash && !emailPrincipal?.trim()
       );
-      if (invalid.length) throw new Error(`Migración bloqueada: ${invalid.length} cuentas sin contraseña ni correo de activación.`);
+      if (invalid.length) {
+        throw new Error(
+          `Migración bloqueada: ${invalid.length} cuentas sin contraseña ni correo de activación.`
+        );
+      }
       for (const plan of planes) {
         await aplicarPlan(plan);
       }

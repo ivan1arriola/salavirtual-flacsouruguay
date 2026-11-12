@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 
 export function BulkMonitoringNotificationActions({
   pendingCount,
-  coveredCount,
+  coveredCount
 }: Readonly<{
   pendingCount: number;
   coveredCount: number;
@@ -24,7 +24,9 @@ export function BulkMonitoringNotificationActions({
     const confirmed = window.confirm(
       `¿Deseas enviar un correo a todas las asistentes disponibles con las ${pendingCount} reuniones sin asignar?`
     );
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setActiveAction("sin_asignar");
     setFeedback(null);
@@ -34,7 +36,7 @@ export function BulkMonitoringNotificationActions({
         const response = await fetch("/api/v1/asistencia/notificaciones", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tipo: "SIN_ASIGNAR" }),
+          body: JSON.stringify({ tipo: "SIN_ASIGNAR" })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -45,7 +47,7 @@ export function BulkMonitoringNotificationActions({
       } catch (err) {
         setFeedback({
           type: "error",
-          text: err instanceof Error ? err.message : "Error al notificar reuniones sin asignar.",
+          text: err instanceof Error ? err.message : "Error al notificar reuniones sin asignar."
         });
       } finally {
         setActiveAction(null);
@@ -61,7 +63,9 @@ export function BulkMonitoringNotificationActions({
     const confirmed = window.confirm(
       `¿Deseas notificar a cada asistente su cronograma con las reuniones que tiene asignadas?`
     );
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setActiveAction("asignadas");
     setFeedback(null);
@@ -71,7 +75,7 @@ export function BulkMonitoringNotificationActions({
         const response = await fetch("/api/v1/asistencia/notificaciones", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tipo: "ASIGNADAS" }),
+          body: JSON.stringify({ tipo: "ASIGNADAS" })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -82,7 +86,7 @@ export function BulkMonitoringNotificationActions({
       } catch (err) {
         setFeedback({
           type: "error",
-          text: err instanceof Error ? err.message : "Error al notificar reuniones asignadas.",
+          text: err instanceof Error ? err.message : "Error al notificar reuniones asignadas."
         });
       } finally {
         setActiveAction(null);
@@ -135,4 +139,3 @@ export function BulkMonitoringNotificationActions({
     </div>
   );
 }
-

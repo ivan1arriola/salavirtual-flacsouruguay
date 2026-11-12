@@ -33,15 +33,21 @@ export async function vincularAutomaticamenteSiInequivoco(
     ahora: Date;
   }>
 ): Promise<ResultadoVinculoAutomaticoZoom> {
-  if (entrada.eventoProveedorId !== null) return { tipo: "YA_VINCULADA" };
+  if (entrada.eventoProveedorId !== null) {
+    return { tipo: "YA_VINCULADA" };
+  }
 
   const porUuid = await tx.eventoProveedor.findMany({
     where: { zoomMeetingUuid: entrada.uuid, proveedor: { tipo: { in: TIPOS_ZOOM } } },
     select: { id: true },
     take: 2
   });
-  if (porUuid.length > 1) return { tipo: "AMBIGUA" };
-  if (porUuid.length === 1) return vincular(tx, entrada, porUuid[0]!.id, "UUID_EXACTO");
+  if (porUuid.length > 1) {
+    return { tipo: "AMBIGUA" };
+  }
+  if (porUuid.length === 1) {
+    return vincular(tx, entrada, porUuid[0]!.id, "UUID_EXACTO");
+  }
 
   const real = entrada.inicioRealAt;
   const candidatos = await tx.eventoProveedor.findMany({
@@ -57,11 +63,15 @@ export async function vincularAutomaticamenteSiInequivoco(
     orderBy: { id: "asc" },
     take: MAXIMO_CANDIDATOS
   });
-  if (candidatos.length === 0) return { tipo: "SIN_COINCIDENCIA" };
+  if (candidatos.length === 0) {
+    return { tipo: "SIN_COINCIDENCIA" };
+  }
 
   const contienen = candidatos.filter((c) => c.instancia.inicioProgramadoAt.getTime() <= real.getTime());
   const elegidos = contienen.length > 0 ? contienen : candidatos;
-  if (elegidos.length > 1) return { tipo: "AMBIGUA" };
+  if (elegidos.length > 1) {
+    return { tipo: "AMBIGUA" };
+  }
   return vincular(tx, entrada, elegidos[0]!.id, "REUNION_Y_HORARIO");
 }
 
@@ -76,12 +86,17 @@ async function vincular(
     where: { id: entrada.ocurrenciaId, eventoProveedorId: null },
     data: { eventoProveedorId, vinculadaAt: entrada.ahora, vinculadaPorId: null }
   });
-  if (count === 0) return { tipo: "YA_VINCULADA" };
+  if (count === 0) {
+    return { tipo: "YA_VINCULADA" };
+  }
   await tx.auditoria.create({
     data: {
-      actorUsuarioId: null, accion: "ZOOM_OCURRENCIA_VINCULADA_AUTO",
-      entidadTipo: "OcurrenciaArchivoZoom", entidadId: entrada.ocurrenciaId,
-      valorAnterior: { eventoProveedorId: null }, valorNuevo: { eventoProveedorId, criterio }
+      actorUsuarioId: null,
+      accion: "ZOOM_OCURRENCIA_VINCULADA_AUTO",
+      entidadTipo: "OcurrenciaArchivoZoom",
+      entidadId: entrada.ocurrenciaId,
+      valorAnterior: { eventoProveedorId: null },
+      valorNuevo: { eventoProveedorId, criterio }
     }
   });
   return { tipo: "VINCULADA", eventoProveedorId };

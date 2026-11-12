@@ -4,11 +4,7 @@ export * from "./application";
 export * from "./infrastructure";
 
 import type { ModalidadAsistencia, PeriodoMes, PeriodoReporteMensual } from "./domain";
-import type {
-  LiquidacionesRepositoryPort,
-  PlanillaPagosExporterPort,
-  TarifasRepositoryPort
-} from "./ports";
+import type { LiquidacionesRepositoryPort, PlanillaPagosExporterPort, TarifasRepositoryPort } from "./ports";
 import {
   consultarResumenAsistentesUseCase,
   consultarTarifaVigenteUseCase,
@@ -20,13 +16,15 @@ export type ServicioLiquidacionesDeps = Readonly<{
   liquidacionesRepo: LiquidacionesRepositoryPort;
   tarifasRepo: TarifasRepositoryPort;
   exporter: PlanillaPagosExporterPort;
-  enviarCorreo: (input: Readonly<{
-    to: readonly string[];
-    cc: readonly string[];
-    subject: string;
-    text: string;
-    html: string;
-  }>) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
+  enviarCorreo: (
+    input: Readonly<{
+      to: readonly string[];
+      cc: readonly string[];
+      subject: string;
+      text: string;
+      html: string;
+    }>
+  ) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
 }>;
 
 export function crearServicioLiquidaciones(deps: ServicioLiquidacionesDeps) {
@@ -41,10 +39,7 @@ export function crearServicioLiquidaciones(deps: ServicioLiquidacionesDeps) {
       );
     },
     consultarResumenAsistentes(periodo: PeriodoMes) {
-      return consultarResumenAsistentesUseCase(
-        { liquidacionesRepo: deps.liquidacionesRepo },
-        periodo
-      );
+      return consultarResumenAsistentesUseCase({ liquidacionesRepo: deps.liquidacionesRepo }, periodo);
     },
     enviarReportesMensuales(ahora?: Date) {
       return enviarReportesMensualesUseCase(

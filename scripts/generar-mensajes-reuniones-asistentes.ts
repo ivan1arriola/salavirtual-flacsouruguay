@@ -98,11 +98,15 @@ async function main(): Promise<void> {
     instances: number;
   }[] = [];
 
-  if (outDir) mkdirSync(outDir, { recursive: true });
+  if (outDir) {
+    mkdirSync(outDir, { recursive: true });
+  }
 
   for (const items of byAssistant.values()) {
     const assistant = items[0]?.asistenteTecnico.usuario;
-    if (!assistant) continue;
+    if (!assistant) {
+      continue;
+    }
 
     const cardsByRequest = new Map<string, MeetingEmailCard>();
     for (const assignment of items) {
@@ -147,17 +151,20 @@ async function main(): Promise<void> {
     const subject = "Próximas asistencias asignadas Google Meet";
     const message = buildMeetingDigestEmail({
       greetingName: firstName(assistant),
-      intro: "Te compartimos el detalle de tus próximas asistencias asignadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
+      intro:
+        "Te compartimos el detalle de tus próximas asistencias asignadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
       cards
     });
     const name = fullName(assistant);
 
-    sections.push([
-      `PARA: ${name} <${assistant.emailPrincipal ?? "sin email"}>`,
-      `ASUNTO: ${subject}`,
-      "",
-      message.text
-    ].join("\n"));
+    sections.push(
+      [
+        `PARA: ${name} <${assistant.emailPrincipal ?? "sin email"}>`,
+        `ASUNTO: ${subject}`,
+        "",
+        message.text
+      ].join("\n")
+    );
 
     if (outDir && assistant.emailPrincipal) {
       const safeEmail = assistant.emailPrincipal.replace(/[^a-z0-9._-]+/gi, "_");
@@ -189,7 +196,9 @@ async function main(): Promise<void> {
 }
 
 function mergeAssignmentState(current: string | undefined, next: string): string {
-  if (current === "Asignada" || next === "ASIGNADO") return "Asignada";
+  if (current === "Asignada" || next === "ASIGNADO") {
+    return "Asignada";
+  }
   return "Confirmada";
 }
 

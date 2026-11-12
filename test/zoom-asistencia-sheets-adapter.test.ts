@@ -3,18 +3,30 @@ import { describe, expect, it, vi } from "vitest";
 import { crearGoogleZoomAsistenciaSheetsAdapter } from "../src/modules/archivos/infrastructure/google/google-zoom-asistencia-sheets.adapter";
 
 const ENTRADA = {
-  titulo: "Clase", carpetaId: "carpeta1", marcador: "m1",
-  resumen: [["Participante"], ["Ana"]], sesiones: [["Participante"], ["Ana"]]
+  titulo: "Clase",
+  carpetaId: "carpeta1",
+  marcador: "m1",
+  resumen: [["Participante"], ["Ana"]],
+  sesiones: [["Participante"], ["Ana"]]
 };
 
-function crear(existentes: Array<{ id: string; webViewLink?: string }> = [], hojas = ["Asistencia", "Sesiones"]) {
+function crear(
+  existentes: Array<{ id: string; webViewLink?: string }> = [],
+  hojas = ["Asistencia", "Sesiones"]
+) {
   const llamadas: Array<{ url: string; method: string; data?: any }> = [];
   const cliente = {
     request: vi.fn(async (o: any) => {
       llamadas.push(o);
-      if (o.method === "GET" && o.url.includes("/drive/")) return { data: { files: existentes } };
-      if (o.method === "POST" && o.url.startsWith("https://www.googleapis.com/drive/v3/files")) return { data: { id: "nueva", webViewLink: "https://docs/nueva" } };
-      if (o.method === "GET") return { data: { sheets: hojas.map((title) => ({ properties: { title } })) } };
+      if (o.method === "GET" && o.url.includes("/drive/")) {
+        return { data: { files: existentes } };
+      }
+      if (o.method === "POST" && o.url.startsWith("https://www.googleapis.com/drive/v3/files")) {
+        return { data: { id: "nueva", webViewLink: "https://docs/nueva" } };
+      }
+      if (o.method === "GET") {
+        return { data: { sheets: hojas.map((title) => ({ properties: { title } })) } };
+      }
       return { data: {} };
     })
   };
@@ -38,7 +50,10 @@ describe("planilla de asistencia Zoom en Drive", () => {
 
   it("actualiza la misma planilla tras conciliar: no crea otra", async () => {
     const { llamadas, adapter } = crear([{ id: "vieja", webViewLink: "https://docs/vieja" }]);
-    expect(await adapter.crearOActualizar(ENTRADA)).toEqual({ webViewUrl: "https://docs/vieja", creada: false });
+    expect(await adapter.crearOActualizar(ENTRADA)).toEqual({
+      webViewUrl: "https://docs/vieja",
+      creada: false
+    });
     expect(llamadas.some((l) => l.method === "POST" && l.url.includes("/drive/v3/files"))).toBe(false);
     expect(llamadas.some((l) => l.url.includes("vieja/values:batchUpdate"))).toBe(true);
   });

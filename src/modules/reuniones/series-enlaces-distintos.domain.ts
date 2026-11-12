@@ -43,9 +43,10 @@ export function evaluarEnlacesDeSerie(
   const enZoom = futuros.filter(({ proveedor }) => proveedor === "ZOOM");
   const mixta = enZoom.length > 0 && enZoom.length < futuros.length;
   const reuniones = distintos(enZoom.map(({ reunionProveedorId }) => reunionProveedorId));
-  const unificada = enZoom.length > 0
-    && enZoom.every(({ reunionProveedorId }) => reunionProveedorId !== null)
-    && reuniones === 1;
+  const unificada =
+    enZoom.length > 0 &&
+    enZoom.every(({ reunionProveedorId }) => reunionProveedorId !== null) &&
+    reuniones === 1;
   const enlacesDistintos = distintos(enZoom.map(({ joinUrl }) => joinUrl));
   const cuentasDistintas = distintos(enZoom.map(({ cuentaProveedorId }) => cuentaProveedorId));
   return {
@@ -54,7 +55,8 @@ export function evaluarEnlacesDeSerie(
     enlacesDistintos,
     cuentasDistintas,
     encuentrosZoom: enZoom.length,
-    necesitaCorreccion: !mixta && !unificada && enZoom.length > 1 && (enlacesDistintos > 1 || cuentasDistintas > 1),
-    mixtaSinUnificar: mixta && !unificada,
+    necesitaCorreccion:
+      !mixta && !unificada && enZoom.length > 1 && (enlacesDistintos > 1 || cuentasDistintas > 1),
+    mixtaSinUnificar: mixta && !unificada
   };
 }

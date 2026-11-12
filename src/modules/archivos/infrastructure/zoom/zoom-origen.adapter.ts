@@ -22,11 +22,15 @@ export type ZoomOrigenAdapterDeps = Readonly<{
  * Adaptador de lectura de Zoom. La URL autorizada de descarga vive solo dentro de `abrirDescarga`:
  * se obtiene del inventario fresco en cada intento y nunca se devuelve ni se persiste.
  */
-export function crearZoomOrigenAdapter(deps: ZoomOrigenAdapterDeps): OrigenZoomPort & InventarioOrigenZoomPort {
+export function crearZoomOrigenAdapter(
+  deps: ZoomOrigenAdapterDeps
+): OrigenZoomPort & InventarioOrigenZoomPort {
   return {
     async obtenerInventario(ocurrencia) {
       const inventario = await obtenerInventarioOcurrenciaZoomHttp(deps.auth, ocurrencia.uuid);
-      if (inventario === null) return null;
+      if (inventario === null) {
+        return null;
+      }
       return normalizarInventarioZoom(ocurrencia, inventario.respuesta, deps.hash);
     },
 
@@ -40,16 +44,24 @@ export function crearZoomOrigenAdapter(deps: ZoomOrigenAdapterDeps): OrigenZoomP
     },
 
     async abrirDescarga(ocurrencia, recurso, offset, signal) {
-      if (recurso.archivoZoomId === null) return { tipo: "REQUIERE_REVISION", motivo: "RECURSO_SIN_ID" };
+      if (recurso.archivoZoomId === null) {
+        return { tipo: "REQUIERE_REVISION", motivo: "RECURSO_SIN_ID" };
+      }
       const inventario = await obtenerInventarioOcurrenciaZoomHttp(deps.auth, ocurrencia.uuid);
-      if (inventario === null) return { tipo: "REQUIERE_REVISION", motivo: "OCURRENCIA_NO_ENCONTRADA" };
+      if (inventario === null) {
+        return { tipo: "REQUIERE_REVISION", motivo: "OCURRENCIA_NO_ENCONTRADA" };
+      }
       const url = inventario.urlDescarga(recurso.archivoZoomId);
-      if (url === null) return { tipo: "REQUIERE_REVISION", motivo: "SIN_URL_DESCARGA" };
+      if (url === null) {
+        return { tipo: "REQUIERE_REVISION", motivo: "SIN_URL_DESCARGA" };
+      }
 
       const descarga = await abrirDescargaZoomHttp(deps.auth, url, offset, signal, {
         permitirJson: TIPOS_JSON.has(recurso.tipoOriginal.trim().toUpperCase())
       });
-      if (descarga.tipo === "REQUIERE_REVISION") return { tipo: "REQUIERE_REVISION", motivo: descarga.motivo };
+      if (descarga.tipo === "REQUIERE_REVISION") {
+        return { tipo: "REQUIERE_REVISION", motivo: descarga.motivo };
+      }
       return {
         tipo: "CONTENIDO",
         // El cliente ya descartó el prefijo si Zoom ignoró Range: en PARCIAL el flujo empieza en `offset`.

@@ -14,33 +14,36 @@ export function crearCompositeEmailTransport(
       }
 
       const recipientSet = new Set(recipients);
-      const copies = normalizeAddresses(input.cc ?? []).filter(
-        (email) => !recipientSet.has(email)
-      );
+      const copies = normalizeAddresses(input.cc ?? []).filter((email) => !recipientSet.has(email));
 
       const normalizedInput: MailInput = {
         ...input,
         to: recipients,
-        cc: copies,
+        cc: copies
       };
 
       if (sesTransport) {
         const sesResult = await sesTransport.enviarCorreo(normalizedInput);
-        if (sesResult.skipped !== "correo-no-configurado") return sesResult;
+        if (sesResult.skipped !== "correo-no-configurado") {
+          return sesResult;
+        }
       }
 
       // Gmail may have accepted the POST before a network timeout. A fallback
       // to SMTP after an error can send the same notification twice.
       const gmailResult = await gmailTransport.enviarCorreo(normalizedInput);
-      if (gmailResult.sent) return gmailResult;
-      if (gmailResult.skipped !== "correo-no-configurado") return gmailResult;
+      if (gmailResult.sent) {
+        return gmailResult;
+      }
+      if (gmailResult.skipped !== "correo-no-configurado") {
+        return gmailResult;
+      }
       // Fallback only when NO Gmail request was attempted.
       return smtpTransport.enviarCorreo(normalizedInput);
-    },
+    }
   };
 }
 
 function normalizeAddresses(addresses: readonly string[]): string[] {
   return [...new Set(addresses.map((email) => email.trim().toLowerCase()).filter(Boolean))];
 }
-

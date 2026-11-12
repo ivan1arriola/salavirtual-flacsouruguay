@@ -23,10 +23,7 @@ export function ProfileMenu({
   const className = ["profile-menu", compact ? "profile-menu-compact" : null].filter(Boolean).join(" ");
 
   return (
-    <DismissibleDetails
-      className={className}
-      dataTour={profileTourForRole(user.role)}
-    >
+    <DismissibleDetails className={className} dataTour={profileTourForRole(user.role)}>
       <summary
         aria-label={`Abrir menú de perfil${unreadNotifications > 0 ? `, ${unreadNotifications} notificaciones sin leer` : ""}`}
         data-tour={notificationTourForRole(user.role)}
@@ -44,7 +41,9 @@ export function ProfileMenu({
           </>
         ) : null}
         {unreadNotifications > 0 ? (
-          <strong className="profile-menu-notification-count" aria-hidden="true">{unreadNotifications}</strong>
+          <strong className="profile-menu-notification-count" aria-hidden="true">
+            {unreadNotifications}
+          </strong>
         ) : null}
       </summary>
 
@@ -68,7 +67,9 @@ export function ProfileMenu({
           >
             <Bell size={18} aria-hidden="true" />
             <span>Notificaciones</span>
-            {unreadNotifications > 0 ? <strong className="profile-menu-action-badge">{unreadNotifications}</strong> : null}
+            {unreadNotifications > 0 ? (
+              <strong className="profile-menu-action-badge">{unreadNotifications}</strong>
+            ) : null}
           </Link>
           <Link className="profile-menu-action" href="/mi-perfil">
             <UserRound size={18} aria-hidden="true" />
@@ -95,30 +96,41 @@ export function ProfileMenu({
 }
 
 function profileTourForRole(role: Session["user"]["role"]): string | undefined {
-  if (role === "DOCENTE") return "teacher-profile";
-  if (role === "ASISTENTE_TECNICO") return "assistant-profile";
+  if (role === "DOCENTE") {
+    return "teacher-profile";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "assistant-profile";
+  }
   return undefined;
 }
 
 function notificationTourForRole(role: Session["user"]["role"]): string | undefined {
-  if (role === "DOCENTE") return "teacher-notifications";
-  if (role === "ASISTENTE_TECNICO") return "assistant-notifications";
+  if (role === "DOCENTE") {
+    return "teacher-notifications";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "assistant-notifications";
+  }
   return undefined;
 }
 
 function roleLabel(role: Session["user"]["role"]): string {
-  if (role === "ADMINISTRACION") return "Administración";
-  if (role === "ASISTENTE_TECNICO") return "Monitoreo";
+  if (role === "ADMINISTRACION") {
+    return "Administración";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "Monitoreo";
+  }
   return "Docente";
 }
 
-function UserAvatarContent({
-  imageUrl,
-  name
-}: Readonly<{ imageUrl?: string | null; name: string }>) {
+function UserAvatarContent({ imageUrl, name }: Readonly<{ imageUrl?: string | null; name: string }>) {
   return (
     <>
-      <span className="avatar-fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+      <span className="avatar-fallback" aria-hidden="true">
+        {name.slice(0, 1).toUpperCase()}
+      </span>
       {imageUrl ? (
         <span
           className="avatar-image"

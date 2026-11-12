@@ -16,7 +16,10 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RefreshButton } from "@/src/components/refresh-button";
 import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
-import { obtenerParticipantesZoomEnVivoHttp, type EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
+import {
+  obtenerParticipantesZoomEnVivoHttp,
+  type EstadoAsistenciaZoomEnVivo
+} from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -41,20 +44,23 @@ export default async function ReunionOperativaPage({
   params
 }: Readonly<{ params: Promise<{ instanciaId: string }> }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   const { instanciaId } = await params;
-  const result = await obtenerReunionOperativa(
-    { id: actor.id, rol: actor.rol },
-    instanciaId
-  );
-  if (result.estado !== "OK") notFound();
+  const result = await obtenerReunionOperativa({ id: actor.id, rol: actor.rol }, instanciaId);
+  if (result.estado !== "OK") {
+    notFound();
+  }
 
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
@@ -74,14 +80,25 @@ export default async function ReunionOperativaPage({
             obtenerSalaEsperaZoomHttp(token, reunion.zoom.id),
             obtenerParticipantesZoomEnVivoHttp(token, reunion.zoom.id)
           ]);
-          if (espera.status === "fulfilled") salaEspera = espera.value;
-          if (asistencia.status === "fulfilled") asistenciaEnVivo = asistencia.value;
+          if (espera.status === "fulfilled") {
+            salaEspera = espera.value;
+          }
+          if (asistencia.status === "fulfilled") {
+            asistenciaEnVivo = asistencia.value;
+          }
         }
       } catch {
         // Sin permisos, conexión o respuesta válida: no afirmar que está deshabilitada.
       }
     }
-    return <ReunionZoomOperativa reunion={reunion} rol={actor.rol} salaEspera={salaEspera} asistenciaEnVivo={asistenciaEnVivo} />;
+    return (
+      <ReunionZoomOperativa
+        reunion={reunion}
+        rol={actor.rol}
+        salaEspera={salaEspera}
+        asistenciaEnVivo={asistenciaEnVivo}
+      />
+    );
   }
 
   const active = reunion.conferencia.participantesActivos;
@@ -91,16 +108,16 @@ export default async function ReunionOperativaPage({
   const backHref = actor.rol === "ASISTENTE_TECNICO" ? "/mi-agenda" : "/";
   const backLabel = actor.rol === "ASISTENTE_TECNICO" ? "Volver a mi agenda" : "Volver al dashboard";
   const canSelfUnassign =
-    actor.rol === "ASISTENTE_TECNICO"
-    && Boolean(reunion.asistencia.asignacionId)
-    && reunion.asistencia.inicioAt.getTime() > reunion.actualizadoAt.getTime();
+    actor.rol === "ASISTENTE_TECNICO" &&
+    Boolean(reunion.asistencia.asignacionId) &&
+    reunion.asistencia.inicioAt.getTime() > reunion.actualizadoAt.getTime();
 
   const grabacionFaltanteEnCurso =
-    reunion.estado === "EN_CURSO"
-    && reunion.requiereGrabacion
-    && !reunion.grabacion.grabandoEnVivo
-    && reunion.grabacion.estado !== "DISPONIBLE"
-    && reunion.grabacion.estado !== "PROCESANDO";
+    reunion.estado === "EN_CURSO" &&
+    reunion.requiereGrabacion &&
+    !reunion.grabacion.grabandoEnVivo &&
+    reunion.grabacion.estado !== "DISPONIBLE" &&
+    reunion.grabacion.estado !== "PROCESANDO";
 
   return (
     <div className="meeting-detail-v2 operational-console">
@@ -110,7 +127,9 @@ export default async function ReunionOperativaPage({
           {backLabel}
         </Link>
         <div className="operational-refresh">
-          <OperationalAutoRefresh enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"} />
+          <OperationalAutoRefresh
+            enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"}
+          />
           <RefreshButton />
         </div>
       </div>
@@ -119,9 +138,7 @@ export default async function ReunionOperativaPage({
         <div className="operational-hero-copy">
           <div className="operational-hero-topline">
             <p className="page-eyebrow">{reunion.programa}</p>
-            <span className={`status ${statusClass(reunion.estado)}`}>
-              {estadoLabel(reunion.estado)}
-            </span>
+            <span className={`status ${statusClass(reunion.estado)}`}>{estadoLabel(reunion.estado)}</span>
             <span
               className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}
               title="Define si la solicitud del encuentro exige grabación"
@@ -129,33 +146,42 @@ export default async function ReunionOperativaPage({
               {reunion.requiereGrabacion ? "Solicitud: Grabación requerida" : "Solicitud: Sin grabación"}
             </span>
             {reunion.grabacion.grabandoEnVivo ? (
-              <span className="operational-mini-pill is-live-rec">
-                ● Meet: Grabando en vivo
-              </span>
+              <span className="operational-mini-pill is-live-rec">● Meet: Grabando en vivo</span>
             ) : grabacionFaltanteEnCurso ? (
-              <span className="operational-mini-pill is-not-rec-warn">
-                ⚠ Meet: No se está grabando
-              </span>
+              <span className="operational-mini-pill is-not-rec-warn">⚠ Meet: No se está grabando</span>
             ) : null}
             {reunion.transcripcion.transcribiendoEnVivo ? (
-              <span className="operational-mini-pill is-live-rec">
-                ● Meet: Transcribiendo en vivo
-              </span>
+              <span className="operational-mini-pill is-live-rec">● Meet: Transcribiendo en vivo</span>
             ) : null}
             {reunion.conferencia.enGruposPequenos ? (
               <span className="status status-warning">
-                <Split size={13} aria-hidden="true" /> Grupos pequeños ({reunion.conferencia.cantidadGruposPequenos})
+                <Split size={13} aria-hidden="true" /> Grupos pequeños (
+                {reunion.conferencia.cantidadGruposPequenos})
               </span>
             ) : null}
           </div>
           <h1>{reunion.titulo}</h1>
           <div className="operational-hero-meta">
-            <span>{reunion.docente}{reunion.docenteEmail ? ` (${reunion.docenteEmail})` : ""}</span>
+            <span>
+              {reunion.docente}
+              {reunion.docenteEmail ? ` (${reunion.docenteEmail})` : ""}
+            </span>
             <span>{formatDate(reunion.inicioProgramadoAt)}</span>
-            <span>Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}</span>
+            <span>
+              Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}
+            </span>
             <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
           </div>
-          <MeetingScheduleTimes startsAt={reunion.inicioProgramadoAt} endsAt={reunion.finProgramadoAt} requiresAssistance={reunion.asistencia.requerida} modality={reunion.modalidad} assistanceStartsAt={reunion.asistencia.inicioAt} assistanceEndsAt={reunion.asistencia.finAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
+          <MeetingScheduleTimes
+            startsAt={reunion.inicioProgramadoAt}
+            endsAt={reunion.finProgramadoAt}
+            requiresAssistance={reunion.asistencia.requerida}
+            modality={reunion.modalidad}
+            assistanceStartsAt={reunion.asistencia.inicioAt}
+            assistanceEndsAt={reunion.asistencia.finAt}
+            viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"}
+            compact
+          />
           {reunion.asistencia.asistente ? (
             <p className="operational-assistance-time">
               Asistente asignado: {reunion.asistencia.asistente}
@@ -166,7 +192,12 @@ export default async function ReunionOperativaPage({
 
         <div className="operational-hero-actions">
           {reunion.meet.joinUrl ? (
-            <a className="primary-action operational-meet-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
+            <a
+              className="primary-action operational-meet-action"
+              href={reunion.meet.joinUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Video size={16} aria-hidden="true" />
               Entrar a Meet
             </a>
@@ -196,7 +227,8 @@ export default async function ReunionOperativaPage({
             <div>
               <strong>Grabación requerida por solicitud, pero NO se está grabando en Google Meet</strong>
               <small>
-                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe iniciar la grabación dentro de Google Meet.
+                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe
+                iniciar la grabación dentro de Google Meet.
               </small>
             </div>
           </div>
@@ -254,10 +286,14 @@ export default async function ReunionOperativaPage({
                 : `No se está grabando (${grabacionEstadoArchivoLabel(reunion.grabacion.estado)})`}
             </strong>
             <div className="operational-policy-vs-live">
-              <span className={`operational-mini-pill ${reunion.grabacion.grabandoEnVivo ? "is-live-rec" : "is-req-no"}`}>
+              <span
+                className={`operational-mini-pill ${reunion.grabacion.grabandoEnVivo ? "is-live-rec" : "is-req-no"}`}
+              >
                 {reunion.grabacion.grabandoEnVivo ? "En vivo: Grabando" : "En vivo: Inactiva"}
               </span>
-              <span className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}>
+              <span
+                className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}
+              >
                 {reunion.requiereGrabacion ? "Solicitud: Requerida" : "Solicitud: No requerida"}
               </span>
             </div>
@@ -402,9 +438,14 @@ export default async function ReunionOperativaPage({
           </div>
           <div className="is-wide">
             <dt>Monitoreo</dt>
-            <dd>{reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}</dd>
+            <dd>
+              {reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}
+            </dd>
             {reunion.asistencia.requerida ? (
-              <small>Llegada: {formatTime(reunion.asistencia.inicioAt)} · Salida: {formatTime(reunion.asistencia.finAt)}</small>
+              <small>
+                Llegada: {formatTime(reunion.asistencia.inicioAt)} · Salida:{" "}
+                {formatTime(reunion.asistencia.finAt)}
+              </small>
             ) : null}
           </div>
         </dl>
@@ -414,7 +455,9 @@ export default async function ReunionOperativaPage({
             <AdminRetryMeetAction
               eventoProveedorId={reunion.meet.eventoProveedorId}
               label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
-              operacion={reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")}
+              operacion={
+                reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")
+              }
             />
           </div>
         ) : null}
@@ -426,22 +469,23 @@ export default async function ReunionOperativaPage({
         ) : null}
         {reunion.conferencia.error ? (
           <p className="status-warning-text operational-warning">
-            <AlertTriangle size={15} aria-hidden="true" /> No se pudo actualizar Meet: {reunion.conferencia.error}
+            <AlertTriangle size={15} aria-hidden="true" /> No se pudo actualizar Meet:{" "}
+            {reunion.conferencia.error}
           </p>
         ) : null}
       </section>
 
-      <details
-        className="content-section operational-disclosure"
-        open={reunion.incidencias.length > 0}
-      >
+      <details className="content-section operational-disclosure" open={reunion.incidencias.length > 0}>
         <summary>
           <div>
             <h2>Incidencias</h2>
             <p>Problemas operativos registrados para este encuentro.</p>
           </div>
           <span className="badge-tag">
-            {reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS").length}
+            {
+              reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS")
+                .length
+            }
           </span>
         </summary>
         <div className="operational-disclosure-content">
@@ -456,10 +500,15 @@ export default async function ReunionOperativaPage({
                 <li key={incidencia.id}>
                   <div>
                     <strong>{incidenciaTipoLabel(incidencia.tipo)}</strong>
-                    <span>{incidencia.estado.replaceAll("_", " ").toLowerCase()} · {incidencia.severidad.toLowerCase()}</span>
+                    <span>
+                      {incidencia.estado.replaceAll("_", " ").toLowerCase()} ·{" "}
+                      {incidencia.severidad.toLowerCase()}
+                    </span>
                   </div>
                   <p>{incidencia.descripcion}</p>
-                  <small>{formatDate(incidencia.createdAt)} · {formatTime(incidencia.createdAt)}</small>
+                  <small>
+                    {formatDate(incidencia.createdAt)} · {formatTime(incidencia.createdAt)}
+                  </small>
                 </li>
               ))}
             </ul>
@@ -469,9 +518,9 @@ export default async function ReunionOperativaPage({
 
       <OperationalIncidentForm instanciaId={reunion.id} />
 
-      {actor.rol === "ASISTENTE_TECNICO"
-        && reunion.asistencia.asignacionId
-        && (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") ? (
+      {actor.rol === "ASISTENTE_TECNICO" &&
+      reunion.asistencia.asignacionId &&
+      (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") ? (
         <OperationalAssistanceClosureForm
           asignacionId={reunion.asistencia.asignacionId}
           inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
@@ -488,19 +537,38 @@ export default async function ReunionOperativaPage({
           </div>
         </div>
         <div className="operational-artifacts-grid">
-          <div><strong>{reunion.artefactos.grabaciones}</strong><span>Grabaciones</span></div>
-          <div><strong>{reunion.artefactos.transcripciones}</strong><span>Transcripciones</span></div>
-          <div><strong>{reunion.artefactos.notas}</strong><span>Notas</span></div>
+          <div>
+            <strong>{reunion.artefactos.grabaciones}</strong>
+            <span>Grabaciones</span>
+          </div>
+          <div>
+            <strong>{reunion.artefactos.transcripciones}</strong>
+            <span>Transcripciones</span>
+          </div>
+          <div>
+            <strong>{reunion.artefactos.notas}</strong>
+            <span>Notas</span>
+          </div>
         </div>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
           {reunion.grabacion.url ? (
-            <a className="secondary-action operational-recording-link" href={reunion.grabacion.url} target="_blank" rel="noreferrer">
+            <a
+              className="secondary-action operational-recording-link"
+              href={reunion.grabacion.url}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Video size={16} aria-hidden="true" />
               Ver grabación
             </a>
           ) : null}
           {reunion.transcripcion.url ? (
-            <a className="secondary-action operational-recording-link" href={reunion.transcripcion.url} target="_blank" rel="noreferrer">
+            <a
+              className="secondary-action operational-recording-link"
+              href={reunion.transcripcion.url}
+              target="_blank"
+              rel="noreferrer"
+            >
               <FileText size={16} aria-hidden="true" />
               Ver transcripción
             </a>
@@ -513,54 +581,102 @@ export default async function ReunionOperativaPage({
 }
 
 function statusClass(estado: string): string {
-  if (estado === "EN_CURSO" || estado === "FINALIZADA") return "status-ok";
-  if (estado === "ESPERANDO_INICIO") return "status-warning";
-  if (estado === "NO_INICIADA") return "status-error";
+  if (estado === "EN_CURSO" || estado === "FINALIZADA") {
+    return "status-ok";
+  }
+  if (estado === "ESPERANDO_INICIO") {
+    return "status-warning";
+  }
+  if (estado === "NO_INICIADA") {
+    return "status-error";
+  }
   return "status-neutral";
 }
 
 function estadoLabel(estado: string): string {
-  if (estado === "ESPERANDO_INICIO") return "Esperando inicio";
-  if (estado === "EN_CURSO") return "En curso";
-  if (estado === "FINALIZADA") return "Finalizada";
-  if (estado === "NO_INICIADA") return "No iniciada";
+  if (estado === "ESPERANDO_INICIO") {
+    return "Esperando inicio";
+  }
+  if (estado === "EN_CURSO") {
+    return "En curso";
+  }
+  if (estado === "FINALIZADA") {
+    return "Finalizada";
+  }
+  if (estado === "NO_INICIADA") {
+    return "No iniciada";
+  }
   return "Programada";
 }
 
 function grabacionEstadoArchivoLabel(estado: string): string {
-  if (estado === "PROCESANDO") return "procesando archivo";
-  if (estado === "DISPONIBLE") return "archivo disponible";
-  if (estado === "NO_REALIZADA") return "sin archivo generado";
+  if (estado === "PROCESANDO") {
+    return "procesando archivo";
+  }
+  if (estado === "DISPONIBLE") {
+    return "archivo disponible";
+  }
+  if (estado === "NO_REALIZADA") {
+    return "sin archivo generado";
+  }
   return "sin grabación activa";
 }
 
 function transcripcionLabel(estado: string): string {
-  if (estado === "TRANSCRIBIENDO") return "Transcribiendo en vivo";
-  if (estado === "PROCESANDO") return "procesando archivo";
-  if (estado === "DISPONIBLE") return "archivo disponible";
+  if (estado === "TRANSCRIBIENDO") {
+    return "Transcribiendo en vivo";
+  }
+  if (estado === "PROCESANDO") {
+    return "procesando archivo";
+  }
+  if (estado === "DISPONIBLE") {
+    return "archivo disponible";
+  }
   return "inactiva";
 }
 
 function tipoAccesoMeetLabel(tipo: string | null): string {
-  if (tipo === "OPEN") return "Abierto (OPEN)";
-  if (tipo === "TRUSTED") return "Institucional / Confianza (TRUSTED)";
-  if (tipo === "RESTRICTED") return "Restringido (RESTRICTED)";
+  if (tipo === "OPEN") {
+    return "Abierto (OPEN)";
+  }
+  if (tipo === "TRUSTED") {
+    return "Institucional / Confianza (TRUSTED)";
+  }
+  if (tipo === "RESTRICTED") {
+    return "Restringido (RESTRICTED)";
+  }
   return "Pendiente";
 }
 
 function rolResponsableLabel(rol: string): string {
-  if (rol === "HOST") return "Host";
-  if (rol === "COHOST") return "Cohost";
-  if (rol === "DOCENTE") return "Docente";
-  if (rol === "ASISTENTE_TECNICO") return "Asistente";
+  if (rol === "HOST") {
+    return "Host";
+  }
+  if (rol === "COHOST") {
+    return "Cohost";
+  }
+  if (rol === "DOCENTE") {
+    return "Docente";
+  }
+  if (rol === "ASISTENTE_TECNICO") {
+    return "Asistente";
+  }
   return rol;
 }
 
 function disponibilidadLabel(estado: string): string {
-  if (estado === "OK") return "Datos confirmados por Google Meet";
-  if (estado === "SIN_CONFERENCIA") return "Todavía no existe una conferencia real";
-  if (estado === "SIN_CREDENCIALES") return "Google Workspace no está disponible";
-  if (estado === "ERROR") return "La última consulta a Google falló";
+  if (estado === "OK") {
+    return "Datos confirmados por Google Meet";
+  }
+  if (estado === "SIN_CONFERENCIA") {
+    return "Todavía no existe una conferencia real";
+  }
+  if (estado === "SIN_CREDENCIALES") {
+    return "Google Workspace no está disponible";
+  }
+  if (estado === "ERROR") {
+    return "La última consulta a Google falló";
+  }
   return "Meet aún no está configurado";
 }
 
@@ -568,18 +684,36 @@ function repairLabel(
   operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
   hasMeet: boolean
 ): string {
-  if (operacion === "REPROGRAMAR") return "Reintentar reprogramación";
-  if (operacion === "CONFIGURAR_MEET") return "Reintentar configuración de Meet";
-  if (operacion === "CANCELAR") return "Reintentar cancelación en Calendar";
-  if (operacion === "PROVISIONAR") return "Reintentar provisión de Meet";
+  if (operacion === "REPROGRAMAR") {
+    return "Reintentar reprogramación";
+  }
+  if (operacion === "CONFIGURAR_MEET") {
+    return "Reintentar configuración de Meet";
+  }
+  if (operacion === "CANCELAR") {
+    return "Reintentar cancelación en Calendar";
+  }
+  if (operacion === "PROVISIONAR") {
+    return "Reintentar provisión de Meet";
+  }
   return hasMeet ? "Revisar configuración de Meet" : "Reintentar provisión de Meet";
 }
 
 function incidenciaTipoLabel(tipo: string): string {
-  if (tipo === "DOCENTE_NO_INGRESA") return "Docente no ingresa";
-  if (tipo === "AUDIO_VIDEO") return "Audio o video";
-  if (tipo === "GRABACION") return "Grabación";
-  if (tipo === "SALA_INCORRECTA") return "Sala incorrecta";
-  if (tipo === "CONECTIVIDAD") return "Conectividad";
+  if (tipo === "DOCENTE_NO_INGRESA") {
+    return "Docente no ingresa";
+  }
+  if (tipo === "AUDIO_VIDEO") {
+    return "Audio o video";
+  }
+  if (tipo === "GRABACION") {
+    return "Grabación";
+  }
+  if (tipo === "SALA_INCORRECTA") {
+    return "Sala incorrecta";
+  }
+  if (tipo === "CONECTIVIDAD") {
+    return "Conectividad";
+  }
   return tipo === "OTRA" ? "Otra" : tipo.replaceAll("_", " ").toLowerCase();
 }

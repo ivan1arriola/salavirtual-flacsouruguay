@@ -7,13 +7,21 @@ const mock = vi.hoisted(() => ({
   updateInterest: vi.fn()
 }));
 vi.mock("next/server", () => ({
-  NextResponse: { json: (body: unknown, init?: { status?: number }) => ({
-    body, status: init?.status ?? 200
-  }) }
+  NextResponse: {
+    json: (body: unknown, init?: { status?: number }) => ({
+      body,
+      status: init?.status ?? 200
+    })
+  }
 }));
 vi.mock("@/src/lib/auth/mobile-actor.adapter", () => ({
   MobileActorError: class MobileActorError extends Error {
-    constructor(message: string, public readonly status: 401 | 403) { super(message); }
+    constructor(
+      message: string,
+      public readonly status: 401 | 403
+    ) {
+      super(message);
+    }
   },
   requireMobileActor: (...args: unknown[]) => mock.requireMobileActor(...args)
 }));
@@ -47,18 +55,21 @@ describe("F9: contrato de permisos de agenda móvil", () => {
   ] as const) {
     it(`${name} responde 401 para token inválido`, async () => {
       mock.requireMobileActor.mockRejectedValueOnce(new MobileActorError("Inválido", 401));
-      expect((await invoke() as { status: number }).status).toBe(401);
+      expect(((await invoke()) as { status: number }).status).toBe(401);
       expect(mock.assistantFindUnique).not.toHaveBeenCalled();
     });
     it(`${name} responde 403 para rol no autorizado`, async () => {
       mock.requireMobileActor.mockRejectedValueOnce(new MobileActorError("Prohibido", 403));
-      expect((await invoke() as { status: number }).status).toBe(403);
+      expect(((await invoke()) as { status: number }).status).toBe(403);
       expect(mock.assistantFindUnique).not.toHaveBeenCalled();
     });
     it(`${name} responde 403 a un asistente cesado`, async () => {
       mock.requireMobileActor.mockResolvedValueOnce({ id: "a", rol: "ASISTENTE_TECNICO", activo: true });
-      mock.assistantFindUnique.mockResolvedValueOnce({ id: "assistant-a", cesadoHastaProximoInicioSesion: true });
-      expect((await invoke() as { status: number }).status).toBe(403);
+      mock.assistantFindUnique.mockResolvedValueOnce({
+        id: "assistant-a",
+        cesadoHastaProximoInicioSesion: true
+      });
+      expect(((await invoke()) as { status: number }).status).toBe(403);
       expect(mock.meetingsFindMany).not.toHaveBeenCalled();
       expect(mock.updateInterest).not.toHaveBeenCalled();
     });

@@ -13,19 +13,72 @@
   font-size: 12px;
   font-weight: 700;
 }
-.openButton:hover { text-decoration: underline; }
-.saved { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.saved strong { color: var(--brand-deep); }
-.actions { display: flex; gap: 6px; }
-.actions button { min-height: 30px; padding: 4px 8px; border-radius: 7px; font-size: 11px; }
-.form { max-width: 600px; padding: 8px 0 4px; }
-.form label { display: block; margin-bottom: 6px; color: var(--text); font-weight: 700; }
-.form > div { display: flex; gap: 8px; }
-.form input { flex: 1; min-width: 0; min-height: 37px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; font: inherit; }
-.form button { min-height: 37px; border-color: var(--brand); background: var(--brand); color: white; font-size: 12px; }
-.form button:disabled { opacity: .5; cursor: not-allowed; }
-.error { margin: 6px 0 0; color: var(--danger); }
+.openButton:hover {
+  text-decoration: underline;
+}
+.saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.saved strong {
+  color: var(--brand-deep);
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.actions button {
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.form {
+  max-width: 600px;
+  padding: 8px 0 4px;
+}
+.form label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-weight: 700;
+}
+.form > div {
+  display: flex;
+  gap: 8px;
+}
+.form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 37px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: inherit;
+}
+.form button {
+  min-height: 37px;
+  border-color: var(--brand);
+  background: var(--brand);
+  color: white;
+  font-size: 12px;
+}
+.form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.error {
+  margin: 6px 0 0;
+  color: var(--danger);
+}
 @media (max-width: 650px) {
-  .control { padding-left: 42px; }
-  .form > div { flex-direction: column; }
+  .control {
+    padding-left: 42px;
+  }
+  .form > div {
+    flex-direction: column;
+  }
 }

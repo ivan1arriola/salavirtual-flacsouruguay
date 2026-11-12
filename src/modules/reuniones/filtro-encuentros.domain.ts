@@ -10,7 +10,9 @@ export function perteneceAVistaTemporal(
   vista: VistaTemporalEncuentros
 ): boolean {
   const esPasadoAnterior = encuentro.temporalidad === "PASADO" && !encuentro.esDeHoy;
-  if (vista === "TODOS") return true;
+  if (vista === "TODOS") {
+    return true;
+  }
   return vista === "PASADOS" ? esPasadoAnterior : !esPasadoAnterior;
 }
 

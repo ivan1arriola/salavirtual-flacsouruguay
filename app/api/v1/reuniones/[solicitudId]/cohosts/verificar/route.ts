@@ -3,7 +3,12 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { toHttpError, ForbiddenApiError, NotFoundApiError, IntegrationApiError } from "@/src/lib/http/api-error";
+import {
+  toHttpError,
+  ForbiddenApiError,
+  NotFoundApiError,
+  IntegrationApiError
+} from "@/src/lib/http/api-error";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
 import { consultarCohostsEspacioMeet, extraerCohostEmailsDeInstancia } from "@/src/modules/conferencias/api";
@@ -14,17 +19,30 @@ type Result = "confirmed" | "rejected" | "unknown";
 
 export async function GET(_request: Request, context: RouteContext) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { solicitudId } = await context.params;
     const request = await db.solicitudSala.findUnique({
       where: { id: solicitudId },
-      select: { id: true, serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true, docentePrograma: { select: { programaId: true } } },
+      select: {
+        id: true,
+        serieReunionId: true,
+        docenteProgramaId: true,
+        titulo: true,
+        createdAt: true,
+        docentePrograma: { select: { programaId: true } }
+      }
     });
-    if (!request) throw new NotFoundApiError("La serie no existe.");
-    if (!await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) {
+    if (!request) {
+      throw new NotFoundApiError("La serie no existe.");
+    }
+    if (!(await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId))) {
       throw new ForbiddenApiError("Sin permiso para verificar cohosts.");
     }
     const series = await db.solicitudSala.findMany({
@@ -41,42 +59,62 @@ export async function GET(_request: Request, context: RouteContext) {
             eventosProveedor: {
               where: { proveedor: { tipo: "GOOGLE_MEET" } },
               select: { codigoReunion: true, cuentaProveedor: { select: { emailOrganizador: true } } },
-              take: 1,
-            },
-          },
-        },
-      },
+              take: 1
+            }
+          }
+        }
+      }
     });
     const meetings = series.flatMap((item) => item.instancias);
     if (meetings.length > 100) {
-      return NextResponse.json({ error: "La serie excede el límite de verificación. Contactá a administración." }, { status: 422 });
+      return NextResponse.json(
+        { error: "La serie excede el límite de verificación. Contactá a administración." },
+        { status: 422 }
+      );
     }
     const { principal, legacy } = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
     if (!principal) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
     }
     const memberCache = new Map<string, Set<string> | null>();
-    const perEmail = new Map<string, {
-      email: string; confirmed: number; rejected: number; unknown: number; total: number;
-      meetings: { id: string; fecha: string; result: Result }[];
-    }>();
+    const perEmail = new Map<
+      string,
+      {
+        email: string;
+        confirmed: number;
+        rejected: number;
+        unknown: number;
+        total: number;
+        meetings: { id: string; fecha: string; result: Result }[];
+      }
+    >();
 
     for (const meeting of meetings) {
       const event = meeting.eventosProveedor[0];
       const host = event?.cuentaProveedor?.emailOrganizador ?? "";
       const code = event?.codigoReunion ?? "";
-      const emails = extraerCohostEmailsDeInstancia(meeting).filter(
-        (email) => email !== host.toLowerCase()
-      );
-      if (!emails.length) continue;
+      const emails = extraerCohostEmailsDeInstancia(meeting).filter((email) => email !== host.toLowerCase());
+      if (!emails.length) {
+        continue;
+      }
       const cacheKey = host.toLowerCase() + "|" + code;
       if (!memberCache.has(cacheKey)) {
         if (!host || !code) {
           memberCache.set(cacheKey, null);
         } else {
           const candidates = [
-            { serviceAccountEmail: principal.serviceAccountEmail, privateKey: principal.privateKey, subject: host, origen: "PRINCIPAL" as const },
-            ...legacy.map((c) => ({ serviceAccountEmail: c.serviceAccountEmail, privateKey: c.privateKey, subject: host, origen: "LEGACY" as const })),
+            {
+              serviceAccountEmail: principal.serviceAccountEmail,
+              privateKey: principal.privateKey,
+              subject: host,
+              origen: "PRINCIPAL" as const
+            },
+            ...legacy.map((c) => ({
+              serviceAccountEmail: c.serviceAccountEmail,
+              privateKey: c.privateKey,
+              subject: host,
+              origen: "LEGACY" as const
+            }))
           ];
           const res = await consultarCohostsEspacioMeet(candidates, code);
           memberCache.set(cacheKey, res.cohosts ? new Set(res.cohosts) : null);
@@ -85,8 +123,12 @@ export async function GET(_request: Request, context: RouteContext) {
       const members = memberCache.get(cacheKey) ?? null;
       for (const email of emails) {
         const entry = perEmail.get(email) ?? {
-          email, confirmed: 0, rejected: 0, unknown: 0, total: 0,
-          meetings: [] as { id: string; fecha: string; result: Result }[],
+          email,
+          confirmed: 0,
+          rejected: 0,
+          unknown: 0,
+          total: 0,
+          meetings: [] as { id: string; fecha: string; result: Result }[]
         };
         const result: Result = members === null ? "unknown" : members.has(email) ? "confirmed" : "rejected";
         entry.total++;
@@ -95,11 +137,14 @@ export async function GET(_request: Request, context: RouteContext) {
         perEmail.set(email, entry);
       }
     }
-    return NextResponse.json({
-      verifiedAt: new Date().toISOString(),
-      meetings: meetings.length,
-      entries: [...perEmail.values()].sort((a, b) => a.email.localeCompare(b.email)),
-    }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      {
+        verifiedAt: new Date().toISOString(),
+        meetings: meetings.length,
+        entries: [...perEmail.values()].sort((a, b) => a.email.localeCompare(b.email))
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });

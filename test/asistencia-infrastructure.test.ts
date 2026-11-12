@@ -80,10 +80,7 @@ describe("asistencia infrastructure", () => {
           })
         },
         asistenteTecnico: {
-          findMany: vi.fn().mockResolvedValue([
-            { usuarioId: "u-1" },
-            { usuarioId: "u-2" }
-          ])
+          findMany: vi.fn().mockResolvedValue([{ usuarioId: "u-1" }, { usuarioId: "u-2" }])
         }
       };
 

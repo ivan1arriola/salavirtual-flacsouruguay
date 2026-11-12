@@ -1,11 +1,25 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const form = readFileSync(new URL("../src/modules/reuniones/presentation/components/meeting-form-zoom.tsx", import.meta.url), "utf8");
+const form = readFileSync(
+  new URL("../src/modules/reuniones/presentation/components/meeting-form-zoom.tsx", import.meta.url),
+  "utf8"
+);
 
-const directorio = new URL("../src/modules/reuniones/presentation/components/nueva-reunion/", import.meta.url);
-const fuente = [form, ...readdirSync(directorio).sort().map((archivo) => readFileSync(new URL(archivo, directorio), "utf8"))].join("\n");
-const dialog = readFileSync(new URL("../src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx", import.meta.url), "utf8");
+const directorio = new URL(
+  "../src/modules/reuniones/presentation/components/nueva-reunion/",
+  import.meta.url
+);
+const fuente = [
+  form,
+  ...readdirSync(directorio)
+    .sort()
+    .map((archivo) => readFileSync(new URL(archivo, directorio), "utf8"))
+].join("\n");
+const dialog = readFileSync(
+  new URL("../src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx", import.meta.url),
+  "utf8"
+);
 const estilosA2 = readFileSync(new URL("nueva-reunion.module.css", directorio), "utf8");
 
 describe("formulario de nueva reunión Zoom", () => {
@@ -34,7 +48,7 @@ describe("formulario de nueva reunión Zoom", () => {
     expect(form).toContain('disabled={!isReady || status === "saving" || status === "done"}');
     expect(form).toContain('aria-busy={status === "saving"}');
     expect(form).toContain('role="alert"');
-    expect(form).toContain("if (submittingRef.current) return;");
+    expect(form).toMatch(/if \(submittingRef\.current\)\s*\{\s*return;\s*\}/);
     expect(form).toContain("submittingRef.current = true;");
     expect(form).toContain("submittingRef.current = false;");
     expect(form).toContain("idempotencyKeyRef.current ||= window.crypto.randomUUID();");
@@ -61,25 +75,31 @@ describe("formulario de nueva reunión Zoom", () => {
   it("conserva un solo POST construido por el helper y nunca presenta URLs de Zoom", () => {
     expect(form.match(/fetch\("\/api\/v1\/reuniones"/g)).toHaveLength(1);
     expect(form).toContain('method: "POST"');
-    expect(form).toContain("JSON.stringify(construirSolicitudReunion({");
+    expect(form).toMatch(/JSON\.stringify\(\s*construirSolicitudReunion\(\{/);
     expect(form).toContain("fechas: ordenarEncuentros(dates)");
     expect(fuente).not.toMatch(/start_url|join_url|zoom\.us\//);
-    expect(form).toContain("resolverAsistenteTecnicoId({ puedeAsignar: canAssignAssistant");
+    expect(form).toMatch(/resolverAsistenteTecnicoId\(\{\s*puedeAsignar: canAssignAssistant/);
   });
 
   it("invalida la vista previa al editar la regla y bloquea fechas obsoletas o más de 100 encuentros", () => {
     expect(form).toContain('dateMode !== "RECURRENT" || recurrenceGenerated');
     expect(form).toContain("dates.length <= 100");
-    expect(form).toMatch(/function invalidarVistaPreviaRecurrencia\(\)[\s\S]*?setRecurrenceGenerated\(invalidada.recurrenceGenerated\)[\s\S]*?setDates\(invalidada.dates\)/);
+    expect(form).toMatch(
+      /function invalidarVistaPreviaRecurrencia\(\)[\s\S]*?setRecurrenceGenerated\(invalidada.recurrenceGenerated\)[\s\S]*?setDates\(invalidada.dates\)/
+    );
     expect(form).toMatch(/function cambiarRecurrencia[\s\S]*?invalidarVistaPreviaRecurrencia\(\)/);
-    expect(form).toMatch(/onChange=\{\(campo, value\)[^\n]*invalidarVistaPreviaRecurrencia\(\)/);
+    expect(form).toMatch(
+      /onChange=\{\(campo, value\) => \{\s*setRecurrence\([^\n]+\);\s*invalidarVistaPreviaRecurrencia\(\);\s*\}\}/
+    );
     expect(form).toContain("if (dates.length < 100)");
   });
 
   it("cambiar de modo solicita confirmación antes de mutar fechas y cancelar solo cierra el aviso", () => {
-    expect(form).toMatch(/requiereConfirmacionCambio\(dateMode, mode, dates, recurrence\)\) \{\s*setPendingMode\(mode\);\s*return;/);
+    expect(form).toMatch(
+      /requiereConfirmacionCambio\(dateMode, mode, dates, recurrence\)\) \{\s*setPendingMode\(mode\);\s*return;/
+    );
     expect(form).toContain("onCancel={() => setPendingMode(null)}");
-    expect(form).toContain("if (pendingMode) return;");
+    expect(form).toMatch(/if \(pendingMode\)\s*\{\s*return;\s*\}/);
     expect(form).toContain("fechasAlCambiarModo(mode, dates, nuevaFecha)");
   });
 

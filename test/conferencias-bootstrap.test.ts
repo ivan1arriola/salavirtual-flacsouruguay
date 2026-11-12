@@ -4,11 +4,11 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/src/lib/db", () => ({
   db: {
     eventoProveedor: { findMany: vi.fn(), findUnique: vi.fn() },
-    configuracionGoogleWorkspace: { findUnique: vi.fn() },
-  },
+    configuracionGoogleWorkspace: { findUnique: vi.fn() }
+  }
 }));
 vi.mock("@/src/lib/config/encryption", () => ({
-  descifrarConfiguracion: vi.fn((val: string) => val),
+  descifrarConfiguracion: vi.fn((val: string) => val)
 }));
 
 import { obtenerServicioConferencias } from "../src/bootstrap/conferencias.server";
@@ -27,4 +27,3 @@ describe("bootstrap/conferencias.server", () => {
     expect(typeof service1.reclasificarOperacionesPendientesLote).toBe("function");
   });
 });
-

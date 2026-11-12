@@ -29,28 +29,40 @@ type GroupPlan = Readonly<{
 async function main(): Promise<void> {
   const candidates = await loadCandidates();
   if (candidates.length === 0) {
-    console.log(JSON.stringify({ mode: applyChanges ? "apply" : "dry-run", status: "already-grouped" }, null, 2));
+    console.log(
+      JSON.stringify({ mode: applyChanges ? "apply" : "dry-run", status: "already-grouped" }, null, 2)
+    );
     return;
   }
   const plans = buildPlans(candidates);
   validatePlans(plans, candidates);
 
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    cutoff: cutoff.toISOString(),
-    groups: plans.map((plan) => ({
-      schedule: plan.schedule,
-      targetRequestId: plan.target.id,
-      meetings: plan.retained.map(summary),
-      duplicatesToCancel: plan.duplicates.map(summary)
-    }))
-  }, null, 2));
-  if (!applyChanges) return;
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        cutoff: cutoff.toISOString(),
+        groups: plans.map((plan) => ({
+          schedule: plan.schedule,
+          targetRequestId: plan.target.id,
+          meetings: plan.retained.map(summary),
+          duplicatesToCancel: plan.duplicates.map(summary)
+        }))
+      },
+      null,
+      2
+    )
+  );
+  if (!applyChanges) {
+    return;
+  }
 
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
   const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
-  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: true
+  });
   if (!config) {
     throw new Error("Google Workspace no está configurado para reagrupar los eventos.");
   }
@@ -90,63 +102,75 @@ function buildPlans(candidates: readonly Candidate[]): readonly GroupPlan[] {
     const key = scheduleKey(meeting.inicioProgramadoAt);
     groups.set(key, [...(groups.get(key) ?? []), candidate]);
   }
-  return [...groups.entries()].map(([key, values]) => {
-    const schedule = scheduleNames.get(key);
-    if (!schedule) throw new Error(`Horario inesperado en las solicitudes individuales: ${key}.`);
-    const byStart = new Map<string, Candidate[]>();
-    for (const value of values) {
-      const start = onlyMeeting(value).inicioProgramadoAt.toISOString();
-      byStart.set(start, [...(byStart.get(start) ?? []), value]);
-    }
-    const retained: Candidate[] = [];
-    const duplicates: Candidate[] = [];
-    for (const sameStart of byStart.values()) {
-      const ordered = [...sameStart].sort((left, right) =>
-        left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)
+  return [...groups.entries()]
+    .map(([key, values]) => {
+      const schedule = scheduleNames.get(key);
+      if (!schedule) {
+        throw new Error(`Horario inesperado en las solicitudes individuales: ${key}.`);
+      }
+      const byStart = new Map<string, Candidate[]>();
+      for (const value of values) {
+        const start = onlyMeeting(value).inicioProgramadoAt.toISOString();
+        byStart.set(start, [...(byStart.get(start) ?? []), value]);
+      }
+      const retained: Candidate[] = [];
+      const duplicates: Candidate[] = [];
+      for (const sameStart of byStart.values()) {
+        const ordered = [...sameStart].sort(
+          (left, right) =>
+            left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)
+        );
+        retained.push(ordered[0]);
+        duplicates.push(...ordered.slice(1));
+      }
+      retained.sort(
+        (left, right) =>
+          onlyMeeting(left).inicioProgramadoAt.getTime() - onlyMeeting(right).inicioProgramadoAt.getTime()
       );
-      retained.push(ordered[0]);
-      duplicates.push(...ordered.slice(1));
-    }
-    retained.sort((left, right) =>
-      onlyMeeting(left).inicioProgramadoAt.getTime() - onlyMeeting(right).inicioProgramadoAt.getTime()
-    );
-    return { schedule, target: retained[0], retained, duplicates };
-  }).sort((left, right) => left.schedule.localeCompare(right.schedule));
+      return { schedule, target: retained[0], retained, duplicates };
+    })
+    .sort((left, right) => left.schedule.localeCompare(right.schedule));
 }
 
 function validatePlans(plans: readonly GroupPlan[], candidates: readonly Candidate[]): void {
-  if (plans.length !== 2) throw new Error(`Se esperaban dos horarios y se encontraron ${plans.length}.`);
+  if (plans.length !== 2) {
+    throw new Error(`Se esperaban dos horarios y se encontraron ${plans.length}.`);
+  }
   const planned = plans.reduce((total, plan) => total + plan.retained.length + plan.duplicates.length, 0);
-  if (planned !== candidates.length) throw new Error("No todas las solicitudes quedaron incluidas en el plan.");
+  if (planned !== candidates.length) {
+    throw new Error("No todas las solicitudes quedaron incluidas en el plan.");
+  }
   for (const candidate of candidates) {
-    if (candidate.instancias.length !== 1) throw new Error(`La solicitud ${candidate.id} no es realmente individual.`);
+    if (candidate.instancias.length !== 1) {
+      throw new Error(`La solicitud ${candidate.id} no es realmente individual.`);
+    }
     const event = onlyEvent(candidate);
-    if (!event.externalEventId || !event.codigoReunion || !event.joinUrl || !event.cuentaProveedor?.emailOrganizador) {
+    if (
+      !event.externalEventId ||
+      !event.codigoReunion ||
+      !event.joinUrl ||
+      !event.cuentaProveedor?.emailOrganizador
+    ) {
       throw new Error(`La solicitud ${candidate.id} no tiene un evento Google Meet sincronizado completo.`);
     }
   }
 }
 
-async function applyPlan(
-  plan: GroupPlan,
-  serviceAccountEmail: string,
-  privateKey: string
-): Promise<void> {
+async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKey: string): Promise<void> {
   const targetEvent = onlyEvent(plan.target);
   const conferenceData = extraerConferenceData(targetEvent.payloadUltimo);
-  if (!conferenceData) throw new Error(`El evento base ${targetEvent.id} no contiene conferenceData.`);
+  if (!conferenceData) {
+    throw new Error(`El evento base ${targetEvent.id} no contiene conferenceData.`);
+  }
 
   const synchronized = new Map<string, Prisma.InputJsonValue>();
   for (const candidate of plan.retained.slice(1)) {
     const event = onlyEvent(candidate);
     const { calendarId, externalEventId } = calendarConnection(event, candidate.id);
     const credentials = credentialsFor(serviceAccountEmail, privateKey, calendarId);
-    const result = await withRateLimitRetries(() => compartirConferenciaGoogleCalendar(
-      credentials,
-      calendarId,
-      externalEventId,
-      conferenceData
-    ));
+    const result = await withRateLimitRetries(() =>
+      compartirConferenciaGoogleCalendar(credentials, calendarId, externalEventId, conferenceData)
+    );
     synchronized.set(event.id, JSON.parse(JSON.stringify(result.payload)) as Prisma.InputJsonValue);
   }
 
@@ -155,76 +179,84 @@ async function applyPlan(
     const { calendarId, externalEventId } = calendarConnection(event, duplicate.id);
     const credentials = credentialsFor(serviceAccountEmail, privateKey, calendarId);
     try {
-      await withRateLimitRetries(() => crearGoogleCalendarProvider(credentials).cancelarEvento(
-        calendarId,
-        externalEventId
-      ));
+      await withRateLimitRetries(() =>
+        crearGoogleCalendarProvider(credentials).cancelarEvento(calendarId, externalEventId)
+      );
     } catch (error) {
-      if (!isMissingCalendarEvent(error)) throw error;
+      if (!isMissingCalendarEvent(error)) {
+        throw error;
+      }
     }
   }
 
-  await db.$transaction(async (tx) => {
-    for (const [index, candidate] of plan.retained.entries()) {
-      const meeting = onlyMeeting(candidate);
-      await tx.instanciaSala.update({
-        where: { id: meeting.id },
-        data: {
-          solicitudSalaId: plan.target.id,
-          ordinal: index + 1,
-          descripcion: candidate.descripcion
-        }
-      });
-      const payload = synchronized.get(onlyEvent(candidate).id);
-      if (payload) {
-        await tx.eventoProveedor.update({
-          where: { id: onlyEvent(candidate).id },
+  await db.$transaction(
+    async (tx) => {
+      for (const [index, candidate] of plan.retained.entries()) {
+        const meeting = onlyMeeting(candidate);
+        await tx.instanciaSala.update({
+          where: { id: meeting.id },
           data: {
-            codigoReunion: targetEvent.codigoReunion,
-            joinUrl: targetEvent.joinUrl,
-            payloadUltimo: payload,
-            sincronizadoAt: new Date(),
-            estadoIntegracion: "SINCRONIZADA",
-            errorIntegracion: null
+            solicitudSalaId: plan.target.id,
+            ordinal: index + 1,
+            descripcion: candidate.descripcion
           }
         });
-      }
-    }
-
-    const sourceIds = [
-      ...plan.retained.slice(1).map(({ id }) => id),
-      ...plan.duplicates.map(({ id }) => id)
-    ];
-    await tx.solicitudSala.deleteMany({ where: { id: { in: sourceIds } } });
-    await recalcularSolicitud(tx, plan.target.id);
-    await tx.auditoria.create({
-      data: {
-        accion: "SOLICITUDES_AGRUPADAS_POR_HORARIO",
-        entidadTipo: "SolicitudSala",
-        entidadId: plan.target.id,
-        valorAnterior: {
-          solicitudes: [plan.target.id, ...sourceIds],
-          duplicados: plan.duplicates.map(({ id }) => id)
-        },
-        valorNuevo: {
-          horario: plan.schedule,
-          encuentros: plan.retained.length,
-          codigoMeet: targetEvent.codigoReunion
+        const payload = synchronized.get(onlyEvent(candidate).id);
+        if (payload) {
+          await tx.eventoProveedor.update({
+            where: { id: onlyEvent(candidate).id },
+            data: {
+              codigoReunion: targetEvent.codigoReunion,
+              joinUrl: targetEvent.joinUrl,
+              payloadUltimo: payload,
+              sincronizadoAt: new Date(),
+              estadoIntegracion: "SINCRONIZADA",
+              errorIntegracion: null
+            }
+          });
         }
       }
-    });
-  }, { timeout: 30000 });
+
+      const sourceIds = [
+        ...plan.retained.slice(1).map(({ id }) => id),
+        ...plan.duplicates.map(({ id }) => id)
+      ];
+      await tx.solicitudSala.deleteMany({ where: { id: { in: sourceIds } } });
+      await recalcularSolicitud(tx, plan.target.id);
+      await tx.auditoria.create({
+        data: {
+          accion: "SOLICITUDES_AGRUPADAS_POR_HORARIO",
+          entidadTipo: "SolicitudSala",
+          entidadId: plan.target.id,
+          valorAnterior: {
+            solicitudes: [plan.target.id, ...sourceIds],
+            duplicados: plan.duplicates.map(({ id }) => id)
+          },
+          valorNuevo: {
+            horario: plan.schedule,
+            encuentros: plan.retained.length,
+            codigoMeet: targetEvent.codigoReunion
+          }
+        }
+      });
+    },
+    { timeout: 30000 }
+  );
 }
 
 function onlyMeeting(candidate: Candidate) {
   const meeting = candidate.instancias[0];
-  if (!meeting) throw new Error(`La solicitud ${candidate.id} no tiene encuentros.`);
+  if (!meeting) {
+    throw new Error(`La solicitud ${candidate.id} no tiene encuentros.`);
+  }
   return meeting;
 }
 
 function onlyEvent(candidate: Candidate) {
   const event = onlyMeeting(candidate).eventosProveedor[0];
-  if (!event) throw new Error(`La solicitud ${candidate.id} no tiene evento Google Meet.`);
+  if (!event) {
+    throw new Error(`La solicitud ${candidate.id} no tiene evento Google Meet.`);
+  }
   return event;
 }
 
@@ -251,34 +283,48 @@ function summary(candidate: Candidate) {
   };
 }
 
-function credentialsFor(serviceAccountEmail: string, privateKey: string, subject: string): GoogleCalendarCredentials {
+function credentialsFor(
+  serviceAccountEmail: string,
+  privateKey: string,
+  subject: string
+): GoogleCalendarCredentials {
   return { serviceAccountEmail, privateKey, subject };
 }
 
 async function withRateLimitRetries<T>(operation: () => Promise<T>): Promise<T> {
   let lastError: unknown;
   for (const delay of [0, 1000, 2000, 4000, 8000]) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    if (delay) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      if (!isRateLimit(error)) throw error;
+      if (!isRateLimit(error)) {
+        throw error;
+      }
     }
   }
   throw lastError;
 }
 
 function isRateLimit(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as { code?: unknown; response?: { status?: unknown } };
   return candidate.code === 429 || candidate.response?.status === 429;
 }
 
 function isMissingCalendarEvent(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as { code?: unknown; response?: { status?: unknown } };
-  return [404, 410].includes(Number(candidate.code)) || [404, 410].includes(Number(candidate.response?.status));
+  return (
+    [404, 410].includes(Number(candidate.code)) || [404, 410].includes(Number(candidate.response?.status))
+  );
 }
 
 main()

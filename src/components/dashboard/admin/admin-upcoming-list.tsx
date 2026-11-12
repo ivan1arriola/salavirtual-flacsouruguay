@@ -10,10 +10,15 @@ export function AdminUpcomingList({
   meetings: readonly AdminUpcomingMeetingDTO[];
 }>) {
   return (
-    <section aria-labelledby="admin-upcoming-title" className="dashboard-content-section admin-upcoming-section">
+    <section
+      aria-labelledby="admin-upcoming-title"
+      className="dashboard-content-section admin-upcoming-section"
+    >
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
-          <span className="admin-section-icon"><CalendarDays aria-hidden="true" size={20} /></span>
+          <span className="admin-section-icon">
+            <CalendarDays aria-hidden="true" size={20} />
+          </span>
           <div>
             <h2 id="admin-upcoming-title">Próximas reuniones</h2>
             <p>Encuentros previstos después de hoy, durante los próximos siete días.</p>
@@ -38,24 +43,34 @@ export function AdminUpcomingList({
               <li className={styles.item} key={meeting.id}>
                 <time className={styles.when} dateTime={startsAt.toISOString()}>
                   <span>{formatDate(startsAt)}</span>
-                  <strong>{formatTime(startsAt)}–{formatTime(endsAt)}</strong>
+                  <strong>
+                    {formatTime(startsAt)}–{formatTime(endsAt)}
+                  </strong>
                   <small>Encuentro</small>
                 </time>
                 <div className={styles.details}>
                   <Link className={styles.title} href={`/reuniones/${meeting.solicitudId}`}>
                     {meeting.titulo}
                   </Link>
-                  <p>{meeting.programa} · {meeting.docenteNombre}</p>
+                  <p>
+                    {meeting.programa} · {meeting.docenteNombre}
+                  </p>
                 </div>
                 <div className={styles.status}>
-                  <span className={`${styles.modality} ${meeting.modalidad === "HIBRIDA" ? styles.hybrid : styles.virtual}`}>{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                  <span
+                    className={`${styles.modality} ${meeting.modalidad === "HIBRIDA" ? styles.hybrid : styles.virtual}`}
+                  >
+                    {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                  </span>
                   {meeting.requiereAsistencia ? (
                     <span className={meeting.asistenteNombre ? styles.assigned : styles.pending}>
                       {meeting.asistenteNombre
                         ? `Monitoreo: ${meeting.asistenteNombre}`
                         : "Monitoreo sin asignar"}
                     </span>
-                  ) : <span className={styles.notRequired}>No requiere monitoreo</span>}
+                  ) : (
+                    <span className={styles.notRequired}>No requiere monitoreo</span>
+                  )}
                 </div>
               </li>
             );

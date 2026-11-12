@@ -17,7 +17,10 @@ const segundos = (desde: Date | null, ahora: Date): number | null =>
   desde === null ? null : Math.max(0, Math.round((ahora.getTime() - desde.getTime()) / 1000));
 
 /** Estado operativo de la conservación de archivos de Zoom: solo lectura de base de datos, sin llamar a Zoom ni a Drive. */
-export async function consultarEstadoZoomArchivosUseCase(repo: ZoomEstadoLecturaPort, ahora: Date): Promise<EstadoZoomArchivos> {
+export async function consultarEstadoZoomArchivosUseCase(
+  repo: ZoomEstadoLecturaPort,
+  ahora: Date
+): Promise<EstadoZoomArchivos> {
   const e = await repo.leerEstado();
   const n = (clave: string) => e.porEstado[clave] ?? 0;
   return {

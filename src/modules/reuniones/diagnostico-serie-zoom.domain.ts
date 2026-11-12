@@ -1,6 +1,7 @@
 import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
 
-export type ClasificacionSerieZoom = "SANA" | "MIGRABLE" | "MEZCLADA" | "ENLACES_DISTINTOS" | "RETOMABLE" | "HUERFANA" | "SIN_FUTUROS";
+export type ClasificacionSerieZoom =
+  "SANA" | "MIGRABLE" | "MEZCLADA" | "ENLACES_DISTINTOS" | "RETOMABLE" | "HUERFANA" | "SIN_FUTUROS";
 export type AccionSerieZoom = "MIGRAR" | "UNIFICAR_ENLACE" | "REANUDAR" | "VER_DETALLE";
 export type ReunionZoomSerie = Readonly<{
   id: string;
@@ -38,7 +39,7 @@ const accionesPorClasificacion: Readonly<Record<ClasificacionSerieZoom, readonly
   ENLACES_DISTINTOS: ["UNIFICAR_ENLACE", "VER_DETALLE"],
   RETOMABLE: ["REANUDAR", "VER_DETALLE"],
   HUERFANA: ["VER_DETALLE"],
-  SIN_FUTUROS: ["VER_DETALLE"],
+  SIN_FUTUROS: ["VER_DETALLE"]
 };
 
 /** Deriva el estado y las acciones de la serie sin modificar sus datos ni consultar proveedores. */
@@ -51,25 +52,38 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
   const evaluacion = evaluarEnlacesDeSerie(futuros, ahora);
 
   const clasificacion: ClasificacionSerieZoom = (() => {
-    if (futuros.length === 0) return activas.length > 0 ? "HUERFANA" : "SIN_FUTUROS";
-    if (zoom.length > 0 && enMeet > 0) return "MEZCLADA";
-    if (activas.some(({ estadoCreacion }) => estadoCreacion === "PENDIENTE" || estadoCreacion === "CREANDO")
-      || (activas.length > 0 && enMeet === futuros.length)) return "RETOMABLE";
-    if (zoom.length === futuros.length) return evaluacion.necesitaCorreccion ? "ENLACES_DISTINTOS" : "SANA";
+    if (futuros.length === 0) {
+      return activas.length > 0 ? "HUERFANA" : "SIN_FUTUROS";
+    }
+    if (zoom.length > 0 && enMeet > 0) {
+      return "MEZCLADA";
+    }
+    if (
+      activas.some(({ estadoCreacion }) => estadoCreacion === "PENDIENTE" || estadoCreacion === "CREANDO") ||
+      (activas.length > 0 && enMeet === futuros.length)
+    ) {
+      return "RETOMABLE";
+    }
+    if (zoom.length === futuros.length) {
+      return evaluacion.necesitaCorreccion ? "ENLACES_DISTINTOS" : "SANA";
+    }
     return "MIGRABLE";
   })();
 
-  const eliminadas = new Set(reuniones.filter(({ estadoCreacion }) => estadoCreacion === "ELIMINADA").map(({ id }) => id));
+  const eliminadas = new Set(
+    reuniones.filter(({ estadoCreacion }) => estadoCreacion === "ELIMINADA").map(({ id }) => id)
+  );
   const reunionesDistintas = new Set([
     ...activas.map(({ id }) => id),
-    ...zoom.map(({ reunionProveedorId }) => reunionProveedorId)
-      .filter((id): id is string => id !== null && !eliminadas.has(id)),
+    ...zoom
+      .map(({ reunionProveedorId }) => reunionProveedorId)
+      .filter((id): id is string => id !== null && !eliminadas.has(id))
   ]);
   const resumenAvisos = {
     enviados: avisos.filter(({ estado }) => estado === "ACEPTADO").length,
     pendientes: avisos.filter(({ estado }) => estado === "RESERVADO").length,
     conError: avisos.filter(({ estado }) => estado !== "ACEPTADO" && estado !== "RESERVADO").length,
-    repetidos: avisos.length - new Set(avisos.map(({ email, tipo }) => JSON.stringify([email, tipo]))).size,
+    repetidos: avisos.length - new Set(avisos.map(({ email, tipo }) => JSON.stringify([email, tipo]))).size
   };
 
   return {
@@ -80,13 +94,14 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
       enZoom: zoom.length,
       enMeet,
       reunionesZoomDistintas: reunionesDistintas.size,
-      enlacesDistintos: evaluacion.enlacesDistintos,
+      enlacesDistintos: evaluacion.enlacesDistintos
     },
     avisos: resumenAvisos,
     // Una serie mixta se resuelve en dos pasos: primero unificar los encuentros que ya están en Zoom y
     // después migrar los de Meet a esa misma reunión.
-    acciones: clasificacion === "MEZCLADA" && evaluacion.mixtaSinUnificar
-      ? ["UNIFICAR_ENLACE", "VER_DETALLE"]
-      : accionesPorClasificacion[clasificacion],
+    acciones:
+      clasificacion === "MEZCLADA" && evaluacion.mixtaSinUnificar
+        ? ["UNIFICAR_ENLACE", "VER_DETALLE"]
+        : accionesPorClasificacion[clasificacion]
   };
 }

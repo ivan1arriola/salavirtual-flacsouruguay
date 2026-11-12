@@ -41,9 +41,8 @@ export async function POST(request: Request) {
     const { objetivo, credentialId } = pruebaConfiguracionGoogleWorkspaceSchema.parse(
       await request.json().catch(() => null)
     );
-    const targetId = objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal"
-      ? credentialId
-      : "principal";
+    const targetId =
+      objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal" ? credentialId : "principal";
     const selected = await obtenerCredencialWorkspacePorId(db, targetId, descifrarConfiguracion);
     if (!selected) {
       if (targetId === "principal") {
@@ -57,10 +56,13 @@ export async function POST(request: Request) {
       privateKey: selected.privateKey
     };
 
-    const principal = targetId === "principal"
-      ? selected
-      : await obtenerCredencialWorkspacePorId(db, "principal", descifrarConfiguracion);
-    if (!principal) throw new Error("Google Workspace no está configurado.");
+    const principal =
+      targetId === "principal"
+        ? selected
+        : await obtenerCredencialWorkspacePorId(db, "principal", descifrarConfiguracion);
+    if (!principal) {
+      throw new Error("Google Workspace no está configurado.");
+    }
 
     if (objetivo === "SCOPES") {
       if (!principal.serviceAccountEmail || !principal.privateKeyCifrada) {
@@ -94,32 +96,33 @@ export async function POST(request: Request) {
       const roomCount = accounts.filter(({ tipo }) => tipo === "SALA").length;
 
       return NextResponse.json({
-        message: missingCount === 0
-          ? `Todos los scopes requeridos están autorizados en ${roomCount} ${roomCount === 1 ? "cuenta sala" : "cuentas sala"}${accounts.some(({ tipo }) => tipo === "GENERAL") ? " y en la cuenta delegada general" : ""}.`
-          : `${missingCount} ${missingCount === 1 ? "autorización de scope falta" : "autorizaciones de scope faltan"} en ${failedAccounts.length} ${failedAccounts.length === 1 ? "cuenta" : "cuentas"}.`,
+        message:
+          missingCount === 0
+            ? `Todos los scopes requeridos están autorizados en ${roomCount} ${roomCount === 1 ? "cuenta sala" : "cuentas sala"}${accounts.some(({ tipo }) => tipo === "GENERAL") ? " y en la cuenta delegada general" : ""}.`
+            : `${missingCount} ${missingCount === 1 ? "autorización de scope falta" : "autorizaciones de scope faltan"} en ${failedAccounts.length} ${failedAccounts.length === 1 ? "cuenta" : "cuentas"}.`,
         accounts
       });
     }
 
-    const hostEmails = objetivo === "DRIVE"
-      ? (await db.cuentaProveedor.findMany({
-          where: {
-            proveedor: { tipo: "GOOGLE_MEET" },
-            activa: true,
-            emailOrganizador: { not: null }
-          },
-          select: { emailOrganizador: true },
-          orderBy: { prioridad: "asc" }
-        })).flatMap(({ emailOrganizador }) => emailOrganizador ? [emailOrganizador] : [])
-      : [];
+    const hostEmails =
+      objetivo === "DRIVE"
+        ? (
+            await db.cuentaProveedor.findMany({
+              where: {
+                proveedor: { tipo: "GOOGLE_MEET" },
+                activa: true,
+                emailOrganizador: { not: null }
+              },
+              select: { emailOrganizador: true },
+              orderBy: { prioridad: "asc" }
+            })
+          ).flatMap(({ emailOrganizador }) => (emailOrganizador ? [emailOrganizador] : []))
+        : [];
 
     const message = await ejecutarPrueba(objetivo, principal, credential, hostEmails);
     return NextResponse.json({ message });
   } catch (error) {
-    return NextResponse.json(
-      { error: mensajeErrorGoogleWorkspace(error) },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: mensajeErrorGoogleWorkspace(error) }, { status: 400 });
   }
 }
 
@@ -137,7 +140,9 @@ async function obtenerSujetosScopes(serviceAccountSubject: string | null): Promi
   const result: ScopeSubject[] = [];
   const add = (candidate: ScopeSubject) => {
     const key = candidate.subject.trim().toLowerCase();
-    if (!key || seen.has(key)) return;
+    if (!key || seen.has(key)) {
+      return;
+    }
     seen.add(key);
     result.push({ ...candidate, subject: candidate.subject.trim() });
   };
@@ -146,7 +151,9 @@ async function obtenerSujetosScopes(serviceAccountSubject: string | null): Promi
     add({ subject: serviceAccountSubject, tipo: "GENERAL", activa: true });
   }
   for (const host of hosts) {
-    if (!host.emailOrganizador) continue;
+    if (!host.emailOrganizador) {
+      continue;
+    }
     add({ subject: host.emailOrganizador, tipo: "SALA", activa: host.activa });
   }
   return result;
@@ -178,9 +185,10 @@ async function ejecutarPrueba(
     throw new Error("Primero guardá el destino de Drive.");
   }
   await probarDestinoDrive(delegated, configuration.driveDestinationId);
-  await Promise.all(hostEmails.map((subject) => probarDestinoDrive(
-    { ...credential, subject },
-    configuration.driveDestinationId!
-  )));
+  await Promise.all(
+    hostEmails.map((subject) =>
+      probarDestinoDrive({ ...credential, subject }, configuration.driveDestinationId!)
+    )
+  );
   return `Lectura y escritura confirmadas para el usuario delegado y ${hostEmails.length} salas Meet.`;
 }

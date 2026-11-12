@@ -35,10 +35,12 @@
 ### Task 1: Cancelación y mensajes Zoom en el backend
 
 **Files:**
+
 - Modify: `src/modules/reuniones/cancelar-solicitudes-atomicas.service.ts:67`, `app/api/v1/reuniones/cancelar-serie/route.ts`
 - Test: `test/cancelar-solicitudes-zoom.test.ts`, ampliar `test/crear-reuniones-service.test.ts`
 
 **Interfaces:**
+
 - Produces: `cancelarSolicitudesAtomicas(db, actor, solicitudIds)` devuelve en `eventoProveedorIds` los eventos `GOOGLE_MEET` **y** `ZOOM`; el mensaje de `POST /cancelar-serie` pasa a "La cancelación quedó registrada. Los enlaces se actualizarán en segundo plano."; el `GET` de progreso incluye eventos de ambos proveedores.
 
 - [ ] **Step 1: Failing tests:** (a) una solicitud con un evento Zoom activo devuelve su id en `eventoProveedorIds` y marca `operacionPendiente = CANCELAR`; (b) una con evento Meet sigue igual; (c) en `crear-reuniones-service.test.ts`, crear una reunión Zoom para un docente cuyo `Usuario` tiene `emailPrincipal` y ninguna `CuentaGoogleFlacso` termina sin error.
@@ -49,10 +51,12 @@
 ### Task 2: Formulario de nueva reunión Zoom
 
 **Files:**
+
 - Create: `src/modules/reuniones/presentation/components/meeting-form-zoom.tsx`
 - Test: `test/meeting-form-zoom-contract.test.ts` (estilo de `test/meeting-form-ui-contract.test.ts`)
 
 **Interfaces:**
+
 - Produces: `MeetingFormZoom({ programs: readonly { id: string; label: string; teacher: string }[]; assistants: readonly { id: string; label: string }[]; canAssignAssistant: boolean })`.
 - Cambios respecto de `meeting-form-v2.tsx` (que no se toca): sin `teacherEmail` ni bloqueo por cuenta Google; sin `EmailListEditor`, `extraCohostEmails` ni `guestEmails`; la sección "Accesos" se llama "Opciones" e incluye grabación y asistente técnico; `modalidad` solo se muestra si `requiresAssistance`, si no se envía `"VIRTUAL"`; mensajes finales: "La reunión y sus enlaces de Zoom quedaron creados correctamente." y, ante fallo de aprovisionamiento, "La reunión quedó guardada. El enlace de Zoom continúa pendiente."
 
@@ -62,11 +66,13 @@
 ### Task 3: Página y ruta de nueva reunión
 
 **Files:**
+
 - Create: `src/bootstrap/ui/reuniones/nueva-reunion-zoom-page.server.tsx`
 - Modify: `app/(gestion)/reuniones/nueva/page.tsx`
 - Test: `test/reuniones-rutas-zoom.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MeetingFormZoom` (Task 2).
 - Produces: `export default async function NuevaReunionZoomPage()` con la misma autorización y carga de programas/asistentes que `nueva-reunion-page.server.tsx`, pero sin incluir `cuentasGoogle` y sin `teacherEmail`; `page.tsx` re-exporta esta página. `nueva-reunion-page.server.tsx` queda intacto y sin ruta.
 
@@ -76,12 +82,14 @@
 ### Task 4: Lista de reuniones Zoom
 
 **Files:**
+
 - Move: `app/(gestion)/reuniones/page.tsx` → `src/bootstrap/ui/reuniones/reuniones-lista-meet-page.server.tsx` (sin cambios de contenido)
 - Create: `src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx`, `src/components/zoom-join-actions.tsx`, `src/components/zoom-link-status.tsx`
 - Modify: `app/(gestion)/reuniones/page.tsx` (queda como `export { default } from "@/src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server";`)
 - Test: ampliar `test/reuniones-rutas-zoom.test.ts`, `test/reuniones-lista-zoom.test.ts`
 
 **Interfaces:**
+
 - Consumes: `obtenerDatosPaginaReuniones(db, actor, params)`, `seleccionarEventoProveedorActivo`, `PeriodoAgenda`.
 - Produces:
   - `estadoEnlaceZoom(evento: { joinUrl: string | null; estadoIntegracion: string; errorIntegracion: string | null } | null): "LISTO" | "PENDIENTE" | "ERROR"` en `src/modules/reuniones/estado-enlace-zoom.domain.ts`.
@@ -95,11 +103,13 @@
 ### Task 5: Detalle de reunión Zoom
 
 **Files:**
+
 - Create: `src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx`, `src/modules/reuniones/enlace-anfitrion.domain.ts`, `src/modules/reuniones/presentation/components/reunion-zoom-encuentros.tsx`
 - Modify: `app/(gestion)/reuniones/[solicitudId]/page.tsx`
 - Test: `test/enlace-anfitrion-domain.test.ts`, `test/reunion-zoom-detail.test.ts`, ampliar `test/reuniones-rutas-zoom.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `puedeVerEnlaceAnfitrion(actor: { id: string; rol: string }, docenteUsuarioId: string): boolean` — verdadero para `ADMINISTRACION` o cuando `actor.id === docenteUsuarioId`.
   - `ReunionZoomEncuentros({ solicitudId: string; esAdmin: boolean; encuentros: readonly { id: string; inicioIso: string; finIso: string; descripcion: string | null; estado: string; joinUrl: string | null; hostUrl: string | null; estadoEnlace: "LISTO" | "PENDIENTE" | "ERROR" }[] })`, con "Unirse", "Copiar enlace", "Iniciar como anfitrión" solo si `hostUrl` no es `null`, edición de fecha/hora (`PATCH /api/v1/reuniones/{solicitudId}/encuentros/{instanciaId}`, usando el cuerpo que valida esa ruta), cancelar encuentro (`DELETE` de la misma ruta) y cancelar toda la serie (`POST /api/v1/reuniones/cancelar-serie`).

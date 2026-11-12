@@ -37,8 +37,9 @@ describe("flujo funcional de asistencia", () => {
         asistenteTecnicoId: "assistant"
       })
     ).toEqual({ instanciaSalaId: "meeting", asistenteTecnicoId: "assistant" });
-    expect(notificacionAsistenciaSchema.parse({ instanciaSalaId: "meeting" }))
-      .toEqual({ instanciaSalaId: "meeting" });
+    expect(notificacionAsistenciaSchema.parse({ instanciaSalaId: "meeting" })).toEqual({
+      instanciaSalaId: "meeting"
+    });
     expect(notificacionAsistenciaSchema.safeParse({ instanciaSalaId: "" }).success).toBe(false);
   });
 
@@ -47,18 +48,27 @@ describe("flujo funcional de asistencia", () => {
       inicio: new Date("2026-08-11T18:00:00Z"),
       fin: new Date("2026-08-11T19:00:00Z")
     };
-    expect(cumpleSeparacionMinimaAsistencias(existente, {
-      inicio: new Date("2026-08-11T19:30:00Z"),
-      fin: new Date("2026-08-11T20:30:00Z")
-    })).toBe(true);
-    expect(cumpleSeparacionMinimaAsistencias(existente, {
-      inicio: new Date("2026-08-11T19:29:00Z"),
-      fin: new Date("2026-08-11T20:30:00Z")
-    })).toBe(false);
-    expect(cumpleSeparacionMinimaAsistencias({
-      inicio: new Date("2026-08-11T16:31:00Z"),
-      fin: new Date("2026-08-11T17:31:00Z")
-    }, existente)).toBe(false);
+    expect(
+      cumpleSeparacionMinimaAsistencias(existente, {
+        inicio: new Date("2026-08-11T19:30:00Z"),
+        fin: new Date("2026-08-11T20:30:00Z")
+      })
+    ).toBe(true);
+    expect(
+      cumpleSeparacionMinimaAsistencias(existente, {
+        inicio: new Date("2026-08-11T19:29:00Z"),
+        fin: new Date("2026-08-11T20:30:00Z")
+      })
+    ).toBe(false);
+    expect(
+      cumpleSeparacionMinimaAsistencias(
+        {
+          inicio: new Date("2026-08-11T16:31:00Z"),
+          fin: new Date("2026-08-11T17:31:00Z")
+        },
+        existente
+      )
+    ).toBe(false);
   });
 
   it("valida el cierre con horario real e incidencia opcional", () => {
@@ -71,21 +81,27 @@ describe("flujo funcional de asistencia", () => {
     });
     expect(result.inicioReal).toBeInstanceOf(Date);
     expect(result.incidencia?.severidad).toBe("MEDIA");
-    expect(reporteDuracionSchema.safeParse({
-      asignacionId: "assignment",
-      inicioReal: "2026-08-07T22:00:00.000Z",
-      finReal: "2026-08-07T21:00:00.000Z"
-    }).success).toBe(false);
+    expect(
+      reporteDuracionSchema.safeParse({
+        asignacionId: "assignment",
+        inicioReal: "2026-08-07T22:00:00.000Z",
+        finReal: "2026-08-07T21:00:00.000Z"
+      }).success
+    ).toBe(false);
   });
 
   it("valida franjas semanales de disponibilidad", () => {
-    expect(disponibilidadSemanalSchema.safeParse({
-      disponibleGeneral: true,
-      franjas: [{ diaSemana: 1, horaDesde: "09:00", horaHasta: "18:00", tipo: "PREFERENTE" }]
-    }).success).toBe(true);
-    expect(disponibilidadSemanalSchema.safeParse({
-      disponibleGeneral: true,
-      franjas: [{ diaSemana: 1, horaDesde: "18:00", horaHasta: "09:00", tipo: "DISPONIBLE" }]
-    }).success).toBe(false);
+    expect(
+      disponibilidadSemanalSchema.safeParse({
+        disponibleGeneral: true,
+        franjas: [{ diaSemana: 1, horaDesde: "09:00", horaHasta: "18:00", tipo: "PREFERENTE" }]
+      }).success
+    ).toBe(true);
+    expect(
+      disponibilidadSemanalSchema.safeParse({
+        disponibleGeneral: true,
+        franjas: [{ diaSemana: 1, horaDesde: "18:00", horaHasta: "09:00", tipo: "DISPONIBLE" }]
+      }).success
+    ).toBe(false);
   });
 });

@@ -23,18 +23,24 @@ export default async function AsistenteDetailPage({
   searchParams: Promise<{ mes?: string }>;
 }>) {
   const session = await auth();
-  if (session?.user.role !== "ADMINISTRACION") redirect("/");
+  if (session?.user.role !== "ADMINISTRACION") {
+    redirect("/");
+  }
   const [{ usuarioId: pathSegment }, query] = await Promise.all([params, searchParams]);
   const period = resolverPeriodoMes(query.mes, new Date());
   const assistantBySlug = await db.asistenteTecnico.findUnique({
     where: { slug: pathSegment },
     include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
   });
-  const assistant = assistantBySlug ?? await db.asistenteTecnico.findUnique({
-    where: { usuarioId: userIdFromAssistantPath(pathSegment) },
-    include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
-  });
-  if (!assistant) notFound();
+  const assistant =
+    assistantBySlug ??
+    (await db.asistenteTecnico.findUnique({
+      where: { usuarioId: userIdFromAssistantPath(pathSegment) },
+      include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
+    }));
+  if (!assistant) {
+    notFound();
+  }
   const usuarioId = assistant.usuarioId;
   const range = { desde: new Date(period.desdeMs), hasta: new Date(period.hastaMs) };
   const [meetings, history, futureAssignments] = await Promise.all([
@@ -56,11 +62,16 @@ export default async function AsistenteDetailPage({
   const name = `${assistant.usuario.nombres} ${assistant.usuario.apellidos ?? ""}`.trim();
   const canonicalSegment = assistant.slug;
   const basePath = `/asistentes/${encodeURIComponent(canonicalSegment)}`;
-  if (pathSegment !== canonicalSegment) redirect(`${basePath}?mes=${period.clave}`);
+  if (pathSegment !== canonicalSegment) {
+    redirect(`${basePath}?mes=${period.clave}`);
+  }
 
   return (
     <>
-      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}><ArrowLeft size={17} />Asistentes de monitoreo</Link>
+      <Link className="recording-back" href={`/asistentes?mes=${period.clave}`}>
+        <ArrowLeft size={17} />
+        Asistentes de monitoreo
+      </Link>
       <header className="page-header assistant-detail-header">
         <div>
           <p className="page-eyebrow">Monitoreo</p>
@@ -69,7 +80,10 @@ export default async function AsistenteDetailPage({
         </div>
         <div className="assistant-detail-actions">
           <AssistantPeriodNav period={period} basePath={basePath} />
-          <Link className="secondary-action" href={`/usuarios/${encodeURIComponent(usuarioId)}`}><UserRoundCog size={17} />Gestionar usuario</Link>
+          <Link className="secondary-action" href={`/usuarios/${encodeURIComponent(usuarioId)}`}>
+            <UserRoundCog size={17} />
+            Gestionar usuario
+          </Link>
         </div>
       </header>
 
@@ -78,21 +92,47 @@ export default async function AsistenteDetailPage({
         usuarioActivo={assistant.usuario.activo}
         disponibleGeneral={assistant.disponibleGeneral}
         cesadoHastaProximoInicioSesion={assistant.cesadoHastaProximoInicioSesion}
-        ultimoAcceso={assistant.usuario.ultimoAccesoAt ? formatDateTime(assistant.usuario.ultimoAccesoAt) : null}
+        ultimoAcceso={
+          assistant.usuario.ultimoAccesoAt ? formatDateTime(assistant.usuario.ultimoAccesoAt) : null
+        }
         cuentasGoogle={assistant.usuario.cuentasGoogle.length}
         asignacionesFuturas={futureAssignments}
       />
 
       <section className="metric-grid" aria-label="Resumen del asistente de monitoreo">
-        <div className="stat"><span>Reuniones asignadas</span><strong>{summary.reuniones}</strong></div>
-        <div className="stat"><span>Horas virtuales</span><strong>{formatMinutes(summary.minutosVirtuales)}</strong></div>
-        <div className="stat"><span>Horas híbridas</span><strong>{formatMinutes(summary.minutosHibridos)}</strong></div>
-        <div className={`stat${missingRates ? " alert-stat" : ""}`}><span>Pago estimado</span><strong>{formatMoney(summary.monto)}</strong>{missingRates ? <small>{missingRates} sin tarifa</small> : null}</div>
+        <div className="stat">
+          <span>Reuniones asignadas</span>
+          <strong>{summary.reuniones}</strong>
+        </div>
+        <div className="stat">
+          <span>Horas virtuales</span>
+          <strong>{formatMinutes(summary.minutosVirtuales)}</strong>
+        </div>
+        <div className="stat">
+          <span>Horas híbridas</span>
+          <strong>{formatMinutes(summary.minutosHibridos)}</strong>
+        </div>
+        <div className={`stat${missingRates ? " alert-stat" : ""}`}>
+          <span>Pago estimado</span>
+          <strong>{formatMoney(summary.monto)}</strong>
+          {missingRates ? <small>{missingRates} sin tarifa</small> : null}
+        </div>
       </section>
 
       <section className="content-section">
-        <div className="section-heading assistant-detail-list-heading"><div><h2>Reuniones e instancias</h2><p>{meetings.length} registros activos en el período.</p></div></div>
-        {meetings.length ? <AssistantMeetingsTable meetings={meetings} /> : <div className="empty-state"><p>No tiene reuniones asignadas en este mes.</p></div>}
+        <div className="section-heading assistant-detail-list-heading">
+          <div>
+            <h2>Reuniones e instancias</h2>
+            <p>{meetings.length} registros activos en el período.</p>
+          </div>
+        </div>
+        {meetings.length ? (
+          <AssistantMeetingsTable meetings={meetings} />
+        ) : (
+          <div className="empty-state">
+            <p>No tiene reuniones asignadas en este mes.</p>
+          </div>
+        )}
       </section>
 
       <AssistantHistory entries={history} />

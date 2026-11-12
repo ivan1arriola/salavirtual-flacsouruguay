@@ -23,12 +23,33 @@ export default async function RecuperarContrasenaPage({
           <div className="login-brand-copy">
             <p className="login-product-label">Seguridad de la cuenta</p>
             <h2>Recuperá el acceso de forma segura.</h2>
-            <p>Te enviaremos un enlace temporal al correo asociado a tu cuenta para que puedas elegir una nueva contraseña.</p>
+            <p>
+              Te enviaremos un enlace temporal al correo asociado a tu cuenta para que puedas elegir una nueva
+              contraseña.
+            </p>
           </div>
           <ul className="login-feature-list" aria-label="Características de recuperación">
-            <li><Mail size={19} /><span><strong>Por correo</strong><small>Al email de tu cuenta</small></span></li>
-            <li><KeyRound size={19} /><span><strong>Enlace temporal</strong><small>Válido por 30 minutos</small></span></li>
-            <li><KeyRound size={19} /><span><strong>Un solo uso</strong><small>Se invalida al utilizarlo</small></span></li>
+            <li>
+              <Mail size={19} />
+              <span>
+                <strong>Por correo</strong>
+                <small>Al email de tu cuenta</small>
+              </span>
+            </li>
+            <li>
+              <KeyRound size={19} />
+              <span>
+                <strong>Enlace temporal</strong>
+                <small>Válido por 30 minutos</small>
+              </span>
+            </li>
+            <li>
+              <KeyRound size={19} />
+              <span>
+                <strong>Un solo uso</strong>
+                <small>Se invalida al utilizarlo</small>
+              </span>
+            </li>
           </ul>
           <p className="login-brand-footer">FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales</p>
         </aside>
@@ -36,7 +57,9 @@ export default async function RecuperarContrasenaPage({
         <div className="login-panel">
           <div className="login-panel-inner">
             <header className="login-header">
-              <span className="login-lock"><KeyRound size={20} /></span>
+              <span className="login-lock">
+                <KeyRound size={20} />
+              </span>
               <p className="eyebrow">Sala Virtual FLACSO</p>
               <h1 id="recovery-title">Recuperar contraseña</h1>
               <p>Ingresá el correo asociado a tu cuenta.</p>
@@ -44,7 +67,8 @@ export default async function RecuperarContrasenaPage({
 
             {enviado === "1" ? (
               <p className="login-success" role="status">
-                Si existe una cuenta asociada a ese correo, recibirás un enlace para restablecer tu contraseña. Revisá también la carpeta de spam.
+                Si existe una cuenta asociada a ese correo, recibirás un enlace para restablecer tu
+                contraseña. Revisá también la carpeta de spam.
               </p>
             ) : (
               <form className="login-form" action={solicitarRecuperacion}>
@@ -57,11 +81,17 @@ export default async function RecuperarContrasenaPage({
                   placeholder="usuario@flacso.edu.uy"
                   required
                 />
-                <button className="login-submit-button" type="submit">Enviar enlace</button>
+                <button className="login-submit-button" type="submit">
+                  Enviar enlace
+                </button>
               </form>
             )}
 
-            <p className="login-help"><a className="login-inline-link" href="/acceso">Volver al inicio de sesión</a></p>
+            <p className="login-help">
+              <a className="login-inline-link" href="/acceso">
+                Volver al inicio de sesión
+              </a>
+            </p>
           </div>
         </div>
       </section>

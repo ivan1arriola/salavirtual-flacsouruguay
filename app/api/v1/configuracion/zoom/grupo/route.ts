@@ -16,7 +16,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const ERROR_GRUPOS = "No se pudo obtener la lista de grupos de Zoom. Revisá la conexión con Zoom y probá de nuevo.";
+const ERROR_GRUPOS =
+  "No se pudo obtener la lista de grupos de Zoom. Revisá la conexión con Zoom y probá de nuevo.";
 const ERROR_GUARDAR = "No se pudo guardar el grupo de Zoom. Probá de nuevo.";
 const ERROR_SINCRONIZAR = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
 const GRUPO_INVALIDO = "Elegí un grupo de Zoom válido.";
@@ -39,14 +40,19 @@ const sincronizarSchema = z.object(
   {
     vistaPrevia: z.boolean({ error: OPCIONES_INVALIDAS }).optional(),
     confirmar: z.boolean({ error: OPCIONES_INVALIDAS }).optional(),
-    revision: z.string({ error: OPCIONES_INVALIDAS }).regex(/^[0-9a-f]{64}$/, OPCIONES_INVALIDAS).optional()
+    revision: z
+      .string({ error: OPCIONES_INVALIDAS })
+      .regex(/^[0-9a-f]{64}$/, OPCIONES_INVALIDAS)
+      .optional()
   },
   { error: OPCIONES_INVALIDAS }
 );
 
 export async function GET() {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const grupos = await listarGruposZoom(db, descifrarConfiguracion);
@@ -62,7 +68,9 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   const parsed = grupoSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -87,17 +95,24 @@ export async function PUT(request: Request) {
  */
 export async function POST(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   const parsed = sincronizarSchema.safeParse(await leerCuerpoOpcional(request));
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? OPCIONES_INVALIDAS }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? OPCIONES_INVALIDAS },
+      { status: 400 }
+    );
   }
   const { vistaPrevia, confirmar, revision } = parsed.data;
 
   try {
     if (vistaPrevia) {
-      return NextResponse.json(await previsualizarSincronizacionConGrupo(db, descifrarConfiguracion, new Date()));
+      return NextResponse.json(
+        await previsualizarSincronizacionConGrupo(db, descifrarConfiguracion, new Date())
+      );
     }
     const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date(), {
       actorId: actor.id,
@@ -114,7 +129,9 @@ export async function POST(request: Request) {
 /** Un cuerpo vacío vale `{}`; un JSON mal formado vale `null` para que la validación lo rechace. */
 async function leerCuerpoOpcional(request: Request): Promise<unknown> {
   const texto = await request.text().catch(() => "");
-  if (!texto.trim()) return {};
+  if (!texto.trim()) {
+    return {};
+  }
   try {
     return JSON.parse(texto);
   } catch {
@@ -129,7 +146,10 @@ async function requireAdmin(): Promise<{ id: string } | NextResponse> {
   }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
-    return NextResponse.json({ error: "La sesión está desactualizada. Volvé a iniciar sesión." }, { status: 401 });
+    return NextResponse.json(
+      { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
+      { status: 401 }
+    );
   }
   return { id: actor.id };
 }

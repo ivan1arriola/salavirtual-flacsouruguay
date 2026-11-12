@@ -17,6 +17,8 @@ describe("ruta de nueva reunión", () => {
   });
 
   it("conserva la página de Meet sin ruta", () => {
-    expect(existsSync(new URL("../src/bootstrap/ui/reuniones/nueva-reunion-page.server.tsx", import.meta.url))).toBe(true);
+    expect(
+      existsSync(new URL("../src/bootstrap/ui/reuniones/nueva-reunion-page.server.tsx", import.meta.url))
+    ).toBe(true);
   });
 });

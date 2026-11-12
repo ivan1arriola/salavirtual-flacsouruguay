@@ -46,13 +46,18 @@ export function SettingsCenterShell({
           <h1>Centro de configuración</h1>
           <p>Revisá el estado general y administrá cada área desde un solo lugar.</p>
         </div>
-        <span className="settings-center__masthead-icon" aria-hidden="true"><Settings size={24} /></span>
+        <span className="settings-center__masthead-icon" aria-hidden="true">
+          <Settings size={24} />
+        </span>
       </header>
 
       <details className="settings-mobile-nav">
         <summary>
           <SectionIcon section={activeMetadata} />
-          <span><small>Sección actual</small><strong>{activeMetadata.label}</strong></span>
+          <span>
+            <small>Sección actual</small>
+            <strong>{activeMetadata.label}</strong>
+          </span>
           <span className="settings-mobile-nav__action">Cambiar sección</span>
         </summary>
         <nav aria-label="Secciones de configuración">

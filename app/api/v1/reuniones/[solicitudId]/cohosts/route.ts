@@ -11,25 +11,29 @@ type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 
 export async function PUT(request: Request, context: RouteContext) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { solicitudId } = await context.params;
     const result = await actualizarCohostsSerie(
       {
         db,
         descifrar: descifrarConfiguracion,
-        sincronizarGoogle: sincronizarCohostsGoogleExistente,
+        sincronizarGoogle: sincronizarCohostsGoogleExistente
       },
       actor,
       solicitudId,
-      await request.json().catch(() => null),
+      await request.json().catch(() => null)
     );
     return NextResponse.json({
       ...result,
-      message: `Cohosts actualizados en ${result.encuentros} ${result.encuentros === 1 ? "encuentro" : "encuentros"}.`,
+      message: `Cohosts actualizados en ${result.encuentros} ${result.encuentros === 1 ? "encuentro" : "encuentros"}.`
     });
   } catch (error) {
     const mapped = toHttpError(error);

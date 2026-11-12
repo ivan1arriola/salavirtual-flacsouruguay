@@ -71,15 +71,15 @@ inconsistencias.
 
 ### Fuentes de verdad
 
-| Hecho | Fuente |
-| --- | --- |
-| Docente y programa | `DocentePrograma`, referenciado por `SolicitudSala` |
-| Fecha y hora programadas | `InstanciaSala` |
-| Dia de la semana | Derivado de fecha y zona horaria |
-| Host y codigo externo | `EventoProveedor` |
-| Licencia y limite del host | `CuentaProveedor` |
-| Cohosts | `CohostReunion` |
-| Asistente tecnico asignado | `AsignacionAsistenciaTecnica` |
+| Hecho                      | Fuente                                              |
+| -------------------------- | --------------------------------------------------- |
+| Docente y programa         | `DocentePrograma`, referenciado por `SolicitudSala` |
+| Fecha y hora programadas   | `InstanciaSala`                                     |
+| Dia de la semana           | Derivado de fecha y zona horaria                    |
+| Host y codigo externo      | `EventoProveedor`                                   |
+| Licencia y limite del host | `CuentaProveedor`                                   |
+| Cohosts                    | `CohostReunion`                                     |
+| Asistente tecnico asignado | `AsignacionAsistenciaTecnica`                       |
 
 `EventoProveedor.estadoIntegracion` no es una máquina de tareas. La tarea
 pendiente se registra separadamente en `operacionPendiente`, lo que permite

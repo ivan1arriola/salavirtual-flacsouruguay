@@ -16,11 +16,17 @@ type ServiceAccountCredential = Readonly<{
   privateKey: string;
 }>;
 
-type DelegatedCredential = ServiceAccountCredential &
-  Readonly<{ subject: string }>;
+type DelegatedCredential = ServiceAccountCredential & Readonly<{ subject: string }>;
 
 export type GoogleWorkspaceScopeValidation = Readonly<{
-  key: "calendar.events" | "drive" | "meetings.space.settings" | "meetings.space.readonly" | "meetings.space.created" | "gmail.send" | "spreadsheets";
+  key:
+    | "calendar.events"
+    | "drive"
+    | "meetings.space.settings"
+    | "meetings.space.readonly"
+    | "meetings.space.created"
+    | "gmail.send"
+    | "spreadsheets";
   label: string;
   scope: string;
   autorizado: boolean;
@@ -39,17 +45,13 @@ const REQUIRED_SCOPES: readonly Omit<GoogleWorkspaceScopeValidation, "autorizado
 
 const WRITER_ROLES = new Set(["organizer", "fileOrganizer", "writer"]);
 
-export async function probarCredencialGoogle(
-  credential: ServiceAccountCredential
-): Promise<string> {
+export async function probarCredencialGoogle(credential: ServiceAccountCredential): Promise<string> {
   const auth = crearJwt(credential, CALENDAR_SCOPE);
   await auth.authorize();
   return "Google aceptó la cuenta de servicio y la clave privada.";
 }
 
-export async function probarDelegacionGoogle(
-  credential: DelegatedCredential
-): Promise<string> {
+export async function probarDelegacionGoogle(credential: DelegatedCredential): Promise<string> {
   const auth = crearJwt(credential, [
     CALENDAR_SCOPE,
     DRIVE_SCOPE,
@@ -70,25 +72,24 @@ export async function probarDelegacionGoogle(
 export async function validarScopesGoogle(
   credential: DelegatedCredential
 ): Promise<readonly GoogleWorkspaceScopeValidation[]> {
-  return Promise.all(REQUIRED_SCOPES.map(async (required) => {
-    try {
-      const auth = crearJwt(credential, required.scope);
-      await auth.authorize();
-      return { ...required, autorizado: true };
-    } catch (error) {
-      return {
-        ...required,
-        autorizado: false,
-        error: mensajeScope(error)
-      };
-    }
-  }));
+  return Promise.all(
+    REQUIRED_SCOPES.map(async (required) => {
+      try {
+        const auth = crearJwt(credential, required.scope);
+        await auth.authorize();
+        return { ...required, autorizado: true };
+      } catch (error) {
+        return {
+          ...required,
+          autorizado: false,
+          error: mensajeScope(error)
+        };
+      }
+    })
+  );
 }
 
-export async function probarDestinoDrive(
-  credential: DelegatedCredential,
-  folderId: string
-): Promise<string> {
+export async function probarDestinoDrive(credential: DelegatedCredential, folderId: string): Promise<string> {
   const auth = crearJwt(credential, DRIVE_SCOPE);
   const response = await auth.request<{
     id?: string;
@@ -111,7 +112,9 @@ export async function probarDestinoDrive(
       parents: [folderId]
     }
   });
-  if (!probe.data.id) throw new Error("Drive no confirmó la prueba de escritura.");
+  if (!probe.data.id) {
+    throw new Error("Drive no confirmó la prueba de escritura.");
+  }
   await eliminarPrueba(auth, probe.data.id);
   return `Lectura y escritura confirmadas en ${response.data.name ?? response.data.id ?? folderId}.`;
 }
@@ -132,11 +135,13 @@ export async function prepararAccesoSalasDrive(
     url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}/permissions?fields=permissions(id,emailAddress,role)&supportsAllDrives=true`,
     method: "GET"
   });
-  const writable = new Set((response.data.permissions ?? []).flatMap((permission) =>
-    permission.emailAddress && permission.role && WRITER_ROLES.has(permission.role)
-      ? [permission.emailAddress.toLowerCase()]
-      : []
-  ));
+  const writable = new Set(
+    (response.data.permissions ?? []).flatMap((permission) =>
+      permission.emailAddress && permission.role && WRITER_ROLES.has(permission.role)
+        ? [permission.emailAddress.toLowerCase()]
+        : []
+    )
+  );
   const pending = hostEmails.filter((email) => !writable.has(email.toLowerCase()));
   await pending.reduce<Promise<unknown>>(async (previous, emailAddress) => {
     await previous;

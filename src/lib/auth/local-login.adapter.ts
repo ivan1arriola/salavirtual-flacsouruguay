@@ -1,9 +1,6 @@
 import { compare } from "bcryptjs";
 import { db } from "@/src/lib/db";
-import {
-  crearPrismaIdentityAdapter,
-  type UsuarioCredenciales
-} from "@/src/modules/identity/api";
+import { crearPrismaIdentityAdapter, type UsuarioCredenciales } from "@/src/modules/identity/api";
 
 export type DependenciasLogin = Readonly<{
   buscarUsuario: (identificador: string) => Promise<UsuarioCredenciales | null>;

@@ -21,7 +21,9 @@ const MS_POR_DIA = 86_400_000;
 
 function parsearFechaZoom(valor: string): number {
   const coincide = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
-  const ms = coincide ? Date.UTC(Number(coincide[1]), Number(coincide[2]) - 1, Number(coincide[3])) : Number.NaN;
+  const ms = coincide
+    ? Date.UTC(Number(coincide[1]), Number(coincide[2]) - 1, Number(coincide[3]))
+    : Number.NaN;
   if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0, 10) !== valor) {
     throw new RangeError(`Fecha invalida: ${valor}`);
   }

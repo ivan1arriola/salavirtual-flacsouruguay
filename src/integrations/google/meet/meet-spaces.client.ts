@@ -9,10 +9,7 @@ export type GoogleMeetSpaceConfig = Readonly<{
   entryPointAccess?: "ENTRY_POINT_ACCESS_UNSPECIFIED" | "ALL" | "CREATOR_APP_ONLY" | string;
   moderation?: "MODERATION_UNSPECIFIED" | "OFF" | "ON" | string;
   attendanceReportGenerationType?:
-    | "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED"
-    | "DO_NOT_GENERATE"
-    | "GENERATE_REPORT"
-    | string;
+    "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED" | "DO_NOT_GENERATE" | "GENERATE_REPORT" | string;
   [key: string]: unknown;
 }>;
 
@@ -31,19 +28,18 @@ export type GoogleMeetSpaceMember = Readonly<{
   [key: string]: unknown;
 }>;
 
-export async function obtenerEspacioMeet(
-  auth: JWT,
-  spaceNameOrCode: string
-): Promise<GoogleMeetSpace> {
+export async function obtenerEspacioMeet(auth: JWT, spaceNameOrCode: string): Promise<GoogleMeetSpace> {
   const path = spaceNameOrCode.startsWith("spaces/")
     ? spaceNameOrCode
     : `spaces/${encodeURIComponent(spaceNameOrCode)}`;
   const url = `${MEET_API_BASE_URL}/${path}`;
-  const response = await conReintentosGoogleLectura(() => auth.request<GoogleMeetSpace>({
-    url,
-    method: "GET",
-    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
-  }));
+  const response = await conReintentosGoogleLectura(() =>
+    auth.request<GoogleMeetSpace>({
+      url,
+      method: "GET",
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
+    })
+  );
   return response.data;
 }
 
@@ -55,7 +51,7 @@ export async function crearEspacioMeetHttp(
     url: `${MEET_API_BASE_URL}/spaces`,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: config ? { config } : {},
+    data: config ? { config } : {}
   });
   return response.data;
 }
@@ -71,7 +67,7 @@ export async function actualizarEspacioMeetHttp(
     url,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { name: spaceName, config },
+    data: { name: spaceName, config }
   });
   return response.data;
 }
@@ -86,18 +82,24 @@ export async function listarMiembrosMeetHttp(
   let pages = 0;
 
   do {
-    if (++pages > 100) throw new Error("Google Meet superó el límite de paginación de miembros.");
+    if (++pages > 100) {
+      throw new Error("Google Meet superó el límite de paginación de miembros.");
+    }
     const query = new URLSearchParams({ pageSize: "100" });
-    if (pageToken) query.set("pageToken", pageToken);
+    if (pageToken) {
+      query.set("pageToken", pageToken);
+    }
 
-    const response = await conReintentosGoogleLectura(() => auth.request<{
-      members?: readonly GoogleMeetSpaceMember[];
-      nextPageToken?: string;
-    }>({
-      url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
-      method: "GET",
-      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
-    }));
+    const response = await conReintentosGoogleLectura(() =>
+      auth.request<{
+        members?: readonly GoogleMeetSpaceMember[];
+        nextPageToken?: string;
+      }>({
+        url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
+        method: "GET",
+        timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
+      })
+    );
 
     if (response.data.members) {
       members.push(...response.data.members);
@@ -106,7 +108,9 @@ export async function listarMiembrosMeetHttp(
     if (pageToken && seenTokens.has(pageToken)) {
       throw new Error("Google Meet repitió un token de paginación de miembros.");
     }
-    if (pageToken) seenTokens.add(pageToken);
+    if (pageToken) {
+      seenTokens.add(pageToken);
+    }
   } while (pageToken);
 
   return members;
@@ -122,7 +126,7 @@ export async function crearMiembroMeetHttp(
     url: `${MEET_API_BASE_URL}/${spaceName}/members`,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { email, role },
+    data: { email, role }
   });
   return response.data;
 }
@@ -137,34 +141,37 @@ export async function actualizarRolMiembroMeetHttp(
     url: `${MEET_API_BASE_URL}/${memberName}?updateMask=role`,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { name: memberName, role },
+    data: { name: memberName, role }
   });
   return response.data;
 }
 
-export async function eliminarMiembroMeetHttp(
-  auth: JWT,
-  memberName: string
-): Promise<void> {
+export async function eliminarMiembroMeetHttp(auth: JWT, memberName: string): Promise<void> {
   await auth.request({
     url: `${MEET_API_BASE_URL}/${memberName}`,
     method: "DELETE",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    timeout: GOOGLE_HTTP_TIMEOUT_MS
   });
 }
 
 export function isAlreadyCohostError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     response?: { status?: unknown; data?: unknown };
   };
-  if (candidate.code === 409 || candidate.response?.status === 409) return true;
+  if (candidate.code === 409 || candidate.response?.status === 409) {
+    return true;
+  }
   return JSON.stringify(candidate.response?.data ?? "").includes("ALREADY_EXISTS");
 }
 
 export function isMeetNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     response?: { status?: unknown };
@@ -173,7 +180,9 @@ export function isMeetNotFoundError(error: unknown): boolean {
 }
 
 export function isMemberPermissionError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     message?: unknown;
@@ -182,8 +191,10 @@ export function isMemberPermissionError(error: unknown): boolean {
   const status = candidate.response?.status ?? candidate.code;
   const text = [
     typeof candidate.message === "string" ? candidate.message : "",
-    JSON.stringify(candidate.response?.data ?? ""),
-  ].join(" ").toLowerCase();
+    JSON.stringify(candidate.response?.data ?? "")
+  ]
+    .join(" ")
+    .toLowerCase();
 
   // Si el error indica explícitamente que la denegación fue sobre el recurso Space,
   // no se trata de un error de miembro.
@@ -200,7 +211,9 @@ export function isMemberPermissionError(error: unknown): boolean {
     text.includes("no tenes permisos") ||
     text.includes("caller does not have permission");
 
-  if (!hasPermissionStatus) return false;
+  if (!hasPermissionStatus) {
+    return false;
+  }
 
   const isMemberContext =
     text.includes("resource member") ||
@@ -215,6 +228,3 @@ export function isMemberPermissionError(error: unknown): boolean {
 
   return isMemberContext;
 }
-
-
-

@@ -13,21 +13,21 @@ const state = vi.hoisted(() => ({
       serviceAccountEmail: "vieja@flacso-zoom-app.iam.gserviceaccount.com",
       privateKeyCifrada: "cifrada",
       serviceAccountSubject: "web@flacso.edu.uy",
-      activa: true,
-    },
-  ],
+      activa: true
+    }
+  ]
 }));
 
 vi.mock("@/src/lib/db", () => ({
   db: {
     configuracionGoogleWorkspace: {
-      findMany: vi.fn(async () => state.legacyRows),
-    },
-  },
+      findMany: vi.fn(async () => state.legacyRows)
+    }
+  }
 }));
 
 vi.mock("@/src/lib/config/encryption", () => ({
-  descifrarConfiguracion: (val: string) => `descifrada:${val}`,
+  descifrarConfiguracion: (val: string) => `descifrada:${val}`
 }));
 
 vi.mock("google-auth-library", () => ({
@@ -57,8 +57,8 @@ vi.mock("google-auth-library", () => ({
             id: "event",
             attendees: [],
             hangoutLink: "https://meet.google.com/abc-defg-hij",
-            conferenceData: { conferenceId: "abc-defg-hij" },
-          },
+            conferenceData: { conferenceId: "abc-defg-hij" }
+          }
         };
       }
       if (url.pathname.includes("/members") && options.method === "POST") {
@@ -67,21 +67,19 @@ vi.mock("google-auth-library", () => ({
       if (url.pathname.includes("/members") && options.method === "GET") {
         return {
           data: {
-            members: [
-              { name: "spaces/space/members/1", email: "docente@flacso.edu.uy", role: "COHOST" },
-            ],
-          },
+            members: [{ name: "spaces/space/members/1", email: "docente@flacso.edu.uy", role: "COHOST" }]
+          }
         };
       }
       return { data: { name: "spaces/space", config: { moderation: "ON" } } };
     }
-  },
+  }
 }));
 
 import {
   configurarGoogleMeetExistente,
   crearGoogleCalendarProvider,
-  sincronizarCohostsGoogleExistente,
+  sincronizarCohostsGoogleExistente
 } from "../src/modules/meet/google-calendar.adapter";
 import { cargarCredencialesLegacyGoogleWorkspace } from "../src/modules/configuracion/google-workspace.service";
 
@@ -89,7 +87,7 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
   const principalCreds = {
     serviceAccountEmail: "nueva@flacso-uruguay.iam.gserviceaccount.com",
     privateKey: "private-key-nueva",
-    subject: "sala02@flacso.edu.uy",
+    subject: "sala02@flacso.edu.uy"
   };
 
   beforeEach(() => {
@@ -105,19 +103,17 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     state.failOnPrincipalEmail = principalCreds.serviceAccountEmail;
 
     await configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
-      cohostEmails: ["docente@flacso.edu.uy"],
+      cohostEmails: ["docente@flacso.edu.uy"]
     });
 
     // Verificamos que se intentó primero Principal con sala02
-    const principalAuths = state.jwtInstances.filter(
-      (j) => j.email === principalCreds.serviceAccountEmail,
-    );
+    const principalAuths = state.jwtInstances.filter((j) => j.email === principalCreds.serviceAccountEmail);
     expect(principalAuths.length).toBeGreaterThanOrEqual(1);
     expect(principalAuths[0].subject).toBe("sala02@flacso.edu.uy");
 
     // Verificamos que el fallback usó Legacy (vieja) con sala02, NUNCA web@flacso.edu.uy
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBeGreaterThanOrEqual(1);
     for (const auth of legacyAuths) {
@@ -133,11 +129,11 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     state.failWithMessage = "No tenés permisos para modificar el rol de este miembro.";
 
     await configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
-      cohostEmails: ["docente@flacso.edu.uy"],
+      cohostEmails: ["docente@flacso.edu.uy"]
     });
 
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBeGreaterThanOrEqual(1);
     expect(legacyAuths[0].subject).toBe("sala02@flacso.edu.uy");
@@ -151,11 +147,11 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
       externalEventId: "evt-1",
       codigoReunion: "abc-defg-hij",
       cohostsAnteriores: [],
-      cohostsDeseados: ["docente@flacso.edu.uy"],
+      cohostsDeseados: ["docente@flacso.edu.uy"]
     });
 
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBeGreaterThanOrEqual(1);
     for (const auth of legacyAuths) {
@@ -176,18 +172,18 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
         timezone: "America/Montevideo",
         calendarId: "sala02@flacso.edu.uy",
         calendarEventId: "cal-evt-1",
-        cohostEmails: ["docente@flacso.edu.uy"],
+        cohostEmails: ["docente@flacso.edu.uy"]
       },
       {
         codigoReunion: "abc-defg-hij",
         joinUrl: "https://meet.google.com/abc-defg-hij",
         externalEventId: "cal-evt-1",
-        payload: {},
-      },
+        payload: {}
+      }
     );
 
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBeGreaterThanOrEqual(1);
     expect(legacyAuths[0].subject).toBe("sala02@flacso.edu.uy");
@@ -204,7 +200,7 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
       calendarId: "sala02@flacso.edu.uy",
       calendarEventId: "nuevo-cal-evt-1",
       cohostEmails: ["docente@flacso.edu.uy"],
-      conferenceData: { conferenceId: "abc-defg-hij" },
+      conferenceData: { conferenceId: "abc-defg-hij" }
     });
 
     // Activamos el fallo en Principal durante configurarEventoMeet
@@ -220,19 +216,19 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
           timezone: "America/Montevideo",
           calendarId: "sala02@flacso.edu.uy",
           calendarEventId: "nuevo-cal-evt-1",
-          cohostEmails: ["docente@flacso.edu.uy"],
+          cohostEmails: ["docente@flacso.edu.uy"]
         },
         {
           codigoReunion: "abc-defg-hij",
           joinUrl: "https://meet.google.com/abc-defg-hij",
           externalEventId: "nuevo-cal-evt-1",
-          payload: {},
-        },
-      ),
+          payload: {}
+        }
+      )
     ).rejects.toThrow("Permission denied on resource Member");
 
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBe(0);
   });
@@ -244,12 +240,12 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
 
     await expect(
       configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
-        cohostEmails: ["docente@flacso.edu.uy"],
-      }),
+        cohostEmails: ["docente@flacso.edu.uy"]
+      })
     ).rejects.toThrow("500: Internal Server Error");
 
     const legacyAuths = state.jwtInstances.filter(
-      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com",
+      (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
     expect(legacyAuths.length).toBe(0);
   });
@@ -257,22 +253,19 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
   it("cargarCredencialesLegacyGoogleWorkspace conserva el subject de Workspace en base de datos para otros servicios (Drive, etc)", async () => {
     const fakeDb = {
       configuracionGoogleWorkspace: {
-        findMany: vi.fn(async () => state.legacyRows),
-      },
+        findMany: vi.fn(async () => state.legacyRows)
+      }
     } as any;
 
-    const rows = await cargarCredencialesLegacyGoogleWorkspace(
-      fakeDb,
-      (k) => `dec:${k}`,
-    );
+    const rows = await cargarCredencialesLegacyGoogleWorkspace(fakeDb, (k) => `dec:${k}`);
 
     expect(rows).toEqual([
       {
         id: "legacy:vieja",
         serviceAccountEmail: "vieja@flacso-zoom-app.iam.gserviceaccount.com",
         privateKey: "dec:cifrada",
-        serviceAccountSubject: "web@flacso.edu.uy",
-      },
+        serviceAccountSubject: "web@flacso.edu.uy"
+      }
     ]);
   });
 
@@ -285,8 +278,8 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
 
     await expect(
       configurarGoogleMeetExistente(principalCreds, "abc-defg-hij", {
-        cohostEmails: ["docente@flacso.edu.uy"],
-      }),
+        cohostEmails: ["docente@flacso.edu.uy"]
+      })
     ).rejects.toThrow("Permission denied on resource Member");
   });
 
@@ -307,15 +300,15 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
           timezone: "America/Montevideo",
           calendarId: "sala02@flacso.edu.uy",
           calendarEventId: "cal-evt-existente",
-          cohostEmails: ["docente@flacso.edu.uy"],
+          cohostEmails: ["docente@flacso.edu.uy"]
         },
         {
           codigoReunion: "abc-defg-hij",
           joinUrl: "https://meet.google.com/abc-defg-hij",
           externalEventId: "cal-evt-existente",
-          payload: {},
-        },
-      ),
+          payload: {}
+        }
+      )
     ).rejects.toThrow("Permission denied on resource Member");
   });
 
@@ -326,12 +319,14 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     state.failWithCode = 403;
     state.failWithMessage = "403: Permission denied on resource Member (or it might not exist)";
 
-    await expect(sincronizarCohostsGoogleExistente(principalCreds, {
-      calendarId: "sala02@flacso.edu.uy",
-      externalEventId: "cal-evt-existente",
-      codigoReunion: "abc-defg-hij",
-      cohostsAnteriores: [],
-      cohostsDeseados: ["docente@flacso.edu.uy"],
-    })).rejects.toThrow("Permission denied on resource Member");
+    await expect(
+      sincronizarCohostsGoogleExistente(principalCreds, {
+        calendarId: "sala02@flacso.edu.uy",
+        externalEventId: "cal-evt-existente",
+        codigoReunion: "abc-defg-hij",
+        cohostsAnteriores: [],
+        cohostsDeseados: ["docente@flacso.edu.uy"]
+      })
+    ).rejects.toThrow("Permission denied on resource Member");
   });
 });

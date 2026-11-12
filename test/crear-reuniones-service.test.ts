@@ -18,9 +18,15 @@ describe("crearReuniones - cohosts e invitados", () => {
   function createMockDb({
     docenteUserId = "docente-user-1",
     actorUserId = "actor-user-admin",
-    actorGoogleAccounts = [{ id: "google-actor-1", userId: "actor-user-admin", email: "admin@flacso.edu.uy" }],
-    docenteGoogleAccounts = [{ id: "google-docente-1", userId: "docente-user-1", email: "docente@flacso.edu.uy" }],
-    assistantGoogleAccounts = [{ id: "google-asistente-1", userId: "asistente-user-1", email: "asistente@flacso.edu.uy" }],
+    actorGoogleAccounts = [
+      { id: "google-actor-1", userId: "actor-user-admin", email: "admin@flacso.edu.uy" }
+    ],
+    docenteGoogleAccounts = [
+      { id: "google-docente-1", userId: "docente-user-1", email: "docente@flacso.edu.uy" }
+    ],
+    assistantGoogleAccounts = [
+      { id: "google-asistente-1", userId: "asistente-user-1", email: "asistente@flacso.edu.uy" }
+    ],
     docenteEmailPrincipal = "docente@flacso.edu.uy"
   }: {
     docenteUserId?: string;
@@ -82,8 +88,12 @@ describe("crearReuniones - cohosts e invitados", () => {
       },
       usuario: {
         findUnique: vi.fn().mockImplementation(({ where }) => {
-          if (where.id === docenteUserId) return Promise.resolve({ emailPrincipal: docenteEmailPrincipal });
-          if (where.id === actorUserId) return Promise.resolve({ emailPrincipal: "admin@flacso.edu.uy" });
+          if (where.id === docenteUserId) {
+            return Promise.resolve({ emailPrincipal: docenteEmailPrincipal });
+          }
+          if (where.id === actorUserId) {
+            return Promise.resolve({ emailPrincipal: "admin@flacso.edu.uy" });
+          }
           return Promise.resolve(null);
         })
       },
@@ -159,7 +169,9 @@ describe("crearReuniones - cohosts e invitados", () => {
     );
 
     expect(createdCohostReuniones).toHaveLength(0);
-    expect(createdCohostEmails.map(({ email }) => email)).toEqual(expect.arrayContaining(["docente@flacso.edu.uy", "asistente@flacso.edu.uy"]));
+    expect(createdCohostEmails.map(({ email }) => email)).toEqual(
+      expect.arrayContaining(["docente@flacso.edu.uy", "asistente@flacso.edu.uy"])
+    );
   });
 
   it("con asistencia abierta guarda el correo del docente", async () => {
@@ -194,55 +206,61 @@ describe("crearReuniones - cohosts e invitados", () => {
   });
 
   describe("crearReuniones - reunión Zoom compartida por serie", () => {
-  const dia = (n: number) => ({
-    inicio: new Date(`2027-10-0${n}T14:00:00-03:00`),
-    fin: new Date(`2027-10-0${n}T16:00:00-03:00`)
-  });
-  const input = (cantidad: number) => ({
-    titulo: "Seminario de Investigación",
-    docenteProgramaId: "dp-123",
-    modalidad: "VIRTUAL" as const,
-    timezone: "America/Montevideo",
-    requiereAsistenciaTecnica: false,
-    instancias: Array.from({ length: cantidad }, (_, i) => dia(i + 1))
-  });
-  const admin = { id: "actor-user-admin", rol: "ADMINISTRACION" as const };
+    const dia = (n: number) => ({
+      inicio: new Date(`2027-10-0${n}T14:00:00-03:00`),
+      fin: new Date(`2027-10-0${n}T16:00:00-03:00`)
+    });
+    const input = (cantidad: number) => ({
+      titulo: "Seminario de Investigación",
+      docenteProgramaId: "dp-123",
+      modalidad: "VIRTUAL" as const,
+      timezone: "America/Montevideo",
+      requiereAsistenciaTecnica: false,
+      instancias: Array.from({ length: cantidad }, (_, i) => dia(i + 1))
+    });
+    const admin = { id: "actor-user-admin", rol: "ADMINISTRACION" as const };
 
-  it("siempre crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
-    const { db, tx, createdEventos } = createMockDb();
-    await crearReuniones(db as never, admin, input(3));
+    it("siempre crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
+      const { db, tx, createdEventos } = createMockDb();
+      await crearReuniones(db as never, admin, input(3));
 
-    expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
-    expect(tx.reunionProveedor.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        proveedorId: "prov-zoom",
-        cuentaProveedorId: "sala-01",
-        serieClave: expect.stringMatching(/^serie:/)
-      })
-    }));
-    expect(createdEventos).toHaveLength(3);
-    for (const evento of createdEventos) {
-      expect(evento).toMatchObject({ reunionProveedorId: "reunion-1", cuentaProveedorId: "sala-01", operacionPendiente: "PROVISIONAR" });
-    }
-  });
+      expect(tx.reunionProveedor.create).toHaveBeenCalledTimes(1);
+      expect(tx.reunionProveedor.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            proveedorId: "prov-zoom",
+            cuentaProveedorId: "sala-01",
+            serieClave: expect.stringMatching(/^serie:/)
+          })
+        })
+      );
+      expect(createdEventos).toHaveLength(3);
+      for (const evento of createdEventos) {
+        expect(evento).toMatchObject({
+          reunionProveedorId: "reunion-1",
+          cuentaProveedorId: "sala-01",
+          operacionPendiente: "PROVISIONAR"
+        });
+      }
+    });
 
-  it("una reunión de un solo encuentro no crea reunión compartida y nace con reunionProveedorId null", async () => {
-    const { db, tx, createdEventos } = createMockDb();
-    await crearReuniones(db as never, admin, input(1));
-    expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
-    expect(createdEventos[0]).toMatchObject({ reunionProveedorId: null });
-  });
+    it("una reunión de un solo encuentro no crea reunión compartida y nace con reunionProveedorId null", async () => {
+      const { db, tx, createdEventos } = createMockDb();
+      await crearReuniones(db as never, admin, input(1));
+      expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
+      expect(createdEventos[0]).toMatchObject({ reunionProveedorId: null });
+    });
 
-  it("rechaza series que superen el límite de 50 ocurrencias de Zoom", async () => {
-    const { db } = createMockDb();
-    await expect(crearReuniones(db as never, admin, input(51))).rejects.toThrow(/50/);
-  });
+    it("rechaza series que superen el límite de 50 ocurrencias de Zoom", async () => {
+      const { db } = createMockDb();
+      await expect(crearReuniones(db as never, admin, input(51))).rejects.toThrow(/50/);
+    });
 
-  it("la disponibilidad de todos los horarios se sigue validando con la reunión compartida", async () => {
-    const { db, tx } = createMockDb();
-    tx.cuentaProveedor.findMany.mockResolvedValue([]);
-    await expect(crearReuniones(db as never, admin, input(2))).rejects.toThrow();
-    expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
+    it("la disponibilidad de todos los horarios se sigue validando con la reunión compartida", async () => {
+      const { db, tx } = createMockDb();
+      tx.cuentaProveedor.findMany.mockResolvedValue([]);
+      await expect(crearReuniones(db as never, admin, input(2))).rejects.toThrow();
+      expect(tx.reunionProveedor.create).not.toHaveBeenCalled();
+    });
   });
-});
 });

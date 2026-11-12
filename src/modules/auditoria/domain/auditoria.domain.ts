@@ -1,8 +1,4 @@
-import type {
-  EventoAuditoria,
-  ResultadoValidacion,
-  ValidarEventoAuditoriaInput
-} from "./auditoria.types";
+import type { EventoAuditoria, ResultadoValidacion, ValidarEventoAuditoriaInput } from "./auditoria.types";
 
 export function validarEventoAuditoria(
   input: ValidarEventoAuditoriaInput
@@ -41,4 +37,3 @@ export function validarEventoAuditoria(
     }
   };
 }
-

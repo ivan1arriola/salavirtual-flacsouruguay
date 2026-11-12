@@ -55,17 +55,24 @@ type Cursor = Readonly<{ startsAt: Date; id: string }>;
 export function validateAdminQuery(query: AdminQuery): AdminQuery {
   const from = parseIso(query.from, "from");
   const to = parseIso(query.to, "to");
-  if (from.getTime() >= to.getTime()) throw new Error("from debe ser anterior a to.");
+  if (from.getTime() >= to.getTime()) {
+    throw new Error("from debe ser anterior a to.");
+  }
   if (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > 100) {
     throw new Error("limit debe estar entre 1 y 100.");
   }
   if (query.coverage !== undefined && query.coverage !== "assigned" && query.coverage !== "unassigned") {
     throw new Error("coverage inválido.");
   }
-  if (query.state !== undefined && !INSTANCE_STATES.includes(query.state as typeof INSTANCE_STATES[number])) {
+  if (
+    query.state !== undefined &&
+    !INSTANCE_STATES.includes(query.state as (typeof INSTANCE_STATES)[number])
+  ) {
     throw new Error("state inválido.");
   }
-  if (query.cursor !== undefined) decodeCursor(query.cursor);
+  if (query.cursor !== undefined) {
+    decodeCursor(query.cursor);
+  }
   return query;
 }
 
@@ -116,15 +123,28 @@ export async function getAdminSummary(db: PrismaClient): Promise<AdminSummary> {
     upcoming: upcoming.map(toAdminMeeting),
     attention: [
       { code: "PENDING_COVERAGE", label: "Cobertura pendiente", count: dashboard.metrics.pendingAssistance },
-      { code: "INTEGRATION_ERRORS", label: "Errores de integración", count: dashboard.metrics.integrationErrors },
-      { code: "PENDING_RECORDINGS", label: "Grabaciones pendientes", count: dashboard.metrics.pendingRecordings },
+      {
+        code: "INTEGRATION_ERRORS",
+        label: "Errores de integración",
+        count: dashboard.metrics.integrationErrors
+      },
+      {
+        code: "PENDING_RECORDINGS",
+        label: "Grabaciones pendientes",
+        count: dashboard.metrics.pendingRecordings
+      },
       { code: "OPEN_INCIDENTS", label: "Incidencias abiertas", count: dashboard.metrics.openIncidents },
       { code: "DUPLICATE_RISKS", label: "Posibles duplicados", count: dashboard.metrics.duplicateRisks }
     ].filter(({ count }) => count > 0)
   };
 }
 
-function buildWhere(query: AdminQuery, from: Date, to: Date, cursor: Cursor | null): Prisma.InstanciaSalaWhereInput {
+function buildWhere(
+  query: AdminQuery,
+  from: Date,
+  to: Date,
+  cursor: Cursor | null
+): Prisma.InstanciaSalaWhereInput {
   const and: Prisma.InstanciaSalaWhereInput[] = [];
   if (query.q?.trim()) {
     and.push({
@@ -147,7 +167,9 @@ function buildWhere(query: AdminQuery, from: Date, to: Date, cursor: Cursor | nu
       }
     });
   }
-  if (query.programId) and.push({ solicitud: { docentePrograma: { programaId: query.programId } } });
+  if (query.programId) {
+    and.push({ solicitud: { docentePrograma: { programaId: query.programId } } });
+  }
   if (cursor) {
     and.push({
       OR: [
@@ -196,26 +218,44 @@ function toAdminMeeting(meeting: MeetingRow): AdminMeeting {
     timezone: meeting.timezone,
     state: meeting.estado,
     requiresAssistance: meeting.requiereAsistenciaTecnica,
-    googleAccount: providerEvent?.cuentaProveedor?.emailOrganizador ?? providerEvent?.cuentaProveedor?.nombre ?? null,
+    googleAccount:
+      providerEvent?.cuentaProveedor?.emailOrganizador ?? providerEvent?.cuentaProveedor?.nombre ?? null,
     meetUrl: providerEvent?.joinUrl ?? null,
     description: meeting.descripcion ?? meeting.solicitud.descripcion ?? null,
-    assignment: assignment && assistant
-      ? {
-          id: assignment.id,
-          assistantId: assignment.asistenteTecnicoId,
-          name: [assistant.nombres, assistant.apellidos].filter(Boolean).join(" "),
-          state: assignment.estado
-        }
-      : null
+    assignment:
+      assignment && assistant
+        ? {
+            id: assignment.id,
+            assistantId: assignment.asistenteTecnicoId,
+            name: [assistant.nombres, assistant.apellidos].filter(Boolean).join(" "),
+            state: assignment.estado
+          }
+        : null
   };
 }
 
 function parseIso(value: unknown, field: string): Date {
-  if (typeof value !== "string") throw new Error(`${field} debe ser ISO 8601.`);
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
-  if (!match) throw new Error(`${field} debe ser ISO 8601.`);
+  if (typeof value !== "string") {
+    throw new Error(`${field} debe ser ISO 8601.`);
+  }
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+  if (!match) {
+    throw new Error(`${field} debe ser ISO 8601.`);
+  }
 
-  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offsetSign, offsetHourText, offsetMinuteText] = match;
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+    offsetSign,
+    offsetHourText,
+    offsetMinuteText
+  ] = match;
   const year = Number(yearText);
   const month = Number(monthText);
   const day = Number(dayText);
@@ -241,12 +281,16 @@ function parseIso(value: unknown, field: string): Date {
   }
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new Error(`${field} debe ser ISO 8601.`);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${field} debe ser ISO 8601.`);
+  }
   return date;
 }
 
 function daysInMonth(year: number, month: number): number {
-  if (month === 2) return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  if (month === 2) {
+    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  }
   return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }
 
@@ -256,8 +300,13 @@ function encodeCursor(startsAt: Date, id: string): string {
 
 function decodeCursor(value: string): Cursor {
   try {
-    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as { startsAt?: unknown; id?: unknown };
-    if (typeof decoded.id !== "string" || !decoded.id) throw new Error("cursor inválido.");
+    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as {
+      startsAt?: unknown;
+      id?: unknown;
+    };
+    if (typeof decoded.id !== "string" || !decoded.id) {
+      throw new Error("cursor inválido.");
+    }
     return { startsAt: parseIso(decoded.startsAt, "cursor"), id: decoded.id };
   } catch {
     throw new Error("cursor inválido.");

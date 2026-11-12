@@ -33,7 +33,9 @@ const operationalLinks = [
 
 export default async function CentroOperacionesPage() {
   const session = await auth();
-  if (session?.user.role !== "ADMINISTRACION") redirect("/");
+  if (session?.user.role !== "ADMINISTRACION") {
+    redirect("/");
+  }
 
   return (
     <div className={styles.page}>

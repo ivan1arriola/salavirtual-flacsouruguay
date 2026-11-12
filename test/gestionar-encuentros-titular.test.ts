@@ -26,8 +26,12 @@ const fin = new Date("2099-05-10T16:00:00-03:00");
 
 const docentePrograma = { programaId: "prog-1", docente: { usuarioId: "titular" } };
 const zoomEvento = {
-  id: "ev-zoom", proveedorId: "prov-zoom", cuentaProveedorId: "host", externalEventId: "z1",
-  codigoReunion: null, proveedor: { tipo: "ZOOM" }
+  id: "ev-zoom",
+  proveedorId: "prov-zoom",
+  cuentaProveedorId: "host",
+  externalEventId: "z1",
+  codigoReunion: null,
+  proveedor: { tipo: "ZOOM" }
 };
 
 function dbCon(tx: Record<string, unknown>) {
@@ -39,11 +43,17 @@ function txEncuentro() {
     $executeRaw: vi.fn(),
     instanciaSala: {
       findFirst: vi.fn().mockResolvedValue({
-        id: "inst-1", estado: "PROGRAMADA", timezone: "America/Montevideo", proveedorActivoTipo: "ZOOM",
+        id: "inst-1",
+        estado: "PROGRAMADA",
+        timezone: "America/Montevideo",
+        proveedorActivoTipo: "ZOOM",
         inicioProgramadoAt: new Date("2099-05-10T10:00:00-03:00"),
         finProgramadoAt: new Date("2099-05-10T12:00:00-03:00"),
-        inicioAsistenciaTecnicaAt: null, finAsistenciaTecnicaAt: null, modalidadOverride: null,
-        requiereAsistenciaTecnica: false, descripcion: null,
+        inicioAsistenciaTecnicaAt: null,
+        finAsistenciaTecnicaAt: null,
+        modalidadOverride: null,
+        requiereAsistenciaTecnica: false,
+        descripcion: null,
         solicitud: { modalidad: "VIRTUAL", docentePrograma },
         eventosProveedor: [zoomEvento]
       }),
@@ -51,7 +61,9 @@ function txEncuentro() {
       update: vi.fn()
     },
     eventoProveedor: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), updateMany: vi.fn() },
-    cuentaProveedor: { findUnique: vi.fn().mockResolvedValue({ id: "host", prioridad: 1, limiteConcurrente: 5 }) },
+    cuentaProveedor: {
+      findUnique: vi.fn().mockResolvedValue({ id: "host", prioridad: 1, limiteConcurrente: 5 })
+    },
     asignacionAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
     postulacionAsistenciaTecnica: { updateMany: vi.fn() },
     auditoria: { create: vi.fn() }
@@ -63,8 +75,13 @@ function txSolicitud() {
     $executeRaw: vi.fn(),
     solicitudSala: {
       findUnique: vi.fn().mockResolvedValue({
-        id: "sol-1", estado: "PROGRAMADA", timezone: "America/Montevideo", modalidad: "VIRTUAL", descripcion: null,
-        docentePrograma, instancias: []
+        id: "sol-1",
+        estado: "PROGRAMADA",
+        timezone: "America/Montevideo",
+        modalidad: "VIRTUAL",
+        descripcion: null,
+        docentePrograma,
+        instancias: []
       }),
       update: vi.fn()
     },
@@ -77,8 +94,9 @@ function txSolicitud() {
 describe("solo el titular de la reunión (o administración) puede modificarla", () => {
   it("otro docente del programa no puede reprogramar un encuentro", async () => {
     const tx = txEncuentro();
-    await expect(actualizarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1", { accion: "EDITAR_FECHA", inicio, fin }))
-      .rejects.toThrow(/permisos/);
+    await expect(
+      actualizarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1", { accion: "EDITAR_FECHA", inicio, fin })
+    ).rejects.toThrow(/permisos/);
     expect(tx.instanciaSala.update).not.toHaveBeenCalled();
     expect(tx.eventoProveedor.update).not.toHaveBeenCalled();
   });
@@ -99,7 +117,9 @@ describe("solo el titular de la reunión (o administración) puede modificarla",
 
   it("otro docente no puede agregar encuentros", async () => {
     const tx = txSolicitud();
-    await expect(agregarEncuentro(dbCon(tx), otroDocente, "sol-1", { inicio, fin })).rejects.toThrow(/permisos/);
+    await expect(agregarEncuentro(dbCon(tx), otroDocente, "sol-1", { inicio, fin })).rejects.toThrow(
+      /permisos/
+    );
   });
 
   it("el titular sí puede cancelar su encuentro", async () => {

@@ -48,11 +48,17 @@ export function ZoomJoinActions({
         title="Copiar enlace de Zoom"
         type="button"
       >
-        {resultado === "copiado" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+        {resultado === "copiado" ? (
+          <Check size={16} aria-hidden="true" />
+        ) : (
+          <Copy size={16} aria-hidden="true" />
+        )}
         <span>{resultado === "copiado" ? "Copiado" : "Copiar enlace"}</span>
       </button>
       {/* El anuncio va fuera del botón: el contenido de un botón es presentacional para los lectores de pantalla. */}
-      <span role="status" className="sr-only">{resultado ? MENSAJES[resultado] : ""}</span>
+      <span role="status" className="sr-only">
+        {resultado ? MENSAJES[resultado] : ""}
+      </span>
       {resultado === "error" ? <small className="zoom-join-error">{MENSAJES.error}</small> : null}
     </span>
   );

@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   notificarUsuario: vi.fn(),
-  notificarUsuarios: vi.fn(),
+  notificarUsuarios: vi.fn()
 }));
 
 vi.mock("@/src/modules/notificaciones/notificaciones.service", () => ({
   notificarUsuario: mocks.notificarUsuario,
-  notificarUsuarios: mocks.notificarUsuarios,
+  notificarUsuarios: mocks.notificarUsuarios
 }));
 
 import {
   notificarReunionesAsignadas,
-  renotificarReunionesSinAsignar,
+  renotificarReunionesSinAsignar
 } from "@/src/modules/asistencia/notificaciones-masivas.service";
 
 describe("notificaciones-masivas.service", () => {
@@ -26,16 +26,16 @@ describe("notificaciones-masivas.service", () => {
   describe("renotificarReunionesSinAsignar", () => {
     it("bloquea usuarios que no sean administradores", async () => {
       const mockDb = {} as any;
-      await expect(
-        renotificarReunionesSinAsignar(mockDb, docenteActor)
-      ).rejects.toThrow("Solo Administración puede renotificar reuniones sin asignar.");
+      await expect(renotificarReunionesSinAsignar(mockDb, docenteActor)).rejects.toThrow(
+        "Solo Administración puede renotificar reuniones sin asignar."
+      );
     });
 
     it("informa si no hay reuniones sin asignar", async () => {
       const mockDb = {
         instanciaSala: {
-          findMany: vi.fn().mockResolvedValue([]),
-        },
+          findMany: vi.fn().mockResolvedValue([])
+        }
       } as any;
 
       const result = await renotificarReunionesSinAsignar(mockDb, adminActor);
@@ -62,12 +62,12 @@ describe("notificaciones-masivas.service", () => {
                 docentePrograma: {
                   programa: { nombre: "Maestría en Políticas" },
                   docente: {
-                    usuario: { nombres: "Ana", apellidos: "García" },
-                  },
-                },
-              },
-            },
-          ]),
+                    usuario: { nombres: "Ana", apellidos: "García" }
+                  }
+                }
+              }
+            }
+          ])
         },
         asistenteTecnico: {
           findMany: vi.fn().mockResolvedValue([
@@ -77,8 +77,8 @@ describe("notificaciones-masivas.service", () => {
                 id: "user-1",
                 emailPrincipal: "asistente1@flacso.edu.uy",
                 nombres: "Carlos",
-                apellidos: "Pérez",
-              },
+                apellidos: "Pérez"
+              }
             },
             {
               id: "asistente-2",
@@ -86,14 +86,14 @@ describe("notificaciones-masivas.service", () => {
                 id: "user-2",
                 emailPrincipal: "asistente2@flacso.edu.uy",
                 nombres: "Lucía",
-                apellidos: "Gómez",
-              },
-            },
-          ]),
+                apellidos: "Gómez"
+              }
+            }
+          ])
         },
         auditoria: {
-          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
-        },
+          create: vi.fn().mockResolvedValue({ id: "audit-1" })
+        }
       } as any;
 
       const result = await renotificarReunionesSinAsignar(mockDb, adminActor);
@@ -103,12 +103,12 @@ describe("notificaciones-masivas.service", () => {
         mockDb,
         [
           { usuarioId: "user-1", email: "asistente1@flacso.edu.uy" },
-          { usuarioId: "user-2", email: "asistente2@flacso.edu.uy" },
+          { usuarioId: "user-2", email: "asistente2@flacso.edu.uy" }
         ],
         expect.objectContaining({
           tipo: "ASISTENCIA_REQUERIDA",
           emailSubject: expect.stringContaining("Cobertura de monitoreo"),
-          href: "/agenda-abierta",
+          href: "/agenda-abierta"
         })
       );
       expect(mockDb.auditoria.create).toHaveBeenCalled();
@@ -118,16 +118,16 @@ describe("notificaciones-masivas.service", () => {
   describe("notificarReunionesAsignadas", () => {
     it("bloquea usuarios que no sean administradores", async () => {
       const mockDb = {} as any;
-      await expect(
-        notificarReunionesAsignadas(mockDb, docenteActor)
-      ).rejects.toThrow("Solo Administración puede notificar reuniones asignadas.");
+      await expect(notificarReunionesAsignadas(mockDb, docenteActor)).rejects.toThrow(
+        "Solo Administración puede notificar reuniones asignadas."
+      );
     });
 
     it("informa si no hay reuniones asignadas", async () => {
       const mockDb = {
         asignacionAsistenciaTecnica: {
-          findMany: vi.fn().mockResolvedValue([]),
-        },
+          findMany: vi.fn().mockResolvedValue([])
+        }
       } as any;
 
       const result = await notificarReunionesAsignadas(mockDb, adminActor);
@@ -148,8 +148,8 @@ describe("notificaciones-masivas.service", () => {
                   id: "user-1",
                   emailPrincipal: "asistente1@flacso.edu.uy",
                   nombres: "Carlos",
-                  apellidos: "Pérez",
-                },
+                  apellidos: "Pérez"
+                }
               },
               instancia: {
                 id: "inst-1",
@@ -164,12 +164,14 @@ describe("notificaciones-masivas.service", () => {
                   docentePrograma: {
                     programa: { nombre: "Doctorado" },
                     docente: {
-                      usuario: { nombres: "Marta", apellidos: "Rodríguez" },
-                    },
-                  },
+                      usuario: { nombres: "Marta", apellidos: "Rodríguez" }
+                    }
+                  }
                 },
-                eventosProveedor: [{ joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } }],
-              },
+                eventosProveedor: [
+                  { joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } }
+                ]
+              }
             },
             {
               id: "asg-2",
@@ -178,8 +180,8 @@ describe("notificaciones-masivas.service", () => {
                   id: "user-1",
                   emailPrincipal: "asistente1@flacso.edu.uy",
                   nombres: "Carlos",
-                  apellidos: "Pérez",
-                },
+                  apellidos: "Pérez"
+                }
               },
               instancia: {
                 id: "inst-2",
@@ -194,18 +196,18 @@ describe("notificaciones-masivas.service", () => {
                   docentePrograma: {
                     programa: { nombre: "Doctorado" },
                     docente: {
-                      usuario: { nombres: "Marta", apellidos: "Rodríguez" },
-                    },
-                  },
+                      usuario: { nombres: "Marta", apellidos: "Rodríguez" }
+                    }
+                  }
                 },
-                eventosProveedor: [],
-              },
-            },
-          ]),
+                eventosProveedor: []
+              }
+            }
+          ])
         },
         auditoria: {
-          create: vi.fn().mockResolvedValue({ id: "audit-2" }),
-        },
+          create: vi.fn().mockResolvedValue({ id: "audit-2" })
+        }
       } as any;
 
       const result = await notificarReunionesAsignadas(mockDb, adminActor);
@@ -219,11 +221,10 @@ describe("notificaciones-masivas.service", () => {
           tipo: "ASISTENCIA_ASIGNACION",
           emailSubject: expect.stringContaining("Cronograma de monitoreo: 2 reuniones asignadas"),
           emailText: expect.stringContaining("https://meet.google.com/abc-defg-hij"),
-          href: "/mi-agenda",
+          href: "/mi-agenda"
         })
       );
       expect(mockDb.auditoria.create).toHaveBeenCalled();
     });
   });
 });
-

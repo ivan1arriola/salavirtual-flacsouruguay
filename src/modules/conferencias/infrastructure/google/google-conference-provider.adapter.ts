@@ -1,10 +1,10 @@
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
-import { claveOperacionGoogle, ejecutarGooglePostUnaVez } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
-  crearGoogleCalendarAuthClient,
-  crearGoogleMeetAuthClient,
-} from "@/src/integrations/google/auth";
+  claveOperacionGoogle,
+  ejecutarGooglePostUnaVez
+} from "@/src/modules/operaciones/google-operaciones-externas.service";
+import { crearGoogleCalendarAuthClient, crearGoogleMeetAuthClient } from "@/src/integrations/google/auth";
 import {
   actualizarEventoCalendarHttp,
   crearEventoCalendarHttp,
@@ -12,7 +12,7 @@ import {
   isAlreadyCalendarEventError,
   obtenerEventoCalendar,
   obtenerEventoCalendarSiExiste,
-  type GoogleCalendarAttendee,
+  type GoogleCalendarAttendee
 } from "@/src/integrations/google/calendar";
 import {
   actualizarEspacioMeetHttp,
@@ -25,7 +25,7 @@ import {
   isMemberPermissionError,
   listarMiembrosMeetHttp,
   obtenerEspacioMeet,
-  type GoogleMeetSpaceMember,
+  type GoogleMeetSpaceMember
 } from "@/src/integrations/google/meet";
 import { cargarCredencialesLegacyGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
 import {
@@ -36,7 +36,7 @@ import {
   registrarVerificacionCohosts,
   type CalendarEvent,
   type ConferenceProvisionRequest,
-  type ConferenceProvisionResult,
+  type ConferenceProvisionResult
 } from "../../domain";
 import type { ConferenceProvider } from "../../ports/conference-provider.port";
 
@@ -47,9 +47,10 @@ export type GoogleCalendarCredentials = Readonly<{
 }>;
 
 type CalendarAttendee = GoogleCalendarAttendee;
-type CalendarEventWithAttendees = CalendarEvent & Readonly<{
-  attendees?: readonly CalendarAttendee[];
-}>;
+type CalendarEventWithAttendees = CalendarEvent &
+  Readonly<{
+    attendees?: readonly CalendarAttendee[];
+  }>;
 
 type MeetSpace = Readonly<{
   name?: string;
@@ -89,13 +90,17 @@ export async function configurarGoogleMeetExistente(
   try {
     await configurarGoogleMeetConCredencial(credentials, codigoReunion, settings);
   } catch (error) {
-    if (!isMemberPermissionError(error)) throw error;
+    if (!isMemberPermissionError(error)) {
+      throw error;
+    }
     for (const legacy of await credencialesLegacy(credentials.subject)) {
       try {
         await configurarGoogleMeetConCredencial(legacy, codigoReunion, settings);
         return;
       } catch (legacyError) {
-        if (!isMemberPermissionError(legacyError)) throw legacyError;
+        if (!isMemberPermissionError(legacyError)) {
+          throw legacyError;
+        }
       }
     }
     // Never report success if neither Principal nor Legacy could assign members.
@@ -117,7 +122,6 @@ async function configurarGoogleMeetConCredencial(
   await reconciliarCohostsMeet(auth, spaceName, [], settings.cohostEmails ?? []);
 }
 
-
 export async function sincronizarCohostsGoogleExistente(
   credentials: GoogleCalendarCredentials,
   input: Readonly<{
@@ -131,12 +135,16 @@ export async function sincronizarCohostsGoogleExistente(
   try {
     return await sincronizarCohostsGoogleConCredencial(credentials, input);
   } catch (error) {
-    if (!isMemberPermissionError(error)) throw error;
+    if (!isMemberPermissionError(error)) {
+      throw error;
+    }
     for (const legacy of await credencialesLegacy(credentials.subject)) {
       try {
         return await sincronizarCohostsGoogleConCredencial(legacy, input);
       } catch (legacyError) {
-        if (!isMemberPermissionError(legacyError)) throw legacyError;
+        if (!isMemberPermissionError(legacyError)) {
+          throw legacyError;
+        }
       }
     }
     // Calendar invitations are not proof of COHOST. Do not write a verified
@@ -179,15 +187,23 @@ async function sincronizarCohostsGoogleConCredencial(
       )) as CalendarEventWithAttendees);
 
   const provisioned = extraerMeetProvisionado(updated);
-  if (!provisioned) throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
-  const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, { cohostEmails: desired });
+  if (!provisioned) {
+    throw new Error("Google Calendar no confirmó el espacio Meet de este evento.");
+  }
+  const spaceName = await configurarEspacioMeet(meetAuth, provisioned.codigoReunion, {
+    cohostEmails: desired
+  });
   await reconciliarCohostsMeet(meetAuth, spaceName, previous, desired);
-  return registrarVerificacionCohosts(updated, provisioned.codigoReunion, credentials.subject, desired, new Date().toISOString());
+  return registrarVerificacionCohosts(
+    updated,
+    provisioned.codigoReunion,
+    credentials.subject,
+    desired,
+    new Date().toISOString()
+  );
 }
 
-export function crearGoogleConferenceProvider(
-  credentials: GoogleCalendarCredentials
-): ConferenceProvider {
+export function crearGoogleConferenceProvider(credentials: GoogleCalendarCredentials): ConferenceProvider {
   const auth = crearGoogleCalendarAuthClient(credentials);
   const meetAuth = crearGoogleMeetAuthClient(credentials);
   let provisioningAttempt = false;
@@ -210,11 +226,20 @@ export function crearGoogleConferenceProvider(
       let createdSpace: Required<Pick<MeetSpace, "name" | "meetingCode" | "meetingUri">> | null = null;
       if (!conferenceData) {
         const key = claveOperacionGoogle(
-          "MEET_CREAR_ESPACIO", credentials.subject, request.calendarId, request.calendarEventId
+          "MEET_CREAR_ESPACIO",
+          credentials.subject,
+          request.calendarId,
+          request.calendarEventId
         );
         createdSpace = await ejecutarGooglePostUnaVez(
           db,
-          { clave: key, proveedor: "MEET", tipo: "MEET_CREAR_ESPACIO", cuenta: credentials.subject, referencia: request.calendarEventId },
+          {
+            clave: key,
+            proveedor: "MEET",
+            tipo: "MEET_CREAR_ESPACIO",
+            cuenta: credentials.subject,
+            referencia: request.calendarEventId
+          },
           () => crearEspacioMeetAplicacion(meetAuth, request),
           (space) => ({
             name: space.name,
@@ -268,7 +293,9 @@ export function crearGoogleConferenceProvider(
           } catch {
             // Preserve the original failure; GET can also fail transiently.
           }
-          if (!recovered) throw error;
+          if (!recovered) {
+            throw error;
+          }
           if (recovered.id !== request.calendarEventId) {
             throw new Error("Google Calendar devolvió un evento con ID inesperado.");
           }
@@ -280,7 +307,9 @@ export function crearGoogleConferenceProvider(
       }
 
       const eventId = responseData.id;
-      if (!eventId) throw new Error("Google Calendar no devolvió el ID del evento.");
+      if (!eventId) {
+        throw new Error("Google Calendar no devolvió el ID del evento.");
+      }
 
       const provisioned = extraerMeetProvisionado(responseData);
       if (!provisioned) {
@@ -291,31 +320,34 @@ export function crearGoogleConferenceProvider(
         (provisioned.codigoReunion !== createdSpace.meetingCode ||
           provisioned.joinUrl !== createdSpace.meetingUri)
       ) {
-        throw new Error("Google Calendar vinculó una conferencia distinta al espacio Meet creado por Sala Virtual.");
+        throw new Error(
+          "Google Calendar vinculó una conferencia distinta al espacio Meet creado por Sala Virtual."
+        );
       }
 
       return { externalEventId: eventId, payload: responseData };
     },
     async obtenerEvento(calendarId, externalEventId) {
-      const current = (await obtenerEventoCalendar(
-        auth,
-        calendarId,
-        externalEventId,
-        { conferenceDataVersion: 1 }
-      )) as CalendarEvent;
+      const current = (await obtenerEventoCalendar(auth, calendarId, externalEventId, {
+        conferenceDataVersion: 1
+      })) as CalendarEvent;
       return extraerMeetProvisionado(current);
     },
     async configurarEventoMeet(request, evento) {
       try {
         await finalizarProvision(meetAuth, evento, request);
       } catch (error) {
-        if (provisioningAttempt || !isMemberPermissionError(error)) throw error;
+        if (provisioningAttempt || !isMemberPermissionError(error)) {
+          throw error;
+        }
         for (const legacy of await credencialesLegacy(credentials.subject)) {
           try {
             await finalizarProvision(crearGoogleMeetAuthClient(legacy), evento, request);
             return;
           } catch (legacyError) {
-            if (!isMemberPermissionError(legacyError)) throw legacyError;
+            if (!isMemberPermissionError(legacyError)) {
+              throw legacyError;
+            }
           }
         }
         // Existing links remain valid, but unassigned cohosts are an integration
@@ -335,7 +367,7 @@ export function crearGoogleConferenceProvider(
           summary: request.titulo,
           description: request.descripcion,
           start: { dateTime: request.inicio.toISOString(), timeZone: request.timezone },
-          end: { dateTime: request.fin.toISOString(), timeZone: request.timezone },
+          end: { dateTime: request.fin.toISOString(), timeZone: request.timezone }
         },
         { sendUpdates: "none" }
       );
@@ -348,23 +380,18 @@ export function crearGoogleConferenceProvider(
     },
     sincronizarCohostsExistente(input) {
       return sincronizarCohostsGoogleExistente(credentials, input);
-    },
+    }
   };
 }
 
-async function credencialesLegacy(
-  subject: string
-): Promise<readonly GoogleCalendarCredentials[]> {
+async function credencialesLegacy(subject: string): Promise<readonly GoogleCalendarCredentials[]> {
   try {
-    const rows = await cargarCredencialesLegacyGoogleWorkspace(
-      db,
-      descifrarConfiguracion
-    );
+    const rows = await cargarCredencialesLegacyGoogleWorkspace(db, descifrarConfiguracion);
 
     return rows.map((credential) => ({
       serviceAccountEmail: credential.serviceAccountEmail,
       privateKey: credential.privateKey,
-      subject,
+      subject
     }));
   } catch {
     return [];
@@ -383,9 +410,9 @@ async function crearEspacioMeetAplicacion(
       ? {
           attendanceReportGenerationType: request.requiereAsistenciaTecnica
             ? "GENERATE_REPORT"
-            : "DO_NOT_GENERATE",
+            : "DO_NOT_GENERATE"
         }
-      : {}),
+      : {})
   });
 
   const name = created.name;
@@ -419,17 +446,23 @@ async function configurarEspacioMeet(
   const configurarAsistencia = request.requiereAsistenciaTecnica !== undefined;
   const configurarModeracion = Boolean(request.cohostEmails?.length);
   const current = await obtenerEspacioMeet(auth, codigoReunion);
-  if (!current.name) throw new Error("Google Meet no devolvió el ID del espacio.");
+  if (!current.name) {
+    throw new Error("Google Meet no devolvió el ID del espacio.");
+  }
 
   const config = {
     ...(configurarAsistencia
-      ? { attendanceReportGenerationType: request.requiereAsistenciaTecnica ? "GENERATE_REPORT" : "DO_NOT_GENERATE" }
+      ? {
+          attendanceReportGenerationType: request.requiereAsistenciaTecnica
+            ? "GENERATE_REPORT"
+            : "DO_NOT_GENERATE"
+        }
       : {}),
-    ...(configurarModeracion ? { moderation: "ON" } : {}),
+    ...(configurarModeracion ? { moderation: "ON" } : {})
   };
   const updateMask = [
     ...(configurarAsistencia ? ["config.attendance_report_generation_type"] : []),
-    ...(configurarModeracion ? ["config.moderation"] : []),
+    ...(configurarModeracion ? ["config.moderation"] : [])
   ];
   if (updateMask.length > 0) {
     await actualizarEspacioMeetHttp(auth, current.name, config, updateMask);
@@ -461,7 +494,9 @@ async function configurarCohostsMeet(
           cachedMembers = await listarMiembrosMeetHttp(auth, spaceName);
         }
         const member = cachedMembers.find((item) => item.email?.trim().toLowerCase() === email);
-        if (!member?.name) throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
+        if (!member?.name) {
+          throw new Error(`Google Meet no permitió verificar el miembro ${email}.`);
+        }
         if (member.role !== "COHOST") {
           try {
             // Promote in place when supported by the endpoint.
@@ -476,7 +511,9 @@ async function configurarCohostsMeet(
             }
             try {
               await eliminarMiembroMeetHttp(auth, member.name).catch((delError) => {
-                if (!isMeetNotFoundError(delError)) throw delError;
+                if (!isMeetNotFoundError(delError)) {
+                  throw delError;
+                }
               });
               await crearMiembroMeetHttp(auth, spaceName, email, "COHOST");
             } catch (recreateError) {
@@ -507,7 +544,9 @@ async function configurarCohostsMeet(
 }
 
 function esErrorPatchMiembroNoSoportado(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as {
     code?: unknown;
     response?: { status?: unknown };
@@ -522,7 +561,9 @@ async function verificarCohostsMeet(
   desiredEmails: readonly string[]
 ): Promise<void> {
   const desired = emailsCohost(auth.subject, desiredEmails);
-  if (desired.length === 0) return;
+  if (desired.length === 0) {
+    return;
+  }
   const members = await listarMiembrosMeetHttp(auth, spaceName);
   const actual = new Set(
     members
@@ -547,18 +588,20 @@ async function reconciliarCohostsMeet(
   const desired = new Set(emailsCohost(auth.subject, desiredEmails));
   const members = await listarMiembrosMeetHttp(auth, spaceName);
   const cohosts = members.filter(({ role }) => role === "COHOST");
-  const memberNamesToRemove = new Set(
-    cohostMemberNamesToRemove(previousEmails, [...desired], cohosts)
-  );
+  const memberNamesToRemove = new Set(cohostMemberNamesToRemove(previousEmails, [...desired], cohosts));
 
   await Promise.all(
     cohosts.flatMap((member) => {
-      if (!member.name || !memberNamesToRemove.has(member.name)) return [];
+      if (!member.name || !memberNamesToRemove.has(member.name)) {
+        return [];
+      }
       return [
         eliminarMiembroMeetHttp(auth, member.name).catch((error) => {
-          if (isMeetNotFoundError(error)) return;
+          if (isMeetNotFoundError(error)) {
+            return;
+          }
           throw error;
-        }),
+        })
       ];
     })
   );
@@ -588,16 +631,17 @@ function reconciliarAttendees(
   const result = new Map<string, CalendarAttendee>();
   for (const attendee of current) {
     const email = attendee.email.trim().toLowerCase();
-    if (!previous.has(email)) result.set(email, { ...attendee, email });
+    if (!previous.has(email)) {
+      result.set(email, { ...attendee, email });
+    }
   }
-  for (const email of normalizarEmails(desiredEmails)) result.set(email, { email });
+  for (const email of normalizarEmails(desiredEmails)) {
+    result.set(email, { email });
+  }
   return [...result.values()];
 }
 
-function mismosAttendees(
-  left: readonly CalendarAttendee[],
-  right: readonly CalendarAttendee[]
-): boolean {
+function mismosAttendees(left: readonly CalendarAttendee[], right: readonly CalendarAttendee[]): boolean {
   const emails = (values: readonly CalendarAttendee[]) =>
     values
       .map(({ email }) => email.trim().toLowerCase())
@@ -622,45 +666,59 @@ export type ResultadoVerificacionEspacioMeet = Readonly<{
 }>;
 
 export async function consultarCohostsEspacioMeet(
-  candidates: readonly { serviceAccountEmail: string; privateKey: string; subject: string; origen?: "PRINCIPAL" | "LEGACY" }[],
+  candidates: readonly {
+    serviceAccountEmail: string;
+    privateKey: string;
+    subject: string;
+    origen?: "PRINCIPAL" | "LEGACY";
+  }[],
   codigoReunion: string
 ): Promise<ResultadoVerificacionEspacioMeet> {
   let intentosLegacy = 0;
   let lastStatus: number | null = null;
 
   for (const cred of candidates) {
-    if (cred.origen === "LEGACY") intentosLegacy++;
+    if (cred.origen === "LEGACY") {
+      intentosLegacy++;
+    }
     try {
       const client = crearGoogleMeetAuthClient(cred);
       const space = await obtenerEspacioMeet(client, codigoReunion);
-      if (!space.name) throw new Error("Espacio Meet no disponible.");
+      if (!space.name) {
+        throw new Error("Espacio Meet no disponible.");
+      }
       const members = await listarMiembrosMeetHttp(client, space.name);
       const cohosts = new Set(
         members
           .filter((m) => m.role === "COHOST" && typeof m.email === "string")
-          .flatMap((m) => m.email ? [m.email.trim().toLowerCase()] : [])
+          .flatMap((m) => (m.email ? [m.email.trim().toLowerCase()] : []))
       );
       return {
         cohosts,
         origen: cred.origen ?? null,
         intentosLegacy,
-        error: null,
+        error: null
       };
     } catch (error) {
-      const status = typeof error === "object" && error !== null
-        ? (error as { response?: { status?: number }; code?: number }).response?.status
-          ?? (error as { code?: number }).code
-        : null;
+      const status =
+        typeof error === "object" && error !== null
+          ? ((error as { response?: { status?: number }; code?: number }).response?.status ??
+            (error as { code?: number }).code)
+          : null;
       lastStatus = typeof status === "number" ? status : null;
-      if (lastStatus !== 403 && lastStatus !== 404 && lastStatus !== 401) break;
+      if (lastStatus !== 403 && lastStatus !== 404 && lastStatus !== 401) {
+        break;
+      }
     }
   }
 
-  const errorMsg = lastStatus === 403
-    ? "Permisos insuficientes en Google Meet."
-    : lastStatus === 404
-    ? "El espacio de Google Meet no existe o expiró."
-    : lastStatus ? `Google Meet respondió con error ${lastStatus}.` : "Error al conectar con Google Meet.";
+  const errorMsg =
+    lastStatus === 403
+      ? "Permisos insuficientes en Google Meet."
+      : lastStatus === 404
+        ? "El espacio de Google Meet no existe o expiró."
+        : lastStatus
+          ? `Google Meet respondió con error ${lastStatus}.`
+          : "Error al conectar con Google Meet.";
   return { cohosts: null, origen: null, intentosLegacy, error: errorMsg };
 }
-

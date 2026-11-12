@@ -7,9 +7,14 @@ const admin = { id: "admin", rol: "ADMINISTRACION" };
 const docente = { id: "docente", rol: "DOCENTE" };
 
 const meetOk = {
-  joinUrl: "https://meet.google.com/abc", externalEventId: "calendar-event", estadoIntegracion: "SINCRONIZADA",
-  operacionPendiente: null, cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" }, proveedor: { tipo: "GOOGLE_MEET" },
-  reunionProveedorId: null, cuentaProveedorId: "meet-host"
+  joinUrl: "https://meet.google.com/abc",
+  externalEventId: "calendar-event",
+  estadoIntegracion: "SINCRONIZADA",
+  operacionPendiente: null,
+  cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" },
+  proveedor: { tipo: "GOOGLE_MEET" },
+  reunionProveedorId: null,
+  cuentaProveedorId: "meet-host"
 };
 
 function instancia(id: string, dia: number, serie: string, extra: Record<string, unknown> = {}) {
@@ -27,7 +32,10 @@ function instancia(id: string, dia: number, serie: string, extra: Record<string,
       docenteProgramaId: "dp-1",
       createdAt: new Date("2026-10-01T12:00:00Z"),
       creadaPor: { emailPrincipal: "Admin@flacso.edu.uy" },
-      docentePrograma: { programa: { nombre: "Maestría" }, docente: { usuario: { emailPrincipal: "doc@flacso.edu.uy" } } }
+      docentePrograma: {
+        programa: { nombre: "Maestría" },
+        docente: { usuario: { emailPrincipal: "doc@flacso.edu.uy" } }
+      }
     },
     asignaciones: [],
     cohostEmails: [{ email: "co@flacso.edu.uy" }],
@@ -42,9 +50,24 @@ function crearDb(instancias: unknown[], opciones: { reservas?: unknown[]; hosts?
   const db = {
     instanciaSala: { findMany: vi.fn(async () => instancias), update: escritura },
     cuentaProveedor: {
-      findMany: vi.fn(async () => opciones.hosts ?? [{ id: "h1", nombre: "Sala 01", emailOrganizador: "sala01@flacso.edu.uy", prioridad: 1, limiteConcurrente: 1 }])
+      findMany: vi.fn(
+        async () =>
+          opciones.hosts ?? [
+            {
+              id: "h1",
+              nombre: "Sala 01",
+              emailOrganizador: "sala01@flacso.edu.uy",
+              prioridad: 1,
+              limiteConcurrente: 1
+            }
+          ]
+      )
     },
-    eventoProveedor: { findMany: vi.fn(async () => opciones.reservas ?? []), update: escritura, create: escritura },
+    eventoProveedor: {
+      findMany: vi.fn(async () => opciones.reservas ?? []),
+      update: escritura,
+      create: escritura
+    },
     auditoria: { create: escritura },
     $transaction: escritura
   } as unknown as PrismaClient;
@@ -54,18 +77,30 @@ function crearDb(instancias: unknown[], opciones: { reservas?: unknown[]; hosts?
 describe("vista previa de la migración por serie", () => {
   it("niega el acceso a quien no es administrador", async () => {
     const { db, escritura } = crearDb([]);
-    await expect(obtenerVistaPreviaMigracionZoomPorSerie(db, docente, ahora)).rejects.toMatchObject({ status: 403 });
+    await expect(obtenerVistaPreviaMigracionZoomPorSerie(db, docente, ahora)).rejects.toMatchObject({
+      status: 403
+    });
     expect(escritura).not.toHaveBeenCalled();
   });
 
   it("agrupa los encuentros por serie y propone una sola sala para todos sus horarios", async () => {
-    const { db, escritura } = crearDb([instancia("a", 10, "s1"), instancia("b", 11, "s1"), instancia("c", 12, "s1")]);
+    const { db, escritura } = crearDb([
+      instancia("a", 10, "s1"),
+      instancia("b", 11, "s1"),
+      instancia("c", 12, "s1")
+    ]);
     const vista = await obtenerVistaPreviaMigracionZoomPorSerie(db, admin, ahora);
 
     expect(vista.modo).toBe("SERIE");
     expect(vista.filas).toHaveLength(1);
     const [fila] = vista.filas;
-    expect(fila).toMatchObject({ titulo: "Clase s1", programa: "Maestría", estado: "MIGRABLE", cambioEnlace: true, hostZoom: { id: "h1", nombre: "Sala 01" } });
+    expect(fila).toMatchObject({
+      titulo: "Clase s1",
+      programa: "Maestría",
+      estado: "MIGRABLE",
+      cambioEnlace: true,
+      hostZoom: { id: "h1", nombre: "Sala 01" }
+    });
     expect(fila.encuentros.map(({ id }) => id)).toEqual(["a", "b", "c"]);
     expect(fila.encuentros.every(({ migra }) => migra)).toBe(true);
     expect(vista.conteos).toMatchObject({ MIGRABLE: 1, SIN_SALA: 0 });
@@ -76,7 +111,11 @@ describe("vista previa de la migración por serie", () => {
     const { db } = crearDb([instancia("a", 10, "s1"), instancia("b", 11, "s1")]);
     const [fila] = (await obtenerVistaPreviaMigracionZoomPorSerie(db, admin, ahora)).filas;
     expect(fila.destinatarios).toEqual([
-      "admin@flacso.edu.uy", "co@flacso.edu.uy", "doc@flacso.edu.uy", "invitado-a@example.org", "invitado-b@example.org"
+      "admin@flacso.edu.uy",
+      "co@flacso.edu.uy",
+      "doc@flacso.edu.uy",
+      "invitado-a@example.org",
+      "invitado-b@example.org"
     ]);
   });
 
@@ -93,35 +132,70 @@ describe("vista previa de la migración por serie", () => {
     ]);
     const [fila] = (await obtenerVistaPreviaMigracionZoomPorSerie(db, admin, ahora)).filas;
     expect(fila).toMatchObject({ estado: "REVISAR", hostZoom: null, cambioEnlace: false, destinatarios: [] });
-    expect(fila.encuentros.find(({ id }) => id === "a")).toMatchObject({ conservarEnMeet: true, motivoExcepcion: "Externo" });
+    expect(fila.encuentros.find(({ id }) => id === "a")).toMatchObject({
+      conservarEnMeet: true,
+      motivoExcepcion: "Externo"
+    });
   });
 
   it("una serie cuyos encuentros en Zoom comparten reunión se migra en la misma sala", async () => {
     const zoomCompartido = {
-      joinUrl: "https://flacso.zoom.us/j/1", externalEventId: "1", estadoIntegracion: "SINCRONIZADA", operacionPendiente: null,
-      cuentaProveedor: { emailOrganizador: "sala02@flacso.edu.uy" }, proveedor: { tipo: "ZOOM" },
-      reunionProveedorId: "reunion-1", cuentaProveedorId: "h2"
+      joinUrl: "https://flacso.zoom.us/j/1",
+      externalEventId: "1",
+      estadoIntegracion: "SINCRONIZADA",
+      operacionPendiente: null,
+      cuentaProveedor: { emailOrganizador: "sala02@flacso.edu.uy" },
+      proveedor: { tipo: "ZOOM" },
+      reunionProveedorId: "reunion-1",
+      cuentaProveedorId: "h2"
     };
     const hosts = [
-      { id: "h1", nombre: "Sala 01", emailOrganizador: "sala01@flacso.edu.uy", prioridad: 1, limiteConcurrente: 1 },
-      { id: "h2", nombre: "Sala 02", emailOrganizador: "sala02@flacso.edu.uy", prioridad: 2, limiteConcurrente: 1 }
+      {
+        id: "h1",
+        nombre: "Sala 01",
+        emailOrganizador: "sala01@flacso.edu.uy",
+        prioridad: 1,
+        limiteConcurrente: 1
+      },
+      {
+        id: "h2",
+        nombre: "Sala 02",
+        emailOrganizador: "sala02@flacso.edu.uy",
+        prioridad: 2,
+        limiteConcurrente: 1
+      }
     ];
-    const { db } = crearDb([
-      instancia("z", 10, "s1", { proveedorActivoTipo: "ZOOM", eventosProveedor: [meetOk, zoomCompartido] }),
-      instancia("a", 11, "s1")
-    ], { hosts });
+    const { db } = crearDb(
+      [
+        instancia("z", 10, "s1", { proveedorActivoTipo: "ZOOM", eventosProveedor: [meetOk, zoomCompartido] }),
+        instancia("a", 11, "s1")
+      ],
+      { hosts }
+    );
     const [fila] = (await obtenerVistaPreviaMigracionZoomPorSerie(db, admin, ahora)).filas;
     expect(fila).toMatchObject({ estado: "MIGRABLE", hostZoom: { id: "h2" } });
     expect(fila.encuentros.find(({ id }) => id === "z")).toMatchObject({ proveedor: "ZOOM", migra: false });
-    expect(fila.encuentros.find(({ id }) => id === "a")).toMatchObject({ proveedor: "GOOGLE_MEET", migra: true });
+    expect(fila.encuentros.find(({ id }) => id === "a")).toMatchObject({
+      proveedor: "GOOGLE_MEET",
+      migra: true
+    });
   });
 
   it("las reservas Zoom de otras reuniones se respetan y las de la propia serie no cuentan como colisión", async () => {
-    const reservaAjena = { cuentaProveedorId: "h1", instanciaSalaId: "otra", instancia: { inicioProgramadoAt: new Date("2026-11-10T12:00:00Z"), finProgramadoAt: new Date("2026-11-10T13:00:00Z") } };
+    const reservaAjena = {
+      cuentaProveedorId: "h1",
+      instanciaSalaId: "otra",
+      instancia: {
+        inicioProgramadoAt: new Date("2026-11-10T12:00:00Z"),
+        finProgramadoAt: new Date("2026-11-10T13:00:00Z")
+      }
+    };
     const ajena = crearDb([instancia("a", 10, "s1")], { reservas: [reservaAjena] });
     expect((await obtenerVistaPreviaMigracionZoomPorSerie(ajena.db, admin, ahora)).conteos.SIN_SALA).toBe(1);
 
-    const propia = crearDb([instancia("a", 10, "s1")], { reservas: [{ ...reservaAjena, instanciaSalaId: "a" }] });
+    const propia = crearDb([instancia("a", 10, "s1")], {
+      reservas: [{ ...reservaAjena, instanciaSalaId: "a" }]
+    });
     expect((await obtenerVistaPreviaMigracionZoomPorSerie(propia.db, admin, ahora)).conteos.MIGRABLE).toBe(1);
   });
 });

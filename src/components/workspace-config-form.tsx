@@ -22,7 +22,7 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
     ["Cuenta de servicio", Boolean(initial?.serviceAccountEmail && initial?.privateKeyConfigurada)],
     ["Delegación", Boolean(initial?.serviceAccountSubject)],
     ["Destino Drive", Boolean(initial?.driveDestinationId)],
-    ["Integración", Boolean(initial?.activa)],
+    ["Integración", Boolean(initial?.activa)]
   ] as const;
   const readiness = workspaceReadiness({
     serviceAccountEmail: initial?.serviceAccountEmail ?? null,
@@ -38,14 +38,19 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
         <div className="workspace-overview-heading">
           <KeyRound size={21} aria-hidden="true" />
           <div>
-            <strong>{readiness.ready ? "Configuración completa" : `${readiness.readyCount} de ${readiness.totalCount} requisitos listos`}</strong>
+            <strong>
+              {readiness.ready
+                ? "Configuración completa"
+                : `${readiness.readyCount} de ${readiness.totalCount} requisitos listos`}
+            </strong>
             <span>Cuenta principal, delegación, Drive e integración</span>
           </div>
         </div>
         <div className="workspace-overview-statuses">
           {checks.map(([label, ready]) => (
             <span className={ready ? "is-ready" : "is-pending"} key={label}>
-              {ready ? <CheckCircle2 size={15} /> : <Circle size={15} />}{label}
+              {ready ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+              {label}
             </span>
           ))}
         </div>
@@ -70,20 +75,34 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
 
       <details className="settings-disclosure settings-disclosure--historical">
         <summary>
-          <span className="settings-disclosure__icon"><History size={19} /></span>
-          <span><strong>Compatibilidad histórica</strong><small>Credenciales que solo administran reuniones anteriores.</small></span>
+          <span className="settings-disclosure__icon">
+            <History size={19} />
+          </span>
+          <span>
+            <strong>Compatibilidad histórica</strong>
+            <small>Credenciales que solo administran reuniones anteriores.</small>
+          </span>
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
-        <div className="settings-disclosure__body"><WorkspaceLegacyCredentials /></div>
+        <div className="settings-disclosure__body">
+          <WorkspaceLegacyCredentials />
+        </div>
       </details>
 
       <details className="settings-disclosure settings-disclosure--advanced" open={!initial?.activa}>
         <summary>
-          <span className="settings-disclosure__icon"><SlidersHorizontal size={19} /></span>
-          <span><strong>Configuración avanzada</strong><small>Pausá o reanudá el aprovisionamiento con Google.</small></span>
+          <span className="settings-disclosure__icon">
+            <SlidersHorizontal size={19} />
+          </span>
+          <span>
+            <strong>Configuración avanzada</strong>
+            <small>Pausá o reanudá el aprovisionamiento con Google.</small>
+          </span>
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
-        <div className="settings-disclosure__body"><WorkspaceStatusForm active={initial?.activa ?? true} /></div>
+        <div className="settings-disclosure__body">
+          <WorkspaceStatusForm active={initial?.activa ?? true} />
+        </div>
       </details>
     </div>
   );

@@ -34,7 +34,9 @@ export function AssistantAssignmentSelect({
   const applicantIds = new Set(applicants.map(({ id }) => id));
 
   function assign(assistantId: string) {
-    if (!assistantId || assistantId === currentAssistantId) return;
+    if (!assistantId || assistantId === currentAssistantId) {
+      return;
+    }
     setMessage("");
     startTransition(async () => {
       const response = await fetch("/api/v1/asistencia/asignaciones", {
@@ -61,7 +63,8 @@ export function AssistantAssignmentSelect({
           onClick={() => setEditing(true)}
           type="button"
         >
-          <RefreshCw size={16} />Reasignar persona
+          <RefreshCw size={16} />
+          Reasignar persona
         </button>
       ) : null}
       {editing ? (
@@ -75,16 +78,18 @@ export function AssistantAssignmentSelect({
             {applicants.length > 0 ? (
               <div className="assignment-chip-list">
                 {applicants.map((applicant) => {
-                  const statusClass = applicant.status === "CONFLICTO"
-                    ? " tone-conflict"
-                    : applicant.status === "MUY_PROXIMO"
-                      ? " tone-warning"
-                      : applicant.status === "DISPONIBLE"
-                        ? " tone-available"
-                        : "";
-                  const hours = applicant.monthlyMinutes !== undefined
-                    ? `${Math.round(applicant.monthlyMinutes / 60)} h`
-                    : "";
+                  const statusClass =
+                    applicant.status === "CONFLICTO"
+                      ? " tone-conflict"
+                      : applicant.status === "MUY_PROXIMO"
+                        ? " tone-warning"
+                        : applicant.status === "DISPONIBLE"
+                          ? " tone-available"
+                          : "";
+                  const hours =
+                    applicant.monthlyMinutes !== undefined
+                      ? `${Math.round(applicant.monthlyMinutes / 60)} h`
+                      : "";
                   const title = applicant.conflictDetail
                     ? `${applicant.name} (${applicant.conflictDetail})`
                     : applicant.status === "DISPONIBLE"
@@ -136,16 +141,23 @@ export function AssistantAssignmentSelect({
             disabled={pending}
             onChange={(event) => assign(event.target.value)}
           >
-            <option value="">{applicants.length > 0 ? "Asignar asistente de monitoreo" : "Asignar manualmente"}</option>
+            <option value="">
+              {applicants.length > 0 ? "Asignar asistente de monitoreo" : "Asignar manualmente"}
+            </option>
             {assistants.map((assistant) => (
               <option key={assistant.id} value={assistant.id}>
-                {assistant.name}{applicantIds.has(assistant.id) ? " · postulante" : ""}
+                {assistant.name}
+                {applicantIds.has(assistant.id) ? " · postulante" : ""}
               </option>
             ))}
           </select>
         </>
       ) : null}
-      {message ? <small className="inline-error" role="alert">{message}</small> : null}
+      {message ? (
+        <small className="inline-error" role="alert">
+          {message}
+        </small>
+      ) : null}
     </div>
   );
 }

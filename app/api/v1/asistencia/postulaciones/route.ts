@@ -18,11 +18,7 @@ export async function PUT(request: Request) {
     if (!actor) {
       return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
     }
-    const interest = await actualizarPostulacionAsistencia(
-      db,
-      actor,
-      await request.json().catch(() => null)
-    );
+    const interest = await actualizarPostulacionAsistencia(db, actor, await request.json().catch(() => null));
     return NextResponse.json({ interest });
   } catch (error) {
     const mapped = toHttpError(error);

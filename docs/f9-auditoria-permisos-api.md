@@ -6,27 +6,27 @@ Rutas `app/api/v1` de reuniones, asistencia, configuración, usuarios, notificac
 
 ## Hallazgos confirmados y correcciones incluidas en PR #102
 
-| Severidad | Ruta(s) | Evidencia | Corrección |
-| --- | --- | --- | --- |
-| Alta | GET configuración/google-workspace | Confiaba únicamente en `session.user.role` para acceder a metadatos de credenciales institucionales | Resolver rol/estado actuales desde DB y denegar si no es administración activa |
-| Alta | GET usuarios/:id/cuentas-google | Lectura de emails y métodos de acceso autorizada solo por rol de sesión, aunque el usuario hubiera sido degradado | Comprobación de administración activa en DB antes de consultar al tercero |
-| Alta | GET asistencia/planilla-pagos | Documento con datos de liquidaciones protegidos solo por claim de sesión | Comprobación de administración activa en DB antes de generar XLSX |
-| Media | GET mobile/reuniones y GET/PUT mobile/agenda-abierta | `.catch(() => null)` convertía 403 y fallos inesperados en 401 | Preservar MobileActorError 401/403 y propagar fallos inesperados |
-| Media | Endpoints POST/PUT de postulaciones, asignaciones, desvinculaciones y notificaciones de asistencia | Devolvían 400 y `error.message` incluso para fallos técnicos y accesos prohibidos | Errores de dominio tipados y `toHttpError` con cuerpo genérico ante 500 |
+| Severidad | Ruta(s)                                                                                            | Evidencia                                                                                                         | Corrección                                                                     |
+| --------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Alta      | GET configuración/google-workspace                                                                 | Confiaba únicamente en `session.user.role` para acceder a metadatos de credenciales institucionales               | Resolver rol/estado actuales desde DB y denegar si no es administración activa |
+| Alta      | GET usuarios/:id/cuentas-google                                                                    | Lectura de emails y métodos de acceso autorizada solo por rol de sesión, aunque el usuario hubiera sido degradado | Comprobación de administración activa en DB antes de consultar al tercero      |
+| Alta      | GET asistencia/planilla-pagos                                                                      | Documento con datos de liquidaciones protegidos solo por claim de sesión                                          | Comprobación de administración activa en DB antes de generar XLSX              |
+| Media     | GET mobile/reuniones y GET/PUT mobile/agenda-abierta                                               | `.catch(() => null)` convertía 403 y fallos inesperados en 401                                                    | Preservar MobileActorError 401/403 y propagar fallos inesperados               |
+| Media     | Endpoints POST/PUT de postulaciones, asignaciones, desvinculaciones y notificaciones de asistencia | Devolvían 400 y `error.message` incluso para fallos técnicos y accesos prohibidos                                 | Errores de dominio tipados y `toHttpError` con cuerpo genérico ante 500        |
 
 ## Matriz comprobada
 
-| Operación | Actor permitido | Control de recurso | Observación |
-| --- | --- | --- | --- |
-| Gestión de encuentros y series | Administración o docente autorizado por programa | `puedeGestionarPrograma` y consulta restringida a solicitud/instancia | Positivo, requiere E2E multirol |
-| Cambio puntual de modalidad y horario híbrido | Administración | `validarGestion` y reglas de la instancia | Positivo, requiere pruebas de fechas pasadas |
-| Verificación y actualización de cohosts | Administración o docente autorizado por programa | `puedeGestionarPrograma` | Positivo, Google externo requiere staging |
-| Cancelación transaccional de series | Administración o docente autorizado por programa | Valida todos los agregados antes de modificar | Positivo, integración eventual pendiente |
-| Asignación de asistencia | Administración activa | Servicio relee rol dentro de transacción | Positivo |
-| Postulación y reporte de duración | Asistente técnico activo | Asignación del actor y estado del encuentro | Positivo |
-| API administrativa Android | Administración activa y token de sesión vigente | `requireMobileActor`, getAdminMeeting, servicio de encuentros | Positivo, requiere E2E |
-| Agenda personal Android | Asistente técnico con sesión vigente | Consulta por asignaciones de actor | Positivo; respuesta 403 corregida |
-| Notificaciones propias | Actor autenticado y activo | `where: { usuarioId: actor.id }` | Positivo |
+| Operación                                     | Actor permitido                                  | Control de recurso                                                    | Observación                                  |
+| --------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- | -------------------------------------------- |
+| Gestión de encuentros y series                | Administración o docente autorizado por programa | `puedeGestionarPrograma` y consulta restringida a solicitud/instancia | Positivo, requiere E2E multirol              |
+| Cambio puntual de modalidad y horario híbrido | Administración                                   | `validarGestion` y reglas de la instancia                             | Positivo, requiere pruebas de fechas pasadas |
+| Verificación y actualización de cohosts       | Administración o docente autorizado por programa | `puedeGestionarPrograma`                                              | Positivo, Google externo requiere staging    |
+| Cancelación transaccional de series           | Administración o docente autorizado por programa | Valida todos los agregados antes de modificar                         | Positivo, integración eventual pendiente     |
+| Asignación de asistencia                      | Administración activa                            | Servicio relee rol dentro de transacción                              | Positivo                                     |
+| Postulación y reporte de duración             | Asistente técnico activo                         | Asignación del actor y estado del encuentro                           | Positivo                                     |
+| API administrativa Android                    | Administración activa y token de sesión vigente  | `requireMobileActor`, getAdminMeeting, servicio de encuentros         | Positivo, requiere E2E                       |
+| Agenda personal Android                       | Asistente técnico con sesión vigente             | Consulta por asignaciones de actor                                    | Positivo; respuesta 403 corregida            |
+| Notificaciones propias                        | Actor autenticado y activo                       | `where: { usuarioId: actor.id }`                                      | Positivo                                     |
 
 ## Riesgos pendientes (no afirmados como explotables)
 

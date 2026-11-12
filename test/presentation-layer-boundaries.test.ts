@@ -62,7 +62,9 @@ describe("capa de presentacion modular", () => {
 
     for (const file of files) {
       const source = readFileSync(join(root, file), "utf8");
-      expect(source, file).not.toMatch(/@\/src\/components\/(?:assistant-|coverage-assistance|meeting-|series-management)/);
+      expect(source, file).not.toMatch(
+        /@\/src\/components\/(?:assistant-|coverage-assistance|meeting-|series-management)/
+      );
     }
   });
 

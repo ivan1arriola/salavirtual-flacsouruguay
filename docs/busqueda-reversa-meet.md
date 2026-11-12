@@ -34,6 +34,7 @@ anterior; un rollback de aplicación puede conservar el trigger y la auditoría.
 ## Evidencia anterior
 
 Se leen, sin reescribirlas, las auditorías documentadas en el código:
+
 - MEET_MIGRADO_A_ESPACIO_PREVIEW: una instancia.
 - MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW: IDs explícitos presentes en ambos snapshots.
 - ENLACE_MEET_ASIGNADO_A_SERIE / ENLACE_MEET_UNIFICADO_EN_SERIE: evidencia de serie,

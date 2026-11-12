@@ -9,12 +9,16 @@ import { actualizarProgramasPropios } from "@/src/modules/usuarios/programas-doc
 
 export async function guardarProgramas(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   let estado = "programas-guardados";
   try {

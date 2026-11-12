@@ -13,9 +13,16 @@ export type EntradaSolicitud = Readonly<{
   fechas: readonly MeetingDate[];
 }>;
 
-export type SolicitudReunion = ReturnType<typeof construirSolicitudReunion>;
-
-export function construirSolicitudReunion({ titulo, descripcion, docenteProgramaId, asistenteTecnicoId, requiereAsistencia, requiereGrabacion, modalidad, fechas }: EntradaSolicitud) {
+export function construirSolicitudReunion({
+  titulo,
+  descripcion,
+  docenteProgramaId,
+  asistenteTecnicoId,
+  requiereAsistencia,
+  requiereGrabacion,
+  modalidad,
+  fechas
+}: EntradaSolicitud) {
   return {
     titulo,
     descripcion: descripcion || undefined,
@@ -26,24 +33,31 @@ export function construirSolicitudReunion({ titulo, descripcion, docentePrograma
     requiereGrabacion: requiereGrabacion,
     modalidad: requiereAsistencia ? modalidad : "VIRTUAL",
     timezone: "America/Montevideo",
-    instancias: fechas.map(({
-      fecha,
-      horaInicio,
-      horaFin,
-      horaAsistenciaInicio,
-      horaAsistenciaFin,
-      descripcion
-    }) => ({
-      inicio: localMontevideoToIso(fecha, horaInicio),
-      fin: localMontevideoToIso(fecha, horaFin),
-      asistenciaInicio: requiereAsistencia
-        ? asistenciaLocalAIso(fecha, horaInicio, modalidad === "VIRTUAL" ? sugerirHorarioAsistencia(horaInicio, horaFin, "VIRTUAL").llegada : horaAsistenciaInicio, "LLEGADA")
-        : undefined,
-      asistenciaFin: requiereAsistencia
-        ? asistenciaLocalAIso(fecha, horaFin, modalidad === "VIRTUAL" ? horaFin : horaAsistenciaFin, "SALIDA")
-        : undefined,
-      descripcion: descripcion || undefined
-    }))
+    instancias: fechas.map(
+      ({ fecha, horaInicio, horaFin, horaAsistenciaInicio, horaAsistenciaFin, descripcion }) => ({
+        inicio: localMontevideoToIso(fecha, horaInicio),
+        fin: localMontevideoToIso(fecha, horaFin),
+        asistenciaInicio: requiereAsistencia
+          ? asistenciaLocalAIso(
+              fecha,
+              horaInicio,
+              modalidad === "VIRTUAL"
+                ? sugerirHorarioAsistencia(horaInicio, horaFin, "VIRTUAL").llegada
+                : horaAsistenciaInicio,
+              "LLEGADA"
+            )
+          : undefined,
+        asistenciaFin: requiereAsistencia
+          ? asistenciaLocalAIso(
+              fecha,
+              horaFin,
+              modalidad === "VIRTUAL" ? horaFin : horaAsistenciaFin,
+              "SALIDA"
+            )
+          : undefined,
+        descripcion: descripcion || undefined
+      })
+    )
   };
 }
 
@@ -52,12 +66,14 @@ export function localMontevideoToIso(fecha: string, hora: string): string {
 }
 
 /** Solo Administración asigna asistente, y solo si se pidió monitoreo en modo «Asignar ahora». */
-export function resolverAsistenteTecnicoId(entrada: Readonly<{
-  puedeAsignar: boolean;
-  requiereAsistencia: boolean;
-  modoAsistencia: "OPEN" | "ASSIGN";
-  valorSeleccionado: string | null | undefined;
-}>): string | undefined {
+export function resolverAsistenteTecnicoId(
+  entrada: Readonly<{
+    puedeAsignar: boolean;
+    requiereAsistencia: boolean;
+    modoAsistencia: "OPEN" | "ASSIGN";
+    valorSeleccionado: string | null | undefined;
+  }>
+): string | undefined {
   return entrada.puedeAsignar && entrada.requiereAsistencia && entrada.modoAsistencia === "ASSIGN"
     ? entrada.valorSeleccionado || undefined
     : undefined;

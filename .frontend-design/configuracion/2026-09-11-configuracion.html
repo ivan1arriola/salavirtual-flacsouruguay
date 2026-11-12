@@ -1,54 +1,703 @@
 <!doctype html>
 <html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Preview · Centro de configuración</title>
-<style>
-:root{--accent:#173f78;--accent-soft:#e8f2f5;--radius:11px;--density:14px;--font:system-ui,-apple-system,"Segoe UI",sans-serif}
-*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:var(--font);color:#1d304a}body{overflow:hidden;background:#dce6eb;font-size:14px}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.top{min-height:58px;padding:10px 18px;background:#fff;border-bottom:1px solid #ccd9df;display:flex;align-items:center;justify-content:space-between;gap:16px}.top h1{font-size:16px;margin:0}.top p{font-size:11px;color:#68798b;margin:2px 0 0}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{font:inherit;font-size:12px;padding:7px 11px;border:1px solid #cbd7dd;border-radius:8px;background:#fff;color:#243851;cursor:pointer}.btn.primary,.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}.layout{min-height:0;display:grid;grid-template-columns:300px 1fr;transition:200ms}.layout.closed{grid-template-columns:52px 1fr}.controls{overflow:auto;background:#fff;border-right:1px solid #ccd9df;padding:14px}.layout.closed .controls>*:not(.collapse){display:none}.collapse{width:100%;margin-bottom:10px}.control{padding:12px 0;border-top:1px solid #e7edef}.control label{display:block;font-size:11px;font-weight:800;margin-bottom:7px}.control small{display:block;color:#6c7b8d;margin-top:5px}.control input[type=range],.control select{width:100%}.control select{border:1px solid #ccd9df;border-radius:8px;padding:8px;background:#fff}.stage{overflow:auto;padding:20px;background:#dce6eb}.pair{min-width:960px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.pane{--page:#eef5f7;--panel:#fff;--line:#d7e1e5;--text:#1d304a;--muted:#6c7b8d;min-height:760px;padding:18px;background:var(--page);color:var(--text);border-radius:14px}.pane.dark{--page:#122238;--panel:#192e48;--line:#33506b;--text:#eef6fa;--muted:#a7b7c7;--accent-soft:#203e51}.theme-label{text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--muted);font-weight:800}.product-title{margin:4px 0 3px;font-size:24px}.product-sub{margin:0 0 16px;color:var(--muted);font-size:12px}.center{display:grid;grid-template-columns:170px 1fr;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}.rail{border-right:1px solid var(--line);padding:12px}.rail-title{text-transform:uppercase;letter-spacing:.1em;font-size:9px;color:var(--muted);font-weight:800;margin:0 0 8px}.nav-item{padding:9px;border-radius:8px;margin-bottom:3px;color:var(--muted);font-size:12px}.nav-item strong,.nav-item small{display:block}.nav-item small{font-size:9px;margin-top:2px}.nav-item.active{background:var(--accent-soft);color:var(--text);box-shadow:inset 3px 0 var(--accent)}.content{padding:18px}.section-label{text-transform:uppercase;letter-spacing:.1em;font-size:9px;color:var(--muted);font-weight:800}.section-title{font-size:20px;margin:3px 0}.section-help{color:var(--muted);font-size:11px;margin:0 0 14px}.status{display:flex;gap:10px;align-items:center;padding:13px;background:#f1f8f5;border:1px solid #b8d8ca;border-radius:var(--radius);color:#2d624b}.dark .status{background:#183b36;color:#bde9d5;border-color:#38665c}.status-icon{width:30px;height:30px;display:grid;place-items:center;background:var(--panel);border-radius:9px;font-weight:900}.status strong,.status small{display:block}.status small{font-size:10px;margin-top:2px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:var(--density);min-height:104px;position:relative}.card-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:800}.card label{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.06em;margin-top:9px}.card strong{display:block;font-size:14px;margin-top:2px}.card p{margin:4px 0 0;font-size:10px;color:var(--muted)}[data-fd-editable]{border-radius:3px}[data-fd-editable]:hover{outline:1px dashed var(--accent);outline-offset:2px}.comment-mode .pane *{cursor:crosshair}.marker{position:fixed;z-index:80;width:20px;height:20px;border-radius:50%;background:#e89118;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:800}.popover,.export{display:none;position:fixed;z-index:100;background:#fff;color:#1d304a;border:1px solid #ccd9df;border-radius:12px;box-shadow:0 16px 42px #0d253444}.popover.open{display:block;width:330px;padding:12px}.popover textarea{width:100%;min-height:75px;margin:8px 0;padding:8px;border:1px solid #ccd9df;border-radius:8px}.scope{display:flex;gap:5px;margin-bottom:9px}.scope button{flex:1;font-size:10px;padding:5px;border:1px solid #ccd9df;background:#fff;border-radius:6px}.scope button.on{border-color:var(--accent);color:var(--accent);background:#edf5f8}.export.open{display:block;inset:8%;padding:16px;overflow:auto}.export pre{white-space:pre-wrap;background:#102238;color:#edf6fa;padding:14px;border-radius:8px}.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#102238;color:#fff;padding:8px 13px;border-radius:8px;opacity:0;transition:180ms;z-index:120}.toast.show{opacity:1}@media(max-width:800px){.layout{grid-template-columns:1fr}.controls{display:none}.stage{padding:10px}.pair{min-width:0;grid-template-columns:1fr}.pane.dark{display:none}.center{grid-template-columns:1fr}.rail{display:none}}
-</style>
-</head>
-<body>
-<div class="app">
-  <header class="top">
-    <div><h1>Centro de configuración · preview</h1><p>Ajustá decisiones, editá textos o dejá comentarios sobre elementos.</p></div>
-    <div class="actions"><button class="btn" id="comment-btn">Comentarios</button><button class="btn" id="reset-btn">Restablecer</button><button class="btn primary" id="export-btn">Exportar markdown</button></div>
-  </header>
-  <div class="layout" id="layout">
-    <aside class="controls">
-      <button class="btn collapse" id="collapse-btn">◀ Ocultar controles</button>
-      <div class="control"><label for="accent">Color principal</label><select id="accent"><option value="A">A · Azul institucional</option><option value="B">B · Turquesa</option><option value="C">C · Azul intenso</option></select><small>Acciones, foco y selección activa.</small></div>
-      <div class="control"><label for="radius">Radio de tarjetas · <span id="radius-value">11px</span></label><input id="radius" type="range" min="4" max="18" step="1" value="11"><small>Tarjetas, avisos y contenedores.</small></div>
-      <div class="control"><label for="density">Densidad</label><select id="density"><option value="compact">Compacta</option><option value="normal" selected>Normal</option><option value="relaxed">Cómoda</option></select><small>Espacio interior de los accesos.</small></div>
-      <div class="control"><small><strong>Comentario:</strong> activá el modo y elegí cualquier elemento. Los cambios se exportan con selectores estables.</small></div>
-    </aside>
-    <main class="stage"><div class="pair" id="pair"></div></main>
-  </div>
-</div>
-<div class="popover" id="popover"><strong id="target"></strong><textarea id="note" placeholder="¿Qué cambiarías?"></textarea><div class="scope" id="scopes"><button class="on" data-scope="this">Este</button><button data-scope="all-matching">Similares</button><button data-scope="global">Global</button></div><div class="actions"><button class="btn" id="cancel-note">Cancelar</button><button class="btn primary" id="save-note">Guardar</button></div></div>
-<div class="export" id="export"><button class="btn" id="close-export">Cerrar</button><pre id="export-text"></pre></div><div class="toast" id="toast"></div>
-<script>
-const META={source:'.frontend-design/configuracion/2026-09-11-configuracion.html',topic:'configuracion',targetFile:'app/(gestion)/configuration-center.css'};
-const PALETTES={A:{light:'#173f78',dark:'#71b9d2'},B:{light:'#0f7782',dark:'#62c6ce'},C:{light:'#174c9b',dark:'#7ab0ff'}};
-const DENSITY={compact:'10px',normal:'14px',relaxed:'18px'};
-const initial={accent:'A',radius:'11',density:'normal'};let comments=[],commentMode=false,targetEl=null,nextId=1;
-const pair=document.getElementById('pair'),accent=document.getElementById('accent'),radius=document.getElementById('radius'),density=document.getElementById('density'),layout=document.getElementById('layout'),toast=document.getElementById('toast'),commentBtn=document.getElementById('comment-btn'),target=document.getElementById('target'),note=document.getElementById('note'),popover=document.getElementById('popover'),cancelNote=document.getElementById('cancel-note'),saveNote=document.getElementById('save-note'),exportBtn=document.getElementById('export-btn'),exportText=document.getElementById('export-text'),closeExport=document.getElementById('close-export'),resetBtn=document.getElementById('reset-btn'),collapseBtn=document.getElementById('collapse-btn');
-function pane(theme){const dark=theme==='dark';return `<section class="pane ${dark?'dark':''}" data-theme="${theme}"><div class="theme-label">${dark?'Tema oscuro':'Tema claro'}</div><h2 class="product-title" data-fd-id="page-title" data-fd-editable="text">Centro de configuración</h2><p class="product-sub" data-fd-id="page-subtitle" data-fd-editable="text">Revisá el estado general y administrá cada área desde un solo lugar.</p><div class="center" data-fd-id="settings-shell"><nav class="rail" data-fd-id="section-nav"><p class="rail-title">Configuración</p><div class="nav-item active"><strong>Resumen</strong><small>Estado general y pendientes</small></div><div class="nav-item"><strong>Google Workspace</strong><small>Integración y permisos</small></div><div class="nav-item"><strong>Salas</strong><small>8 de 8 disponibles</small></div><div class="nav-item"><strong>Programas</strong><small>14 de 14 activos</small></div><div class="nav-item"><strong>Asistencia técnica</strong></div><div class="nav-item"><strong>Correo</strong></div><div class="nav-item"><strong>Histórico Zoom</strong></div></nav><section class="content"><span class="section-label">Estado general</span><h3 class="section-title" data-fd-id="section-title" data-fd-editable="text">Resumen</h3><p class="section-help">Consultá lo que necesita atención o entrá al área que querés administrar.</p><div class="status" data-fd-id="readiness-banner"><span class="status-icon">✓</span><span><strong data-fd-id="readiness-title" data-fd-editable="text">Todo está listo para operar</strong><small>La integración está activa y no quedan operaciones pendientes.</small></span></div><div class="cards"><article class="card" data-fd-id="card-workspace"><span class="card-icon">⌘</span><label>GOOGLE WORKSPACE</label><strong>Integración activa</strong><p>Cuenta, delegación y Drive configurados</p></article><article class="card" data-fd-id="card-rooms"><span class="card-icon">▣</span><label>SALAS</label><strong>8 cuentas</strong><p>8 de 8 disponibles para nuevas reuniones</p></article><article class="card" data-fd-id="card-programs"><span class="card-icon">▤</span><label>PROGRAMAS</label><strong>14 programas</strong><p>14 activos · 0 inactivos</p></article><article class="card" data-fd-id="card-assistance"><span class="card-icon">◷</span><label>ASISTENCIA TÉCNICA</label><strong>Configurar reportes</strong><p>Destinatarios de los reportes mensuales</p></article></div></section></div></section>`}
-pair.innerHTML=pane('light')+pane('dark');
-function apply(){const p=PALETTES[accent.value];document.querySelector('.pane:not(.dark)').style.setProperty('--accent',p.light);document.querySelector('.pane.dark').style.setProperty('--accent',p.dark);document.querySelectorAll('.pane').forEach(x=>{x.style.setProperty('--radius',radius.value+'px');x.style.setProperty('--density',DENSITY[density.value])});document.getElementById('radius-value').textContent=radius.value+'px'}
-accent.onchange=apply;radius.oninput=apply;density.onchange=apply;apply();
-document.querySelectorAll('[data-fd-editable]').forEach(el=>{el.contentEditable='plaintext-only';el.dataset.initial=el.textContent;el.oninput=()=>document.querySelectorAll(`[data-fd-id="${el.dataset.fdId}"][data-fd-editable]`).forEach(m=>{if(m!==el)m.textContent=el.textContent})});
-collapseBtn.onclick=()=>{layout.classList.toggle('closed');collapseBtn.textContent=layout.classList.contains('closed')?'▶':'◀ Ocultar controles'};
-function toastMsg(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1700)}
-commentBtn.onclick=()=>{commentMode=!commentMode;document.body.classList.toggle('comment-mode',commentMode);commentBtn.classList.toggle('on',commentMode);commentBtn.textContent=commentMode?'Salir de comentarios':'Comentarios'};
-document.querySelector('.stage').addEventListener('click',e=>{if(!commentMode)return;const el=e.target.closest('[data-fd-id]');if(!el)return;e.preventDefault();targetEl=el;target.textContent='[data-fd-id="'+el.dataset.fdId+'"]';note.value='';popover.style.left=Math.min(e.clientX,innerWidth-350)+'px';popover.style.top=Math.min(e.clientY,innerHeight-220)+'px';popover.classList.add('open')},true);
-document.querySelectorAll('#scopes button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#scopes button').forEach(x=>x.classList.remove('on'));b.classList.add('on')});
-cancelNote.onclick=()=>popover.classList.remove('open');saveNote.onclick=()=>{if(!note.value.trim())return toastMsg('Escribí un comentario');const scope=document.querySelector('#scopes .on').dataset.scope;comments.push({id:nextId++,anchor:targetEl.dataset.fdId,scope,text:note.value.trim()});popover.classList.remove('open');toastMsg('Comentario guardado')};
-function edits(){const out=[],seen=new Set;document.querySelectorAll('[data-fd-editable]').forEach(el=>{if(seen.has(el.dataset.fdId))return;seen.add(el.dataset.fdId);if(el.textContent!==el.dataset.initial)out.push({id:el.dataset.fdId,value:el.textContent})});return out}
-function markdown(){const lines=['## Frontend design round-trip','Source: '+META.source,'Captured at: '+new Date().toISOString().slice(0,19).replace('T',' ')+' (local)','Skill: frontend-design','Topic: '+META.topic,''];const changed=accent.value!==initial.accent||radius.value!==initial.radius||density.value!==initial.density;if(changed){lines.push('### Decisions','');if(accent.value!==initial.accent){const p=PALETTES[accent.value];lines.push('#### Accents','- `--accent-primary` (light) → `'+p.light+'`','- `--accent-primary` (dark)  → `'+p.dark+'`','  - rejected: '+Object.entries(PALETTES).filter(([k])=>k!==accent.value).map(([k,v])=>`${k}(L:${v.light}/D:${v.dark})`).join(', '),'')}if(radius.value!==initial.radius)lines.push('#### Radius','- `--radius-default` → `'+radius.value+'px` (slider, range 4-18, step 1)','');if(density.value!==initial.density)lines.push('#### Density','- `--row-density` → `'+DENSITY[density.value]+'` (segmented: compact | normal | relaxed)','')};const direct=edits();if(direct.length){lines.push('### Direct edits','');direct.forEach((x,i)=>lines.push('#### Edit '+(i+1),'- Element: `[data-fd-id="'+x.id+'"]` ('+x.id+')','- Kind: text','- Value: '+x.value,''))}if(comments.length){lines.push('### Element comments','');comments.forEach((c,i)=>lines.push('#### Comment '+(i+1),c.scope==='global'?'- Element: (global)':'- Element: `[data-fd-id="'+c.anchor+'"]` ('+c.anchor+')','- Scope: '+c.scope,'- Note: '+c.text,''))}if(!changed&&!direct.length&&!comments.length)return null;lines.push('### Apply','','When applying these changes:','',`1. Apply the exported decisions and element notes in \`${META.targetFile}\` and the matching components.`,`2. Verify types, tests, build, and the responsive flow at localhost:8000.`);return lines.join('\n')}
-exportBtn.onclick=()=>{const md=markdown();if(!md)return toastMsg('No hay cambios para exportar');exportText.textContent=md;document.getElementById('export').classList.add('open')};closeExport.onclick=()=>document.getElementById('export').classList.remove('open');
-resetBtn.onclick=()=>{accent.value=initial.accent;radius.value=initial.radius;density.value=initial.density;comments=[];document.querySelectorAll('[data-fd-editable]').forEach(el=>el.textContent=el.dataset.initial);apply();toastMsg('Restablecido')};
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Preview · Centro de configuración</title>
+    <style>
+      :root {
+        --accent: #173f78;
+        --accent-soft: #e8f2f5;
+        --radius: 11px;
+        --density: 14px;
+        --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: var(--font);
+        color: #1d304a;
+      }
+      body {
+        overflow: hidden;
+        background: #dce6eb;
+        font-size: 14px;
+      }
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .top {
+        min-height: 58px;
+        padding: 10px 18px;
+        background: #fff;
+        border-bottom: 1px solid #ccd9df;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .top h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .top p {
+        font-size: 11px;
+        color: #68798b;
+        margin: 2px 0 0;
+      }
+      .actions {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        font: inherit;
+        font-size: 12px;
+        padding: 7px 11px;
+        border: 1px solid #cbd7dd;
+        border-radius: 8px;
+        background: #fff;
+        color: #243851;
+        cursor: pointer;
+      }
+      .btn.primary,
+      .btn.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .layout {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        transition: 200ms;
+      }
+      .layout.closed {
+        grid-template-columns: 52px 1fr;
+      }
+      .controls {
+        overflow: auto;
+        background: #fff;
+        border-right: 1px solid #ccd9df;
+        padding: 14px;
+      }
+      .layout.closed .controls > *:not(.collapse) {
+        display: none;
+      }
+      .collapse {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .control {
+        padding: 12px 0;
+        border-top: 1px solid #e7edef;
+      }
+      .control label {
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 7px;
+      }
+      .control small {
+        display: block;
+        color: #6c7b8d;
+        margin-top: 5px;
+      }
+      .control input[type="range"],
+      .control select {
+        width: 100%;
+      }
+      .control select {
+        border: 1px solid #ccd9df;
+        border-radius: 8px;
+        padding: 8px;
+        background: #fff;
+      }
+      .stage {
+        overflow: auto;
+        padding: 20px;
+        background: #dce6eb;
+      }
+      .pair {
+        min-width: 960px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .pane {
+        --page: #eef5f7;
+        --panel: #fff;
+        --line: #d7e1e5;
+        --text: #1d304a;
+        --muted: #6c7b8d;
+        min-height: 760px;
+        padding: 18px;
+        background: var(--page);
+        color: var(--text);
+        border-radius: 14px;
+      }
+      .pane.dark {
+        --page: #122238;
+        --panel: #192e48;
+        --line: #33506b;
+        --text: #eef6fa;
+        --muted: #a7b7c7;
+        --accent-soft: #203e51;
+      }
+      .theme-label {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+      .product-title {
+        margin: 4px 0 3px;
+        font-size: 24px;
+      }
+      .product-sub {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .center {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--panel);
+      }
+      .rail {
+        border-right: 1px solid var(--line);
+        padding: 12px;
+      }
+      .rail-title {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 9px;
+        color: var(--muted);
+        font-weight: 800;
+        margin: 0 0 8px;
+      }
+      .nav-item {
+        padding: 9px;
+        border-radius: 8px;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .nav-item strong,
+      .nav-item small {
+        display: block;
+      }
+      .nav-item small {
+        font-size: 9px;
+        margin-top: 2px;
+      }
+      .nav-item.active {
+        background: var(--accent-soft);
+        color: var(--text);
+        box-shadow: inset 3px 0 var(--accent);
+      }
+      .content {
+        padding: 18px;
+      }
+      .section-label {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 9px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+      .section-title {
+        font-size: 20px;
+        margin: 3px 0;
+      }
+      .section-help {
+        color: var(--muted);
+        font-size: 11px;
+        margin: 0 0 14px;
+      }
+      .status {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 13px;
+        background: #f1f8f5;
+        border: 1px solid #b8d8ca;
+        border-radius: var(--radius);
+        color: #2d624b;
+      }
+      .dark .status {
+        background: #183b36;
+        color: #bde9d5;
+        border-color: #38665c;
+      }
+      .status-icon {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        background: var(--panel);
+        border-radius: 9px;
+        font-weight: 900;
+      }
+      .status strong,
+      .status small {
+        display: block;
+      }
+      .status small {
+        font-size: 10px;
+        margin-top: 2px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-top: 12px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: var(--density);
+        min-height: 104px;
+        position: relative;
+      }
+      .card-icon {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 800;
+      }
+      .card label {
+        display: block;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        margin-top: 9px;
+      }
+      .card strong {
+        display: block;
+        font-size: 14px;
+        margin-top: 2px;
+      }
+      .card p {
+        margin: 4px 0 0;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      [data-fd-editable] {
+        border-radius: 3px;
+      }
+      [data-fd-editable]:hover {
+        outline: 1px dashed var(--accent);
+        outline-offset: 2px;
+      }
+      .comment-mode .pane * {
+        cursor: crosshair;
+      }
+      .marker {
+        position: fixed;
+        z-index: 80;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #e89118;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+        font-weight: 800;
+      }
+      .popover,
+      .export {
+        display: none;
+        position: fixed;
+        z-index: 100;
+        background: #fff;
+        color: #1d304a;
+        border: 1px solid #ccd9df;
+        border-radius: 12px;
+        box-shadow: 0 16px 42px #0d253444;
+      }
+      .popover.open {
+        display: block;
+        width: 330px;
+        padding: 12px;
+      }
+      .popover textarea {
+        width: 100%;
+        min-height: 75px;
+        margin: 8px 0;
+        padding: 8px;
+        border: 1px solid #ccd9df;
+        border-radius: 8px;
+      }
+      .scope {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 9px;
+      }
+      .scope button {
+        flex: 1;
+        font-size: 10px;
+        padding: 5px;
+        border: 1px solid #ccd9df;
+        background: #fff;
+        border-radius: 6px;
+      }
+      .scope button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #edf5f8;
+      }
+      .export.open {
+        display: block;
+        inset: 8%;
+        padding: 16px;
+        overflow: auto;
+      }
+      .export pre {
+        white-space: pre-wrap;
+        background: #102238;
+        color: #edf6fa;
+        padding: 14px;
+        border-radius: 8px;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        background: #102238;
+        color: #fff;
+        padding: 8px 13px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: 180ms;
+        z-index: 120;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .controls {
+          display: none;
+        }
+        .stage {
+          padding: 10px;
+        }
+        .pair {
+          min-width: 0;
+          grid-template-columns: 1fr;
+        }
+        .pane.dark {
+          display: none;
+        }
+        .center {
+          grid-template-columns: 1fr;
+        }
+        .rail {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div>
+          <h1>Centro de configuración · preview</h1>
+          <p>Ajustá decisiones, editá textos o dejá comentarios sobre elementos.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="comment-btn">Comentarios</button
+          ><button class="btn" id="reset-btn">Restablecer</button
+          ><button class="btn primary" id="export-btn">Exportar markdown</button>
+        </div>
+      </header>
+      <div class="layout" id="layout">
+        <aside class="controls">
+          <button class="btn collapse" id="collapse-btn">◀ Ocultar controles</button>
+          <div class="control">
+            <label for="accent">Color principal</label
+            ><select id="accent">
+              <option value="A">A · Azul institucional</option>
+              <option value="B">B · Turquesa</option>
+              <option value="C">C · Azul intenso</option></select
+            ><small>Acciones, foco y selección activa.</small>
+          </div>
+          <div class="control">
+            <label for="radius">Radio de tarjetas · <span id="radius-value">11px</span></label
+            ><input id="radius" type="range" min="4" max="18" step="1" value="11" /><small
+              >Tarjetas, avisos y contenedores.</small
+            >
+          </div>
+          <div class="control">
+            <label for="density">Densidad</label
+            ><select id="density">
+              <option value="compact">Compacta</option>
+              <option value="normal" selected>Normal</option>
+              <option value="relaxed">Cómoda</option></select
+            ><small>Espacio interior de los accesos.</small>
+          </div>
+          <div class="control">
+            <small
+              ><strong>Comentario:</strong> activá el modo y elegí cualquier elemento. Los cambios se exportan
+              con selectores estables.</small
+            >
+          </div>
+        </aside>
+        <main class="stage"><div class="pair" id="pair"></div></main>
+      </div>
+    </div>
+    <div class="popover" id="popover">
+      <strong id="target"></strong><textarea id="note" placeholder="¿Qué cambiarías?"></textarea>
+      <div class="scope" id="scopes">
+        <button class="on" data-scope="this">Este</button><button data-scope="all-matching">Similares</button
+        ><button data-scope="global">Global</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="cancel-note">Cancelar</button
+        ><button class="btn primary" id="save-note">Guardar</button>
+      </div>
+    </div>
+    <div class="export" id="export">
+      <button class="btn" id="close-export">Cerrar</button>
+      <pre id="export-text"></pre>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+      const META = {
+        source: ".frontend-design/configuracion/2026-09-11-configuracion.html",
+        topic: "configuracion",
+        targetFile: "app/(gestion)/configuration-center.css"
+      };
+      const PALETTES = {
+        A: { light: "#173f78", dark: "#71b9d2" },
+        B: { light: "#0f7782", dark: "#62c6ce" },
+        C: { light: "#174c9b", dark: "#7ab0ff" }
+      };
+      const DENSITY = { compact: "10px", normal: "14px", relaxed: "18px" };
+      const initial = { accent: "A", radius: "11", density: "normal" };
+      let comments = [],
+        commentMode = false,
+        targetEl = null,
+        nextId = 1;
+      const pair = document.getElementById("pair"),
+        accent = document.getElementById("accent"),
+        radius = document.getElementById("radius"),
+        density = document.getElementById("density"),
+        layout = document.getElementById("layout"),
+        toast = document.getElementById("toast"),
+        commentBtn = document.getElementById("comment-btn"),
+        target = document.getElementById("target"),
+        note = document.getElementById("note"),
+        popover = document.getElementById("popover"),
+        cancelNote = document.getElementById("cancel-note"),
+        saveNote = document.getElementById("save-note"),
+        exportBtn = document.getElementById("export-btn"),
+        exportText = document.getElementById("export-text"),
+        closeExport = document.getElementById("close-export"),
+        resetBtn = document.getElementById("reset-btn"),
+        collapseBtn = document.getElementById("collapse-btn");
+      function pane(theme) {
+        const dark = theme === "dark";
+        return `<section class="pane ${dark ? "dark" : ""}" data-theme="${theme}"><div class="theme-label">${dark ? "Tema oscuro" : "Tema claro"}</div><h2 class="product-title" data-fd-id="page-title" data-fd-editable="text">Centro de configuración</h2><p class="product-sub" data-fd-id="page-subtitle" data-fd-editable="text">Revisá el estado general y administrá cada área desde un solo lugar.</p><div class="center" data-fd-id="settings-shell"><nav class="rail" data-fd-id="section-nav"><p class="rail-title">Configuración</p><div class="nav-item active"><strong>Resumen</strong><small>Estado general y pendientes</small></div><div class="nav-item"><strong>Google Workspace</strong><small>Integración y permisos</small></div><div class="nav-item"><strong>Salas</strong><small>8 de 8 disponibles</small></div><div class="nav-item"><strong>Programas</strong><small>14 de 14 activos</small></div><div class="nav-item"><strong>Asistencia técnica</strong></div><div class="nav-item"><strong>Correo</strong></div><div class="nav-item"><strong>Histórico Zoom</strong></div></nav><section class="content"><span class="section-label">Estado general</span><h3 class="section-title" data-fd-id="section-title" data-fd-editable="text">Resumen</h3><p class="section-help">Consultá lo que necesita atención o entrá al área que querés administrar.</p><div class="status" data-fd-id="readiness-banner"><span class="status-icon">✓</span><span><strong data-fd-id="readiness-title" data-fd-editable="text">Todo está listo para operar</strong><small>La integración está activa y no quedan operaciones pendientes.</small></span></div><div class="cards"><article class="card" data-fd-id="card-workspace"><span class="card-icon">⌘</span><label>GOOGLE WORKSPACE</label><strong>Integración activa</strong><p>Cuenta, delegación y Drive configurados</p></article><article class="card" data-fd-id="card-rooms"><span class="card-icon">▣</span><label>SALAS</label><strong>8 cuentas</strong><p>8 de 8 disponibles para nuevas reuniones</p></article><article class="card" data-fd-id="card-programs"><span class="card-icon">▤</span><label>PROGRAMAS</label><strong>14 programas</strong><p>14 activos · 0 inactivos</p></article><article class="card" data-fd-id="card-assistance"><span class="card-icon">◷</span><label>ASISTENCIA TÉCNICA</label><strong>Configurar reportes</strong><p>Destinatarios de los reportes mensuales</p></article></div></section></div></section>`;
+      }
+      pair.innerHTML = pane("light") + pane("dark");
+      function apply() {
+        const p = PALETTES[accent.value];
+        document.querySelector(".pane:not(.dark)").style.setProperty("--accent", p.light);
+        document.querySelector(".pane.dark").style.setProperty("--accent", p.dark);
+        document.querySelectorAll(".pane").forEach((x) => {
+          x.style.setProperty("--radius", radius.value + "px");
+          x.style.setProperty("--density", DENSITY[density.value]);
+        });
+        document.getElementById("radius-value").textContent = radius.value + "px";
+      }
+      accent.onchange = apply;
+      radius.oninput = apply;
+      density.onchange = apply;
+      apply();
+      document.querySelectorAll("[data-fd-editable]").forEach((el) => {
+        el.contentEditable = "plaintext-only";
+        el.dataset.initial = el.textContent;
+        el.oninput = () =>
+          document.querySelectorAll(`[data-fd-id="${el.dataset.fdId}"][data-fd-editable]`).forEach((m) => {
+            if (m !== el) m.textContent = el.textContent;
+          });
+      });
+      collapseBtn.onclick = () => {
+        layout.classList.toggle("closed");
+        collapseBtn.textContent = layout.classList.contains("closed") ? "▶" : "◀ Ocultar controles";
+      };
+      function toastMsg(t) {
+        toast.textContent = t;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+      commentBtn.onclick = () => {
+        commentMode = !commentMode;
+        document.body.classList.toggle("comment-mode", commentMode);
+        commentBtn.classList.toggle("on", commentMode);
+        commentBtn.textContent = commentMode ? "Salir de comentarios" : "Comentarios";
+      };
+      document.querySelector(".stage").addEventListener(
+        "click",
+        (e) => {
+          if (!commentMode) return;
+          const el = e.target.closest("[data-fd-id]");
+          if (!el) return;
+          e.preventDefault();
+          targetEl = el;
+          target.textContent = '[data-fd-id="' + el.dataset.fdId + '"]';
+          note.value = "";
+          popover.style.left = Math.min(e.clientX, innerWidth - 350) + "px";
+          popover.style.top = Math.min(e.clientY, innerHeight - 220) + "px";
+          popover.classList.add("open");
+        },
+        true
+      );
+      document.querySelectorAll("#scopes button").forEach(
+        (b) =>
+          (b.onclick = () => {
+            document.querySelectorAll("#scopes button").forEach((x) => x.classList.remove("on"));
+            b.classList.add("on");
+          })
+      );
+      cancelNote.onclick = () => popover.classList.remove("open");
+      saveNote.onclick = () => {
+        if (!note.value.trim()) return toastMsg("Escribí un comentario");
+        const scope = document.querySelector("#scopes .on").dataset.scope;
+        comments.push({ id: nextId++, anchor: targetEl.dataset.fdId, scope, text: note.value.trim() });
+        popover.classList.remove("open");
+        toastMsg("Comentario guardado");
+      };
+      function edits() {
+        const out = [],
+          seen = new Set();
+        document.querySelectorAll("[data-fd-editable]").forEach((el) => {
+          if (seen.has(el.dataset.fdId)) return;
+          seen.add(el.dataset.fdId);
+          if (el.textContent !== el.dataset.initial) out.push({ id: el.dataset.fdId, value: el.textContent });
+        });
+        return out;
+      }
+      function markdown() {
+        const lines = [
+          "## Frontend design round-trip",
+          "Source: " + META.source,
+          "Captured at: " + new Date().toISOString().slice(0, 19).replace("T", " ") + " (local)",
+          "Skill: frontend-design",
+          "Topic: " + META.topic,
+          ""
+        ];
+        const changed =
+          accent.value !== initial.accent ||
+          radius.value !== initial.radius ||
+          density.value !== initial.density;
+        if (changed) {
+          lines.push("### Decisions", "");
+          if (accent.value !== initial.accent) {
+            const p = PALETTES[accent.value];
+            lines.push(
+              "#### Accents",
+              "- `--accent-primary` (light) → `" + p.light + "`",
+              "- `--accent-primary` (dark)  → `" + p.dark + "`",
+              "  - rejected: " +
+                Object.entries(PALETTES)
+                  .filter(([k]) => k !== accent.value)
+                  .map(([k, v]) => `${k}(L:${v.light}/D:${v.dark})`)
+                  .join(", "),
+              ""
+            );
+          }
+          if (radius.value !== initial.radius)
+            lines.push(
+              "#### Radius",
+              "- `--radius-default` → `" + radius.value + "px` (slider, range 4-18, step 1)",
+              ""
+            );
+          if (density.value !== initial.density)
+            lines.push(
+              "#### Density",
+              "- `--row-density` → `" + DENSITY[density.value] + "` (segmented: compact | normal | relaxed)",
+              ""
+            );
+        }
+        const direct = edits();
+        if (direct.length) {
+          lines.push("### Direct edits", "");
+          direct.forEach((x, i) =>
+            lines.push(
+              "#### Edit " + (i + 1),
+              '- Element: `[data-fd-id="' + x.id + '"]` (' + x.id + ")",
+              "- Kind: text",
+              "- Value: " + x.value,
+              ""
+            )
+          );
+        }
+        if (comments.length) {
+          lines.push("### Element comments", "");
+          comments.forEach((c, i) =>
+            lines.push(
+              "#### Comment " + (i + 1),
+              c.scope === "global"
+                ? "- Element: (global)"
+                : '- Element: `[data-fd-id="' + c.anchor + '"]` (' + c.anchor + ")",
+              "- Scope: " + c.scope,
+              "- Note: " + c.text,
+              ""
+            )
+          );
+        }
+        if (!changed && !direct.length && !comments.length) return null;
+        lines.push(
+          "### Apply",
+          "",
+          "When applying these changes:",
+          "",
+          `1. Apply the exported decisions and element notes in \`${META.targetFile}\` and the matching components.`,
+          `2. Verify types, tests, build, and the responsive flow at localhost:8000.`
+        );
+        return lines.join("\n");
+      }
+      exportBtn.onclick = () => {
+        const md = markdown();
+        if (!md) return toastMsg("No hay cambios para exportar");
+        exportText.textContent = md;
+        document.getElementById("export").classList.add("open");
+      };
+      closeExport.onclick = () => document.getElementById("export").classList.remove("open");
+      resetBtn.onclick = () => {
+        accent.value = initial.accent;
+        radius.value = initial.radius;
+        density.value = initial.density;
+        comments = [];
+        document
+          .querySelectorAll("[data-fd-editable]")
+          .forEach((el) => (el.textContent = el.dataset.initial));
+        apply();
+        toastMsg("Restablecido");
+      };
+    </script>
+  </body>
 </html>

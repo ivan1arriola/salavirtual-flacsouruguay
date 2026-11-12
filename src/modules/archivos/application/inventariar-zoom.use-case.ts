@@ -30,11 +30,6 @@ export interface InventarioOrigenZoomPort {
   ): Promise<ResultadoPagina<ReferenciaOcurrenciaZoom>>;
 }
 
-export type OcurrenciaPorInventariarZoom = Readonly<{
-  referencia: ReferenciaOcurrenciaZoom;
-  cuentaProveedorId: string | null;
-}>;
-
 /** Cadencia: <48 h cada 10 min, hasta 30 días cada hora, más antiguas a diario; `null` tras el corte. */
 export function proximoInventarioZoom(
   inicioRealAt: Date,
@@ -47,22 +42,30 @@ export function proximoInventarioZoom(
     // Hay elementos aún procesándose en Zoom: seguimiento frecuente hasta 30 días, luego a diario.
     return new Date(ahora.getTime() + (edad <= 30 * DIA ? 10 * MIN : DIA));
   }
-  if (edad > opciones.corteDias * DIA) return null;
+  if (edad > opciones.corteDias * DIA) {
+    return null;
+  }
   return new Date(ahora.getTime() + intervalo);
 }
 
 export type ResultadoInventariarZoom =
-  | Readonly<{ tipo: "GUARDADO"; resumen: ResumenInventarioGuardado }>
-  | Readonly<{ tipo: "NO_ENCONTRADA" }>;
+  Readonly<{ tipo: "GUARDADO"; resumen: ResumenInventarioGuardado }> | Readonly<{ tipo: "NO_ENCONTRADA" }>;
 
 export async function inventariarZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "guardarInventario">,
   origen: Pick<InventarioOrigenZoomPort, "obtenerInventario">,
-  entrada: Readonly<{ referencia: ReferenciaOcurrenciaZoom; cuentaProveedorId: string | null; ahora: Date; corteDias: number }>
+  entrada: Readonly<{
+    referencia: ReferenciaOcurrenciaZoom;
+    cuentaProveedorId: string | null;
+    ahora: Date;
+    corteDias: number;
+  }>
 ): Promise<ResultadoInventariarZoom> {
   const inventario = await origen.obtenerInventario(entrada.referencia);
   // 404 nunca equivale a "sin archivos": no se registra un inventario vacío exitoso.
-  if (inventario === null) return { tipo: "NO_ENCONTRADA" };
+  if (inventario === null) {
+    return { tipo: "NO_ENCONTRADA" };
+  }
   const resumen = await repo.guardarInventario(
     {
       referencia: entrada.referencia,
@@ -78,7 +81,11 @@ export async function inventariarZoomUseCase(
   return { tipo: "GUARDADO", resumen };
 }
 
-export type ResumenMantenimientoInventarioZoom = Readonly<{ guardadas: number; fallidas: number; noEncontradas: number }>;
+export type ResumenMantenimientoInventarioZoom = Readonly<{
+  guardadas: number;
+  fallidas: number;
+  noEncontradas: number;
+}>;
 
 export async function inventariarOcurrenciasVencidasZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "guardarInventario" | "listarOcurrenciasPorInventariar">,
@@ -91,9 +98,16 @@ export async function inventariarOcurrenciasVencidasZoomUseCase(
   let noEncontradas = 0;
   for (const v of vencidas) {
     try {
-      const r = await inventariarZoomUseCase(repo, origen, { ...v, ahora: entrada.ahora, corteDias: entrada.corteDias });
-      if (r.tipo === "GUARDADO") guardadas++;
-      else noEncontradas++;
+      const r = await inventariarZoomUseCase(repo, origen, {
+        ...v,
+        ahora: entrada.ahora,
+        corteDias: entrada.corteDias
+      });
+      if (r.tipo === "GUARDADO") {
+        guardadas++;
+      } else {
+        noEncontradas++;
+      }
     } catch {
       // Una ocurrencia con error no frena a las demás; queda vencida y se reintenta en el próximo ciclo.
       fallidas++;
@@ -104,7 +118,12 @@ export async function inventariarOcurrenciasVencidasZoomUseCase(
 
 function fechaMontevideo(fecha: Date): string {
   // en-CA formatea como YYYY-MM-DD.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_NEGOCIO, year: "numeric", month: "2-digit", day: "2-digit" }).format(fecha);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_NEGOCIO,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(fecha);
 }
 
 export type ErrorBarridoZoom = Readonly<{ anfitrionZoomId: string; codigo: string }>;
@@ -136,7 +155,12 @@ export function codigoDeError(error: unknown): string {
 export async function barrerAnfitrionesZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "guardarInventario">,
   origen: InventarioOrigenZoomPort,
-  entrada: Readonly<{ anfitriones: readonly AnfitrionInventarioZoom[]; ahora: Date; diasAtras: number; corteDias: number }>
+  entrada: Readonly<{
+    anfitriones: readonly AnfitrionInventarioZoom[];
+    ahora: Date;
+    diasAtras: number;
+    corteDias: number;
+  }>
 ): Promise<ResumenBarridoZoom> {
   const hasta = fechaMontevideo(entrada.ahora);
   const desde = fechaMontevideo(new Date(entrada.ahora.getTime() - entrada.diasAtras * DIA));
@@ -156,14 +180,21 @@ export async function barrerAnfitrionesZoomUseCase(
           const vistos = new Set<string>();
           do {
             const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await origen.listarOcurrencias(
-              anfitrion, papelera ? { ...ventana, papelera: true } : ventana, cursor
+              anfitrion,
+              papelera ? { ...ventana, papelera: true } : ventana,
+              cursor
             );
             for (const referencia of pagina.elementos) {
               ocurrencias++;
-              if (papelera) ocurrenciasPapelera++;
+              if (papelera) {
+                ocurrenciasPapelera++;
+              }
               try {
                 await inventariarZoomUseCase(repo, origen, {
-                  referencia, cuentaProveedorId: anfitrion.cuentaProveedorId, ahora: entrada.ahora, corteDias: entrada.corteDias
+                  referencia,
+                  cuentaProveedorId: anfitrion.cuentaProveedorId,
+                  ahora: entrada.ahora,
+                  corteDias: entrada.corteDias
                 });
               } catch {
                 ocurrenciasConError++;
@@ -172,7 +203,9 @@ export async function barrerAnfitrionesZoomUseCase(
             cursor = pagina.siguiente;
             if (cursor !== null) {
               // Un cursor repetido no avanza: se corta sin declarar completa la ventana.
-              if (vistos.has(cursor)) throw new Error("Cursor de paginación repetido.");
+              if (vistos.has(cursor)) {
+                throw new Error("Cursor de paginación repetido.");
+              }
               vistos.add(cursor);
             }
           } while (cursor !== null);
@@ -180,7 +213,9 @@ export async function barrerAnfitrionesZoomUseCase(
       }
     } catch (error) {
       anfitrionesConError++;
-      if (errores.length < 25) errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
+      if (errores.length < 25) {
+        errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
+      }
     }
   }
   return { ocurrencias, ocurrenciasPapelera, anfitrionesConError, ocurrenciasConError, errores };

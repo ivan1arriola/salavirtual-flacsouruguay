@@ -31,6 +31,7 @@
 ### Task 1: Typed encounter query and Prisma pagination
 
 **Files:**
+
 - Create: `src/modules/archivos/domain/grabaciones-query.domain.ts`
 - Modify: `src/modules/archivos/ports/archivos-repository.port.ts`
 - Modify: `src/modules/archivos/application/consultar-grabaciones.use-case.ts`
@@ -40,6 +41,7 @@
 - Test: `test/archivos-application.test.ts`
 
 **Interfaces:**
+
 - Produces `ListarEncuentrosConArchivosInput = { actor: SessionActor; pagina: number; porPagina: 12; busqueda: string; filtro: TipoFiltroArtefacto }`.
 - Produces `normalizarParametrosGrabaciones(params: Readonly<{ pagina?: string | string[]; busqueda?: string | string[]; filtro?: string | string[] }>): { pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }`, defaulting malformed values to page 1, empty search, and `TODOS`.
 - Produces `crearHrefGrabaciones(actual: { pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }, cambios: Partial<{ pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }>): string`, preserving safe search/filter values and omitting default query values.
@@ -56,12 +58,14 @@
 ### Task 2: Server page parameters and URL navigation
 
 **Files:**
+
 - Modify: `app/(gestion)/grabaciones/page.tsx`
 - Modify: `src/components/recordings-library.tsx`
 - Modify: `src/bootstrap/archivos.server.ts`
 - Test: `test/grabaciones-filtro-domain.test.ts`
 
 **Interfaces:**
+
 - The page accepts Next.js 16 `searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string }>` and passes normalized values plus the authenticated `SessionActor` to `listarEncuentrosConArchivos`.
 - The client receives `EncuentrosConArchivosPage` and updates the safe `/grabaciones` query string for search, filter, previous/next, and reset actions. Query changes reset `pagina` to 1; the page component performs no local catalog filtering or pagination.
 - Consumes Task 1 `crearHrefGrabaciones(actual, cambios)` for link generation.
@@ -75,6 +79,7 @@
 ### Task 3: Full access, category, and regression verification
 
 **Files:**
+
 - Modify: `test/archivos-infrastructure.test.ts`
 - Modify: `test/grabaciones-filtro-domain.test.ts`
 - Modify: `test/functional-architecture.test.ts` only if page and repository layering checks require an update justified by the new server query.
@@ -84,4 +89,3 @@
 - [ ] **Step 3: Re-run** current `functional-architecture` failures and fix only proven issues in this scope.
 - [ ] **Step 4: Run** `npm run check`, `npm test -- --reporter=dot`, and `npm run build`; compare against the documented baseline and resolve failures in touched code.
 - [ ] **Step 5: Commit** as `test: cover recordings pagination and access scope`.
-

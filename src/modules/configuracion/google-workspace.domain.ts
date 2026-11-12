@@ -6,21 +6,24 @@ const privateKeySchema = z
   .trim()
   .transform((value) => value.replaceAll("\\n", "\n"))
   .refine(
-    (value) =>
-      value.startsWith("-----BEGIN PRIVATE KEY-----") &&
-      value.endsWith("-----END PRIVATE KEY-----"),
+    (value) => value.startsWith("-----BEGIN PRIVATE KEY-----") && value.endsWith("-----END PRIVATE KEY-----"),
     "El private key no tiene formato PEM valido."
   );
 
-const credentialIdSchema = z.string().trim().min(1).max(160).refine(
-  (value) => value === "principal" || value.startsWith("legacy:"),
-  "Identificador de credencial inválido."
-);
+const credentialIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(160)
+  .refine(
+    (value) => value === "principal" || value.startsWith("legacy:"),
+    "Identificador de credencial inválido."
+  );
 
 export const googleServiceAccountKeySchema = z
   .object({
     type: z.literal("service_account", {
-      message: "El JSON debe tener type: \"service_account\".",
+      message: 'El JSON debe tener type: "service_account".'
     }),
     project_id: z.string().trim().min(1, "El JSON debe incluir project_id.").optional(),
     private_key_id: z.string().trim().optional(),
@@ -31,13 +34,11 @@ export const googleServiceAccountKeySchema = z
     token_uri: z.string().optional(),
     auth_provider_x509_cert_url: z.string().optional(),
     client_x509_cert_url: z.string().optional(),
-    universe_domain: z.string().optional(),
+    universe_domain: z.string().optional()
   })
   .passthrough();
 
-export type GoogleServiceAccountKey = Readonly<
-  z.infer<typeof googleServiceAccountKeySchema>
->;
+export type GoogleServiceAccountKey = Readonly<z.infer<typeof googleServiceAccountKeySchema>>;
 
 export function parseServiceAccountKeyJson(input: unknown): GoogleServiceAccountKey {
   if (input === null || input === undefined) {
@@ -84,7 +85,8 @@ export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("s
       } catch (error) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: error instanceof Error ? error.message : "El archivo JSON de cuenta de servicio no es válido."
+          message:
+            error instanceof Error ? error.message : "El archivo JSON de cuenta de servicio no es válido."
         });
         return z.NEVER;
       }
@@ -108,10 +110,6 @@ export const pruebaConfiguracionGoogleWorkspaceSchema = z.object({
   objetivo: z.enum(["CREDENCIAL", "DELEGACION", "SCOPES", "DRIVE"]),
   credentialId: credentialIdSchema.optional()
 });
-
-export type ConfiguracionGoogleWorkspaceInput = Readonly<
-  z.infer<typeof configuracionGoogleWorkspaceSchema>
->;
 
 export type SeccionConfiguracionGoogleWorkspaceInput = Readonly<
   z.infer<typeof seccionConfiguracionGoogleWorkspaceSchema>
@@ -139,7 +137,10 @@ export function mensajeErrorGoogleWorkspace(error: unknown): string {
   if (normalized.includes("delegation denied")) {
     return "Google denegó la delegación del dominio. Revisá el ID numérico del cliente, el usuario delegado y los scopes autorizados.";
   }
-  if (normalized.includes("insufficient authentication scopes") || normalized.includes("insufficient oauth")) {
+  if (
+    normalized.includes("insufficient authentication scopes") ||
+    normalized.includes("insufficient oauth")
+  ) {
     return "Faltan scopes OAuth en la delegación de todo el dominio. Usá Validar scopes en Configuración → Google Workspace para identificar cuáles faltan.";
   }
   if (normalized.includes("insufficient") || normalized.includes("permission")) {

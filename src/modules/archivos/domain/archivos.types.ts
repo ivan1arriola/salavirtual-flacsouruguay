@@ -1,10 +1,6 @@
 export type RolUsuario = "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
 
-export type EstadoResultadoGrabacion =
-  | "NO_REQUERIDA"
-  | "PENDIENTE"
-  | "DISPONIBLE"
-  | "NO_REALIZADA";
+export type EstadoResultadoGrabacion = "NO_REQUERIDA" | "PENDIENTE" | "DISPONIBLE" | "NO_REALIZADA";
 
 export type SyncArtifactsResult = Readonly<{
   eventoProveedorId: string;
@@ -14,20 +10,10 @@ export type SyncArtifactsResult = Readonly<{
   error?: string;
 }>;
 
-export type RolEnReunionMeet =
-  | "HOST"
-  | "COHOST"
-  | "DOCENTE"
-  | "ASISTENTE_TECNICO"
-  | "PARTICIPANTE";
+export type RolEnReunionMeet = "HOST" | "COHOST" | "DOCENTE" | "ASISTENTE_TECNICO" | "PARTICIPANTE";
 
 export type OrigenCorreoParticipanteMeet =
-  | "GOOGLE_MEET"
-  | "GOOGLE_REPORTS"
-  | "REPORTS_API"
-  | "DIRECTORIO_FLACSO"
-  | "MANUAL"
-  | "SIN_CORREO";
+  "GOOGLE_MEET" | "GOOGLE_REPORTS" | "REPORTS_API" | "DIRECTORIO_FLACSO" | "MANUAL" | "SIN_CORREO";
 
 export type ParticipanteActivoMeet = Readonly<{
   nombre: string;
@@ -156,4 +142,3 @@ export type MovedDriveFile = Readonly<{
   size?: string;
   webViewLink?: string;
 }>;
-

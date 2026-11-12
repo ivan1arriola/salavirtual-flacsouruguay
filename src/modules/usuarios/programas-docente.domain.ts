@@ -19,8 +19,8 @@ export function puedeGestionarProgramasDocente(
   actor: ActorProgramasDocente,
   docenteUsuarioId: string
 ): boolean {
-  return actor.activo && (
-    actor.rol === "ADMINISTRACION" ||
-    (actor.rol === "DOCENTE" && actor.id === docenteUsuarioId)
+  return (
+    actor.activo &&
+    (actor.rol === "ADMINISTRACION" || (actor.rol === "DOCENTE" && actor.id === docenteUsuarioId))
   );
 }

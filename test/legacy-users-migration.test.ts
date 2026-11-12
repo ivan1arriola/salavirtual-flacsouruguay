@@ -74,12 +74,14 @@ describe("plan funcional de migracion de usuarios", () => {
 
   it("usa nombre alternativo, limpia apellido y aplica DOCENTE a roles desconocidos", () => {
     const [plan] = planificarMigracionUsuarios(
-      [legacyUser({
-        firstName: "   ",
-        name: "  Nombre alternativo  ",
-        lastName: "   ",
-        role: "ROL_DESCONOCIDO"
-      })],
+      [
+        legacyUser({
+          firstName: "   ",
+          name: "  Nombre alternativo  ",
+          lastName: "   ",
+          role: "ROL_DESCONOCIDO"
+        })
+      ],
       new Set(),
       new Map()
     );
@@ -102,21 +104,23 @@ describe("plan funcional de migracion de usuarios", () => {
 
   it("normaliza aliases y conserva cuentas Google correspondientes a emails FLACSO", () => {
     const [plan] = planificarMigracionUsuarios(
-      [legacyUser({
-        email: " Persona@FLACSO.EDU.UY ",
-        emailAliases: [
-          { email: " ALIAS@FLACSO.EDU.UY " },
-          { email: "externo@gmail.com" }
-        ],
-        accounts: [googleAccount("google-1"), googleAccount("google-2"), googleAccount("google-3")]
-      })],
+      [
+        legacyUser({
+          email: " Persona@FLACSO.EDU.UY ",
+          emailAliases: [{ email: " ALIAS@FLACSO.EDU.UY " }, { email: "externo@gmail.com" }],
+          accounts: [googleAccount("google-1"), googleAccount("google-2"), googleAccount("google-3")]
+        })
+      ],
       new Set(),
       new Map()
     );
 
     expect(plan?.emailPrincipal).toBe("persona@flacso.edu.uy");
     expect(plan?.aliases).toEqual(["alias@flacso.edu.uy", "externo@gmail.com"]);
-    expect(plan?.cuentasGoogle.map(({ providerAccountId }) => providerAccountId)).toEqual(["google-1", "google-2"]);
+    expect(plan?.cuentasGoogle.map(({ providerAccountId }) => providerAccountId)).toEqual([
+      "google-1",
+      "google-2"
+    ]);
     expect(plan?.cuentasGoogleOmitidas).toBe(1);
   });
 
@@ -138,15 +142,10 @@ describe("plan funcional de migracion de usuarios", () => {
 
   it("falla de forma explícita si se agotan los sufijos de colisión", () => {
     const base = "ana.perez";
-    const reservados = new Set([
-      base,
-      ...Array.from({ length: 999 }, (_, index) => `${base}-${index + 2}`)
-    ]);
+    const reservados = new Set([base, ...Array.from({ length: 999 }, (_, index) => `${base}-${index + 2}`)]);
 
-    expect(() => planificarMigracionUsuarios(
-      [legacyUser()],
-      reservados,
-      new Map()
-    )).toThrow(`No se pudo generar un usuario unico para ${base}.`);
+    expect(() => planificarMigracionUsuarios([legacyUser()], reservados, new Map())).toThrow(
+      `No se pudo generar un usuario unico para ${base}.`
+    );
   });
 });

@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { ConflictApiError, ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import {
   cumpleSeparacionMinimaAsistencias,
@@ -20,9 +20,7 @@ import type {
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
-export function crearPrismaAsistenciaRepositoryAdapter(
-  db: PrismaClient
-): AsistenciaRepositoryPort {
+export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): AsistenciaRepositoryPort {
   return {
     async obtenerPerfilAsistentePorUsuarioId(usuarioId: string): Promise<AssistantProfile | null> {
       const assistant = await db.asistenteTecnico.findUnique({
@@ -31,11 +29,15 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           id: true,
           usuarioId: true,
           cesadoHastaProximoInicioSesion: true,
-          usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true, emailPrincipal: true } }
+          usuario: {
+            select: { activo: true, rol: true, nombres: true, apellidos: true, emailPrincipal: true }
+          }
         }
       });
 
-      if (!assistant || assistant.usuario.rol !== "ASISTENTE_TECNICO") return null;
+      if (!assistant || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
+        return null;
+      }
 
       const nombre = `${assistant.usuario.nombres} ${assistant.usuario.apellidos ?? ""}`.trim();
       return {
@@ -296,7 +298,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
             accion: currentActive ? "ASISTENTE_REASIGNADO" : "ASISTENTE_ASIGNADO",
             entidadTipo: "InstanciaSala",
             entidadId: meeting.id,
-            valorAnterior: currentActive ? { asistenteTecnicoId: currentActive.asistenteTecnicoId } : undefined,
+            valorAnterior: currentActive
+              ? { asistenteTecnicoId: currentActive.asistenteTecnicoId }
+              : undefined,
             valorNuevo: {
               asistenteTecnicoId: assistant.id,
               asignacionId: created.id,
@@ -317,19 +321,13 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       });
     },
 
-    async desvincularAsistente(
-      asignacionId: string,
-      actorUsuarioId: string
-    ): Promise<AsignacionRow> {
+    async desvincularAsistente(asignacionId: string, actorUsuarioId: string): Promise<AsignacionRow> {
       return db.$transaction(async (tx) => {
         const actor = await tx.usuario.findUnique({
           where: { id: actorUsuarioId },
           select: { id: true, activo: true, rol: true }
         });
-        if (
-          !actor?.activo ||
-          !["ADMINISTRACION", "ASISTENTE_TECNICO"].includes(actor.rol)
-        ) {
+        if (!actor?.activo || !["ADMINISTRACION", "ASISTENTE_TECNICO"].includes(actor.rol)) {
           throw new ForbiddenApiError("La sesión ya no tiene permisos para modificar esta asignación.");
         }
 
@@ -370,8 +368,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           throw new ForbiddenApiError("Solo podés darte de baja de tus propias asignaciones.");
         }
         const inicioAsistencia =
-          assignment.instancia.inicioAsistenciaTecnicaAt ??
-          assignment.instancia.inicioProgramadoAt;
+          assignment.instancia.inicioAsistenciaTecnicaAt ?? assignment.instancia.inicioProgramadoAt;
         if (esBajaPropia && inicioAsistencia <= new Date()) {
           throw new ConflictApiError("No podés darte de baja una vez iniciado el monitoreo.");
         }
@@ -471,10 +468,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         ) {
           throw new ForbiddenApiError("La reunión no está asignada a este usuario.");
         }
-        if (
-          asignacion.instancia.estado !== "FINALIZADA" &&
-          asignacion.instancia.finProgramadoAt > ahora
-        ) {
+        if (asignacion.instancia.estado !== "FINALIZADA" && asignacion.instancia.finProgramadoAt > ahora) {
           throw new ConflictApiError("La duración solo se puede informar al finalizar la reunión.");
         }
         if (["CANCELADA", "NO_REALIZADA"].includes(asignacion.instancia.estado)) {
@@ -529,10 +523,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       });
     },
 
-    async actualizarDisponibilidad(
-      usuarioId: string,
-      input: DisponibilidadSemanalInput
-    ): Promise<void> {
+    async actualizarDisponibilidad(usuarioId: string, input: DisponibilidadSemanalInput): Promise<void> {
       if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
         throw new ValidationApiError("Solo puede definirse una franja habitual por día.");
       }
@@ -542,7 +533,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           where: { usuarioId },
           select: { id: true }
         });
-        if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
+        if (!assistant) {
+          throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
+        }
 
         await tx.asistenteTecnico.update({
           where: { id: assistant.id },
@@ -588,7 +581,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         where: { usuarioId },
         select: { id: true }
       });
-      if (!assistant) return [];
+      if (!assistant) {
+        return [];
+      }
 
       const parts = new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Montevideo",
@@ -600,10 +595,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       const desdeMes = new Date(Date.UTC(year, month - 1, 1, 3));
       const hastaMes = new Date(Date.UTC(year, month, 1, 3));
 
-      const rango =
-        periodo === "MES_ACTUAL"
-          ? { gte: desdeMes, lt: hastaMes }
-          : { lt: desdeMes };
+      const rango = periodo === "MES_ACTUAL" ? { gte: desdeMes, lt: hastaMes } : { lt: desdeMes };
 
       const asignaciones = await db.asignacionAsistenciaTecnica.findMany({
         where: {
@@ -666,7 +658,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           instanciaId: instancia.id,
           titulo: instancia.solicitud.titulo,
           programa: asociacion.programa.nombre,
-          docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
+          docente:
+            `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
           inicioAt: inicioAsistencia,
           finAt: finAsistencia,
           inicioRealAt: instancia.inicioRealAt,
@@ -696,7 +689,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
         where: { usuarioId },
         select: { id: true }
       });
-      if (!assistant) return [];
+      if (!assistant) {
+        return [];
+      }
 
       const assignments = await db.asignacionAsistenciaTecnica.findMany({
         where: {
@@ -715,7 +710,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           }
         }
       });
-      if (assignments.length === 0) return [];
+      if (assignments.length === 0) {
+        return [];
+      }
 
       const meetingById = new Map(
         assignments.map((assignment) => [
@@ -746,14 +743,18 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       });
 
       const helperAsistenteId = (value: unknown): string | null => {
-        if (!value || Array.isArray(value) || typeof value !== "object") return null;
+        if (!value || Array.isArray(value) || typeof value !== "object") {
+          return null;
+        }
         const id = (value as Record<string, unknown>).asistenteTecnicoId;
         return typeof id === "string" ? id : null;
       };
 
       return audits.flatMap((audit) => {
         const meeting = meetingById.get(audit.entidadId);
-        if (!meeting) return [];
+        if (!meeting) {
+          return [];
+        }
 
         const accion = resolverAccionHistorialAsistente(
           audit.accion,
@@ -761,7 +762,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
           helperAsistenteId(audit.valorNuevo),
           assistant.id
         );
-        if (!accion) return [];
+        if (!accion) {
+          return [];
+        }
 
         const actor = audit.actor
           ? `${audit.actor.nombres} ${audit.actor.apellidos ?? ""}`.trim()
@@ -788,10 +791,12 @@ export function crearPrismaAsistenciaRepositoryAdapter(
       return assistant?.slug ?? null;
     },
 
-    async obtenerAsistentesParaNotificacion(instanciaSalaId: string): Promise<Readonly<{
-      reunion: MeetingCoverInfo;
-      destinatarios: readonly string[];
-    }>> {
+    async obtenerAsistentesParaNotificacion(instanciaSalaId: string): Promise<
+      Readonly<{
+        reunion: MeetingCoverInfo;
+        destinatarios: readonly string[];
+      }>
+    > {
       const meeting = await db.instanciaSala.findUnique({
         where: { id: instanciaSalaId },
         select: {
@@ -807,7 +812,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(
             select: {
               titulo: true,
               modalidad: true,
-              docentePrograma: { select: { docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } } } }
+              docentePrograma: {
+                select: { docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } } }
+              }
             }
           },
           asignaciones: {

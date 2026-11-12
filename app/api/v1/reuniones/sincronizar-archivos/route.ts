@@ -41,7 +41,11 @@ async function executeSynchronization(incluirZoom: boolean) {
     sincronizarArtefactosOperativos(),
     incluirZoom ? estadoZoomArchivos() : Promise.resolve(null)
   ]);
-  const zoom = !incluirZoom ? undefined : zoomEstado.status === "fulfilled" ? zoomEstado.value : { disponible: false as const };
+  const zoom = !incluirZoom
+    ? undefined
+    : zoomEstado.status === "fulfilled"
+      ? zoomEstado.value
+      : { disponible: false as const };
   if (meet.status === "rejected") {
     return NextResponse.json({ error: "No se pudo sincronizar Meet.", zoom }, { status: 502 });
   }

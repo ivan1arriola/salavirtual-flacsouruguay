@@ -18,19 +18,21 @@ export function claveSerieReunion(request: SolicitudDeSerie): string {
   return `legacy:${request.docenteProgramaId}|${request.createdAt.toISOString()}|${encodeURIComponent(request.titulo)}`;
 }
 
-export function construirFiltroSerieSolicitud(request: Readonly<{
-  serieReunionId?: string | null;
-  docenteProgramaId: string;
-  titulo: string;
-  createdAt: Date;
-}>): { serieReunionId: string } | { docenteProgramaId: string; titulo: string; createdAt: Date } {
+export function construirFiltroSerieSolicitud(
+  request: Readonly<{
+    serieReunionId?: string | null;
+    docenteProgramaId: string;
+    titulo: string;
+    createdAt: Date;
+  }>
+): { serieReunionId: string } | { docenteProgramaId: string; titulo: string; createdAt: Date } {
   if (request.serieReunionId) {
     return { serieReunionId: request.serieReunionId };
   }
   return {
     docenteProgramaId: request.docenteProgramaId,
     titulo: request.titulo,
-    createdAt: request.createdAt,
+    createdAt: request.createdAt
   };
 }
 
@@ -47,9 +49,13 @@ export function filtroSerieDesdeClave(
   }
   if (clave.startsWith("legacy:")) {
     const [docenteProgramaId, creada, tituloCodificado, ...resto] = clave.slice("legacy:".length).split("|");
-    if (!docenteProgramaId || !creada || tituloCodificado === undefined || resto.length > 0) return null;
+    if (!docenteProgramaId || !creada || tituloCodificado === undefined || resto.length > 0) {
+      return null;
+    }
     const createdAt = new Date(creada);
-    if (Number.isNaN(createdAt.getTime())) return null;
+    if (Number.isNaN(createdAt.getTime())) {
+      return null;
+    }
     try {
       return { docenteProgramaId, titulo: decodeURIComponent(tituloCodificado), createdAt };
     } catch {
@@ -59,15 +65,21 @@ export function filtroSerieDesdeClave(
   // Formato anterior, con NUL como separador: puede seguir en una pantalla que ya estaba abierta.
   const [docenteProgramaId, titulo, creada, ...resto] = clave.split("\u0000");
   const createdAt = new Date(creada ?? "");
-  if (!docenteProgramaId || titulo === undefined || resto.length > 0 || Number.isNaN(createdAt.getTime())) return null;
+  if (!docenteProgramaId || titulo === undefined || resto.length > 0 || Number.isNaN(createdAt.getTime())) {
+    return null;
+  }
   return { docenteProgramaId, titulo, createdAt };
 }
 
 /** Lleva cualquier clave recibida (también la antigua con NUL) al formato actual, apto para la base. */
 export function normalizarClaveSerie(clave: string): string {
-  if (!clave.includes("\u0000")) return clave;
+  if (!clave.includes("\u0000")) {
+    return clave;
+  }
   const filtro = filtroSerieDesdeClave(clave);
-  return filtro && "docenteProgramaId" in filtro ? claveSerieReunion({ ...filtro, serieReunionId: null }) : clave;
+  return filtro && "docenteProgramaId" in filtro
+    ? claveSerieReunion({ ...filtro, serieReunionId: null })
+    : clave;
 }
 
 /** Clave de bloqueo asesor de una serie: PostgreSQL no admite el carácter NUL en el texto que se le pasa a `hashtext`. */

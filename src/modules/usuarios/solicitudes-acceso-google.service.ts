@@ -36,12 +36,19 @@ export async function aprobarSolicitudAccesoGoogle(
       },
       select: { userId: true }
     });
-    if (existente) throw new Error("Esta cuenta Google ya está vinculada a un usuario.");
+    if (existente) {
+      throw new Error("Esta cuenta Google ya está vinculada a un usuario.");
+    }
 
     const usuarioId = await idDisponible(tx, solicitud.email);
-    const slug = rol === "ASISTENTE_TECNICO"
-      ? await crearSlugAsistenteDisponible(tx, [solicitud.nombres, solicitud.apellidos].filter(Boolean).join(" "), usuarioId)
-      : null;
+    const slug =
+      rol === "ASISTENTE_TECNICO"
+        ? await crearSlugAsistenteDisponible(
+            tx,
+            [solicitud.nombres, solicitud.apellidos].filter(Boolean).join(" "),
+            usuarioId
+          )
+        : null;
     const usuario = await tx.usuario.create({
       data: {
         id: usuarioId,
@@ -133,11 +140,13 @@ export async function rechazarSolicitudAccesoGoogle(
 }
 
 async function idDisponible(tx: Prisma.TransactionClient, email: string): Promise<string> {
-  const base = email.split("@")[0]
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9._-]/gi, "-")
-    .slice(0, 50) || "google";
+  const base =
+    email
+      .split("@")[0]
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9._-]/gi, "-")
+      .slice(0, 50) || "google";
   const existe = await tx.usuario.findUnique({ where: { id: base }, select: { id: true } });
   return existe ? `${base.slice(0, 40)}-${randomUUID().slice(0, 8)}` : base;
 }

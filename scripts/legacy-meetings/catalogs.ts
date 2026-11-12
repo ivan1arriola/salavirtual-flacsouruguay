@@ -90,18 +90,11 @@ export async function cargarMapeos() {
   ]);
 
   return {
-    usuariosPorLegacy: new Map(
-      usuarios.map((usuario) => [usuario.legacyZoomUserId as string, usuario])
-    ),
+    usuariosPorLegacy: new Map(usuarios.map((usuario) => [usuario.legacyZoomUserId as string, usuario])),
     programasPorNombre: new Map(
-      programas.map((programa) => [
-        normalizarNombrePrograma(programa.nombre).toLowerCase(),
-        programa.id
-      ])
+      programas.map((programa) => [normalizarNombrePrograma(programa.nombre).toLowerCase(), programa.id])
     ),
-    cuentasPorLegacy: new Map(
-      cuentas.map((cuenta) => [cuenta.legacyZoomCuentaId as string, cuenta.id])
-    )
+    cuentasPorLegacy: new Map(cuentas.map((cuenta) => [cuenta.legacyZoomCuentaId as string, cuenta.id]))
   };
 }
 

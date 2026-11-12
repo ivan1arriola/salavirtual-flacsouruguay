@@ -26,18 +26,24 @@ export default async function MiAgendaPage({
   searchParams?: Promise<{ tab?: string }>;
 }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") redirect("/");
+  if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") {
+    redirect("/");
+  }
 
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },
     select: { id: true }
   });
-  if (!assistant) redirect("/");
+  if (!assistant) {
+    redirect("/");
+  }
 
   const resolvedParams = searchParams ? await searchParams : {};
   const requestedTab = resolvedParams.tab;
@@ -99,9 +105,9 @@ export default async function MiAgendaPage({
     })
   ]);
 
-  const upcomingPeriods = [...new Set(
-    upcomingAssignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt))
-  )].map((clave) => ({
+  const upcomingPeriods = [
+    ...new Set(upcomingAssignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt)))
+  ].map((clave) => ({
     clave,
     assignments: upcomingAssignments.filter(
       ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
@@ -119,9 +125,10 @@ export default async function MiAgendaPage({
           <p className="page-eyebrow">Monitoreo</p>
           <h1>Mi agenda</h1>
           <p>
-            {activeTab === "proximas" && (
-              upcomingCount === 1 ? "1 reunión próxima asignada." : `${upcomingCount} reuniones próximas asignadas.`
-            )}
+            {activeTab === "proximas" &&
+              (upcomingCount === 1
+                ? "1 reunión próxima asignada."
+                : `${upcomingCount} reuniones próximas asignadas.`)}
             {activeTab === "mes" && `Reuniones, horas e importes estimados de ${formatMonth(ahora)}.`}
             {activeTab === "historico" && "Horas e importes personales de meses anteriores."}
           </p>
@@ -132,10 +139,23 @@ export default async function MiAgendaPage({
             <span>
               <small>Próxima llegada para monitoreo</small>
               <strong>
-                {(nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) === "HIBRIDA" && !nextAssignment.instancia.inicioAsistenciaTecnicaAt ? "Horario por confirmar" : formatDate(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}
-                {((nextAssignment.instancia.modalidadOverride ?? nextAssignment.instancia.solicitud.modalidad) !== "HIBRIDA" || nextAssignment.instancia.inicioAsistenciaTecnicaAt) ? ` · ${formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}` : ""}
+                {(nextAssignment.instancia.modalidadOverride ??
+                  nextAssignment.instancia.solicitud.modalidad) === "HIBRIDA" &&
+                !nextAssignment.instancia.inicioAsistenciaTecnicaAt
+                  ? "Horario por confirmar"
+                  : formatDate(
+                      nextAssignment.instancia.inicioAsistenciaTecnicaAt ??
+                        nextAssignment.instancia.inicioProgramadoAt
+                    )}
+                {(nextAssignment.instancia.modalidadOverride ??
+                  nextAssignment.instancia.solicitud.modalidad) !== "HIBRIDA" ||
+                nextAssignment.instancia.inicioAsistenciaTecnicaAt
+                  ? ` · ${formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}`
+                  : ""}
               </strong>
-              <small>La reunión empieza a las {formatTime(nextAssignment.instancia.inicioProgramadoAt)}</small>
+              <small>
+                La reunión empieza a las {formatTime(nextAssignment.instancia.inicioProgramadoAt)}
+              </small>
             </span>
           </div>
         ) : activeTab === "mes" ? (
@@ -146,18 +166,12 @@ export default async function MiAgendaPage({
       </header>
 
       <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
-        <Link
-          className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`}
-          href="/mi-agenda"
-        >
+        <Link className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`} href="/mi-agenda">
           <CalendarCheck2 size={16} aria-hidden="true" />
           <span>Próximas</span>
           {upcomingCount > 0 ? <span className="tab-pill">{upcomingCount}</span> : null}
         </Link>
-        <Link
-          className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`}
-          href="/mi-agenda?tab=mes"
-        >
+        <Link className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`} href="/mi-agenda?tab=mes">
           <CalendarRange size={16} aria-hidden="true" />
           <span>Mes</span>
         </Link>
@@ -170,8 +184,8 @@ export default async function MiAgendaPage({
         </Link>
       </nav>
 
-      {activeTab === "proximas" && (
-        upcomingAssignments.length === 0 ? (
+      {activeTab === "proximas" &&
+        (upcomingAssignments.length === 0 ? (
           <section className="content-section">
             <div className="empty-state">
               <CalendarCheck2 size={24} aria-hidden="true" />
@@ -199,18 +213,31 @@ export default async function MiAgendaPage({
                     const teacher = association.docente.usuario;
                     const meet = seleccionarEventoProveedorActivo(meeting);
                     const isNext = assignment.id === nextAssignment?.id;
-                    const roomName = meet?.cuentaProveedor?.emailOrganizador
-                      ?? meet?.cuentaProveedor?.nombre
-                      ?? "Sin cuenta asignada";
+                    const roomName =
+                      meet?.cuentaProveedor?.emailOrganizador ??
+                      meet?.cuentaProveedor?.nombre ??
+                      "Sin cuenta asignada";
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
                     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
 
                     return (
-                      <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`} key={assignment.id}>
+                      <article
+                        className={`assistant-agenda-item${isNext ? " is-next" : ""}`}
+                        key={assignment.id}
+                      >
                         <div className="assistant-agenda-date-block">
                           <span>{formatDate(inicioAsistencia)}</span>
-                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} viewerIsAssistant compact />
+                          <MeetingScheduleTimes
+                            startsAt={meeting.inicioProgramadoAt}
+                            endsAt={meeting.finProgramadoAt}
+                            requiresAssistance
+                            modality={modalidad}
+                            assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt}
+                            assistanceEndsAt={meeting.finAsistenciaTecnicaAt}
+                            viewerIsAssistant
+                            compact
+                          />
                           {isNext ? <em>Próxima</em> : null}
                         </div>
 
@@ -222,7 +249,9 @@ export default async function MiAgendaPage({
                             </span>
                           </div>
                           <h3>{meeting.solicitud.titulo}</h3>
-                          <p>{teacher.nombres} {teacher.apellidos}</p>
+                          <p>
+                            {teacher.nombres} {teacher.apellidos}
+                          </p>
                         </div>
 
                         <div className="assistant-agenda-room">
@@ -261,8 +290,7 @@ export default async function MiAgendaPage({
               </section>
             ))}
           </div>
-        )
-      )}
+        ))}
 
       {activeTab === "mes" && (
         <>
@@ -303,8 +331,8 @@ export default async function MiAgendaPage({
         </>
       )}
 
-      {activeTab === "historico" && (
-        historyPeriods.length === 0 ? (
+      {activeTab === "historico" &&
+        (historyPeriods.length === 0 ? (
           <section className="content-section">
             <div className="empty-state">
               <History size={24} />
@@ -321,7 +349,9 @@ export default async function MiAgendaPage({
                     <div>
                       <h2>{formatMonth(period.registros[0].inicioAt)}</h2>
                       <p>
-                        {periodSummary.reuniones} reuniones · {formatMinutes(periodSummary.minutosVirtuales + periodSummary.minutosHibridos)} horas · {formatMoney(periodSummary.monto)}
+                        {periodSummary.reuniones} reuniones ·{" "}
+                        {formatMinutes(periodSummary.minutosVirtuales + periodSummary.minutosHibridos)} horas
+                        · {formatMoney(periodSummary.monto)}
                       </p>
                     </div>
                   </div>
@@ -330,8 +360,7 @@ export default async function MiAgendaPage({
               );
             })}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }

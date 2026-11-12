@@ -16,7 +16,9 @@ export function DismissibleDetails({
   useEffect(() => {
     function closeMenu({ restoreFocus = false } = {}) {
       const details = detailsRef.current;
-      if (!details?.open) return;
+      if (!details?.open) {
+        return;
+      }
 
       details.open = false;
 
@@ -27,7 +29,9 @@ export function DismissibleDetails({
 
     function handlePointerDown(event: PointerEvent) {
       const details = detailsRef.current;
-      if (!details?.open) return;
+      if (!details?.open) {
+        return;
+      }
 
       const target = event.target;
       if (target instanceof Node && !details.contains(target)) {
@@ -36,10 +40,14 @@ export function DismissibleDetails({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape") {
+        return;
+      }
 
       const details = detailsRef.current;
-      if (!details?.open) return;
+      if (!details?.open) {
+        return;
+      }
 
       event.preventDefault();
       closeMenu({ restoreFocus: true });
@@ -60,4 +68,3 @@ export function DismissibleDetails({
     </details>
   );
 }
-

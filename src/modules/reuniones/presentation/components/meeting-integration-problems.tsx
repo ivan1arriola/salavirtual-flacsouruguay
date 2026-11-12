@@ -19,7 +19,7 @@ type RepairResult = Readonly<{
 
 export function MeetingIntegrationProblems({
   problems,
-  canRepair,
+  canRepair
 }: Readonly<{
   problems: readonly IntegrationProblem[];
   canRepair: boolean;
@@ -28,7 +28,9 @@ export function MeetingIntegrationProblems({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Readonly<Record<string, string>>>({});
 
-  if (problems.length === 0) return null;
+  if (problems.length === 0) {
+    return null;
+  }
 
   async function repair(problem: IntegrationProblem) {
     setBusyId(problem.eventoProveedorId);
@@ -39,14 +41,14 @@ export function MeetingIntegrationProblems({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventoProveedorId: problem.eventoProveedorId,
-          operacion: problem.hasMeet ? "CONFIGURAR_MEET" : "PROVISIONAR",
-        }),
+          operacion: problem.hasMeet ? "CONFIGURAR_MEET" : "PROVISIONAR"
+        })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         setFeedback((current) => ({
           ...current,
-          [problem.eventoProveedorId]: result.error ?? "No se pudo reintentar la integración.",
+          [problem.eventoProveedorId]: result.error ?? "No se pudo reintentar la integración."
         }));
         return;
       }
@@ -58,8 +60,9 @@ export function MeetingIntegrationProblems({
         return;
       }
 
-      const message = repaired?.error
-        ?? (repaired?.estado === "PENDIENTE_CONFIGURACION"
+      const message =
+        repaired?.error ??
+        (repaired?.estado === "PENDIENTE_CONFIGURACION"
           ? "Falta completar la configuración de Google Workspace."
           : repaired?.estado === "EN_PROCESO"
             ? "La sincronización ya está siendo procesada."
@@ -69,7 +72,7 @@ export function MeetingIntegrationProblems({
     } catch {
       setFeedback((current) => ({
         ...current,
-        [problem.eventoProveedorId]: "No se pudo conectar con el servicio de sincronización.",
+        [problem.eventoProveedorId]: "No se pudo conectar con el servicio de sincronización."
       }));
     } finally {
       setBusyId(null);
@@ -83,7 +86,10 @@ export function MeetingIntegrationProblems({
           <h2 id="meet-integration-problems-title">Problemas de Google Meet</h2>
           <p>Solo aparecen los encuentros cuya integración necesita atención.</p>
         </div>
-        <span className="status status-error"><AlertTriangle size={14} />{problems.length}</span>
+        <span className="status status-error">
+          <AlertTriangle size={14} />
+          {problems.length}
+        </span>
       </div>
 
       <ul className="settings-list">
@@ -92,9 +98,17 @@ export function MeetingIntegrationProblems({
           return (
             <li key={problem.eventoProveedorId}>
               <span>
-                <strong>Encuentro {problem.ordinal} · {problem.fechaLegible}</strong>
-                <small>{problem.error ?? (problem.hasMeet ? "El Meet existe, pero su configuración quedó incompleta." : "No se pudo completar la creación del Meet.")}</small>
-                {feedback[problem.eventoProveedorId] && feedback[problem.eventoProveedorId] !== problem.error ? (
+                <strong>
+                  Encuentro {problem.ordinal} · {problem.fechaLegible}
+                </strong>
+                <small>
+                  {problem.error ??
+                    (problem.hasMeet
+                      ? "El Meet existe, pero su configuración quedó incompleta."
+                      : "No se pudo completar la creación del Meet.")}
+                </small>
+                {feedback[problem.eventoProveedorId] &&
+                feedback[problem.eventoProveedorId] !== problem.error ? (
                   <small role="status">{feedback[problem.eventoProveedorId]}</small>
                 ) : null}
               </span>

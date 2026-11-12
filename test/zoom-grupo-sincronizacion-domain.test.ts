@@ -6,8 +6,17 @@ import {
   type MiembroGrupoZoom
 } from "../src/modules/configuracion/zoom-grupo-sincronizacion.domain";
 
-const miembro = (id: string, email: string, licenciado = true): MiembroGrupoZoom => ({ id, email, nombre: `N ${id}`, licenciado });
-const cuenta = (id: string, email: string | null, extra: Partial<CuentaZoomActual> = {}): CuentaZoomActual => ({
+const miembro = (id: string, email: string, licenciado = true): MiembroGrupoZoom => ({
+  id,
+  email,
+  nombre: `N ${id}`,
+  licenciado
+});
+const cuenta = (
+  id: string,
+  email: string | null,
+  extra: Partial<CuentaZoomActual> = {}
+): CuentaZoomActual => ({
   id,
   emailOrganizador: email,
   externalAccountId: null,
@@ -30,16 +39,26 @@ describe("zoom-grupo-sincronizacion.domain", () => {
   });
 
   it("usa prioridad 100 si no hay cuentas y cuenta una vez los correos duplicados", () => {
-    const plan = planificarSincronizacionGrupoZoom([miembro("a", "A@x.uy"), miembro("a2", " a@x.uy ")], [], {});
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("a", "A@x.uy"), miembro("a2", " a@x.uy ")],
+      [],
+      {}
+    );
     expect(plan.crear).toHaveLength(1);
     expect(plan.crear[0].miembro.id).toBe("a");
     expect(plan.crear[0].prioridad).toBe(100);
   });
 
   it("adopta una cuenta existente por correo sin distinguir mayúsculas", () => {
-    const plan = planificarSincronizacionGrupoZoom([miembro("a", "Ana@X.uy")], [cuenta("c1", " ana@x.uy")], {});
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("a", "Ana@X.uy")],
+      [cuenta("c1", " ana@x.uy")],
+      {}
+    );
     expect(plan.crear).toHaveLength(0);
-    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("a", "Ana@X.uy"), reactivar: false }]);
+    expect(plan.actualizar).toEqual([
+      { cuentaId: "c1", miembro: miembro("a", "Ana@X.uy"), reactivar: false }
+    ]);
   });
 
   it("empareja por id de Zoom una cuenta cuyo correo cambió y la actualiza sin crear otra", () => {
@@ -49,7 +68,9 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       {}
     );
     expect(plan.crear).toEqual([]);
-    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }]);
+    expect(plan.actualizar).toEqual([
+      { cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }
+    ]);
     expect(plan.desactivar).toEqual([]);
     expect(plan.marcarFuera).toEqual([]);
   });
@@ -61,7 +82,9 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       {}
     );
     expect(plan.crear).toEqual([]);
-    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "Sala01@x.uy"), reactivar: false }]);
+    expect(plan.actualizar).toEqual([
+      { cuentaId: "c1", miembro: miembro("u1", "Sala01@x.uy"), reactivar: false }
+    ]);
   });
 
   it("una cuenta emparejada por id no se empareja también por correo", () => {
@@ -74,7 +97,9 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       ],
       {}
     );
-    expect(plan.actualizar).toEqual([{ cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }]);
+    expect(plan.actualizar).toEqual([
+      { cuentaId: "c1", miembro: miembro("u1", "nuevo@x.uy"), reactivar: false }
+    ]);
     expect(plan.crear).toEqual([{ miembro: miembro("u2", "otro@x.uy"), prioridad: 101 }]);
     expect(plan.desactivar).toEqual(["c2"]);
   });
@@ -114,7 +139,9 @@ describe("zoom-grupo-sincronizacion.domain", () => {
   });
 
   it("marca fuera del grupo la que salió con reuniones futuras y no la desactiva", () => {
-    const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy")], [cuenta("c1", "b@x.uy")], { c1: 3 });
+    const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy")], [cuenta("c1", "b@x.uy")], {
+      c1: 3
+    });
     expect(plan.desactivar).toEqual([]);
     expect(plan.marcarFuera).toEqual([{ cuentaId: "c1", reunionesFuturas: 3 }]);
   });
@@ -133,7 +160,10 @@ describe("zoom-grupo-sincronizacion.domain", () => {
     const fuera = new Date();
     const plan = planificarSincronizacionGrupoZoom(
       [miembro("a", "a@x.uy")],
-      [cuenta("c1", "b@x.uy", { fueraDelGrupoAt: fuera }), cuenta("c2", "c@x.uy", { fueraDelGrupoAt: fuera })],
+      [
+        cuenta("c1", "b@x.uy", { fueraDelGrupoAt: fuera }),
+        cuenta("c2", "c@x.uy", { fueraDelGrupoAt: fuera })
+      ],
       { c1: 2 }
     );
     expect(plan.marcarFuera).toEqual([{ cuentaId: "c1", reunionesFuturas: 2 }]);
@@ -171,7 +201,11 @@ describe("zoom-grupo-sincronizacion.domain", () => {
 
     const dos = planificarSincronizacionGrupoZoom(
       [miembro("a", "a@x.uy", false), miembro("b", "b@x.uy", false), miembro("c", "c@x.uy")],
-      [cuenta("c1", "a@x.uy", { tieneLicencia: false }), cuenta("c2", "b@x.uy", { tieneLicencia: false }), cuenta("c3", "c@x.uy")],
+      [
+        cuenta("c1", "a@x.uy", { tieneLicencia: false }),
+        cuenta("c2", "b@x.uy", { tieneLicencia: false }),
+        cuenta("c3", "c@x.uy")
+      ],
       {}
     );
     expect(dos.resumen).toBe("0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia");
@@ -184,7 +218,9 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       {}
     );
     expect(uno.pierdenLicencia).toEqual([{ cuentaId: "c1", miembro: miembro("a", "a@x.uy", false) }]);
-    expect(uno.resumen).toBe("0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)");
+    expect(uno.resumen).toBe(
+      "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)"
+    );
 
     const dos = planificarSincronizacionGrupoZoom(
       [miembro("a", "a@x.uy", false), miembro("b", "b@x.uy", false)],
@@ -192,32 +228,59 @@ describe("zoom-grupo-sincronizacion.domain", () => {
       {}
     );
     expect(dos.pierdenLicencia.map(({ cuentaId }) => cuentaId)).toEqual(["c1", "c2"]);
-    expect(dos.resumen).toBe("0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia (2 pasan a sin licencia)");
+    expect(dos.resumen).toBe(
+      "0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia (2 pasan a sin licencia)"
+    );
   });
 });
 
 describe("evaluarRiesgoSincronizacion", () => {
-  const cuatroAsignables = [cuenta("c1", "a@x.uy"), cuenta("c2", "b@x.uy"), cuenta("c3", "c@x.uy"), cuenta("c4", "d@x.uy")];
+  const cuatroAsignables = [
+    cuenta("c1", "a@x.uy"),
+    cuenta("c2", "b@x.uy"),
+    cuenta("c3", "c@x.uy"),
+    cuenta("c4", "d@x.uy")
+  ];
 
   it("quitar exactamente la mitad de las cuentas asignables no es masivo", () => {
-    const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy"), miembro("b", "b@x.uy")], cuatroAsignables, { c3: 1 });
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("a", "a@x.uy"), miembro("b", "b@x.uy")],
+      cuatroAsignables,
+      { c3: 1 }
+    );
     expect(plan.desactivar).toEqual(["c4"]);
     expect(plan.marcarFuera).toEqual([{ cuentaId: "c3", reunionesFuturas: 1 }]);
-    expect(evaluarRiesgoSincronizacion(plan, cuatroAsignables)).toEqual({ masivo: false, afectadas: 2, asignables: 4 });
+    expect(evaluarRiesgoSincronizacion(plan, cuatroAsignables)).toEqual({
+      masivo: false,
+      afectadas: 2,
+      asignables: 4
+    });
   });
 
   it("quitar la mitad más una de las cuentas asignables es masivo", () => {
     const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy")], cuatroAsignables, { c2: 3 });
-    expect(evaluarRiesgoSincronizacion(plan, cuatroAsignables)).toEqual({ masivo: true, afectadas: 3, asignables: 4 });
+    expect(evaluarRiesgoSincronizacion(plan, cuatroAsignables)).toEqual({
+      masivo: true,
+      afectadas: 3,
+      asignables: 4
+    });
   });
 
   it("sin cuentas asignables nunca es masivo", () => {
-    const sinLicencia = [cuenta("c1", "a@x.uy", { tieneLicencia: false }), cuenta("c2", "b@x.uy", { activa: false })];
+    const sinLicencia = [
+      cuenta("c1", "a@x.uy", { tieneLicencia: false }),
+      cuenta("c2", "b@x.uy", { activa: false })
+    ];
     const plan = planificarSincronizacionGrupoZoom([miembro("z", "z@x.uy")], sinLicencia, {});
     expect(plan.desactivar).toEqual(["c1", "c2"]);
-    expect(evaluarRiesgoSincronizacion(plan, sinLicencia)).toEqual({ masivo: false, afectadas: 0, asignables: 0 });
-    expect(evaluarRiesgoSincronizacion(planificarSincronizacionGrupoZoom([miembro("z", "z@x.uy")], [], {}), []))
-      .toEqual({ masivo: false, afectadas: 0, asignables: 0 });
+    expect(evaluarRiesgoSincronizacion(plan, sinLicencia)).toEqual({
+      masivo: false,
+      afectadas: 0,
+      asignables: 0
+    });
+    expect(
+      evaluarRiesgoSincronizacion(planificarSincronizacionGrupoZoom([miembro("z", "z@x.uy")], [], {}), [])
+    ).toEqual({ masivo: false, afectadas: 0, asignables: 0 });
   });
 
   it("solo cuenta las cuentas que hoy reciben reuniones nuevas", () => {
@@ -230,8 +293,16 @@ describe("evaluarRiesgoSincronizacion", () => {
       cuenta("c3", "c@x.uy", { fueraDelGrupoAt: fuera }),
       cuenta("c4", "d@x.uy", { fueraDelGrupoAt: fuera })
     ];
-    const plan = planificarSincronizacionGrupoZoom([miembro("a", "a@x.uy"), miembro("b", "b@x.uy")], cuentas, { c3: 2, c4: 1 });
+    const plan = planificarSincronizacionGrupoZoom(
+      [miembro("a", "a@x.uy"), miembro("b", "b@x.uy")],
+      cuentas,
+      { c3: 2, c4: 1 }
+    );
     expect(plan.marcarFuera.map(({ cuentaId }) => cuentaId)).toEqual(["c3", "c4"]);
-    expect(evaluarRiesgoSincronizacion(plan, cuentas)).toEqual({ masivo: false, afectadas: 0, asignables: 2 });
+    expect(evaluarRiesgoSincronizacion(plan, cuentas)).toEqual({
+      masivo: false,
+      afectadas: 0,
+      asignables: 2
+    });
   });
 });

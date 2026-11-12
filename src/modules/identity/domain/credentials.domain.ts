@@ -31,4 +31,3 @@ export function evaluarAccesoLocal(
     debeCambiarPassword: usuario.debeCambiarPassword
   };
 }
-

@@ -20,7 +20,11 @@ import {
   type AnfitrionInventarioZoom,
   type SaludWorkerZoom
 } from "../modules/archivos/application";
-import { FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM, leerConfiguracionZoomArchivos, type LeaseArchivoZoom } from "../modules/archivos/domain";
+import {
+  FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM,
+  leerConfiguracionZoomArchivos,
+  type LeaseArchivoZoom
+} from "../modules/archivos/domain";
 import {
   GoogleDriveArchivoStorageAdapter,
   crearPrismaZoomArchivoRepositoryAdapter,
@@ -69,16 +73,22 @@ export async function listarAnfitriones(cuentaZoomId: string): Promise<readonly 
     orderBy: { id: "asc" }
   });
   return cuentas.flatMap((c) =>
-    c.externalAccountId ? [{ cuentaZoomId, anfitrionZoomId: c.externalAccountId, cuentaProveedorId: c.id }] : []
+    c.externalAccountId
+      ? [{ cuentaZoomId, anfitrionZoomId: c.externalAccountId, cuentaProveedorId: c.id }]
+      : []
   );
 }
 
-export async function crearWorkerZoomArchivos(env: Readonly<Record<string, string | undefined>> = process.env): Promise<WorkerZoomArchivos> {
+export async function crearWorkerZoomArchivos(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): Promise<WorkerZoomArchivos> {
   const config = leerConfiguracionZoomArchivos(env);
   const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash });
 
   const zoom = await obtenerCredencialesZoom(db, descifrarConfiguracion);
-  const workspace = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  const workspace = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: true
+  });
 
   const driveAuth = workspace
     ? crearGoogleDriveAuthClient({
@@ -97,7 +107,8 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
   });
   if (!salud.ok || !zoom.disponible || !driveAuth || !workspace) {
     return {
-      config, salud,
+      config,
+      salud,
       reclamarArchivo: async () => null,
       transferir: async () => undefined,
       inventariarVencidas: async () => undefined,
@@ -109,10 +120,22 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
   }
 
   const cuentaZoomId = zoom.accountId;
-  const auth = crearProveedorTokenZoom({ accountId: zoom.accountId, clientId: zoom.clientId, clientSecret: zoom.clientSecret });
+  const auth = crearProveedorTokenZoom({
+    accountId: zoom.accountId,
+    clientId: zoom.clientId,
+    clientSecret: zoom.clientSecret
+  });
   const origen = crearZoomOrigenAdapter({ auth, cuentaZoomId, hash });
-  const storage = new GoogleDriveArchivoStorageAdapter({ auth: driveAuth, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
-  const repoBarridos = crearPrismaZoomBarridoRepositoryAdapter({ db, cifrar: cifrarConfiguracion, descifrar: descifrarConfiguracion });
+  const storage = new GoogleDriveArchivoStorageAdapter({
+    auth: driveAuth,
+    cifrar: cifrarConfiguracion,
+    descifrar: descifrarConfiguracion
+  });
+  const repoBarridos = crearPrismaZoomBarridoRepositoryAdapter({
+    db,
+    cifrar: cifrarConfiguracion,
+    descifrar: descifrarConfiguracion
+  });
   const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
 
   // El barrido periódico solo cubre los últimos tres días. Encolar una importación durable única
@@ -159,7 +182,11 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
         resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(storage, hash, archivo, raices)
       }),
     inventariarVencidas: () =>
-      inventariarOcurrenciasVencidasZoomUseCase(repo, origen, { ahora: new Date(), limite: LOTE_INVENTARIO, corteDias: config.corteDias }),
+      inventariarOcurrenciasVencidasZoomUseCase(repo, origen, {
+        ahora: new Date(),
+        limite: LOTE_INVENTARIO,
+        corteDias: config.corteDias
+      }),
     barrerRecientes: async () =>
       barrerAnfitrionesZoomUseCase(repo, origen, {
         anfitriones: await listarAnfitriones(cuentaZoomId),
@@ -186,7 +213,10 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
       moverCarpetasVinculadasZoomUseCase(
         {
           repo: crearPrismaZoomCarpetasRepositoryAdapter({ db }),
-          storage, hash, raizVinculados: raices.raizVinculados, ahora: () => new Date()
+          storage,
+          hash,
+          raizVinculados: raices.raizVinculados,
+          ahora: () => new Date()
         },
         { limite: LOTE_CARPETAS }
       ),
@@ -198,16 +228,29 @@ export async function crearWorkerZoomArchivos(env: Readonly<Record<string, strin
         while (paginas < PAGINAS_RECUPERACION_POR_CICLO) {
           const r = await procesarPaginaRecuperacionZoom(
             {
-              repoBarridos, repoArchivos: repo, origen, cuentaZoomId, ahora: () => new Date(), leaseMs: config.leaseMs,
-              corteDias: config.corteDias, aleatorio: Math.random, limiteIntentos: FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM
+              repoBarridos,
+              repoArchivos: repo,
+              origen,
+              cuentaZoomId,
+              ahora: () => new Date(),
+              leaseMs: config.leaseMs,
+              corteDias: config.corteDias,
+              aleatorio: Math.random,
+              limiteIntentos: FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM
             },
             barridoId
           );
           paginas++;
-          if (r.tipo === "AVANZO" || r.tipo === "COMPLETADO") ocurrencias += r.ocurrencias;
-          if (r.tipo === "REQUIERE_REVISION") detenidos.push(barridoId);
+          if (r.tipo === "AVANZO" || r.tipo === "COMPLETADO") {
+            ocurrencias += r.ocurrencias;
+          }
+          if (r.tipo === "REQUIERE_REVISION") {
+            detenidos.push(barridoId);
+          }
           // Solo se sigue con la misma recuperación mientras avanza; un fallo espera su reintento.
-          if (r.tipo !== "AVANZO") break;
+          if (r.tipo !== "AVANZO") {
+            break;
+          }
         }
       }
       return { paginas, ocurrencias, requierenRevision: detenidos.length };

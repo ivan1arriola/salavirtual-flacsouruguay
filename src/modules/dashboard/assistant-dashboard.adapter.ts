@@ -23,7 +23,9 @@ export async function obtenerDashboardAsistenteOptimizado(
     where: { usuarioId },
     select: { id: true }
   });
-  if (!assistantRecord) return null;
+  if (!assistantRecord) {
+    return null;
+  }
 
   const [baseDashboard, openOpportunityInstances, userAccounts] = await Promise.all([
     obtenerDashboardAsistente(db, usuarioId, ahora),
@@ -56,7 +58,9 @@ export async function obtenerDashboardAsistenteOptimizado(
     })
   ]);
 
-  if (!baseDashboard) return null;
+  if (!baseDashboard) {
+    return null;
+  }
 
   // Check next meeting details (if available) with cohost verification
   let heroMeeting: HeroMeetingDTO | null = null;
@@ -91,25 +95,23 @@ export async function obtenerDashboardAsistenteOptimizado(
       const cohostEmails = extraerCohostEmailsDeInstancia(nextMeetingInstance);
       const isVerified = Boolean(
         !meetCohosts?.errorIntegracion &&
-          !meetCohosts?.operacionPendiente &&
-          cohostsConfirmados(
-            meetCohosts?.payloadUltimo,
-            meetCohosts?.codigoReunion,
-            meetCohosts?.cuentaProveedor?.emailOrganizador,
-            cohostEmails
-          )
+        !meetCohosts?.operacionPendiente &&
+        cohostsConfirmados(
+          meetCohosts?.payloadUltimo,
+          meetCohosts?.codigoReunion,
+          meetCohosts?.cuentaProveedor?.emailOrganizador,
+          cohostEmails
+        )
       );
 
-      const assistantIsCohost = cohostEmails.some((e) =>
-        userEmails.includes(e.toLowerCase())
-      );
+      const assistantIsCohost = cohostEmails.some((e) => userEmails.includes(e.toLowerCase()));
 
       heroMeeting = {
         id: nextMeetingInstance.id,
         solicitudId: nextMeetingInstance.solicitud.id,
         titulo: nextMeetingInstance.solicitud.titulo,
         programa: nextMeetingInstance.solicitud.docentePrograma.programa.nombre,
-        modalidad: (nextMeetingInstance.modalidadOverride ?? nextMeetingInstance.solicitud.modalidad),
+        modalidad: nextMeetingInstance.modalidadOverride ?? nextMeetingInstance.solicitud.modalidad,
         inicioProgramadoAt: nextMeetingInstance.inicioProgramadoAt.toISOString(),
         finProgramadoAt: nextMeetingInstance.finProgramadoAt.toISOString(),
         inicioAsistenciaAt: nextMeetingInstance.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
@@ -128,8 +130,9 @@ export async function obtenerDashboardAsistenteOptimizado(
     }
   }
 
-  const upcomingCoverages: UpcomingMeetingSummaryDTO[] =
-    baseDashboard.proximasCoberturas.slice(1).map((m) => ({
+  const upcomingCoverages: UpcomingMeetingSummaryDTO[] = baseDashboard.proximasCoberturas
+    .slice(1)
+    .map((m) => ({
       id: m.id,
       solicitudId: m.solicitudId,
       titulo: m.titulo,
@@ -151,14 +154,13 @@ export async function obtenerDashboardAsistenteOptimizado(
     solicitudId: opp.solicitud.id,
     titulo: opp.solicitud.titulo,
     programa: opp.solicitud.docentePrograma.programa.nombre,
-    modalidad: (opp.modalidadOverride ?? opp.solicitud.modalidad),
+    modalidad: opp.modalidadOverride ?? opp.solicitud.modalidad,
     inicioProgramadoAt: opp.inicioProgramadoAt.toISOString(),
     finProgramadoAt: opp.finProgramadoAt.toISOString(),
     yaPostulado: opp.postulaciones.some((p) => p.estado === "ME_INTERESA")
   }));
 
-  const currentMinutes =
-    baseDashboard.mesActual.minutosVirtuales + baseDashboard.mesActual.minutosHibridos;
+  const currentMinutes = baseDashboard.mesActual.minutosVirtuales + baseDashboard.mesActual.minutosHibridos;
   const previousMinutes =
     baseDashboard.mesAnterior.minutosVirtuales + baseDashboard.mesAnterior.minutosHibridos;
 

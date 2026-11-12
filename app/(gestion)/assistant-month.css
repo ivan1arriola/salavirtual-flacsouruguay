@@ -309,7 +309,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 760px) {
@@ -340,5 +342,4 @@
   .incident-description {
     grid-column: auto;
   }
-
 }

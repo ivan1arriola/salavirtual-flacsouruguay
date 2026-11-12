@@ -3,18 +3,13 @@ import type {
   CuentaCalendarioAsistente,
   PlanCalendarioAsistente,
   ResultadoSincronizacionCalendarioAsistente,
-  SnapshotCalendarioAsistente,
+  SnapshotCalendarioAsistente
 } from "./calendario-asistente.types";
 
 const ACTIVE_ASSIGNMENTS = new Set(["ASIGNADO", "ACEPTADO"]);
 
-export function idEventoCalendarioAsistente(
-  instanciaId: string,
-  cuentaGoogleId: string
-): string {
-  return createHash("sha256")
-    .update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}`)
-    .digest("hex");
+export function idEventoCalendarioAsistente(instanciaId: string, cuentaGoogleId: string): string {
+  return createHash("sha256").update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}`).digest("hex");
 }
 
 export type SegmentoCalendarioAsistente = "PREPARACION" | "CIERRE";
@@ -32,11 +27,7 @@ export function idEventoCalendarioAsistenteSegmento(
 export function cuentasCalendarioDeseadas(
   snapshot: SnapshotCalendarioAsistente
 ): readonly CuentaCalendarioAsistente[] {
-  if (
-    snapshot.estado !== "PROGRAMADA" ||
-    !snapshot.requiereAsistenciaTecnica ||
-    snapshot.vigente === false
-  ) {
+  if (snapshot.estado !== "PROGRAMADA" || !snapshot.requiereAsistenciaTecnica || snapshot.vigente === false) {
     return [];
   }
 
@@ -59,9 +50,7 @@ export function planificarSincronizacionCalendarioAsistente(
   const desiredIds = desired.map(({ id }) => id);
   const historical = cuentasUnicas(
     snapshot.asignaciones
-      .filter(
-        ({ asistenteTecnico }) => asistenteTecnico.usuario.rol === "ASISTENTE_TECNICO"
-      )
+      .filter(({ asistenteTecnico }) => asistenteTecnico.usuario.rol === "ASISTENTE_TECNICO")
       .flatMap(({ asistenteTecnico }) => asistenteTecnico.usuario.cuentasGoogle)
       .filter(esCuentaGoogleVinculada)
   );
@@ -69,14 +58,14 @@ export function planificarSincronizacionCalendarioAsistente(
   return {
     publicar: desired.map((cuenta) => ({
       cuenta,
-      eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
+      eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id)
     })),
     eliminar: historical
       .filter(({ id }) => !desiredIds.includes(id))
       .map((cuenta) => ({
         cuenta,
-        eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
-      })),
+        eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id)
+      }))
   };
 }
 
@@ -90,11 +79,6 @@ function esCuentaGoogleVinculada(cuenta: CuentaCalendarioAsistente): boolean {
   return Boolean(cuenta.providerAccountId && cuenta.emailVerificadoAt);
 }
 
-function cuentasUnicas(
-  cuentas: readonly CuentaCalendarioAsistente[]
-): readonly CuentaCalendarioAsistente[] {
-  return cuentas.filter(
-    (cuenta, index, all) => all.findIndex(({ id }) => id === cuenta.id) === index
-  );
+function cuentasUnicas(cuentas: readonly CuentaCalendarioAsistente[]): readonly CuentaCalendarioAsistente[] {
+  return cuentas.filter((cuenta, index, all) => all.findIndex(({ id }) => id === cuenta.id) === index);
 }
-

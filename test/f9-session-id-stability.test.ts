@@ -6,11 +6,14 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
   it("rechaza IDs eliminados aunque el correo esté asociado a una cuenta nueva", async () => {
     const findUnique = vi.fn().mockResolvedValue(null);
     const findFirst = vi.fn().mockResolvedValue({
-      id: "usuario-nuevo", rol: "ADMINISTRACION", activo: true
+      id: "usuario-nuevo",
+      rol: "ADMINISTRACION",
+      activo: true
     });
     const db = { usuario: { findUnique, findFirst } } as unknown as PrismaClient;
     const actor = await resolveSessionActor(db, {
-      id: "usuario-borrado", email: "reutilizado@flacso.edu.uy"
+      id: "usuario-borrado",
+      email: "reutilizado@flacso.edu.uy"
     });
     expect(actor).toBeNull();
     expect(findUnique).toHaveBeenCalledWith({
@@ -24,9 +27,12 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
     const findUnique = vi.fn();
     const findFirst = vi.fn();
     const db = { usuario: { findUnique, findFirst } } as unknown as PrismaClient;
-    expect(await resolveSessionActor(db, {
-      id: "  ", email: "admin@flacso.edu.uy"
-    })).toBeNull();
+    expect(
+      await resolveSessionActor(db, {
+        id: "  ",
+        email: "admin@flacso.edu.uy"
+      })
+    ).toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
     expect(findFirst).not.toHaveBeenCalled();
   });
@@ -35,9 +41,12 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
     const user = { id: "usuario-1", rol: "DOCENTE", activo: true };
     const findUnique = vi.fn().mockResolvedValue(user);
     const db = { usuario: { findUnique } } as unknown as PrismaClient;
-    expect(await resolveSessionActor(db, {
-      id: "usuario-1", email: "alias@flacso.edu.uy"
-    })).toEqual(user);
+    expect(
+      await resolveSessionActor(db, {
+        id: "usuario-1",
+        email: "alias@flacso.edu.uy"
+      })
+    ).toEqual(user);
   });
 
   it("la sesión de una cuenta desactivada permanece inactiva", async () => {

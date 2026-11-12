@@ -1,8 +1,4 @@
-import type {
-  ArchivoMeetVisibleModel,
-  ArchivosRepositoryPort,
-  SessionActor
-} from "../ports";
+import type { ArchivoMeetVisibleModel, ArchivosRepositoryPort, SessionActor } from "../ports";
 import type { ListarGrabacionesDbInput } from "../ports";
 
 export async function listarArchivosVisiblesUseCase(
@@ -12,7 +8,13 @@ export async function listarArchivosVisiblesUseCase(
   return repositorio.listarArchivosVisibles(actor);
 }
 
-export async function listarGrabacionesDbUseCase(repositorio: ArchivosRepositoryPort, actor: SessionActor, input: ListarGrabacionesDbInput) {
-  if (!repositorio.listarGrabacionesDb) throw new Error("El repositorio no implementa paginación de encuentros.");
+export async function listarGrabacionesDbUseCase(
+  repositorio: ArchivosRepositoryPort,
+  actor: SessionActor,
+  input: ListarGrabacionesDbInput
+) {
+  if (!repositorio.listarGrabacionesDb) {
+    throw new Error("El repositorio no implementa paginación de encuentros.");
+  }
   return repositorio.listarGrabacionesDb(actor, input);
 }

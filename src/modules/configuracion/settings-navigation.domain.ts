@@ -64,16 +64,14 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
 ];
 
 export function resolveSettingsSection(value?: string): SettingsSection {
-  return SETTINGS_SECTION_IDS.includes(value as SettingsSection)
-    ? value as SettingsSection
-    : "resumen";
+  return SETTINGS_SECTION_IDS.includes(value as SettingsSection) ? (value as SettingsSection) : "resumen";
 }
 
 export function settingsHref(section: SettingsSection) {
-  if (section === "programas") return "/usuarios?vista=programas";
-  return section === "resumen"
-    ? "/configuracion"
-    : `/configuracion?seccion=${section}`;
+  if (section === "programas") {
+    return "/usuarios?vista=programas";
+  }
+  return section === "resumen" ? "/configuracion" : `/configuracion?seccion=${section}`;
 }
 
 export function legacySettingsRedirect(section?: string): string | null {
@@ -88,10 +86,12 @@ export type SettingsAttentionInput = Readonly<{
 }>;
 
 export function settingsNeedsAttention(input: SettingsAttentionInput) {
-  return input.pendingOperations > 0
-    || !input.workspaceReady
-    || !input.integrationActive
-    || input.availableHosts === 0;
+  return (
+    input.pendingOperations > 0 ||
+    !input.workspaceReady ||
+    !input.integrationActive ||
+    input.availableHosts === 0
+  );
 }
 
 export type WorkspaceReadinessInput = Readonly<{

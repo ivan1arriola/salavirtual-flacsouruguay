@@ -20,9 +20,9 @@ const eventoReintentable = {
     {
       proveedor: { tipo: "GOOGLE_MEET" },
       externalEventId: { not: null },
-      instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
-    },
-  ],
+      instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true }
+    }
+  ]
 } satisfies Prisma.EventoProveedorWhereInput;
 
 export async function POST(request: Request) {
@@ -42,10 +42,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const hasTargetPayload = Boolean(
-      body &&
-      typeof body === "object" &&
-      !Array.isArray(body) &&
-      Object.keys(body).length > 0
+      body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length > 0
     );
 
     let targetIds: readonly string[] | null = null;
@@ -55,7 +52,7 @@ export async function POST(request: Request) {
       const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
-          ...eventoReintentable,
+          ...eventoReintentable
         },
         select: {
           id: true,
@@ -76,16 +73,17 @@ export async function POST(request: Request) {
           );
         }
         const puedeReconfigurar = revision.operacion === "CONFIGURAR_MEET";
-        if (current.estadoIntegracion !== "PENDIENTE" && current.estadoIntegracion !== "ERROR" && !puedeReconfigurar) {
-          return NextResponse.json(
-            { error: "El evento no requiere reparación." },
-            { status: 409 }
-          );
+        if (
+          current.estadoIntegracion !== "PENDIENTE" &&
+          current.estadoIntegracion !== "ERROR" &&
+          !puedeReconfigurar
+        ) {
+          return NextResponse.json({ error: "El evento no requiere reparación." }, { status: 409 });
         }
 
         const validStates = puedeReconfigurar
-          ? ["PENDIENTE", "ERROR", "SINCRONIZADA"] as const
-          : ["PENDIENTE", "ERROR"] as const;
+          ? (["PENDIENTE", "ERROR", "SINCRONIZADA"] as const)
+          : (["PENDIENTE", "ERROR"] as const);
 
         const assigned = await db.eventoProveedor.updateMany({
           where: {
@@ -113,13 +111,17 @@ export async function POST(request: Request) {
       targetIds = [revision.eventoProveedorId];
     }
 
-    const ids = targetIds ?? (await db.eventoProveedor.findMany({
-      where: {
-        ...eventoReintentable,
-        operacionPendiente: { not: null }
-      },
-      select: { id: true }
-    })).map(({ id }) => id);
+    const ids =
+      targetIds ??
+      (
+        await db.eventoProveedor.findMany({
+          where: {
+            ...eventoReintentable,
+            operacionPendiente: { not: null }
+          },
+          select: { id: true }
+        })
+      ).map(({ id }) => id);
 
     const results = await obtenerServicioConferencias().sincronizarEventosPendientes(ids);
     const payload = {

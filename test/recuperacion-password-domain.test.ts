@@ -37,16 +37,20 @@ describe("recuperación de contraseña", () => {
   });
 
   it("exige contraseña de al menos 8 caracteres y confirmación coincidente", () => {
-    expect(restablecerPasswordSchema.safeParse({
-      token: "a".repeat(43),
-      passwordNueva: "segura123",
-      confirmarPassword: "segura123"
-    }).success).toBe(true);
+    expect(
+      restablecerPasswordSchema.safeParse({
+        token: "a".repeat(43),
+        passwordNueva: "segura123",
+        confirmarPassword: "segura123"
+      }).success
+    ).toBe(true);
 
-    expect(restablecerPasswordSchema.safeParse({
-      token: "a".repeat(43),
-      passwordNueva: "segura123",
-      confirmarPassword: "distinta123"
-    }).success).toBe(false);
+    expect(
+      restablecerPasswordSchema.safeParse({
+        token: "a".repeat(43),
+        passwordNueva: "segura123",
+        confirmarPassword: "distinta123"
+      }).success
+    ).toBe(false);
   });
 });

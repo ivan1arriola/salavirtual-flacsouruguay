@@ -19,19 +19,44 @@ describe("zoom-asistencia-provider", () => {
     expect(await p.obtenerSesiones("uuid-1")).toEqual({ estado: "NO_DISPONIBLE" });
     listar.mockResolvedValueOnce([]);
     expect(await p.obtenerSesiones("uuid-1")).toEqual({ estado: "VACIO" });
-    listar.mockResolvedValueOnce([{ participantId: "p", userId: "u", nombre: "Ana", email: "a@x.com", joinTime: t("10:00"), leaveTime: t("10:30"), status: "in_meeting" }]);
+    listar.mockResolvedValueOnce([
+      {
+        participantId: "p",
+        userId: "u",
+        nombre: "Ana",
+        email: "a@x.com",
+        joinTime: t("10:00"),
+        leaveTime: t("10:30"),
+        status: "in_meeting"
+      }
+    ]);
     const r = await p.obtenerSesiones("uuid-1");
     expect(r.estado).toBe("DISPONIBLE");
   });
 
   it("mapea sin rol (no comprobado), conserva status y crea claves estables por UUID", async () => {
     const p = crearZoomAsistenciaProviderAdapter({ auth: "tok", hash });
-    const fila = { participantId: "p", userId: "u", nombre: "Ana", email: null, joinTime: t("10:00"), leaveTime: t("10:30"), status: "in_waiting_room" as const };
+    const fila = {
+      participantId: "p",
+      userId: "u",
+      nombre: "Ana",
+      email: null,
+      joinTime: t("10:00"),
+      leaveTime: t("10:30"),
+      status: "in_waiting_room" as const
+    };
     listar.mockResolvedValue([fila]);
-    const a = await p.obtenerSesiones("uuid-1") as unknown as { sesiones: any[] };
-    const b = await p.obtenerSesiones("uuid-1") as unknown as { sesiones: any[] };
-    const c = await p.obtenerSesiones("uuid-2") as unknown as { sesiones: any[] };
-    expect(a.sesiones[0]).toMatchObject({ participanteId: "p", userId: "u", entradaAt: t("10:00"), salidaAt: t("10:30"), status: "in_waiting_room", rol: null });
+    const a = (await p.obtenerSesiones("uuid-1")) as unknown as { sesiones: any[] };
+    const b = (await p.obtenerSesiones("uuid-1")) as unknown as { sesiones: any[] };
+    const c = (await p.obtenerSesiones("uuid-2")) as unknown as { sesiones: any[] };
+    expect(a.sesiones[0]).toMatchObject({
+      participanteId: "p",
+      userId: "u",
+      entradaAt: t("10:00"),
+      salidaAt: t("10:30"),
+      status: "in_waiting_room",
+      rol: null
+    });
     expect(a.sesiones[0].claveSesion).toBe(b.sesiones[0].claveSesion);
     expect(a.sesiones[0].claveSesion).not.toBe(c.sesiones[0].claveSesion);
   });

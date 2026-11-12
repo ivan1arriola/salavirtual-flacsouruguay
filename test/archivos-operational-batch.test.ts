@@ -6,7 +6,8 @@ import {
 
 describe("archivos: lote operativo", () => {
   it("prioriza las tres ventanas, limita el lote y no repite eventos", async () => {
-    const listar = vi.fn()
+    const listar = vi
+      .fn()
       .mockResolvedValueOnce(["hot-1", "shared"])
       .mockResolvedValueOnce(["shared", "middle-1"])
       .mockResolvedValueOnce(["closing-1"]);

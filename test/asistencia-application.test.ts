@@ -19,11 +19,10 @@ describe("asistencia application", () => {
       const actor = { id: "u-1", rol: "DOCENTE", activo: true };
 
       await expect(
-        actualizarPostulacionUseCase(
-          { repo: mockRepo as AsistenciaRepositoryPort },
-          actor,
-          { instanciaSalaId: "inst-1", accion: "POSTULAR" }
-        )
+        actualizarPostulacionUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+          instanciaSalaId: "inst-1",
+          accion: "POSTULAR"
+        })
       ).rejects.toThrow("Solo un asistente de monitoreo puede gestionar postulaciones.");
     });
 
@@ -41,11 +40,11 @@ describe("asistencia application", () => {
       };
       const actor = { id: "u-1", rol: "ASISTENTE_TECNICO", activo: true };
 
-      const res = await actualizarPostulacionUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        actor,
-        { instanciaSalaId: "inst-1", accion: "POSTULAR", comentario: "Disponible" }
-      );
+      const res = await actualizarPostulacionUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+        instanciaSalaId: "inst-1",
+        accion: "POSTULAR",
+        comentario: "Disponible"
+      });
 
       expect(res.ok).toBe(true);
       expect(res.estado).toBe("ME_INTERESA");
@@ -73,11 +72,10 @@ describe("asistencia application", () => {
       };
       const actor = { id: "admin-1", rol: "ADMINISTRACION", activo: true };
 
-      const res = await asignarAsistenteUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        actor,
-        { instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1" }
-      );
+      const res = await asignarAsistenteUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+        instanciaSalaId: "inst-1",
+        asistenteTecnicoId: "asist-1"
+      });
 
       expect(res.id).toBe("asig-1");
       expect(mockRepo.reservarYAsignarAsistente).toHaveBeenCalledWith("inst-1", "asist-1", "admin-1");
@@ -97,11 +95,9 @@ describe("asistencia application", () => {
       };
       const actor = { id: "admin-1", rol: "ADMINISTRACION", activo: true };
 
-      const res = await desvincularAsistenteUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        actor,
-        { asignacionId: "asig-1" }
-      );
+      const res = await desvincularAsistenteUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+        asignacionId: "asig-1"
+      });
 
       expect(res.estado).toBe("CANCELADO");
       expect(mockRepo.desvincularAsistente).toHaveBeenCalledWith("asig-1", "admin-1");
@@ -121,11 +117,9 @@ describe("asistencia application", () => {
       };
       const actor = { id: "u-1", rol: "ASISTENTE_TECNICO", activo: true };
 
-      const res = await desvincularAsistenteUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        actor,
-        { asignacionId: "asig-1" }
-      );
+      const res = await desvincularAsistenteUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+        asignacionId: "asig-1"
+      });
 
       expect(res.estado).toBe("CANCELADO");
       expect(mockRepo.desvincularAsistente).toHaveBeenCalledWith("asig-1", "u-1");
@@ -154,16 +148,12 @@ describe("asistencia application", () => {
       };
       const actor = { id: "u-1", rol: "ASISTENTE_TECNICO", activo: true };
 
-      const res = await reportarDuracionUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        actor,
-        {
-          asignacionId: "asig-1",
-          inicioReal: "2026-05-10T10:00:00Z",
-          finReal: "2026-05-10T11:30:00Z",
-          comentario: "Todo en orden"
-        }
-      );
+      const res = await reportarDuracionUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, actor, {
+        asignacionId: "asig-1",
+        inicioReal: "2026-05-10T10:00:00Z",
+        finReal: "2026-05-10T11:30:00Z",
+        comentario: "Todo en orden"
+      });
 
       expect(res.ok).toBe(true);
       expect(mockRepo.reportarDuracion).toHaveBeenCalled();
@@ -180,9 +170,7 @@ describe("asistencia application", () => {
         actor,
         {
           disponibleGeneral: true,
-          franjas: [
-            { diaSemana: 1, horaDesde: "09:00", horaHasta: "13:00", tipo: "DISPONIBLE" }
-          ]
+          franjas: [{ diaSemana: 1, horaDesde: "09:00", horaHasta: "13:00", tipo: "DISPONIBLE" }]
         }
       );
 
@@ -195,7 +183,13 @@ describe("asistencia application", () => {
     it("renotifica a los asistentes disponibles", async () => {
       const mockRepo: Partial<AsistenciaRepositoryPort> = {
         obtenerAsistentesParaNotificacion: vi.fn().mockResolvedValue({
-          reunion: { id: "inst-1", titulo: "Taller Metodológico", inicio: new Date(), fin: new Date(), modalidad: "VIRTUAL" },
+          reunion: {
+            id: "inst-1",
+            titulo: "Taller Metodológico",
+            inicio: new Date(),
+            fin: new Date(),
+            modalidad: "VIRTUAL"
+          },
           destinatarios: ["u-1", "u-2"]
         })
       };
@@ -234,10 +228,7 @@ describe("asistencia application", () => {
       );
       expect(historial).toEqual([]);
 
-      const slug = await consultarSlugAsistenteUseCase(
-        { repo: mockRepo as AsistenciaRepositoryPort },
-        "u-1"
-      );
+      const slug = await consultarSlugAsistenteUseCase({ repo: mockRepo as AsistenciaRepositoryPort }, "u-1");
       expect(slug).toBe("ana-silva");
     });
   });

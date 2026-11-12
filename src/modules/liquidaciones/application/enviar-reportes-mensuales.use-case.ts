@@ -1,7 +1,4 @@
-import {
-  construirCorreoReporteMensual,
-  periodoMesAnteriorUtc3
-} from "../domain";
+import { construirCorreoReporteMensual, periodoMesAnteriorUtc3 } from "../domain";
 import type { LiquidacionesRepositoryPort } from "../ports";
 
 export type ResultadoReportesMensuales = Readonly<{
@@ -15,13 +12,15 @@ export type ResultadoReportesMensuales = Readonly<{
 
 export type EnviarReportesMensualesDeps = Readonly<{
   liquidacionesRepo: LiquidacionesRepositoryPort;
-  enviarCorreo: (input: Readonly<{
-    to: readonly string[];
-    cc: readonly string[];
-    subject: string;
-    text: string;
-    html: string;
-  }>) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
+  enviarCorreo: (
+    input: Readonly<{
+      to: readonly string[];
+      cc: readonly string[];
+      subject: string;
+      text: string;
+      html: string;
+    }>
+  ) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
 }>;
 
 export async function enviarReportesMensualesUseCase(

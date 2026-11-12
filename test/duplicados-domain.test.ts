@@ -7,10 +7,7 @@ import {
   type CandidataReunionDuplicada
 } from "../src/modules/reuniones/duplicados.domain";
 
-function meeting(
-  id: string,
-  overrides: Partial<CandidataReunionDuplicada> = {}
-): CandidataReunionDuplicada {
+function meeting(id: string, overrides: Partial<CandidataReunionDuplicada> = {}): CandidataReunionDuplicada {
   return {
     id,
     solicitudId: `solicitud-${id}`,
@@ -36,11 +33,13 @@ describe("detección de reuniones duplicadas", () => {
     const derecha = meeting("b", { inicio: new Date("2026-08-20T15:30:00Z") });
     const base = { izquierda, derecha, motivo: "HORARIO_SUPERPUESTO" as const };
 
-    expect(huellaRevisionDuplicado(base)).toBe(huellaRevisionDuplicado({
-      izquierda: derecha,
-      derecha: izquierda,
-      motivo: "HORARIO_SUPERPUESTO"
-    }));
+    expect(huellaRevisionDuplicado(base)).toBe(
+      huellaRevisionDuplicado({
+        izquierda: derecha,
+        derecha: izquierda,
+        motivo: "HORARIO_SUPERPUESTO"
+      })
+    );
   });
 
   it("reconoce únicamente las decisiones soportadas", () => {

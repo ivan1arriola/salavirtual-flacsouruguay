@@ -85,6 +85,7 @@ El rediseño respeta las reglas de negocio de FLACSO Uruguay, la separación de 
 ## 5. Diseño de Interfaz y Componentes
 
 ### 5.1. Cabecera y Resumen
+
 - Título: **Grabaciones y archivos**
 - Subtítulo: Cantidad de archivos disponibles agrupados por cantidad de encuentros.
 - Botón principal: **Carpeta general en Google Drive** (abre `driveDestinationId`).
@@ -96,7 +97,9 @@ El rediseño respeta las reglas de negocio de FLACSO Uruguay, la separación de 
   - 📝 Notas de Gemini (contador)
 
 ### 5.2. Barra de Búsqueda y Filtros (`RecordingsLibrary.tsx`)
+
 Componente interactivo de cliente:
+
 - **Buscador en tiempo real**: Campo de texto que filtra instantáneamente por:
   - Título del encuentro o clase.
   - Nombre del programa académico o materia.
@@ -106,10 +109,12 @@ Componente interactivo de cliente:
   - `Solo grabaciones`
   - `Solo asistencia`
   - `Transcripciones y notas`
-- *(Solo Administradores)*: Filtro discreto de auditoría: `Mostrar clases con grabación requerida pendiente`.
+- _(Solo Administradores)_: Filtro discreto de auditoría: `Mostrar clases con grabación requerida pendiente`.
 
 ### 5.3. Tarjeta de Encuentro (`.recording-meeting-card`)
+
 Cada encuentro completado se representa en una tarjeta limpia:
+
 - **Encabezado**:
   - Fecha y hora formateada en hora local de Montevideo.
   - Nombre del programa académico y materia.
@@ -124,7 +129,9 @@ Cada encuentro completado se representa en una tarjeta limpia:
     `⏳ Video procesando en Google Meet (demora habitual: 15-45 min)`.
 
 ### 5.4. Integración en `/reuniones/[solicitudId]`
+
 En la vista de gestión de serie de encuentros, cada encuentro con temporalidad `PASADO` incluye:
+
 - Fila con botones compactos:
   - `🎥 Grabación (480 MB)` (si existe)
   - `👥 Asistencia (18 alumnos)` (si existe)
@@ -137,4 +144,3 @@ En la vista de gestión de serie de encuentros, cada encuentro con temporalidad 
 - **ADMINISTRACIÓN**: Acceso global a todos los programas, salas y carpetas. Botón secundario para forzar sincronización manual de diagnóstico.
 - **DOCENTE**: Acceso limitado exclusivamente a los encuentros de sus propios programas académicos. Enlaces directos a sus grabaciones y asistencias para compartir con estudiantes.
 - **ASISTENTE TÉCNICO**: Acceso a las grabaciones y asistencias de los encuentros donde estuvo asignado.
-

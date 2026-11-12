@@ -4,14 +4,14 @@
 
 No todas las llamadas a Google son equivalentes. Perder la respuesta HTTP no demuestra que el servidor no haya realizado el cambio.
 
-| Operación | Reintento inmediato | Recuperación |
-| --- | --- | --- |
-| GET Calendar, Meet, Drive y artefactos | Sí, solo 408/429/5xx y fallos de red transitorios (403 limitado a cuotas recuperables) | Hasta 4 intentos, backoff exponencial con jitter, honor Retry-After, espera máx. 30 s |
-| PATCH/DELETE Calendar, Meet, Drive | No automático | Leer estado actual y reconciliar desde una operación persistida |
-| POST Calendar con ID determinístico | No automático | GET por ID, comparar y después actualizar/reconciliar |
-| POST Meet spaces | **No** | Requiere guardar espacio remoto antes de depender de Calendar; hoy puede dejar espacio huérfano |
-| POST Drive files o carpetas | **No** | Requiere índice local de objetos, exclusión mutua por clave y relectura |
-| POST Gmail send | **No** | Debe usar outbox transaccional y reconciliación con estado desconocido para no duplicar correos |
+| Operación                              | Reintento inmediato                                                                    | Recuperación                                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| GET Calendar, Meet, Drive y artefactos | Sí, solo 408/429/5xx y fallos de red transitorios (403 limitado a cuotas recuperables) | Hasta 4 intentos, backoff exponencial con jitter, honor Retry-After, espera máx. 30 s           |
+| PATCH/DELETE Calendar, Meet, Drive     | No automático                                                                          | Leer estado actual y reconciliar desde una operación persistida                                 |
+| POST Calendar con ID determinístico    | No automático                                                                          | GET por ID, comparar y después actualizar/reconciliar                                           |
+| POST Meet spaces                       | **No**                                                                                 | Requiere guardar espacio remoto antes de depender de Calendar; hoy puede dejar espacio huérfano |
+| POST Drive files o carpetas            | **No**                                                                                 | Requiere índice local de objetos, exclusión mutua por clave y relectura                         |
+| POST Gmail send                        | **No**                                                                                 | Debe usar outbox transaccional y reconciliación con estado desconocido para no duplicar correos |
 
 Las lecturas emplean timeout por intento de 20 s; las escrituras conservan 60 s. Los límites de demora y número de reintentos son locales a cada llamada, no constituyen todavía un presupuesto global por transacción.
 

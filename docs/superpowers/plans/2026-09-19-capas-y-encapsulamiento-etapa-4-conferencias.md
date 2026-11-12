@@ -32,6 +32,7 @@
 ## Tareas
 
 ### Tarea 1: Capa de Dominio de Conferencias (`src/modules/conferencias/domain/`)
+
 - Crear `src/modules/conferencias/domain/conferencias.types.ts`:
   - Tipos base: `ConferenceProvisionRequest`, `ConferenceProvisionResult`, `DetalleCohostsVerificados`, `IntegracionConferenciaHealth`, `EstadoIntegracionConferencia`, `OperacionPendienteConferencia`.
 - Crear `src/modules/conferencias/domain/cohosts.domain.ts`:
@@ -49,6 +50,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 2: Capa de Puertos de Conferencias (`src/modules/conferencias/ports/`)
+
 - Crear `src/modules/conferencias/ports/conference-provider.port.ts`:
   - Contrato `ConferenceProvider` (`crearEventoCalendar`, `obtenerEvento`, `configurarEventoMeet`, `cancelarEvento`, `actualizarEvento`, `compartirConferenciaCalendar`, `configurarMeetExistente`, `sincronizarCohostsExistente`).
 - Crear `src/modules/conferencias/ports/conferencias-repository.port.ts`:
@@ -57,6 +59,7 @@
 - Verificar con `npm run check`.
 
 ### Tarea 3: Capa de Aplicación de Conferencias (`src/modules/conferencias/application/`)
+
 - Crear `src/modules/conferencias/application/provisionar-conferencias.use-case.ts`:
   - Implementar orquestación de aprovisionamiento con claims, persistencia de `externalEventId`, polling de conferencia y ejecución de operación pendiente con idempotencia.
 - Crear `src/modules/conferencias/application/sincronizar-cohosts.use-case.ts`:
@@ -68,6 +71,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 4: Capa de Infraestructura de Conferencias (`src/modules/conferencias/infrastructure/`)
+
 - Crear `src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts`:
   - Implementa `ConferenceProvider` coordinando `src/integrations/google` y resolviendo credenciales de workspace.
 - Crear `src/modules/conferencias/infrastructure/prisma/prisma-conferencias-repository.adapter.ts`:
@@ -77,6 +81,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 5: API Pública, Raíz de Composición Servidor y Fachadas
+
 - Crear `src/modules/conferencias/api.ts`.
 - Crear `src/bootstrap/conferencias.server.ts` con `server-only` y `obtenerServicioConferencias()`.
 - Crear `test/conferencias-bootstrap.test.ts`.
@@ -85,6 +90,7 @@
 - Verificar que todos los tests existentes de regresión sigan pasando.
 
 ### Tarea 6: Fronteras Arquitectónicas y Verificación Integral
+
 - Auditar que `src/modules/conferencias/` cumpla las 5 capas en `test/architecture-boundaries.test.ts` y que `test/functional-architecture.test.ts` certifique pureza en `domain/`.
 - Ejecutar:
   - `npm run check`
@@ -92,4 +98,3 @@
   - `npm run validate:schema`
   - `npm run build`
 - Documentar en `walkthrough.md` y registrar commit.
-

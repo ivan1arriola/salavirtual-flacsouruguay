@@ -20,7 +20,7 @@ export async function sincronizarCohostsExistenteUseCase(
   const provider = providerFactory({
     serviceAccountEmail: creds.serviceAccountEmail,
     privateKey: creds.privateKey,
-    subject: input.organizerEmail,
+    subject: input.organizerEmail
   });
 
   if (!provider.sincronizarCohostsExistente) {
@@ -48,7 +48,7 @@ export async function configurarMeetExistenteUseCase(
   const provider = providerFactory({
     serviceAccountEmail: creds.serviceAccountEmail,
     privateKey: creds.privateKey,
-    subject: organizerEmail,
+    subject: organizerEmail
   });
 
   if (!provider.configurarMeetExistente) {
@@ -57,4 +57,3 @@ export async function configurarMeetExistenteUseCase(
 
   await provider.configurarMeetExistente(codigoReunion, settings);
 }
-

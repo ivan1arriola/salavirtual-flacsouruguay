@@ -10,7 +10,9 @@ export async function puedeRedirigirAlPanel(
   db: PrismaClient,
   sessionUser: Readonly<{ id: string; email?: string | null }> | null | undefined
 ): Promise<boolean> {
-  if (!sessionUser?.id) return false;
+  if (!sessionUser?.id) {
+    return false;
+  }
   const actor = await resolveSessionActor(db, sessionUser);
   return actor?.activo === true;
 }

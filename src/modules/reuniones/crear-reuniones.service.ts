@@ -6,14 +6,14 @@ import {
   ForbiddenApiError,
   IntegrationApiError,
   NotFoundApiError,
-  ValidationApiError,
+  ValidationApiError
 } from "@/src/lib/http/api-error";
 import {
   crearReunionesSchema,
   diasDeReunion,
   encuentrosComienzanEnFuturo,
   puedeCrearReuniones,
-  resolverAsignacionInicial,
+  resolverAsignacionInicial
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
@@ -30,42 +30,51 @@ export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
 const invitadosEmailsSchema = z.preprocess(
   (value) => {
     if (typeof value === "string") {
-      return value.split(/[\n,;]+/).map((item) => item.trim().toLowerCase()).filter(Boolean);
+      return value
+        .split(/[\n,;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
     }
     return value;
   },
-  z.array(z.email().transform((email) => email.toLowerCase())).max(100).default([]),
+  z
+    .array(z.email().transform((email) => email.toLowerCase()))
+    .max(100)
+    .default([])
 );
 
 export async function crearReuniones(
   db: PrismaClient,
   actor: ActorReunion,
   rawInput: unknown,
-  claveIdempotenciaCreacion?: string,
-): Promise<Readonly<{
-  solicitudId: string;
-  reuniones: number;
-  dias: readonly string[];
-  eventoProveedorIds: readonly string[];
-  reutilizada: boolean;
-}>> {
+  claveIdempotenciaCreacion?: string
+): Promise<
+  Readonly<{
+    solicitudId: string;
+    reuniones: number;
+    dias: readonly string[];
+    eventoProveedorIds: readonly string[];
+    reutilizada: boolean;
+  }>
+> {
   const parsed = crearReunionesSchema.parse(rawInput);
   // Siempre guardar la cobertura virtual fija, incluso para clientes API antiguos
   // que todavía no envían horarios de asistencia.
-  const input = parsed.requiereAsistenciaTecnica && parsed.modalidad === "VIRTUAL"
-    ? {
-        ...parsed,
-        instancias: parsed.instancias.map((instancia) => ({
-          ...instancia,
-          asistenciaInicio: new Date(instancia.inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000),
-          asistenciaFin: instancia.fin
-        }))
-      }
-    : parsed;
+  const input =
+    parsed.requiereAsistenciaTecnica && parsed.modalidad === "VIRTUAL"
+      ? {
+          ...parsed,
+          instancias: parsed.instancias.map((instancia) => ({
+            ...instancia,
+            asistenciaInicio: new Date(instancia.inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000),
+            asistenciaFin: instancia.fin
+          }))
+        }
+      : parsed;
   const invitadosSolicitados = invitadosEmailsSchema.parse(
     rawInput && typeof rawInput === "object" && "invitadosEmails" in rawInput
       ? (rawInput as { invitadosEmails?: unknown }).invitadosEmails
-      : undefined,
+      : undefined
   );
 
   let asistenteTecnicoId: string | null;
@@ -73,7 +82,7 @@ export async function crearReuniones(
     asistenteTecnicoId = resolverAsignacionInicial(
       actor.rol,
       input.requiereAsistenciaTecnica,
-      input.asistenteTecnicoId,
+      input.asistenteTecnicoId
     );
   } catch (error) {
     throw new ValidationApiError(error instanceof Error ? error.message : "Asignación inicial inválida.");
@@ -92,10 +101,10 @@ export async function crearReuniones(
             orderBy: { ordinal: "asc" },
             select: {
               inicioProgramadoAt: true,
-              eventosProveedor: { select: { id: true } },
-            },
-          },
-        },
+              eventosProveedor: { select: { id: true } }
+            }
+          }
+        }
       });
       if (existente) {
         if (existente.creadaPorUsuarioId !== actor.id) {
@@ -108,7 +117,7 @@ export async function crearReuniones(
           eventoProveedorIds: existente.instancias.flatMap(({ eventosProveedor }) =>
             eventosProveedor.map(({ id }) => id)
           ),
-          reutilizada: true,
+          reutilizada: true
         };
       }
     }
@@ -117,7 +126,9 @@ export async function crearReuniones(
       throw new ValidationApiError("Todos los encuentros deben comenzar en el futuro.");
     }
     if (input.instancias.length > MAX_ZOOM_OCCURRENCES) {
-      throw new ValidationApiError(`Una serie de Zoom no puede superar los ${MAX_ZOOM_OCCURRENCES} encuentros.`);
+      throw new ValidationApiError(
+        `Una serie de Zoom no puede superar los ${MAX_ZOOM_OCCURRENCES} encuentros.`
+      );
     }
     if (input.instancias.length > 1) {
       try {
@@ -126,7 +137,9 @@ export async function crearReuniones(
           input.timezone
         );
       } catch (err) {
-        throw new ValidationApiError(err instanceof Error ? err.message : "Error al calcular la recurrencia de la serie.");
+        throw new ValidationApiError(
+          err instanceof Error ? err.message : "Error al calcular la recurrencia de la serie."
+        );
       }
     }
 
@@ -136,12 +149,14 @@ export async function crearReuniones(
         where: { id: input.docenteProgramaId },
         include: {
           docente: { select: { usuarioId: true } },
-          programa: { select: { activo: true } },
-        },
+          programa: { select: { activo: true } }
+        }
       }),
-      tx.proveedorReunion.findUnique({ where: { tipo: tipoProveedor } }),
+      tx.proveedorReunion.findUnique({ where: { tipo: tipoProveedor } })
     ]);
-    if (!docentePrograma) throw new NotFoundApiError("La asociación docente-programa no existe.");
+    if (!docentePrograma) {
+      throw new NotFoundApiError("La asociación docente-programa no existe.");
+    }
     if (!docentePrograma.activo || !docentePrograma.programa.activo) {
       throw new ConflictApiError("La asociación docente-programa no está activa.");
     }
@@ -156,7 +171,7 @@ export async function crearReuniones(
     await bloquearReservaSalas(tx, proveedor.id);
     const periodosAsistencia = input.instancias.map((instancia) => ({
       inicio: instancia.asistenciaInicio ?? instancia.inicio,
-      fin: instancia.asistenciaFin ?? instancia.fin,
+      fin: instancia.asistenciaFin ?? instancia.fin
     }));
     const reservaAsistente = asistenteTecnicoId
       ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, periodosAsistencia)
@@ -167,7 +182,7 @@ export async function crearReuniones(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedor.id, ...CUENTA_ZOOM_ASIGNABLE },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-        select: { id: true, prioridad: true, limiteConcurrente: true },
+        select: { id: true, prioridad: true, limiteConcurrente: true }
       }),
       tx.eventoProveedor.findMany({
         where: {
@@ -177,21 +192,21 @@ export async function crearReuniones(
             estado: { in: ["PROGRAMADA", "EN_CURSO"] },
             OR: input.instancias.map(({ inicio, fin }) => ({
               inicioProgramadoAt: { lt: fin },
-              finProgramadoAt: { gt: inicio },
-            })),
-          },
+              finProgramadoAt: { gt: inicio }
+            }))
+          }
         },
         select: {
           cuentaProveedorId: true,
-          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
-        },
-      }),
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+        }
+      })
     ]);
 
     // El docente y el asistente asignado se guardan como cohosts por correo.
     const docenteUser = await tx.usuario.findUnique({
       where: { id: docentePrograma.docente.usuarioId },
-      select: { emailPrincipal: true },
+      select: { emailPrincipal: true }
     });
 
     // Zoom no requiere cuenta Google: se guardan siempre los correos como texto.
@@ -204,36 +219,46 @@ export async function crearReuniones(
       fallbackEmails.push(assistant.usuario.emailPrincipal);
     }
 
-    const manualCohostEmails = normalizeCohostEmails([
-      ...input.cohostEmailsManual,
-      ...fallbackEmails,
-    ]);
+    const manualCohostEmails = normalizeCohostEmails([...input.cohostEmailsManual, ...fallbackEmails]);
     const cohostEmailSet = new Set(manualCohostEmails);
-    const invitadosEmails = normalizeCohostEmails(invitadosSolicitados)
-      .filter((email) => !cohostEmailSet.has(email));
+    const invitadosEmails = normalizeCohostEmails(invitadosSolicitados).filter(
+      (email) => !cohostEmailSet.has(email)
+    );
 
     const cuentaHostId = elegirCuentaHostParaPeriodos(
       null,
-      hosts.map((host) => tipoProveedor === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host),
-      occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
-        cuentaProveedorId,
-        inicio: instancia.inicioProgramadoAt,
-        fin: instancia.finProgramadoAt,
-      }] : []),
-      input.instancias,
+      hosts.map((host) => (tipoProveedor === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host)),
+      occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) =>
+        cuentaProveedorId
+          ? [
+              {
+                cuentaProveedorId,
+                inicio: instancia.inicioProgramadoAt,
+                fin: instancia.finProgramadoAt
+              }
+            ]
+          : []
+      ),
+      input.instancias
     );
     if (!cuentaHostId) {
-      throw new ConflictApiError(tipoProveedor === "ZOOM" ? "No hay una sala Zoom libre para todas las fechas solicitadas." : "No hay una sala Meet libre para todas las fechas solicitadas.");
+      throw new ConflictApiError(
+        tipoProveedor === "ZOOM"
+          ? "No hay una sala Zoom libre para todas las fechas solicitadas."
+          : "No hay una sala Meet libre para todas las fechas solicitadas."
+      );
     }
 
     const startTimes = input.instancias.map(({ inicio }) => inicio.getTime());
     const endTimes = input.instancias.map(({ fin }) => fin.getTime());
     const firstAssistance = input.instancias[0];
     const hasSharedAssistanceSchedule = Boolean(
-      firstAssistance?.asistenciaInicio && firstAssistance.asistenciaFin &&
-      input.instancias.every((instancia) =>
-        instancia.asistenciaInicio?.getTime() === firstAssistance.asistenciaInicio?.getTime() &&
-        instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime()
+      firstAssistance?.asistenciaInicio &&
+      firstAssistance.asistenciaFin &&
+      input.instancias.every(
+        (instancia) =>
+          instancia.asistenciaInicio?.getTime() === firstAssistance.asistenciaInicio?.getTime() &&
+          instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime()
       )
     );
     const serieReunionId = randomUUID();
@@ -255,27 +280,28 @@ export async function crearReuniones(
         inicioAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaInicio : null,
         finAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaFin : null,
         requiereGrabacion: input.requiereGrabacion,
-        estado: "REGISTRADA",
-      },
+        estado: "REGISTRADA"
+      }
     });
 
     // Series con más de 1 encuentro comparten UNA reunión de Zoom (mismo enlace y misma sala).
     // Encuentros únicos no crean reunión compartida: se crean como reunión programada puntual (type: 2).
-    const reunionCompartida = input.instancias.length > 1
-      ? await tx.reunionProveedor.create({
-          data: {
-            proveedorId: proveedor.id,
-            cuentaProveedorId: cuentaHostId,
-            serieClave: claveSerieReunion({
-              serieReunionId,
-              docenteProgramaId: input.docenteProgramaId,
-              titulo: input.titulo,
-              createdAt: solicitud.createdAt,
-            }),
-          },
-          select: { id: true },
-        })
-      : null;
+    const reunionCompartida =
+      input.instancias.length > 1
+        ? await tx.reunionProveedor.create({
+            data: {
+              proveedorId: proveedor.id,
+              cuentaProveedorId: cuentaHostId,
+              serieClave: claveSerieReunion({
+                serieReunionId,
+                docenteProgramaId: input.docenteProgramaId,
+                titulo: input.titulo,
+                createdAt: solicitud.createdAt
+              })
+            },
+            select: { id: true }
+          })
+        : null;
 
     const eventoProveedorIds = await Promise.all(
       input.instancias.map(async (fecha, index) => {
@@ -291,8 +317,8 @@ export async function crearReuniones(
             timezone: input.timezone,
             requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
             requiereGrabacion: input.requiereGrabacion,
-            proveedorActivoTipo: "ZOOM",
-          },
+            proveedorActivoTipo: "ZOOM"
+          }
         });
         const evento = await tx.eventoProveedor.create({
           data: {
@@ -301,14 +327,12 @@ export async function crearReuniones(
             cuentaProveedorId: cuentaHostId,
             reunionProveedorId: reunionCompartida?.id ?? null,
             operacionPendiente: "PROVISIONAR",
-            ...(invitadosEmails.length > 0
-              ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }
-              : {}),
-          },
+            ...(invitadosEmails.length > 0 ? { payloadUltimo: { salaVirtual: { invitadosEmails } } } : {})
+          }
         });
         if (manualCohostEmails.length > 0) {
           await tx.cohostEmailReunion.createMany({
-            data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email })),
+            data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email }))
           });
         }
         if (asistenteTecnicoId) {
@@ -319,12 +343,12 @@ export async function crearReuniones(
               asistenteTecnicoId,
               tarifaAsistenciaTecnicaId: tarifa.id,
               tarifaHoraAplicada: tarifa.valorHora,
-              moneda: tarifa.moneda,
-            },
+              moneda: tarifa.moneda
+            }
           });
         }
         return evento.id;
-      }),
+      })
     );
 
     return {
@@ -333,9 +357,9 @@ export async function crearReuniones(
       eventoProveedorIds,
       dias: diasDeReunion(
         input.instancias.map(({ inicio }) => ({ inicioProgramadoAt: inicio })),
-        input.timezone,
+        input.timezone
       ),
-      reutilizada: false,
+      reutilizada: false
     };
   });
 }

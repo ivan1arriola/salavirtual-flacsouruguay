@@ -33,8 +33,8 @@ export function OtroProveedorAviso({
 }: Readonly<{ proveedor: ProveedorReunion; cantidad: number; href: string }>) {
   return (
     <p className="proveedor-aviso" role="note">
-      Esta reunión también tiene {cantidad} {cantidad === 1 ? "encuentro" : "encuentros"} en {NOMBRES[proveedor]}.{" "}
-      <Link href={href}>Ver los de {NOMBRES[proveedor]}</Link>
+      Esta reunión también tiene {cantidad} {cantidad === 1 ? "encuentro" : "encuentros"} en{" "}
+      {NOMBRES[proveedor]}. <Link href={href}>Ver los de {NOMBRES[proveedor]}</Link>
     </p>
   );
 }

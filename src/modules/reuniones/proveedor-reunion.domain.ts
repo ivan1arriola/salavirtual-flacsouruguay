@@ -2,8 +2,12 @@ export type ProveedorReunion = "GOOGLE_MEET" | "ZOOM";
 
 /** Interpreta el parámetro `proveedor` de la URL: `null` significa sin filtro. */
 export function resolverProveedorReunion(value?: string): ProveedorReunion | null {
-  if (value === "meet") return "GOOGLE_MEET";
-  if (value === "zoom") return "ZOOM";
+  if (value === "meet") {
+    return "GOOGLE_MEET";
+  }
+  if (value === "zoom") {
+    return "ZOOM";
+  }
   return null;
 }
 
@@ -11,12 +15,18 @@ export function resolverProveedorReunion(value?: string): ProveedorReunion | nul
  * Proveedor al que pertenece un encuentro. Debe coincidir con `filtroProveedorActivo`:
  * sin proveedor activo explícito (datos anteriores a la migración), Meet conserva el encuentro.
  */
-export function proveedorActivoDeInstancia(instancia: Readonly<{
-  proveedorActivoTipo?: string | null;
-  eventosProveedor: readonly Readonly<{ proveedor: Readonly<{ tipo: string }> }>[];
-}>): ProveedorReunion {
-  if (instancia.proveedorActivoTipo === "GOOGLE_MEET") return "GOOGLE_MEET";
-  if (instancia.proveedorActivoTipo === "ZOOM") return "ZOOM";
+export function proveedorActivoDeInstancia(
+  instancia: Readonly<{
+    proveedorActivoTipo?: string | null;
+    eventosProveedor: readonly Readonly<{ proveedor: Readonly<{ tipo: string }> }>[];
+  }>
+): ProveedorReunion {
+  if (instancia.proveedorActivoTipo === "GOOGLE_MEET") {
+    return "GOOGLE_MEET";
+  }
+  if (instancia.proveedorActivoTipo === "ZOOM") {
+    return "ZOOM";
+  }
   return instancia.eventosProveedor.some(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
     ? "GOOGLE_MEET"
     : "ZOOM";
@@ -53,9 +63,13 @@ export function elegirProveedorDetalle(
   encuentros: readonly EncuentroDeSerie[],
   ahora: Date,
   solicitado: ProveedorReunion | null
-): Readonly<{ proveedor: ProveedorReunion; otro: Readonly<{ proveedor: ProveedorReunion; cantidad: number }> | null }> {
+): Readonly<{
+  proveedor: ProveedorReunion;
+  otro: Readonly<{ proveedor: ProveedorReunion; cantidad: number }> | null;
+}> {
   const activos = encuentros.filter(({ estado }) => estado !== "CANCELADA");
-  const cuenta = (proveedor: ProveedorReunion) => activos.filter((item) => item.proveedor === proveedor).length;
+  const cuenta = (proveedor: ProveedorReunion) =>
+    activos.filter((item) => item.proveedor === proveedor).length;
 
   const proximo = activos
     .filter(({ finProgramadoAt }) => finProgramadoAt >= ahora)
@@ -67,9 +81,8 @@ export function elegirProveedorDetalle(
     (mayor, item) => (!mayor || item.inicioProgramadoAt > mayor.inicioProgramadoAt ? item : mayor),
     null
   );
-  const elegido: ProveedorReunion = solicitado && cuenta(solicitado) > 0
-    ? solicitado
-    : (proximo ?? ultimo)?.proveedor ?? "ZOOM";
+  const elegido: ProveedorReunion =
+    solicitado && cuenta(solicitado) > 0 ? solicitado : ((proximo ?? ultimo)?.proveedor ?? "ZOOM");
 
   const otroProveedor: ProveedorReunion = elegido === "ZOOM" ? "GOOGLE_MEET" : "ZOOM";
   const cantidad = cuenta(otroProveedor);

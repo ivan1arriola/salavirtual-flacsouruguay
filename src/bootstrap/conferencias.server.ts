@@ -5,7 +5,7 @@ import {
   crearGoogleConferenceProvider,
   crearPrismaConferenciasRepository,
   crearServicioConferencias,
-  type ServicioConferencias,
+  type ServicioConferencias
 } from "@/src/modules/conferencias/api";
 
 let servicioConferenciasSingleton: ServicioConferencias | null = null;
@@ -14,13 +14,9 @@ export function obtenerServicioConferencias(): ServicioConferencias {
   if (!servicioConferenciasSingleton) {
     const repository = crearPrismaConferenciasRepository({
       db,
-      descifrarConfiguracion,
+      descifrarConfiguracion
     });
-    servicioConferenciasSingleton = crearServicioConferencias(
-      repository,
-      crearGoogleConferenceProvider
-    );
+    servicioConferenciasSingleton = crearServicioConferencias(repository, crearGoogleConferenceProvider);
   }
   return servicioConferenciasSingleton;
 }
-

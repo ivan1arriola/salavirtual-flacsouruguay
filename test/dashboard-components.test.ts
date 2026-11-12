@@ -23,4 +23,3 @@ describe("componentes compartidos de dashboard", () => {
     expect(formatearTiempoHastaReunion(inicio, ahora)).toBe("En curso");
   });
 });
-

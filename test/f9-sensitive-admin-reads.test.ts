@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mock = vi.hoisted(() => ({
-  session: { user: { id: "admin-1", email: "admin@example.test", role: "ADMINISTRACION" } } as { user: { id: string; email: string; role: string } } | null,
-  actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true } as { id: string; rol: string; activo: boolean } | null,
+  session: { user: { id: "admin-1", email: "admin@example.test", role: "ADMINISTRACION" } } as {
+    user: { id: string; email: string; role: string };
+  } | null,
+  actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true } as {
+    id: string;
+    rol: string;
+    activo: boolean;
+  } | null,
   resolveSessionActor: vi.fn(),
   workspaceFindUnique: vi.fn(),
   workspaceFindMany: vi.fn(),
@@ -58,7 +64,10 @@ const context = { params: Promise.resolve({ usuarioId: "user-2" }) };
 const sensitiveReads = [
   ["asistencia/planilla-pagos", () => getPayments()],
   ["configuracion/google-workspace", () => getWorkspace()],
-  ["usuarios/:id/cuentas-google", () => getUserAccounts(new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"), context)]
+  [
+    "usuarios/:id/cuentas-google",
+    () => getUserAccounts(new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"), context)
+  ]
 ] as const;
 
 beforeEach(() => {
@@ -75,7 +84,7 @@ describe("F9: las lecturas administrativas no confían en un rol de sesión obso
   for (const [route, invoke] of sensitiveReads) {
     it(`${route}: deniega un administrador degradado sin ejecutar consultas de datos`, async () => {
       mock.actor = { id: "admin-1", rol: "DOCENTE", activo: true };
-      const response = await invoke() as { status: number };
+      const response = (await invoke()) as { status: number };
       expect(response.status).toBe(403);
       expect(mock.resolveSessionActor).toHaveBeenCalledOnce();
       expect(mock.workspaceFindUnique).not.toHaveBeenCalled();
@@ -86,14 +95,14 @@ describe("F9: las lecturas administrativas no confían en un rol de sesión obso
 
     it(`${route}: deniega usuarios desactivados o eliminados`, async () => {
       mock.actor = { id: "admin-1", rol: "ADMINISTRACION", activo: false };
-      expect((await invoke() as { status: number }).status).toBe(403);
+      expect(((await invoke()) as { status: number }).status).toBe(403);
       mock.actor = null;
-      expect((await invoke() as { status: number }).status).toBe(403);
+      expect(((await invoke()) as { status: number }).status).toBe(403);
     });
 
     it(`${route}: no consulta la base cuando no hay sesión`, async () => {
       mock.session = null;
-      expect((await invoke() as { status: number }).status).toBe(403);
+      expect(((await invoke()) as { status: number }).status).toBe(403);
       expect(mock.resolveSessionActor).not.toHaveBeenCalled();
     });
   }
@@ -104,10 +113,19 @@ describe("F9: administradores vigentes conservan acceso a las lecturas", () => {
     mock.workspaceFindUnique.mockResolvedValue(null);
     mock.workspaceFindMany.mockResolvedValue([]);
     mock.userFindUnique.mockResolvedValue({
-      id: "user-2", passwordHash: null, cuentasGoogle: []
+      id: "user-2",
+      passwordHash: null,
+      cuentasGoogle: []
     });
-    expect((await getWorkspace() as { status: number }).status).toBe(200);
-    expect((await getUserAccounts(new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"), context) as { status: number }).status).toBe(200);
+    expect(((await getWorkspace()) as { status: number }).status).toBe(200);
+    expect(
+      (
+        (await getUserAccounts(
+          new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"),
+          context
+        )) as { status: number }
+      ).status
+    ).toBe(200);
     expect(mock.workspaceFindUnique).toHaveBeenCalledTimes(1);
     expect(mock.userFindUnique).toHaveBeenCalledTimes(1);
   });

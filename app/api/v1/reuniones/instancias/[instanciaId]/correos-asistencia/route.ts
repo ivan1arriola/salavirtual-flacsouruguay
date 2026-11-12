@@ -12,7 +12,9 @@ type Context = { params: Promise<{ instanciaId: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Sin sesión" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Sin sesión" }, { status: 401 });
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Acceso reservado a Administración" }, { status: 403 });
@@ -25,7 +27,9 @@ export async function GET(_request: Request, { params }: Context) {
       instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true, estado: true } }
     }
   });
-  if (!evento?.codigoReunion) return NextResponse.json({ error: "Sin Meet asociado" }, { status: 404 });
+  if (!evento?.codigoReunion) {
+    return NextResponse.json({ error: "Sin Meet asociado" }, { status: 404 });
+  }
   if (evento.instancia.finProgramadoAt > new Date() || evento.instancia.estado === "CANCELADA") {
     return NextResponse.json({ error: "La reunión no ha finalizado" }, { status: 409 });
   }
@@ -42,11 +46,17 @@ export async function GET(_request: Request, { params }: Context) {
       startTime: new Date(evento.instancia.inicioProgramadoAt.getTime() - 30 * 60000).toISOString(),
       endTime: new Date(evento.instancia.finProgramadoAt.getTime() + 30 * 60000).toISOString()
     });
-    return NextResponse.json({ correos, total: correos.length, codigo: evento.codigoReunion }, {
-      headers: { "Cache-Control": "no-store" }
-    });
+    return NextResponse.json(
+      { correos, total: correos.length, codigo: evento.codigoReunion },
+      {
+        headers: { "Cache-Control": "no-store" }
+      }
+    );
   } catch (error) {
     console.error("Meet audit query failed", error instanceof Error ? error.message : String(error));
-    return NextResponse.json({ error: "Error al consultar la auditoría de Google Workspace" }, { status: 502 });
+    return NextResponse.json(
+      { error: "Error al consultar la auditoría de Google Workspace" },
+      { status: 502 }
+    );
   }
 }

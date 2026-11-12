@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FolderSync, Loader2, RefreshCw, UserCheck } from "lucide-react";
+import { FolderSync, Loader2, RefreshCw, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -116,12 +116,7 @@ export function AdminSyncRecordingsAction({
 
   return (
     <div className="operations-attention-action-bar">
-      <button
-        className="operations-attention-btn"
-        disabled={pending}
-        onClick={sync}
-        type="button"
-      >
+      <button className="operations-attention-btn" disabled={pending} onClick={sync} type="button">
         {pending ? <Loader2 className="animate-spin" size={14} /> : <FolderSync size={14} />}
         <span>{pending ? "Sincronizando…" : label}</span>
       </button>
@@ -148,7 +143,9 @@ export function AdminQuickAssignAction({
   const [feedback, setFeedback] = useState<{ text: string; isError: boolean } | null>(null);
 
   function assign(assistantId: string) {
-    if (!assistantId) return;
+    if (!assistantId) {
+      return;
+    }
     setFeedback(null);
     startTransition(async () => {
       try {
@@ -198,9 +195,7 @@ export function AdminQuickAssignAction({
           disabled={pending}
           onChange={(e) => assign(e.target.value)}
         >
-          <option value="">
-            {firstApplicant ? "O asignar a otro asistente…" : "Asignar asistente…"}
-          </option>
+          <option value="">{firstApplicant ? "O asignar a otro asistente…" : "Asignar asistente…"}</option>
           {assistants.map((ast) => (
             <option key={ast.id} value={ast.id}>
               {ast.name}

@@ -92,9 +92,7 @@ export function ZoomConfigForm({
     }
   }
 
-  const isConfigured = Boolean(
-    initial?.accountId && initial?.clientId && initial?.clientSecretConfigurado
-  );
+  const isConfigured = Boolean(initial?.accountId && initial?.clientId && initial?.clientSecretConfigurado);
 
   return (
     <div className="settings-workspace-groups">
@@ -127,8 +125,8 @@ export function ZoomConfigForm({
           <div>
             <h2>Credenciales Server-to-Server OAuth</h2>
             <p>
-              Generadas en <strong>Zoom App Marketplace</strong> con tipo Server-to-Server OAuth.
-              Permite crear, reprogramar y cancelar reuniones en cualquiera de las 10 cuentas del grupo.
+              Generadas en <strong>Zoom App Marketplace</strong> con tipo Server-to-Server OAuth. Permite
+              crear, reprogramar y cancelar reuniones en cualquiera de las 10 cuentas del grupo.
             </p>
           </div>
         </div>
@@ -184,17 +182,14 @@ export function ZoomConfigForm({
             />
             {initial?.clientSecretConfigurado ? (
               <small style={{ color: "#666" }}>
-                El Client Secret se encuentra cifrado en la base de datos. Solo ingresá uno nuevo si deseás actualizarlo.
+                El Client Secret se encuentra cifrado en la base de datos. Solo ingresá uno nuevo si deseás
+                actualizarlo.
               </small>
             ) : null}
           </label>
 
           <label className="checkbox-field">
-            <input
-              type="checkbox"
-              checked={activa}
-              onChange={(e) => setActiva(e.target.checked)}
-            />
+            <input type="checkbox" checked={activa} onChange={(e) => setActiva(e.target.checked)} />
             <span>Habilitar la plataforma Zoom para la creación y gestión de reuniones</span>
           </label>
 
@@ -225,20 +220,19 @@ export function ZoomConfigForm({
         >
           <strong>Configuración recomendada de la App en Zoom:</strong>
           <ul style={{ marginTop: "0.5rem", paddingLeft: "1.2rem", lineHeight: "1.5" }}>
-            <li>Tipo de App: <strong>Server-to-Server OAuth</strong></li>
+            <li>
+              Tipo de App: <strong>Server-to-Server OAuth</strong>
+            </li>
             <li>
               Scopes necesarios:
-              <code> meeting:write:meeting:admin</code>,
-              <code> meeting:read:meeting:admin</code>,
-              <code> meeting:update:meeting:admin</code>,
-              <code> meeting:delete:meeting:admin</code>,
-              <code> meeting:read:list_meetings:admin</code>,
-              <code> group:read:list_groups:admin</code>,
+              <code> meeting:write:meeting:admin</code>,<code> meeting:read:meeting:admin</code>,
+              <code> meeting:update:meeting:admin</code>,<code> meeting:delete:meeting:admin</code>,
+              <code> meeting:read:list_meetings:admin</code>,<code> group:read:list_groups:admin</code>,
               <code> group_member:read:list_members:admin</code>
             </li>
             <li>
-              Las 10 cuentas de sala deben ser miembros de la misma organización o cuenta maestra.
-              La app institucional asignará automáticamente el anfitrión adecuado a cada sala.
+              Las 10 cuentas de sala deben ser miembros de la misma organización o cuenta maestra. La app
+              institucional asignará automáticamente el anfitrión adecuado a cada sala.
             </li>
           </ul>
         </div>

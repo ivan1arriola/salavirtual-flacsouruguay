@@ -1,0 +1,1507 @@
+{
+  "app/(gestion)/cobertura-asistencias/page.tsx": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/configuracion/page.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/docentes/[usuarioId]/reuniones/page.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/grabaciones/page.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/mi-perfil/page.tsx": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 2
+    }
+  },
+  "app/(gestion)/monitoreo/gestion/page.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    }
+  },
+  "app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/notificaciones/page.tsx": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    }
+  },
+  "app/(gestion)/reuniones/[solicitudId]/encuentros/[instanciaId]/asistencia/page.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 9
+    }
+  },
+  "app/(gestion)/reuniones/duplicados/page.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/usuarios/[usuarioId]/page.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "app/(gestion)/usuarios/page.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "app/acceso/page.tsx": {
+    "@next/next/no-img-element": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/api/v1/configuracion/correo/test/route.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "app/api/v1/configuracion/google-workspace/test/route.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    }
+  },
+  "app/api/v1/configuracion/salas-meet/route.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 5
+    }
+  },
+  "app/api/v1/operaciones/estado/route.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/api/v1/reuniones/[solicitudId]/cohosts/verificar/route.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "app/api/v1/reuniones/instancias/[instanciaId]/asistencia/exportar/[fuente]/route.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "app/api/v1/reuniones/migracion-zoom/series-enlaces/route.ts": {
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/api/v1/reuniones/provisionar-pendientes/route.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "app/api/v1/reuniones/route.ts": {
+    "sonarjs/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/api/v1/reuniones/sincronizar-archivos/route.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "app/recuperar-contrasena/page.tsx": {
+    "@next/next/no-img-element": {
+      "count": 1
+    }
+  },
+  "app/restablecer-contrasena/page.tsx": {
+    "@next/next/no-img-element": {
+      "count": 1
+    }
+  },
+  "auth.ts": {
+    "no-console": {
+      "count": 1
+    }
+  },
+  "public/sw.js": {
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "scripts/actualizar-cohosts-serie.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "scripts/audit-oauth-legacy.ts": {
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "scripts/dev-with-tunnel.mjs": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 2
+    }
+  },
+  "scripts/email-message-helpers.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "scripts/generar-mensajes-reuniones-asistentes.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "scripts/migrate-meet-to-preview-space.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/vercel-should-build.mjs": {
+    "sonarjs/no-os-command-from-path": {
+      "count": 1
+    }
+  },
+  "src/bootstrap/ui/asistencia/agenda-abierta-page.server.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 5
+    }
+  },
+  "src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 5
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/bootstrap/ui/asistencia/mi-agenda-page.server.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/bootstrap/ui/reuniones/reunion-operativa-page.server.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/bootstrap/ui/reuniones/reunion-zoom-detail-page.server.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/bootstrap/ui/reuniones/reunion-zoom-operativa.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/bootstrap/ui/reuniones/reuniones-lista-meet-page.server.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 26
+    },
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 5
+    }
+  },
+  "src/components/admin-attention-actions.tsx": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/app-navigation.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/admin/admin-today-timeline.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/dashboard/admin/admin-triage-section.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/live-meeting-hero.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 8
+    }
+  },
+  "src/components/dashboard/teacher/teacher-upcoming-list.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/components/meet-attendance-emails.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/meet-hosts-config.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/meeting-schedule-times.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/migracion-zoom-aplicar-control.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/migracion-zoom-serie-control.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/notification-actions.tsx": {
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "src/components/operational-assistance-closure-form.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/components/operational-remote-control.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/pending-meet-operations-manager.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/components/profile-menu.tsx": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    }
+  },
+  "src/components/program-members-config.tsx": {
+    "sonarjs/redundant-type-aliases": {
+      "count": 1
+    }
+  },
+  "src/components/pwa-register.tsx": {
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "src/components/recordings-library.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/components/remembered-accounts.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/workspace-cohosts-global-verification.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 7
+    }
+  },
+  "src/components/workspace-credential-form.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/workspace-legacy-credentials.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/workspace-scopes-validator.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/zoom-archivo-progreso.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/components/zoom-grupo-config.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/components/zoom-historico-control.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/components/zoom-passcode-control.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/integrations/google/gmail/gmail-messages.client.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/integrations/zoom/zoom-download.client.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/misplaced-loop-counter": {
+      "count": 1
+    },
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "src/integrations/zoom/zoom-http.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/lib/auth/mobile-token.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/lib/ui/assistant-route.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/application/generar-planilla-asistencia-zoom.use-case.ts": {
+    "sonarjs/concise-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/application/inventariar-zoom.use-case.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/application/recuperar-historico-zoom.use-case.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/modules/archivos/application/sincronizar-artefactos.use-case.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 7
+    }
+  },
+  "src/modules/archivos/application/sincronizar-asistencia-zoom.use-case.ts": {
+    "sonarjs/concise-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/application/transferir-archivo-zoom.use-case.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-redundant-assignments": {
+      "count": 1
+    },
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/attendance-view.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/grabaciones-query.domain.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/meet-email-attribution.domain.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/meet-reports-reconciliation.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/zoom-archivos.domain.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/zoom-biblioteca.domain.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/domain/zoom-inventario-estado.domain.ts": {
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 1
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 5
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    },
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/redundant-type-aliases": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/archivos/infrastructure/google/google-meet-audit-emails.client.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/no-nested-functions": {
+      "count": 4
+    }
+  },
+  "src/modules/archivos/infrastructure/prisma/prisma-asistencia-zoom-repository.adapter.ts": {
+    "sonarjs/no-nested-functions": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/archivos/infrastructure/prisma/prisma-zoom-barrido-repository.adapter.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/application/sincronizar-cohosts-asistencia.use-case.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    }
+  },
+  "src/modules/asistencia/correo-monitoreo.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/modules/asistencia/domain/asignacion-sugerencias.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/infrastructure/google/google-assistant-calendar-provider.adapter.ts": {
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/infrastructure/prisma/prisma-asistencia-repository.adapter.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "sonarjs/no-nested-functions": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/presentation/components/assistant-assignment-select.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/presentation/components/assistant-interest-button.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/asistencia/presentation/components/assistant-month-list.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/presentation/components/assistant-onboarding-tour.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/modules/asistencia/reserva-asistentes.adapter.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/auditoria/infrastructure/prisma-auditoria.adapter.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/modules/conferencias/application/provisionar-conferencias.use-case.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/modules/conferencias/domain/meet-history.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/modules/conferencias/domain/meet-link.domain.ts": {
+    "sonarjs/empty-string-repetition": {
+      "count": 1
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/conferencias/infrastructure/google/google-conference-provider.adapter.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/conferencias/infrastructure/prisma/prisma-conferencias-repository.adapter.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    }
+  },
+  "src/modules/configuracion/asistencia-tecnica.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/configuracion/google-workspace.service.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "src/modules/configuracion/verificar-cohosts-global.service.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/identity/infrastructure/asistencia-calendario-dispatcher.adapter.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/modules/identity/infrastructure/prisma-identity.adapter.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/modules/liquidaciones/infrastructure/excel/exceljs-planilla-pagos.adapter.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/liquidaciones/infrastructure/prisma/prisma-tarifas-repository.adapter.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/migracion/usuarios-legacy.domain.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/mobile-admin/queries.adapter.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/notificaciones/application/notificar-usuario.use-case.ts": {
+    "sonarjs/concise-regex": {
+      "count": 1
+    },
+    "sonarjs/no-all-duplicated-branches": {
+      "count": 1
+    }
+  },
+  "src/modules/notificaciones/domain/notificacion-email.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 6
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/operaciones/google-operaciones-externas.service.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/no-ignored-exceptions": {
+      "count": 1
+    }
+  },
+  "src/modules/operaciones/salud.domain.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/aviso-enlace-serie.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/concise-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/avisos-participacion.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    }
+  },
+  "src/modules/reuniones/corregir-serie-enlaces.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/crear-reuniones.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/gestionar-encuentros.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/horarios-asistencia.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/invitados-serie.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/lista-zoom-agrupacion.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/migracion-zoom-avisos.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/concise-regex": {
+      "count": 1
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/migracion-zoom-calendar.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/modules/reuniones/migracion-zoom-serie-aplicar.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/migracion-zoom.service.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/email-list-editor.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-detail-manager.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 10
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-detail-tabs.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-form-v2.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 11
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-form-zoom.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/meeting-integration-problems.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/meeting-instances-editor.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/meeting-options.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/meeting-summary.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/meeting-type-selector.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/recurrence-rule-editor.tsx": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/presentation/components/nueva-reunion/solicitud-reunion.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/presentation/components/series-management.tsx": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    },
+    "sonarjs/no-nested-functions": {
+      "count": 1
+    },
+    "sonarjs/slow-regex": {
+      "count": 4
+    }
+  },
+  "src/modules/reuniones/recordatorio-reunion-email.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/recordatorios-24h.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/concise-regex": {
+      "count": 1
+    },
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/recuperacion-enlace-serie.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/reemplazo-serie-zoom.domain.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/reserva-salas.adapter.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/reunion-operativa.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-redundant-assignments": {
+      "count": 1
+    }
+  },
+  "src/modules/reuniones/reuniones-page.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/modules/reuniones/reuniones.domain.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/usuarios/eliminacion.service.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/usuarios/invitaciones.service.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/modules/usuarios/recuperacion-password.domain.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/architecture-boundaries.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "test/asistencia-infrastructure.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "test/auditoria-module.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test/aviso-enlace-serie-email.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 3
+    }
+  },
+  "test/aviso-enlace-serie.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/calendario-asistente-infrastructure.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "test/conciliar-asistencia-zoom-route.test.ts": {
+    "sonarjs/no-clear-text-protocols": {
+      "count": 1
+    }
+  },
+  "test/conferencias-application.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 2
+    }
+  },
+  "test/conferencias-reunion-compartida-adapter.test.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "test/conferencias-reunion-compartida.test.ts": {
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "test/configuracion-page-salas.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "test/corregir-serie-enlaces.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 19
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/correo-monitoreo.test.ts": {
+    "sonarjs/code-eval": {
+      "count": 2
+    }
+  },
+  "test/credentials-domain.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 2
+    }
+  },
+  "test/email-design-system.test.ts": {
+    "sonarjs/code-eval": {
+      "count": 1
+    }
+  },
+  "test/google-meet-attendance-sheets.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    }
+  },
+  "test/google-oauth-internal-id.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "test/google-workspace-config.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "test/google-workspace-credentials-service.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "test/google-workspace-legacy-meet.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "test/historial-asistente-adapter.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "test/identity-application.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 3
+    }
+  },
+  "test/identity-bootstrap.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 2
+    }
+  },
+  "test/identity-domain.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/identity-infrastructure.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/incidencias-operativas-route.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "test/integrations-google-gmail.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "test/integrations-zoom-client.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 5
+    }
+  },
+  "test/liquidaciones-infrastructure.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "test/live-participants-feature.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "test/meet-cohosts-regression.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "test/meet-link.test.ts": {
+    "sonarjs/code-eval": {
+      "count": 1
+    }
+  },
+  "test/migracion-zoom-aplicar-route.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "test/migracion-zoom-aplicar.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 22
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    },
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "test/migracion-zoom-avisos.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/migracion-zoom-calendar.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 3
+    }
+  },
+  "test/migracion-zoom-routes.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "test/migracion-zoom-serie-aplicar.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 19
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/migracion-zoom-serie-ui.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "test/migracion-zoom-series-routes.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    }
+  },
+  "test/mobile-login.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/mobile-logout.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "test/mobile-me.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test/notificacion-email.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/notificaciones-infrastructure.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "test/notificaciones-masivas-asistencia.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "test/perfil-domain.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 7
+    }
+  },
+  "test/proveedor-activo-consumidores.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 1
+    }
+  },
+  "test/recordatorios-24h.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "test/recordatorios-invitados.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test/recuperacion-password-domain.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 4
+    }
+  },
+  "test/resincronizar-cohosts-route.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    }
+  },
+  "test/revocar-sesiones-password.test.ts": {
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 4
+    }
+  },
+  "test/salas-meet-route.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "sonarjs/no-hardcoded-passwords": {
+      "count": 3
+    }
+  },
+  "test/schema-contract.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 5
+    }
+  },
+  "test/serie-link-guest-service.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "test/serie-zoom-resumen.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "test/series-enlaces-route.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    }
+  },
+  "test/support/aviso-migracion-zoom-fake.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "test/verificar-cohosts-global.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "test/zoom-archivo-schema.test.ts": {
+    "sonarjs/slow-regex": {
+      "count": 1
+    }
+  },
+  "test/zoom-archivos-integracion.test.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "test/zoom-archivos-library.test.ts": {
+    "sonarjs/code-eval": {
+      "count": 1
+    },
+    "sonarjs/no-clear-text-protocols": {
+      "count": 1
+    }
+  },
+  "test/zoom-archivos-route.test.ts": {
+    "sonarjs/no-clear-text-protocols": {
+      "count": 1
+    }
+  },
+  "test/zoom-barrido-repository-postgres.test.ts": {
+    "sonarjs/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "test/zoom-download-client.test.ts": {
+    "sonarjs/no-clear-text-protocols": {
+      "count": 2
+    }
+  },
+  "test/zoom-grupo-routes.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 32
+    }
+  },
+  "test/zoom-grupo-sincronizacion-service.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    }
+  },
+  "test/zoom-historico-routes.test.ts": {
+    "sonarjs/no-clear-text-protocols": {
+      "count": 4
+    }
+  },
+  "test/zoom-historico.test.ts": {
+    "sonarjs/no-all-duplicated-branches": {
+      "count": 1
+    },
+    "sonarjs/no-identical-functions": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "test/zoom-ui-rutas.test.ts": {
+    "sonarjs/no-clear-text-protocols": {
+      "count": 1
+    }
+  }
+}

@@ -50,15 +50,15 @@ Salida:
 - Conteos: `enZoom`, `enMeet`, `total`, `reunionesZoomDistintas`, `enlacesDistintos`.
 - `clasificacion`, una de:
 
-  | Valor | Condición |
-  | --- | --- |
-  | `SANA` | todos los futuros en Zoom con una sola reunión y un solo enlace |
-  | `MIGRABLE` | todos en Meet, sin reunión Zoom de la serie |
-  | `MEZCLADA` | hay encuentros en Zoom y en Meet |
-  | `ENLACES_DISTINTOS` | todos en Zoom pero con más de una reunión o enlace |
-  | `RETOMABLE` | existe una reunión Zoom de la serie sin crear o a medias (`PENDIENTE`/`CREANDO`) |
-  | `HUERFANA` | existe una reunión Zoom de la serie sin ningún encuentro futuro que la use |
-  | `SIN_FUTUROS` | no hay encuentros futuros programados |
+  | Valor               | Condición                                                                        |
+  | ------------------- | -------------------------------------------------------------------------------- |
+  | `SANA`              | todos los futuros en Zoom con una sola reunión y un solo enlace                  |
+  | `MIGRABLE`          | todos en Meet, sin reunión Zoom de la serie                                      |
+  | `MEZCLADA`          | hay encuentros en Zoom y en Meet                                                 |
+  | `ENLACES_DISTINTOS` | todos en Zoom pero con más de una reunión o enlace                               |
+  | `RETOMABLE`         | existe una reunión Zoom de la serie sin crear o a medias (`PENDIENTE`/`CREANDO`) |
+  | `HUERFANA`          | existe una reunión Zoom de la serie sin ningún encuentro futuro que la use       |
+  | `SIN_FUTUROS`       | no hay encuentros futuros programados                                            |
 
 - `avisos`: `{ enviados, pendientes, repetidos }`, donde repetido es más de un aviso del mismo tipo para el mismo correo (no debería ocurrir por la restricción única; se informa si aparece).
 - `acciones`: lista ordenada de acciones permitidas, `MIGRAR | UNIFICAR_ENLACE | REANUDAR | VER_DETALLE`, con la principal primero.

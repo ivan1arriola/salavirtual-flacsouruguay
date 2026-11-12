@@ -4,15 +4,18 @@ import { reunionEmailText } from "../src/modules/notificaciones/notificaciones.s
 
 describe("correo de notificaciones", () => {
   it("incluye resumen, detalles, acción y enlace absoluto al sistema", () => {
-    const email = construirCorreoNotificacion({
-      tipo: "REUNION_CREADA",
-      titulo: "Reunión creada",
-      cuerpo: "La clase quedó registrada.",
-      href: "/reuniones/abc",
-      emailSubject: "Confirmación de reunión",
-      emailText: "Miércoles 12 de agosto, 18:30.",
-      emailActionLabel: "Ver reunión"
-    }, "https://salas-meet.flacso.edu.uy");
+    const email = construirCorreoNotificacion(
+      {
+        tipo: "REUNION_CREADA",
+        titulo: "Reunión creada",
+        cuerpo: "La clase quedó registrada.",
+        href: "/reuniones/abc",
+        emailSubject: "Confirmación de reunión",
+        emailText: "Miércoles 12 de agosto, 18:30.",
+        emailActionLabel: "Ver reunión"
+      },
+      "https://salas-meet.flacso.edu.uy"
+    );
 
     expect(email.subject).toBe("Confirmación de reunión");
     expect(email.text).toContain("Ver reunión: https://salas-meet.flacso.edu.uy/reuniones/abc");
@@ -22,11 +25,14 @@ describe("correo de notificaciones", () => {
   });
 
   it("escapa contenido dinámico en el correo HTML", () => {
-    const email = construirCorreoNotificacion({
-      tipo: "ASISTENCIA_REQUERIDA",
-      titulo: "Clase <script>",
-      cuerpo: "Docente & programa"
-    }, "https://salas-meet.flacso.edu.uy/");
+    const email = construirCorreoNotificacion(
+      {
+        tipo: "ASISTENCIA_REQUERIDA",
+        titulo: "Clase <script>",
+        cuerpo: "Docente & programa"
+      },
+      "https://salas-meet.flacso.edu.uy/"
+    );
 
     expect(email.html).toContain("Clase &lt;script&gt;");
     expect(email.html).toContain("Docente &amp; programa");
@@ -41,14 +47,16 @@ describe("correo de notificaciones", () => {
       modalidad: "VIRTUAL",
       requiereAsistenciaTecnica: false,
       requiereGrabacion: false,
-      instancias: [{
-        inicio: "Martes, 18 de agosto, 18:15",
-        fin: "21:15",
-        sala: "host-principal@flacso.edu.uy",
-        password: "Clave-actualizada-2026+",
-        meet: "ids-zrev-eas",
-        joinUrl: "https://meet.google.com/ids-zrev-eas"
-      }]
+      instancias: [
+        {
+          inicio: "Martes, 18 de agosto, 18:15",
+          fin: "21:15",
+          sala: "host-principal@flacso.edu.uy",
+          password: "Clave-actualizada-2026+",
+          meet: "ids-zrev-eas",
+          joinUrl: "https://meet.google.com/ids-zrev-eas"
+        }
+      ]
     });
 
     expect(detalle).toContain("Sala: host-principal@flacso.edu.uy");
@@ -60,11 +68,13 @@ describe("correo de notificaciones", () => {
   it("no inventa una contraseña cuando la cuenta no tiene una configurada", () => {
     const detalle = reunionEmailText({
       titulo: "Prueba",
-      instancias: [{
-        inicio: "Martes, 18 de agosto, 18:15",
-        fin: "21:15",
-        sala: "host-secundario@flacso.edu.uy"
-      }]
+      instancias: [
+        {
+          inicio: "Martes, 18 de agosto, 18:15",
+          fin: "21:15",
+          sala: "host-secundario@flacso.edu.uy"
+        }
+      ]
     });
 
     expect(detalle).toContain("Sala: host-secundario@flacso.edu.uy");
@@ -77,18 +87,24 @@ describe("correo de notificaciones", () => {
       programa: "Doctorado",
       docente: "Dra. García",
       requiereAsistenciaTecnica: false,
-      instancias: [{
-        inicio: "Lunes, 15 de setiembre, 18:00",
-        fin: "20:00",
-        sala: "sala01@flacso.edu.uy",
-        joinUrl: "https://meet.google.com/abc-defg-hij"
-      }]
+      instancias: [
+        {
+          inicio: "Lunes, 15 de setiembre, 18:00",
+          fin: "20:00",
+          sala: "sala01@flacso.edu.uy",
+          joinUrl: "https://meet.google.com/abc-defg-hij"
+        }
+      ]
     });
 
     expect(detalle).toContain("¿CÓMO ACCEDER A LA REUNIÓN?");
-    expect(detalle).toContain("No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña");
+    expect(detalle).toContain(
+      "No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña"
+    );
     expect(detalle).toContain("Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host)");
-    expect(detalle).toContain("Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet");
+    expect(detalle).toContain(
+      "Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet"
+    );
     expect(detalle).toContain("Monitoreo: no requerido");
   });
 
@@ -96,11 +112,13 @@ describe("correo de notificaciones", () => {
     const pendiente = reunionEmailText({
       titulo: "Seminario Abierto",
       requiereAsistenciaTecnica: true,
-      instancias: [{
-        inicio: "Miércoles, 17 de setiembre, 19:00",
-        fin: "21:00",
-        joinUrl: "https://meet.google.com/xyz-uvwx-rst"
-      }]
+      instancias: [
+        {
+          inicio: "Miércoles, 17 de setiembre, 19:00",
+          fin: "21:00",
+          joinUrl: "https://meet.google.com/xyz-uvwx-rst"
+        }
+      ]
     });
     expect(pendiente).toContain("Monitoreo: la reunión requiere monitoreo (pendiente de asignación)");
 
@@ -108,11 +126,13 @@ describe("correo de notificaciones", () => {
       titulo: "Seminario Abierto",
       requiereAsistenciaTecnica: true,
       asistenteTecnico: "Juan Asistente",
-      instancias: [{
-        inicio: "Miércoles, 17 de setiembre, 19:00",
-        fin: "21:00",
-        joinUrl: "https://meet.google.com/xyz-uvwx-rst"
-      }]
+      instancias: [
+        {
+          inicio: "Miércoles, 17 de setiembre, 19:00",
+          fin: "21:00",
+          joinUrl: "https://meet.google.com/xyz-uvwx-rst"
+        }
+      ]
     });
     expect(asignada).toContain("Monitoreo: asignado a Juan Asistente");
   });
@@ -120,20 +140,25 @@ describe("correo de notificaciones", () => {
   it("maqueta en el correo HTML una tarjeta destacada para las instrucciones de acceso y enlaces clicables", () => {
     const emailText = reunionEmailText({
       titulo: "Clase Magistral",
-      instancias: [{
-        inicio: "Jueves, 18 de setiembre, 18:00",
-        fin: "20:00",
-        joinUrl: "https://meet.google.com/aaa-bbbb-ccc"
-      }]
+      instancias: [
+        {
+          inicio: "Jueves, 18 de setiembre, 18:00",
+          fin: "20:00",
+          joinUrl: "https://meet.google.com/aaa-bbbb-ccc"
+        }
+      ]
     });
 
-    const email = construirCorreoNotificacion({
-      tipo: "REUNION_CREADA",
-      titulo: "Reunión creada",
-      cuerpo: "La reunión ha sido creada exitosamente.",
-      emailText,
-      href: "/reuniones/123"
-    }, "https://salas-meet.flacso.edu.uy");
+    const email = construirCorreoNotificacion(
+      {
+        tipo: "REUNION_CREADA",
+        titulo: "Reunión creada",
+        cuerpo: "La reunión ha sido creada exitosamente.",
+        emailText,
+        href: "/reuniones/123"
+      },
+      "https://salas-meet.flacso.edu.uy"
+    );
 
     expect(email.html).toContain("¿Cómo acceder?");
     expect(email.html).toContain("border-left:5px solid #167e9f");

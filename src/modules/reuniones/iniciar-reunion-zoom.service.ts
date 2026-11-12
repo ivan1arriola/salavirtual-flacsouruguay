@@ -41,11 +41,13 @@ export async function obtenerEnlaceInicioZoom(
       }
     }
   });
-  if (!instancia) throw new NotFoundApiError("El encuentro no existe.");
+  if (!instancia) {
+    throw new NotFoundApiError("El encuentro no existe.");
+  }
 
   const { programaId, docente } = instancia.solicitud.docentePrograma;
   if (
-    !await puedeGestionarPrograma(dependencias.db, actor, programaId) ||
+    !(await puedeGestionarPrograma(dependencias.db, actor, programaId)) ||
     !puedeVerEnlaceAnfitrion(actor, docente.usuarioId)
   ) {
     throw new ForbiddenApiError("No tenés permisos para iniciar esta reunión.");
@@ -64,6 +66,8 @@ export async function obtenerEnlaceInicioZoom(
   }
 
   const startUrl = await dependencias.obtenerStartUrl(zoomMeetingId);
-  if (!startUrl) throw new ConflictApiError("Zoom no devolvió el enlace de inicio de la reunión.");
+  if (!startUrl) {
+    throw new ConflictApiError("Zoom no devolvió el enlace de inicio de la reunión.");
+  }
   return startUrl;
 }

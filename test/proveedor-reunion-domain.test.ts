@@ -17,16 +17,33 @@ describe("proveedor de una reunión", () => {
   });
 
   it("usa el proveedor activo explícito aunque exista el otro evento", () => {
-    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: "ZOOM", eventosProveedor: [evento("GOOGLE_MEET"), evento("ZOOM")] })).toBe("ZOOM");
-    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: "GOOGLE_MEET", eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")] })).toBe("GOOGLE_MEET");
+    expect(
+      proveedorActivoDeInstancia({
+        proveedorActivoTipo: "ZOOM",
+        eventosProveedor: [evento("GOOGLE_MEET"), evento("ZOOM")]
+      })
+    ).toBe("ZOOM");
+    expect(
+      proveedorActivoDeInstancia({
+        proveedorActivoTipo: "GOOGLE_MEET",
+        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")]
+      })
+    ).toBe("GOOGLE_MEET");
   });
 
   it("en datos antiguos sin proveedor activo, una reunión con Meet sigue siendo de Meet", () => {
-    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")] })).toBe("GOOGLE_MEET");
+    expect(
+      proveedorActivoDeInstancia({
+        proveedorActivoTipo: null,
+        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")]
+      })
+    ).toBe("GOOGLE_MEET");
   });
 
   it("sin proveedor activo y sin evento Meet, o sin eventos, es de Zoom", () => {
-    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [evento("ZOOM")] })).toBe("ZOOM");
+    expect(
+      proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [evento("ZOOM")] })
+    ).toBe("ZOOM");
     expect(proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [] })).toBe("ZOOM");
   });
 });

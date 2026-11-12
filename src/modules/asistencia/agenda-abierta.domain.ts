@@ -5,8 +5,5 @@ export {
   formatearDiasRestantes,
   ordenarPostulantesParaAdministracion
 } from "./domain/agenda-abierta.domain";
-export type {
-  AsignacionExistente,
-  ConflictoAsistenciaResultado
-} from "./domain/asistencia.types";
+export type { AsignacionExistente, ConflictoAsistenciaResultado } from "./domain/asistencia.types";
 export type { PostulanteEvaluado } from "./domain/agenda-abierta.domain";

@@ -4,7 +4,8 @@
 
 **Goal:** Implementar la infraestructura de control arquitectónico (pruebas automatizadas de fronteras de capas y encapsulamiento modular) y desplegar el primer módulo piloto (`auditoria`) con sus 5 capas completas (`domain`, `ports`, `application`, `infrastructure`, `api.ts`) y su composición en `src/bootstrap/`, sin alterar la funcionalidad observable ni romper ninguna prueba existente.
 
-**Architecture:** 
+**Architecture:**
+
 - `test/architecture-boundaries.test.ts` inspecciona estáticamente las dependencias e imports en `src/modules/` para impedir acoplamientos prohibidos entre capas (`presentation` -> `infrastructure`, `domain` -> frameworks/efectos, etc.) y entre módulos internos.
 - `test/functional-architecture.test.ts` se armoniza para auditar la pureza funcional de la capa `domain/` en los módulos migrados y de los archivos de dominio legacy.
 - Módulo piloto `src/modules/auditoria/` implementado bajo el nuevo estándar de 5 capas:
@@ -34,9 +35,11 @@
 ### Task 1: Harnés de pruebas de fronteras arquitectónicas (`architecture-boundaries`)
 
 **Files:**
+
 - Create: `test/architecture-boundaries.test.ts`
 
 **Interfaces:**
+
 - Produces: Suite de pruebas en Vitest que escanea el código fuente de `src/modules/**` y valida:
   1. `domain` no importa `application`, `infrastructure`, `presentation`, `@prisma/client`, `next`, `react`, bibliotecas de red o `process.env`.
   2. `application` no importa `presentation`, `infrastructure`, `@prisma/client`, `next` ni `react`.
@@ -67,7 +70,7 @@ type FileInfo = Readonly<{
 function extractImports(source: string): string[] {
   const importLines = source.match(/^import\s+[\s\S]*?from\s+["']([^"']+)["']/gm) || [];
   const dynamicImports = source.match(/import\s*\(\s*["']([^"']+)["']\s*\)/g) || [];
-  
+
   const results: string[] = [];
   for (const line of importLines) {
     const match = line.match(/from\s+["']([^"']+)["']/);
@@ -94,7 +97,9 @@ function scanModules(dir: string): FileInfo[] {
       const parts = rel.split("/");
       const moduleName = parts[0];
       const layerCandidate = parts[1];
-      const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(layerCandidate)
+      const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(
+        layerCandidate
+      )
         ? (layerCandidate as FileInfo["layer"])
         : undefined;
 
@@ -125,15 +130,16 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
     for (const file of layeredFiles) {
       if (file.layer === "domain") {
         it(`[domain] ${file.relPath} no importa capas superiores ni dependencias de infraestructura`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/application") ||
-            imp.includes("/presentation") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react") ||
-            imp.includes("googleapis") ||
-            imp.includes("nodemailer")
+          const forbidden = file.imports.filter(
+            (imp) =>
+              imp.includes("/infrastructure") ||
+              imp.includes("/application") ||
+              imp.includes("/presentation") ||
+              imp.includes("@prisma/client") ||
+              imp.startsWith("next") ||
+              imp.startsWith("react") ||
+              imp.includes("googleapis") ||
+              imp.includes("nodemailer")
           );
           expect(forbidden, `Imports prohibidos en domain: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -141,13 +147,14 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
       if (file.layer === "ports") {
         it(`[ports] ${file.relPath} no importa infraestructura ni frameworks externos`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/presentation") ||
-            imp.includes("/application") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react")
+          const forbidden = file.imports.filter(
+            (imp) =>
+              imp.includes("/infrastructure") ||
+              imp.includes("/presentation") ||
+              imp.includes("/application") ||
+              imp.includes("@prisma/client") ||
+              imp.startsWith("next") ||
+              imp.startsWith("react")
           );
           expect(forbidden, `Imports prohibidos en ports: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -155,12 +162,13 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
       if (file.layer === "application") {
         it(`[application] ${file.relPath} no importa infraestructura, presentacion ni Prisma`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("/presentation") ||
-            imp.includes("@prisma/client") ||
-            imp.startsWith("next") ||
-            imp.startsWith("react")
+          const forbidden = file.imports.filter(
+            (imp) =>
+              imp.includes("/infrastructure") ||
+              imp.includes("/presentation") ||
+              imp.includes("@prisma/client") ||
+              imp.startsWith("next") ||
+              imp.startsWith("react")
           );
           expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -168,9 +176,8 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
       if (file.layer === "presentation") {
         it(`[presentation] ${file.relPath} no importa infraestructura ni Prisma directamente`, () => {
-          const forbidden = file.imports.filter((imp) =>
-            imp.includes("/infrastructure") ||
-            imp.includes("@prisma/client")
+          const forbidden = file.imports.filter(
+            (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client")
           );
           expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -217,9 +224,11 @@ git commit -m "test(arch): agregar arnes de pruebas de fronteras arquitectonicas
 ### Task 2: Armonización de `test/functional-architecture.test.ts`
 
 **Files:**
+
 - Modify: `test/functional-architecture.test.ts`
 
 **Interfaces:**
+
 - Consumes: Convención de carpetas modular (`src/modules/<modulo>/domain/**.ts` y archivos legacy sin carpetas de capa).
 - Produces: Verificación de pureza funcional inmutable sobre todos los archivos de dominio (antiguos y nuevos dentro de `domain/`).
 
@@ -294,9 +303,7 @@ describe("arquitectura funcional", () => {
   for (const relativePath of PURE_MODULES) {
     it(`${relativePath} permanece libre de efectos externos`, () => {
       const source = readFileSync(new URL(relativePath, MODULES_ROOT), "utf8");
-      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(
-        ({ name }) => name
-      );
+      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(({ name }) => name);
 
       expect(effects).toEqual([]);
     });
@@ -321,6 +328,7 @@ git commit -m "test(arch): armonizar deteccion de modulos de dominio para soport
 ### Task 3: Módulo Piloto `auditoria` con 5 capas
 
 **Files:**
+
 - Create: `src/modules/auditoria/domain/auditoria.types.ts`
 - Create: `src/modules/auditoria/domain/auditoria.domain.ts`
 - Create: `src/modules/auditoria/ports/auditoria.port.ts`
@@ -330,6 +338,7 @@ git commit -m "test(arch): armonizar deteccion de modulos de dominio para soport
 - Create: `test/auditoria-module.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `EventoAuditoria`: Entidad de dominio inmutable con datos validados de auditoría.
   - `validarEventoAuditoria(datos)`: Función pura que valida campos obligatorios y formato.
@@ -475,8 +484,7 @@ export type EventoAuditoria = Readonly<{
 }>;
 
 export type ResultadoValidacion<T> =
-  | Readonly<{ ok: true; value: T }>
-  | Readonly<{ ok: false; error: string }>;
+  Readonly<{ ok: true; value: T }> | Readonly<{ ok: false; error: string }>;
 ```
 
 Crear `src/modules/auditoria/domain/auditoria.domain.ts`:
@@ -554,13 +562,10 @@ export type RegistrarAuditoriaInput = Readonly<{
 }>;
 
 export type ResultadoAuditoria =
-  | Readonly<{ ok: true; evento: EventoAuditoria }>
-  | Readonly<{ ok: false; error: string }>;
+  Readonly<{ ok: true; evento: EventoAuditoria }> | Readonly<{ ok: false; error: string }>;
 
 export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) {
-  return async function registrarAuditoria(
-    input: RegistrarAuditoriaInput
-  ): Promise<ResultadoAuditoria> {
+  return async function registrarAuditoria(input: RegistrarAuditoriaInput): Promise<ResultadoAuditoria> {
     const validacion = validarEventoAuditoria(input);
     if (!validacion.ok) {
       return { ok: false, error: validacion.error };
@@ -583,9 +588,7 @@ import type { AuditoriaRepository } from "../ports/auditoria.port";
 
 type PrismaAuditoriaClient = Pick<PrismaClient, "auditoria">;
 
-export function crearPrismaAuditoriaAdapter(
-  prismaOrTx: PrismaAuditoriaClient
-): AuditoriaRepository {
+export function crearPrismaAuditoriaAdapter(prismaOrTx: PrismaAuditoriaClient): AuditoriaRepository {
   return {
     async registrar(evento: EventoAuditoria): Promise<void> {
       await prismaOrTx.auditoria.create({
@@ -636,10 +639,12 @@ git commit -m "feat(auditoria): crear modulo piloto con arquitectura de 5 capas"
 ### Task 4: Composición del módulo piloto en `src/bootstrap/auditoria.server.ts`
 
 **Files:**
+
 - Create: `src/bootstrap/auditoria.server.ts`
 - Create: `test/auditoria-bootstrap.test.ts`
 
 **Interfaces:**
+
 - Consumes: `@/src/lib/db`, `@/src/modules/auditoria/api`.
 - Produces: `obtenerServicioAuditoria()` y `crearServicioAuditoriaTransaccional(tx)` como puntos de entrada singleton y transaccionales para servidores Next.js.
 
@@ -708,9 +713,7 @@ export function obtenerServicioAuditoria(): ServicioAuditoria {
   };
 }
 
-export function crearServicioAuditoriaTransaccional(
-  tx: Pick<PrismaClient, "auditoria">
-): ServicioAuditoria {
+export function crearServicioAuditoriaTransaccional(tx: Pick<PrismaClient, "auditoria">): ServicioAuditoria {
   const adapter = crearPrismaAuditoriaAdapter(tx);
   const useCase = crearRegistrarAuditoriaUseCase(adapter);
   return {
@@ -736,9 +739,11 @@ git commit -m "feat(bootstrap): raiz de composicion server-only para modulo audi
 ### Task 5: Verificación global de tipos, tests y build
 
 **Files:**
+
 - None (verificación pura sobre el árbol completo)
 
 **Interfaces:**
+
 - Consumes: Todo el árbol de código y tests.
 - Produces: Validación estricta de TypeScript, suite completa de Vitest, esquema de Prisma y compilación Next.js 16.
 
@@ -761,4 +766,3 @@ Expected: PASS.
 
 Run: `npm run build`
 Expected: PASS con compilación exitosa de Next.js 16.
-

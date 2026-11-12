@@ -23,15 +23,21 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await verificarCohostsGlobalPagina({
-      db,
-      descifrar: descifrarConfiguracion,
-    }, cursor);
+    const result = await verificarCohostsGlobalPagina(
+      {
+        db,
+        descifrar: descifrarConfiguracion
+      },
+      cursor
+    );
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch {
     // Never include provider payloads, service-account keys or tokens.
-    return NextResponse.json({
-      error: "No se pudo completar la verificación. Revisá la configuración de Google Workspace.",
-    }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      {
+        error: "No se pudo completar la verificación. Revisá la configuración de Google Workspace."
+      },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
   }
 }

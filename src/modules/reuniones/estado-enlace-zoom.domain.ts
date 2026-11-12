@@ -9,8 +9,12 @@ type EventoEnlace = Readonly<{
 }>;
 
 export function estadoEnlaceZoom(evento: EventoEnlace | null): EstadoEnlaceZoom {
-  if (!evento) return "PENDIENTE";
-  if (evento.joinUrl) return evento.estadoIntegracion === "ERROR" ? "ATENCION" : "LISTO";
+  if (!evento) {
+    return "PENDIENTE";
+  }
+  if (evento.joinUrl) {
+    return evento.estadoIntegracion === "ERROR" ? "ATENCION" : "LISTO";
+  }
   return evento.estadoIntegracion === "ERROR" || evento.errorIntegracion ? "ERROR" : "PENDIENTE";
 }
 
@@ -26,15 +30,18 @@ export type ResumenEnlaceZoom = Readonly<{
 const OPERACIONES = ["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"] as const;
 
 /** Enlace vigente de una instancia: el del evento del proveedor activo. */
-export function resumenEnlaceZoom(instancia: Readonly<{
-  proveedorActivoTipo?: string | null;
-  eventosProveedor: readonly (EventoEnlace & Readonly<{
-    id: string;
-    proveedor: Readonly<{ tipo: string }>;
-    operacionPendiente: string | null;
-    cuentaProveedor?: Readonly<{ nombre: string; emailOrganizador: string | null }> | null;
-  }>)[];
-}>): ResumenEnlaceZoom {
+export function resumenEnlaceZoom(
+  instancia: Readonly<{
+    proveedorActivoTipo?: string | null;
+    eventosProveedor: readonly (EventoEnlace &
+      Readonly<{
+        id: string;
+        proveedor: Readonly<{ tipo: string }>;
+        operacionPendiente: string | null;
+        cuentaProveedor?: Readonly<{ nombre: string; emailOrganizador: string | null }> | null;
+      }>)[];
+  }>
+): ResumenEnlaceZoom {
   const evento = seleccionarEventoProveedorActivo(instancia);
   const operacion = OPERACIONES.find((valor) => valor === evento?.operacionPendiente) ?? "PROVISIONAR";
   return {

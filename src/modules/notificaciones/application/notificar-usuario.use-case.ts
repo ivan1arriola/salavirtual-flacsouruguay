@@ -1,12 +1,5 @@
-import {
-  construirCorreoNotificacion,
-  type NotificationMessage,
-  type NotificationRecipient,
-} from "../domain";
-import type {
-  EmailTransportPort,
-  NotificacionesRepositoryPort,
-} from "../ports";
+import { construirCorreoNotificacion, type NotificationMessage, type NotificationRecipient } from "../domain";
+import type { EmailTransportPort, NotificacionesRepositoryPort } from "../ports";
 
 export async function notificarUsuarioUseCase(
   repository: NotificacionesRepositoryPort,
@@ -16,7 +9,9 @@ export async function notificarUsuarioUseCase(
   appBaseUrl = "https://salavirtual.flacso.edu.uy"
 ): Promise<void> {
   const asistenteCesado = await repository.esAsistenteCesado(recipient.usuarioId);
-  if (asistenteCesado) return;
+  if (asistenteCesado) {
+    return;
+  }
 
   const preference = await repository.obtenerPreferencias(recipient.usuarioId, message.tipo);
 
@@ -28,7 +23,7 @@ export async function notificarUsuarioUseCase(
       titulo: message.titulo,
       cuerpo: message.cuerpo,
       href: message.href,
-      metadata: message.metadata,
+      metadata: message.metadata
     });
   }
 
@@ -49,11 +44,16 @@ export async function notificarUsuarioUseCase(
     } catch (error) {
       // La indisponibilidad de auditoría no reintenta el correo ni
       // interrumpe el flujo principal que disparó la notificación.
-      console.error("No se pudo auditar el resultado del correo", error instanceof Error ? error.name : "AuditError");
+      console.error(
+        "No se pudo auditar el resultado del correo",
+        error instanceof Error ? error.name : "AuditError"
+      );
     }
   }
 
-  if (!preference.email) return;
+  if (!preference.email) {
+    return;
+  }
   if (!recipient.email) {
     await auditar("OMITIDO", undefined, "sin-destinatario");
     return;
@@ -66,7 +66,7 @@ export async function notificarUsuarioUseCase(
       to: [recipient.email],
       subject: email.subject,
       text: email.text,
-      html: email.html,
+      html: email.html
     });
 
     if (result.sent) {

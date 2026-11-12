@@ -1,6 +1,6 @@
 import type {
   IntentoSincronizacionCalendarioAsistente,
-  ResultadoSincronizacionCalendarioAsistente,
+  ResultadoSincronizacionCalendarioAsistente
 } from "../domain";
 
 export async function intentarSincronizacionCalendarioAsistente(
@@ -9,16 +9,12 @@ export async function intentarSincronizacionCalendarioAsistente(
   try {
     return {
       resultados: await operation(),
-      error: null,
+      error: null
     };
   } catch (error) {
     return {
       resultados: [],
-      error:
-        error instanceof Error
-          ? error.message
-          : "No se pudo sincronizar Google Calendar.",
+      error: error instanceof Error ? error.message : "No se pudo sincronizar Google Calendar."
     };
   }
 }
-

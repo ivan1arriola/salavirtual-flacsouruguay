@@ -38,7 +38,9 @@ export function LiveParticipantsIndicator({
     let consultaEnCurso = false;
 
     const actualizar = async () => {
-      if (consultaEnCurso) return;
+      if (consultaEnCurso) {
+        return;
+      }
       consultaEnCurso = true;
       try {
         const response = await fetch(
@@ -48,7 +50,9 @@ export function LiveParticipantsIndicator({
             signal: controller.signal
           }
         );
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         const nextData = (await response.json()) as LiveParticipantsResponse;
         setData(nextData);
         setFalloActualizacion(false);
@@ -146,7 +150,11 @@ export function LiveParticipantsIndicator({
 }
 
 function etiquetaTipo(tipo: ParticipanteActivo["tipo"]): string {
-  if (tipo === "CUENTA_GOOGLE") return "Google";
-  if (tipo === "TELEFONO") return "Teléfono";
+  if (tipo === "CUENTA_GOOGLE") {
+    return "Google";
+  }
+  if (tipo === "TELEFONO") {
+    return "Teléfono";
+  }
   return "Invitado";
 }

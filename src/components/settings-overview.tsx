@@ -31,7 +31,11 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
 
       <div className="settings-overview-grid">
         <OverviewCard
-          description={data.workspaceReady ? "Cuenta, delegación y Drive configurados" : "Faltan datos para completar la integración"}
+          description={
+            data.workspaceReady
+              ? "Cuenta, delegación y Drive configurados"
+              : "Faltan datos para completar la integración"
+          }
           href="/configuracion?seccion=workspace"
           icon={<KeyRound size={22} />}
           label="Google Workspace"
@@ -90,22 +94,48 @@ function SettingsAttentionBanner({
   if (!needsAttention) {
     return (
       <section className="settings-attention settings-attention--ok" aria-label="Estado general">
-        <span className="settings-attention__icon"><CheckCircle2 size={24} /></span>
-        <div><strong>Todo está listo para operar</strong><p>La integración está activa, hay salas disponibles y no quedan operaciones pendientes.</p></div>
+        <span className="settings-attention__icon">
+          <CheckCircle2 size={24} />
+        </span>
+        <div>
+          <strong>Todo está listo para operar</strong>
+          <p>La integración está activa, hay salas disponibles y no quedan operaciones pendientes.</p>
+        </div>
       </section>
     );
   }
 
   return (
     <section className="settings-attention settings-attention--warning" aria-label="Estado general">
-      <span className="settings-attention__icon"><CircleAlert size={24} /></span>
+      <span className="settings-attention__icon">
+        <CircleAlert size={24} />
+      </span>
       <div>
         <strong>Hay aspectos que requieren revisión</strong>
         <ul>
-          {data.pendingOperations > 0 ? <li><Link href="/configuracion?seccion=workspace">{data.pendingOperations} {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google</Link></li> : null}
-          {!data.workspaceReady ? <li><Link href="/configuracion?seccion=workspace">Completar Google Workspace</Link></li> : null}
-          {!data.integrationActive ? <li><Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link></li> : null}
-          {data.availableHosts === 0 ? <li><Link href="/configuracion?seccion=salas">Revisar las salas disponibles</Link></li> : null}
+          {data.pendingOperations > 0 ? (
+            <li>
+              <Link href="/configuracion?seccion=workspace">
+                {data.pendingOperations}{" "}
+                {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
+              </Link>
+            </li>
+          ) : null}
+          {!data.workspaceReady ? (
+            <li>
+              <Link href="/configuracion?seccion=workspace">Completar Google Workspace</Link>
+            </li>
+          ) : null}
+          {!data.integrationActive ? (
+            <li>
+              <Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link>
+            </li>
+          ) : null}
+          {data.availableHosts === 0 ? (
+            <li>
+              <Link href="/configuracion?seccion=salas">Revisar las salas disponibles</Link>
+            </li>
+          ) : null}
         </ul>
       </div>
     </section>
@@ -129,7 +159,9 @@ function OverviewCard({
 }>) {
   return (
     <Link className={`settings-overview-card settings-overview-card--${state}`} href={href}>
-      <span className="settings-overview-card__icon" aria-hidden="true">{icon}</span>
+      <span className="settings-overview-card__icon" aria-hidden="true">
+        {icon}
+      </span>
       <span className="settings-overview-card__copy">
         <small>{label}</small>
         <strong>{value}</strong>

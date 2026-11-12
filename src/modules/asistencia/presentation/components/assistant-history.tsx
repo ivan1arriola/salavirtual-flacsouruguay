@@ -2,12 +2,16 @@ import { History } from "lucide-react";
 import { formatDateTime } from "@/src/lib/ui/format";
 import type {
   AccionHistorialAsistencia,
-  RegistroHistorialAsistenciaPersonal,
+  RegistroHistorialAsistenciaPersonal
 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 function actionLabel(action: AccionHistorialAsistencia): string {
-  if (action === "DESVINCULADO") return "Desvinculado";
-  if (action === "REASIGNADO") return "Asignado por reasignación";
+  if (action === "DESVINCULADO") {
+    return "Desvinculado";
+  }
+  if (action === "REASIGNADO") {
+    return "Asignado por reasignación";
+  }
   return "Asignado";
 }
 
@@ -16,7 +20,7 @@ function actionClass(action: AccionHistorialAsistencia): string {
 }
 
 export function AssistantHistory({
-  entries,
+  entries
 }: Readonly<{
   entries: readonly RegistroHistorialAsistenciaPersonal[];
 }>) {
@@ -24,8 +28,13 @@ export function AssistantHistory({
     <section className="content-section assistant-history-section">
       <details className="assistant-history-details">
         <summary>
-          <span className="assistant-history-summary-title"><History size={17} />Ver historial</span>
-          <span className="assistant-history-summary-count">{entries.length} {entries.length === 1 ? "cambio" : "cambios"}</span>
+          <span className="assistant-history-summary-title">
+            <History size={17} />
+            Ver historial
+          </span>
+          <span className="assistant-history-summary-count">
+            {entries.length} {entries.length === 1 ? "cambio" : "cambios"}
+          </span>
         </summary>
         <div className="assistant-history-content">
           <div className="section-heading assistant-detail-list-heading">
@@ -50,8 +59,12 @@ export function AssistantHistory({
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id}>
-                      <td><span className={actionClass(entry.accion)}>{actionLabel(entry.accion)}</span></td>
-                      <td><strong>{entry.titulo}</strong></td>
+                      <td>
+                        <span className={actionClass(entry.accion)}>{actionLabel(entry.accion)}</span>
+                      </td>
+                      <td>
+                        <strong>{entry.titulo}</strong>
+                      </td>
                       <td className="date-cell">{formatDateTime(entry.instanciaInicioAt)}</td>
                       <td className="date-cell">{formatDateTime(entry.ocurrioAt)}</td>
                       <td>{entry.actor}</td>
@@ -61,7 +74,9 @@ export function AssistantHistory({
               </table>
             </div>
           ) : (
-            <div className="empty-state"><p>No hay cambios de asignación registrados en este período.</p></div>
+            <div className="empty-state">
+              <p>No hay cambios de asignación registrados en este período.</p>
+            </div>
           )}
         </div>
       </details>

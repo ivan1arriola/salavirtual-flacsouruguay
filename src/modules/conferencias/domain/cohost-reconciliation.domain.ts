@@ -10,11 +10,7 @@ export function cohostMemberNamesToRemove(
 
   return members.flatMap((member) => {
     const email = member.email?.trim().toLowerCase();
-    return member.role === "COHOST"
-      && member.name
-      && email
-      && previous.has(email)
-      && !desired.has(email)
+    return member.role === "COHOST" && member.name && email && previous.has(email) && !desired.has(email)
       ? [member.name]
       : [];
   });

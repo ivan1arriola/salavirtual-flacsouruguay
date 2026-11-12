@@ -35,11 +35,13 @@
 ### Task 1: Esquema de conciliación
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (modelos `RegistroAsistenciaMeet`, `InvitadoReunion`)
 - Create: `prisma/migrations/20261103000000_asistencia_zoom_conciliacion/migration.sql`
 - Test: `test/schema-contract.test.ts`
 
 **Interfaces:**
+
 - Produces: columnas `RegistroAsistenciaMeet.proveedor String @default("GOOGLE_MEET")`, `estadoConciliacion String @default("CONCILIADO")`, `invitadoReunionId String?` (relación a `InvitadoReunion`, `onDelete: SetNull`), `@@index([instanciaSalaId, estadoConciliacion])`; relación inversa `registrosAsistencia RegistroAsistenciaMeet[]` en `InvitadoReunion`.
 
 - [ ] **Step 1: Failing test** en `test/schema-contract.test.ts`: el esquema contiene los tres campos en `RegistroAsistenciaMeet` con los defaults `GOOGLE_MEET` y `CONCILIADO`, y la migración incluye `ADD COLUMN` para cada uno.
@@ -51,10 +53,12 @@
 ### Task 2: Cliente de reportes Zoom
 
 **Files:**
+
 - Create: `src/integrations/zoom/zoom-reports.client.ts`
 - Test: `test/zoom-reports-client.test.ts`
 
 **Interfaces:**
+
 - Consumes: `obtenerZoomAccessToken(creds: ZoomCredentials): Promise<string>` de `zoom-client.ts`.
 - Produces:
   - `type ZoomSesionParticipante = Readonly<{ participantId: string | null; userId: string | null; nombre: string; email: string | null; joinTime: Date; leaveTime: Date }>`
@@ -68,10 +72,12 @@
 ### Task 3: Dominio de agrupamiento y cálculo
 
 **Files:**
+
 - Create: `src/modules/archivos/domain/asistencia-zoom.domain.ts` (exportar desde `domain/index.ts`)
 - Test: `test/asistencia-zoom-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `normalizarNombreParticipante(nombre: string): string` — minúsculas, sin acentos, espacios colapsados.
   - `claveParticipanteZoom(sesion: { userId: string | null; nombre: string }): string` — `zoom:user:{userId}` si hay ID, si no `zoom:nombre:{normalizado}`.
@@ -85,10 +91,12 @@
 ### Task 4: Persistencia sin pisar vínculos
 
 **Files:**
+
 - Modify: `src/modules/archivos/ports/archivos-repository.port.ts`, `src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter.ts`
 - Test: `test/archivos-asistencia-zoom-repository.test.ts` (estilo de `test/archivos-infrastructure.test.ts`)
 
 **Interfaces:**
+
 - Produces en `ArchivosRepositoryPort`:
   - `type EventoZoomParaAsistencia = Readonly<{ id: string; instanciaSalaId: string; zoomMeetingId: string; emailOrganizador: string | null; hostEmails: readonly string[]; inicioProgramadoAt: Date; finProgramadoAt: Date; timezone: string; tituloSolicitud: string; archivos: readonly ArchivoExistente[]; asistenciaDriveFileId: string | null; invitados: readonly { id: string; email: string; nombre: string | null }[] }>`
   - `obtenerEventosZoomParaAsistencia(eventoProveedorIds: readonly string[]): Promise<readonly EventoZoomParaAsistencia[]>` — filtra `proveedor.tipo = "ZOOM"`; `zoomMeetingId` es `externalEventId`.
@@ -102,11 +110,13 @@
 ### Task 5: Sincronización de asistencia Zoom y planilla
 
 **Files:**
+
 - Create: `src/modules/archivos/application/sincronizar-asistencia-zoom.use-case.ts` (exportar desde `application/index.ts`)
 - Modify: `src/bootstrap/archivos.server.ts`, `src/modules/archivos/application/seleccionar-eventos-operativos.use-case.ts` (incluir eventos Zoom terminados)
 - Test: `test/sincronizar-asistencia-zoom.test.ts`
 
 **Interfaces:**
+
 - Consumes: `listarParticipantesReunionPasadaZoomHttp`, `agruparSesionesZoom`, `sugerirVinculos`, los métodos de la Task 4, `ArtifactProviderFactory` (solo `obtenerOCrearCarpeta` y `subirPlanillaAsistencia`).
 - Produces: `sincronizarAsistenciaZoomUseCase(repositorio: ArchivosRepositoryPort, obtenerReporte: (zoomMeetingId: string) => Promise<readonly ZoomSesionParticipante[] | null>, providerFactory: ArtifactProviderFactory, descifrar: (c: string) => string, input: { eventoProveedorIds: readonly string[] }): Promise<readonly SyncArtifactsResult[]>`; y `construirPlanillaAsistenciaZoom(registros: readonly RegistroAsistenciaZoom[]): NonNullable<MeetAttendanceDocument["planilla"]>` (puro, mismo archivo de dominio de la Task 3 o contiguo): una sesión por participante en `sesionesMeet` con `tipo: "MEET"` (compatibilidad con `construirVistaAsistencia`; el renombre es del sub-proyecto 3) y `correosAuditados` solo con los `CONCILIADO` que tienen email; `eventosAuditoria: []`.
 - Bootstrap: `sincronizarAsistenciaZoom(eventoProveedorIds: readonly string[])`, y `sincronizarArtefactosOperativos` la invoca para los eventos Zoom del lote.
@@ -117,10 +127,12 @@
 ### Task 6: Conciliación
 
 **Files:**
+
 - Create: `src/modules/archivos/application/conciliar-asistencia-zoom.use-case.ts`, `app/api/v1/reuniones/instancias/[instanciaId]/asistencia/conciliar/route.ts`
 - Test: `test/conciliar-asistencia-zoom.test.ts`
 
 **Interfaces:**
+
 - Produces: `conciliarAsistenciaZoomUseCase(deps, input: { instanciaSalaId: string; claveParticipante: string; accion: { tipo: "VINCULAR"; invitadoReunionId: string } | { tipo: "EXTERNO" } | { tipo: "DESVINCULAR" }; actorId: string }): Promise<RegistroAsistenciaZoom>`; `VINCULAR` y `EXTERNO` dejan `CONCILIADO` (con `email` e `invitadoReunionId` del invitado, o `externo = true` sin invitado); `DESVINCULAR` vuelve a `SIN_IDENTIFICAR`. Cada acción escribe una fila en `Auditoria`. Al terminar regenera la planilla (`sincronizarAsistenciaZoom` con `asistenciaDriveFileId` existente).
 - La ruta valida con el esquema del estilo de las rutas vecinas y autoriza al docente de la instancia o a admin con la misma verificación que usan las demás rutas de `instancias`.
 
@@ -130,11 +142,13 @@
 ### Task 7: Interfaz de conciliación y vista
 
 **Files:**
+
 - Create: `src/components/asistencia-zoom-conciliacion.tsx`
 - Modify: detalle de reunión (`src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx` y componente cliente asociado), `src/modules/archivos/domain/attendance-view.domain.ts` y `attendance-raw-export.domain.ts` (columna de conciliación)
 - Test: `test/asistencia-zoom-conciliacion-ui.test.ts`, ampliar el test de vista existente en `test/archivos-domain.test.ts`
 
 **Interfaces:**
+
 - Consumes: la ruta de la Task 6 y `listarAsistenciaInstancia`.
 - Produces: componente que lista los participantes Zoom con estado (`CONCILIADO`/`SUGERIDO`/`SIN_IDENTIFICAR`), un selector de invitado, "Marcar externo" y "Desvincular"; visible solo si el evento activo es Zoom. `FilaVistaAsistencia` gana `estadoConciliacion?: "CONCILIADO" | "SUGERIDO" | "SIN_IDENTIFICAR"`; las exportaciones agregan esa columna para filas Zoom y no cambian para filas Meet.
 

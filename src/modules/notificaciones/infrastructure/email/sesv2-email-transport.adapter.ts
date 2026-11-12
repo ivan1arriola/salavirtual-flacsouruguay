@@ -12,27 +12,31 @@ export function crearSesV2EmailTransport(
   return {
     async enviarCorreo(input: MailInput): Promise<MailSendResult> {
       const config = await resolver();
-      if (!config) return { sent: false, skipped: "correo-no-configurado" };
+      if (!config) {
+        return { sent: false, skipped: "correo-no-configurado" };
+      }
       const client = crearCliente(config.awsRegion);
       let response;
       try {
-        response = await client.send(new SendEmailCommand({
-          FromEmailAddress: config.fromEmail,
-          ReplyToAddresses: config.replyToEmail ? [config.replyToEmail] : undefined,
-          Destination: {
-            ToAddresses: [...input.to],
-            CcAddresses: input.cc?.length ? [...input.cc] : undefined
-          },
-          Content: {
-            Simple: {
-              Subject: { Data: input.subject, Charset: "UTF-8" },
-              Body: {
-                Text: { Data: input.text, Charset: "UTF-8" },
-                Html: input.html ? { Data: input.html, Charset: "UTF-8" } : undefined
+        response = await client.send(
+          new SendEmailCommand({
+            FromEmailAddress: config.fromEmail,
+            ReplyToAddresses: config.replyToEmail ? [config.replyToEmail] : undefined,
+            Destination: {
+              ToAddresses: [...input.to],
+              CcAddresses: input.cc?.length ? [...input.cc] : undefined
+            },
+            Content: {
+              Simple: {
+                Subject: { Data: input.subject, Charset: "UTF-8" },
+                Body: {
+                  Text: { Data: input.text, Charset: "UTF-8" },
+                  Html: input.html ? { Data: input.html, Charset: "UTF-8" } : undefined
+                }
               }
             }
-          }
-        }));
+          })
+        );
       } catch (error) {
         const safeError = new Error("Amazon SES no pudo completar el envío.");
         safeError.name = error instanceof Error ? error.name : "SesSendError";

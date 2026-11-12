@@ -36,29 +36,35 @@ describe("navegación de configuración", () => {
   });
 
   it("resume los cuatro requisitos visibles de Google Workspace", () => {
-    expect(workspaceReadiness({
-      serviceAccountEmail: "service@example.com",
-      privateKeyConfigurada: true,
-      serviceAccountSubject: "sala@example.com",
-      driveDestinationId: "folder",
-      activa: true
-    })).toEqual({ readyCount: 4, totalCount: 4, ready: true });
+    expect(
+      workspaceReadiness({
+        serviceAccountEmail: "service@example.com",
+        privateKeyConfigurada: true,
+        serviceAccountSubject: "sala@example.com",
+        driveDestinationId: "folder",
+        activa: true
+      })
+    ).toEqual({ readyCount: 4, totalCount: 4, ready: true });
 
-    expect(workspaceReadiness({
-      serviceAccountEmail: "service@example.com",
-      privateKeyConfigurada: false,
-      serviceAccountSubject: "",
-      driveDestinationId: null,
-      activa: false
-    })).toEqual({ readyCount: 0, totalCount: 4, ready: false });
+    expect(
+      workspaceReadiness({
+        serviceAccountEmail: "service@example.com",
+        privateKeyConfigurada: false,
+        serviceAccountSubject: "",
+        driveDestinationId: null,
+        activa: false
+      })
+    ).toEqual({ readyCount: 0, totalCount: 4, ready: false });
   });
 
   it("marca para revisión una integración pausada aunque sus datos estén completos", () => {
-    expect(settingsNeedsAttention({
-      availableHosts: 2,
-      integrationActive: false,
-      pendingOperations: 0,
-      workspaceReady: true
-    })).toBe(true);
+    expect(
+      settingsNeedsAttention({
+        availableHosts: 2,
+        integrationActive: false,
+        pendingOperations: 0,
+        workspaceReady: true
+      })
+    ).toBe(true);
   });
 });

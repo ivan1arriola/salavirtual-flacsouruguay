@@ -28,7 +28,7 @@ import { db } from "@/src/lib/db";
 import { ForbiddenApiError, NotFoundApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import {
   obtenerCredencialPrincipalGoogleWorkspace,
-  obtenerCandidatosCredencialesParaOrganizador,
+  obtenerCandidatosCredencialesParaOrganizador
 } from "@/src/modules/configuracion/api";
 import {
   controlOperativoReunionSchema,
@@ -183,8 +183,12 @@ export function normalizarTextoOperativo(valor: string | null | undefined): stri
 }
 
 function normalizarClaveParticipante(p: ParticipanteActivoMeet): string {
-  if (p.user && p.user.trim()) return p.user.trim();
-  if (p.participanteId && p.participanteId.trim()) return p.participanteId.trim();
+  if (p.user && p.user.trim()) {
+    return p.user.trim();
+  }
+  if (p.participanteId && p.participanteId.trim()) {
+    return p.participanteId.trim();
+  }
   return `${p.tipo}:${normalizarTextoOperativo(p.nombre) || "anonimo"}`;
 }
 
@@ -198,20 +202,26 @@ export function crearIndiceUnicoPorNombre<T extends { email: string }>() {
     registrar(nombre: string | null | undefined, valor: T) {
       const clave = normalizarTextoOperativo(nombre);
       const correo = valor.email.trim().toLowerCase();
-      if (!clave || !correo) return;
+      if (!clave || !correo) {
+        return;
+      }
       const existente = mapa.get(clave);
       if (!existente) {
         mapa.set(clave, { ...valor, email: correo });
         return;
       }
-      if (existente === "AMBIGUO") return;
+      if (existente === "AMBIGUO") {
+        return;
+      }
       if (existente.email !== correo) {
         mapa.set(clave, "AMBIGUO");
       }
     },
     obtenerUnico(nombre: string | null | undefined): T | null {
       const clave = normalizarTextoOperativo(nombre);
-      if (!clave) return null;
+      if (!clave) {
+        return null;
+      }
       const valor = mapa.get(clave);
       return valor && valor !== "AMBIGUO" ? valor : null;
     }
@@ -259,32 +269,40 @@ export async function obtenerReunionOperativa(
     }
   });
 
-  if (!meeting) return { estado: "NO_ENCONTRADA" };
+  if (!meeting) {
+    return { estado: "NO_ENCONTRADA" };
+  }
 
   const asignacionActor = meeting.asignaciones.find(
     ({ asistenteTecnico }) => asistenteTecnico.usuarioId === actor.id
   );
-  if (!puedeConsultarReunionOperativa({
-    rol: actor.rol,
-    asistenteAsignado: Boolean(asignacionActor)
-  })) {
+  if (
+    !puedeConsultarReunionOperativa({
+      rol: actor.rol,
+      asistenteAsignado: Boolean(asignacionActor)
+    })
+  ) {
     return { estado: "PROHIBIDA" };
   }
 
-  const evento = meeting.proveedorActivoTipo === "ZOOM" ? null : meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null;
+  const evento =
+    meeting.proveedorActivoTipo === "ZOOM"
+      ? null
+      : (meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null);
   const eventoZoom = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM") ?? null;
-  const proveedorActivo = meeting.proveedorActivoTipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const;
+  const proveedorActivo =
+    meeting.proveedorActivoTipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const);
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
   const cohostConfirmado = Boolean(
-    evento
-      && !evento.errorIntegracion
-      && !evento.operacionPendiente
-      && cohostsConfirmados(
-        evento.payloadUltimo,
-        evento.codigoReunion,
-        evento.cuentaProveedor?.emailOrganizador,
-        cohostEmails
-      )
+    evento &&
+    !evento.errorIntegracion &&
+    !evento.operacionPendiente &&
+    cohostsConfirmados(
+      evento.payloadUltimo,
+      evento.codigoReunion,
+      evento.cuentaProveedor?.emailOrganizador,
+      cohostEmails
+    )
   );
 
   let disponibilidad: ReunionOperativaView["conferencia"]["disponibilidad"] = "SIN_MEET";
@@ -348,8 +366,9 @@ export async function obtenerReunionOperativa(
             moderacionMeet = espacioMeet.config.moderation;
           }
           if (
-            espacioMeet.config.attendanceReportGenerationType
-            && espacioMeet.config.attendanceReportGenerationType !== "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED"
+            espacioMeet.config.attendanceReportGenerationType &&
+            espacioMeet.config.attendanceReportGenerationType !==
+              "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED"
           ) {
             reporteAsistenciaMeet = espacioMeet.config.attendanceReportGenerationType;
           }
@@ -384,9 +403,7 @@ export async function obtenerReunionOperativa(
           // Google Admin Reports API solo emite `call_ended` para sesiones finalizadas.
           // Solo la consultamos si existen sesiones finalizadas y hay credencial de administrador configurada.
           const adminEmail =
-            process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim()
-            || cred.serviceAccountSubject?.trim()
-            || null;
+            process.env.GOOGLE_REPORTS_ADMIN_EMAIL?.trim() || cred.serviceAccountSubject?.trim() || null;
           if (adminEmail && (participantesDesconectados.length > 0 || Boolean(finRealAt))) {
             const correosAuditados = await obtenerEventosAuditoriaMeet({
               serviceAccountEmail: cred.serviceAccountEmail,
@@ -394,7 +411,9 @@ export async function obtenerReunionOperativa(
               adminEmail,
               meetingCode: evento.codigoReunion,
               startTime: new Date(meeting.inicioProgramadoAt.getTime() - 12 * 60 * 60 * 1000).toISOString(),
-              endTime: new Date(Math.max(ahora.getTime(), meeting.finProgramadoAt.getTime()) + 6 * 60 * 60 * 1000).toISOString()
+              endTime: new Date(
+                Math.max(ahora.getTime(), meeting.finProgramadoAt.getTime()) + 6 * 60 * 60 * 1000
+              ).toISOString()
             })
               .then((eventos: readonly EventoAuditoriaMeet[]) => agruparCorreosAuditoriaMeet(eventos))
               .catch(() => []);
@@ -418,21 +437,24 @@ export async function obtenerReunionOperativa(
           transcripciones = artefactos.transcripts.length;
           notas = artefactos.notes.length;
 
-          const recording = artefactos.recordings.find((r: GoogleArtifact) => Boolean(r.driveFileId)) ?? artefactos.recordings[0];
+          const recording =
+            artefactos.recordings.find((r: GoogleArtifact) => Boolean(r.driveFileId)) ??
+            artefactos.recordings[0];
           grabacionUrl = recording?.driveFileId
             ? `https://drive.google.com/file/d/${encodeURIComponent(recording.driveFileId)}/view`
             : null;
 
-          const transcript = artefactos.transcripts.find((t: GoogleArtifact) => Boolean(t.driveFileId)) ?? artefactos.transcripts[0];
+          const transcript =
+            artefactos.transcripts.find((t: GoogleArtifact) => Boolean(t.driveFileId)) ??
+            artefactos.transcripts[0];
           transcripcionUrl = transcript?.driveFileId
             ? `https://docs.google.com/document/d/${encodeURIComponent(transcript.driveFileId)}/edit`
             : null;
         }
       } catch (error) {
         disponibilidad = "ERROR";
-        errorConferencia = error instanceof Error
-          ? error.message
-          : "No se pudo consultar el estado de Google Meet.";
+        errorConferencia =
+          error instanceof Error ? error.message : "No se pudo consultar el estado de Google Meet.";
       }
     }
   }
@@ -460,9 +482,7 @@ export async function obtenerReunionOperativa(
   const teacherFullName = [teacher.nombres, teacher.apellidos].filter(Boolean).join(" ");
   const teacherEmail = teacher.emailPrincipal?.trim().toLowerCase() ?? null;
 
-  const assignment = actor.rol === "ASISTENTE_TECNICO"
-    ? asignacionActor
-    : meeting.asignaciones[0];
+  const assignment = actor.rol === "ASISTENTE_TECNICO" ? asignacionActor : meeting.asignaciones[0];
   const assistant = assignment?.asistenteTecnico.usuario;
   const assistantFullName = assistant
     ? [assistant.nombres, assistant.apellidos].filter(Boolean).join(" ")
@@ -511,28 +531,31 @@ export async function obtenerReunionOperativa(
     }
   }
 
-  const registrosPreviosMap = new Map<string, {
-    id: string;
-    claveParticipante: string;
-    participanteMeetId: string | null;
-    nombre: string;
-    email: string | null;
-    tipoAcceso: string;
-    rolEnReunion: string;
-    conectado: boolean;
-    primeraEntradaAt: Date | null;
-    ultimaSalidaAt: Date | null;
-    minutosConectado: number;
-    porcentajeAsistencia: number;
-    cumpleNormativa: boolean;
-    numeroConexiones: number;
-    esHostOCohost: boolean;
-    enGrupoPequeno: boolean;
-    salaGrupoPequeno: string | null;
-    externo: boolean | null;
-    origenCorreo: string;
-    notasOperador: string | null;
-  }>();
+  const registrosPreviosMap = new Map<
+    string,
+    {
+      id: string;
+      claveParticipante: string;
+      participanteMeetId: string | null;
+      nombre: string;
+      email: string | null;
+      tipoAcceso: string;
+      rolEnReunion: string;
+      conectado: boolean;
+      primeraEntradaAt: Date | null;
+      ultimaSalidaAt: Date | null;
+      minutosConectado: number;
+      porcentajeAsistencia: number;
+      cumpleNormativa: boolean;
+      numeroConexiones: number;
+      esHostOCohost: boolean;
+      enGrupoPequeno: boolean;
+      salaGrupoPequeno: string | null;
+      externo: boolean | null;
+      origenCorreo: string;
+      notasOperador: string | null;
+    }
+  >();
 
   try {
     if (db.registroAsistenciaMeet?.findMany) {
@@ -581,33 +604,40 @@ export async function obtenerReunionOperativa(
     rolPrevioGuardado?: string | null
   ): RolEnReunionMeet {
     const mailNorm = email?.trim().toLowerCase() ?? null;
-    if (mailNorm && organizadorEmail && mailNorm === organizadorEmail) return "HOST";
-    if (mailNorm && cohostSet.has(mailNorm)) return "COHOST";
+    if (mailNorm && organizadorEmail && mailNorm === organizadorEmail) {
+      return "HOST";
+    }
+    if (mailNorm && cohostSet.has(mailNorm)) {
+      return "COHOST";
+    }
     if (
-      (mailNorm && teacherEmail && mailNorm === teacherEmail)
-      || (nombreNorm && nombreNorm === normalizarTextoOperativo(teacherFullName))
+      (mailNorm && teacherEmail && mailNorm === teacherEmail) ||
+      (nombreNorm && nombreNorm === normalizarTextoOperativo(teacherFullName))
     ) {
       return "DOCENTE";
     }
     if (
-      (mailNorm && assistantEmail && mailNorm === assistantEmail)
-      || (assistantFullName && nombreNorm === normalizarTextoOperativo(assistantFullName))
+      (mailNorm && assistantEmail && mailNorm === assistantEmail) ||
+      (assistantFullName && nombreNorm === normalizarTextoOperativo(assistantFullName))
     ) {
       return "ASISTENTE_TECNICO";
     }
     // Preservar rol asignado previamente por el operador si no es el genérico PARTICIPANTE
     if (
-      rolPrevioGuardado === "HOST"
-      || rolPrevioGuardado === "COHOST"
-      || rolPrevioGuardado === "DOCENTE"
-      || rolPrevioGuardado === "ASISTENTE_TECNICO"
+      rolPrevioGuardado === "HOST" ||
+      rolPrevioGuardado === "COHOST" ||
+      rolPrevioGuardado === "DOCENTE" ||
+      rolPrevioGuardado === "ASISTENTE_TECNICO"
     ) {
       return rolPrevioGuardado;
     }
     return "PARTICIPANTE";
   }
 
-  function enriquecerParticipante(p: ParticipanteActivoMeet, conectadoDefault: boolean): ParticipanteActivoMeet & {
+  function enriquecerParticipante(
+    p: ParticipanteActivoMeet,
+    conectadoDefault: boolean
+  ): ParticipanteActivoMeet & {
     claveParticipante: string;
     origenCorreo: OrigenCorreoParticipanteMeet;
     externo: boolean | null;
@@ -641,16 +671,12 @@ export async function obtenerReunionOperativa(
       origenCorreo = (previo.origenCorreo as OrigenCorreoParticipanteMeet) || "DIRECTORIO_FLACSO";
     }
 
-    const rolEnReunion = resolverRolParticipante(
-      nombreNorm,
-      email,
-      previo?.rolEnReunion
-    );
+    const rolEnReunion = resolverRolParticipante(nombreNorm, email, previo?.rolEnReunion);
     const esHostOCohost =
-      rolEnReunion === "HOST"
-      || rolEnReunion === "COHOST"
-      || rolEnReunion === "DOCENTE"
-      || rolEnReunion === "ASISTENTE_TECNICO";
+      rolEnReunion === "HOST" ||
+      rolEnReunion === "COHOST" ||
+      rolEnReunion === "DOCENTE" ||
+      rolEnReunion === "ASISTENTE_TECNICO";
 
     const conectado = p.conectado ?? conectadoDefault;
     const minutosConectado = p.minutosConectado ?? previo?.minutosConectado ?? 0;
@@ -684,10 +710,7 @@ export async function obtenerReunionOperativa(
 
   const activosEnriquecidos = participantesActivos.map((p) => enriquecerParticipante(p, true));
   const desconectadosEnriquecidos = participantesDesconectados.map((p) => enriquecerParticipante(p, false));
-  const todosEnriquecidos = [
-    ...activosEnriquecidos,
-    ...desconectadosEnriquecidos
-  ];
+  const todosEnriquecidos = [...activosEnriquecidos, ...desconectadosEnriquecidos];
 
   const asistentesRegistrados: RegistroAsistenciaOperativoView[] = [];
   const clavesVistas = new Set<string>();
@@ -728,14 +751,14 @@ export async function obtenerReunionOperativa(
 
     // Solo escribir en DB si el participante es nuevo o si cambió su estado/minutos/correo/grupo
     const cambioSignificativo =
-      !previo
-      || previo.conectado !== viewRecord.conectado
-      || previo.minutosConectado !== viewRecord.minutosConectado
-      || previo.numeroConexiones !== viewRecord.numeroConexiones
-      || (viewRecord.email && previo.email !== viewRecord.email)
-      || previo.rolEnReunion !== viewRecord.rolEnReunion
-      || previo.enGrupoPequeno !== viewRecord.enGrupoPequeno
-      || previo.salaGrupoPequeno !== viewRecord.salaGrupoPequeno;
+      !previo ||
+      previo.conectado !== viewRecord.conectado ||
+      previo.minutosConectado !== viewRecord.minutosConectado ||
+      previo.numeroConexiones !== viewRecord.numeroConexiones ||
+      (viewRecord.email && previo.email !== viewRecord.email) ||
+      previo.rolEnReunion !== viewRecord.rolEnReunion ||
+      previo.enGrupoPequeno !== viewRecord.enGrupoPequeno ||
+      previo.salaGrupoPequeno !== viewRecord.salaGrupoPequeno;
 
     if (cambioSignificativo && db.registroAsistenciaMeet?.upsert) {
       escriturasPendientes.push(() =>
@@ -804,7 +827,9 @@ export async function obtenerReunionOperativa(
 
   // Incluir registros guardados en DB que aún no estén en el scan actual de Meet
   for (const [clave, reg] of registrosPreviosMap.entries()) {
-    if (clavesVistas.has(clave)) continue;
+    if (clavesVistas.has(clave)) {
+      continue;
+    }
     asistentesRegistrados.push({
       id: reg.id,
       claveParticipante: reg.claveParticipante,
@@ -832,7 +857,7 @@ export async function obtenerReunionOperativa(
   const salasGruposPequenosActivas = new Set(
     asistentesRegistrados
       .filter((a) => a.conectado && a.enGrupoPequeno)
-      .map((a) => (a.salaGrupoPequeno?.trim().toLowerCase() || "subgrupo"))
+      .map((a) => a.salaGrupoPequeno?.trim().toLowerCase() || "subgrupo")
   );
   const enGruposPequenos = salasGruposPequenosActivas.size > 0;
   const cantidadGruposPequenos = salasGruposPequenosActivas.size;
@@ -846,7 +871,9 @@ export async function obtenerReunionOperativa(
     rol: "HOST" | "COHOST" | "DOCENTE" | "ASISTENTE_TECNICO"
   ) {
     const clave = email ? email.trim().toLowerCase() : `nombre:${normalizarTextoOperativo(nombre)}`;
-    if (!clave || hostsYCohostsMap.has(clave)) return;
+    if (!clave || hostsYCohostsMap.has(clave)) {
+      return;
+    }
 
     const match = asistentesRegistrados.find((a) => {
       if (email && a.email && a.email.trim().toLowerCase() === email.trim().toLowerCase()) {
@@ -873,7 +900,11 @@ export async function obtenerReunionOperativa(
     registrarCandidatoHost(teacherEmail, teacherFullName, "DOCENTE");
   }
   if (assistantFullName || assistantEmail) {
-    registrarCandidatoHost(assistantEmail, assistantFullName ?? "Asistente de monitoreo", "ASISTENTE_TECNICO");
+    registrarCandidatoHost(
+      assistantEmail,
+      assistantFullName ?? "Asistente de monitoreo",
+      "ASISTENTE_TECNICO"
+    );
   }
   for (const cohost of extraerCohostsUnificadosDeInstancia(meeting)) {
     registrarCandidatoHost(cohost.email, cohost.name || cohost.email, "COHOST");
@@ -898,7 +929,7 @@ export async function obtenerReunionOperativa(
       programa: association.programa.nombre,
       docente: teacherFullName,
       docenteEmail: teacherEmail,
-      modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad),
+      modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       inicioProgramadoAt: meeting.inicioProgramadoAt,
       finProgramadoAt: meeting.finProgramadoAt,
       estado,
@@ -984,15 +1015,19 @@ export async function registrarIncidenciaOperativa(
       }
     });
 
-    if (!meeting) throw new NotFoundApiError("La reunión no existe.");
+    if (!meeting) {
+      throw new NotFoundApiError("La reunión no existe.");
+    }
 
     const asistenteAsignado = meeting.asignaciones.some(
       ({ asistenteTecnico }) => asistenteTecnico.usuarioId === actor.id
     );
-    if (!puedeConsultarReunionOperativa({
-      rol: actor.rol,
-      asistenteAsignado
-    })) {
+    if (
+      !puedeConsultarReunionOperativa({
+        rol: actor.rol,
+        asistenteAsignado
+      })
+    ) {
       throw new ForbiddenApiError("No tenés permisos para registrar incidencias en esta reunión.");
     }
 
@@ -1060,15 +1095,19 @@ export async function actualizarControlOperativoReunion(
     }
   });
 
-  if (!meeting) throw new NotFoundApiError("La reunión no existe.");
+  if (!meeting) {
+    throw new NotFoundApiError("La reunión no existe.");
+  }
 
   const asistenteAsignado = meeting.asignaciones.some(
     ({ asistenteTecnico }) => asistenteTecnico.usuarioId === actor.id
   );
-  if (!puedeConsultarReunionOperativa({
-    rol: actor.rol,
-    asistenteAsignado
-  })) {
+  if (
+    !puedeConsultarReunionOperativa({
+      rol: actor.rol,
+      asistenteAsignado
+    })
+  ) {
     throw new ForbiddenApiError("No tenés permisos para modificar el control operativo de esta reunión.");
   }
 
@@ -1185,9 +1224,9 @@ export async function actualizarControlOperativoReunion(
   const cambioCohosts = Boolean(parsed.agregarCohostEmail || parsed.quitarCohostEmail);
 
   if (
-    evento?.codigoReunion
-    && evento.cuentaProveedor?.emailOrganizador
-    && (parsed.tipoAccesoMeet || cambioCohosts)
+    evento?.codigoReunion &&
+    evento.cuentaProveedor?.emailOrganizador &&
+    (parsed.tipoAccesoMeet || cambioCohosts)
   ) {
     const subject = evento.cuentaProveedor.emailOrganizador;
     const candidates = await obtenerCandidatosCredencialesParaOrganizador(
@@ -1226,10 +1265,12 @@ export async function actualizarControlOperativoReunion(
               lastAccessErr = accessErr;
               const status =
                 typeof accessErr === "object" && accessErr !== null
-                  ? (accessErr as { response?: { status?: number }; code?: number }).response?.status
-                    ?? (accessErr as { code?: number }).code
+                  ? ((accessErr as { response?: { status?: number }; code?: number }).response?.status ??
+                    (accessErr as { code?: number }).code)
                   : null;
-              if (status !== 403) break;
+              if (status !== 403) {
+                break;
+              }
             }
           }
           if (!accessUpdated && lastAccessErr) {
@@ -1264,45 +1305,53 @@ export async function actualizarControlOperativoReunion(
             });
             sincronizadoConGoogle = true;
           } else {
-            advertenciaGoogle = "El encuentro aún no cuenta con evento en Google Calendar; quedó pendiente de sincronización.";
-            await db.eventoProveedor.update({
-              where: { id: evento.id },
-              data: {
-                operacionPendiente: "CONFIGURAR_MEET",
-                errorIntegracion: advertenciaGoogle
-              }
-            }).catch(() => null);
+            advertenciaGoogle =
+              "El encuentro aún no cuenta con evento en Google Calendar; quedó pendiente de sincronización.";
+            await db.eventoProveedor
+              .update({
+                where: { id: evento.id },
+                data: {
+                  operacionPendiente: "CONFIGURAR_MEET",
+                  errorIntegracion: advertenciaGoogle
+                }
+              })
+              .catch(() => null);
             sincronizadoConGoogle = false;
           }
         } else {
           sincronizadoConGoogle = true;
         }
       } catch (error) {
-        advertenciaGoogle = error instanceof Error
-          ? error.message
-          : "Se guardó en Sala Virtual, pero Google Meet rechazó la actualización remota.";
+        advertenciaGoogle =
+          error instanceof Error
+            ? error.message
+            : "Se guardó en Sala Virtual, pero Google Meet rechazó la actualización remota.";
 
         // Si falló la sincronización de cohosts o configuración de Meet, dejar marcada
         // la operación pendiente en EventoProveedor para que la cola de reintentos la repare.
         if (evento.id && cambioCohosts) {
-          await db.eventoProveedor.update({
-            where: { id: evento.id },
-            data: {
-              operacionPendiente: "CONFIGURAR_MEET",
-              errorIntegracion: advertenciaGoogle
-            }
-          }).catch(() => null);
+          await db.eventoProveedor
+            .update({
+              where: { id: evento.id },
+              data: {
+                operacionPendiente: "CONFIGURAR_MEET",
+                errorIntegracion: advertenciaGoogle
+              }
+            })
+            .catch(() => null);
         }
       }
     } else if (cambioCohosts && evento?.id) {
       advertenciaGoogle = "Credenciales de Google Workspace no disponibles; quedó pendiente de sincronizar.";
-      await db.eventoProveedor.update({
-        where: { id: evento.id },
-        data: {
-          operacionPendiente: "CONFIGURAR_MEET",
-          errorIntegracion: advertenciaGoogle
-        }
-      }).catch(() => null);
+      await db.eventoProveedor
+        .update({
+          where: { id: evento.id },
+          data: {
+            operacionPendiente: "CONFIGURAR_MEET",
+            errorIntegracion: advertenciaGoogle
+          }
+        })
+        .catch(() => null);
     }
   }
 
@@ -1349,27 +1398,26 @@ export async function guardarRegistroAsistenciaOperativo(
     }
   });
 
-  if (!meeting) throw new NotFoundApiError("La reunión no existe.");
+  if (!meeting) {
+    throw new NotFoundApiError("La reunión no existe.");
+  }
 
   const asistenteAsignado = meeting.asignaciones.some(
     ({ asistenteTecnico }) => asistenteTecnico.usuarioId === actor.id
   );
-  if (!puedeConsultarReunionOperativa({
-    rol: actor.rol,
-    asistenteAsignado
-  })) {
+  if (
+    !puedeConsultarReunionOperativa({
+      rol: actor.rol,
+      asistenteAsignado
+    })
+  ) {
     throw new ForbiddenApiError("No tenés permisos para editar asistentes en esta reunión.");
   }
 
-  const emailLimpio = parsed.email && parsed.email.trim()
-    ? parsed.email.trim().toLowerCase()
-    : null;
+  const emailLimpio = parsed.email && parsed.email.trim() ? parsed.email.trim().toLowerCase() : null;
   const rol = parsed.rolEnReunion ?? "PARTICIPANTE";
   const esHostOCohost =
-    rol === "HOST"
-    || rol === "COHOST"
-    || rol === "DOCENTE"
-    || rol === "ASISTENTE_TECNICO";
+    rol === "HOST" || rol === "COHOST" || rol === "DOCENTE" || rol === "ASISTENTE_TECNICO";
   const origenCorreo: OrigenCorreoParticipanteMeet = "MANUAL";
 
   const registro = await db.registroAsistenciaMeet.upsert({

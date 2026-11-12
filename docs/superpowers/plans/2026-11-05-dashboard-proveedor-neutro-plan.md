@@ -31,10 +31,12 @@
 ### Task 1: Exponer el proveedor activo en la agenda administrativa
 
 **Files:**
+
 - Modify: `src/modules/dashboard/admin-dashboard.adapter.ts`
 - Test: `test/admin-dashboard.adapter.test.ts` (o el test existente equivalente del adaptador)
 
 **Interfaces:**
+
 - Produces: `AdminTodayMeetingDTO.proveedorTipo: string | null`.
 - Consumes: `seleccionarEventoProveedorActivo(instancia)`.
 
@@ -68,11 +70,13 @@ git commit -m "feat: expose active provider in admin dashboard"
 ### Task 2: Hacer neutrales las acciones de enlace
 
 **Files:**
+
 - Modify: `src/components/copy-meet-link-button.tsx`
 - Modify: `src/components/dashboard/admin/admin-today-timeline.tsx`
 - Test: `test/dashboard-views.test.ts`
 
 **Interfaces:**
+
 - Consumes: `AdminTodayMeetingDTO.proveedorTipo`.
 - Produces: una acción de entrada rotulada `Zoom` o `Google Meet` y una copia sin referencia fija a Meet.
 
@@ -106,12 +110,14 @@ git commit -m "feat: label dashboard links by meeting provider"
 ### Task 3: Ocultar estados exclusivos de Meet para Zoom y generalizar el acceso rápido
 
 **Files:**
+
 - Modify: `src/components/dashboard/admin/admin-today-timeline.tsx`
 - Modify: `src/components/dashboard/admin/admin-dashboard.tsx`
 - Modify: `docs/ui/dashboards.md`
 - Test: `test/dashboard-views.test.ts`
 
 **Interfaces:**
+
 - Consumes: `proveedorTipo` desde Task 1.
 - Produces: cohosts solo en Google Meet y el acceso `Buscar reunión` a `/reuniones`.
 
@@ -145,9 +151,11 @@ git commit -m "fix: keep Meet-only status off Zoom meetings"
 ### Task 4: Verify the completed dashboard change
 
 **Files:**
+
 - Modify: no product files expected.
 
 **Interfaces:**
+
 - Consumes: Tasks 1–3.
 
 - [ ] **Step 1: Run focused tests**

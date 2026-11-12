@@ -17,12 +17,12 @@ decisiones están en `docs/superpowers/plans/2026-11-07-zoom-archivos-asistencia
 Sin los scopes necesarios Zoom responde **HTTP 400 con código 4711**, no 403. El barrido lo informa como
 `SOLICITUD_RECHAZADA:400:z4711`.
 
-| Función | Scope | Estado |
-|---|---|---|
-| Listar grabaciones de un anfitrión | `cloud_recording:read:list_user_recordings:admin` | Verificado en producción |
-| Listar archivos de una ocurrencia | `cloud_recording:read:list_recording_files:admin` | Verificado en producción |
-| Participantes históricos (asistencia) | scope de reportes de reuniones | **Sin verificar**: confirmar el nombre contra la documentación de Zoom |
-| Resúmenes de reunión | scope de resúmenes (`meeting_summary`) | **Sin verificar** |
+| Función                               | Scope                                             | Estado                                                                 |
+| ------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| Listar grabaciones de un anfitrión    | `cloud_recording:read:list_user_recordings:admin` | Verificado en producción                                               |
+| Listar archivos de una ocurrencia     | `cloud_recording:read:list_recording_files:admin` | Verificado en producción                                               |
+| Participantes históricos (asistencia) | scope de reportes de reuniones                    | **Sin verificar**: confirmar el nombre contra la documentación de Zoom |
+| Resúmenes de reunión                  | scope de resúmenes (`meeting_summary`)            | **Sin verificar**                                                      |
 
 Un `404` con código Zoom `1001` en un anfitrión indica que ese usuario ya no existe en la cuenta. No impide el
 barrido de los demás, pero se cuenta como error del anfitrión.
@@ -31,15 +31,15 @@ barrido de los demás, pero se cuenta como error del anfitrión.
 
 Las variables se leen con prefijo `ZOOM_ARCHIVOS_`. Un valor inválido impide arrancar el worker.
 
-| Variable | Defecto | Significado |
-|---|---|---|
-| `TOPE_GB` | 80 | Bytes máximos transferidos en una ventana móvil de 24 h |
-| `RESERVA_RECIENTE_GB` | 20 | Parte del tope reservada para grabaciones recientes (no puede superar el tope) |
-| `BLOQUE_MIB` | 8 | Tamaño de bloque de subida (múltiplo de 256 KiB) |
-| `CONCURRENCIA` | 1 | Archivos en paralelo (con más de 1 puede haber carpetas duplicadas por ocurrencia) |
-| `CORTE_DIAS` | 90 | Edad desde la cual una ocurrencia deja de reinventariarse |
-| `LEASE_MS`, `MARGEN_LEASE_MS`, `HEARTBEAT_MS` | 300000, 60000, 30000 | Reclamo de trabajos |
-| `DRIVE_HISTORICO_ID` | vacío | Carpeta de administración para archivos sin encuentro vinculado |
+| Variable                                      | Defecto              | Significado                                                                        |
+| --------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------- |
+| `TOPE_GB`                                     | 80                   | Bytes máximos transferidos en una ventana móvil de 24 h                            |
+| `RESERVA_RECIENTE_GB`                         | 20                   | Parte del tope reservada para grabaciones recientes (no puede superar el tope)     |
+| `BLOQUE_MIB`                                  | 8                    | Tamaño de bloque de subida (múltiplo de 256 KiB)                                   |
+| `CONCURRENCIA`                                | 1                    | Archivos en paralelo (con más de 1 puede haber carpetas duplicadas por ocurrencia) |
+| `CORTE_DIAS`                                  | 90                   | Edad desde la cual una ocurrencia deja de reinventariarse                          |
+| `LEASE_MS`, `MARGEN_LEASE_MS`, `HEARTBEAT_MS` | 300000, 60000, 30000 | Reclamo de trabajos                                                                |
+| `DRIVE_HISTORICO_ID`                          | vacío                | Carpeta de administración para archivos sin encuentro vinculado                    |
 
 Las credenciales de Zoom y Google siguen en el mecanismo de configuración existente; nada de esto se imprime.
 
@@ -97,7 +97,7 @@ Periodo explícito (no hereda los últimos días) y solo anfitriones configurado
 3. El worker continúa el barrido página a página (cursor guardado después de persistir la página). Un anfitrión
    inexistente (`404:z1001`) se omite; scope faltante (`z4711`) deja el barrido en `REQUIERE_REVISION`.
 4. Progreso: `GET /api/v1/archivos/zoom/recuperaciones/{id}` (solo administración). Alta: `POST
-   /api/v1/archivos/zoom/recuperaciones` (simula salvo `dryRun:false`).
+/api/v1/archivos/zoom/recuperaciones` (simula salvo `dryRun:false`).
 5. Vínculo manual de una ocurrencia con un encuentro Zoom: `POST /api/v1/archivos/zoom/ocurrencias/{id}/vincular`
    con `{ "eventoId" }`; reutiliza el archivo ya conservado, sin nueva transferencia.
 

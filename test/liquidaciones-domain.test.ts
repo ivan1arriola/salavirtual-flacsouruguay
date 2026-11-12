@@ -69,7 +69,14 @@ describe("liquidaciones domain", () => {
   describe("resumen de liquidaciones", () => {
     it("resume asignaciones por asistente y totales", () => {
       const asistentes: readonly AsistenteResumenBase[] = [
-        { id: "asist-1", usuarioId: "u-1", slug: "juan", nombre: "Juan Perez", email: "juan@flacso.edu.uy", activo: true }
+        {
+          id: "asist-1",
+          usuarioId: "u-1",
+          slug: "juan",
+          nombre: "Juan Perez",
+          email: "juan@flacso.edu.uy",
+          activo: true
+        }
       ];
       const asignaciones: readonly AsignacionResumenAdministracion[] = [
         { asistenteTecnicoId: "asist-1", modalidad: "VIRTUAL", minutos: 60, monto: 500, moneda: "UYU" },

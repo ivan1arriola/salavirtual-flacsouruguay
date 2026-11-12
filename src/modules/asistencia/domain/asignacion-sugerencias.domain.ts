@@ -12,40 +12,32 @@ export function buildAssignmentSuggestions(
   const eligibleAssistants = input.assistants.filter(
     (assistant) => !assistant.cesadoHastaProximoInicioSesion
   );
-  const assistantById = new Map(
-    eligibleAssistants.map((assistant) => [assistant.id, assistant] as const)
+  const assistantById = new Map(eligibleAssistants.map((assistant) => [assistant.id, assistant] as const));
+
+  const initialLoads: Readonly<Record<string, number>> = input.assignments.reduce<Record<string, number>>(
+    (acc, assignment) => {
+      const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
+      const loadKey = `${assignment.assistantId}:${monthKey(assignment.startsAt, assignment.timezone)}`;
+      return {
+        ...acc,
+        [loadKey]: (acc[loadKey] ?? 0) + minutes
+      };
+    },
+    {}
   );
 
-  const initialLoads: Readonly<Record<string, number>> = input.assignments.reduce<
-    Record<string, number>
+  const initialSchedules: Readonly<Record<string, readonly PeriodoAsistencia[]>> = input.assignments.reduce<
+    Record<string, readonly PeriodoAsistencia[]>
   >((acc, assignment) => {
-    const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
-    const loadKey = `${assignment.assistantId}:${monthKey(assignment.startsAt, assignment.timezone)}`;
+    const existing = acc[assignment.assistantId] ?? [];
     return {
       ...acc,
-      [loadKey]: (acc[loadKey] ?? 0) + minutes
+      [assignment.assistantId]: [...existing, { inicio: assignment.startsAt, fin: assignment.endsAt }]
     };
   }, {});
 
-  const initialSchedules: Readonly<Record<string, readonly PeriodoAsistencia[]>> =
-    input.assignments.reduce<Record<string, readonly PeriodoAsistencia[]>>(
-      (acc, assignment) => {
-        const existing = acc[assignment.assistantId] ?? [];
-        return {
-          ...acc,
-          [assignment.assistantId]: [
-            ...existing,
-            { inicio: assignment.startsAt, fin: assignment.endsAt }
-          ]
-        };
-      },
-      {}
-    );
-
   const pendingMeetings = ordenarArray(
-    input.meetings
-      .filter(({ covered }) => !covered)
-      .map(({ meeting }) => meeting),
+    input.meetings.filter(({ covered }) => !covered).map(({ meeting }) => meeting),
     (left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime()
   );
 
@@ -73,19 +65,18 @@ export function buildAssignmentSuggestions(
       };
       const keySuffix = monthKey(coverageStart, meeting.timezone);
 
-      const availabilityById: Readonly<
-        Record<string, ReturnType<typeof evaluarDisponibilidad>>
-      > = eligibleAssistants.reduce(
-        (acc, assistant) => ({
-          ...acc,
-          [assistant.id]: evaluarDisponibilidad(
-            coverageStart,
-            coverageEnd,
-            assistant.disponibilidades ?? []
-          )
-        }),
-        {}
-      );
+      const availabilityById: Readonly<Record<string, ReturnType<typeof evaluarDisponibilidad>>> =
+        eligibleAssistants.reduce(
+          (acc, assistant) => ({
+            ...acc,
+            [assistant.id]: evaluarDisponibilidad(
+              coverageStart,
+              coverageEnd,
+              assistant.disponibilidades ?? []
+            )
+          }),
+          {}
+        );
 
       const candidateIds = eligibleAssistants.map(({ id }) => id);
       const availableCandidates = ordenarArray(
@@ -97,14 +88,16 @@ export function buildAssignmentSuggestions(
             )
           ),
         (left, right) => {
-          const leftScore =
-            (availabilityById[left]?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
-          const rightScore =
-            (availabilityById[right]?.puntaje ?? 0) * 2 + Number(applicantSet.has(right));
-          if (leftScore !== rightScore) return rightScore - leftScore;
+          const leftScore = (availabilityById[left]?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
+          const rightScore = (availabilityById[right]?.puntaje ?? 0) * 2 + Number(applicantSet.has(right));
+          if (leftScore !== rightScore) {
+            return rightScore - leftScore;
+          }
           const leftLoad = state.loads[`${left}:${keySuffix}`] ?? 0;
           const rightLoad = state.loads[`${right}:${keySuffix}`] ?? 0;
-          if (leftLoad !== rightLoad) return leftLoad - rightLoad;
+          if (leftLoad !== rightLoad) {
+            return leftLoad - rightLoad;
+          }
           return (assistantById.get(left)?.name ?? left).localeCompare(
             assistantById.get(right)?.name ?? right,
             "es"
@@ -114,7 +107,9 @@ export function buildAssignmentSuggestions(
 
       const selectedId = availableCandidates[0];
       const selected = selectedId ? assistantById.get(selectedId) : null;
-      if (!selected) return state;
+      if (!selected) {
+        return state;
+      }
 
       const loadBefore = state.loads[`${selected.id}:${keySuffix}`] ?? 0;
       const reason = [
@@ -162,16 +157,13 @@ export function evaluarDisponibilidad(
   etiqueta?: string;
 }> {
   const exact = records.filter(
-    (record) =>
-      record.fecha &&
-      record.fecha.toISOString().slice(0, 10) === dateKey(startsAt, record.timezone)
+    (record) => record.fecha && record.fecha.toISOString().slice(0, 10) === dateKey(startsAt, record.timezone)
   );
   const relevant =
     exact.length > 0
       ? exact
       : records.filter(
-          (record) =>
-            record.fecha === null && record.diaSemana === weekday(startsAt, record.timezone)
+          (record) => record.fecha === null && record.diaSemana === weekday(startsAt, record.timezone)
         );
   const overlapping = relevant.filter((record) => {
     const start = timeKey(startsAt, record.timezone);
@@ -196,7 +188,9 @@ export function evaluarDisponibilidad(
 }
 
 function ordenarArray<T>(items: readonly T[], compare: (a: T, b: T) => number): readonly T[] {
-  if (items.length <= 1) return items;
+  if (items.length <= 1) {
+    return items;
+  }
   const pivot = items[0];
   const rest = items.slice(1);
   const left = rest.filter((item) => compare(item, pivot) < 0);
@@ -246,7 +240,11 @@ function minutesBetween(start: Date, end: Date): number {
 function formatLoad(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const remMinutes = minutes % 60;
-  if (hours === 0) return `${remMinutes} min`;
-  if (remMinutes === 0) return `${hours} h`;
+  if (hours === 0) {
+    return `${remMinutes} min`;
+  }
+  if (remMinutes === 0) {
+    return `${hours} h`;
+  }
   return `${hours} h ${remMinutes} min`;
 }

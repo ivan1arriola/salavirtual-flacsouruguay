@@ -5,7 +5,9 @@ import {
 } from "./resumen-personal.domain";
 
 function asistenteIdDesdeJson(value: unknown): string | null {
-  if (!value || Array.isArray(value) || typeof value !== "object") return null;
+  if (!value || Array.isArray(value) || typeof value !== "object") {
+    return null;
+  }
   const id = (value as Record<string, unknown>).asistenteTecnicoId;
   return typeof id === "string" ? id : null;
 }
@@ -19,7 +21,9 @@ export async function obtenerHistorialAsistenteEnRango(
     where: { usuarioId },
     select: { id: true }
   });
-  if (!assistant) return [];
+  if (!assistant) {
+    return [];
+  }
 
   const assignments = await db.asignacionAsistenciaTecnica.findMany({
     where: {
@@ -41,7 +45,9 @@ export async function obtenerHistorialAsistenteEnRango(
       }
     }
   });
-  if (assignments.length === 0) return [];
+  if (assignments.length === 0) {
+    return [];
+  }
 
   const meetingById = new Map(
     assignments.map((assignment) => [
@@ -75,24 +81,30 @@ export async function obtenerHistorialAsistenteEnRango(
 
   return audits.flatMap<RegistroHistorialAsistenciaPersonal>((audit) => {
     const meeting = meetingById.get(audit.entidadId);
-    if (!meeting) return [];
+    if (!meeting) {
+      return [];
+    }
     const accion = resolverAccionHistorialAsistente(
       audit.accion,
       asistenteIdDesdeJson(audit.valorAnterior),
       asistenteIdDesdeJson(audit.valorNuevo),
       assistant.id
     );
-    if (!accion) return [];
+    if (!accion) {
+      return [];
+    }
     const actor = audit.actor
       ? [audit.actor.nombres, audit.actor.apellidos].filter(Boolean).join(" ") || "Sistema"
       : "Sistema";
-    return [{
-      id: audit.id,
-      accion,
-      titulo: meeting.titulo,
-      instanciaInicioAt: meeting.instanciaInicioAt,
-      ocurrioAt: audit.createdAt,
-      actor
-    }];
+    return [
+      {
+        id: audit.id,
+        accion,
+        titulo: meeting.titulo,
+        instanciaInicioAt: meeting.instanciaInicioAt,
+        ocurrioAt: audit.createdAt,
+        actor
+      }
+    ];
   });
 }

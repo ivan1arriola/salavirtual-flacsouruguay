@@ -5,21 +5,19 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import {
-  actualizarPerfilPersonal,
-  cambiarPasswordPersonal
-} from "@/src/modules/usuarios/perfil.service";
-import {
-  esTipoNotificacion,
-  TIPOS_NOTIFICACION
-} from "@/src/modules/notificaciones/notificaciones.domain";
+import { actualizarPerfilPersonal, cambiarPasswordPersonal } from "@/src/modules/usuarios/perfil.service";
+import { esTipoNotificacion, TIPOS_NOTIFICACION } from "@/src/modules/notificaciones/notificaciones.domain";
 import { actualizarDisponibilidadSemanal } from "@/src/modules/asistencia/asistencia.service";
 
 async function actorActual() {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
   return actor;
 }
 
@@ -53,7 +51,9 @@ export async function guardarPreferenciasNotificacion(formData: FormData): Promi
   try {
     await db.$transaction(async (tx) => {
       for (const tipo of TIPOS_NOTIFICACION) {
-        if (!esTipoNotificacion(tipo)) continue;
+        if (!esTipoNotificacion(tipo)) {
+          continue;
+        }
         await tx.preferenciaNotificacion.upsert({
           where: { usuarioId_tipo: { usuarioId: actor.id, tipo } },
           create: {

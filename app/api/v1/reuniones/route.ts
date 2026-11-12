@@ -6,16 +6,20 @@ import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
-  sincronizarCalendariosAsistenteSolicitud,
+  sincronizarCalendariosAsistenteSolicitud
 } from "@/src/modules/asistencia/calendario-asistente.service";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
-import { notificarUsuario,notificarUsuarios, reunionEmailText } from "@/src/modules/notificaciones/notificaciones.service";
+import {
+  notificarUsuario,
+  notificarUsuarios,
+  reunionEmailText
+} from "@/src/modules/notificaciones/notificaciones.service";
 import { crearReuniones } from "@/src/modules/reuniones/crear-reuniones.service";
 import { destinatariosDocentesPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { claveIdempotenciaCreacionSchema } from "@/src/modules/reuniones/reuniones.domain";
@@ -25,7 +29,9 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const input = await request.json().catch(() => null);
   const idempotencyHeader = request.headers.get("Idempotency-Key");
 
@@ -47,44 +53,63 @@ export async function POST(request: Request) {
       db,
       { id: actor.id, rol: actor.rol },
       input,
-      claveIdempotenciaCreacion,
+      claveIdempotenciaCreacion
     );
-    const provisionamiento = await obtenerServicioConferencias()
-      .sincronizarEventosPendientes(result.eventoProveedorIds);
+    const provisionamiento = await obtenerServicioConferencias().sincronizarEventosPendientes(
+      result.eventoProveedorIds
+    );
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
-      sincronizarCalendariosAsistenteSolicitud({
-        db,
-        descifrar: descifrarConfiguracion,
-        publicarEvento: publicarEventoCalendarioAsistente,
-        eliminarEvento: eliminarEventoCalendarioAsistente,
-      }, result.solicitudId)
+      sincronizarCalendariosAsistenteSolicitud(
+        {
+          db,
+          descifrar: descifrarConfiguracion,
+          publicarEvento: publicarEventoCalendarioAsistente,
+          eliminarEvento: eliminarEventoCalendarioAsistente
+        },
+        result.solicitudId
+      )
     );
     const calendarioAsistente = intentoCalendario.resultados;
-    const calendarPending = intentoCalendario.error !== null ||
-      hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
+    const calendarPending =
+      intentoCalendario.error !== null || hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
 
     if (result.reutilizada) {
       const { eventoProveedorIds: _, ...reunion } = result;
       return NextResponse.json(
         { ...reunion, provisionamiento, calendarioAsistente },
-        { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 200 },
+        {
+          status:
+            provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 200
+        }
       );
     }
 
     const advertencias: string[] = [];
     if (calendarPending) {
-      advertencias.push("La reunión se creó, pero el calendario del asistente de monitoreo todavía tiene sincronizaciones pendientes.");
+      advertencias.push(
+        "La reunión se creó, pero el calendario del asistente de monitoreo todavía tiene sincronizaciones pendientes."
+      );
     }
     try {
       await notificarReunionCreada(result.solicitudId);
     } catch (error) {
       console.warn("La reunion se creo, pero no se pudieron generar todas las notificaciones", error);
-      advertencias.push("La reunion se creo correctamente, pero algunas notificaciones no pudieron enviarse.");
+      advertencias.push(
+        "La reunion se creo correctamente, pero algunas notificaciones no pudieron enviarse."
+      );
     }
     const { eventoProveedorIds: _, ...reunion } = result;
     return NextResponse.json(
-      { ...reunion, provisionamiento, calendarioAsistente, ...(advertencias.length > 0 ? { advertencias } : {}) },
-      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 201 }
+      {
+        ...reunion,
+        provisionamiento,
+        calendarioAsistente,
+        ...(advertencias.length > 0 ? { advertencias } : {})
+      },
+      {
+        status:
+          provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") || calendarPending ? 202 : 201
+      }
     );
   } catch (error) {
     const mapped = toHttpError(error);
@@ -100,7 +125,11 @@ async function notificarReunionCreada(solicitudId: string) {
       docentePrograma: {
         include: {
           programa: true,
-          docente: { include: { usuario: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true } } } }
+          docente: {
+            include: {
+              usuario: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true } }
+            }
+          }
         }
       },
       instancias: {
@@ -117,7 +146,9 @@ async function notificarReunionCreada(solicitudId: string) {
       }
     }
   });
-  if (!solicitud) return;
+  if (!solicitud) {
+    return;
+  }
 
   const docenteUsuario = solicitud.docentePrograma.docente.usuario;
   const docenteNombre = [docenteUsuario.nombres, docenteUsuario.apellidos].filter(Boolean).join(" ");
@@ -131,16 +162,17 @@ async function notificarReunionCreada(solicitudId: string) {
     const inicioFecha = formatShortDate(instancia.inicioProgramadoAt);
     const finFecha = formatShortDate(instancia.finProgramadoAt);
     const inicio = `${capitalizar(inicioFecha)}, ${formatTime(instancia.inicioProgramadoAt)}`;
-    const fin = inicioFecha === finFecha
-      ? formatTime(instancia.finProgramadoAt)
-      : `${capitalizar(finFecha)}, ${formatTime(instancia.finProgramadoAt)}`;
+    const fin =
+      inicioFecha === finFecha
+        ? formatTime(instancia.finProgramadoAt)
+        : `${capitalizar(finFecha)}, ${formatTime(instancia.finProgramadoAt)}`;
     return {
       inicio,
       fin,
       sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
       meet: meet?.codigoReunion,
       joinUrl: meet?.joinUrl,
-      proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const
+      proveedor: meet?.proveedor.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const)
     };
   });
   const usaZoom = instancias.length > 0 && instancias.every(({ proveedor }) => proveedor === "ZOOM");
@@ -148,7 +180,9 @@ async function notificarReunionCreada(solicitudId: string) {
     .flatMap((i) => i.asignaciones)
     .find((a) => a.asistenteTecnico)?.asistenteTecnico;
   const initialAssistantName = firstAssignedAssistant
-    ? [firstAssignedAssistant.usuario.nombres, firstAssignedAssistant.usuario.apellidos].filter(Boolean).join(" ")
+    ? [firstAssignedAssistant.usuario.nombres, firstAssignedAssistant.usuario.apellidos]
+        .filter(Boolean)
+        .join(" ")
     : null;
 
   const detailsText = reunionEmailText({
@@ -161,20 +195,16 @@ async function notificarReunionCreada(solicitudId: string) {
     asistenteTecnico: initialAssistantName,
     instancias
   });
-  await notificarUsuarios(
-    db,
-    responsablesPrograma,
-    {
-      tipo: "REUNION_CREADA",
-      titulo: "Reunión creada",
-      cuerpo: `${solicitud.titulo} quedó registrada con ${solicitud.instancias.length} ${solicitud.instancias.length === 1 ? "encuentro" : "encuentros"}.`,
-      href: `/reuniones/${solicitud.id}`,
-      metadata: { solicitudId: solicitud.id },
-      emailSubject: `Reunión creada: ${solicitud.titulo}`,
-      emailText: detailsText,
-      emailActionLabel: "Ver reunión"
-    }
-  );
+  await notificarUsuarios(db, responsablesPrograma, {
+    tipo: "REUNION_CREADA",
+    titulo: "Reunión creada",
+    cuerpo: `${solicitud.titulo} quedó registrada con ${solicitud.instancias.length} ${solicitud.instancias.length === 1 ? "encuentro" : "encuentros"}.`,
+    href: `/reuniones/${solicitud.id}`,
+    metadata: { solicitudId: solicitud.id },
+    emailSubject: `Reunión creada: ${solicitud.titulo}`,
+    emailText: detailsText,
+    emailActionLabel: "Ver reunión"
+  });
 
   const assignedAssistants = solicitud.instancias.flatMap((instancia) =>
     instancia.asignaciones.map((assignment) => ({ instancia, assistant: assignment.asistenteTecnico }))
@@ -189,7 +219,11 @@ async function notificarReunionCreada(solicitudId: string) {
         titulo: "Te asignaron una reunión",
         cuerpo: `${solicitud.titulo} quedó asignada a tu agenda de monitoreo.`,
         href: "/mi-agenda",
-        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
+        metadata: {
+          solicitudId: solicitud.id,
+          instanciaSalaId: instancia.id,
+          asistenteTecnicoId: assistant.id
+        },
         emailSubject: `Te asignaron un monitoreo: ${solicitud.titulo}`,
         emailText: usaZoom
           ? `${detailsText}\n\nINSTRUCCIONES PARA EL ASISTENTE DE MONITOREO:\n• Esta reunión se realiza en Zoom.\n• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.\n• Ingresá al enlace de Zoom indicado para cada encuentro; ante dudas sobre permisos de moderación, consultá a Administración.`
@@ -197,27 +231,31 @@ async function notificarReunionCreada(solicitudId: string) {
         emailActionLabel: "Abrir mi agenda"
       }
     );
-    await notificarUsuarios(
-      db,
-      responsablesPrograma,
-      {
-        tipo: "ASISTENCIA_ASIGNACION",
-        titulo: "Monitoreo asignado",
-        cuerpo: `${solicitud.titulo} quedó asignada a ${assistantName || "la persona asignada"}.`,
-        href: `/reuniones/${solicitud.id}`,
-        metadata: { solicitudId: solicitud.id, instanciaSalaId: instancia.id, asistenteTecnicoId: assistant.id },
-        emailSubject: `Monitoreo asignado: ${solicitud.titulo}`,
-        emailText: usaZoom
-          ? `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Zoom para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Zoom sin requerir credenciales de sala.`
-          : `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
-        emailActionLabel: "Ver reunión"
-      }
-    );
+    await notificarUsuarios(db, responsablesPrograma, {
+      tipo: "ASISTENCIA_ASIGNACION",
+      titulo: "Monitoreo asignado",
+      cuerpo: `${solicitud.titulo} quedó asignada a ${assistantName || "la persona asignada"}.`,
+      href: `/reuniones/${solicitud.id}`,
+      metadata: {
+        solicitudId: solicitud.id,
+        instanciaSalaId: instancia.id,
+        asistenteTecnicoId: assistant.id
+      },
+      emailSubject: `Monitoreo asignado: ${solicitud.titulo}`,
+      emailText: usaZoom
+        ? `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Zoom para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Zoom sin requerir credenciales de sala.`
+        : `${detailsText}\n\nMonitoreo confirmado con: ${assistantName || assistant.usuario.id}.\n• La persona asignada al monitoreo ingresará a Google Meet con su propia cuenta de Google como anfitrión/co-anfitrión para moderar y dar soporte técnico.\n• Docentes y estudiantes ingresan directamente a través del enlace de Google Meet sin requerir credenciales de sala.`,
+      emailActionLabel: "Ver reunión"
+    });
   }
 
-  if (!solicitud.requiereAsistenciaTecnica) return;
+  if (!solicitud.requiereAsistenciaTecnica) {
+    return;
+  }
   const hasOpenAssistance = solicitud.instancias.some((instancia) => instancia.asignaciones.length === 0);
-  if (!hasOpenAssistance) return;
+  if (!hasOpenAssistance) {
+    return;
+  }
   const assistants = await db.asistenteTecnico.findMany({
     where: {
       usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
@@ -242,16 +280,6 @@ async function notificarReunionCreada(solicitudId: string) {
       emailActionLabel: "Ver agenda abierta"
     }
   );
-}
-
-function passwordCuenta(secretRef: string | null | undefined): string | null {
-  if (!secretRef) return null;
-  try {
-    return descifrarConfiguracion(secretRef);
-  } catch (error) {
-    console.warn("No se pudo descifrar la contraseña de una cuenta Meet", error);
-    return null;
-  }
 }
 
 function capitalizar(value: string): string {

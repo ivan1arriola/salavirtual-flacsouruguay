@@ -5,8 +5,11 @@ const originalKey = process.env.CONFIG_ENCRYPTION_KEY;
 const validKey = "0123456789abcdef".repeat(4);
 
 afterEach(() => {
-  if (originalKey === undefined) delete process.env.CONFIG_ENCRYPTION_KEY;
-  else process.env.CONFIG_ENCRYPTION_KEY = originalKey;
+  if (originalKey === undefined) {
+    delete process.env.CONFIG_ENCRYPTION_KEY;
+  } else {
+    process.env.CONFIG_ENCRYPTION_KEY = originalKey;
+  }
   vi.resetModules();
 });
 

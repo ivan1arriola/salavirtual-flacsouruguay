@@ -13,9 +13,7 @@ export async function importarSolicitud(
   zoomProviderId: string,
   mapeos: MapeosLegacy
 ): Promise<void> {
-  const eventosVigentes = solicitud.eventos.filter(
-    ({ estadoEvento }) => estadoEvento !== "CANCELADO"
-  );
+  const eventosVigentes = solicitud.eventos.filter(({ estadoEvento }) => estadoEvento !== "CANCELADO");
   if (eventosVigentes.length === 0) return;
   const estadoSolicitud = solicitud.estadoSolicitud.startsWith("CANCELADA")
     ? "PROVISIONADA"
@@ -53,11 +51,11 @@ export async function importarSolicitud(
       tipoInstancias: mapearTipoInstanciasLegacy(solicitud.tipoInstancias),
       timezone: solicitud.timezone,
       fechaInicioSolicitada: eventosVigentes.reduce(
-        (earliest, evento) => evento.inicioProgramadoAt < earliest ? evento.inicioProgramadoAt : earliest,
+        (earliest, evento) => (evento.inicioProgramadoAt < earliest ? evento.inicioProgramadoAt : earliest),
         eventosVigentes[0].inicioProgramadoAt
       ),
       fechaFinSolicitada: eventosVigentes.reduce(
-        (latest, evento) => evento.finProgramadoAt > latest ? evento.finProgramadoAt : latest,
+        (latest, evento) => (evento.finProgramadoAt > latest ? evento.finProgramadoAt : latest),
         eventosVigentes[0].finProgramadoAt
       ),
       cantidadInstancias: eventosVigentes.length,

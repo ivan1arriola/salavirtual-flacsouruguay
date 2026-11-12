@@ -30,34 +30,41 @@ describe("conferencias: protección de escrituras bajo claim", () => {
     const db = { eventoProveedor: { updateMany } } as unknown as PrismaClient;
     const repository = crearPrismaConferenciasRepository({ db, descifrarConfiguracion: (v) => v });
 
-    await expect(repository.guardarExternalEventIdTemprano(claim, "google-1", { id: "google-1" }))
-      .rejects.toThrow(/claim/);
+    await expect(
+      repository.guardarExternalEventIdTemprano(claim, "google-1", { id: "google-1" })
+    ).rejects.toThrow(/claim/);
 
-    expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        reclamoIntegracionToken: "claim-actual",
-        reclamoIntegracionAt: claim.at,
-        operacionPendiente: "PROVISIONAR",
-        externalEventId: null
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          reclamoIntegracionToken: "claim-actual",
+          reclamoIntegracionAt: claim.at,
+          operacionPendiente: "PROVISIONAR",
+          externalEventId: null
+        })
       })
-    }));
+    );
   });
 
   it("impide actualizar Meet si otro worker cambió el claim", async () => {
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
     const db = { eventoProveedor: { updateMany } } as unknown as PrismaClient;
     const repository = crearPrismaConferenciasRepository({ db, descifrarConfiguracion: (v) => v });
-    await expect(repository.persistirMeetDetectado(claim, {
-      externalEventId: "google-1",
-      codigoReunion: "abc-defg-hij",
-      joinUrl: "https://meet.google.com/abc-defg-hij",
-      payload: {}
-    })).rejects.toThrow(/claim/);
-    expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        reclamoIntegracionToken: "claim-actual",
-        externalEventId: "google-1"
+    await expect(
+      repository.persistirMeetDetectado(claim, {
+        externalEventId: "google-1",
+        codigoReunion: "abc-defg-hij",
+        joinUrl: "https://meet.google.com/abc-defg-hij",
+        payload: {}
       })
-    }));
+    ).rejects.toThrow(/claim/);
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          reclamoIntegracionToken: "claim-actual",
+          externalEventId: "google-1"
+        })
+      })
+    );
   });
 });

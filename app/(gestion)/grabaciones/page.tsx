@@ -17,18 +17,36 @@ import {
 } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
-export default async function GrabacionesPage({ searchParams }: { searchParams: Promise<{ pagina?: string; busqueda?: string; filtro?: string; zoomPagina?: string; zoomCategoria?: string; zoomVinculo?: string }> }) {
+export default async function GrabacionesPage({
+  searchParams
+}: {
+  searchParams: Promise<{
+    pagina?: string;
+    busqueda?: string;
+    filtro?: string;
+    zoomPagina?: string;
+    zoomCategoria?: string;
+    zoomVinculo?: string;
+  }>;
+}) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   const now = new Date();
   const parametros = await searchParams;
   const query = normalizarParametrosGrabaciones(parametros);
   const esAdmin = actor.rol === "ADMINISTRACION";
-  const zoomCategoria: FiltroCategoriaZoom = (FILTROS_CATEGORIA_ZOOM as readonly string[]).includes(parametros.zoomCategoria ?? "")
-    ? (parametros.zoomCategoria as FiltroCategoriaZoom) : "TODOS";
+  const zoomCategoria: FiltroCategoriaZoom = (FILTROS_CATEGORIA_ZOOM as readonly string[]).includes(
+    parametros.zoomCategoria ?? ""
+  )
+    ? (parametros.zoomCategoria as FiltroCategoriaZoom)
+    : "TODOS";
   const zoomVinculo = parametros.zoomVinculo === "SIN_VINCULO" ? "SIN_VINCULO" : "TODAS";
   const zoomPagina = Number.parseInt(parametros.zoomPagina ?? "1", 10);
   const [page, workspaceConfiguration] = await Promise.all([
@@ -36,21 +54,28 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
   ]);
   // La carpeta general apunta a una raíz que puede contener el histórico de Zoom: solo administración.
-  const generalFolderId = esAdmin && workspaceConfiguration?.activa
-    ? workspaceConfiguration.driveDestinationId
+  const generalFolderId =
+    esAdmin && workspaceConfiguration?.activa ? workspaceConfiguration.driveDestinationId : null;
+
+  const inventarioZoom = esAdmin
+    ? await listarInventarioZoomAdmin(actor, { pagina: zoomPagina, vinculo: zoomVinculo })
     : null;
 
-  const inventarioZoom = esAdmin ? await listarInventarioZoomAdmin(actor, { pagina: zoomPagina, vinculo: zoomVinculo }) : null;
-
-  const counts = { grabaciones: page.conteos.grabaciones, transcripciones: page.conteos.transcripciones, asistencias: page.conteos.asistencias, notas: page.conteos.notas };
+  const counts = {
+    grabaciones: page.conteos.grabaciones,
+    transcripciones: page.conteos.transcripciones,
+    asistencias: page.conteos.asistencias,
+    notas: page.conteos.notas
+  };
 
   const grupos: readonly GrupoEncuentroConArchivos[] = page.encuentros
     .map((g) => ({
       instanciaId: g.instanciaId,
       proveedor: g.proveedor,
-      asistenciaHref: g.proveedor === "ZOOM" && g.asistenciaZoom
-        ? `/reuniones/${encodeURIComponent(g.solicitudId)}/encuentros/${encodeURIComponent(g.instanciaId)}/asistencia`
-        : null,
+      asistenciaHref:
+        g.proveedor === "ZOOM" && g.asistenciaZoom
+          ? `/reuniones/${encodeURIComponent(g.solicitudId)}/encuentros/${encodeURIComponent(g.instanciaId)}/asistencia`
+          : null,
       titulo: g.titulo,
       programa: g.programa,
       docente: g.docente,
@@ -63,18 +88,18 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
         finProgramadoAt: g.finProgramadoAt,
         requiereGrabacion: Boolean(g.requiereGrabacion),
         // Un video de Zoom aún sin conservar se informa como procesamiento en curso.
-        estadoDetectado: g.proveedor === "ZOOM"
-          ? (g.archivos.some((a) => a.tipo === "GRABACION" && a.pendienteZoom) ? "PROCESANDO" : null)
-          : g.estadoGrabacionMeet,
+        estadoDetectado:
+          g.proveedor === "ZOOM"
+            ? g.archivos.some((a) => a.tipo === "GRABACION" && a.pendienteZoom)
+              ? "PROCESANDO"
+              : null
+            : g.estadoGrabacionMeet,
         observadoAt: g.proveedor === "ZOOM" ? now : g.grabacionObservadaAt,
         ahora: now
       }),
       archivos: g.archivos.map((a) => ({ ...a, tamanoBytes: a.tamanoBytes ? Number(a.tamanoBytes) : null }))
     }))
-    .sort(
-      (left, right) =>
-        new Date(right.fechaInicio).getTime() - new Date(left.fechaInicio).getTime()
-    );
+    .sort((left, right) => new Date(right.fechaInicio).getTime() - new Date(left.fechaInicio).getTime());
 
   return (
     <div className="recordings-page">
@@ -83,7 +108,11 @@ export default async function GrabacionesPage({ searchParams }: { searchParams: 
           <p className="page-eyebrow">Google Meet · Zoom</p>
           <h1>Grabaciones y archivos</h1>
           <p>
-            {page.totalEncuentros} {page.totalEncuentros === 1 ? "encuentro con archivos o grabación detectada" : "encuentros con archivos o grabaciones detectadas"}.
+            {page.totalEncuentros}{" "}
+            {page.totalEncuentros === 1
+              ? "encuentro con archivos o grabación detectada"
+              : "encuentros con archivos o grabaciones detectadas"}
+            .
           </p>
         </div>
         {generalFolderId ? (

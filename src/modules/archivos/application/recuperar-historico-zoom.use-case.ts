@@ -25,7 +25,10 @@ const MAX_PAGINAS_DRY_RUN = 500;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** `id` null: ejecución desde el script del servidor, sin usuario de la aplicación. */
-export type ActorRecuperacionZoom = Readonly<{ id: string | null; rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO" }>;
+export type ActorRecuperacionZoom = Readonly<{
+  id: string | null;
+  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+}>;
 
 export type SolicitudRecuperacionZoom = Readonly<{
   /** Vacío = todos los anfitriones configurados. Un id desconocido se rechaza: nunca se consulta fuera de la lista. */
@@ -53,7 +56,14 @@ export type ResumenRecuperacion =
       ultimaOcurrenciaAt: Date | null;
       errores: readonly ErrorBarridoZoom[];
     }>
-  | Readonly<{ tipo: "ENCOLADA"; barridoId: string; desde: string; hasta: string; anfitriones: number; ventanas: number }>;
+  | Readonly<{
+      tipo: "ENCOLADA";
+      barridoId: string;
+      desde: string;
+      hasta: string;
+      anfitriones: number;
+      ventanas: number;
+    }>;
 
 export type DepsCrearRecuperacionZoom = Readonly<{
   origen: Pick<InventarioOrigenZoomPort, "listarOcurrencias">;
@@ -65,7 +75,9 @@ export type DepsCrearRecuperacionZoom = Readonly<{
 }>;
 
 function fechaValida(valor: string): boolean {
-  if (!FECHA.test(valor)) return false;
+  if (!FECHA.test(valor)) {
+    return false;
+  }
   const fecha = new Date(`${valor}T00:00:00Z`);
   // Una fecha imposible (mes 13) produce Invalid Date y toISOString() lanzaría: se comprueba antes.
   return Number.isFinite(fecha.getTime()) && fecha.toISOString().slice(0, 10) === valor;
@@ -84,37 +96,51 @@ export async function crearRecuperacionZoom(
   actor: ActorRecuperacionZoom,
   solicitud: SolicitudRecuperacionZoom
 ): Promise<ResumenRecuperacion> {
-  if (actor.rol !== "ADMINISTRACION") return { tipo: "PROHIBIDO" };
+  if (actor.rol !== "ADMINISTRACION") {
+    return { tipo: "PROHIBIDO" };
+  }
   if (!fechaValida(solicitud.desde) || !fechaValida(solicitud.hasta)) {
     return { tipo: "PETICION_INVALIDA", motivo: "FECHA_INVALIDA" };
   }
-  if (solicitud.desde > solicitud.hasta) return { tipo: "PETICION_INVALIDA", motivo: "PERIODO_INVERTIDO" };
+  if (solicitud.desde > solicitud.hasta) {
+    return { tipo: "PETICION_INVALIDA", motivo: "PERIODO_INVERTIDO" };
+  }
   // El día siguiente cubre la diferencia horaria con Montevideo; más allá es futuro.
   if (solicitud.hasta > hoyUtc(new Date(deps.ahora().getTime() + 86_400_000))) {
     return { tipo: "PETICION_INVALIDA", motivo: "PERIODO_FUTURO" };
   }
 
   const configurados = await deps.anfitriones();
-  const elegidos = solicitud.anfitrionIds.length === 0
-    ? configurados
-    : solicitud.anfitrionIds.map((id) => configurados.find((a) => a.anfitrionZoomId === id) ?? null);
+  const elegidos =
+    solicitud.anfitrionIds.length === 0
+      ? configurados
+      : solicitud.anfitrionIds.map((id) => configurados.find((a) => a.anfitrionZoomId === id) ?? null);
   if (elegidos.length === 0 || elegidos.some((a) => a === null)) {
     return { tipo: "PETICION_INVALIDA", motivo: "ANFITRION_NO_CONFIGURADO" };
   }
-  const anfitriones = [...new Map((elegidos as AnfitrionInventarioZoom[]).map((a) => [a.anfitrionZoomId, a])).values()];
+  const anfitriones = [
+    ...new Map((elegidos as AnfitrionInventarioZoom[]).map((a) => [a.anfitrionZoomId, a])).values()
+  ];
   const ventanas = particionarPeriodoZoom(solicitud.desde, solicitud.hasta, DIAS_VENTANA_LISTADO_GRABACIONES);
 
   if (!solicitud.dryRun) {
     const { id } = await deps.repoBarridos.crear({
       cuentaZoomId: deps.cuentaZoomId,
-      anfitriones: anfitriones.map((a) => ({ anfitrionZoomId: a.anfitrionZoomId, cuentaProveedorId: a.cuentaProveedorId })),
+      anfitriones: anfitriones.map((a) => ({
+        anfitrionZoomId: a.anfitrionZoomId,
+        cuentaProveedorId: a.cuentaProveedorId
+      })),
       desde: solicitud.desde,
       hasta: solicitud.hasta,
       solicitanteId: actor.id
     });
     return {
-      tipo: "ENCOLADA", barridoId: id, desde: solicitud.desde, hasta: solicitud.hasta,
-      anfitriones: anfitriones.length, ventanas: ventanas.length
+      tipo: "ENCOLADA",
+      barridoId: id,
+      desde: solicitud.desde,
+      hasta: solicitud.hasta,
+      anfitriones: anfitriones.length,
+      ventanas: ventanas.length
     };
   }
 
@@ -131,15 +157,26 @@ export async function crearRecuperacionZoom(
           let paginas = 0;
           do {
             const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await deps.origen.listarOcurrencias(
-              anfitrion, papelera ? { ...ventana, papelera: true } : ventana, cursor
+              anfitrion,
+              papelera ? { ...ventana, papelera: true } : ventana,
+              cursor
             );
             for (const o of pagina.elementos) {
               ocurrencias++;
-              if (papelera) ocurrenciasPapelera++;
-              if (primera === null || o.inicioRealAt < primera) primera = o.inicioRealAt;
-              if (ultima === null || o.inicioRealAt > ultima) ultima = o.inicioRealAt;
+              if (papelera) {
+                ocurrenciasPapelera++;
+              }
+              if (primera === null || o.inicioRealAt < primera) {
+                primera = o.inicioRealAt;
+              }
+              if (ultima === null || o.inicioRealAt > ultima) {
+                ultima = o.inicioRealAt;
+              }
             }
-            if (pagina.siguiente !== null && (pagina.siguiente === cursor || ++paginas >= MAX_PAGINAS_DRY_RUN)) {
+            if (
+              pagina.siguiente !== null &&
+              (pagina.siguiente === cursor || ++paginas >= MAX_PAGINAS_DRY_RUN)
+            ) {
               throw new Error("Paginación sin fin.");
             }
             cursor = pagina.siguiente;
@@ -147,12 +184,22 @@ export async function crearRecuperacionZoom(
         }
       }
     } catch (error) {
-      if (errores.length < 25) errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
+      if (errores.length < 25) {
+        errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
+      }
     }
   }
   return {
-    tipo: "DRY_RUN", desde: solicitud.desde, hasta: solicitud.hasta, anfitriones: anfitriones.length,
-    ventanas: ventanas.length, ocurrencias, ocurrenciasPapelera, primeraOcurrenciaAt: primera, ultimaOcurrenciaAt: ultima, errores
+    tipo: "DRY_RUN",
+    desde: solicitud.desde,
+    hasta: solicitud.hasta,
+    anfitriones: anfitriones.length,
+    ventanas: ventanas.length,
+    ocurrencias,
+    ocurrenciasPapelera,
+    primeraOcurrenciaAt: primera,
+    ultimaOcurrenciaAt: ultima,
+    errores
   };
 }
 
@@ -180,7 +227,12 @@ export type DepsProcesarPaginaRecuperacionZoom = Readonly<{
   limiteIntentos: number;
 }>;
 
-type ErrorZoomLeido = { code?: unknown; status?: unknown; codigoZoom?: unknown; reintentarEnSegundos?: unknown };
+type ErrorZoomLeido = {
+  code?: unknown;
+  status?: unknown;
+  codigoZoom?: unknown;
+  reintentarEnSegundos?: unknown;
+};
 
 function leerErrorZoom(error: unknown): ErrorZoomLeido {
   return error !== null && typeof error === "object" ? (error as ErrorZoomLeido) : {};
@@ -201,10 +253,20 @@ function posicionSiguiente(
   }
   // Terminadas las activas de la ventana, sigue la papelera de la misma ventana (cursor propio).
   if (!omitirAnfitrion && fuente === "ACTIVAS") {
-    return { anfitrionIndice, fuente: "PAPELERA", ventanaDesde: ventanas[indiceVentana]!.desde, cursor: null };
+    return {
+      anfitrionIndice,
+      fuente: "PAPELERA",
+      ventanaDesde: ventanas[indiceVentana]!.desde,
+      cursor: null
+    };
   }
   if (!omitirAnfitrion && indiceVentana + 1 < ventanas.length) {
-    return { anfitrionIndice, fuente: "ACTIVAS", ventanaDesde: ventanas[indiceVentana + 1]!.desde, cursor: null };
+    return {
+      anfitrionIndice,
+      fuente: "ACTIVAS",
+      ventanaDesde: ventanas[indiceVentana + 1]!.desde,
+      cursor: null
+    };
   }
   if (anfitrionIndice + 1 < barrido.anfitriones.length) {
     return { anfitrionIndice: anfitrionIndice + 1, fuente: "ACTIVAS", ventanaDesde: null, cursor: null };
@@ -217,7 +279,11 @@ async function fallar(
   lease: LeaseBarridoZoom,
   barrido: BarridoZoom,
   codigo: string,
-  opciones: Readonly<{ revision?: boolean; reiniciarCursor?: boolean; reintentarEnSegundos?: number | null }> = {}
+  opciones: Readonly<{
+    revision?: boolean;
+    reiniciarCursor?: boolean;
+    reintentarEnSegundos?: number | null;
+  }> = {}
 ): Promise<ProgresoBarrido> {
   const ahora = deps.ahora();
   const registrado = await deps.repoBarridos.registrarFallo(lease, {
@@ -225,11 +291,18 @@ async function fallar(
     codigo,
     proximoIntentoAt: opciones.revision
       ? null
-      : proximoIntentoZoom(barrido.intentos + 1, ahora, deps.aleatorio, opciones.reintentarEnSegundos ?? null),
+      : proximoIntentoZoom(
+          barrido.intentos + 1,
+          ahora,
+          deps.aleatorio,
+          opciones.reintentarEnSegundos ?? null
+        ),
     reiniciarCursor: opciones.reiniciarCursor,
     limiteIntentos: deps.limiteIntentos
   });
-  if (!registrado) return { tipo: "LEASE_OBSOLETO" };
+  if (!registrado) {
+    return { tipo: "LEASE_OBSOLETO" };
+  }
   return opciones.revision ? { tipo: "REQUIERE_REVISION", codigo } : { tipo: "ERROR_REINTENTABLE", codigo };
 }
 
@@ -242,22 +315,29 @@ export async function procesarPaginaRecuperacionZoom(
   barridoId: string
 ): Promise<ProgresoBarrido> {
   const reclamado = await deps.repoBarridos.reclamar(barridoId, deps.ahora(), deps.leaseMs);
-  if (!reclamado) return { tipo: "NO_DISPONIBLE" };
+  if (!reclamado) {
+    return { tipo: "NO_DISPONIBLE" };
+  }
   const { lease, barrido } = reclamado;
 
   const ventanas = particionarPeriodoZoom(barrido.desde, barrido.hasta, DIAS_VENTANA_LISTADO_GRABACIONES);
-  const indiceVentana = barrido.posicion.ventanaDesde === null
-    ? 0
-    : ventanas.findIndex((v) => v.desde === barrido.posicion.ventanaDesde);
+  const indiceVentana =
+    barrido.posicion.ventanaDesde === null
+      ? 0
+      : ventanas.findIndex((v) => v.desde === barrido.posicion.ventanaDesde);
   const bruto = barrido.anfitriones[barrido.posicion.anfitrionIndice];
-  if (indiceVentana < 0 || !bruto) return fallar(deps, lease, barrido, "POSICION_INVALIDA", { revision: true });
+  if (indiceVentana < 0 || !bruto) {
+    return fallar(deps, lease, barrido, "POSICION_INVALIDA", { revision: true });
+  }
   const anfitrion: AnfitrionInventarioZoom = { cuentaZoomId: deps.cuentaZoomId, ...bruto };
 
   let pagina: ResultadoPagina<ReferenciaOcurrenciaZoom>;
   try {
     const ventana = ventanas[indiceVentana]!;
     pagina = await deps.origen.listarOcurrencias(
-      anfitrion, barrido.posicion.fuente === "PAPELERA" ? { ...ventana, papelera: true } : ventana, barrido.posicion.cursor
+      anfitrion,
+      barrido.posicion.fuente === "PAPELERA" ? { ...ventana, papelera: true } : ventana,
+      barrido.posicion.cursor
     );
   } catch (error) {
     const e = leerErrorZoom(error);
@@ -266,10 +346,16 @@ export async function procesarPaginaRecuperacionZoom(
     if (e.code === "SOLICITUD_RECHAZADA" && e.status === 404 && e.codigoZoom === 1001) {
       const siguiente = posicionSiguiente(barrido, ventanas, indiceVentana, null, true);
       const ok = await deps.repoBarridos.avanzar(
-        lease, { siguiente, ocurrencias: 0, omision: { anfitrionZoomId: bruto.anfitrionZoomId, codigo } }, deps.ahora()
+        lease,
+        { siguiente, ocurrencias: 0, omision: { anfitrionZoomId: bruto.anfitrionZoomId, codigo } },
+        deps.ahora()
       );
-      if (!ok) return { tipo: "LEASE_OBSOLETO" };
-      return siguiente === null ? { tipo: "COMPLETADO_CON_OMISIONES", ocurrencias: 0 } : { tipo: "AVANZO", ocurrencias: 0 };
+      if (!ok) {
+        return { tipo: "LEASE_OBSOLETO" };
+      }
+      return siguiente === null
+        ? { tipo: "COMPLETADO_CON_OMISIONES", ocurrencias: 0 }
+        : { tipo: "AVANZO", ocurrencias: 0 };
     }
     // Sin permisos (scope pendiente): reintentar no lo arregla; exige acción de administración.
     if (e.code === "CAPACIDAD_PENDIENTE" || (e.status === 400 && e.codigoZoom === 4711)) {
@@ -292,12 +378,18 @@ export async function procesarPaginaRecuperacionZoom(
   try {
     for (const referencia of pagina.elementos) {
       const r = await inventariarZoomUseCase(deps.repoArchivos, deps.origen, {
-        referencia, cuentaProveedorId: bruto.cuentaProveedorId, ahora: deps.ahora(), corteDias: deps.corteDias
+        referencia,
+        cuentaProveedorId: bruto.cuentaProveedorId,
+        ahora: deps.ahora(),
+        corteDias: deps.corteDias
       });
       if (r.tipo === "NO_ENCONTRADA") {
         // En la papelera Zoom puede no ofrecer el inventario de lo eliminado: se registra como omisión
         // visible (el barrido queda en revisión) pero no bloquea el resto de la recuperación.
-        if (barrido.posicion.fuente === "PAPELERA") { sinInventarioEnPapelera++; continue; }
+        if (barrido.posicion.fuente === "PAPELERA") {
+          sinInventarioEnPapelera++;
+          continue;
+        }
         // Zoom la listó pero no devuelve su inventario (404): no se persistió, así que la página no puede darse por procesada.
         return fallar(deps, lease, barrido, "INVENTARIO_NO_ENCONTRADO");
       }
@@ -315,12 +407,19 @@ export async function procesarPaginaRecuperacionZoom(
       ocurrencias: pagina.elementos.length - sinInventarioEnPapelera,
       conservarIntentos: siguiente !== null && siguiente.cursor !== null,
       ...(sinInventarioEnPapelera > 0
-        ? { omision: { anfitrionZoomId: bruto.anfitrionZoomId, codigo: `PAPELERA_INVENTARIO_NO_ENCONTRADO:${sinInventarioEnPapelera}` } }
+        ? {
+            omision: {
+              anfitrionZoomId: bruto.anfitrionZoomId,
+              codigo: `PAPELERA_INVENTARIO_NO_ENCONTRADO:${sinInventarioEnPapelera}`
+            }
+          }
         : {})
     },
     deps.ahora()
   );
-  if (!ok) return { tipo: "LEASE_OBSOLETO" };
+  if (!ok) {
+    return { tipo: "LEASE_OBSOLETO" };
+  }
   const hayOmisiones = barrido.omisiones.length > 0 || sinInventarioEnPapelera > 0;
   return siguiente === null
     ? { tipo: hayOmisiones ? "COMPLETADO_CON_OMISIONES" : "COMPLETADO", ocurrencias: pagina.elementos.length }

@@ -50,7 +50,8 @@ export function planificarSincronizacionGrupoZoom(
 ): PlanSincronizacionZoom {
   // Un correo repetido en el grupo cuenta una sola vez: gana el primero.
   const unicos = miembros.filter(
-    (miembro, indice) => miembros.findIndex((otro) => normalizar(otro.email) === normalizar(miembro.email)) === indice
+    (miembro, indice) =>
+      miembros.findIndex((otro) => normalizar(otro.email) === normalizar(miembro.email)) === indice
   );
 
   const porId = unicos.map((miembro) => ({
@@ -64,7 +65,8 @@ export function planificarSincronizacionGrupoZoom(
     cuenta:
       cuenta ??
       libres.find(
-        (libre) => libre.emailOrganizador !== null && normalizar(libre.emailOrganizador) === normalizar(miembro.email)
+        (libre) =>
+          libre.emailOrganizador !== null && normalizar(libre.emailOrganizador) === normalizar(miembro.email)
       ) ??
       null
   }));
@@ -86,7 +88,9 @@ export function planificarSincronizacionGrupoZoom(
     .filter((cuenta) => !enElGrupo.has(cuenta.id))
     .filter((cuenta) => cuenta.activa || cuenta.fueraDelGrupoAt === null)
     .map((cuenta) => ({ cuentaId: cuenta.id, reunionesFuturas: reunionesFuturasPorCuenta[cuenta.id] ?? 0 }));
-  const desactivar = salieron.filter(({ reunionesFuturas }) => reunionesFuturas === 0).map(({ cuentaId }) => cuentaId);
+  const desactivar = salieron
+    .filter(({ reunionesFuturas }) => reunionesFuturas === 0)
+    .map(({ cuentaId }) => cuentaId);
   const marcarFuera = salieron.filter(({ reunionesFuturas }) => reunionesFuturas > 0);
 
   const resumen = [

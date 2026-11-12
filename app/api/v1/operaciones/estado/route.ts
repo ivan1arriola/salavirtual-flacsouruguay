@@ -12,7 +12,9 @@ export async function GET(request: Request) {
   const isCron = Boolean(secret && request.headers.get("authorization") === "Bearer " + secret);
   if (!isCron) {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -21,25 +23,26 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const pendiente = { proveedor: { tipo: "GOOGLE_MEET" as const }, operacionPendiente: { not: null } };
-  const [pendingGoogle, googleErrors, staleClaims, oldest, uncertainPosts, stuckPosts, reservedPosts] = await Promise.all([
-    db.eventoProveedor.count({ where: pendiente }),
-    db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),
-    db.eventoProveedor.count({
-      where: { ...pendiente, reclamoIntegracionAt: { lt: new Date(now.getTime() - 10 * 60_000) } }
-    }),
-    db.eventoProveedor.findFirst({
-      where: pendiente,
-      orderBy: { updatedAt: "asc" },
-      select: { updatedAt: true }
-    }),
-    db.googleOperacionExterna.count({ where: { estado: "INCIERTA" } }),
-    db.googleOperacionExterna.count({
-      where: { estado: "ENVIANDO", iniciadaAt: { lt: new Date(now.getTime() - 2 * 60_000) } }
-    }),
-    db.googleOperacionExterna.count({
-      where: { estado: "RESERVADA", createdAt: { lt: new Date(now.getTime() - 15 * 60_000) } }
-    })
-  ]);
+  const [pendingGoogle, googleErrors, staleClaims, oldest, uncertainPosts, stuckPosts, reservedPosts] =
+    await Promise.all([
+      db.eventoProveedor.count({ where: pendiente }),
+      db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),
+      db.eventoProveedor.count({
+        where: { ...pendiente, reclamoIntegracionAt: { lt: new Date(now.getTime() - 10 * 60_000) } }
+      }),
+      db.eventoProveedor.findFirst({
+        where: pendiente,
+        orderBy: { updatedAt: "asc" },
+        select: { updatedAt: true }
+      }),
+      db.googleOperacionExterna.count({ where: { estado: "INCIERTA" } }),
+      db.googleOperacionExterna.count({
+        where: { estado: "ENVIANDO", iniciadaAt: { lt: new Date(now.getTime() - 2 * 60_000) } }
+      }),
+      db.googleOperacionExterna.count({
+        where: { estado: "RESERVADA", createdAt: { lt: new Date(now.getTime() - 15 * 60_000) } }
+      })
+    ]);
   const health = evaluarSaludOperativa({
     pendingGoogle,
     googleErrors,
@@ -49,24 +52,28 @@ export async function GET(request: Request) {
       : null
   });
 
-  const status = uncertainPosts > 0 || stuckPosts > 0
-    ? "critico"
-    : reservedPosts > 0 && health.status === "ok"
-      ? "degradado"
-      : health.status;
+  const status =
+    uncertainPosts > 0 || stuckPosts > 0
+      ? "critico"
+      : reservedPosts > 0 && health.status === "ok"
+        ? "degradado"
+        : health.status;
 
-  return NextResponse.json({
-    ...health,
-    status,
-    googlePost: {
-      inciertas: uncertainPosts,
-      enviandoObsoletas: stuckPosts,
-      reservadasAtrasadas: reservedPosts
+  return NextResponse.json(
+    {
+      ...health,
+      status,
+      googlePost: {
+        inciertas: uncertainPosts,
+        enviandoObsoletas: stuckPosts,
+        reservadasAtrasadas: reservedPosts
+      },
+      checkedAt: now.toISOString(),
+      note: "Antigüedad aproximada desde el último cambio del evento; no desde su creación."
     },
-    checkedAt: now.toISOString(),
-    note: "Antigüedad aproximada desde el último cambio del evento; no desde su creación."
-  }, {
-    status: status === "critico" ? 503 : 200,
-    headers: { "Cache-Control": "no-store" }
-  });
+    {
+      status: status === "critico" ? 503 : 200,
+      headers: { "Cache-Control": "no-store" }
+    }
+  );
 }

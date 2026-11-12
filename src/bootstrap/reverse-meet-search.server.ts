@@ -24,7 +24,7 @@ const resultSelect = {
   cuentaProveedor: { select: { nombre: true, emailOrganizador: true } },
   archivos: {
     where: { tipo: "GRABACION" as const },
-    select: { id: true, nombre: true, driveFileId: true },
+    select: { id: true, nombre: true, driveFileId: true }
   },
   instancia: {
     select: {
@@ -41,18 +41,14 @@ const resultSelect = {
           id: true,
           titulo: true,
           docentePrograma: { select: { programa: { select: { nombre: true } } } },
-          creadaPor: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true } },
-        },
-      },
-    },
-  },
+          creadaPor: { select: { id: true, nombres: true, apellidos: true, emailPrincipal: true } }
+        }
+      }
+    }
+  }
 } satisfies Prisma.EventoProveedorSelect;
 
-export async function buscarMeet(
-  actor: SessionActor | null,
-  input: unknown,
-  database: PrismaClient = db
-) {
+export async function buscarMeet(actor: SessionActor | null, input: unknown, database: PrismaClient = db) {
   if (!actor?.activo || !puedeAdministrar(actor.rol)) {
     throw new ForbiddenApiError("La búsqueda de Meet requiere acceso de Administración.");
   }
@@ -65,7 +61,7 @@ export async function buscarMeet(
   const [events, audits] = await Promise.all([
     database.eventoProveedor.findMany({
       where: { proveedor: { tipo: "GOOGLE_MEET" } },
-      select: { id: true, instanciaSalaId: true, codigoReunion: true, joinUrl: true },
+      select: { id: true, instanciaSalaId: true, codigoReunion: true, joinUrl: true }
     }),
     database.auditoria.findMany({
       where: { accion: { in: [...MEET_HISTORY_ACTIONS] } },
@@ -76,10 +72,10 @@ export async function buscarMeet(
         entidadId: true,
         valorAnterior: true,
         valorNuevo: true,
-        createdAt: true,
+        createdAt: true
       },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    }),
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+    })
   ]);
 
   const history = new Map<string, MeetChange[]>();
@@ -87,23 +83,26 @@ export async function buscarMeet(
 
   for (const audit of audits) {
     const evidence = readMeetEvidence(audit);
-    if (!evidence) continue;
+    if (!evidence) {
+      continue;
+    }
 
     for (const id of evidence.meetingIds) {
       history.set(id, [...(history.get(id) ?? []), evidence.change]);
     }
 
     if (evidence.seriesId && evidenceMatches(evidence.change, searched.code)) {
-      seriesEvidence.set(
-        evidence.seriesId,
-        [...(seriesEvidence.get(evidence.seriesId) ?? []), evidence.change]
-      );
+      seriesEvidence.set(evidence.seriesId, [
+        ...(seriesEvidence.get(evidence.seriesId) ?? []),
+        evidence.change
+      ]);
     }
   }
 
-  const matches = events.filter((event) =>
-    meetLinks(event.codigoReunion, event.joinUrl).some((link) => link.code === searched.code)
-    || (history.get(event.instanciaSalaId) ?? []).some((change) => evidenceMatches(change, searched.code))
+  const matches = events.filter(
+    (event) =>
+      meetLinks(event.codigoReunion, event.joinUrl).some((link) => link.code === searched.code) ||
+      (history.get(event.instanciaSalaId) ?? []).some((change) => evidenceMatches(change, searched.code))
   );
 
   const [details, series] = await Promise.all([
@@ -114,15 +113,15 @@ export async function buscarMeet(
             proveedor: { tipo: "GOOGLE_MEET" }
           },
           select: resultSelect,
-          orderBy: [{ instancia: { inicioProgramadoAt: "desc" } }, { id: "asc" }],
+          orderBy: [{ instancia: { inicioProgramadoAt: "desc" } }, { id: "asc" }]
         })
       : [],
     seriesEvidence.size
       ? database.solicitudSala.findMany({
           where: { id: { in: [...seriesEvidence.keys()] } },
-          select: { id: true, titulo: true },
+          select: { id: true, titulo: true }
         })
-      : [],
+      : []
   ]);
 
   const results = details.map((event) => {
@@ -132,7 +131,7 @@ export async function buscarMeet(
       currentLinks,
       current: currentLinks.some((link) => link.code === searched.code),
       inconsistent: currentLinks.length > 1,
-      history: history.get(event.instancia.id) ?? [],
+      history: history.get(event.instancia.id) ?? []
     };
   });
 
@@ -143,6 +142,6 @@ export async function buscarMeet(
     series: series.map((item) => ({
       ...item,
       history: seriesEvidence.get(item.id) ?? []
-    })),
+    }))
   };
 }

@@ -2,35 +2,34 @@ import { describe, expect, it, vi } from "vitest";
 import {
   enviarCorreoConfiguradoUseCase,
   notificarUsuariosUseCase,
-  notificarUsuarioUseCase,
+  notificarUsuarioUseCase
 } from "../src/modules/notificaciones/application";
-import type {
-  EmailTransportPort,
-  NotificacionesRepositoryPort,
-} from "../src/modules/notificaciones/ports";
+import type { EmailTransportPort, NotificacionesRepositoryPort } from "../src/modules/notificaciones/ports";
 
-function createMockRepository(overrides: Partial<NotificacionesRepositoryPort> = {}): NotificacionesRepositoryPort {
+function createMockRepository(
+  overrides: Partial<NotificacionesRepositoryPort> = {}
+): NotificacionesRepositoryPort {
   return {
     obtenerPreferencias: vi.fn().mockResolvedValue({ push: true, email: true }),
     guardarNotificacionEnBandeja: vi.fn().mockResolvedValue(undefined),
     esAsistenteCesado: vi.fn().mockResolvedValue(false),
     obtenerDestinatariosDocentesPrograma: vi.fn().mockResolvedValue([]),
     obtenerCredencialesGmail: vi.fn().mockResolvedValue(null),
-    ...overrides,
+    ...overrides
   };
 }
 
 function createMockTransport(overrides: Partial<EmailTransportPort> = {}): EmailTransportPort {
   return {
     enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" }),
-    ...overrides,
+    ...overrides
   };
 }
 
 describe("casos de uso de notificaciones", () => {
   it("omite envio y guardado si el asistente esta cesado", async () => {
     const repository = createMockRepository({
-      esAsistenteCesado: vi.fn().mockResolvedValue(true),
+      esAsistenteCesado: vi.fn().mockResolvedValue(true)
     });
     const transport = createMockTransport();
 
@@ -61,21 +60,21 @@ describe("casos de uso de notificaciones", () => {
       expect.objectContaining({
         usuarioId: "usr-1",
         tipo: "REUNION_CREADA",
-        titulo: "Clase 1",
+        titulo: "Clase 1"
       })
     );
 
     expect(transport.enviarCorreo).toHaveBeenCalledWith(
       expect.objectContaining({
         to: ["docente@flacso.edu.uy"],
-        subject: "Clase 1",
+        subject: "Clase 1"
       })
     );
   });
 
   it("respeta preferencias desactivadas para push y email", async () => {
     const repository = createMockRepository({
-      obtenerPreferencias: vi.fn().mockResolvedValue({ push: false, email: false }),
+      obtenerPreferencias: vi.fn().mockResolvedValue({ push: false, email: false })
     });
     const transport = createMockTransport();
 
@@ -93,7 +92,7 @@ describe("casos de uso de notificaciones", () => {
   it("no lanza excepcion si el transporte de correo falla", async () => {
     const repository = createMockRepository();
     const transport = createMockTransport({
-      enviarCorreo: vi.fn().mockRejectedValue(new Error("SMTP socket closed")),
+      enviarCorreo: vi.fn().mockRejectedValue(new Error("SMTP socket closed"))
     });
 
     await expect(
@@ -110,9 +109,9 @@ describe("casos de uso de notificaciones", () => {
 
   it("notificarUsuarios deduplica destinatarios e incluye docentes de programa", async () => {
     const repository = createMockRepository({
-      obtenerDestinatariosDocentesPrograma: vi.fn().mockResolvedValue([
-        { usuarioId: "usr-docente-programa", email: "docente-prog@flacso.edu.uy" },
-      ]),
+      obtenerDestinatariosDocentesPrograma: vi
+        .fn()
+        .mockResolvedValue([{ usuarioId: "usr-docente-programa", email: "docente-prog@flacso.edu.uy" }])
     });
     const transport = createMockTransport();
 
@@ -121,13 +120,13 @@ describe("casos de uso de notificaciones", () => {
       transport,
       [
         { usuarioId: "usr-1", email: "u1@flacso.edu.uy" },
-        { usuarioId: "usr-1", email: "u1@flacso.edu.uy" }, // duplicado
+        { usuarioId: "usr-1", email: "u1@flacso.edu.uy" } // duplicado
       ],
       {
         tipo: "REUNION_CREADA",
         titulo: "Clase nueva",
         cuerpo: "Texto",
-        href: "/reuniones/sol-123",
+        href: "/reuniones/sol-123"
       }
     );
 
@@ -141,14 +140,13 @@ describe("casos de uso de notificaciones", () => {
     const result = await enviarCorreoConfiguradoUseCase(transport, {
       to: ["test@flacso.edu.uy"],
       subject: "Asunto",
-      text: "Texto",
+      text: "Texto"
     });
 
     expect(result).toEqual({ sent: true, transport: "GMAIL_API" });
     expect(transport.enviarCorreo).toHaveBeenCalled();
   });
 });
-
 
 describe("trazabilidad de correo y serialización", () => {
   it("audita la aceptación del proveedor sin afirmar entrega al destinatario", async () => {
@@ -160,9 +158,15 @@ describe("trazabilidad de correo y serialización", () => {
     const transport = createMockTransport({
       enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" })
     });
-    await notificarUsuarioUseCase(repository, transport, {
-      usuarioId: "user-1", email: "docente@example.com"
-    }, { tipo: "REUNION_CREADA", titulo: "Nueva clase", cuerpo: "Texto" });
+    await notificarUsuarioUseCase(
+      repository,
+      transport,
+      {
+        usuarioId: "user-1",
+        email: "docente@example.com"
+      },
+      { tipo: "REUNION_CREADA", titulo: "Nueva clase", cuerpo: "Texto" }
+    );
     expect(audit).toHaveBeenCalledWith({
       usuarioId: "user-1",
       notificacionId: "notif-1",
@@ -178,12 +182,24 @@ describe("trazabilidad de correo y serialización", () => {
     const error = new Error("Secreto o correo personal que no debe persistirse");
     error.name = "GoogleCuentaOcupadaError";
     const transport = createMockTransport({ enviarCorreo: vi.fn().mockRejectedValue(error) });
-    await expect(notificarUsuarioUseCase(repository, transport, {
-      usuarioId: "user-2", email: "docente@example.com"
-    }, { tipo: "REUNION_CREADA", titulo: "Nueva clase", cuerpo: "Texto" })).resolves.toBeUndefined();
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({
-      usuarioId: "user-2", estado: "ERROR", motivo: "GoogleCuentaOcupadaError"
-    }));
+    await expect(
+      notificarUsuarioUseCase(
+        repository,
+        transport,
+        {
+          usuarioId: "user-2",
+          email: "docente@example.com"
+        },
+        { tipo: "REUNION_CREADA", titulo: "Nueva clase", cuerpo: "Texto" }
+      )
+    ).resolves.toBeUndefined();
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usuarioId: "user-2",
+        estado: "ERROR",
+        motivo: "GoogleCuentaOcupadaError"
+      })
+    );
     expect(JSON.stringify(audit.mock.calls)).not.toContain("Secreto o correo personal");
   });
 
@@ -191,11 +207,15 @@ describe("trazabilidad de correo y serialización", () => {
     const audit = vi.fn().mockResolvedValue(undefined);
     const repository = createMockRepository({ registrarResultadoCorreo: audit });
     const transport = createMockTransport();
-    await notificarUsuarioUseCase(repository, transport,
+    await notificarUsuarioUseCase(
+      repository,
+      transport,
       { usuarioId: "user-3", email: null },
       { tipo: "ASISTENCIA_ASIGNACION", titulo: "Reunión", cuerpo: "Aviso" }
     );
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({ estado: "OMITIDO", motivo: "sin-destinatario" }));
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({ estado: "OMITIDO", motivo: "sin-destinatario" })
+    );
     expect(transport.enviarCorreo).not.toHaveBeenCalled();
   });
 
@@ -212,7 +232,9 @@ describe("trazabilidad de correo y serialización", () => {
       })
     });
     const repository = createMockRepository();
-    await notificarUsuariosUseCase(repository, transport,
+    await notificarUsuariosUseCase(
+      repository,
+      transport,
       [
         { usuarioId: "u1", email: "uno@example.com" },
         { usuarioId: "u2", email: "dos@example.com" },

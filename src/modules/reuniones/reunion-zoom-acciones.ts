@@ -13,7 +13,7 @@ export async function enviarAccionEncuentro(
         ? {}
         : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(init.body) })
     });
-    const result = await response.json().catch(() => ({})) as {
+    const result = (await response.json().catch(() => ({}))) as {
       error?: string;
       message?: string;
       warning?: string | null;

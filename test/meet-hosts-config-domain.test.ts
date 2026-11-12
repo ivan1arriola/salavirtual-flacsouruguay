@@ -45,8 +45,12 @@ describe("aviso de cuenta fuera del grupo de Zoom", () => {
   });
 
   it("usa plural para varias reuniones futuras y singular para una", () => {
-    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 3 })).toBe("Fuera del grupo (3 reuniones futuras)");
-    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 1 })).toBe("Fuera del grupo (1 reunión futura)");
+    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 3 })).toBe(
+      "Fuera del grupo (3 reuniones futuras)"
+    );
+    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 1 })).toBe(
+      "Fuera del grupo (1 reunión futura)"
+    );
   });
 
   it("sin reuniones futuras solo indica que está fuera del grupo", () => {

@@ -32,7 +32,10 @@ export async function GET(request: Request) {
   });
 
   if (!assistant || !assistant.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
-    return NextResponse.json({ error: "La cuenta ya no tiene acceso como asistente técnico." }, { status: 403 });
+    return NextResponse.json(
+      { error: "La cuenta ya no tiene acceso como asistente técnico." },
+      { status: 403 }
+    );
   }
 
   const now = new Date();
@@ -88,12 +91,12 @@ export async function GET(request: Request) {
       const meet = seleccionarEventoProveedorActivo(meeting);
       const assignment = meeting.asignaciones[0];
       const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
-      const assistanceStartsAt = modality === "VIRTUAL"
-        ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
-        : meeting.inicioAsistenciaTecnicaAt;
-      const assistanceEndsAt = modality === "VIRTUAL"
-        ? meeting.finProgramadoAt
-        : meeting.finAsistenciaTecnicaAt;
+      const assistanceStartsAt =
+        modality === "VIRTUAL"
+          ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
+          : meeting.inicioAsistenciaTecnicaAt;
+      const assistanceEndsAt =
+        modality === "VIRTUAL" ? meeting.finProgramadoAt : meeting.finAsistenciaTecnicaAt;
 
       return {
         id: meeting.id,

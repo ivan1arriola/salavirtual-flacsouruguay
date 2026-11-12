@@ -1,17 +1,16 @@
-import {
-  notificacionAsistenciaSchema,
-  puedeAsignarAsistencia
-} from "../domain";
-import type { AsistenciaRepositoryPort, MeetingCoverInfo } from "../ports";
+import { notificacionAsistenciaSchema, puedeAsignarAsistencia } from "../domain";
+import type { AsistenciaRepositoryPort } from "../ports";
 import type { SessionActor } from "./actualizar-postulacion.use-case";
 
 export type RenotificarAsistentesDeps = Readonly<{
   repo: AsistenciaRepositoryPort;
-  notificarUsuarios: (input: Readonly<{
-    usuarioIds: readonly string[];
-    asunto: string;
-    mensaje: string;
-  }>) => Promise<unknown>;
+  notificarUsuarios: (
+    input: Readonly<{
+      usuarioIds: readonly string[];
+      asunto: string;
+      mensaje: string;
+    }>
+  ) => Promise<unknown>;
 }>;
 
 export async function renotificarAsistentesUseCase(
@@ -24,9 +23,7 @@ export async function renotificarAsistentesUseCase(
   }
   const input = notificacionAsistenciaSchema.parse(rawInput);
 
-  const { reunion, destinatarios } = await deps.repo.obtenerAsistentesParaNotificacion(
-    input.instanciaSalaId
-  );
+  const { reunion, destinatarios } = await deps.repo.obtenerAsistentesParaNotificacion(input.instanciaSalaId);
 
   if (destinatarios.length > 0) {
     await deps.notificarUsuarios({

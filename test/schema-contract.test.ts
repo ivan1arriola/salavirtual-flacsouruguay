@@ -5,7 +5,9 @@ const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url),
 
 function model(name: string): string {
   const match = schema.match(new RegExp(`model ${name} \\{([\\s\\S]*?)\\n\\}`));
-  if (!match) throw new Error(`No existe el modelo ${name}.`);
+  if (!match) {
+    throw new Error(`No existe el modelo ${name}.`);
+  }
   return match[1];
 }
 
@@ -108,7 +110,14 @@ describe("reunión compartida por serie", () => {
 
   it("define ReunionProveedor con estado de creación persistido y sus unicidades", () => {
     const reunion = model("ReunionProveedor");
-    for (const campo of ["serieClave", "externalId", "joinUrl", "estadoCreacion", "reclamoToken", "reclamoAt"]) {
+    for (const campo of [
+      "serieClave",
+      "externalId",
+      "joinUrl",
+      "estadoCreacion",
+      "reclamoToken",
+      "reclamoAt"
+    ]) {
       expect(reunion, campo).toContain(campo);
     }
     expect(reunion).toContain("@@unique([proveedorId, externalId])");
@@ -125,7 +134,14 @@ describe("reunión compartida por serie", () => {
 
   it("define el avance por cita de Calendar y los avisos por serie", () => {
     const cita = model("CambioEnlaceCita");
-    for (const campo of ["enlaceNuevo", "estado", "reunionAnteriorExternalId", "eliminarDespuesDe", "reunionAnteriorEliminadaAt", "sinCita"]) {
+    for (const campo of [
+      "enlaceNuevo",
+      "estado",
+      "reunionAnteriorExternalId",
+      "eliminarDespuesDe",
+      "reunionAnteriorEliminadaAt",
+      "sinCita"
+    ]) {
       expect(cita, campo).toContain(campo);
     }
     expect(cita).toContain("@@unique([instanciaSalaId, reunionProveedorId])");

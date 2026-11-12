@@ -60,7 +60,7 @@ describe("deploy.sh: el worker nunca corre código de un release rechazado", () 
     const rollback = pos('mv -Tf "$BASE/.current-rollback-$SHA" "$BASE/current"');
     const reinicio = d.indexOf("reiniciar_worker_zoom", rollback);
     expect(reinicio).toBeGreaterThan(rollback);
-    expect(reinicio).toBeLessThan(pos('exit 1', rollback));
+    expect(reinicio).toBeLessThan(pos("exit 1", rollback));
   });
   it("el reinicio exige que `current` contenga el bundle del worker (un release anterior sin él lo deja detenido)", () => {
     expect(d).toMatch(/-f "\$BASE\/current\/zoom-archivos-worker\.cjs"/);

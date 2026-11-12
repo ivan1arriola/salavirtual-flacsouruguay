@@ -54,10 +54,8 @@ export async function actualizarProgramasDocente(
     }
 
     const puedeTenerPerfilDocente = Boolean(
-      usuario && (
-        usuario.rol === "DOCENTE" ||
-        (usuario.rol === "ADMINISTRACION" && usuario.id === actorActual.id)
-      )
+      usuario &&
+      (usuario.rol === "DOCENTE" || (usuario.rol === "ADMINISTRACION" && usuario.id === actorActual.id))
     );
     if (!usuario || !puedeTenerPerfilDocente) {
       throw new Error("El usuario no puede gestionar programas académicos propios.");
@@ -70,10 +68,12 @@ export async function actualizarProgramasDocente(
       throw new Error("Uno o mas programas no existen o ya no estan activos.");
     }
 
-    const docente = usuario.docente ?? await tx.docente.create({
-      data: { usuarioId: usuario.id },
-      select: { id: true, programas: { select: { programaId: true } } }
-    });
+    const docente =
+      usuario.docente ??
+      (await tx.docente.create({
+        data: { usuarioId: usuario.id },
+        select: { id: true, programas: { select: { programaId: true } } }
+      }));
     const anteriores = usuario.docente?.programas.map(({ programaId }) => programaId) ?? [];
 
     await tx.docentePrograma.updateMany({

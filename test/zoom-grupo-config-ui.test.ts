@@ -61,15 +61,17 @@ const SIN_GRUPO = {
 };
 
 function formularioDeEdicion(host: MeetHostVisible) {
-  return renderToStaticMarkup(createElement(HostEditForm, {
-    host,
-    hostsCount: 2,
-    saving: null,
-    message: "",
-    success: false,
-    onSubmit: () => {},
-    onDelete: () => {}
-  }));
+  return renderToStaticMarkup(
+    createElement(HostEditForm, {
+      host,
+      hostsCount: 2,
+      saving: null,
+      message: "",
+      success: false,
+      onSubmit: () => {},
+      onDelete: () => {}
+    })
+  );
 }
 
 function botonSincronizar(html: string) {
@@ -109,7 +111,16 @@ describe("Configuración › Salas: formularios de cuentas", () => {
 
   it("una fila Meet conserva todos sus campos y el borrado", () => {
     const html = formularioDeEdicion(MEET);
-    for (const campo of ["nombre", "email", "password", "prioridad", "limiteConcurrente", "tieneLicencia", "activa", "notificarCambioPassword"]) {
+    for (const campo of [
+      "nombre",
+      "email",
+      "password",
+      "prioridad",
+      "limiteConcurrente",
+      "tieneLicencia",
+      "activa",
+      "notificarCambioPassword"
+    ]) {
       expect(html).toContain(`name="${campo}"`);
     }
     expect(html).toContain("Correo de Google Workspace");
@@ -119,16 +130,20 @@ describe("Configuración › Salas: formularios de cuentas", () => {
 
 describe("Configuración › Salas: lista de cuentas", () => {
   it("una cuenta fuera del grupo muestra el aviso con la cantidad de reuniones futuras", () => {
-    const html = renderToStaticMarkup(createElement(MeetHostsConfig, {
-      hosts: [MEET, { ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 3 }]
-    }));
+    const html = renderToStaticMarkup(
+      createElement(MeetHostsConfig, {
+        hosts: [MEET, { ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 3 }]
+      })
+    );
     expect(html).toContain("Fuera del grupo (3 reuniones futuras)");
   });
 
   it("una cuenta fuera del grupo figura como no disponible", () => {
-    const html = renderToStaticMarkup(createElement(MeetHostsConfig, {
-      hosts: [{ ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 1 }]
-    }));
+    const html = renderToStaticMarkup(
+      createElement(MeetHostsConfig, {
+        hosts: [{ ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 1 }]
+      })
+    );
     expect(html).toContain("Fuera del grupo (1 reunión futura)");
     expect(html).toContain("No disponible");
     expect(html).not.toContain(">Disponible<");
@@ -154,12 +169,14 @@ describe("Configuración › Salas: grupo de Zoom", () => {
     vi.stubGlobal("fetch", fetch);
     // La página formatea la fecha en el servidor (es-UY, Montevideo) para no depender del navegador.
     const fecha = formatDateTime(new Date("2026-11-05T13:30:00.000Z"));
-    const html = renderToStaticMarkup(createElement(ZoomGrupoConfig, {
-      grupoId: "g-1",
-      grupoNombre: "Salas FLACSO",
-      ultimaSincronizacionFecha: fecha,
-      ultimaSincronizacionResultado: "2 nuevas, 1 desactivada"
-    }));
+    const html = renderToStaticMarkup(
+      createElement(ZoomGrupoConfig, {
+        grupoId: "g-1",
+        grupoNombre: "Salas FLACSO",
+        ultimaSincronizacionFecha: fecha,
+        ultimaSincronizacionResultado: "2 nuevas, 1 desactivada"
+      })
+    );
     expect(html).toContain("Salas FLACSO");
     expect(html).toContain(fecha);
     expect(html).toContain("2 nuevas, 1 desactivada");
@@ -174,7 +191,9 @@ describe("Configuración › Salas: grupo de Zoom", () => {
   });
 
   it("con grupo pero sin sincronizar todavía lo dice", () => {
-    const html = renderToStaticMarkup(createElement(ZoomGrupoConfig, { ...SIN_GRUPO, grupoId: "g-1", grupoNombre: "Salas FLACSO" }));
+    const html = renderToStaticMarkup(
+      createElement(ZoomGrupoConfig, { ...SIN_GRUPO, grupoId: "g-1", grupoNombre: "Salas FLACSO" })
+    );
     expect(html).toContain("Todavía no se sincronizó");
   });
 });
@@ -224,12 +243,14 @@ const SIN_CAMBIOS: VistaPreviaSincronizacion = {
 };
 
 function panel(vistaPrevia: VistaPreviaSincronizacion) {
-  return renderToStaticMarkup(createElement(VistaPreviaSincronizacionPanel, {
-    vistaPrevia,
-    ocupado: false,
-    onConfirmar: () => {},
-    onCancelar: () => {}
-  }));
+  return renderToStaticMarkup(
+    createElement(VistaPreviaSincronizacionPanel, {
+      vistaPrevia,
+      ocupado: false,
+      onConfirmar: () => {},
+      onCancelar: () => {}
+    })
+  );
 }
 
 describe("vista previa de la sincronización", () => {
@@ -284,20 +305,27 @@ describe("vista previa de la sincronización", () => {
   });
 
   it("una reunión futura se nombra en singular", () => {
-    const html = panel({ ...SIN_CAMBIOS, marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }] });
+    const html = panel({
+      ...SIN_CAMBIOS,
+      marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }]
+    });
     expect(html).toContain("sala03@flacso.edu.uy (1 reunión futura)");
     expect(html).not.toContain("No cambia ninguna cuenta");
   });
 
   it("solo confirma la sincronización masiva que se vio en la vista previa", () => {
-    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({ confirmar: true, revision: "a".repeat(64) });
+    expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({
+      confirmar: true,
+      revision: "a".repeat(64)
+    });
     expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false, revision: "a".repeat(64) });
   });
 
   it("lee la vista previa de la respuesta y, si no se pudo armar, el mensaje", () => {
     expect(leerVistaPrevia({ ok: true, ...VISTA_PREVIA })).toEqual({ ok: true, vistaPrevia: VISTA_PREVIA });
-    expect(leerVistaPrevia({ ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [] }))
-      .toEqual({ ok: false, mensaje: "El grupo de Zoom no tiene miembros." });
+    expect(leerVistaPrevia({ ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [] })).toEqual(
+      { ok: false, mensaje: "El grupo de Zoom no tiene miembros." }
+    );
     expect(leerVistaPrevia({ error: "Forbidden" })).toEqual({ ok: false, mensaje: "Forbidden" });
     expect(leerVistaPrevia({ ok: true, resumen: "x", crear: "a@x.uy" })).toEqual({
       ok: false,
@@ -317,14 +345,20 @@ describe("vista previa de la sincronización", () => {
 
 describe("resultado de la sincronización", () => {
   it("lee ok y resumen de la respuesta, también cuando no se pudo sincronizar", () => {
-    expect(resultadoSincronizacion({ ok: true, resumen: "2 nuevas" })).toEqual({ ok: true, mensaje: "2 nuevas" });
-    expect(resultadoSincronizacion({ ok: false, resumen: "Ya hay una sincronización en curso." }))
-      .toEqual({ ok: false, mensaje: "Ya hay una sincronización en curso." });
+    expect(resultadoSincronizacion({ ok: true, resumen: "2 nuevas" })).toEqual({
+      ok: true,
+      mensaje: "2 nuevas"
+    });
+    expect(resultadoSincronizacion({ ok: false, resumen: "Ya hay una sincronización en curso." })).toEqual({
+      ok: false,
+      mensaje: "Ya hay una sincronización en curso."
+    });
   });
 
   it("si no hay resumen usa el error y, si tampoco, un mensaje propio", () => {
-    expect(resultadoSincronizacion({ error: "La sesión está desactualizada. Volvé a iniciar sesión." }))
-      .toEqual({ ok: false, mensaje: "La sesión está desactualizada. Volvé a iniciar sesión." });
+    expect(
+      resultadoSincronizacion({ error: "La sesión está desactualizada. Volvé a iniciar sesión." })
+    ).toEqual({ ok: false, mensaje: "La sesión está desactualizada. Volvé a iniciar sesión." });
     expect(resultadoSincronizacion(null)).toEqual({
       ok: false,
       mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo."

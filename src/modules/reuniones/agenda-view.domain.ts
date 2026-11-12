@@ -38,7 +38,9 @@ export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
   }, {});
   const grouped = Object.values(groups);
 
-  if (!esHistorial) return grouped;
+  if (!esHistorial) {
+    return grouped;
+  }
 
   return ordenarPorRecencia(grouped);
 }
@@ -48,17 +50,11 @@ function ordenarPorRecencia<T extends EncuentroAgrupable>(
 ): readonly (readonly T[])[] {
   return groups.reduce<readonly (readonly T[])[]>((ordered, group) => {
     const timestamp = fechaMasReciente(group);
-    const insertionIndex = ordered.findIndex(
-      (candidate) => fechaMasReciente(candidate) < timestamp
-    );
+    const insertionIndex = ordered.findIndex((candidate) => fechaMasReciente(candidate) < timestamp);
 
     return insertionIndex < 0
       ? [...ordered, group]
-      : [
-          ...ordered.slice(0, insertionIndex),
-          group,
-          ...ordered.slice(insertionIndex)
-        ];
+      : [...ordered.slice(0, insertionIndex), group, ...ordered.slice(insertionIndex)];
   }, []);
 }
 
@@ -114,12 +110,13 @@ export function calcularInfoPaginacion(
   };
 }
 
-export function parsearFechaFiltro(
-  dateString: string | undefined,
-  isEnd = false
-): string | undefined {
-  if (!dateString) return undefined;
+export function parsearFechaFiltro(dateString: string | undefined, isEnd = false): string | undefined {
+  if (!dateString) {
+    return undefined;
+  }
   const trimmed = dateString.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return undefined;
+  }
   return isEnd ? `${trimmed}T23:59:59.999-03:00` : `${trimmed}T00:00:00.000-03:00`;
 }

@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  session: { user: { id: "user-1", email: "admin@example.org" } } as null | { user: { id: string; email: string } },
-  actor: { id: "user-1", activo: true, rol: "ADMINISTRACION" } as { id: string; activo: boolean; rol: string } | null,
+  session: { user: { id: "user-1", email: "admin@example.org" } } as null | {
+    user: { id: string; email: string };
+  },
+  actor: { id: "user-1", activo: true, rol: "ADMINISTRACION" } as {
+    id: string;
+    activo: boolean;
+    rol: string;
+  } | null,
   findUnique: vi.fn(),
   canAccess: vi.fn(),
   config: vi.fn(),
@@ -41,7 +47,9 @@ vi.mock("@/src/modules/archivos/infrastructure/google/google-attendance-sheet-re
 import { GET } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/exportar/[fuente]/route";
 
 const url = (fuente: string, formato = "csv") =>
-  new Request(`https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/${fuente}?formato=${formato}`);
+  new Request(
+    `https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/${fuente}?formato=${formato}`
+  );
 const ctx = (fuente: string) => ({ params: Promise.resolve({ instanciaId: "inst-1", fuente }) });
 
 beforeEach(() => {
@@ -52,21 +60,50 @@ beforeEach(() => {
     inicioProgramadoAt: new Date("2026-10-21T12:00:00.000Z"),
     finProgramadoAt: new Date("2026-10-21T13:00:00.000Z"),
     solicitud: { docentePrograma: { programaId: "programa-1" } },
-    eventosProveedor: [{
-      codigoReunion: "abc-def-ghi",
-      cuentaProveedor: { emailOrganizador: "host@flacso.edu.uy" },
-      archivos: [{ driveFileId: "sheet-1", mimeType: "application/vnd.google-apps.spreadsheet" }]
-    }]
+    eventosProveedor: [
+      {
+        codigoReunion: "abc-def-ghi",
+        cuentaProveedor: { emailOrganizador: "host@flacso.edu.uy" },
+        archivos: [{ driveFileId: "sheet-1", mimeType: "application/vnd.google-apps.spreadsheet" }]
+      }
+    ]
   });
   mocks.canAccess.mockResolvedValue(true);
   mocks.jwt.mockReturnValue({});
-  mocks.config.mockResolvedValue({ activa: true, serviceAccountEmail: "service@example.org", privateKeyCifrada: "encrypted" });
+  mocks.config.mockResolvedValue({
+    activa: true,
+    serviceAccountEmail: "service@example.org",
+    privateKeyCifrada: "encrypted"
+  });
   mocks.readSheet.mockResolvedValue({
-    asistencia: [], responsables: [],
+    asistencia: [],
+    responsables: [],
     datosBrutos: [
       ["Fuente"],
-      ["MEET", "Alumno", "", "participants/p1", "", "2026-10-21T12:00:00Z", "2026-10-21T12:20:00Z", 1200, "conf-1", "session-1"],
-      ["REPORTS", "Alumno", "alumno@example.org", "alumno@example.org", "email_address", "2026-10-21T12:00:00Z", "2026-10-21T12:30:00Z", 1800, "audit", "endpoint"]
+      [
+        "MEET",
+        "Alumno",
+        "",
+        "participants/p1",
+        "",
+        "2026-10-21T12:00:00Z",
+        "2026-10-21T12:20:00Z",
+        1200,
+        "conf-1",
+        "session-1"
+      ],
+      [
+        "REPORTS",
+        "Alumno",
+        "alumno@example.org",
+        "alumno@example.org",
+        "email_address",
+        "2026-10-21T12:00:00Z",
+        "2026-10-21T12:30:00Z",
+        1800,
+        "audit",
+        "endpoint"
+      ]
     ]
   });
 });
@@ -90,7 +127,9 @@ describe("descargas por encuentro y API", () => {
     const res = await GET(url("meet"), ctx("meet"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/csv");
-    expect(res.headers.get("content-disposition")).toMatch(/attachment; filename="asistencia_\d+_inst-1_meet.csv"/);
+    expect(res.headers.get("content-disposition")).toMatch(
+      /attachment; filename="asistencia_\d+_inst-1_meet.csv"/
+    );
     expect(res.headers.get("cache-control")).toContain("no-store");
     const body = await res.text();
     expect(body).toContain("participants/p1");
@@ -113,7 +152,11 @@ describe("descargas por encuentro y API", () => {
 
   it("rechaza formatos inválidos y ausencia de registros sin inventar asistencia", async () => {
     expect((await GET(url("reports", "xlsx"), ctx("reports"))).status).toBe(400);
-    mocks.readSheet.mockResolvedValue({ asistencia: [], responsables: [], datosBrutos: [["Fuente"], ["MEET", "Alumno"]] });
+    mocks.readSheet.mockResolvedValue({
+      asistencia: [],
+      responsables: [],
+      datosBrutos: [["Fuente"], ["MEET", "Alumno"]]
+    });
     const res = await GET(url("reports"), ctx("reports"));
     expect(res.status).toBe(409);
     expect((await res.json()).error).toContain("no demuestra ausencia");
@@ -121,7 +164,9 @@ describe("descargas por encuentro y API", () => {
 
   it("no admite identificadores de hojas elegidos desde el navegador", async () => {
     const response = await GET(
-      new Request("https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/meet?spreadsheetId=other"),
+      new Request(
+        "https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/meet?spreadsheetId=other"
+      ),
       ctx("meet")
     );
     expect(response.status).toBe(200);

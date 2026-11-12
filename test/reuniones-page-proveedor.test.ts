@@ -23,7 +23,10 @@ const donde = (llamada: readonly unknown[] | undefined) => (llamada?.[0] as { wh
 describe("lista de reuniones filtrada por proveedor", () => {
   it("la vista por encuentros filtra los encuentros y sus conteos por el proveedor pedido", async () => {
     const { db, cliente } = fakeDb();
-    const datos = await obtenerDatosPaginaReuniones(cliente, admin, { vista: "encuentros", proveedor: "zoom" });
+    const datos = await obtenerDatosPaginaReuniones(cliente, admin, {
+      vista: "encuentros",
+      proveedor: "zoom"
+    });
     const filtro = filtroProveedorActivo("ZOOM");
     expect(datos.proveedor).toBe("ZOOM");
     expect(incluye(donde(db.instanciaSala.findMany.mock.calls[0]), filtro)).toBe(true);
@@ -39,7 +42,8 @@ describe("lista de reuniones filtrada por proveedor", () => {
     const filtro = filtroProveedorActivo("GOOGLE_MEET");
     expect(incluye(donde(db.solicitudSala.findMany.mock.calls[0]), filtro)).toBe(true);
     const traeEncuentros = db.instanciaSala.findMany.mock.calls.find((llamada) =>
-      JSON.stringify(donde(llamada)).includes('"solicitudSalaId"'));
+      JSON.stringify(donde(llamada)).includes('"solicitudSalaId"')
+    );
     expect(traeEncuentros).toBeDefined();
     expect(incluye(donde(traeEncuentros), filtro)).toBe(true);
   });
@@ -48,6 +52,8 @@ describe("lista de reuniones filtrada por proveedor", () => {
     const { db, cliente } = fakeDb();
     const datos = await obtenerDatosPaginaReuniones(cliente, admin, { vista: "encuentros" });
     expect(datos.proveedor).toBeNull();
-    expect(JSON.stringify(donde(db.instanciaSala.findMany.mock.calls[0]))).not.toContain("proveedorActivoTipo");
+    expect(JSON.stringify(donde(db.instanciaSala.findMany.mock.calls[0]))).not.toContain(
+      "proveedorActivoTipo"
+    );
   });
 });

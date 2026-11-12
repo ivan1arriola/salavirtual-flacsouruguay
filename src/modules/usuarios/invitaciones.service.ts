@@ -12,7 +12,9 @@ export async function invitarUsuario(
   actor: SessionActor,
   rawInput: unknown
 ): Promise<Readonly<{ usuarioId: string; correoEnviado: boolean }>> {
-  if (!puedeInvitarUsuarios(actor)) throw new Error("Solo Administración puede invitar usuarios.");
+  if (!puedeInvitarUsuarios(actor)) {
+    throw new Error("Solo Administración puede invitar usuarios.");
+  }
   const input = invitarUsuarioSchema.parse(rawInput);
   const user = await db.$transaction(async (tx) => {
     const admin = await tx.usuario.findUnique({
@@ -31,19 +33,23 @@ export async function invitarUsuario(
       },
       select: { id: true }
     });
-    if (duplicate) throw new Error("Ya existe un usuario asociado a ese correo.");
+    if (duplicate) {
+      throw new Error("Ya existe un usuario asociado a ese correo.");
+    }
 
-    const programa = input.rol === "DOCENTE"
-      ? await resolverProgramaInvitacion(tx, input.programaId, input.programaNuevo)
-      : null;
+    const programa =
+      input.rol === "DOCENTE"
+        ? await resolverProgramaInvitacion(tx, input.programaId, input.programaNuevo)
+        : null;
     const usuarioId = await idInvitadoDisponible(tx, input.email);
-    const assistantSlug = input.rol === "ASISTENTE_TECNICO"
-      ? await crearSlugAsistenteDisponible(
-          tx,
-          [input.nombres, input.apellidos].filter(Boolean).join(" "),
-          usuarioId
-        )
-      : null;
+    const assistantSlug =
+      input.rol === "ASISTENTE_TECNICO"
+        ? await crearSlugAsistenteDisponible(
+            tx,
+            [input.nombres, input.apellidos].filter(Boolean).join(" "),
+            usuarioId
+          )
+        : null;
     const created = await tx.usuario.create({
       data: {
         id: usuarioId,
@@ -63,7 +69,9 @@ export async function invitarUsuario(
                 }
               }
             }
-          : input.rol === "ASISTENTE_TECNICO" ? { asistenteTecnico: { create: { slug: assistantSlug! } } } : {})
+          : input.rol === "ASISTENTE_TECNICO"
+            ? { asistenteTecnico: { create: { slug: assistantSlug! } } }
+            : {})
       },
       select: { id: true }
     });
@@ -86,8 +94,10 @@ export async function invitarUsuario(
       titulo: "Te damos la bienvenida a Sala Virtual",
       resumen: "Administración de FLACSO Uruguay te invitó a utilizar la plataforma.",
       variante: "accion",
-      contenidoHtml: '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
-        escaparHtmlEmail(input.nombres) + '.</p>' +
+      contenidoHtml:
+        '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
+        escaparHtmlEmail(input.nombres) +
+        ".</p>" +
         '<p style="margin:0 0 15px;color:#526277;font-size:14px;line-height:22px">Ingresá con la cuenta de Google que corresponde a este correo. No necesitás crear una contraseña.</p>',
       accion: { texto: "Ingresar a Sala Virtual", url: accesoUrl }
     });
@@ -122,18 +132,25 @@ async function resolverProgramaInvitacion(
       where: { id: programaId, activo: true },
       select: { id: true, nombre: true }
     });
-    if (!existing) throw new Error("El programa seleccionado no existe o está inactivo.");
+    if (!existing) {
+      throw new Error("El programa seleccionado no existe o está inactivo.");
+    }
     return existing;
   }
   const duplicate = await tx.programa.findFirst({
     where: { nombre: { equals: programaNuevo!, mode: "insensitive" } },
     select: { id: true, nombre: true, activo: true }
   });
-  if (duplicate && !duplicate.activo) throw new Error("Ya existe un programa inactivo con ese nombre.");
-  return duplicate ?? tx.programa.create({
-    data: { nombre: programaNuevo!, activo: true },
-    select: { id: true, nombre: true }
-  });
+  if (duplicate && !duplicate.activo) {
+    throw new Error("Ya existe un programa inactivo con ese nombre.");
+  }
+  return (
+    duplicate ??
+    tx.programa.create({
+      data: { nombre: programaNuevo!, activo: true },
+      select: { id: true, nombre: true }
+    })
+  );
 }
 
 async function idInvitadoDisponible(tx: Prisma.TransactionClient, email: string): Promise<string> {

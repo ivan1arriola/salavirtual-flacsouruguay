@@ -7,12 +7,7 @@ describe("eliminación administrativa de usuarios", () => {
     const db = { $transaction: vi.fn() } as unknown as PrismaClient;
 
     await expect(
-      eliminarUsuarioCompleto(
-        db,
-        { id: "admin", rol: "ADMINISTRACION", activo: true },
-        "admin",
-        "ELIMINAR"
-      )
+      eliminarUsuarioCompleto(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "admin", "ELIMINAR")
     ).rejects.toThrow("No podés eliminar tu propia cuenta.");
 
     expect(db.$transaction).not.toHaveBeenCalled();
@@ -22,12 +17,7 @@ describe("eliminación administrativa de usuarios", () => {
     const db = { $transaction: vi.fn() } as unknown as PrismaClient;
 
     await expect(
-      eliminarUsuarioCompleto(
-        db,
-        { id: "admin", rol: "ADMINISTRACION", activo: true },
-        "usuario",
-        "eliminar"
-      )
+      eliminarUsuarioCompleto(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "usuario", "eliminar")
     ).rejects.toThrow("La confirmación de eliminación no es válida.");
 
     expect(db.$transaction).not.toHaveBeenCalled();
@@ -38,7 +28,8 @@ describe("eliminación administrativa de usuarios", () => {
     const createAudit = vi.fn().mockResolvedValue({});
     const tx = {
       usuario: {
-        findUnique: vi.fn()
+        findUnique: vi
+          .fn()
           .mockResolvedValueOnce({ id: "admin", rol: "ADMINISTRACION", activo: true })
           .mockResolvedValueOnce({
             id: "usuario",

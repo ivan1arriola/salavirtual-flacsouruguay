@@ -10,7 +10,9 @@ const roots = [
 ];
 
 function sourceFiles(root: string): string[] {
-  if (!existsSync(root)) return [];
+  if (!existsSync(root)) {
+    return [];
+  }
   const files: string[] = [];
   for (const entry of readdirSync(root)) {
     const path = join(root, entry);
@@ -19,8 +21,11 @@ function sourceFiles(root: string): string[] {
       continue;
     }
     const stat = statSync(path);
-    if (stat.isDirectory()) files.push(...sourceFiles(path));
-    else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) files.push(path);
+    if (stat.isDirectory()) {
+      files.push(...sourceFiles(path));
+    } else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) {
+      files.push(path);
+    }
   }
   return files;
 }
@@ -38,9 +43,7 @@ describe("frontera de compatibilidad del módulo meet", () => {
 
     it(`${rel} no depende de src/modules/meet`, () => {
       const hasLegacyImport =
-        source.includes("@/src/modules/meet/") ||
-        source.includes("../meet/") ||
-        source.includes("./meet/");
+        source.includes("@/src/modules/meet/") || source.includes("../meet/") || source.includes("./meet/");
       expect(
         hasLegacyImport,
         "El código runtime debe usar conferencias, archivos o bootstrap; meet es solo compatibilidad."
@@ -48,4 +51,3 @@ describe("frontera de compatibilidad del módulo meet", () => {
     });
   }
 });
-

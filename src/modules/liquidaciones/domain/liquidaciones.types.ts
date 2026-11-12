@@ -64,14 +64,15 @@ export type AsignacionResumenAdministracion = Readonly<{
   moneda: string;
 }>;
 
-export type FilaResumenAsistente = AsistenteResumenBase & Readonly<{
-  reuniones: number;
-  virtuales: number;
-  hibridas: number;
-  minutos: number;
-  montos: readonly MontoMoneda[];
-  sinTarifa: number;
-}>;
+export type FilaResumenAsistente = AsistenteResumenBase &
+  Readonly<{
+    reuniones: number;
+    virtuales: number;
+    hibridas: number;
+    minutos: number;
+    montos: readonly MontoMoneda[];
+    sinTarifa: number;
+  }>;
 
 export type TotalesResumen = Readonly<{
   asistentes: number;

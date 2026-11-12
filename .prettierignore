@@ -1,0 +1,8 @@
+node_modules
+.next
+.next-dev
+coverage
+.zoom-worker
+package-lock.json
+prisma/migrations
+*.min.js

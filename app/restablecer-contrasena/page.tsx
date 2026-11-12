@@ -32,9 +32,27 @@ export default async function RestablecerContrasenaPage({
             <p>El enlace recibido por correo es temporal y se invalida automáticamente después de usarlo.</p>
           </div>
           <ul className="login-feature-list" aria-label="Características de seguridad">
-            <li><ShieldCheck size={19} /><span><strong>Protegida</strong><small>Hash seguro con bcrypt</small></span></li>
-            <li><KeyRound size={19} /><span><strong>8 caracteres</strong><small>Mínimo requerido</small></span></li>
-            <li><KeyRound size={19} /><span><strong>Un solo uso</strong><small>El enlace queda invalidado</small></span></li>
+            <li>
+              <ShieldCheck size={19} />
+              <span>
+                <strong>Protegida</strong>
+                <small>Hash seguro con bcrypt</small>
+              </span>
+            </li>
+            <li>
+              <KeyRound size={19} />
+              <span>
+                <strong>8 caracteres</strong>
+                <small>Mínimo requerido</small>
+              </span>
+            </li>
+            <li>
+              <KeyRound size={19} />
+              <span>
+                <strong>Un solo uso</strong>
+                <small>El enlace queda invalidado</small>
+              </span>
+            </li>
           </ul>
           <p className="login-brand-footer">FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales</p>
         </aside>
@@ -42,13 +60,19 @@ export default async function RestablecerContrasenaPage({
         <div className="login-panel">
           <div className="login-panel-inner">
             <header className="login-header">
-              <span className="login-lock"><KeyRound size={20} /></span>
+              <span className="login-lock">
+                <KeyRound size={20} />
+              </span>
               <p className="eyebrow">Sala Virtual FLACSO</p>
               <h1 id="reset-title">Nueva contraseña</h1>
               <p>Ingresala dos veces para confirmar el cambio.</p>
             </header>
 
-            {mensaje ? <p className="login-error" role="alert">{mensaje}</p> : null}
+            {mensaje ? (
+              <p className="login-error" role="alert">
+                {mensaje}
+              </p>
+            ) : null}
 
             {token ? (
               <form className="login-form" action={guardarNuevaPassword}>
@@ -73,13 +97,21 @@ export default async function RestablecerContrasenaPage({
                   maxLength={72}
                   required
                 />
-                <button className="login-submit-button" type="submit">Guardar nueva contraseña</button>
+                <button className="login-submit-button" type="submit">
+                  Guardar nueva contraseña
+                </button>
               </form>
             ) : (
-              <p className="login-error" role="alert">Falta el token de recuperación. Solicitá un nuevo enlace.</p>
+              <p className="login-error" role="alert">
+                Falta el token de recuperación. Solicitá un nuevo enlace.
+              </p>
             )}
 
-            <p className="login-help"><a className="login-inline-link" href="/recuperar-contrasena">Solicitar un nuevo enlace</a></p>
+            <p className="login-help">
+              <a className="login-inline-link" href="/recuperar-contrasena">
+                Solicitar un nuevo enlace
+              </a>
+            </p>
           </div>
         </div>
       </section>

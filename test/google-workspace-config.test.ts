@@ -47,13 +47,15 @@ describe("configuracion funcional de Google Workspace", () => {
   });
 
   it("rechaza una clave privada que no tenga formato PEM", () => {
-    expect(() => configuracionGoogleWorkspaceSchema.parse({
-      serviceAccountEmail: "service@project.iam.gserviceaccount.com",
-      privateKey: "no-es-pem",
-      serviceAccountSubject: "usuario@flacso.edu.uy",
-      driveDestinationId: "drive-folder",
-      activa: true
-    })).toThrow("formato PEM");
+    expect(() =>
+      configuracionGoogleWorkspaceSchema.parse({
+        serviceAccountEmail: "service@project.iam.gserviceaccount.com",
+        privateKey: "no-es-pem",
+        serviceAccountSubject: "usuario@flacso.edu.uy",
+        driveDestinationId: "drive-folder",
+        activa: true
+      })
+    ).toThrow("formato PEM");
   });
 
   it("valida cada seccion sin exigir valores de las otras", () => {
@@ -84,7 +86,8 @@ describe("configuracion funcional de Google Workspace", () => {
     type: "service_account",
     project_id: "flacso-zoom-app",
     private_key_id: "277f21b0dbd4da25eecb1433087ae4649dfd84f5",
-    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDDVofnfJgif882\n-----END PRIVATE KEY-----\n",
+    private_key:
+      "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDDVofnfJgif882\n-----END PRIVATE KEY-----\n",
     client_email: "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com",
     client_id: "112652356410959245168",
     auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -96,11 +99,15 @@ describe("configuracion funcional de Google Workspace", () => {
       seccion: "CREDENCIAL",
       serviceAccountJson: validServiceAccountJson
     });
-    if (parsed.seccion !== "CREDENCIAL") throw new Error("Se esperaba seccion CREDENCIAL");
+    if (parsed.seccion !== "CREDENCIAL") {
+      throw new Error("Se esperaba seccion CREDENCIAL");
+    }
 
     expect(parsed.seccion).toBe("CREDENCIAL");
     expect(parsed.credentialId).toBe("principal");
-    expect(parsed.serviceAccountJson.client_email).toBe("flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com");
+    expect(parsed.serviceAccountJson.client_email).toBe(
+      "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com"
+    );
     expect(parsed.serviceAccountJson.project_id).toBe("flacso-zoom-app");
     expect(parsed.serviceAccountJson.client_id).toBe("112652356410959245168");
     expect(parsed.serviceAccountJson.private_key).toContain("-----BEGIN PRIVATE KEY-----");
@@ -111,9 +118,13 @@ describe("configuracion funcional de Google Workspace", () => {
       seccion: "CREDENCIAL",
       serviceAccountJson: JSON.stringify(validServiceAccountJson)
     });
-    if (parsed.seccion !== "CREDENCIAL") throw new Error("Se esperaba seccion CREDENCIAL");
+    if (parsed.seccion !== "CREDENCIAL") {
+      throw new Error("Se esperaba seccion CREDENCIAL");
+    }
 
-    expect(parsed.serviceAccountJson.client_email).toBe("flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com");
+    expect(parsed.serviceAccountJson.client_email).toBe(
+      "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com"
+    );
     expect(parsed.serviceAccountJson.client_id).toBe("112652356410959245168");
   });
 
@@ -123,42 +134,54 @@ describe("configuracion funcional de Google Workspace", () => {
       credentialId: "legacy:old-project",
       serviceAccountJson: validServiceAccountJson
     });
-    if (parsed.seccion !== "CREDENCIAL") throw new Error("Se esperaba seccion CREDENCIAL");
+    if (parsed.seccion !== "CREDENCIAL") {
+      throw new Error("Se esperaba seccion CREDENCIAL");
+    }
 
     expect(parsed.credentialId).toBe("legacy:old-project");
-    expect(parsed.serviceAccountJson.client_email).toBe("flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com");
+    expect(parsed.serviceAccountJson.client_email).toBe(
+      "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com"
+    );
 
-    expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
-      seccion: "CREDENCIAL",
-      credentialId: "otra-configuracion",
-      serviceAccountJson: validServiceAccountJson
-    })).toThrow("Identificador de credencial inválido");
+    expect(() =>
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "CREDENCIAL",
+        credentialId: "otra-configuracion",
+        serviceAccountJson: validServiceAccountJson
+      })
+    ).toThrow("Identificador de credencial inválido");
   });
 
   it("rechaza configuraciones de credencial que no provean el JSON oficial de Google Cloud", () => {
-    expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
-      seccion: "CREDENCIAL",
-      serviceAccountEmail: "cuenta@proyecto.iam.gserviceaccount.com",
-      privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
-    })).toThrow();
+    expect(() =>
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "CREDENCIAL",
+        serviceAccountEmail: "cuenta@proyecto.iam.gserviceaccount.com",
+        privateKey: "-----BEGIN PRIVATE KEY-----\ncontenido\n-----END PRIVATE KEY-----"
+      })
+    ).toThrow();
   });
 
   it("rechaza JSONs que no sean del tipo service_account o tengan clave inválida", () => {
-    expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
-      seccion: "CREDENCIAL",
-      serviceAccountJson: {
-        ...validServiceAccountJson,
-        type: "authorized_user"
-      }
-    })).toThrow("service_account");
+    expect(() =>
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "CREDENCIAL",
+        serviceAccountJson: {
+          ...validServiceAccountJson,
+          type: "authorized_user"
+        }
+      })
+    ).toThrow("service_account");
 
-    expect(() => seccionConfiguracionGoogleWorkspaceSchema.parse({
-      seccion: "CREDENCIAL",
-      serviceAccountJson: {
-        ...validServiceAccountJson,
-        private_key: "no-es-pem"
-      }
-    })).toThrow("formato PEM");
+    expect(() =>
+      seccionConfiguracionGoogleWorkspaceSchema.parse({
+        seccion: "CREDENCIAL",
+        serviceAccountJson: {
+          ...validServiceAccountJson,
+          private_key: "no-es-pem"
+        }
+      })
+    ).toThrow("formato PEM");
   });
 
   describe("parseServiceAccountKeyJson", () => {
@@ -186,48 +209,50 @@ describe("configuracion funcional de Google Workspace", () => {
 
     it("rechaza JSON que no sea un objeto", () => {
       expect(() => parseServiceAccountKeyJson("123")).toThrow("objeto JSON");
-      expect(() => parseServiceAccountKeyJson("[\"un-array\"]")).toThrow("objeto JSON");
+      expect(() => parseServiceAccountKeyJson('["un-array"]')).toThrow("objeto JSON");
     });
 
     it("rechaza si falta client_email o si no es un email válido", () => {
-      expect(() => parseServiceAccountKeyJson({
-        ...validServiceAccountJson,
-        client_email: "no-es-un-email"
-      })).toThrow("client_email");
+      expect(() =>
+        parseServiceAccountKeyJson({
+          ...validServiceAccountJson,
+          client_email: "no-es-un-email"
+        })
+      ).toThrow("client_email");
     });
   });
 
   it("acepta la prueba especifica de scopes", () => {
-    expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({ objetivo: "SCOPES" }))
-      .toEqual({ objetivo: "SCOPES" });
+    expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({ objetivo: "SCOPES" })).toEqual({
+      objetivo: "SCOPES"
+    });
   });
 
   it("acepta probar una credencial Legacy concreta", () => {
-    expect(pruebaConfiguracionGoogleWorkspaceSchema.parse({
-      objetivo: "CREDENCIAL",
-      credentialId: "legacy:old-project"
-    })).toEqual({ objetivo: "CREDENCIAL", credentialId: "legacy:old-project" });
+    expect(
+      pruebaConfiguracionGoogleWorkspaceSchema.parse({
+        objetivo: "CREDENCIAL",
+        credentialId: "legacy:old-project"
+      })
+    ).toEqual({ objetivo: "CREDENCIAL", credentialId: "legacy:old-project" });
   });
 
   it("explica como corregir unauthorized_client", () => {
-    const message = mensajeErrorGoogleWorkspace(
-      new Error("unauthorized_client: Client is unauthorized")
-    );
+    const message = mensajeErrorGoogleWorkspace(new Error("unauthorized_client: Client is unauthorized"));
     expect(message).toContain("ID numérico");
     expect(message).toContain("scopes requeridos");
   });
 
   it("explica como corregir invalid_client", () => {
-    const message = mensajeErrorGoogleWorkspace(
-      new Error("invalid_client: The OAuth client was not found")
-    );
+    const message = mensajeErrorGoogleWorkspace(new Error("invalid_client: The OAuth client was not found"));
     expect(message).toContain("cuenta de servicio");
     expect(message).toContain("email y la clave privada");
   });
 
   it("explica cuando Google deniega la delegación del dominio", () => {
-    expect(mensajeErrorGoogleWorkspace(new Error("Delegation denied for user")))
-      .toContain("Google denegó la delegación del dominio");
+    expect(mensajeErrorGoogleWorkspace(new Error("Delegation denied for user"))).toContain(
+      "Google denegó la delegación del dominio"
+    );
   });
 
   it("distingue scopes insuficientes de permisos de recursos", () => {
@@ -256,7 +281,7 @@ describe("configuracion funcional de Google Workspace", () => {
 
       const tx = {
         usuario: {
-          findUnique: async () => actor,
+          findUnique: async () => actor
         },
         configuracionGoogleWorkspace: {
           findUnique: async () => null,
@@ -268,33 +293,33 @@ describe("configuracion funcional de Google Workspace", () => {
               driveDestinationId: null,
               privateKeyCifrada: args.create.privateKeyCifrada,
               activa: true,
-              version: 1,
+              version: 1
             };
-          },
+          }
         },
         auditoria: {
           create: async (args: any) => {
             auditoriaArgs = args;
-          },
-        },
+          }
+        }
       };
 
       const db = {
-        $transaction: async (cb: any) => cb(tx),
+        $transaction: async (cb: any) => cb(tx)
       } as any;
 
-      const result = await actualizarSeccionGoogleWorkspace(
-        { db, cifrar: (val) => `enc:${val}` },
-        actor,
-        {
-          seccion: "CREDENCIAL",
-          serviceAccountJson: validServiceAccountJson,
-        }
-      );
+      const result = await actualizarSeccionGoogleWorkspace({ db, cifrar: (val) => `enc:${val}` }, actor, {
+        seccion: "CREDENCIAL",
+        serviceAccountJson: validServiceAccountJson
+      });
 
-      expect(result.serviceAccountEmail).toBe("flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com");
+      expect(result.serviceAccountEmail).toBe(
+        "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com"
+      );
       expect(result.privateKeyConfigurada).toBe(true);
-      expect(upsertArgs.create.serviceAccountEmail).toBe("flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com");
+      expect(upsertArgs.create.serviceAccountEmail).toBe(
+        "flacso-cuenta-servicio@flacso-zoom-app.iam.gserviceaccount.com"
+      );
       expect(upsertArgs.create.privateKeyCifrada).toContain("enc:-----BEGIN PRIVATE KEY-----");
       expect(auditoriaArgs.data.valorNuevo.projectId).toBe("flacso-zoom-app");
       expect(auditoriaArgs.data.valorNuevo.clientId).toBe("112652356410959245168");

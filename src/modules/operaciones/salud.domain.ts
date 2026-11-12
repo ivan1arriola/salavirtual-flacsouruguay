@@ -12,10 +12,11 @@ export type OperationalHealth = Readonly<{
  */
 export function evaluarSaludOperativa(input: Omit<OperationalHealth, "status">): OperationalHealth {
   const { pendingGoogle, googleErrors, staleClaims, oldestPendingMinutes } = input;
-  const status = staleClaims > 0 || (oldestPendingMinutes ?? 0) >= 120
-    ? "critico"
-    : googleErrors > 0 || (oldestPendingMinutes ?? 0) >= 30
-      ? "degradado"
-      : "ok";
+  const status =
+    staleClaims > 0 || (oldestPendingMinutes ?? 0) >= 120
+      ? "critico"
+      : googleErrors > 0 || (oldestPendingMinutes ?? 0) >= 30
+        ? "degradado"
+        : "ok";
   return { ...input, status };
 }

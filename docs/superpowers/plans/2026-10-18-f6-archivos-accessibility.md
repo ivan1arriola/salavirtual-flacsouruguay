@@ -28,11 +28,13 @@
 ### Task 1: Align recordings filters with native controls
 
 **Files:**
+
 - Modify: `src/components/recordings-library.tsx`
 - Test: `test/recordings-library-accessibility.test.ts`
 - Document: `docs/ui/archivos.md`
 
 **Interfaces:**
+
 - Consumes and produces: existing `RecordingsLibraryProps`, URL filter behavior, and CSS classes; no interface changes.
 
 - [x] Write a failing source contract test checking the filter group, pressed states, search input type, and absence of tab roles.

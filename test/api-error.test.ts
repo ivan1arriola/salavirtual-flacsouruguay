@@ -23,8 +23,12 @@ describe("errores HTTP", () => {
   });
 
   it("convierte el primer problema de Zod en un 400", () => {
-    const parsed = z.object({ nombre: z.string().min(3, "Nombre demasiado corto") }).safeParse({ nombre: "x" });
-    if (parsed.success) throw new Error("La prueba esperaba un error de Zod");
+    const parsed = z
+      .object({ nombre: z.string().min(3, "Nombre demasiado corto") })
+      .safeParse({ nombre: "x" });
+    if (parsed.success) {
+      throw new Error("La prueba esperaba un error de Zod");
+    }
 
     expect(toHttpError(parsed.error)).toEqual({
       status: 400,

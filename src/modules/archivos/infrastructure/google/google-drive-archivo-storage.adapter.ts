@@ -58,34 +58,66 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
 
   async iniciarSubida(destino: DestinoSubidaArchivo, origenKey: string): Promise<string> {
     const url = await iniciarSubidaDriveReanudable(this.deps.auth, {
-      fileId: destino.fileId, nombre: destino.nombre, carpetaId: destino.carpetaId,
-      mimeType: destino.mimeType, origenHash: origenKey, tamanoTotal: destino.tamanoTotal
+      fileId: destino.fileId,
+      nombre: destino.nombre,
+      carpetaId: destino.carpetaId,
+      mimeType: destino.mimeType,
+      origenHash: origenKey,
+      tamanoTotal: destino.tamanoTotal
     });
     return this.deps.cifrar(url);
   }
 
-  async consultarSubida(sesionCifrada: string, total: bigint | null, signal?: AbortSignal): Promise<EstadoSubidaArchivo> {
-    return aEstado(await consultarSubidaDriveReanudable(this.deps.auth, this.deps.descifrar(sesionCifrada), total, { signal }));
+  async consultarSubida(
+    sesionCifrada: string,
+    total: bigint | null,
+    signal?: AbortSignal
+  ): Promise<EstadoSubidaArchivo> {
+    return aEstado(
+      await consultarSubidaDriveReanudable(this.deps.auth, this.deps.descifrar(sesionCifrada), total, {
+        signal
+      })
+    );
   }
 
   async subirBloque(
-    sesionCifrada: string, offset: bigint, bytes: Uint8Array, total: bigint | null,
+    sesionCifrada: string,
+    offset: bigint,
+    bytes: Uint8Array,
+    total: bigint | null,
     opciones: Readonly<{ ultimo?: boolean; signal?: AbortSignal }> = {}
   ): Promise<EstadoSubidaArchivo> {
-    return aEstado(await subirBloqueDriveReanudable(
-      this.deps.auth, this.deps.descifrar(sesionCifrada), offset, bytes, total, opciones
-    ));
+    return aEstado(
+      await subirBloqueDriveReanudable(
+        this.deps.auth,
+        this.deps.descifrar(sesionCifrada),
+        offset,
+        bytes,
+        total,
+        opciones
+      )
+    );
   }
 
-  async buscarConservado(origenKey: string, fileId: string | null, signal?: AbortSignal): Promise<BusquedaConservadoArchivo> {
+  async buscarConservado(
+    origenKey: string,
+    fileId: string | null,
+    signal?: AbortSignal
+  ): Promise<BusquedaConservadoArchivo> {
     if (fileId) {
       const porId = await obtenerArchivoDrivePorId(this.deps.auth, fileId, { signal });
       // Un archivo con tamaño pero aún sin finalizar no existe en Drive: solo cuenta lo completo.
-      if (porId && !porId.trashed && porId.size !== undefined) return { tipo: "UNO", destino: aDestino(porId) };
+      if (porId && !porId.trashed && porId.size !== undefined) {
+        return { tipo: "UNO", destino: aDestino(porId) };
+      }
     }
     const marcados = await listarArchivosDrivePorOrigen(this.deps.auth, origenKey, { signal });
-    if (marcados.length === 0) return { tipo: "NINGUNO" };
-    if (marcados.length > 1) return { tipo: "AMBIGUO", cantidad: marcados.length };
+    if (marcados.length === 0) {
+      return { tipo: "NINGUNO" };
+    }
+    if (marcados.length > 1) {
+      return { tipo: "AMBIGUO", cantidad: marcados.length };
+    }
     return { tipo: "UNO", destino: aDestino(marcados[0]!) };
   }
 

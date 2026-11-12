@@ -27,10 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const { instanciaId } = await context.params;
-    const result = await obtenerReunionOperativa(
-      { id: actor.id, rol: actor.rol },
-      instanciaId
-    );
+    const result = await obtenerReunionOperativa({ id: actor.id, rol: actor.rol }, instanciaId);
     if (result.estado === "NO_ENCONTRADA") {
       return NextResponse.json({ error: "La reunión no existe." }, { status: 404 });
     }
@@ -102,4 +99,3 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }
-

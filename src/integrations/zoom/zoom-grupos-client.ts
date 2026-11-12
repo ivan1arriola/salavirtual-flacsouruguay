@@ -15,8 +15,12 @@ const MAX_PAGINAS = 50;
 
 async function pedirZoom<T>(url: string, token: string, accion: string): Promise<T> {
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (response.status === 401 || response.status === 403) throw new ZoomPermisosError();
-  if (response.status === 404) throw new Error("El grupo de Zoom ya no existe.");
+  if (response.status === 401 || response.status === 403) {
+    throw new ZoomPermisosError();
+  }
+  if (response.status === 404) {
+    throw new Error("El grupo de Zoom ya no existe.");
+  }
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(`Zoom API error al ${accion} (${response.status}): ${errorBody || response.statusText}`);
@@ -43,14 +47,22 @@ export async function listarMiembrosGrupoZoomHttp(
   for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
     const url = paginaToken ? `${base}&next_page_token=${encodeURIComponent(paginaToken)}` : base;
     const data = await pedirZoom<{
-      members?: readonly { id: string; email: string; first_name?: string; last_name?: string; type?: number }[];
+      members?: readonly {
+        id: string;
+        email: string;
+        first_name?: string;
+        last_name?: string;
+        type?: number;
+      }[];
       next_page_token?: string;
     }>(url, token, "listar miembros del grupo");
     for (const m of data.members ?? []) {
       const nombre = `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim();
       miembros.push({ id: m.id, email: m.email, nombre: nombre || m.email, licenciado: m.type === 2 });
     }
-    if (!data.next_page_token) return miembros;
+    if (!data.next_page_token) {
+      return miembros;
+    }
     paginaToken = data.next_page_token;
   }
   throw new Error(`El grupo de Zoom supera el máximo de ${MAX_PAGINAS} páginas de miembros.`);

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import {
   crearGoogleConferenceProvider,
-  crearPrismaConferenciasRepository,
+  crearPrismaConferenciasRepository
 } from "../src/modules/conferencias/infrastructure";
 
 describe("conferencias/infrastructure", () => {
@@ -11,7 +11,7 @@ describe("conferencias/infrastructure", () => {
       const provider = crearGoogleConferenceProvider({
         serviceAccountEmail: "test@flacso.iam.gserviceaccount.com",
         privateKey: "pk-test",
-        subject: "sala01@flacso.edu.uy",
+        subject: "sala01@flacso.edu.uy"
       });
 
       expect(typeof provider.crearEventoCalendar).toBe("function");
@@ -33,15 +33,15 @@ describe("conferencias/infrastructure", () => {
             id: "principal",
             activa: true,
             serviceAccountEmail: "principal@flacso.edu.uy",
-            privateKeyCifrada: "cifrada:123",
-          }),
-        },
+            privateKeyCifrada: "cifrada:123"
+          })
+        }
       } as unknown as PrismaClient;
 
       const descifrar = vi.fn((val: string) => `descifrada:${val}`);
       const repo = crearPrismaConferenciasRepository({
         db: mockDb,
-        descifrarConfiguracion: descifrar,
+        descifrarConfiguracion: descifrar
       });
 
       const creds = await repo.obtenerCredencialesWorkspace();
@@ -55,58 +55,64 @@ describe("conferencias/infrastructure", () => {
       const createdAt = new Date("2026-10-08T12:00:00Z");
       const conferenceData = {
         conferenceId: "abc-defg-hij",
-        entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }],
+        entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }]
       };
       const findUnique = vi.fn().mockResolvedValue({
         docenteProgramaId: "docente-programa-1",
         titulo: "Taller",
-        createdAt,
+        createdAt
       });
-      const findMany = vi.fn().mockResolvedValue([
-        { payloadUltimo: { id: "evento-incompleto" } },
-        { payloadUltimo: { conferenceData } },
-      ]);
+      const findMany = vi
+        .fn()
+        .mockResolvedValue([
+          { payloadUltimo: { id: "evento-incompleto" } },
+          { payloadUltimo: { conferenceData } }
+        ]);
       const mockDb = {
         solicitudSala: { findUnique },
-        eventoProveedor: { findMany },
+        eventoProveedor: { findMany }
       } as unknown as PrismaClient;
 
       const repo = crearPrismaConferenciasRepository({
         db: mockDb,
-        descifrarConfiguracion: (v) => v,
+        descifrarConfiguracion: (v) => v
       });
-      await expect(repo.buscarConferenceDataCompartida("solicitud-2", "evento-actual"))
-        .resolves.toEqual(conferenceData);
+      await expect(repo.buscarConferenceDataCompartida("solicitud-2", "evento-actual")).resolves.toEqual(
+        conferenceData
+      );
       expect(findUnique).toHaveBeenCalledWith({
         where: { id: "solicitud-2" },
-        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
+        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true }
       });
-      expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({
-          id: { not: "evento-actual" },
-          proveedor: { tipo: "GOOGLE_MEET" },
-          instancia: {
-            estado: "PROGRAMADA",
-            solicitud: { docenteProgramaId: "docente-programa-1", titulo: "Taller", createdAt },
-          },
-          estadoIntegracion: "SINCRONIZADA",
-          operacionPendiente: null,
-        }),
-      }));
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { not: "evento-actual" },
+            proveedor: { tipo: "GOOGLE_MEET" },
+            instancia: {
+              estado: "PROGRAMADA",
+              solicitud: { docenteProgramaId: "docente-programa-1", titulo: "Taller", createdAt }
+            },
+            estadoIntegracion: "SINCRONIZADA",
+            operacionPendiente: null
+          })
+        })
+      );
     });
 
     it("no busca conferencias de otras series si la solicitud no existe", async () => {
       const findMany = vi.fn();
       const mockDb = {
         solicitudSala: { findUnique: vi.fn().mockResolvedValue(null) },
-        eventoProveedor: { findMany },
+        eventoProveedor: { findMany }
       } as unknown as PrismaClient;
       const repo = crearPrismaConferenciasRepository({
         db: mockDb,
-        descifrarConfiguracion: (v) => v,
+        descifrarConfiguracion: (v) => v
       });
-      await expect(repo.buscarConferenceDataCompartida("inexistente", "evento-actual"))
-        .resolves.toBeUndefined();
+      await expect(
+        repo.buscarConferenceDataCompartida("inexistente", "evento-actual")
+      ).resolves.toBeUndefined();
       expect(findMany).not.toHaveBeenCalled();
     });
 
@@ -119,25 +125,26 @@ describe("conferencias/infrastructure", () => {
               estadoIntegracion: "PENDIENTE",
               operacionPendiente: "PROVISIONAR",
               reclamoIntegracionAt: null,
-              errorIntegracion: null,
-            },
-          ]),
-        },
+              errorIntegracion: null
+            }
+          ])
+        }
       } as unknown as PrismaClient;
 
       const repo = crearPrismaConferenciasRepository({
         db: mockDb,
-        descifrarConfiguracion: (v) => v,
+        descifrarConfiguracion: (v) => v
       });
 
       const snapshots = await repo.obtenerSnapshotsEventos(["evt-1"]);
       expect(snapshots).toHaveLength(1);
       expect(snapshots[0].id).toBe("evt-1");
       expect(snapshots[0].operacionPendiente).toBe("PROVISIONAR");
-      expect(mockDb.eventoProveedor.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: { in: ["evt-1"] } },
-      }));
+      expect(mockDb.eventoProveedor.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ["evt-1"] } }
+        })
+      );
     });
   });
 });
-

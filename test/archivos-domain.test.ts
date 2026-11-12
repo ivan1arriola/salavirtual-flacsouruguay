@@ -57,15 +57,9 @@ describe("archivos: domain", () => {
     it("detecta si la asistencia de Meet está completa", () => {
       expect(asistenciaMeetCompleta([])).toBe(false);
       expect(
-        asistenciaMeetCompleta([
-          [{ startTime: "2026-09-19T14:00:00Z", endTime: "2026-09-19T15:00:00Z" }]
-        ])
+        asistenciaMeetCompleta([[{ startTime: "2026-09-19T14:00:00Z", endTime: "2026-09-19T15:00:00Z" }]])
       ).toBe(true);
-      expect(
-        asistenciaMeetCompleta([
-          [{ startTime: "2026-09-19T14:00:00Z" }]
-        ])
-      ).toBe(false);
+      expect(asistenciaMeetCompleta([[{ startTime: "2026-09-19T14:00:00Z" }]])).toBe(false);
     });
 
     it("crea HTML de asistencia correctamente formateado", () => {
@@ -165,4 +159,3 @@ describe("archivos: domain", () => {
     });
   });
 });
-

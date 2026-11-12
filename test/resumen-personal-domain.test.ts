@@ -49,9 +49,23 @@ describe("resumen personal de asistencias", () => {
   });
 
   it("resume y agrupa sin modificar los registros", () => {
-    const second = { ...base, id: "a2", inicioAt: new Date("2026-06-10T13:00:00Z"), modalidad: "HIBRIDA" as const, minutos: 60, monto: 500 };
+    const second = {
+      ...base,
+      id: "a2",
+      inicioAt: new Date("2026-06-10T13:00:00Z"),
+      modalidad: "HIBRIDA" as const,
+      minutos: 60,
+      monto: 500
+    };
     const records = Object.freeze([base, second]);
-    expect(resumirAsistencias(records)).toEqual({ reuniones: 2, minutosVirtuales: 120, minutosHibridos: 60, montoVirtual: 800, montoHibrido: 500, monto: 1300 });
+    expect(resumirAsistencias(records)).toEqual({
+      reuniones: 2,
+      minutosVirtuales: 120,
+      minutosHibridos: 60,
+      montoVirtual: 800,
+      montoHibrido: 500,
+      monto: 1300
+    });
     expect(agruparPorMes(records).map(({ clave }) => clave)).toEqual(["2026-07", "2026-06"]);
     expect(calcularMonto(null, 400, 90)).toBe(600);
     expect(records).toHaveLength(2);

@@ -1128,12 +1128,18 @@
 }
 
 @keyframes meeting-creation-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes meeting-creation-progress {
-  from { transform: translateX(-105%); }
-  to { transform: translateX(245%); }
+  from {
+    transform: translateX(-105%);
+  }
+  to {
+    transform: translateX(245%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1308,7 +1314,10 @@
 
 .agenda-summary-link article {
   height: 100%;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
 .agenda-summary-link:hover article,
@@ -2694,170 +2703,746 @@
 
 /* Gestión de asistencia: densidad operacional móvil */
 @media (max-width: 700px) {
-  .coverage-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 10px; }
-  .coverage-stats .stat, .coverage-stats .stat:nth-child(2) { border-right: 1px solid var(--line); border-bottom: 0; }
-  .coverage-stats .stat:last-child { border-right: 0; }
-  .coverage-stats .stat { padding: 9px 7px; }
-  .coverage-stats .stat span { font-size: .65rem; }
-  .coverage-stats .stat strong { font-size: 1.05rem; }
-  .coverage-filter { gap: 7px; margin-bottom: 10px; padding: 8px; }
-  .coverage-filter input, .coverage-filter select { min-height: 38px; }
-  .coverage-filter button { min-height: 36px; }
-  .coverage-card-list { gap: 9px; }
-  .coverage-card { border-left-width: 4px; }
-  .coverage-card-header { min-height: 0; flex-direction: row; align-items: center; gap: 8px; border-bottom: 0; padding: 10px 12px 4px; background: #fff; }
-  .coverage-date { gap: 7px; }
-  .coverage-date small { display: inline; margin-left: 4px; }
-  .coverage-card-body { display: block; padding: 2px 12px 8px; }
-  .coverage-title-link { margin: 3px 0 8px; font-size: 1rem; }
-  .coverage-meeting-meta { display: none; }
-  .coverage-interest-summary { margin-top: 7px; }
-  .coverage-assignment-panel { margin-top: 10px; padding: 9px 10px; }
-  .coverage-assignment-heading { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
-  .coverage-assignment-heading span { margin: 0; }
-  .coverage-card-footer { gap: 8px; padding: 8px 12px 11px; }
-  .coverage-quick-links { flex-direction: row; align-items: center; gap: 8px; }
-  .coverage-quick-links .meet-link-actions { flex: 1 1 auto; }
-  .coverage-quick-links .meet-access { width: 100%; justify-content: center; }
-  .coverage-quick-links .text-link { width: auto; font-size: .74rem; white-space: nowrap; }
-  .coverage-management-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .coverage-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 10px;
+  }
+  .coverage-stats .stat,
+  .coverage-stats .stat:nth-child(2) {
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+  }
+  .coverage-stats .stat:last-child {
+    border-right: 0;
+  }
+  .coverage-stats .stat {
+    padding: 9px 7px;
+  }
+  .coverage-stats .stat span {
+    font-size: 0.65rem;
+  }
+  .coverage-stats .stat strong {
+    font-size: 1.05rem;
+  }
+  .coverage-filter {
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 8px;
+  }
+  .coverage-filter input,
+  .coverage-filter select {
+    min-height: 38px;
+  }
+  .coverage-filter button {
+    min-height: 36px;
+  }
+  .coverage-card-list {
+    gap: 9px;
+  }
+  .coverage-card {
+    border-left-width: 4px;
+  }
+  .coverage-card-header {
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 0;
+    padding: 10px 12px 4px;
+    background: #fff;
+  }
+  .coverage-date {
+    gap: 7px;
+  }
+  .coverage-date small {
+    display: inline;
+    margin-left: 4px;
+  }
+  .coverage-card-body {
+    display: block;
+    padding: 2px 12px 8px;
+  }
+  .coverage-title-link {
+    margin: 3px 0 8px;
+    font-size: 1rem;
+  }
+  .coverage-meeting-meta {
+    display: none;
+  }
+  .coverage-interest-summary {
+    margin-top: 7px;
+  }
+  .coverage-assignment-panel {
+    margin-top: 10px;
+    padding: 9px 10px;
+  }
+  .coverage-assignment-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .coverage-assignment-heading span {
+    margin: 0;
+  }
+  .coverage-card-footer {
+    gap: 8px;
+    padding: 8px 12px 11px;
+  }
+  .coverage-quick-links {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .coverage-quick-links .meet-link-actions {
+    flex: 1 1 auto;
+  }
+  .coverage-quick-links .meet-access {
+    width: 100%;
+    justify-content: center;
+  }
+  .coverage-quick-links .text-link {
+    width: auto;
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+  .coverage-management-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
   .coverage-management-actions .coverage-unassign-action,
-  .coverage-management-actions .coverage-notify-action { grid-column: 1 / -1; }
-  .coverage-management-actions .coverage-cancel-action { grid-column: 1 / -1; color: #9a5719; border-color: #e5c99c; background: #fffaf2; }
+  .coverage-management-actions .coverage-notify-action {
+    grid-column: 1 / -1;
+  }
+  .coverage-management-actions .coverage-cancel-action {
+    grid-column: 1 / -1;
+    color: #9a5719;
+    border-color: #e5c99c;
+    background: #fffaf2;
+  }
 }
 
 /* Coberturas: agenda compacta con gestión bajo demanda */
-.coverage-management-disclosure { border-top: 1px solid #e8ebf0; background: #fbfcfd; }
-.coverage-management-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; padding: 11px 18px; color: #36506a; font-size: .8rem; font-weight: 800; }
-.coverage-management-disclosure summary::-webkit-details-marker { display: none; }
-.coverage-management-disclosure summary span:last-child { color: var(--brand-strong); font-size: .72rem; }
-.coverage-management-disclosure[open] summary { border-bottom: 1px solid #e8ebf0; background: #f4f8fa; }
-.coverage-management-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 13px 18px; }
-.coverage-management-content .coverage-assignment-panel { margin: 0; }
-@media (max-width: 700px) { .coverage-card-footer { min-height: 0; flex-direction: row; padding: 7px 12px; } .coverage-quick-links { width: 100%; } .coverage-management-disclosure summary { padding: 10px 12px; } .coverage-management-content { grid-template-columns: 1fr; gap: 9px; padding: 10px 12px 12px; } .coverage-management-content .coverage-assignment-panel { padding: 9px 10px; } .coverage-management-content .coverage-management-actions { width: 100%; } }
+.coverage-management-disclosure {
+  border-top: 1px solid #e8ebf0;
+  background: #fbfcfd;
+}
+.coverage-management-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  padding: 11px 18px;
+  color: #36506a;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.coverage-management-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.coverage-management-disclosure summary span:last-child {
+  color: var(--brand-strong);
+  font-size: 0.72rem;
+}
+.coverage-management-disclosure[open] summary {
+  border-bottom: 1px solid #e8ebf0;
+  background: #f4f8fa;
+}
+.coverage-management-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding: 13px 18px;
+}
+.coverage-management-content .coverage-assignment-panel {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .coverage-card-footer {
+    min-height: 0;
+    flex-direction: row;
+    padding: 7px 12px;
+  }
+  .coverage-quick-links {
+    width: 100%;
+  }
+  .coverage-management-disclosure summary {
+    padding: 10px 12px;
+  }
+  .coverage-management-content {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 10px 12px 12px;
+  }
+  .coverage-management-content .coverage-assignment-panel {
+    padding: 9px 10px;
+  }
+  .coverage-management-content .coverage-management-actions {
+    width: 100%;
+  }
+}
 
-.coverage-card-footer { display: block; min-height: 0; padding: 0; }
-.coverage-card-footer > .coverage-quick-links { padding: 10px 18px; }
-.coverage-management-disclosure { width: 100%; }
-@media (max-width: 700px) { .coverage-card-footer > .coverage-quick-links { padding: 8px 12px; } }
-
+.coverage-card-footer {
+  display: block;
+  min-height: 0;
+  padding: 0;
+}
+.coverage-card-footer > .coverage-quick-links {
+  padding: 10px 18px;
+}
+.coverage-management-disclosure {
+  width: 100%;
+}
+@media (max-width: 700px) {
+  .coverage-card-footer > .coverage-quick-links {
+    padding: 8px 12px;
+  }
+}
 
 /* Monitoring navigation and compact management UX */
-.monitoring-view-tabs,.monitoring-management-filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}
-.monitoring-view-tabs>a,.monitoring-management-filters>a{display:inline-flex;justify-content:center;align-items:center;gap:6px;padding:11px 18px;border:1px solid var(--border,#d0daea);border-radius:12px;background:var(--surface,#fff);color:var(--brand,#294b83);font-weight:700;text-decoration:none}
-.monitoring-view-tabs>a{flex:1}
-.monitoring-view-tabs>a.is-active,.monitoring-management-filters>a.is-active{background:#dce8ff;border-color:#acc7ff;color:#164baf}
-.monitoring-platform{display:inline-flex;align-items:center;border-radius:999px;padding:4px 11px;font-size:.82rem;font-weight:700;margin-bottom:8px}
-.monitoring-platform.is-zoom{background:#e3edff;color:#1556c4}
-.monitoring-platform.is-meet{background:#dcf4e8;color:#17644a}
-.monitoring-zoom-identifiers{background:#f0f5fc;border-radius:10px;padding:9px 12px;margin:10px 0;font-size:.87rem}
-.monitoring-zoom-identifiers strong{margin-right:8px}
-.coverage-management-link{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap;color:#37516e;font-weight:600}
-.coverage-management-link .secondary-action{display:inline-flex;align-items:center;gap:7px;text-decoration:none}
-.monitoring-management-list{display:grid;gap:12px}
-.monitoring-management-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid #d2dced;border-left:4px solid #227f60;border-radius:14px;background:#fff;text-decoration:none;color:#1d293c}
-.monitoring-management-row>div{display:grid;gap:7px;min-width:0}
-.monitoring-management-row strong{line-height:1.35}
-.monitoring-management-row small,.monitoring-management-date{display:flex;align-items:center;gap:6px;color:#566985}
-.monitoring-management-row .monitoring-platform{justify-self:start;margin:0}
-@media(max-width:600px){.monitoring-management-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.monitoring-management-filters>a{padding:10px 6px;font-size:.85rem}.coverage-management-link .secondary-action{width:100%;justify-content:center}.coverage-management-link{align-items:stretch}}
-
+.monitoring-view-tabs,
+.monitoring-management-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 18px;
+}
+.monitoring-view-tabs > a,
+.monitoring-management-filters > a {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 18px;
+  border: 1px solid var(--border, #d0daea);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  color: var(--brand, #294b83);
+  font-weight: 700;
+  text-decoration: none;
+}
+.monitoring-view-tabs > a {
+  flex: 1;
+}
+.monitoring-view-tabs > a.is-active,
+.monitoring-management-filters > a.is-active {
+  background: #dce8ff;
+  border-color: #acc7ff;
+  color: #164baf;
+}
+.monitoring-platform {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.monitoring-platform.is-zoom {
+  background: #e3edff;
+  color: #1556c4;
+}
+.monitoring-platform.is-meet {
+  background: #dcf4e8;
+  color: #17644a;
+}
+.monitoring-zoom-identifiers {
+  background: #f0f5fc;
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin: 10px 0;
+  font-size: 0.87rem;
+}
+.monitoring-zoom-identifiers strong {
+  margin-right: 8px;
+}
+.coverage-management-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  flex-wrap: wrap;
+  color: #37516e;
+  font-weight: 600;
+}
+.coverage-management-link .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+}
+.monitoring-management-list {
+  display: grid;
+  gap: 12px;
+}
+.monitoring-management-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #d2dced;
+  border-left: 4px solid #227f60;
+  border-radius: 14px;
+  background: #fff;
+  text-decoration: none;
+  color: #1d293c;
+}
+.monitoring-management-row > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.monitoring-management-row strong {
+  line-height: 1.35;
+}
+.monitoring-management-row small,
+.monitoring-management-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #566985;
+}
+.monitoring-management-row .monitoring-platform {
+  justify-self: start;
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .monitoring-management-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .monitoring-management-filters > a {
+    padding: 10px 6px;
+    font-size: 0.85rem;
+  }
+  .coverage-management-link .secondary-action {
+    width: 100%;
+    justify-content: center;
+  }
+  .coverage-management-link {
+    align-items: stretch;
+  }
+}
 
 /* Mobile-first monitoring refresh: concise cards and touch-friendly controls */
-.coverage-card-list{gap:16px}
-.coverage-card{border-radius:18px;border-left-width:4px;box-shadow:0 8px 24px rgba(23,44,75,.06)}
-.coverage-card-header{padding:16px 18px;background:#fff}
-.coverage-card-body{grid-template-columns:minmax(0,1fr);padding:18px}
-.coverage-card-footer{display:grid;gap:14px;padding:16px 18px;background:#f8faff}
-.coverage-quick-links{gap:12px}
-.coverage-quick-links .meet-link-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
-.coverage-quick-links .meet-link-actions>a,.coverage-quick-links .copy-meet-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:11px}
-.coverage-management-link{border-top:1px solid #e2eaf5;padding-top:14px}
-.monitoring-management-row{transition:border-color .15s,box-shadow .15s}
-.monitoring-management-row:hover{border-color:#9db8e4;box-shadow:0 5px 18px rgba(23,44,75,.07)}
-@media(max-width:700px){
-  .coverage-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .coverage-stats .stat{min-width:0;padding:12px 8px;text-align:center;border-radius:13px}
-  .coverage-stats .stat span{font-size:.72rem;line-height:1.3}
-  .coverage-stats .stat strong{font-size:1.45rem}
-  .coverage-filter{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-  .coverage-filter>svg{display:none}
-  .coverage-filter input,.coverage-filter select,.coverage-filter button{width:100%;min-width:0;min-height:46px}
-  .coverage-card-header{align-items:flex-start;flex-direction:column;gap:10px;padding:15px}
-  .coverage-card-header .status{align-self:flex-start}
-  .coverage-card-body{padding:15px}
-  .coverage-card-footer{padding:15px}
-  .coverage-title-link{font-size:1.07rem;line-height:1.45}
-  .coverage-meeting-meta{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
-  .coverage-meeting-meta span{overflow-wrap:anywhere}
-  .coverage-quick-links{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-  .coverage-quick-links .meet-link-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .coverage-quick-links .meet-link-actions>a,.coverage-quick-links .copy-meet-button{width:100%;min-width:0;text-align:center}
-  .coverage-quick-links>.text-link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d4dfef;border-radius:11px}
-  .coverage-management-link{display:grid;gap:12px}
-  .coverage-management-link .secondary-action{min-height:48px;width:100%;justify-content:center}
-  .monitoring-management-row{min-height:110px;padding:16px;border-radius:16px}
-  .monitoring-workflow-page{min-width:0}
-  .monitoring-workflow-header,.monitoring-workflow-surface{min-width:0;overflow-wrap:anywhere}
-  .monitoring-workflow-body{padding:16px}
-  .monitoring-workflow-form input,.monitoring-workflow-form select,.monitoring-workflow-form button{min-height:44px}
+.coverage-card-list {
+  gap: 16px;
 }
-
+.coverage-card {
+  border-radius: 18px;
+  border-left-width: 4px;
+  box-shadow: 0 8px 24px rgba(23, 44, 75, 0.06);
+}
+.coverage-card-header {
+  padding: 16px 18px;
+  background: #fff;
+}
+.coverage-card-body {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 18px;
+}
+.coverage-card-footer {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #f8faff;
+}
+.coverage-quick-links {
+  gap: 12px;
+}
+.coverage-quick-links .meet-link-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.coverage-quick-links .meet-link-actions > a,
+.coverage-quick-links .copy-meet-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 11px;
+}
+.coverage-management-link {
+  border-top: 1px solid #e2eaf5;
+  padding-top: 14px;
+}
+.monitoring-management-row {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.monitoring-management-row:hover {
+  border-color: #9db8e4;
+  box-shadow: 0 5px 18px rgba(23, 44, 75, 0.07);
+}
+@media (max-width: 700px) {
+  .coverage-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .coverage-stats .stat {
+    min-width: 0;
+    padding: 12px 8px;
+    text-align: center;
+    border-radius: 13px;
+  }
+  .coverage-stats .stat span {
+    font-size: 0.72rem;
+    line-height: 1.3;
+  }
+  .coverage-stats .stat strong {
+    font-size: 1.45rem;
+  }
+  .coverage-filter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .coverage-filter > svg {
+    display: none;
+  }
+  .coverage-filter input,
+  .coverage-filter select,
+  .coverage-filter button {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+  }
+  .coverage-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+  }
+  .coverage-card-header .status {
+    align-self: flex-start;
+  }
+  .coverage-card-body {
+    padding: 15px;
+  }
+  .coverage-card-footer {
+    padding: 15px;
+  }
+  .coverage-title-link {
+    font-size: 1.07rem;
+    line-height: 1.45;
+  }
+  .coverage-meeting-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+  .coverage-meeting-meta span {
+    overflow-wrap: anywhere;
+  }
+  .coverage-quick-links {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .coverage-quick-links .meet-link-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .coverage-quick-links .meet-link-actions > a,
+  .coverage-quick-links .copy-meet-button {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+  }
+  .coverage-quick-links > .text-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d4dfef;
+    border-radius: 11px;
+  }
+  .coverage-management-link {
+    display: grid;
+    gap: 12px;
+  }
+  .coverage-management-link .secondary-action {
+    min-height: 48px;
+    width: 100%;
+    justify-content: center;
+  }
+  .monitoring-management-row {
+    min-height: 110px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .monitoring-workflow-page {
+    min-width: 0;
+  }
+  .monitoring-workflow-header,
+  .monitoring-workflow-surface {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .monitoring-workflow-body {
+    padding: 16px;
+  }
+  .monitoring-workflow-form input,
+  .monitoring-workflow-form select,
+  .monitoring-workflow-form button {
+    min-height: 44px;
+  }
+}
 
 /* Mobile-first monitoring: readable cards and accessible touch actions */
-.coverage-card-list{display:grid;gap:14px}
-.coverage-card{min-width:0;overflow:hidden;border-radius:18px}
-.coverage-card-header,.coverage-card-footer{gap:12px}
-.coverage-meeting-copy,.coverage-card-body,.coverage-quick-links{min-width:0}
-.coverage-title-link{overflow-wrap:anywhere}
-.coverage-meeting-meta span{overflow-wrap:anywhere}
-.coverage-quick-links a,.coverage-management-link a,.monitoring-view-tabs a{min-height:44px}
-.coverage-quick-links .meet-link-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.monitoring-workflow-body{overflow-wrap:anywhere}
-@media(max-width:680px){
-  .coverage-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .coverage-stats .stat{min-width:0;padding:12px 8px}
-  .coverage-stats .stat span{font-size:.75rem;line-height:1.3}
-  .coverage-stats .stat strong{font-size:1.6rem}
-  .coverage-filter{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-  .coverage-filter input,.coverage-filter select,.coverage-filter button{width:100%;min-width:0;min-height:46px}
-  .coverage-filter>svg{display:none}
-  .coverage-card{padding:0}
-  .coverage-card-header{display:flex;align-items:flex-start;flex-direction:column;padding:14px}
-  .coverage-card-header .status{align-self:flex-start}
-  .coverage-card-body{padding:0 14px 12px}
-  .coverage-card-footer{display:grid;padding:12px 14px 14px}
-  .coverage-meeting-meta{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-  .coverage-meeting-meta span{display:grid;gap:2px}
-  .coverage-quick-links{display:grid;gap:10px}
-  .coverage-quick-links .meet-link-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-  .coverage-quick-links .meet-link-actions>a,.coverage-quick-links .meet-link-actions>button{display:flex;justify-content:center;align-items:center;gap:8px;min-height:46px;width:100%;padding:10px;border-radius:11px}
-  .coverage-management-link{display:grid;gap:10px}
-  .coverage-management-link .secondary-action{display:flex;min-height:48px}
-  .monitoring-workflow-page{min-width:0}
-  .monitoring-workflow-meta{display:grid;gap:8px}
-  .monitoring-workflow-body{padding:14px}
-  .monitoring-workflow-time-grid{display:grid;grid-template-columns:minmax(0,1fr)}
+.coverage-card-list {
+  display: grid;
+  gap: 14px;
+}
+.coverage-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.coverage-card-header,
+.coverage-card-footer {
+  gap: 12px;
+}
+.coverage-meeting-copy,
+.coverage-card-body,
+.coverage-quick-links {
+  min-width: 0;
+}
+.coverage-title-link {
+  overflow-wrap: anywhere;
+}
+.coverage-meeting-meta span {
+  overflow-wrap: anywhere;
+}
+.coverage-quick-links a,
+.coverage-management-link a,
+.monitoring-view-tabs a {
+  min-height: 44px;
+}
+.coverage-quick-links .meet-link-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.monitoring-workflow-body {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 680px) {
+  .coverage-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .coverage-stats .stat {
+    min-width: 0;
+    padding: 12px 8px;
+  }
+  .coverage-stats .stat span {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+  .coverage-stats .stat strong {
+    font-size: 1.6rem;
+  }
+  .coverage-filter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .coverage-filter input,
+  .coverage-filter select,
+  .coverage-filter button {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+  }
+  .coverage-filter > svg {
+    display: none;
+  }
+  .coverage-card {
+    padding: 0;
+  }
+  .coverage-card-header {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px;
+  }
+  .coverage-card-header .status {
+    align-self: flex-start;
+  }
+  .coverage-card-body {
+    padding: 0 14px 12px;
+  }
+  .coverage-card-footer {
+    display: grid;
+    padding: 12px 14px 14px;
+  }
+  .coverage-meeting-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .coverage-meeting-meta span {
+    display: grid;
+    gap: 2px;
+  }
+  .coverage-quick-links {
+    display: grid;
+    gap: 10px;
+  }
+  .coverage-quick-links .meet-link-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .coverage-quick-links .meet-link-actions > a,
+  .coverage-quick-links .meet-link-actions > button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 11px;
+  }
+  .coverage-management-link {
+    display: grid;
+    gap: 10px;
+  }
+  .coverage-management-link .secondary-action {
+    display: flex;
+    min-height: 48px;
+  }
+  .monitoring-workflow-page {
+    min-width: 0;
+  }
+  .monitoring-workflow-meta {
+    display: grid;
+    gap: 8px;
+  }
+  .monitoring-workflow-body {
+    padding: 14px;
+  }
+  .monitoring-workflow-time-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-
 /* Same account palette and date dividers as Zoom agenda. */
-.monitoring-day-group{display:grid;gap:12px;min-width:0}
-.monitoring-day-cards{display:grid;gap:12px;min-width:0}
-.monitoring-day-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 0;padding:10px 0;border-bottom:1px solid #cbd5e1;font-size:1.05rem;text-transform:capitalize}
-.monitoring-day-title small{margin-left:auto;font-size:.78rem;font-weight:500;color:#64748b}
-.monitoring-day-relative{border-radius:8px;background:#dbeafe;color:#1d4ed8;padding:4px 9px;font-size:.8rem}
-.monitoring-account-card{--account-strong:#94a3b8;--account-pale:#f8fafc;border-left:5px solid var(--account-strong);background:linear-gradient(90deg,var(--account-pale),transparent 55%),var(--surface,#fff)}
-.monitoring-account-card[data-cuenta="0"]{--account-strong:#2563eb;--account-pale:#eff4ff}
-.monitoring-account-card[data-cuenta="1"]{--account-strong:#dc2626;--account-pale:#fff1f1}
-.monitoring-account-card[data-cuenta="2"]{--account-strong:#16a34a;--account-pale:#eefaf2}
-.monitoring-account-card[data-cuenta="3"]{--account-strong:#d97706;--account-pale:#fff7e8}
-.monitoring-account-card[data-cuenta="4"]{--account-strong:#7c3aed;--account-pale:#f5f0ff}
-.monitoring-account-card[data-cuenta="5"]{--account-strong:#0891b2;--account-pale:#ecfafd}
-.monitoring-account-card[data-cuenta="6"]{--account-strong:#db2777;--account-pale:#fff0f7}
-.monitoring-account-card[data-cuenta="7"]{--account-strong:#4d7c0f;--account-pale:#f4f9e8}
-.monitoring-account-card[data-cuenta="8"]{--account-strong:#ea580c;--account-pale:#fff2ea}
-.monitoring-account-card[data-cuenta="9"]{--account-strong:#0f766e;--account-pale:#ebf8f6}
-.monitoring-account-card[data-cuenta="10"]{--account-strong:#475569;--account-pale:#f1f5f9}
-.monitoring-account-card[data-cuenta="11"]{--account-strong:#92400e;--account-pale:#fbf3ec}
-@media(max-width:680px){.monitoring-day-title{font-size:.94rem}.monitoring-day-title small{width:100%;margin-left:0}.monitoring-day-cards{gap:10px}}
+.monitoring-day-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.monitoring-day-cards {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.monitoring-day-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 0;
+  padding: 10px 0;
+  border-bottom: 1px solid #cbd5e1;
+  font-size: 1.05rem;
+  text-transform: capitalize;
+}
+.monitoring-day-title small {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748b;
+}
+.monitoring-day-relative {
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 4px 9px;
+  font-size: 0.8rem;
+}
+.monitoring-account-card {
+  --account-strong: #94a3b8;
+  --account-pale: #f8fafc;
+  border-left: 5px solid var(--account-strong);
+  background: linear-gradient(90deg, var(--account-pale), transparent 55%), var(--surface, #fff);
+}
+.monitoring-account-card[data-cuenta="0"] {
+  --account-strong: #2563eb;
+  --account-pale: #eff4ff;
+}
+.monitoring-account-card[data-cuenta="1"] {
+  --account-strong: #dc2626;
+  --account-pale: #fff1f1;
+}
+.monitoring-account-card[data-cuenta="2"] {
+  --account-strong: #16a34a;
+  --account-pale: #eefaf2;
+}
+.monitoring-account-card[data-cuenta="3"] {
+  --account-strong: #d97706;
+  --account-pale: #fff7e8;
+}
+.monitoring-account-card[data-cuenta="4"] {
+  --account-strong: #7c3aed;
+  --account-pale: #f5f0ff;
+}
+.monitoring-account-card[data-cuenta="5"] {
+  --account-strong: #0891b2;
+  --account-pale: #ecfafd;
+}
+.monitoring-account-card[data-cuenta="6"] {
+  --account-strong: #db2777;
+  --account-pale: #fff0f7;
+}
+.monitoring-account-card[data-cuenta="7"] {
+  --account-strong: #4d7c0f;
+  --account-pale: #f4f9e8;
+}
+.monitoring-account-card[data-cuenta="8"] {
+  --account-strong: #ea580c;
+  --account-pale: #fff2ea;
+}
+.monitoring-account-card[data-cuenta="9"] {
+  --account-strong: #0f766e;
+  --account-pale: #ebf8f6;
+}
+.monitoring-account-card[data-cuenta="10"] {
+  --account-strong: #475569;
+  --account-pale: #f1f5f9;
+}
+.monitoring-account-card[data-cuenta="11"] {
+  --account-strong: #92400e;
+  --account-pale: #fbf3ec;
+}
+@media (max-width: 680px) {
+  .monitoring-day-title {
+    font-size: 0.94rem;
+  }
+  .monitoring-day-title small {
+    width: 100%;
+    margin-left: 0;
+  }
+  .monitoring-day-cards {
+    gap: 10px;
+  }
+}

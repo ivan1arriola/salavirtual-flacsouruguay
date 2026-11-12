@@ -14,9 +14,7 @@ const forbiddenModelNames = [
   "Liquidacion",
   "LiquidacionDetalle"
 ];
-const found = forbiddenModelNames.filter((name) =>
-  new RegExp(`^model\\s+${name}\\s*\\{`, "m").test(schema)
-);
+const found = forbiddenModelNames.filter((name) => new RegExp(`^model\\s+${name}\\s*\\{`, "m").test(schema));
 
 if (found.length > 0) {
   console.error(`El schema conserva modelos anteriores: ${found.join(", ")}`);

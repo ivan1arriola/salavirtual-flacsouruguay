@@ -8,25 +8,22 @@ describe("credenciales Legacy de Google Workspace", () => {
         id: "legacy:old",
         serviceAccountEmail: "old@project.iam.gserviceaccount.com",
         privateKeyCifrada: "ciphertext",
-        serviceAccountSubject: "web@flacso.edu.uy",
-      },
+        serviceAccountSubject: "web@flacso.edu.uy"
+      }
     ]);
     const db = {
-      configuracionGoogleWorkspace: { findMany },
+      configuracionGoogleWorkspace: { findMany }
     } as never;
 
-    const result = await cargarCredencialesLegacyGoogleWorkspace(
-      db,
-      (value) => `dec:${value}`,
-    );
+    const result = await cargarCredencialesLegacyGoogleWorkspace(db, (value) => `dec:${value}`);
 
     expect(result).toEqual([
       {
         id: "legacy:old",
         serviceAccountEmail: "old@project.iam.gserviceaccount.com",
         privateKey: "dec:ciphertext",
-        serviceAccountSubject: "web@flacso.edu.uy",
-      },
+        serviceAccountSubject: "web@flacso.edu.uy"
+      }
     ]);
     expect(findMany).toHaveBeenCalledOnce();
   });

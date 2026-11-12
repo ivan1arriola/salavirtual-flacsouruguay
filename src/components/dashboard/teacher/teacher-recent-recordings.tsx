@@ -64,12 +64,7 @@ export function TeacherRecentRecordings({
 
               <div className="teacher-recording-card-actions">
                 {rec.driveUrl ? (
-                  <a
-                    className="secondary-action"
-                    href={rec.driveUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
+                  <a className="secondary-action" href={rec.driveUrl} rel="noreferrer" target="_blank">
                     <ExternalLink size={14} />
                     <span>Ver en Drive</span>
                   </a>

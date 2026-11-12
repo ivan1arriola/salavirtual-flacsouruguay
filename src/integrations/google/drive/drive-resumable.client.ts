@@ -24,8 +24,12 @@ type EncabezadosHttp = Headers | Record<string, unknown>;
 type RespuestaHttp = { status: number; headers?: EncabezadosHttp; data?: unknown };
 
 function leerEncabezado(headers: EncabezadosHttp | undefined, nombre: string): unknown {
-  if (!headers) return undefined;
-  if (typeof (headers as Headers).get === "function") return (headers as Headers).get(nombre) ?? undefined;
+  if (!headers) {
+    return undefined;
+  }
+  if (typeof (headers as Headers).get === "function") {
+    return (headers as Headers).get(nombre) ?? undefined;
+  }
   const plano = headers as Record<string, unknown>;
   const clave = Object.keys(plano).find((k) => k.toLowerCase() === nombre.toLowerCase());
   return clave === undefined ? undefined : plano[clave];
@@ -38,13 +42,17 @@ function errorSaneado(operacion: string, status: number): Error {
 
 function leerBytesConfirmados(headers: EncabezadosHttp | undefined): bigint {
   const rango = leerEncabezado(headers, "range");
-  if (typeof rango !== "string") return 0n;
+  if (typeof rango !== "string") {
+    return 0n;
+  }
   const m = /^bytes=0-(\d+)$/.exec(rango.trim());
   return m ? BigInt(m[1]!) + 1n : 0n;
 }
 
 function interpretar(operacion: string, r: RespuestaHttp): ResultadoSubidaDrive {
-  if (r.status === 308) return { estado: "PARCIAL", bytesConfirmados: leerBytesConfirmados(r.headers) };
+  if (r.status === 308) {
+    return { estado: "PARCIAL", bytesConfirmados: leerBytesConfirmados(r.headers) };
+  }
   if (r.status === 200 || r.status === 201) {
     const archivo = r.data as ArchivoDriveSubido | undefined;
     if (!archivo || typeof archivo !== "object" || !archivo.id) {
@@ -52,7 +60,9 @@ function interpretar(operacion: string, r: RespuestaHttp): ResultadoSubidaDrive 
     }
     return { estado: "COMPLETA", archivo };
   }
-  if (r.status === 404 || r.status === 410) return { estado: "VENCIDA" };
+  if (r.status === 404 || r.status === 410) {
+    return { estado: "VENCIDA" };
+  }
   throw errorSaneado(operacion, r.status);
 }
 
@@ -73,9 +83,11 @@ export async function iniciarSubidaDriveReanudable(
     "Content-Type": "application/json; charset=UTF-8",
     "X-Upload-Content-Type": params.mimeType
   };
-  if (params.tamanoTotal !== null) headers["X-Upload-Content-Length"] = params.tamanoTotal.toString();
+  if (params.tamanoTotal !== null) {
+    headers["X-Upload-Content-Length"] = params.tamanoTotal.toString();
+  }
   // POST no idempotente: sin reintentos automáticos. El ID pregenerado permite reconciliar.
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: `${DRIVE_UPLOAD_API_BASE_URL}/files?uploadType=resumable&supportsAllDrives=true&fields=id`,
     method: "POST",
     headers,
@@ -88,8 +100,10 @@ export async function iniciarSubidaDriveReanudable(
       mimeType: params.mimeType,
       appProperties: { [DRIVE_ZOOM_ORIGEN_PROPERTY]: params.origenHash }
     }
-  }) as unknown as RespuestaHttp;
-  if (r.status !== 200) throw errorSaneado("inicio de sesión", r.status);
+  })) as unknown as RespuestaHttp;
+  if (r.status !== 200) {
+    throw errorSaneado("inicio de sesión", r.status);
+  }
   const location = leerEncabezado(r.headers, "location");
   if (typeof location !== "string" || !location.startsWith("https://")) {
     throw new Error("Drive reanudable: no devolvió la sesión de subida.");
@@ -103,14 +117,17 @@ export async function consultarSubidaDriveReanudable(
   tamanoTotal: bigint | null,
   opciones: Readonly<{ signal?: AbortSignal }> = {}
 ): Promise<ResultadoSubidaDrive> {
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: sesionUrl,
     method: "PUT",
-    headers: { "Content-Range": `bytes */${tamanoTotal === null ? "*" : tamanoTotal.toString()}`, "Content-Length": "0" },
+    headers: {
+      "Content-Range": `bytes */${tamanoTotal === null ? "*" : tamanoTotal.toString()}`,
+      "Content-Length": "0"
+    },
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
     signal: opciones.signal
-  }) as unknown as RespuestaHttp;
+  })) as unknown as RespuestaHttp;
   return interpretar("consulta de sesión", r);
 }
 
@@ -129,8 +146,9 @@ export async function subirBloqueDriveReanudable(
   const fin = offset + BigInt(bytes.byteLength);
   const total = ultimo ? fin : tamanoTotal;
   const totalTexto = total === null ? "*" : total.toString();
-  const rango = bytes.byteLength === 0 ? `bytes */${totalTexto}` : `bytes ${offset}-${fin - 1n}/${totalTexto}`;
-  const r = await auth.request<unknown>({
+  const rango =
+    bytes.byteLength === 0 ? `bytes */${totalTexto}` : `bytes ${offset}-${fin - 1n}/${totalTexto}`;
+  const r = (await auth.request<unknown>({
     url: sesionUrl,
     method: "PUT",
     headers: { "Content-Range": rango, "Content-Length": String(bytes.byteLength) },
@@ -138,7 +156,7 @@ export async function subirBloqueDriveReanudable(
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
     signal: opciones.signal
-  }) as unknown as RespuestaHttp;
+  })) as unknown as RespuestaHttp;
   return interpretar("subida de bloque", r);
 }
 
@@ -148,15 +166,19 @@ export async function obtenerArchivoDrivePorId(
   fileId: string,
   opciones: Readonly<{ signal?: AbortSignal }> = {}
 ): Promise<(ArchivoDriveSubido & { appProperties?: Record<string, string>; trashed?: boolean }) | null> {
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,webViewLink,appProperties,trashed&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
     signal: opciones.signal
-  }) as unknown as RespuestaHttp;
-  if (r.status === 404) return null;
-  if (r.status !== 200) throw errorSaneado("consulta de archivo", r.status);
+  })) as unknown as RespuestaHttp;
+  if (r.status === 404) {
+    return null;
+  }
+  if (r.status !== 200) {
+    throw errorSaneado("consulta de archivo", r.status);
+  }
   return r.data as ArchivoDriveSubido & { appProperties?: Record<string, string>; trashed?: boolean };
 }
 
@@ -166,42 +188,52 @@ export async function listarArchivosDrivePorOrigen(
   origenHash: string,
   opciones: Readonly<{ signal?: AbortSignal }> = {}
 ): Promise<readonly ArchivoDriveSubido[]> {
-  if (!/^[a-f0-9]{64}$/.test(origenHash)) throw new Error("Identificador de origen Drive inválido.");
+  if (!/^[a-f0-9]{64}$/.test(origenHash)) {
+    throw new Error("Identificador de origen Drive inválido.");
+  }
   const query = `appProperties has { key='${DRIVE_ZOOM_ORIGEN_PROPERTY}' and value='${origenHash}' } and trashed = false`;
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,size,webViewLink)&pageSize=3&includeItemsFromAllDrives=true&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
     signal: opciones.signal
-  }) as unknown as RespuestaHttp;
-  if (r.status !== 200) throw errorSaneado("búsqueda por origen", r.status);
-  return ((r.data as { files?: ArchivoDriveSubido[] })?.files) ?? [];
+  })) as unknown as RespuestaHttp;
+  if (r.status !== 200) {
+    throw errorSaneado("búsqueda por origen", r.status);
+  }
+  return (r.data as { files?: ArchivoDriveSubido[] })?.files ?? [];
 }
 
 /** IDs pregenerados por Drive: permiten persistir el destino antes del POST y reconciliar por ID. */
 export async function generarIdArchivoDrive(auth: JWT): Promise<string> {
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files/generateIds?count=1&space=drive`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo
-  }) as unknown as RespuestaHttp;
+  })) as unknown as RespuestaHttp;
   const id = (r.data as { ids?: string[] } | undefined)?.ids?.[0];
-  if (r.status !== 200 || !id) throw errorSaneado("generación de ID", r.status);
+  if (r.status !== 200 || !id) {
+    throw errorSaneado("generación de ID", r.status);
+  }
   return id;
 }
 
 /** Healthcheck de escritura: la carpeta existe, es carpeta y la identidad de servicio puede crear dentro. */
 export async function verificarEscrituraCarpetaDrive(auth: JWT, carpetaId: string): Promise<boolean> {
-  const r = await auth.request<unknown>({
+  const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(carpetaId)}?fields=id,mimeType,capabilities(canAddChildren)&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo
-  }) as unknown as RespuestaHttp;
-  if (r.status === 404) return false;
-  if (r.status !== 200) throw errorSaneado("comprobación de carpeta", r.status);
+  })) as unknown as RespuestaHttp;
+  if (r.status === 404) {
+    return false;
+  }
+  if (r.status !== 200) {
+    throw errorSaneado("comprobación de carpeta", r.status);
+  }
   const datos = r.data as { mimeType?: string; capabilities?: { canAddChildren?: boolean } } | undefined;
   return datos?.mimeType === DRIVE_FOLDER_MIME && datos.capabilities?.canAddChildren === true;
 }

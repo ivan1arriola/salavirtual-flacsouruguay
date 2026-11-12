@@ -11,10 +11,15 @@ export function AdminMetricsBar({
   const metricItems = getAdminSummaryMetrics(metrics);
 
   return (
-    <section className="dashboard-content-section admin-metrics-bar admin-metrics-bar-section" aria-label="Indicadores generales">
+    <section
+      className="dashboard-content-section admin-metrics-bar admin-metrics-bar-section"
+      aria-label="Indicadores generales"
+    >
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
-          <span className="admin-section-icon"><ChartNoAxesCombined aria-hidden="true" size={20} /></span>
+          <span className="admin-section-icon">
+            <ChartNoAxesCombined aria-hidden="true" size={20} />
+          </span>
           <div>
             <h2>Indicadores generales</h2>
             <p>Solicitudes activas y reuniones de los próximos siete días.</p>
@@ -24,11 +29,7 @@ export function AdminMetricsBar({
 
       <div className="admin-metrics-bar-grid">
         {metricItems.map(({ label, value, copy, icon: Icon, href, tone }) => (
-          <Link
-            className={`admin-metric-card tone-${tone}`}
-            href={href}
-            key={label}
-          >
+          <Link className={`admin-metric-card tone-${tone}`} href={href} key={label}>
             <span className="admin-metric-card-icon">
               <Icon size={18} aria-hidden="true" />
             </span>

@@ -300,7 +300,10 @@
   border-radius: 12px;
   background: var(--surface);
   padding: 17px;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .settings-overview-card:hover {

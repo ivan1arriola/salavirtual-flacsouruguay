@@ -8,12 +8,9 @@ import {
 import { vincularCuentaGoogleSchema } from "../src/modules/usuarios/types";
 
 describe("migracion funcional de roles", () => {
-  it.each(["ADMINISTRADOR", "CONTADURIA"])(
-    "absorbe %s dentro de ADMINISTRACION",
-    (rolAnterior) => {
-      expect(buscarRolAnterior(rolAnterior)).toBe("ADMINISTRACION");
-    }
-  );
+  it.each(["ADMINISTRADOR", "CONTADURIA"])("absorbe %s dentro de ADMINISTRACION", (rolAnterior) => {
+    expect(buscarRolAnterior(rolAnterior)).toBe("ADMINISTRACION");
+  });
 
   it("unifica los roles anteriores de asistencia", () => {
     expect(buscarRolAnterior("SOPORTE_ZOOM")).toBe("ASISTENTE_TECNICO");

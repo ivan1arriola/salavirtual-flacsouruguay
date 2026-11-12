@@ -73,12 +73,7 @@ export async function PUT(request: Request, context: RouteContext) {
         { status: 401 }
       );
     }
-    const emails = await reemplazarCuentasGooglePermitidas(
-      { db },
-      actor,
-      usuarioId,
-      input
-    );
+    const emails = await reemplazarCuentasGooglePermitidas({ db }, actor, usuarioId, input);
     return NextResponse.json({ usuarioId, emails });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Datos invalidos.";

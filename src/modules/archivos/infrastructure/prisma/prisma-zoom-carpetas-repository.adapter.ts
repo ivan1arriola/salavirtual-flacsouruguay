@@ -2,7 +2,9 @@ import type { PrismaClient } from "@prisma/client";
 import type { RepoMoverCarpetasZoom } from "../../application";
 
 /** Pendientes: ocurrencias con encuentro y carpeta de Drive que aún no se verificaron bajo la raíz de vinculados. */
-export function crearPrismaZoomCarpetasRepositoryAdapter(deps: Readonly<{ db: PrismaClient }>): RepoMoverCarpetasZoom {
+export function crearPrismaZoomCarpetasRepositoryAdapter(
+  deps: Readonly<{ db: PrismaClient }>
+): RepoMoverCarpetasZoom {
   return {
     async listarCarpetasPorMover(limite) {
       const filas = await deps.db.ocurrenciaArchivoZoom.findMany({
@@ -12,7 +14,15 @@ export function crearPrismaZoomCarpetasRepositoryAdapter(deps: Readonly<{ db: Pr
         select: { id: true, driveFolderId: true, inicioRealAt: true }
       });
       return filas.flatMap((f) =>
-        f.driveFolderId ? [{ ocurrenciaId: f.id, driveFolderId: f.driveFolderId, referencia: { inicioRealAt: f.inicioRealAt } }] : []
+        f.driveFolderId
+          ? [
+              {
+                ocurrenciaId: f.id,
+                driveFolderId: f.driveFolderId,
+                referencia: { inicioRealAt: f.inicioRealAt }
+              }
+            ]
+          : []
       );
     },
 

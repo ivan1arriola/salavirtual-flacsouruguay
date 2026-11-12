@@ -6,14 +6,22 @@ const schema = readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8")
 
 function bloque(modelo: string) {
   const inicio = schema.indexOf(`model ${modelo} {`);
-  if (inicio < 0) throw new Error(`Modelo ${modelo} no encontrado`);
+  if (inicio < 0) {
+    throw new Error(`Modelo ${modelo} no encontrado`);
+  }
   return schema.slice(inicio, schema.indexOf("}", inicio));
 }
 
 describe("esquema de cuentas Zoom por grupo", () => {
   it("ConfiguracionZoom guarda el grupo y el estado de sincronización", () => {
     const modelo = bloque("ConfiguracionZoom");
-    for (const campo of ["grupoId", "grupoNombre", "ultimaSincronizacionAt", "ultimaSincronizacionResultado", "sincronizandoDesdeAt"]) {
+    for (const campo of [
+      "grupoId",
+      "grupoNombre",
+      "ultimaSincronizacionAt",
+      "ultimaSincronizacionResultado",
+      "sincronizandoDesdeAt"
+    ]) {
       expect(modelo).toContain(`  ${campo} `);
     }
   });

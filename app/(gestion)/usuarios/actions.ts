@@ -14,9 +14,13 @@ import { esRolUsuario } from "@/src/modules/usuarios/roles";
 
 export async function enviarInvitacion(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor) redirect("/acceso");
+  if (!actor) {
+    redirect("/acceso");
+  }
   let estado: "invitacion-enviada" | "invitacion-creada";
   try {
     const result = await invitarUsuario(db, actor, {
@@ -38,12 +42,16 @@ export async function enviarInvitacion(formData: FormData): Promise<void> {
 
 export async function aprobarSolicitudAccesoGoogle(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   const solicitudId = String(formData.get("solicitudId") ?? "");
   const rol = String(formData.get("rol") ?? "");
   try {
-    if (!actor || !esRolUsuario(rol)) throw new Error("Datos de aprobación inválidos.");
+    if (!actor || !esRolUsuario(rol)) {
+      throw new Error("Datos de aprobación inválidos.");
+    }
     await aprobarSolicitud(db, actor, solicitudId, rol);
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo aprobar la solicitud.";
@@ -55,11 +63,15 @@ export async function aprobarSolicitudAccesoGoogle(formData: FormData): Promise<
 
 export async function rechazarSolicitudAccesoGoogle(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   const solicitudId = String(formData.get("solicitudId") ?? "");
   try {
-    if (!actor || !solicitudId) throw new Error("Datos de rechazo inválidos.");
+    if (!actor || !solicitudId) {
+      throw new Error("Datos de rechazo inválidos.");
+    }
     await rechazarSolicitud(db, actor, solicitudId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo rechazar la solicitud.";

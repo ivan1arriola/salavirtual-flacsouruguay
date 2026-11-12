@@ -49,38 +49,42 @@ describe("liquidaciones infrastructure", () => {
     it("calcula horas y pago híbridos con toda la cobertura técnica", async () => {
       const mockDb = {
         asistenteTecnico: {
-          findMany: vi.fn().mockResolvedValue([{
-            id: "asistente-1",
-            slug: "ivan",
-            usuario: {
-              id: "usuario-1",
-              nombres: "Iván",
-              apellidos: "Arriola",
-              emailPrincipal: "ivan@example.com",
-              activo: true
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: "asistente-1",
+              slug: "ivan",
+              usuario: {
+                id: "usuario-1",
+                nombres: "Iván",
+                apellidos: "Arriola",
+                emailPrincipal: "ivan@example.com",
+                activo: true
+              }
             }
-          }])
+          ])
         },
         asignacionAsistenciaTecnica: {
-          findMany: vi.fn().mockResolvedValue([{
-            asistenteTecnicoId: "asistente-1",
-            minutosConfirmados: null,
-            montoConfirmado: null,
-            tarifaHoraAplicada: { toNumber: () => 500 },
-            moneda: "UYU",
-            instancia: {
-              inicioProgramadoAt: new Date("2026-10-10T14:00:00Z"),
-              finProgramadoAt: new Date("2026-10-10T16:30:00Z"),
-              inicioAsistenciaTecnicaAt: new Date("2026-10-10T12:00:00Z"),
-              finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z"),
-              minutosReportados: null,
-              inicioRealAt: null,
-              finRealAt: null,
-              requiereAsistenciaTecnica: true,
-              estado: "PROGRAMADA",
-              solicitud: { estado: "PROVISIONADA", modalidad: "HIBRIDA" }
+          findMany: vi.fn().mockResolvedValue([
+            {
+              asistenteTecnicoId: "asistente-1",
+              minutosConfirmados: null,
+              montoConfirmado: null,
+              tarifaHoraAplicada: { toNumber: () => 500 },
+              moneda: "UYU",
+              instancia: {
+                inicioProgramadoAt: new Date("2026-10-10T14:00:00Z"),
+                finProgramadoAt: new Date("2026-10-10T16:30:00Z"),
+                inicioAsistenciaTecnicaAt: new Date("2026-10-10T12:00:00Z"),
+                finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z"),
+                minutosReportados: null,
+                inicioRealAt: null,
+                finRealAt: null,
+                requiereAsistenciaTecnica: true,
+                estado: "PROGRAMADA",
+                solicitud: { estado: "PROVISIONADA", modalidad: "HIBRIDA" }
+              }
             }
-          }])
+          ])
         }
       };
 
@@ -160,10 +164,7 @@ describe("liquidaciones infrastructure", () => {
 
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer as any);
-      expect(workbook.worksheets.map((s) => s.name)).toEqual([
-        "Pagos por asistente",
-        "Pagos por programa"
-      ]);
+      expect(workbook.worksheets.map((s) => s.name)).toEqual(["Pagos por asistente", "Pagos por programa"]);
     });
   });
 });

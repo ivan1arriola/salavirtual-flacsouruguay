@@ -3,14 +3,14 @@ import type {
   AssistantCalendarProvider,
   AssistantCalendarRepositoryPort,
   EventoCalendarioAsistente,
-  GoogleCalendarCredentials,
+  GoogleCalendarCredentials
 } from "./ports";
 import type { ResultadoSincronizacionCalendarioAsistente } from "./domain";
 import {
   sincronizarCalendarioAsistenteInstanciaUseCase,
   sincronizarCalendariosAsistenteSolicitudUseCase,
   sincronizarCalendariosAsistenteUsuarioUseCase,
-  reconciliarCalendariosAsistentesUseCase,
+  reconciliarCalendariosAsistentesUseCase
 } from "./application";
 import { crearPrismaAssistantCalendarRepository } from "./infrastructure/prisma/prisma-assistant-calendar-repository.adapter";
 
@@ -20,14 +20,8 @@ export { hayErroresSincronizacionCalendarioAsistente } from "./domain";
 export type SincronizacionCalendarioAsistenteDependencies = Readonly<{
   db: PrismaClient;
   descifrar: (value: string) => string;
-  publicarEvento: (
-    credentials: GoogleCalendarCredentials,
-    event: EventoCalendarioAsistente
-  ) => Promise<void>;
-  eliminarEvento: (
-    credentials: GoogleCalendarCredentials,
-    eventId: string
-  ) => Promise<void>;
+  publicarEvento: (credentials: GoogleCalendarCredentials, event: EventoCalendarioAsistente) => Promise<void>;
+  eliminarEvento: (credentials: GoogleCalendarCredentials, eventId: string) => Promise<void>;
 }>;
 
 function buildAdapters(dependencies: SincronizacionCalendarioAsistenteDependencies): {
@@ -36,11 +30,11 @@ function buildAdapters(dependencies: SincronizacionCalendarioAsistenteDependenci
 } {
   const repository = crearPrismaAssistantCalendarRepository({
     db: dependencies.db,
-    descifrar: dependencies.descifrar,
+    descifrar: dependencies.descifrar
   });
   const provider: AssistantCalendarProvider = {
     publicarEvento: dependencies.publicarEvento,
-    eliminarEvento: dependencies.eliminarEvento,
+    eliminarEvento: dependencies.eliminarEvento
   };
   return { repository, provider };
 }
@@ -50,11 +44,7 @@ export async function sincronizarCalendarioAsistenteInstancia(
   instanciaSalaId: string
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const { repository, provider } = buildAdapters(dependencies);
-  return sincronizarCalendarioAsistenteInstanciaUseCase(
-    repository,
-    provider,
-    instanciaSalaId
-  );
+  return sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, instanciaSalaId);
 }
 
 export async function sincronizarCalendariosAsistenteSolicitud(
@@ -62,11 +52,7 @@ export async function sincronizarCalendariosAsistenteSolicitud(
   solicitudSalaId: string
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const { repository, provider } = buildAdapters(dependencies);
-  return sincronizarCalendariosAsistenteSolicitudUseCase(
-    repository,
-    provider,
-    solicitudSalaId
-  );
+  return sincronizarCalendariosAsistenteSolicitudUseCase(repository, provider, solicitudSalaId);
 }
 
 export async function sincronizarCalendariosAsistenteUsuario(
@@ -74,11 +60,7 @@ export async function sincronizarCalendariosAsistenteUsuario(
   usuarioId: string
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const { repository, provider } = buildAdapters(dependencies);
-  return sincronizarCalendariosAsistenteUsuarioUseCase(
-    repository,
-    provider,
-    usuarioId
-  );
+  return sincronizarCalendariosAsistenteUsuarioUseCase(repository, provider, usuarioId);
 }
 
 export async function reconciliarCalendariosAsistentes(

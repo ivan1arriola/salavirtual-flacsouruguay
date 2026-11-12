@@ -33,15 +33,18 @@ const TINTES: Record<VarianteCorreo, string> = {
 };
 
 export function escaparHtmlEmail(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
 
 export function urlHttpSegura(value: string): string | null {
   try {
     const url = new URL(value);
-    return (url.protocol === "https:" || url.protocol === "http:") ? url.toString() : null;
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
   } catch {
     return null;
   }
@@ -49,30 +52,51 @@ export function urlHttpSegura(value: string): string | null {
 
 export function botonCorreo(accion: AccionCorreo, variante: VarianteCorreo = "accion"): string {
   const url = urlHttpSegura(accion.url);
-  if (!url) return "";
+  if (!url) {
+    return "";
+  }
   const acento = TINTES[variante];
-  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0"><tr>' +
-    '<td bgcolor="' + acento + '" style="border-radius:8px;background:' + acento + '">' +
-    '<a href="' + escaparHtmlEmail(url) + '" style="display:inline-block;padding:13px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:20px">' +
-    escaparHtmlEmail(accion.texto) + '</a></td></tr></table>';
+  return (
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0"><tr>' +
+    '<td bgcolor="' +
+    acento +
+    '" style="border-radius:8px;background:' +
+    acento +
+    '">' +
+    '<a href="' +
+    escaparHtmlEmail(url) +
+    '" style="display:inline-block;padding:13px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:20px">' +
+    escaparHtmlEmail(accion.texto) +
+    "</a></td></tr></table>"
+  );
 }
 
 export function panelCorreo(contenidoHtml: string, titulo?: string): string {
-  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ' +
+  return (
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ' +
     'style="width:100%;margin:0 0 14px;border:1px solid #dce5ee;border-radius:10px;border-collapse:separate;background:#ffffff">' +
     '<tr><td style="padding:17px 18px">' +
-    (titulo ? '<p style="margin:0 0 12px;color:#183b70;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">' +
-      escaparHtmlEmail(titulo) + '</p>' : '') +
-    contenidoHtml + '</td></tr></table>';
+    (titulo
+      ? '<p style="margin:0 0 12px;color:#183b70;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">' +
+        escaparHtmlEmail(titulo) +
+        "</p>"
+      : "") +
+    contenidoHtml +
+    "</td></tr></table>"
+  );
 }
 
 export function envolverCorreo(input: LayoutCorreo): string {
   const variante = input.variante ?? "informativo";
   const acento = TINTES[variante];
-  const accionHtml = input.accion ? '<div style="margin-top:20px">' + botonCorreo(input.accion, variante) + '</div>' : '';
+  const accionHtml = input.accion
+    ? '<div style="margin-top:20px">' + botonCorreo(input.accion, variante) + "</div>"
+    : "";
   const noteHtml = input.nota
-    ? '<p style="margin:15px 0 0;color:#526277;font-size:12px;line-height:19px">' + escaparHtmlEmail(input.nota) + '</p>'
-    : '';
+    ? '<p style="margin:15px 0 0;color:#526277;font-size:12px;line-height:19px">' +
+      escaparHtmlEmail(input.nota) +
+      "</p>"
+    : "";
   const preferencias = input.preferenciasUrl ? urlHttpSegura(input.preferenciasUrl) : null;
   const footerText = input.permiteRespuesta
     ? "Correo automático de Sala Virtual FLACSO. Si encontrás una diferencia, podés responder a este mensaje."
@@ -81,7 +105,7 @@ export function envolverCorreo(input: LayoutCorreo): string {
     ? '<p style="margin:5px 0 0;font-size:11px;line-height:18px"><a href="' +
       escaparHtmlEmail(preferencias) +
       '" style="color:#087f9e;text-decoration:underline">Administrar preferencias de notificación</a></p>'
-    : '';
+    : "";
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">

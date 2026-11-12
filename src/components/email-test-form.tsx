@@ -9,7 +9,9 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
   const [success, setSuccess] = useState(false);
 
   async function sendTest(formData: FormData) {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
     setBusy(true);
     setSuccess(false);
     setMessage("Enviando un correo real…");
@@ -21,9 +23,11 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
       });
       const result = await response.json().catch(() => ({}));
       setSuccess(response.ok);
-      setMessage(response.ok
-        ? result.message ?? "Correo de prueba enviado."
-        : result.error ?? "No se pudo enviar el correo de prueba.");
+      setMessage(
+        response.ok
+          ? (result.message ?? "Correo de prueba enviado.")
+          : (result.error ?? "No se pudo enviar el correo de prueba.")
+      );
     } catch {
       setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
     } finally {
@@ -36,7 +40,10 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
       <div className="section-heading">
         <div>
           <h2>Probar envío de correo</h2>
-          <p>Esta acción envía un correo real mediante el mismo canal que usan las invitaciones y notificaciones.</p>
+          <p>
+            Esta acción envía un correo real mediante el mismo canal que usan las invitaciones y
+            notificaciones.
+          </p>
         </div>
         <MailCheck size={22} color="var(--brand)" aria-hidden="true" />
       </div>
@@ -60,7 +67,9 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
           {message}
         </p>
       </form>
-      <p className="email-test-help">La prueba confirma la entrega al proveedor. Verificá que el mensaje llegue a Recibidos o Spam.</p>
+      <p className="email-test-help">
+        La prueba confirma la entrega al proveedor. Verificá que el mensaje llegue a Recibidos o Spam.
+      </p>
     </section>
   );
 }

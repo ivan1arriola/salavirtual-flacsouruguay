@@ -23,10 +23,7 @@ export {
   resolverRedireccionAutorizada
 } from "./domain";
 
-export type {
-  IdentityRepository,
-  CalendarioAsistenteDispatcher
-} from "./ports";
+export type { IdentityRepository, CalendarioAsistenteDispatcher } from "./ports";
 
 export {
   crearAutenticarCredencialesUseCase,
@@ -40,4 +37,3 @@ export {
   type AsistenciaCalendarioDependencies,
   type SincronizarCalendariosAsistenteUsuarioFn
 } from "./infrastructure";
-

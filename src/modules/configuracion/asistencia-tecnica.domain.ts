@@ -13,11 +13,7 @@ export function puedeConfigurarAsistenciaTecnica(actor: ActorConfiguracionAsiste
 }
 
 export function normalizarCorreosCopiaReporte(value: unknown): string[] {
-  const raw = typeof value === "string"
-    ? value
-    : Array.isArray(value)
-      ? value.join("\n")
-      : "";
+  const raw = typeof value === "string" ? value : Array.isArray(value) ? value.join("\n") : "";
   const candidates = raw
     .split(/[\s,;]+/)
     .map((item) => item.trim())

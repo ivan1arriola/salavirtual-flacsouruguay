@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
+import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/google-workspace.service";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { recalcularSolicitud } from "@/src/modules/reuniones/encuentros-persistence.adapter";
 import {
@@ -9,20 +9,18 @@ import {
   normalizeCohostEmails,
   normalizeMeetLink,
   type ConferenceProvisionRequest,
-  type ConferenceProvisionResult,
   type DescartarLoteResult,
   type DescartarOperacionResult,
   type EstadoIntegracionConferencia,
   type OperacionPendienteConferencia,
   type ProvisionConferenciaResult,
-  type ReclasificarLoteResult,
+  type ReclasificarLoteResult
 } from "../../domain";
 import type {
   ClaimInfo,
   ConferenciasRepositoryPort,
-  EventoProveedorSnapshot,
   WorkspaceCredentialsResult,
-  ZoomCredentialsResult,
+  ZoomCredentialsResult
 } from "../../ports/conferencias-repository.port";
 
 const CLAIM_TIMEOUT_MS = 10 * 60_000;
@@ -43,7 +41,9 @@ export function crearPrismaConferenciasRepository(
 
   return {
     async obtenerSnapshotsEventos(ids) {
-      if (ids.length === 0) return [];
+      if (ids.length === 0) {
+        return [];
+      }
       const rows = await db.eventoProveedor.findMany({
         where: { id: { in: [...ids] } },
         select: {
@@ -51,8 +51,8 @@ export function crearPrismaConferenciasRepository(
           estadoIntegracion: true,
           operacionPendiente: true,
           reclamoIntegracionAt: true,
-          errorIntegracion: true,
-        },
+          errorIntegracion: true
+        }
       });
 
       return rows.map((r) => ({
@@ -60,7 +60,7 @@ export function crearPrismaConferenciasRepository(
         estadoIntegracion: r.estadoIntegracion as EstadoIntegracionConferencia,
         operacionPendiente: r.operacionPendiente as OperacionPendienteConferencia | null,
         reclamoIntegracionAt: r.reclamoIntegracionAt,
-        errorIntegracion: r.errorIntegracion,
+        errorIntegracion: r.errorIntegracion
       }));
     },
 
@@ -73,7 +73,7 @@ export function crearPrismaConferenciasRepository(
         return {
           disponible: true,
           serviceAccountEmail: cred.serviceAccountEmail,
-          privateKey: cred.privateKey,
+          privateKey: cred.privateKey
         };
       } catch (err) {
         const error = err instanceof Error ? err.message : "No se pudo leer la clave de Google.";
@@ -89,14 +89,14 @@ export function crearPrismaConferenciasRepository(
             disponible: true,
             accountId: creds.accountId,
             clientId: creds.clientId,
-            clientSecret: creds.clientSecret,
+            clientSecret: creds.clientSecret
           };
         }
         return { disponible: false, error: creds.error };
       } catch (err) {
         return {
           disponible: false,
-          error: err instanceof Error ? err.message : "Error al obtener credenciales de Zoom",
+          error: err instanceof Error ? err.message : "Error al obtener credenciales de Zoom"
         };
       }
     },
@@ -114,12 +114,14 @@ export function crearPrismaConferenciasRepository(
               include: {
                 solicitud: true,
                 cohosts: { include: { cuentaGoogle: { select: { email: true } } } },
-                cohostEmails: true,
-              },
-            },
-          },
+                cohostEmails: true
+              }
+            }
+          }
         });
-        if (!event?.operacionPendiente) return null;
+        if (!event?.operacionPendiente) {
+          return null;
+        }
         if (
           event.reclamoIntegracionAt &&
           event.reclamoIntegracionAt > new Date(Date.now() - CLAIM_TIMEOUT_MS)
@@ -136,16 +138,18 @@ export function crearPrismaConferenciasRepository(
             operacionPendiente: operacion,
             reclamoIntegracionAt: event.reclamoIntegracionAt,
             reclamoIntegracionToken: event.reclamoIntegracionToken,
-            updatedAt: event.updatedAt,
+            updatedAt: event.updatedAt
           },
           data: {
             reclamoIntegracionAt: at,
             reclamoIntegracionToken: token,
             estadoIntegracion: "PENDIENTE",
-            errorIntegracion: null,
-          },
+            errorIntegracion: null
+          }
         });
-        if (updated.count !== 1) return null;
+        if (updated.count !== 1) {
+          return null;
+        }
 
         const request = buildProvisionRequest(event);
         return {
@@ -157,11 +161,11 @@ export function crearPrismaConferenciasRepository(
             organizerEmail: event.cuentaProveedor?.emailOrganizador ?? "",
             request,
             reunionProveedorId: event.reunionProveedorId ?? null,
-            serieClave: event.reunionProveedor?.serieClave ?? null,
+            serieClave: event.reunionProveedor?.serieClave ?? null
           },
           operacion,
           at,
-          token,
+          token
         };
       });
     },
@@ -172,16 +176,24 @@ export function crearPrismaConferenciasRepository(
       return db.$transaction(async (tx) => {
         const evento = await tx.eventoProveedor.findUnique({
           where: { id: eventoProveedorId },
-          select: { reunionProveedorId: true },
+          select: { reunionProveedorId: true }
         });
         const reunionId = evento?.reunionProveedorId;
-        if (!reunionId) return null;
+        if (!reunionId) {
+          return null;
+        }
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:reunion-proveedor:${reunionId}`}))`;
 
         // Una reunión eliminada que vuelve a necesitarse (nuevo encuentro) empieza de cero.
         await tx.reunionProveedor.updateMany({
           where: { id: reunionId, estadoCreacion: "ELIMINADA" },
-          data: { estadoCreacion: "PENDIENTE", externalId: null, joinUrl: null, reclamoToken: null, reclamoAt: null },
+          data: {
+            estadoCreacion: "PENDIENTE",
+            externalId: null,
+            joinUrl: null,
+            reclamoToken: null,
+            reclamoAt: null
+          }
         });
 
         // Reclamo condicional (no un bloqueo): solo si está pendiente, vencido o ya es de este token.
@@ -192,14 +204,14 @@ export function crearPrismaConferenciasRepository(
             OR: [
               { estadoCreacion: "PENDIENTE" },
               { estadoCreacion: "CREANDO", reclamoAt: { lt: vencido } },
-              { estadoCreacion: "CREANDO", reclamoToken: token },
-            ],
+              { estadoCreacion: "CREANDO", reclamoToken: token }
+            ]
           },
-          data: { estadoCreacion: "CREANDO", reclamoToken: token, reclamoAt: ahora },
+          data: { estadoCreacion: "CREANDO", reclamoToken: token, reclamoAt: ahora }
         });
         const reunion = await tx.reunionProveedor.findUnique({
           where: { id: reunionId },
-          select: { estadoCreacion: true, externalId: true, joinUrl: true },
+          select: { estadoCreacion: true, externalId: true, joinUrl: true }
         });
         if (reclamado.count === 1) {
           // Un reclamo vencido pudo haber guardado ya el ID de Zoom: se reutiliza.
@@ -217,10 +229,21 @@ export function crearPrismaConferenciasRepository(
             inicio: e.instancia.inicioProgramadoAt,
             fin: e.instancia.finProgramadoAt
           }));
-          return { reunionId, resultado: "RECLAMADA" as const, externalId: reunion?.externalId ?? null, joinUrl: reunion?.joinUrl ?? null, instanciasHorarios };
+          return {
+            reunionId,
+            resultado: "RECLAMADA" as const,
+            externalId: reunion?.externalId ?? null,
+            joinUrl: reunion?.joinUrl ?? null,
+            instanciasHorarios
+          };
         }
         if (reunion?.estadoCreacion === "CREADA") {
-          return { reunionId, resultado: "YA_CREADA" as const, externalId: reunion.externalId, joinUrl: reunion.joinUrl };
+          return {
+            reunionId,
+            resultado: "YA_CREADA" as const,
+            externalId: reunion.externalId,
+            joinUrl: reunion.joinUrl
+          };
         }
         return { reunionId, resultado: "EN_CURSO_POR_OTRO" as const, externalId: null, joinUrl: null };
       });
@@ -229,7 +252,7 @@ export function crearPrismaConferenciasRepository(
     async registrarExternalIdTemprano(reunionId, token, externalId) {
       const actualizado = await db.reunionProveedor.updateMany({
         where: { id: reunionId, estadoCreacion: "CREANDO", reclamoToken: token },
-        data: { externalId },
+        data: { externalId }
       });
       if (actualizado.count !== 1) {
         throw new Error("El reclamo de la reunión compartida ya no es válido; otro proceso la tomó.");
@@ -247,8 +270,8 @@ export function crearPrismaConferenciasRepository(
             estadoIntegracion: "SINCRONIZADA",
             errorIntegracion: null,
             reclamoToken: null,
-            reclamoAt: null,
-          },
+            reclamoAt: null
+          }
         });
         if (actualizado.count !== 1) {
           throw new Error("El reclamo de la reunión compartida ya no es válido; otro proceso la tomó.");
@@ -256,7 +279,14 @@ export function crearPrismaConferenciasRepository(
         // Los eventos de la serie que todavía no tienen ID reciben la copia, para que las lecturas no cambien.
         await tx.eventoProveedor.updateMany({
           where: { reunionProveedorId: reunionId, externalEventId: null },
-          data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl, zoomMeetingUuid: null, zoomUuidInicioAt: null, zoomUuidMeetingId: null },
+          data: {
+            externalEventId: datos.externalId,
+            codigoReunion: datos.externalId,
+            joinUrl: datos.joinUrl,
+            zoomMeetingUuid: null,
+            zoomUuidInicioAt: null,
+            zoomUuidMeetingId: null
+          }
         });
       });
     },
@@ -268,9 +298,16 @@ export function crearPrismaConferenciasRepository(
           operacionPendiente: claim.operacion,
           reclamoIntegracionAt: claim.at,
           reclamoIntegracionToken: claim.token,
-          OR: [{ externalEventId: null }, { externalEventId: datos.externalId }],
+          OR: [{ externalEventId: null }, { externalEventId: datos.externalId }]
         },
-        data: { externalEventId: datos.externalId, codigoReunion: datos.externalId, joinUrl: datos.joinUrl, zoomMeetingUuid: null, zoomUuidInicioAt: null, zoomUuidMeetingId: null },
+        data: {
+          externalEventId: datos.externalId,
+          codigoReunion: datos.externalId,
+          joinUrl: datos.joinUrl,
+          zoomMeetingUuid: null,
+          zoomUuidInicioAt: null,
+          zoomUuidMeetingId: null
+        }
       });
       if (actualizado.count !== 1) {
         throw new Error("El claim de integración caducó o el evento ya fue modificado.");
@@ -280,7 +317,7 @@ export function crearPrismaConferenciasRepository(
     async liberarReclamoEvento(claim) {
       await db.eventoProveedor.updateMany({
         where: { id: claim.event.id, reclamoIntegracionToken: claim.token, reclamoIntegracionAt: claim.at },
-        data: { reclamoIntegracionAt: null, reclamoIntegracionToken: null },
+        data: { reclamoIntegracionAt: null, reclamoIntegracionToken: null }
       });
     },
 
@@ -291,26 +328,28 @@ export function crearPrismaConferenciasRepository(
           externalId: true,
           estadoCreacion: true,
           eventos: {
-            select: { id: true, instancia: { select: { estado: true, finProgramadoAt: true } } },
-          },
-        },
+            select: { id: true, instancia: { select: { estado: true, finProgramadoAt: true } } }
+          }
+        }
       });
-      if (!reunion) return { usos: [], externalId: null, eliminada: true };
+      if (!reunion) {
+        return { usos: [], externalId: null, eliminada: true };
+      }
       return {
         externalId: reunion.externalId,
         eliminada: reunion.estadoCreacion === "ELIMINADA",
         usos: reunion.eventos.map((evento) => ({
           eventoProveedorId: evento.id,
           instanciaEstado: evento.instancia.estado,
-          instanciaFin: evento.instancia.finProgramadoAt,
-        })),
+          instanciaFin: evento.instancia.finProgramadoAt
+        }))
       };
     },
 
     async marcarReunionCompartidaEliminada(reunionId) {
       const actualizado = await db.reunionProveedor.updateMany({
         where: { id: reunionId, estadoCreacion: { not: "ELIMINADA" } },
-        data: { estadoCreacion: "ELIMINADA", reclamoToken: null, reclamoAt: null },
+        data: { estadoCreacion: "ELIMINADA", reclamoToken: null, reclamoAt: null }
       });
       return actualizado.count === 1;
     },
@@ -321,9 +360,11 @@ export function crearPrismaConferenciasRepository(
       // identity, rather than restricting reuse to one SolicitudSala record.
       const request = await db.solicitudSala.findUnique({
         where: { id: solicitudSalaId },
-        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
+        select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true }
       });
-      if (!request) return undefined;
+      if (!request) {
+        return undefined;
+      }
       const candidates = await db.eventoProveedor.findMany({
         where: {
           id: { not: excludeEventoId },
@@ -335,19 +376,21 @@ export function crearPrismaConferenciasRepository(
               : {
                   docenteProgramaId: request.docenteProgramaId,
                   titulo: request.titulo,
-                  createdAt: request.createdAt,
-                },
+                  createdAt: request.createdAt
+                }
           },
           estadoIntegracion: "SINCRONIZADA",
           operacionPendiente: null,
-          codigoReunion: { not: null },
+          codigoReunion: { not: null }
         },
         orderBy: { updatedAt: "asc" },
-        select: { payloadUltimo: true },
+        select: { payloadUltimo: true }
       });
       for (const candidate of candidates) {
         const conferenceData = extraerConferenceData(candidate.payloadUltimo);
-        if (conferenceData) return conferenceData;
+        if (conferenceData) {
+          return conferenceData;
+        }
       }
       return undefined;
     },
@@ -360,11 +403,13 @@ export function crearPrismaConferenciasRepository(
           operacionPendiente: claim.operacion,
           reclamoIntegracionAt: claim.at,
           reclamoIntegracionToken: claim.token,
-          externalEventId: null,
+          externalEventId: null
         },
-        data: persisted,
+        data: persisted
       });
-      if (updated.count === 1) return;
+      if (updated.count === 1) {
+        return;
+      }
 
       // Google may create an event while a user is cancelling the request.
       // Record only its remote ID so the newer CANCELAR operation can delete
@@ -373,12 +418,14 @@ export function crearPrismaConferenciasRepository(
         where: {
           id: claim.event.id,
           operacionPendiente: "CANCELAR",
-          externalEventId: null,
+          externalEventId: null
         },
-        data: persisted,
+        data: persisted
       });
       if (cancelled.count === 1) {
-        throw new Error("La reunión fue cancelada durante la creación en Google; se guardó el ID remoto para su eliminación.");
+        throw new Error(
+          "La reunión fue cancelada durante la creación en Google; se guardó el ID remoto para su eliminación."
+        );
       }
       throw new Error("El claim de integración caducó o el evento ya fue modificado.");
     },
@@ -390,13 +437,13 @@ export function crearPrismaConferenciasRepository(
           operacionPendiente: claim.operacion,
           reclamoIntegracionAt: claim.at,
           reclamoIntegracionToken: claim.token,
-          externalEventId: result.externalEventId,
+          externalEventId: result.externalEventId
         },
         data: {
           codigoReunion: normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
           joinUrl: normalizeMeetLink(result.joinUrl)?.url ?? result.joinUrl,
-          payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
-        },
+          payloadUltimo: JSON.parse(JSON.stringify(result.payload))
+        }
       });
       if (updated.count !== 1) {
         throw new Error("El claim de integración caducó durante la sincronización Meet.");
@@ -410,7 +457,7 @@ export function crearPrismaConferenciasRepository(
             id: claim.event.id,
             operacionPendiente: claim.operacion,
             reclamoIntegracionAt: claim.at,
-            reclamoIntegracionToken: claim.token,
+            reclamoIntegracionToken: claim.token
           },
           data: {
             estadoIntegracion: "SINCRONIZADA",
@@ -422,15 +469,16 @@ export function crearPrismaConferenciasRepository(
             ...(result
               ? {
                   externalEventId: result.externalEventId,
-                  codigoReunion:
-                    normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
+                  codigoReunion: normalizeMeetLink(result.codigoReunion)?.code ?? result.codigoReunion,
                   joinUrl: normalizeMeetLink(result.joinUrl)?.url ?? result.joinUrl,
-                  payloadUltimo: JSON.parse(JSON.stringify(result.payload)),
+                  payloadUltimo: JSON.parse(JSON.stringify(result.payload))
                 }
-              : {}),
-          },
+              : {})
+          }
         });
-        if (updated.count !== 1) return false;
+        if (updated.count !== 1) {
+          return false;
+        }
 
         const current = await tx.eventoProveedor.findUnique({
           where: { id: claim.event.id },
@@ -439,10 +487,10 @@ export function crearPrismaConferenciasRepository(
               select: {
                 solicitudSalaId: true,
                 estado: true,
-                solicitud: { select: { estado: true } },
-              },
-            },
-          },
+                solicitud: { select: { estado: true } }
+              }
+            }
+          }
         });
 
         if (!cancelacion && current && current.instancia.estado !== "CANCELADA") {
@@ -452,13 +500,13 @@ export function crearPrismaConferenciasRepository(
           const pendientes = await tx.eventoProveedor.count({
             where: {
               instancia: { solicitudSalaId: current.instancia.solicitudSalaId },
-              operacionPendiente: "CANCELAR",
-            },
+              operacionPendiente: "CANCELAR"
+            }
           });
           if (pendientes === 0) {
             await tx.solicitudSala.update({
               where: { id: current.instancia.solicitudSalaId },
-              data: { canceladaMotivo: "Cancelación confirmada en Google Calendar." },
+              data: { canceladaMotivo: "Cancelación confirmada en Google Calendar." }
             });
           }
         }
@@ -473,32 +521,32 @@ export function crearPrismaConferenciasRepository(
           select: {
             joinUrl: true,
             codigoReunion: true,
-            instancia: { select: { solicitudSalaId: true, estado: true } },
-          },
+            instancia: { select: { solicitudSalaId: true, estado: true } }
+          }
         });
         const hasMeet = Boolean(current?.joinUrl || current?.codigoReunion);
         const noBloqueante = scopeConfiguracionMeet && hasMeet;
         const proximaOperacion =
-          claim.operacion === "PROVISIONAR" && hasMeet
-            ? ("CONFIGURAR_MEET" as const)
-            : claim.operacion;
+          claim.operacion === "PROVISIONAR" && hasMeet ? ("CONFIGURAR_MEET" as const) : claim.operacion;
 
         const updated = await tx.eventoProveedor.updateMany({
           where: {
             id: claim.event.id,
             operacionPendiente: claim.operacion,
             reclamoIntegracionAt: claim.at,
-            reclamoIntegracionToken: claim.token,
+            reclamoIntegracionToken: claim.token
           },
           data: {
             operacionPendiente: proximaOperacion,
             estadoIntegracion: noBloqueante ? "SINCRONIZADA" : "ERROR",
             errorIntegracion: error,
             reclamoIntegracionAt: null,
-            reclamoIntegracionToken: null,
-          },
+            reclamoIntegracionToken: null
+          }
         });
-        if (updated.count !== 1) return null;
+        if (updated.count !== 1) {
+          return null;
+        }
         if (current && current.instancia.estado !== "CANCELADA") {
           await recalcular(tx, current.instancia.solicitudSalaId);
         }
@@ -521,8 +569,8 @@ export function crearPrismaConferenciasRepository(
             reclamoIntegracionToken: true,
             estadoIntegracion: true,
             errorIntegracion: true,
-            instancia: { select: { solicitudSalaId: true, estado: true } },
-          },
+            instancia: { select: { solicitudSalaId: true, estado: true } }
+          }
         });
         if (!current?.operacionPendiente) {
           return resultadoSinOperacion(id, current ?? undefined);
@@ -536,11 +584,13 @@ export function crearPrismaConferenciasRepository(
             id,
             operacionPendiente: current.operacionPendiente,
             reclamoIntegracionAt: null,
-            reclamoIntegracionToken: null,
+            reclamoIntegracionToken: null
           },
-          data: { estadoIntegracion: "ERROR", errorIntegracion: error },
+          data: { estadoIntegracion: "ERROR", errorIntegracion: error }
         });
-        if (updated.count !== 1) return { eventoProveedorId: id, estado: "EN_PROCESO" };
+        if (updated.count !== 1) {
+          return { eventoProveedorId: id, estado: "EN_PROCESO" };
+        }
         if (current.instancia.estado !== "CANCELADA") {
           await recalcular(tx, current.instancia.solicitudSalaId);
         }
@@ -555,17 +605,19 @@ export function crearPrismaConferenciasRepository(
           estadoIntegracion: true,
           operacionPendiente: true,
           reclamoIntegracionAt: true,
-          errorIntegracion: true,
-        },
+          errorIntegracion: true
+        }
       });
       if (!current) {
         return {
           eventoProveedorId: id,
           estado: "ERROR",
-          error: "El evento proveedor no existe.",
+          error: "El evento proveedor no existe."
         };
       }
-      if (!current.operacionPendiente) return resultadoSinOperacion(id, current);
+      if (!current.operacionPendiente) {
+        return resultadoSinOperacion(id, current);
+      }
       return { eventoProveedorId: id, estado: "EN_PROCESO" };
     },
 
@@ -582,10 +634,10 @@ export function crearPrismaConferenciasRepository(
             instancia: {
               select: {
                 solicitudSalaId: true,
-                estado: true,
-              },
-            },
-          },
+                estado: true
+              }
+            }
+          }
         });
 
         if (!event) {
@@ -596,7 +648,7 @@ export function crearPrismaConferenciasRepository(
           return {
             eventoProveedorId,
             descartada: false,
-            motivo: "El evento no tiene operación pendiente.",
+            motivo: "El evento no tiene operación pendiente."
           };
         }
 
@@ -609,8 +661,8 @@ export function crearPrismaConferenciasRepository(
             reclamoIntegracionAt: null,
             reclamoIntegracionToken: null,
             errorIntegracion: null,
-            estadoIntegracion: hasMeet ? "SINCRONIZADA" : event.estadoIntegracion,
-          },
+            estadoIntegracion: hasMeet ? "SINCRONIZADA" : event.estadoIntegracion
+          }
         });
 
         if (event.instancia && event.instancia.estado !== "CANCELADA") {
@@ -627,20 +679,22 @@ export function crearPrismaConferenciasRepository(
           where: {
             proveedor: { tipo: "GOOGLE_MEET" },
             operacionPendiente: { not: null },
-            OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }],
+            OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }]
           },
           select: {
             id: true,
             instancia: {
               select: {
                 solicitudSalaId: true,
-                estado: true,
-              },
-            },
-          },
+                estado: true
+              }
+            }
+          }
         });
 
-        if (candidates.length === 0) return { totalDescartadas: 0 };
+        if (candidates.length === 0) {
+          return { totalDescartadas: 0 };
+        }
 
         const ids = candidates.map((item) => item.id);
         const updated = await tx.eventoProveedor.updateMany({
@@ -650,8 +704,8 @@ export function crearPrismaConferenciasRepository(
             reclamoIntegracionAt: null,
             reclamoIntegracionToken: null,
             errorIntegracion: null,
-            estadoIntegracion: "SINCRONIZADA",
-          },
+            estadoIntegracion: "SINCRONIZADA"
+          }
         });
 
         const solicitudIds = [
@@ -659,7 +713,7 @@ export function crearPrismaConferenciasRepository(
             candidates
               .filter((item) => item.instancia && item.instancia.estado !== "CANCELADA")
               .map((item) => item.instancia.solicitudSalaId)
-          ),
+          )
         ];
 
         for (const solicitudId of solicitudIds) {
@@ -675,15 +729,15 @@ export function crearPrismaConferenciasRepository(
         where: {
           proveedor: { tipo: "GOOGLE_MEET" },
           operacionPendiente: "PROVISIONAR",
-          OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }],
+          OR: [{ joinUrl: { not: null } }, { codigoReunion: { not: null } }]
         },
         data: {
-          operacionPendiente: "CONFIGURAR_MEET",
-        },
+          operacionPendiente: "CONFIGURAR_MEET"
+        }
       });
 
       return { totalReclasificadas: result.count };
-    },
+    }
   };
 }
 
@@ -717,12 +771,14 @@ function buildProvisionRequest(event: {
     guestEmails: extraerInvitados(event.payloadUltimo, cohostEmails),
     requiereAsistenciaTecnica: instancia.requiereAsistenciaTecnica,
     requiereGrabacion: instancia.requiereGrabacion,
-    calendarEventId: calendarEventId(event.id),
+    calendarEventId: calendarEventId(event.id)
   };
 }
 
 function extraerInvitados(payload: unknown, cohostEmails: readonly string[]): readonly string[] {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return [];
+  }
   const record = payload as {
     salaVirtual?: { invitadosEmails?: unknown };
     attendees?: readonly Readonly<{ email?: unknown }>[];
@@ -735,7 +791,9 @@ function extraerInvitados(payload: unknown, cohostEmails: readonly string[]): re
     ).filter((email) => !cohostSet.has(email));
   }
   const attendees = Array.isArray(record.attendees)
-    ? record.attendees.flatMap(({ email }) => (typeof email === "string" ? [email.trim()] : [])).filter(Boolean)
+    ? record.attendees
+        .flatMap(({ email }) => (typeof email === "string" ? [email.trim()] : []))
+        .filter(Boolean)
     : [];
   return normalizeCohostEmails(attendees).filter((email) => !cohostSet.has(email));
 }
@@ -755,9 +813,8 @@ function resultadoSinOperacion(
     return {
       eventoProveedorId: id,
       estado: "REQUIERE_REVISION",
-      ...(current.errorIntegracion ? { error: current.errorIntegracion } : {}),
+      ...(current.errorIntegracion ? { error: current.errorIntegracion } : {})
     };
   }
   return { eventoProveedorId: id, estado: "SINCRONIZADA" };
 }
-

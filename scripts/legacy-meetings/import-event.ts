@@ -99,32 +99,32 @@ async function importarAsignaciones(
     .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
     .filter(
       (asignacion, position, all) =>
-        all.findIndex(
-          (candidate) => candidate.asistenteZoomId === asignacion.asistenteZoomId
-        ) === position
+        all.findIndex((candidate) => candidate.asistenteZoomId === asignacion.asistenteZoomId) === position
     );
   for (const asignacion of asignaciones) {
     const usuario = mapeos.usuariosPorLegacy.get(asignacion.asistente.usuarioId);
     if (!usuario?.asistenteTecnico) {
       throw new Error(`No se pudo resolver asistente de ${asignacion.id}.`);
     }
-    const tarifa = await target.tarifaAsistenciaTecnica.findFirst({
-      where: {
-        modalidad,
-        valorHora: asignacion.tarifaAplicadaHora.toString(),
-        moneda: asignacion.moneda
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      select: { id: true }
-    }) ?? await target.tarifaAsistenciaTecnica.create({
-      data: {
-        modalidad,
-        valorHora: asignacion.tarifaAplicadaHora.toString(),
-        moneda: asignacion.moneda,
-        createdAt: asignacion.createdAt
-      },
-      select: { id: true }
-    });
+    const tarifa =
+      (await target.tarifaAsistenciaTecnica.findFirst({
+        where: {
+          modalidad,
+          valorHora: asignacion.tarifaAplicadaHora.toString(),
+          moneda: asignacion.moneda
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { id: true }
+      })) ??
+      (await target.tarifaAsistenciaTecnica.create({
+        data: {
+          modalidad,
+          valorHora: asignacion.tarifaAplicadaHora.toString(),
+          moneda: asignacion.moneda,
+          createdAt: asignacion.createdAt
+        },
+        select: { id: true }
+      }));
     await target.asignacionAsistenciaTecnica.upsert({
       where: { legacyZoomAsignacionId: asignacion.id },
       create: {

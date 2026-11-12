@@ -6,6 +6,7 @@
 **Goal:** Implementar las 5 capas arquitectónicas para el calendario del asistente (`domain`, `ports`, `application`, `infrastructure`, `api.ts`), el puerto `AssistantCalendarProvider`, casos de uso de sincronización de instancias, solicitudes, usuarios y reconciliación periódica con contención segura de errores, y adaptar la infraestructura a los clientes técnicos de Google (`src/integrations/google`), preservando fachadas retrocompatibles en `src/modules/asistencia/`.
 
 **Architecture:** Monolito modular desacoplado.
+
 - `src/modules/asistencia/domain/`: Tipos inmutables y reglas puras (hashes determinísticos de eventos, cuentas deseadas, planificación de sincronización publicar/eliminar, verificación de errores).
 - `src/modules/asistencia/ports/`: Contrato de integración `AssistantCalendarProvider` (publicar/eliminar eventos) y contrato de persistencia `AssistantCalendarRepositoryPort`.
 - `src/modules/asistencia/application/`: Casos de uso de sincronización (`sincronizarCalendarioAsistenteInstancia`, `sincronizarCalendariosAsistenteSolicitud`, `sincronizarCalendariosAsistenteUsuario`, `reconciliarCalendariosAsistentes`) y contención de fallos (`intentarSincronizacionCalendarioAsistente`).
@@ -46,6 +47,7 @@
 ## Tareas
 
 ### Tarea 1: Capa de Dominio (`src/modules/asistencia/domain/`)
+
 - Crear `src/modules/asistencia/domain/calendario-asistente.types.ts`:
   - Tipos `CuentaCalendarioAsistente`, `AsignacionCalendarioAsistente`, `SnapshotCalendarioAsistente`, `PlanCalendarioAsistente`, `ResultadoSincronizacionCalendarioAsistente`, `IntentoSincronizacionCalendarioAsistente`.
 - Crear `src/modules/asistencia/domain/calendario-asistente.domain.ts`:
@@ -58,6 +60,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 2: Capa de Puertos (`src/modules/asistencia/ports/`)
+
 - Crear `src/modules/asistencia/ports/assistant-calendar-provider.port.ts`:
   - Tipo `EventoCalendarioAsistente`.
   - Interfaz `AssistantCalendarProvider` con `publicarEvento(credentials, event)` y `eliminarEvento(credentials, eventId)`.
@@ -73,6 +76,7 @@
 - Verificar con `npm run check`.
 
 ### Tarea 3: Capa de Aplicación (`src/modules/asistencia/application/`)
+
 - Crear `src/modules/asistencia/application/sincronizar-calendario-instancia.use-case.ts`:
   - Caso de uso `sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, instanciaSalaId)`.
 - Crear `src/modules/asistencia/application/sincronizar-calendario-solicitud.use-case.ts`:
@@ -88,6 +92,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 4: Capa de Infraestructura (`src/modules/asistencia/infrastructure/`)
+
 - Crear `src/modules/asistencia/infrastructure/google/google-assistant-calendar-provider.adapter.ts`:
   - Implementa `AssistantCalendarProvider` delegando en `src/integrations/google` (`crearGoogleCalendarAuthClient`, `crearEventoCalendarHttp`, `actualizarEventoCalendarHttp`, `eliminarEventoCalendarHttp`).
   - Manejo de 409 con PATCH y 404/410 como no-op en eliminación.
@@ -98,6 +103,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 5: API Pública, Raíz de Composición Servidor y Fachadas
+
 - Crear `src/modules/asistencia/api.ts`:
   - Exporta `crearServicioCalendarioAsistente(repository, provider)` y los tipos públicos de asistencia/calendario.
 - Crear `src/bootstrap/asistencia.server.ts`:
@@ -112,6 +118,7 @@
 - Verificar compatibilidad de `src/bootstrap/identity.server.ts` y tests existentes (`test/calendario-asistente-service.test.ts`, `test/identity-bootstrap.test.ts`).
 
 ### Tarea 6: Fronteras Arquitectónicas y Verificación Integral
+
 - Auditar que `src/modules/asistencia/` cumpla las reglas de capas en `test/architecture-boundaries.test.ts` y que `test/functional-architecture.test.ts` certifique pureza en `domain/`.
 - Ejecutar:
   - `npm run check`
@@ -119,4 +126,3 @@
   - `npm run validate:schema`
   - `npm run build`
 - Documentar en `walkthrough.md`, actualizar `task_tracking.md` y hacer commit atómico de la Etapa 5.
-

@@ -29,7 +29,9 @@ describe("acceso: JWT antiguo no debe provocar bucle de redirecciones", () => {
 
   it("muestra login cuando la cuenta asociada al JWT fue desactivada", async () => {
     const findUnique = vi.fn().mockResolvedValue({
-      id: "desactivado", rol: "DOCENTE", activo: false
+      id: "desactivado",
+      rol: "DOCENTE",
+      activo: false
     });
     const db = { usuario: { findUnique } } as unknown as PrismaClient;
     expect(await puedeRedirigirAlPanel(db, { id: "desactivado" })).toBe(false);
@@ -37,7 +39,9 @@ describe("acceso: JWT antiguo no debe provocar bucle de redirecciones", () => {
 
   it("permite redirigir al panel con una sesión asociada a un usuario activo", async () => {
     const findUnique = vi.fn().mockResolvedValue({
-      id: "vigente", rol: "ADMINISTRACION", activo: true
+      id: "vigente",
+      rol: "ADMINISTRACION",
+      activo: true
     });
     const db = { usuario: { findUnique } } as unknown as PrismaClient;
     expect(await puedeRedirigirAlPanel(db, { id: "vigente" })).toBe(true);

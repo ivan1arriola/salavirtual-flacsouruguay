@@ -4,30 +4,34 @@ const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string; role: string } },
   actor: null as null | { id: string; rol: string; activo: boolean },
   preview: vi.fn(),
-  update: vi.fn(),
+  update: vi.fn()
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
-    constructor(public body: unknown, public status = 200) {}
+    constructor(
+      public body: unknown,
+      public status = 200
+    ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  },
+  }
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/modules/reuniones/migracion-zoom.service", () => ({
   obtenerVistaPreviaMigracionZoom: state.preview,
-  actualizarExcepcionGoogleMeet: state.update,
+  actualizarExcepcionGoogleMeet: state.update
 }));
 
 import { GET } from "../app/api/v1/reuniones/migracion-zoom/vista-previa/route";
 import { PATCH } from "../app/api/v1/reuniones/instancias/[instanciaId]/excepcion-meet/route";
 
 const context = { params: Promise.resolve({ instanciaId: "i1" }) };
-const patch = (body: unknown) => new Request("http://localhost/x", { method: "PATCH", body: JSON.stringify(body) });
+const patch = (body: unknown) =>
+  new Request("http://localhost/x", { method: "PATCH", body: JSON.stringify(body) });
 
 beforeEach(() => {
   state.session = { user: { id: "u", email: "a@flacso.edu.uy", role: "ADMINISTRACION" } };
@@ -63,8 +67,12 @@ describe("rutas de migración a Zoom", () => {
     expect(((await PATCH(patch({ conservar: "si" }), context)) as any).status).toBe(400);
     expect(state.update).not.toHaveBeenCalled();
 
-    const response = await PATCH(patch({ conservar: true, motivo: "Motivo" }), context) as any;
+    const response = (await PATCH(patch({ conservar: true, motivo: "Motivo" }), context)) as any;
     expect(response.status).toBe(200);
-    expect(state.update).toHaveBeenCalledWith({}, { id: "u", rol: "ADMINISTRACION" }, { instanciaId: "i1", conservar: true, motivo: "Motivo" });
+    expect(state.update).toHaveBeenCalledWith(
+      {},
+      { id: "u", rol: "ADMINISTRACION" },
+      { instanciaId: "i1", conservar: true, motivo: "Motivo" }
+    );
   });
 });

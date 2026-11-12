@@ -37,7 +37,9 @@ export async function solicitarRecuperacionPassword(
   });
 
   // La respuesta pública siempre es la misma, exista o no la cuenta.
-  if (!usuario) return;
+  if (!usuario) {
+    return;
+  }
 
   const identifier = identifierRecuperacionPassword(usuario.id);
   const limiteReenvio = new Date(
@@ -47,7 +49,9 @@ export async function solicitarRecuperacionPassword(
     where: { identifier, expires: { gt: limiteReenvio } },
     select: { identifier: true }
   });
-  if (solicitudReciente) return;
+  if (solicitudReciente) {
+    return;
+  }
 
   const token = randomBytes(32).toString("base64url");
   const tokenHash = hashTokenRecuperacion(token);
@@ -70,8 +74,10 @@ export async function solicitarRecuperacionPassword(
       titulo: "Restablecé tu contraseña",
       resumen: "Recibimos una solicitud para cambiar la contraseña de Sala Virtual FLACSO.",
       variante: "seguridad",
-      contenidoHtml: '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
-        escaparHtmlEmail(usuario.nombres) + '.</p>' +
+      contenidoHtml:
+        '<p style="margin:0 0 14px;color:#33465c;font-size:15px;line-height:23px">Hola, ' +
+        escaparHtmlEmail(usuario.nombres) +
+        ".</p>" +
         panelCorreo(
           '<p style="margin:0;color:#192b44;font-size:14px;line-height:21px"><strong>El enlace vence en 30 minutos</strong> y solo puede utilizarse una vez.</p>',
           "Acceso temporal"
@@ -118,9 +124,7 @@ export async function restablecerPassword(
     },
     select: { identifier: true, token: true, expires: true }
   });
-  const usuarioId = recuperacion
-    ? usuarioIdDesdeIdentifierRecuperacion(recuperacion.identifier)
-    : null;
+  const usuarioId = recuperacion ? usuarioIdDesdeIdentifierRecuperacion(recuperacion.identifier) : null;
 
   if (!recuperacion || !usuarioId || !tokenRecuperacionVigente(recuperacion, ahora)) {
     throw new Error("El enlace de recuperación no es válido o ya venció.");

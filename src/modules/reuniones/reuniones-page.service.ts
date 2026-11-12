@@ -45,11 +45,8 @@ export function startOfMontevideoDay(date: Date): Date {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") =>
-    parts.find((part) => part.type === type)?.value;
-  return new Date(
-    `${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`
-  );
+  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value;
+  return new Date(`${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`);
 }
 
 export type SessionActorReuniones = Readonly<{
@@ -284,9 +281,12 @@ export async function obtenerDatosPaginaReuniones(
   ]);
 
   // El listado Zoom permite 10/20/50 sin alterar el tamaño histórico de Meet.
-  const tamanoPagina = proveedor === "ZOOM" && [10, 20, 50].includes(Number(porPaginaParam))
-    ? Number(porPaginaParam)
-    : proveedor === "ZOOM" ? 10 : 50;
+  const tamanoPagina =
+    proveedor === "ZOOM" && [10, 20, 50].includes(Number(porPaginaParam))
+      ? Number(porPaginaParam)
+      : proveedor === "ZOOM"
+        ? 10
+        : 50;
   const requestedPagination = resolverPaginacionAgenda(pageParam, tamanoPagina);
   const selectedTotal = vista === "series" ? totalSeries : totalMeetings;
   const pagination = calcularInfoPaginacion(
@@ -315,7 +315,9 @@ export async function obtenerDatosPaginaReuniones(
           })
           .then(async (requests) => {
             const requestIds = requests.map(({ id }) => id);
-            if (requestIds.length === 0) return [];
+            if (requestIds.length === 0) {
+              return [];
+            }
             return db.instanciaSala.findMany({
               where: {
                 solicitudSalaId: { in: requestIds },
@@ -353,38 +355,22 @@ export async function obtenerDatosPaginaReuniones(
       : Promise.resolve([]),
     db.instanciaSala.count({
       where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } }
-        ]
+        AND: [baseInstanceWhere, dateRangeWhere, { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } }]
       }
     }),
     db.instanciaSala.count({
       where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { inicioProgramadoAt: { gte: now, lt: weekEnd } }
-        ]
+        AND: [baseInstanceWhere, dateRangeWhere, { inicioProgramadoAt: { gte: now, lt: weekEnd } }]
       }
     }),
     db.instanciaSala.count({
       where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { finProgramadoAt: { gte: sevenDaysAgo, lt: now } }
-        ]
+        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: sevenDaysAgo, lt: now } }]
       }
     }),
     db.instanciaSala.count({
       where: {
-        AND: [
-          baseInstanceWhere,
-          dateRangeWhere,
-          { finProgramadoAt: { gte: thirtyDaysAgo, lt: now } }
-        ]
+        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: thirtyDaysAgo, lt: now } }]
       }
     }),
     db.instanciaSala.count({

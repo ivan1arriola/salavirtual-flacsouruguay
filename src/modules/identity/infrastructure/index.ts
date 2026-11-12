@@ -4,4 +4,3 @@ export {
   type AsistenciaCalendarioDependencies,
   type SincronizarCalendariosAsistenteUsuarioFn
 } from "./asistencia-calendario-dispatcher.adapter";
-

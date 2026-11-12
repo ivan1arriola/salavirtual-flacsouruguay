@@ -25,12 +25,21 @@ export function AssistantMeetingsTable({
           {meetings.map((meeting) => (
             <tr key={meeting.id}>
               <td className="date-cell">{formatDateTime(meeting.inicioAt)}</td>
-              <td><strong>{meeting.titulo}</strong><small>{meeting.docente}</small></td>
+              <td>
+                <strong>{meeting.titulo}</strong>
+                <small>{meeting.docente}</small>
+              </td>
               <td>{meeting.programa}</td>
               <td>{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</td>
               <td>{formatMinutes(meeting.minutos)}</td>
               <td>{meeting.monto === null ? "Sin tarifa" : formatMoney(meeting.monto, meeting.moneda)}</td>
-              <td><span className={`status ${meeting.estado === "FINALIZADA" ? "status-ok" : "status-neutral"}`}>{meeting.estado.toLowerCase()}</span></td>
+              <td>
+                <span
+                  className={`status ${meeting.estado === "FINALIZADA" ? "status-ok" : "status-neutral"}`}
+                >
+                  {meeting.estado.toLowerCase()}
+                </span>
+              </td>
               <td className="assistant-actions-cell">
                 <AssistantUnassignButton assignmentId={meeting.id} title={meeting.titulo} />
               </td>

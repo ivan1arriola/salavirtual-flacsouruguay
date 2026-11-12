@@ -26,7 +26,9 @@ export async function procesarColaZoomUseCase(
         await deps.procesar(lease);
         continue;
       }
-      if (opciones.unaVez) return;
+      if (opciones.unaVez) {
+        return;
+      }
       await deps.esperar(deps.esperaVaciaMs, opciones.signal);
     }
   };

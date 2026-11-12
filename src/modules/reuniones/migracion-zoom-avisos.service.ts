@@ -3,12 +3,14 @@ import { formatLongDate, formatTime } from "@/src/lib/ui/format";
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import { construirAvisoMigracionZoom, esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 
-export type EnviarCorreoMigracion = (input: Readonly<{
-  to: readonly string[];
-  subject: string;
-  text: string;
-  html: string;
-}>) => Promise<Readonly<{ sent: boolean; skipped?: string; error?: string }>>;
+export type EnviarCorreoMigracion = (
+  input: Readonly<{
+    to: readonly string[];
+    subject: string;
+    text: string;
+    html: string;
+  }>
+) => Promise<Readonly<{ sent: boolean; skipped?: string; error?: string }>>;
 
 export type DependenciasAvisosMigracionZoom = Readonly<{
   db: PrismaClient;
@@ -37,7 +39,14 @@ export type ResumenAvisosMigracion = Readonly<{
 }>;
 
 const vacio = (estado: ResumenAvisosMigracion["estado"], motivo: string): ResumenAvisosMigracion => ({
-  estado, motivo, destinatarios: 0, enviados: 0, yaEnviados: 0, enCurso: 0, errores: 0, detalle: [],
+  estado,
+  motivo,
+  destinatarios: 0,
+  enviados: 0,
+  yaEnviados: 0,
+  enCurso: 0,
+  errores: 0,
+  detalle: []
 });
 
 export function normalizarEmailAviso(email: string | null | undefined): string | null {
@@ -59,29 +68,31 @@ const seleccion = {
   inicioProgramadoAt: true,
   finProgramadoAt: true,
   proveedorActivoTipo: true,
-  eventosProveedor: { select: {
-    joinUrl: true,
-    externalEventId: true,
-    cuentaProveedor: { select: { emailOrganizador: true } },
-    proveedor: { select: { tipo: true } },
-  } },
+  eventosProveedor: {
+    select: {
+      joinUrl: true,
+      externalEventId: true,
+      cuentaProveedor: { select: { emailOrganizador: true } },
+      proveedor: { select: { tipo: true } }
+    }
+  },
   solicitud: {
     select: {
       titulo: true,
       estado: true,
       creadaPorUsuarioId: true,
       docentePrograma: {
-        select: { docente: { select: { usuarioId: true } }, programa: { select: { nombre: true } } },
-      },
-    },
+        select: { docente: { select: { usuarioId: true } }, programa: { select: { nombre: true } } }
+      }
+    }
   },
   asignaciones: {
     where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-    select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } },
+    select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } }
   },
   cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
   cohostEmails: { select: { email: true } },
-  invitados: { select: { email: true, nombre: true } },
+  invitados: { select: { email: true, nombre: true } }
 } satisfies Prisma.InstanciaSalaSelect;
 
 /**
@@ -93,40 +104,62 @@ const seleccion = {
  */
 export async function notificarMigracionZoom(
   deps: DependenciasAvisosMigracionZoom,
-  instanciaId: string,
+  instanciaId: string
 ): Promise<ResumenAvisosMigracion> {
   const { db } = deps;
   const ahora = (deps.ahora ?? (() => new Date()))();
   const instancia = await db.instanciaSala.findUnique({ where: { id: instanciaId }, select: seleccion });
-  if (!instancia) return vacio("NO_APLICA", "El encuentro no existe.");
-  if (instancia.proveedorActivoTipo !== "ZOOM") return vacio("NO_APLICA", "El proveedor activo todavía no es Zoom.");
-  if (instancia.estado !== "PROGRAMADA" || instancia.solicitud.estado === "CANCELADA" || instancia.inicioProgramadoAt <= ahora) {
+  if (!instancia) {
+    return vacio("NO_APLICA", "El encuentro no existe.");
+  }
+  if (instancia.proveedorActivoTipo !== "ZOOM") {
+    return vacio("NO_APLICA", "El proveedor activo todavía no es Zoom.");
+  }
+  if (
+    instancia.estado !== "PROGRAMADA" ||
+    instancia.solicitud.estado === "CANCELADA" ||
+    instancia.inicioProgramadoAt <= ahora
+  ) {
     return vacio("NO_APLICA", "El encuentro ya no está programado a futuro.");
   }
   const joinUrl = seleccionarEventoProveedorActivo(instancia)?.joinUrl ?? "";
-  if (!esUrlZoom(joinUrl)) return vacio("NO_APLICA", "El encuentro no tiene un enlace de Zoom válido.");
+  if (!esUrlZoom(joinUrl)) {
+    return vacio("NO_APLICA", "El encuentro no tiene un enlace de Zoom válido.");
+  }
 
   // Destinatarios conocidos, deduplicados por correo normalizado.
   const nombres = new Map<string, string | null>();
   const agregar = (email: string | null | undefined, nombre: string | null = null) => {
     const normalizado = normalizarEmailAviso(email);
-    if (normalizado && (!nombres.has(normalizado) || (nombre && !nombres.get(normalizado)))) nombres.set(normalizado, nombre);
+    if (normalizado && (!nombres.has(normalizado) || (nombre && !nombres.get(normalizado)))) {
+      nombres.set(normalizado, nombre);
+    }
   };
-  const usuarioIds = [...new Set([
-    instancia.solicitud.creadaPorUsuarioId,
-    instancia.solicitud.docentePrograma.docente.usuarioId,
-    ...instancia.asignaciones
-      .filter(({ asistenteTecnico }) => !asistenteTecnico.cesadoHastaProximoInicioSesion)
-      .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId),
-  ])];
+  const usuarioIds = [
+    ...new Set([
+      instancia.solicitud.creadaPorUsuarioId,
+      instancia.solicitud.docentePrograma.docente.usuarioId,
+      ...instancia.asignaciones
+        .filter(({ asistenteTecnico }) => !asistenteTecnico.cesadoHastaProximoInicioSesion)
+        .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
+    ])
+  ];
   const usuarios = await db.usuario.findMany({
     where: { id: { in: usuarioIds }, activo: true, fusionadoEnId: null },
-    select: { nombres: true, emailPrincipal: true },
+    select: { nombres: true, emailPrincipal: true }
   });
-  for (const u of usuarios) agregar(u.emailPrincipal, u.nombres);
-  for (const c of instancia.cohosts) agregar(c.cuentaGoogle.email);
-  for (const c of instancia.cohostEmails) agregar(c.email);
-  for (const g of instancia.invitados) agregar(g.email, g.nombre);
+  for (const u of usuarios) {
+    agregar(u.emailPrincipal, u.nombres);
+  }
+  for (const c of instancia.cohosts) {
+    agregar(c.cuentaGoogle.email);
+  }
+  for (const c of instancia.cohostEmails) {
+    agregar(c.email);
+  }
+  for (const g of instancia.invitados) {
+    agregar(g.email, g.nombre);
+  }
 
   // Calendar puede contener invitados añadidos manualmente que aún no figuran
   // en Sala Virtual. La clave única de la outbox deduplica ambos orígenes.
@@ -134,43 +167,78 @@ export async function notificarMigracionZoom(
   let errorCalendar: string | null = null;
   if (deps.leerInvitadosCalendar && meet?.externalEventId && meet.cuentaProveedor?.emailOrganizador) {
     try {
-      const invitadosCalendar = await deps.leerInvitadosCalendar(meet.cuentaProveedor.emailOrganizador, meet.externalEventId);
-      for (const email of invitadosCalendar) agregar(email);
+      const invitadosCalendar = await deps.leerInvitadosCalendar(
+        meet.cuentaProveedor.emailOrganizador,
+        meet.externalEventId
+      );
+      for (const email of invitadosCalendar) {
+        agregar(email);
+      }
     } catch (error) {
-      errorCalendar = error instanceof Error ? error.message : "No se pudieron leer los invitados de Calendar.";
+      errorCalendar =
+        error instanceof Error ? error.message : "No se pudieron leer los invitados de Calendar.";
     }
   }
 
   const fecha = formatLongDate(instancia.inicioProgramadoAt);
-  const horario = formatTime(instancia.inicioProgramadoAt) + "–" + formatTime(instancia.finProgramadoAt) + " h";
+  const horario =
+    formatTime(instancia.inicioProgramadoAt) + "–" + formatTime(instancia.finProgramadoAt) + " h";
   const detalle: { email: string; estado: EstadoAvisoDestinatario; error?: string }[] = [];
 
   for (const [email, nombre] of nombres) {
     // 1. Reserva atómica. Un ERROR previo se re-reclama; ACEPTADO/RESERVADO/OBSOLETO no.
     let reservaId: string;
     try {
-      reservaId = (await db.avisoMigracionZoom.create({
-        data: { instanciaSalaId: instancia.id, email, inicioProgramadoAt: instancia.inicioProgramadoAt, joinUrl, estado: "RESERVADO" },
-        select: { id: true },
-      })).id;
+      reservaId = (
+        await db.avisoMigracionZoom.create({
+          data: {
+            instanciaSalaId: instancia.id,
+            email,
+            inicioProgramadoAt: instancia.inicioProgramadoAt,
+            joinUrl,
+            estado: "RESERVADO"
+          },
+          select: { id: true }
+        })
+      ).id;
     } catch (error) {
-      if (!esDuplicado(error)) throw error;
+      if (!esDuplicado(error)) {
+        throw error;
+      }
       const previo = await db.avisoMigracionZoom.findUnique({
         where: { instanciaSalaId_email: { instanciaSalaId: instancia.id, email } },
-        select: { id: true, estado: true },
+        select: { id: true, estado: true }
       });
-      if (!previo) { detalle.push({ email, estado: "EN_CURSO" }); continue; }
-      if (previo.estado === "ACEPTADO") { detalle.push({ email, estado: "YA_ENVIADO" }); continue; }
-      if (previo.estado === "OBSOLETO") { detalle.push({ email, estado: "OBSOLETO" }); continue; }
-      if (previo.estado !== "ERROR") { detalle.push({ email, estado: "EN_CURSO" }); continue; }
+      if (!previo) {
+        detalle.push({ email, estado: "EN_CURSO" });
+        continue;
+      }
+      if (previo.estado === "ACEPTADO") {
+        detalle.push({ email, estado: "YA_ENVIADO" });
+        continue;
+      }
+      if (previo.estado === "OBSOLETO") {
+        detalle.push({ email, estado: "OBSOLETO" });
+        continue;
+      }
+      if (previo.estado !== "ERROR") {
+        detalle.push({ email, estado: "EN_CURSO" });
+        continue;
+      }
       const reclamo = await db.avisoMigracionZoom.updateMany({
         where: { id: previo.id, estado: "ERROR" },
         data: {
-          estado: "RESERVADO", errorCodigo: null, joinUrl,
-          inicioProgramadoAt: instancia.inicioProgramadoAt, intentos: { increment: 1 },
-        },
+          estado: "RESERVADO",
+          errorCodigo: null,
+          joinUrl,
+          inicioProgramadoAt: instancia.inicioProgramadoAt,
+          intentos: { increment: 1 }
+        }
       });
-      if (reclamo.count !== 1) { detalle.push({ email, estado: "EN_CURSO" }); continue; }
+      if (reclamo.count !== 1) {
+        detalle.push({ email, estado: "EN_CURSO" });
+        continue;
+      }
       reservaId = previo.id;
     }
 
@@ -178,35 +246,53 @@ export async function notificarMigracionZoom(
     try {
       const vigente = await db.instanciaSala.findUnique({
         where: { id: instancia.id },
-        select: { estado: true, proveedorActivoTipo: true, inicioProgramadoAt: true, solicitud: { select: { estado: true } } },
+        select: {
+          estado: true,
+          proveedorActivoTipo: true,
+          inicioProgramadoAt: true,
+          solicitud: { select: { estado: true } }
+        }
       });
-      if (!vigente || vigente.estado !== "PROGRAMADA" || vigente.proveedorActivoTipo !== "ZOOM" ||
+      if (
+        !vigente ||
+        vigente.estado !== "PROGRAMADA" ||
+        vigente.proveedorActivoTipo !== "ZOOM" ||
         vigente.solicitud.estado === "CANCELADA" ||
-        vigente.inicioProgramadoAt.getTime() !== instancia.inicioProgramadoAt.getTime()) {
+        vigente.inicioProgramadoAt.getTime() !== instancia.inicioProgramadoAt.getTime()
+      ) {
         await db.avisoMigracionZoom.update({ where: { id: reservaId }, data: { estado: "OBSOLETO" } });
         detalle.push({ email, estado: "OBSOLETO" });
         continue;
       }
       const correo = construirAvisoMigracionZoom({
-        nombre, reunion: instancia.solicitud.titulo, programa: instancia.solicitud.docentePrograma.programa.nombre,
-        fecha, horario, urlZoom: joinUrl,
+        nombre,
+        reunion: instancia.solicitud.titulo,
+        programa: instancia.solicitud.docentePrograma.programa.nombre,
+        fecha,
+        horario,
+        urlZoom: joinUrl
       });
       const resultado = await deps.enviarCorreo({ to: [email], ...correo });
       if (!resultado.sent) {
         const codigo = (resultado.skipped ?? resultado.error ?? "NO_CONFIRMADO").slice(0, 80);
-        await db.avisoMigracionZoom.update({ where: { id: reservaId }, data: { estado: "ERROR", errorCodigo: codigo } });
+        await db.avisoMigracionZoom.update({
+          where: { id: reservaId },
+          data: { estado: "ERROR", errorCodigo: codigo }
+        });
         detalle.push({ email, estado: "ERROR", error: codigo });
         continue;
       }
       await db.avisoMigracionZoom.update({
-        where: { id: reservaId }, data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null },
+        where: { id: reservaId },
+        data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
       });
       detalle.push({ email, estado: "ENVIADO" });
     } catch (error) {
       const codigo = codigoError(error);
       // Una excepción del transporte o al confirmar en la DB deja incierto si
       // el mensaje salió. Mantener RESERVADO evita reenviarlo automáticamente.
-      await db.avisoMigracionZoom.update({ where: { id: reservaId }, data: { errorCodigo: codigo } })
+      await db.avisoMigracionZoom
+        .update({ where: { id: reservaId }, data: { errorCodigo: codigo } })
         .catch(() => undefined);
       detalle.push({ email, estado: "EN_CURSO", error: codigo });
     }
@@ -217,12 +303,14 @@ export async function notificarMigracionZoom(
   const enCurso = cuenta("EN_CURSO");
   return {
     estado: errores || enCurso || errorCalendar ? "PARCIAL" : "COMPLETO",
-    ...(errorCalendar ? { motivo: `No se pudieron leer todos los invitados de Calendar: ${errorCalendar}` } : {}),
+    ...(errorCalendar
+      ? { motivo: `No se pudieron leer todos los invitados de Calendar: ${errorCalendar}` }
+      : {}),
     destinatarios: detalle.length,
     enviados: cuenta("ENVIADO"),
     yaEnviados: cuenta("YA_ENVIADO"),
     enCurso,
     errores,
-    detalle,
+    detalle
   };
 }

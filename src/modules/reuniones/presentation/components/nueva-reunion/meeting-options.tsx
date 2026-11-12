@@ -2,7 +2,20 @@ import { Clock3, UsersRound } from "lucide-react";
 import { ChoicePanel, Field, FormSection } from "./form-primitives";
 import type { Option } from "./tipos";
 
-export function MeetingOptions({ requiresAssistance, requiresRecording, meetingMode, assistanceMode, canAssignAssistant, assistants, selectedAssistantId = "", onAssistantChange, onRequiresAssistanceChange, onRequiresRecordingChange, onModeChange, onAssistanceModeChange }: Readonly<{
+export function MeetingOptions({
+  requiresAssistance,
+  requiresRecording,
+  meetingMode,
+  assistanceMode,
+  canAssignAssistant,
+  assistants,
+  selectedAssistantId = "",
+  onAssistantChange,
+  onRequiresAssistanceChange,
+  onRequiresRecordingChange,
+  onModeChange,
+  onAssistanceModeChange
+}: Readonly<{
   requiresAssistance: boolean;
   requiresRecording: boolean;
   meetingMode: "VIRTUAL" | "HIBRIDA";
@@ -18,7 +31,12 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
 }>) {
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   return (
-    <FormSection id="organizacion" icon={<UsersRound size={19} />} title="Organización" detail="Indicá si debe grabarse y si requiere un asistente técnico.">
+    <FormSection
+      id="organizacion"
+      icon={<UsersRound size={19} />}
+      title="Organización"
+      detail="Indicá si debe grabarse y si requiere un asistente técnico."
+    >
       <div className="organization-v2">
         <section className="organization-support-grid" aria-label="Soporte y grabación">
           <ChoicePanel
@@ -50,7 +68,10 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
             <Clock3 size={18} aria-hidden="true" />
             <div>
               <strong>Horarios de asistencia presencial</strong>
-              <span>La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como mínimo. Ambos horarios se pueden ampliar.</span>
+              <span>
+                La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como
+                mínimo. Ambos horarios se pueden ampliar.
+              </span>
               <a href="#fechas">Revisar llegada y salida en Fechas</a>
             </div>
           </div>
@@ -67,25 +88,104 @@ export function MeetingOptions({ requiresAssistance, requiresRecording, meetingM
 
         {requiresAssistance ? (
           <section className="organization-subsection organization-assistance-config">
-            <div className="organization-subsection-heading"><div><h3>Cobertura de monitoreo</h3><p>{meetingMode === "HIBRIDA" ? "El horario de monitoreo se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre." : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}</p></div></div>
+            <div className="organization-subsection-heading">
+              <div>
+                <h3>Cobertura de monitoreo</h3>
+                <p>
+                  {meetingMode === "HIBRIDA"
+                    ? "El horario de monitoreo se define por fecha, con al menos 30 minutos de preparación y 30 minutos después del cierre."
+                    : "El horario virtual es fijo: 15 minutos antes y salida al finalizar. Definí la asignación del asistente."}
+                </p>
+              </div>
+            </div>
             <fieldset className="field field-wide modality-choice">
               <legend>Modalidad</legend>
-              <label><input type="radio" name="modalidad" value="VIRTUAL" checked={meetingMode === "VIRTUAL"} onChange={() => onModeChange("VIRTUAL")} /><span className="option-copy"><strong>Virtual</strong><small>Todos participan por Zoom</small></span></label>
-              <label><input type="radio" name="modalidad" value="HIBRIDA" checked={meetingMode === "HIBRIDA"} onChange={() => onModeChange("HIBRIDA")} /><span className="option-copy"><strong>Híbrida</strong><small>Combina participación presencial y remota</small></span></label>
+              <label>
+                <input
+                  type="radio"
+                  name="modalidad"
+                  value="VIRTUAL"
+                  checked={meetingMode === "VIRTUAL"}
+                  onChange={() => onModeChange("VIRTUAL")}
+                />
+                <span className="option-copy">
+                  <strong>Virtual</strong>
+                  <small>Todos participan por Zoom</small>
+                </span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="modalidad"
+                  value="HIBRIDA"
+                  checked={meetingMode === "HIBRIDA"}
+                  onChange={() => onModeChange("HIBRIDA")}
+                />
+                <span className="option-copy">
+                  <strong>Híbrida</strong>
+                  <small>Combina participación presencial y remota</small>
+                </span>
+              </label>
             </fieldset>
             {canAssignAssistant ? (
               <fieldset className="assistance-choice organization-assistance-choice">
                 <legend>Asignación del asistente</legend>
-                <label><input type="radio" name="modoAsistencia" value="OPEN" checked={assistanceMode === "OPEN"} onChange={() => onAssistanceModeChange("OPEN")} /><span className="option-copy"><strong>Abierta a postulaciones</strong><small>Los asistentes disponibles podrán ofrecerse</small></span></label>
-                <label className={assistants.length === 0 ? "is-disabled" : ""}><input type="radio" name="modoAsistencia" value="ASSIGN" disabled={assistants.length === 0} checked={assistanceMode === "ASSIGN"} onChange={() => onAssistanceModeChange("ASSIGN")} /><span className="option-copy"><strong>Asignar ahora</strong><small>{assistants.length > 0 ? `${assistants.length} asistentes disponibles` : "No hay asistentes disponibles"}</small></span></label>
+                <label>
+                  <input
+                    type="radio"
+                    name="modoAsistencia"
+                    value="OPEN"
+                    checked={assistanceMode === "OPEN"}
+                    onChange={() => onAssistanceModeChange("OPEN")}
+                  />
+                  <span className="option-copy">
+                    <strong>Abierta a postulaciones</strong>
+                    <small>Los asistentes disponibles podrán ofrecerse</small>
+                  </span>
+                </label>
+                <label className={assistants.length === 0 ? "is-disabled" : ""}>
+                  <input
+                    type="radio"
+                    name="modoAsistencia"
+                    value="ASSIGN"
+                    disabled={assistants.length === 0}
+                    checked={assistanceMode === "ASSIGN"}
+                    onChange={() => onAssistanceModeChange("ASSIGN")}
+                  />
+                  <span className="option-copy">
+                    <strong>Asignar ahora</strong>
+                    <small>
+                      {assistants.length > 0
+                        ? `${assistants.length} asistentes disponibles`
+                        : "No hay asistentes disponibles"}
+                    </small>
+                  </span>
+                </label>
               </fieldset>
-            ) : <span className="status status-warning">Abierta a postulaciones</span>}
+            ) : (
+              <span className="status status-warning">Abierta a postulaciones</span>
+            )}
             {canAssignAssistant && assistanceMode === "ASSIGN" ? (
-              <Field label="Asistente de monitoreo"><select name="asistenteTecnicoId" required value={selectedAssistantId} onChange={(event) => onAssistantChange?.(event.target.value)}><option value="" disabled>Seleccioná un asistente de monitoreo</option>{assistants.map((assistant) => <option value={assistant.id} key={assistant.id}>{assistant.label}</option>)}</select></Field>
+              <Field label="Asistente de monitoreo">
+                <select
+                  name="asistenteTecnicoId"
+                  required
+                  value={selectedAssistantId}
+                  onChange={(event) => onAssistantChange?.(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Seleccioná un asistente de monitoreo
+                  </option>
+                  {assistants.map((assistant) => (
+                    <option value={assistant.id} key={assistant.id}>
+                      {assistant.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             ) : null}
           </section>
         ) : null}
-
       </div>
     </FormSection>
   );

@@ -6,7 +6,7 @@ import {
   planificarMigracionZoomPorSerie,
   type EncuentroSerieMigracionZoom,
   type EstadoVistaPreviaZoom,
-  type SerieMigracionZoom,
+  type SerieMigracionZoom
 } from "./migracion-zoom-preview.domain";
 import { cargarDatosMigracionZoom, exigirAdministracion } from "./migracion-zoom.service";
 import { claveSerieReunion } from "./serie-reunion.domain";
@@ -68,7 +68,7 @@ export type InstanciaParaSerieMigracion = Readonly<{
 export function armarSerieMigracionZoom(
   serieClave: string,
   delaSerie: readonly InstanciaParaSerieMigracion[],
-  hosts: readonly Readonly<{ id: string; emailOrganizador: string | null }>[],
+  hosts: readonly Readonly<{ id: string; emailOrganizador: string | null }>[]
 ): SerieMigracionZoom {
   const encuentros = delaSerie.map((instancia): EncuentroSerieMigracionZoom => {
     const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
@@ -81,30 +81,38 @@ export function armarSerieMigracionZoom(
       estado: instancia.estado,
       proveedorActivo: activo === "GOOGLE_MEET" || activo === "ZOOM" ? activo : null,
       conservarGoogleMeet: instancia.conservarGoogleMeet,
-      meetPreparado: meetPreparadoParaMigracion(meet ? {
-        ...meet,
-        emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
-      } : null),
+      meetPreparado: meetPreparadoParaMigracion(
+        meet
+          ? {
+              ...meet,
+              emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null
+            }
+          : null
+      ),
       meetJoinUrl: meet?.joinUrl ?? null,
       zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
-      reunionCompartidaId: zoom?.reunionProveedorId ?? null,
+      reunionCompartidaId: zoom?.reunionProveedorId ?? null
     };
   });
 
   // Sala preferida: la de la reunión compartida si ya hay encuentros en Zoom; si no, la que
   // corresponde al organizador Meet del primer encuentro.
-  const primeroEnZoom = delaSerie
-    .flatMap(({ eventosProveedor, proveedorActivoTipo }) =>
-      proveedorActivoTipo === "ZOOM"
-        ? eventosProveedor.filter(({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId)
-        : [])[0];
+  const primeroEnZoom = delaSerie.flatMap(({ eventosProveedor, proveedorActivoTipo }) =>
+    proveedorActivoTipo === "ZOOM"
+      ? eventosProveedor.filter(
+          ({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId
+        )
+      : []
+  )[0];
   const emailMeet = delaSerie
     .flatMap(({ eventosProveedor }) => eventosProveedor)
     .find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
-    ?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
-  const cuentaZoomPreferidaId = primeroEnZoom?.cuentaProveedorId
-    ?? (emailMeet
-      ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
+    ?.cuentaProveedor?.emailOrganizador?.trim()
+    .toLowerCase();
+  const cuentaZoomPreferidaId =
+    primeroEnZoom?.cuentaProveedorId ??
+    (emailMeet
+      ? (hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null)
       : null);
   return { serieClave, encuentros, cuentaZoomPreferidaId };
 }
@@ -116,7 +124,7 @@ export function armarSerieMigracionZoom(
 export async function obtenerVistaPreviaMigracionZoomPorSerie(
   db: PrismaClient,
   actor: Actor,
-  ahora: Date = new Date(),
+  ahora: Date = new Date()
 ): Promise<VistaPreviaMigracionZoomSerie> {
   exigirAdministracion(actor);
   const { instancias, hosts, reservas } = await cargarDatosMigracionZoom(db, ahora);
@@ -127,11 +135,12 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
       const clave = claveSerieReunion(instancia.solicitud);
       return new Map([...mapa, [clave, [...(mapa.get(clave) ?? []), instancia]]]);
     },
-    new Map(),
+    new Map()
   );
 
   const series: SerieMigracionZoom[] = [...porSerie].map(([serieClave, delaSerie]) =>
-    armarSerieMigracionZoom(serieClave, delaSerie, hosts));
+    armarSerieMigracionZoom(serieClave, delaSerie, hosts)
+  );
 
   const plan = planificarMigracionZoomPorSerie({
     ahora,
@@ -140,17 +149,33 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
     hosts: hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
     reservasZoom: reservas.flatMap(({ cuentaProveedorId, instanciaSalaId, instancia }) =>
       cuentaProveedorId
-        ? [{ cuentaProveedorId, inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt, instanciaId: instanciaSalaId }]
-        : []),
+        ? [
+            {
+              cuentaProveedorId,
+              inicio: instancia.inicioProgramadoAt,
+              fin: instancia.finProgramadoAt,
+              instanciaId: instanciaSalaId
+            }
+          ]
+        : []
+    )
   });
 
   const conteos: Record<EstadoVistaPreviaZoom, number> = {
-    MIGRABLE: 0, EXCEPCION: 0, SERIE: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
+    MIGRABLE: 0,
+    EXCEPCION: 0,
+    SERIE: 0,
+    YA_ZOOM: 0,
+    SIN_SALA: 0,
+    CERCANO: 0,
+    NO_FUTURO: 0,
+    REVISAR: 0
   };
   const filas = plan.map((fila): FilaVistaPreviaSerie => {
     conteos[fila.estado] += 1;
-    const delaSerie = [...(porSerie.get(fila.serieClave) ?? [])]
-      .sort((a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime());
+    const delaSerie = [...(porSerie.get(fila.serieClave) ?? [])].sort(
+      (a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime()
+    );
     const aMigrar = new Set(fila.encuentroIds);
     const primera = delaSerie[0];
     const host = fila.hostId ? hostPorId.get(fila.hostId) : undefined;
@@ -162,9 +187,11 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
           instancia.solicitud.creadaPor.emailPrincipal,
           ...instancia.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.emailPrincipal),
           ...instancia.cohostEmails.map(({ email: correo }) => correo),
-          ...instancia.invitados.map(({ email: correo }) => correo),
+          ...instancia.invitados.map(({ email: correo }) => correo)
         ]) {
-          if (email) correos.add(email.toLowerCase());
+          if (email) {
+            correos.add(email.toLowerCase());
+          }
         }
       }
     }
@@ -184,11 +211,11 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
           enlaceActual: activo?.joinUrl ?? null,
           migra: aMigrar.has(instancia.id),
           conservarEnMeet: instancia.conservarGoogleMeet,
-          motivoExcepcion: instancia.conservarGoogleMeet ? instancia.motivoConservarGoogleMeet : null,
+          motivoExcepcion: instancia.conservarGoogleMeet ? instancia.motivoConservarGoogleMeet : null
         };
       }),
       cambioEnlace: fila.estado === "MIGRABLE",
-      destinatarios: [...correos].sort(),
+      destinatarios: [...correos].sort()
     };
   });
 
@@ -197,6 +224,6 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
     generadaAt: ahora.toISOString(),
     margenSeguridadHoras: MARGEN_SEGURIDAD_HORAS_APLICAR,
     conteos,
-    filas,
+    filas
   };
 }

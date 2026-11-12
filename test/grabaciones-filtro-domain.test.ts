@@ -55,15 +55,25 @@ describe("grabaciones-filtro.domain", () => {
   it("muestra una grabación detectada aunque no se haya requerido", () => {
     const ahora = new Date("2026-10-27T18:00:00Z");
     const base = {
-      tieneArchivoGrabacion: false, archivosSincronizadosAt: null,
+      tieneArchivoGrabacion: false,
+      archivosSincronizadosAt: null,
       finProgramadoAt: new Date("2026-10-27T19:00:00Z"),
-      requiereGrabacion: false, ahora,
+      requiereGrabacion: false,
+      ahora,
       observadoAt: new Date("2026-10-27T17:55:00Z")
     };
     expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO" })).toBe("EN_CURSO");
     expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "PROCESANDO" })).toBe("PROCESANDO");
-    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO", observadoAt: new Date("2026-10-27T16:00:00Z") })).toBe("NO_REQUERIDA");
-    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO", tieneArchivoGrabacion: true })).toBe("DISPONIBLE");
+    expect(
+      resolverEstadoVisualGrabacion({
+        ...base,
+        estadoDetectado: "EN_CURSO",
+        observadoAt: new Date("2026-10-27T16:00:00Z")
+      })
+    ).toBe("NO_REQUERIDA");
+    expect(
+      resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO", tieneArchivoGrabacion: true })
+    ).toBe("DISPONIBLE");
   });
 
   it("filtra encuentros por texto de busqueda en titulo, programa o docente", () => {
@@ -90,7 +100,12 @@ describe("grabaciones-filtro.domain", () => {
     expect(filtrarEncuentrosConArchivos(grupos, "TODOS", "Juan")).toHaveLength(1);
     expect(filtrarEncuentrosConArchivos(grupos, "GRABACIONES", "")).toHaveLength(1);
     expect(filtrarEncuentrosConArchivos(grupos, "ASISTENCIAS", "")).toHaveLength(1);
-    expect(filtrarEncuentrosConArchivos([{ ...grupos[1], archivos: [], estadoGrabacion: "EN_CURSO" }], "GRABACIONES", "")).toHaveLength(1);
+    expect(
+      filtrarEncuentrosConArchivos(
+        [{ ...grupos[1], archivos: [], estadoGrabacion: "EN_CURSO" }],
+        "GRABACIONES",
+        ""
+      )
+    ).toHaveLength(1);
   });
 });
-

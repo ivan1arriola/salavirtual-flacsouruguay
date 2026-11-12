@@ -1,7 +1,4 @@
-import type {
-  RegistroAsistenciaPersonal,
-  RegistroHistorialAsistenciaPersonal
-} from "../domain";
+import type { RegistroAsistenciaPersonal, RegistroHistorialAsistenciaPersonal } from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 
 export type ConsultarAsistenciasDeps = Readonly<{

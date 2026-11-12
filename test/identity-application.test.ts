@@ -3,10 +3,7 @@ import {
   crearAutenticarCredencialesUseCase,
   crearResolverUsuarioGoogleUseCase
 } from "@/src/modules/identity/application";
-import type {
-  IdentityRepository,
-  CalendarioAsistenteDispatcher
-} from "@/src/modules/identity/ports";
+import type { IdentityRepository, CalendarioAsistenteDispatcher } from "@/src/modules/identity/ports";
 
 describe("identity application use cases", () => {
   it("autentica con credenciales validas", async () => {
@@ -153,4 +150,3 @@ describe("identity application use cases", () => {
     expect(mockDispatcher.reconciliarCalendarioAsistente).not.toHaveBeenCalled();
   });
 });
-

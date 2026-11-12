@@ -20,7 +20,7 @@
 
   .assistant-dashboard-redesigned .dashboard-header-subtitle,
   .teacher-dashboard-redesigned .dashboard-header-subtitle {
-    font-size: .82rem;
+    font-size: 0.82rem;
   }
 
   .assistant-dashboard-redesigned .dashboard-header-actions,
@@ -35,7 +35,7 @@
     min-width: 0;
     min-height: 44px;
     padding: 9px 6px;
-    font-size: .8rem;
+    font-size: 0.8rem;
     text-align: center;
   }
 
@@ -154,6 +154,6 @@
 
   .assistant-dashboard-redesigned .dashboard-header-actions a,
   .teacher-dashboard-redesigned .dashboard-header-actions a {
-    font-size: .75rem;
+    font-size: 0.75rem;
   }
 }

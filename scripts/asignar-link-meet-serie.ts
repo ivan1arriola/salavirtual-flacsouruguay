@@ -16,7 +16,9 @@ async function main(): Promise<void> {
     where: { id: solicitudId },
     select: { id: true, titulo: true, docenteProgramaId: true, createdAt: true }
   });
-  if (!request) throw new Error(`No existe la solicitud ${solicitudId}.`);
+  if (!request) {
+    throw new Error(`No existe la solicitud ${solicitudId}.`);
+  }
   const meetings = await db.instanciaSala.findMany({
     where: {
       solicitud: {
@@ -34,7 +36,9 @@ async function main(): Promise<void> {
       }
     }
   });
-  if (meetings.length === 0) throw new Error("La serie no tiene encuentros Google Meet.");
+  if (meetings.length === 0) {
+    throw new Error("La serie no tiene encuentros Google Meet.");
+  }
   const events = meetings.map((meeting) => {
     const event = meeting.eventosProveedor[0];
     if (!event?.externalEventId || !event.cuentaProveedor?.emailOrganizador) {
@@ -45,29 +49,39 @@ async function main(): Promise<void> {
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
   const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
-  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: true
+  });
   if (!configuration) {
     throw new Error("Google Workspace no está configurado.");
   }
   const privateKey = configuration.privateKey;
   await verifyMeetSpace(configuration.serviceAccountEmail, privateKey, events[0].calendarId);
 
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    solicitudId,
-    titulo: request.titulo,
-    meetCode,
-    meetUrl,
-    encuentros: events.map(({ meeting, event, calendarId }) => ({
-      instanciaId: meeting.id,
-      solicitudId: meeting.solicitud.id,
-      inicio: meeting.inicioProgramadoAt,
-      calendarId,
-      externalEventId: event.externalEventId,
-      enlaceAnterior: event.joinUrl
-    }))
-  }, null, 2));
-  if (!applyChanges) return;
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        solicitudId,
+        titulo: request.titulo,
+        meetCode,
+        meetUrl,
+        encuentros: events.map(({ meeting, event, calendarId }) => ({
+          instanciaId: meeting.id,
+          solicitudId: meeting.solicitud.id,
+          inicio: meeting.inicioProgramadoAt,
+          calendarId,
+          externalEventId: event.externalEventId,
+          enlaceAnterior: event.joinUrl
+        }))
+      },
+      null,
+      2
+    )
+  );
+  if (!applyChanges) {
+    return;
+  }
 
   const updatedPayloads = new Map<string, Prisma.InputJsonValue>();
   for (const { event, calendarId } of events) {
@@ -93,7 +107,7 @@ async function main(): Promise<void> {
   }
 
   await db.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'asignar-link-meet-serie', true), set_config('flacso.meet_change_reason', 'Asignación de enlace a la serie', true)`;
+    await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'asignar-link-meet-serie', true), set_config('flacso.meet_change_reason', 'Asignación de enlace a la serie', true)`;
     for (const { event } of events) {
       await tx.eventoProveedor.update({
         where: { id: event.id },
@@ -168,13 +182,17 @@ function withMeetAccess(description: string | undefined, url: string): string {
 function argumentValue(name: string): string {
   const index = process.argv.indexOf(name);
   const value = index >= 0 ? process.argv[index + 1]?.trim() : "";
-  if (!value) throw new Error(`Falta ${name}.`);
+  if (!value) {
+    throw new Error(`Falta ${name}.`);
+  }
   return value;
 }
 
 function normalizeMeetUrl(value: string): string {
   const link = normalizeMeetLink(value);
-  if (!link) throw new Error("El enlace de Google Meet no es válido.");
+  if (!link) {
+    throw new Error("El enlace de Google Meet no es válido.");
+  }
   return link.url;
 }
 

@@ -10,12 +10,14 @@ const APP_URL = "https://salavirtual.flacso.edu.uy";
 export type DependenciasRecordatorios = Readonly<{
   /** Google Meet spaces.members (COHOST); null significa resultado desconocido, nunca rechazado. */
   verificarCohosts: (organizador: string, codigo: string) => Promise<ReadonlySet<string> | null>;
-  enviarCorreo: (input: Readonly<{
-    to: readonly string[];
-    subject: string;
-    text: string;
-    html: string;
-  }>) => Promise<Readonly<{ sent: boolean; skipped?: string; error?: string }>>;
+  enviarCorreo: (
+    input: Readonly<{
+      to: readonly string[];
+      subject: string;
+      text: string;
+      html: string;
+    }>
+  ) => Promise<Readonly<{ sent: boolean; skipped?: string; error?: string }>>;
 }>;
 
 export type ResultadoRecordatorios = Readonly<{
@@ -38,23 +40,25 @@ export function clasificarAccesosPropios(
   cohostsRemotos: ReadonlySet<string> | null,
   organizador: string | null
 ): AccesoRecordatorio {
-  const propias = [...new Set(cuentas.map(normalizarEmail).filter((email): email is string => Boolean(email)))]
-    .filter(email => email !== normalizarEmail(organizador));
+  const propias = [
+    ...new Set(cuentas.map(normalizarEmail).filter((email): email is string => Boolean(email)))
+  ].filter((email) => email !== normalizarEmail(organizador));
   if (cohostsRemotos === null) {
     return { estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: [] };
   }
-  const remotas = new Set([...cohostsRemotos].map(normalizarEmail).filter((email): email is string => Boolean(email)));
-  const cuentasConfirmadas = propias.filter(email => remotas.has(email));
+  const remotas = new Set(
+    [...cohostsRemotos].map(normalizarEmail).filter((email): email is string => Boolean(email))
+  );
+  const cuentasConfirmadas = propias.filter((email) => remotas.has(email));
   return {
     estado: cuentasConfirmadas.length ? "CONFIRMADO" : "SIN_PERMISOS",
     cuentasConfirmadas,
-    cuentasSinPermiso: propias.filter(email => !remotas.has(email))
+    cuentasSinPermiso: propias.filter((email) => !remotas.has(email))
   };
 }
 
 function esDuplicado(error: unknown): boolean {
-  return typeof error === "object" && error !== null &&
-    "code" in error && error.code === "P2002";
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
 
 /**
@@ -87,7 +91,10 @@ export async function procesarRecordatorios24h(
       invitados: { select: { email: true } },
       solicitud: {
         select: {
-          id: true, titulo: true, modalidad: true, creadaPorUsuarioId: true,
+          id: true,
+          titulo: true,
+          modalidad: true,
+          creadaPorUsuarioId: true,
           docentePrograma: {
             select: {
               docente: { select: { usuarioId: true } },
@@ -112,17 +119,26 @@ export async function procesarRecordatorios24h(
     }
   });
 
-  const counters = { reuniones: reuniones.length, destinatarios: 0, enviados: 0, omitidos: 0, errores: 0, verificacionesFallidas: 0 };
+  const counters = {
+    reuniones: reuniones.length,
+    destinatarios: 0,
+    enviados: 0,
+    omitidos: 0,
+    errores: 0,
+    verificacionesFallidas: 0
+  };
   const cacheMeet = new Map<string, Promise<ReadonlySet<string> | null>>();
 
   for (const meeting of reuniones) {
-    const ids = [...new Set([
-      meeting.solicitud.creadaPorUsuarioId,
-      meeting.solicitud.docentePrograma.docente.usuarioId,
-      ...meeting.asignaciones
-        .filter(asignacion => !asignacion.asistenteTecnico.cesadoHastaProximoInicioSesion)
-        .map(asignacion => asignacion.asistenteTecnico.usuarioId)
-    ])];
+    const ids = [
+      ...new Set([
+        meeting.solicitud.creadaPorUsuarioId,
+        meeting.solicitud.docentePrograma.docente.usuarioId,
+        ...meeting.asignaciones
+          .filter((asignacion) => !asignacion.asistenteTecnico.cesadoHastaProximoInicioSesion)
+          .map((asignacion) => asignacion.asistenteTecnico.usuarioId)
+      ])
+    ];
     const usuarios = await db.usuario.findMany({
       where: { id: { in: ids }, activo: true, fusionadoEnId: null },
       select: {
@@ -139,8 +155,9 @@ export async function procesarRecordatorios24h(
     });
     // El enlace sigue al proveedor activo; los cohosts solo existen en Google Meet.
     const event = seleccionarEventoProveedorActivo(meeting);
-    const proveedor = event?.proveedor.tipo === "ZOOM" ? "ZOOM" as const : "GOOGLE_MEET" as const;
-    const organizador = proveedor === "GOOGLE_MEET" ? normalizarEmail(event?.cuentaProveedor?.emailOrganizador) : null;
+    const proveedor = event?.proveedor.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const);
+    const organizador =
+      proveedor === "GOOGLE_MEET" ? normalizarEmail(event?.cuentaProveedor?.emailOrganizador) : null;
     const codigo = proveedor === "GOOGLE_MEET" ? event?.codigoReunion : null;
     let confirmados: ReadonlySet<string> | null = null;
     if (organizador && codigo) {
@@ -152,7 +169,9 @@ export async function procesarRecordatorios24h(
       }
       confirmados = await consulta;
     }
-    if (confirmados === null && proveedor === "GOOGLE_MEET") counters.verificacionesFallidas++;
+    if (confirmados === null && proveedor === "GOOGLE_MEET") {
+      counters.verificacionesFallidas++;
+    }
 
     for (const usuario of usuarios) {
       const destino = normalizarEmail(usuario.emailPrincipal);
@@ -190,13 +209,17 @@ export async function procesarRecordatorios24h(
         const vigente = await db.instanciaSala.findUnique({
           where: { id: meeting.id },
           select: {
-            estado: true, inicioProgramadoAt: true,
+            estado: true,
+            inicioProgramadoAt: true,
             solicitud: { select: { estado: true } }
           }
         });
-        if (!vigente || vigente.estado !== "PROGRAMADA" ||
+        if (
+          !vigente ||
+          vigente.estado !== "PROGRAMADA" ||
           vigente.solicitud.estado === "CANCELADA" ||
-          vigente.inicioProgramadoAt.getTime() !== meeting.inicioProgramadoAt.getTime()) {
+          vigente.inicioProgramadoAt.getTime() !== meeting.inicioProgramadoAt.getTime()
+        ) {
           await db.recordatorioReunion.update({
             where: { id: reservado.id },
             data: { estado: "OBSOLETO" }
@@ -211,9 +234,10 @@ export async function procesarRecordatorios24h(
           ...usuario.emailAliases.map(({ email }) => email)
         ];
         const acceso = clasificarAccesosPropios(cuentas, confirmados, organizador);
-        const esMonitor = meeting.asignaciones.some(asignacion =>
-          asignacion.asistenteTecnico.usuarioId === usuario.id &&
-          !asignacion.asistenteTecnico.cesadoHastaProximoInicioSesion
+        const esMonitor = meeting.asignaciones.some(
+          (asignacion) =>
+            asignacion.asistenteTecnico.usuarioId === usuario.id &&
+            !asignacion.asistenteTecnico.cesadoHastaProximoInicioSesion
         );
         const inicioMonitor = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
         const finMonitor = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
@@ -222,10 +246,13 @@ export async function procesarRecordatorios24h(
           reunion: meeting.solicitud.titulo,
           programa: meeting.solicitud.docentePrograma.programa.nombre,
           fecha: formatLongDate(meeting.inicioProgramadoAt),
-          horarioClase: formatTime(meeting.inicioProgramadoAt) + "–" + formatTime(meeting.finProgramadoAt) + " h",
+          horarioClase:
+            formatTime(meeting.inicioProgramadoAt) + "–" + formatTime(meeting.finProgramadoAt) + " h",
           horarioMonitoreo: esMonitor
-            ? formatTime(inicioMonitor) + "–" + formatTime(finMonitor) + " h" : null,
-          modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual",
+            ? formatTime(inicioMonitor) + "–" + formatTime(finMonitor) + " h"
+            : null,
+          modalidad:
+            (meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual",
           urlMeet: event?.joinUrl ?? null,
           proveedor,
           urlDetalle: APP_URL + "/reuniones/" + encodeURIComponent(meeting.solicitud.id),
@@ -248,24 +275,28 @@ export async function procesarRecordatorios24h(
 
         // La bandeja en la app acompaña al aviso por correo cuando está habilitada.
         if (preference?.push !== false) {
-          await db.notificacion.create({
-            data: {
-              usuarioId: usuario.id,
-              tipo: "REUNION_RECORDATORIO",
-              titulo: "Tu próxima reunión",
-              cuerpo: meeting.solicitud.titulo,
-              href: "/reuniones/" + meeting.solicitud.id,
-              metadata: { instanciaSalaId: meeting.id }
-            }
-          }).catch(() => undefined);
+          await db.notificacion
+            .create({
+              data: {
+                usuarioId: usuario.id,
+                tipo: "REUNION_RECORDATORIO",
+                titulo: "Tu próxima reunión",
+                cuerpo: meeting.solicitud.titulo,
+                href: "/reuniones/" + meeting.solicitud.id,
+                metadata: { instanciaSalaId: meeting.id }
+              }
+            })
+            .catch(() => undefined);
         }
       } catch (error) {
-        const codigoError = error instanceof Error
-          ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0,80) : "Error";
-        await db.recordatorioReunion.update({
-          where: { id: reservado.id },
-          data: { estado: "ERROR", errorCodigo: codigoError }
-        }).catch(() => undefined);
+        const codigoError =
+          error instanceof Error ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0, 80) : "Error";
+        await db.recordatorioReunion
+          .update({
+            where: { id: reservado.id },
+            data: { estado: "ERROR", errorCodigo: codigoError }
+          })
+          .catch(() => undefined);
         counters.errores++;
       }
     }
@@ -273,63 +304,97 @@ export async function procesarRecordatorios24h(
     // Invitados sin rol de usuario: la deduplicación usa su email normalizado,
     // no un UsuarioId inexistente. No se duplican los avisos que ya reciben
     // los responsables o monitores de esta misma reunión.
-    const avisadosComoUsuario = new Set(usuarios
-      .map(u => normalizarEmail(u.emailPrincipal))
-      .filter((email): email is string => Boolean(email)));
-    const invitados = [...new Set((meeting.invitados ?? [])
-      .map(g => normalizarEmail(g.email))
-      .filter((email): email is string => Boolean(email)))];
+    const avisadosComoUsuario = new Set(
+      usuarios
+        .map((u) => normalizarEmail(u.emailPrincipal))
+        .filter((email): email is string => Boolean(email))
+    );
+    const invitados = [
+      ...new Set(
+        (meeting.invitados ?? [])
+          .map((g) => normalizarEmail(g.email))
+          .filter((email): email is string => Boolean(email))
+      )
+    ];
     for (const email of invitados) {
-      if (avisadosComoUsuario.has(email)) { counters.omitidos++; continue; }
+      if (avisadosComoUsuario.has(email)) {
+        counters.omitidos++;
+        continue;
+      }
       counters.destinatarios++;
       let reservado: { id: string };
       try {
         reservado = await db.recordatorioInvitadoReunion.create({
           data: {
-            instanciaSalaId: meeting.id, email,
+            instanciaSalaId: meeting.id,
+            email,
             inicioProgramadoAt: meeting.inicioProgramadoAt,
             estado: "RESERVADO"
-          }, select: { id: true }
+          },
+          select: { id: true }
         });
       } catch (error) {
-        if (esDuplicado(error)) { counters.omitidos++; continue; }
+        if (esDuplicado(error)) {
+          counters.omitidos++;
+          continue;
+        }
         throw error;
       }
       try {
         const vigente = await db.instanciaSala.findUnique({
           where: { id: meeting.id },
-          select: { estado: true, inicioProgramadoAt: true,
+          select: {
+            estado: true,
+            inicioProgramadoAt: true,
             solicitud: { select: { estado: true } },
             invitados: { where: { email }, select: { id: true } }
           }
         });
-        if (!vigente || vigente.estado !== "PROGRAMADA" ||
-            vigente.solicitud.estado === "CANCELADA" ||
-            vigente.inicioProgramadoAt.getTime() !== meeting.inicioProgramadoAt.getTime() ||
-            vigente.invitados.length === 0) {
+        if (
+          !vigente ||
+          vigente.estado !== "PROGRAMADA" ||
+          vigente.solicitud.estado === "CANCELADA" ||
+          vigente.inicioProgramadoAt.getTime() !== meeting.inicioProgramadoAt.getTime() ||
+          vigente.invitados.length === 0
+        ) {
           await db.recordatorioInvitadoReunion.update({
-            where: { id: reservado.id }, data: { estado: "OBSOLETO" }
+            where: { id: reservado.id },
+            data: { estado: "OBSOLETO" }
           });
           counters.omitidos++;
           continue;
         }
-        const correo = construirCorreoParticipacion("RECORDATORIO", [{
-          id: meeting.id, titulo: meeting.solicitud.titulo,
-          inicio: meeting.inicioProgramadoAt, fin: meeting.finProgramadoAt,
-          urlMeet: event?.joinUrl ?? null,
-          proveedor
-        }], "INVITADO");
+        const correo = construirCorreoParticipacion(
+          "RECORDATORIO",
+          [
+            {
+              id: meeting.id,
+              titulo: meeting.solicitud.titulo,
+              inicio: meeting.inicioProgramadoAt,
+              fin: meeting.finProgramadoAt,
+              urlMeet: event?.joinUrl ?? null,
+              proveedor
+            }
+          ],
+          "INVITADO"
+        );
         const result = await deps.enviarCorreo({ to: [email], ...correo });
         await db.recordatorioInvitadoReunion.update({
           where: { id: reservado.id },
           data: { estado: result.sent ? "ACEPTADO" : "ERROR", enviadoAt: result.sent ? new Date() : null }
         });
-        if (result.sent) counters.enviados++;
-        else counters.errores++;
+        if (result.sent) {
+          counters.enviados++;
+        } else {
+          counters.errores++;
+        }
       } catch {
-        await db.recordatorioInvitadoReunion.update({
-          where: { id: reservado.id }, data: { estado: "ERROR" }
-        }).catch(() => undefined);
+        await db.recordatorioInvitadoReunion
+          .update({
+            where: { id: reservado.id },
+            data: { estado: "ERROR" }
+          })
+          .catch(() => undefined);
         counters.errores++;
       }
     }

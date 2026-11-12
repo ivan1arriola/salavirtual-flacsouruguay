@@ -11,17 +11,29 @@ export function AttendanceRegenerateAction({ instanciaId }: Readonly<{ instancia
   const [estado, setEstado] = useState("");
 
   async function actualizar() {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
     setBusy(true);
     setError("");
     setEstado("");
     try {
-      const response = await fetch(`/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`, {
-        method: "POST", cache: "no-store"
-      });
+      const response = await fetch(
+        `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`,
+        {
+          method: "POST",
+          cache: "no-store"
+        }
+      );
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detalle || data.error || "No fue posible actualizar la asistencia.");
-      setEstado(data.estado === "ARTEFACTOS_PENDIENTES" ? "Google todavía está procesando los datos. Volvé a intentar más tarde." : "Sincronización terminada. Actualizando la vista…");
+      if (!response.ok) {
+        throw new Error(data.detalle || data.error || "No fue posible actualizar la asistencia.");
+      }
+      setEstado(
+        data.estado === "ARTEFACTOS_PENDIENTES"
+          ? "Google todavía está procesando los datos. Volvé a intentar más tarde."
+          : "Sincronización terminada. Actualizando la vista…"
+      );
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de conexión.");
@@ -33,9 +45,14 @@ export function AttendanceRegenerateAction({ instanciaId }: Readonly<{ instancia
   return (
     <div className="attendance-refresh">
       <button className="primary-action" type="button" onClick={actualizar} disabled={busy} aria-busy={busy}>
-        <RefreshCw size={16} aria-hidden="true" />{busy ? "Actualizando…" : "Actualizar asistencia"}
+        <RefreshCw size={16} aria-hidden="true" />
+        {busy ? "Actualizando…" : "Actualizar asistencia"}
       </button>
-      {error ? <small role="alert" className="attendance-refresh-error">{error}</small> : null}
+      {error ? (
+        <small role="alert" className="attendance-refresh-error">
+          {error}
+        </small>
+      ) : null}
       {estado ? <small role="status">{estado}</small> : null}
     </div>
   );

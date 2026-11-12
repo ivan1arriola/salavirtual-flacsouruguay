@@ -44,9 +44,14 @@ export async function POST(request: Request) {
 
     switch (parsed.data.accion) {
       case "descartar": {
-        const result = await obtenerServicioConferencias().descartarOperacionPendiente(parsed.data.eventoProveedorId);
+        const result = await obtenerServicioConferencias().descartarOperacionPendiente(
+          parsed.data.eventoProveedorId
+        );
         if (!result.descartada) {
-          return NextResponse.json({ error: result.motivo ?? "No se pudo descartar la operación." }, { status: 400 });
+          return NextResponse.json(
+            { error: result.motivo ?? "No se pudo descartar la operación." },
+            { status: 400 }
+          );
         }
         return NextResponse.json({ ok: true, resultado: result });
       }

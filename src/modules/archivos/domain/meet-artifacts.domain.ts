@@ -1,9 +1,4 @@
-export type TipoArtefactoMeet =
-  | "GRABACION"
-  | "LISTA_ASISTENCIA"
-  | "TRANSCRIPCION"
-  | "NOTAS"
-  | "OTRO";
+export type TipoArtefactoMeet = "GRABACION" | "LISTA_ASISTENCIA" | "TRANSCRIPCION" | "NOTAS" | "OTRO";
 
 export const TIPOS_ARTEFACTO_SINCRONIZABLES = Object.freeze([
   "GRABACION",
@@ -18,12 +13,13 @@ export type DatosCarpetaReunion = Readonly<{
   timezone: string;
 }>;
 
-export type DatosNombreArtefacto = DatosCarpetaReunion & Readonly<{
-  codigoReunion: string;
-  tipo: TipoArtefactoMeet;
-  indice: number;
-  extension?: string;
-}>;
+export type DatosNombreArtefacto = DatosCarpetaReunion &
+  Readonly<{
+    codigoReunion: string;
+    tipo: TipoArtefactoMeet;
+    indice: number;
+    extension?: string;
+  }>;
 
 export type FilaAsistenciaMeet = Readonly<{
   nombre: string;
@@ -86,7 +82,9 @@ export function elegirConferenciaMeet(
   inicio: Date,
   fin: Date
 ): RegistroConferenciaMeet | null {
-  if (records.length === 0) return null;
+  if (records.length === 0) {
+    return null;
+  }
   const inicioMs = inicio.getTime();
   const finMs = fin.getTime();
   const superpuestas = records.filter((record) => {
@@ -98,7 +96,9 @@ export function elegirConferenciaMeet(
 
   if (superpuestas.length > 0) {
     return superpuestas.reduce<RegistroConferenciaMeet | null>((selected, current) => {
-      if (!selected) return current;
+      if (!selected) {
+        return current;
+      }
       const currentStart = Date.parse(current.startTime);
       const currentEnd = current.endTime ? Date.parse(current.endTime) : finMs;
       const currentOverlap = Math.max(0, Math.min(currentEnd, finMs) - Math.max(currentStart, inicioMs));
@@ -124,7 +124,9 @@ export function elegirConferenciaMeet(
   }
 
   return candidates.reduce<RegistroConferenciaMeet | null>((selected, current) => {
-    if (!selected) return current;
+    if (!selected) {
+      return current;
+    }
     const currentDistance = Math.abs(Date.parse(current.startTime) - inicioMs);
     const selectedDistance = Math.abs(Date.parse(selected.startTime) - inicioMs);
     return currentDistance < selectedDistance ? current : selected;
@@ -135,7 +137,9 @@ export function asistenciaMeetCompleta(
   sesionesPorParticipante: readonly (readonly SesionParticipanteMeet[])[],
   conferenciaFinalizada = false
 ): boolean {
-  if (sesionesPorParticipante.length === 0) return false;
+  if (sesionesPorParticipante.length === 0) {
+    return false;
+  }
   if (conferenciaFinalizada) {
     return sesionesPorParticipante.some((sesiones) => sesiones.length > 0);
   }
@@ -145,14 +149,18 @@ export function asistenciaMeetCompleta(
 }
 
 export function crearHtmlAsistencia(filas: readonly FilaAsistenciaMeet[]): string {
-  const rows = filas.map((fila) => `
+  const rows = filas
+    .map(
+      (fila) => `
     <tr>
       <td>${escaparHtml(fila.nombre)}</td>
       <td>${escaparHtml(fila.tipo)}</td>
       <td>${escaparHtml(fila.inicio)}</td>
       <td>${escaparHtml(fila.fin)}</td>
       <td>${minutosEntre(fila.inicio, fila.fin)}</td>
-    </tr>`).join("");
+    </tr>`
+    )
+    .join("");
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -184,18 +192,23 @@ function fechaLocalToken(date: Date, timezone: string): string {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") =>
-    parts.find((part) => part.type === type)?.value ?? "00";
+  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value ?? "00";
   return `${value("year")}${value("month")}${value("day")}`;
 }
 
 function textoSeguro(value: string): string {
-  const normalized = value.trim().replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ");
+  const normalized = value
+    .trim()
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ");
   return normalized.replaceAll("/", "-").replaceAll("\\", "-") || "sin nombre";
 }
 
 function extensionSegura(extension: string | undefined): string {
-  const clean = (extension ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const clean = (extension ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
   return clean ? `.${clean}` : "";
 }
 
@@ -212,4 +225,3 @@ function escaparHtml(value: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
-

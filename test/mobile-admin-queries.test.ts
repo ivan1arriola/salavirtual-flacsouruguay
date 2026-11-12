@@ -6,7 +6,12 @@ vi.mock("../src/modules/dashboard/admin-dashboard.adapter", () => ({
 }));
 
 import { obtenerDashboardAdministracion } from "../src/modules/dashboard/admin-dashboard.adapter";
-import { getAdminMeeting, getAdminSummary, listAdminMeetings, validateAdminQuery } from "../src/modules/mobile-admin/queries.adapter";
+import {
+  getAdminMeeting,
+  getAdminSummary,
+  listAdminMeetings,
+  validateAdminQuery
+} from "../src/modules/mobile-admin/queries.adapter";
 
 function meeting(id: string, startsAt: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -27,11 +32,13 @@ function meeting(id: string, startsAt: string, overrides: Record<string, unknown
         docente: { usuario: { nombres: "Ana", apellidos: "Pérez" } }
       }
     },
-    eventosProveedor: [{
-      joinUrl: `https://meet.google.com/${id}`,
-      proveedor: { tipo: "GOOGLE_MEET" },
-      cuentaProveedor: { emailOrganizador: "salas@flacso.edu.uy", nombre: "Sala" }
-    }],
+    eventosProveedor: [
+      {
+        joinUrl: `https://meet.google.com/${id}`,
+        proveedor: { tipo: "GOOGLE_MEET" },
+        cuentaProveedor: { emailOrganizador: "salas@flacso.edu.uy", nombre: "Sala" }
+      }
+    ],
     asignaciones: [],
     ...overrides
   };
@@ -65,19 +72,27 @@ beforeEach(() => mockedDashboard.mockReset());
 
 describe("consultas de administración móvil", () => {
   it("rechaza intervalos, límites, estados y coberturas inválidos", () => {
-    expect(() => validateAdminQuery({ ...validQuery, from: validQuery.to })).toThrow("from debe ser anterior");
+    expect(() => validateAdminQuery({ ...validQuery, from: validQuery.to })).toThrow(
+      "from debe ser anterior"
+    );
     expect(() => validateAdminQuery({ ...validQuery, limit: 0 })).toThrow("limit");
     expect(() => validateAdminQuery({ ...validQuery, state: "OTRO" })).toThrow("state");
     expect(() => validateAdminQuery({ ...validQuery, coverage: "partial" as never })).toThrow("coverage");
   });
 
   it("rechaza fechas ISO inexistentes en el intervalo", () => {
-    expect(() => validateAdminQuery({ ...validQuery, from: "2026-02-30T00:00:00Z" })).toThrow("from debe ser ISO");
-    expect(() => validateAdminQuery({ ...validQuery, to: "2026-04-31T00:00:00-03:00" })).toThrow("to debe ser ISO");
+    expect(() => validateAdminQuery({ ...validQuery, from: "2026-02-30T00:00:00Z" })).toThrow(
+      "from debe ser ISO"
+    );
+    expect(() => validateAdminQuery({ ...validQuery, to: "2026-04-31T00:00:00-03:00" })).toThrow(
+      "to debe ser ISO"
+    );
   });
 
   it("rechaza cursores manipulados con una fecha ISO inexistente", () => {
-    const cursor = Buffer.from(JSON.stringify({ startsAt: "2026-02-30T00:00:00Z", id: "meeting-1" })).toString("base64url");
+    const cursor = Buffer.from(
+      JSON.stringify({ startsAt: "2026-02-30T00:00:00Z", id: "meeting-1" })
+    ).toString("base64url");
 
     expect(() => validateAdminQuery({ ...validQuery, cursor })).toThrow("cursor inválido");
   });
@@ -86,9 +101,7 @@ describe("consultas de administración móvil", () => {
     const a = meeting("a", "2026-09-02T09:00:00Z");
     const b = meeting("b", "2026-09-02T09:00:00Z");
     const c = meeting("c", "2026-09-03T09:00:00Z");
-    const findMany = vi.fn()
-      .mockResolvedValueOnce([a, b, c])
-      .mockResolvedValueOnce([c]);
+    const findMany = vi.fn().mockResolvedValueOnce([a, b, c]).mockResolvedValueOnce([c]);
     const db = { instanciaSala: { findMany } } as unknown as PrismaClient;
 
     const first = await listAdminMeetings(db, validQuery);
@@ -130,21 +143,27 @@ describe("consultas de administración móvil", () => {
         asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
       }
     });
-    expect(findMany.mock.calls[0][0].where.AND).toEqual(expect.arrayContaining([
-      expect.objectContaining({ solicitud: expect.objectContaining({ OR: expect.any(Array) }) }),
-      { solicitud: { docentePrograma: { programaId: "program-1" } } }
-    ]));
+    expect(findMany.mock.calls[0][0].where.AND).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ solicitud: expect.objectContaining({ OR: expect.any(Array) }) }),
+        { solicitud: { docentePrograma: { programaId: "program-1" } } }
+      ])
+    );
   });
 
   it("maps a deterministic active assignment for assigned coverage", async () => {
-    const findMany = vi.fn().mockResolvedValue([meeting("assigned", "2026-09-04T09:00:00Z", {
-      asignaciones: [{
-        id: "assignment-a",
-        asistenteTecnicoId: "assistant-a",
-        estado: "ACEPTADO",
-        asistenteTecnico: { usuario: { nombres: "Beatriz", apellidos: "Suárez" } }
-      }]
-    })]);
+    const findMany = vi.fn().mockResolvedValue([
+      meeting("assigned", "2026-09-04T09:00:00Z", {
+        asignaciones: [
+          {
+            id: "assignment-a",
+            asistenteTecnicoId: "assistant-a",
+            estado: "ACEPTADO",
+            asistenteTecnico: { usuario: { nombres: "Beatriz", apellidos: "Suárez" } }
+          }
+        ]
+      })
+    ]);
     const db = { instanciaSala: { findMany } } as unknown as PrismaClient;
 
     const page = await listAdminMeetings(db, { ...validQuery, coverage: "assigned", limit: 1 });
@@ -183,13 +202,15 @@ describe("consultas de administración móvil", () => {
   });
 
   it("returns five upcoming meetings and only positive administrative attention", async () => {
-    const findMany = vi.fn().mockResolvedValue([
-      meeting("1", "2026-09-01T09:00:00Z"),
-      meeting("2", "2026-09-02T09:00:00Z"),
-      meeting("3", "2026-09-03T09:00:00Z"),
-      meeting("4", "2026-09-04T09:00:00Z"),
-      meeting("5", "2026-09-05T09:00:00Z")
-    ]);
+    const findMany = vi
+      .fn()
+      .mockResolvedValue([
+        meeting("1", "2026-09-01T09:00:00Z"),
+        meeting("2", "2026-09-02T09:00:00Z"),
+        meeting("3", "2026-09-03T09:00:00Z"),
+        meeting("4", "2026-09-04T09:00:00Z"),
+        meeting("5", "2026-09-05T09:00:00Z")
+      ]);
     const db = { instanciaSala: { findMany } } as unknown as PrismaClient;
     mockedDashboard.mockResolvedValue(dashboardMetrics({ pendingAssistance: 2, openIncidents: 1 }));
 
@@ -200,10 +221,12 @@ describe("consultas de administración móvil", () => {
       { code: "PENDING_COVERAGE", label: "Cobertura pendiente", count: 2 },
       { code: "OPEN_INCIDENTS", label: "Incidencias abiertas", count: 1 }
     ]);
-    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-      orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-      take: 5
-    }));
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
+        take: 5
+      })
+    );
   });
 
   it("propaga errores del dashboard administrativo", async () => {

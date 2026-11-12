@@ -29,11 +29,13 @@ Se guarda el grupo elegido en `ConfiguracionZoom` y la sincronización crea y ac
 ### 1. Datos (migración Prisma)
 
 `ConfiguracionZoom` suma:
+
 - `grupoId: String?` y `grupoNombre: String?` — grupo elegido.
 - `ultimaSincronizacionAt: DateTime?`
 - `ultimaSincronizacionResultado: String?` — resumen legible («3 nuevas, 1 desactivada, 1 fuera del grupo con reuniones») o el error.
 
 `CuentaProveedor` suma:
+
 - `origenGrupoZoom: Boolean @default(false)` — la cuenta fue creada o adoptada por la sincronización.
 - `fueraDelGrupoAt: DateTime?` — fecha en que se detectó que salió del grupo; `null` si pertenece.
 
@@ -44,12 +46,14 @@ Una cuenta Zoom ya existente cuyo `emailOrganizador` coincide con un miembro del
 ### 2. Servicio de sincronización
 
 Un servicio `sincronizarCuentasZoomConGrupo` (módulo `configuracion`):
+
 1. Lee los miembros del grupo elegido con las credenciales de `obtenerCredencialesZoom`, paginando.
 2. Calcula el plan con una función pura `planificarSincronizacionGrupoZoom(miembros, cuentasActuales, reunionesFuturasPorCuenta)` que devuelve: crear, actualizar, adoptar, desactivar, marcar fuera del grupo, reactivar (una cuenta que vuelve al grupo se reactiva y limpia `fueraDelGrupoAt`).
 3. Aplica el plan en una transacción y guarda fecha y resumen en `ConfiguracionZoom`.
 4. Si Zoom no responde, faltan permisos o el grupo ya no existe, **no cambia ninguna cuenta**; solo guarda el error como resultado.
 
 Reglas de la función pura:
+
 - Miembro nuevo → crear activa.
 - Miembro existente → actualizar nombre/correo; si estaba fuera del grupo, reactivar.
 - Cuenta de origen grupo que ya no es miembro: sin reuniones futuras → `activa = false` y `fueraDelGrupoAt`; con reuniones futuras → sigue `activa`, se fija `fueraDelGrupoAt` y se cuenta como «fuera con reuniones».

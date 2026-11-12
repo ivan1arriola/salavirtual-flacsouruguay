@@ -27,7 +27,11 @@ export interface ArchivoStoragePort {
   asegurarCarpeta(clave: string, nombre: string, padreId: string): Promise<string>;
   /** Devuelve la sesión ya cifrada, lista para persistir. */
   iniciarSubida(destino: DestinoSubidaArchivo, origenKey: string): Promise<string>;
-  consultarSubida(sesionCifrada: string, total: bigint | null, signal?: AbortSignal): Promise<EstadoSubidaArchivo>;
+  consultarSubida(
+    sesionCifrada: string,
+    total: bigint | null,
+    signal?: AbortSignal
+  ): Promise<EstadoSubidaArchivo>;
   subirBloque(
     sesionCifrada: string,
     offset: bigint,
@@ -36,8 +40,16 @@ export interface ArchivoStoragePort {
     opciones?: Readonly<{ ultimo?: boolean; signal?: AbortSignal }>
   ): Promise<EstadoSubidaArchivo>;
   /** Primero `files.get(fileId)`, después búsqueda por marca de origen. */
-  buscarConservado(origenKey: string, fileId: string | null, signal?: AbortSignal): Promise<BusquedaConservadoArchivo>;
+  buscarConservado(
+    origenKey: string,
+    fileId: string | null,
+    signal?: AbortSignal
+  ): Promise<BusquedaConservadoArchivo>;
   verificarArchivo(id: string, signal?: AbortSignal): Promise<DestinoConservadoZoom | null>;
   /** Mueve una carpeta (con todo su contenido) al padre indicado conservando su ID; idempotente. */
-  moverCarpeta(carpetaId: string, nuevoPadreId: string, signal?: AbortSignal): Promise<"MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO">;
+  moverCarpeta(
+    carpetaId: string,
+    nuevoPadreId: string,
+    signal?: AbortSignal
+  ): Promise<"MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO">;
 }

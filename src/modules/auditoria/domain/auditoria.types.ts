@@ -21,6 +21,4 @@ export type ValidarEventoAuditoriaInput = Readonly<{
 }>;
 
 export type ResultadoValidacion<T> =
-  | Readonly<{ ok: true; value: T }>
-  | Readonly<{ ok: false; error: string }>;
-
+  Readonly<{ ok: true; value: T }> | Readonly<{ ok: false; error: string }>;

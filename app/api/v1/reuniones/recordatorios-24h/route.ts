@@ -27,32 +27,37 @@ export async function GET(request: Request) {
   try {
     const resultado = await procesarRecordatorios24h(db, {
       verificarCohosts: async (organizador, codigoReunion) => {
-        if (!credenciales?.principal) return null;
+        if (!credenciales?.principal) {
+          return null;
+        }
         const candidatos = [
           {
             serviceAccountEmail: credenciales.principal.serviceAccountEmail,
             privateKey: credenciales.principal.privateKey,
             subject: organizador,
-            origen: "PRINCIPAL" as const,
+            origen: "PRINCIPAL" as const
           },
           ...credenciales.legacy.map((legacy) => ({
             serviceAccountEmail: legacy.serviceAccountEmail,
             privateKey: legacy.privateKey,
             subject: organizador,
-            origen: "LEGACY" as const,
-          })),
+            origen: "LEGACY" as const
+          }))
         ];
         const resultadoMeet = await consultarCohostsEspacioMeet(candidatos, codigoReunion);
         return resultadoMeet.cohosts;
       },
-      enviarCorreo: (input) => enviarCorreoConfigurado(db, input),
+      enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
     });
     return NextResponse.json(resultado, {
       status: resultado.errores ? 502 : 200,
       headers: { "Cache-Control": "no-store" }
     });
   } catch (error) {
-    console.error("Error al procesar recordatorios de reunión:", error instanceof Error ? error.name : "Error");
+    console.error(
+      "Error al procesar recordatorios de reunión:",
+      error instanceof Error ? error.name : "Error"
+    );
     return NextResponse.json({ error: "No fue posible procesar los recordatorios." }, { status: 500 });
   }
 }

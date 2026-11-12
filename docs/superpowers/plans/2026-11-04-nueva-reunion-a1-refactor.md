@@ -36,17 +36,17 @@
 
 Crear en `src/modules/reuniones/presentation/components/nueva-reunion/`:
 
-| Archivo | Responsabilidad |
-| --- | --- |
-| `tipos.ts` | tipos compartidos: `Option`, `ProgramOption`, `MeetingDate`, `MeetingDateMode`, `RecurrenceState` |
-| `solicitud-reunion.ts` | `construirSolicitudReunion`, `localMontevideoToIso` |
-| `form-primitives.tsx` | `Field`, `FormSection`, `ChoicePanel` |
-| `academic-details.tsx` | `AcademicDetails` |
-| `meeting-summary.tsx` | `MeetingSummary` |
-| `recurrence-rule-editor.tsx` | `RecurrenceRuleEditor` |
-| `meeting-instances-editor.tsx` | `MeetingInstancesEditor` |
-| `meeting-schedule-editor.tsx` | `MeetingScheduleEditor` (router de modo) |
-| `meeting-options.tsx` | `MeetingOptions` |
+| Archivo                        | Responsabilidad                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `tipos.ts`                     | tipos compartidos: `Option`, `ProgramOption`, `MeetingDate`, `MeetingDateMode`, `RecurrenceState` |
+| `solicitud-reunion.ts`         | `construirSolicitudReunion`, `localMontevideoToIso`                                               |
+| `form-primitives.tsx`          | `Field`, `FormSection`, `ChoicePanel`                                                             |
+| `academic-details.tsx`         | `AcademicDetails`                                                                                 |
+| `meeting-summary.tsx`          | `MeetingSummary`                                                                                  |
+| `recurrence-rule-editor.tsx`   | `RecurrenceRuleEditor`                                                                            |
+| `meeting-instances-editor.tsx` | `MeetingInstancesEditor`                                                                          |
+| `meeting-schedule-editor.tsx`  | `MeetingScheduleEditor` (router de modo)                                                          |
+| `meeting-options.tsx`          | `MeetingOptions`                                                                                  |
 
 Modificar: `meeting-form-zoom.tsx` y `test/meeting-form-zoom-contract.test.ts`.
 Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-componentes.test.tsx`.
@@ -56,11 +56,13 @@ Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-compo
 ### Tarea 1: tipos y construcción pura de la solicitud
 
 **Archivos:**
+
 - Crear: `nueva-reunion/tipos.ts`, `nueva-reunion/solicitud-reunion.ts`
 - Modificar: `meeting-form-zoom.tsx` (importar tipos y la función; quitar las definiciones locales y `localMontevideoToIso`)
 - Prueba: `test/nueva-reunion-solicitud.test.ts`
 
 **Interfaces:**
+
 - Produce en `tipos.ts`: `Option = Readonly<{id: string; label: string}>`, `ProgramOption = Option & Readonly<{teacher: string}>`, `MeetingDate` (los mismos campos que hoy), `MeetingDateMode = "SINGLE" | "RECURRENT" | "MANUAL"`, `RecurrenceState` (los mismos campos que hoy).
 - Produce en `solicitud-reunion.ts`:
   - `localMontevideoToIso(fecha: string, hora: string): string`
@@ -84,11 +86,13 @@ Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-compo
 ### Tarea 2: primitivas, datos académicos y resumen
 
 **Archivos:**
+
 - Crear: `nueva-reunion/form-primitives.tsx`, `academic-details.tsx`, `meeting-summary.tsx`
 - Modificar: `meeting-form-zoom.tsx`
 - Prueba: `test/nueva-reunion-componentes.test.tsx`
 
 **Interfaces:**
+
 - Produce: `Field({label, wide?, children})`, `FormSection({id, icon, number, title, detail, children})`, `ChoicePanel({title, detail, name, value, noLabel, noDetail, yesLabel, yesDetail, onChange})` (mismas firmas que hoy, exportadas).
 - Produce: `AcademicDetails({programs: readonly ProgramOption[], selectedProgramId: string, onProgramChange: (id: string) => void, title: string, onTitleChange: (value: string) => void})`.
 - Produce: `MeetingSummary({count: number, isReady: boolean, hasProgram: boolean, academicReady: boolean, requiresAssistance: boolean, requiresRecording: boolean})`.
@@ -104,11 +108,13 @@ Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-compo
 ### Tarea 3: editores de fechas
 
 **Archivos:**
+
 - Crear: `nueva-reunion/recurrence-rule-editor.tsx`, `meeting-instances-editor.tsx`, `meeting-schedule-editor.tsx`
 - Modificar: `meeting-form-zoom.tsx`
 - Prueba: `test/nueva-reunion-componentes.test.tsx`
 
 **Interfaces:**
+
 - Produce `RecurrenceRuleEditor({recurrence: RecurrenceState, requiresAssistance: boolean, meetingMode: "VIRTUAL" | "HIBRIDA", message: string, onChange: (campo: keyof RecurrenceState, value: string | readonly number[]) => void, onTimeChange: (campo: "horaInicio" | "horaFin", value: string) => void, onGenerate: () => void})`.
 - Produce `MeetingInstancesEditor({dates: readonly MeetingDate[], dateMode: MeetingDateMode, requiresAssistance: boolean, meetingMode: "VIRTUAL" | "HIBRIDA", onFieldChange: (index: number, campo: Exclude<keyof MeetingDate, "id">, value: string) => void, onTimeChange: (index: number, campo: "horaInicio" | "horaFin", value: string) => void, onRemove: (index: number) => void, onAdd: () => void})`.
 - Produce `MeetingScheduleEditor` que compone ambos según `dateMode`, con el selector de modo (`fieldset.date-mode-selector`) y el aviso de cobertura. Recibe las props anteriores más `recurrenceGenerated`, `recurrenceReviewRef` y `onModeChange: (mode: MeetingDateMode) => void`.
@@ -128,11 +134,13 @@ Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-compo
 ### Tarea 4: opciones de monitoreo y grabación
 
 **Archivos:**
+
 - Crear: `nueva-reunion/meeting-options.tsx`
 - Modificar: `meeting-form-zoom.tsx`
 - Prueba: `test/nueva-reunion-componentes.test.tsx`
 
 **Interfaces:**
+
 - Produce `MeetingOptions({requiresAssistance: boolean, requiresRecording: boolean, meetingMode: "VIRTUAL" | "HIBRIDA", assistanceMode: "OPEN" | "ASSIGN", canAssignAssistant: boolean, assistants: readonly Option[], onRequiresAssistanceChange: (value: boolean) => void, onRequiresRecordingChange: (value: boolean) => void, onModeChange: (mode: "VIRTUAL" | "HIBRIDA") => void, onAssistanceModeChange: (mode: "OPEN" | "ASSIGN") => void})`.
 
 - [ ] **Paso 1: pruebas que fallan:**
@@ -148,6 +156,7 @@ Crear pruebas: `test/nueva-reunion-solicitud.test.ts`, `test/nueva-reunion-compo
 ### Tarea 5: adaptar pruebas de contrato y de límites
 
 **Archivos:**
+
 - Modificar: `test/meeting-form-zoom-contract.test.ts`
 - Revisar: `test/presentation-layer-boundaries.test.ts`, `test/reuniones-rutas-zoom.test.ts`
 

@@ -5,13 +5,13 @@ Branch: feat/cuentas-zoom-por-grupo. BASE c7c19ea, HEAD f207569. Not pushed; mai
 
 ## Commits
 
-| SHA | Subject | Findings |
-|---|---|---|
-| ecf5278 | feat: vista previa y confirmación de la sincronización con el grupo de Zoom | 1 (domain/service), 2, 4, 5 |
-| 51cbd30 | feat: la ruta de sincronización con Zoom ofrece vista previa y confirmación | 1 (routes), 4 (route passes actor) |
-| eb3a9e7 | feat: Salas muestra qué cambia antes de sincronizar con el grupo de Zoom | 1 (UI), 2 (UI) |
-| f38cdd7 | fix: agregar una fecha a una serie cuya sala salió del grupo de Zoom lo explica | 3 |
-| f207569 | docs: cuentas anfitrionas de Zoom a partir de un grupo | 6 |
+| SHA     | Subject                                                                         | Findings                           |
+| ------- | ------------------------------------------------------------------------------- | ---------------------------------- |
+| ecf5278 | feat: vista previa y confirmación de la sincronización con el grupo de Zoom     | 1 (domain/service), 2, 4, 5        |
+| 51cbd30 | feat: la ruta de sincronización con Zoom ofrece vista previa y confirmación     | 1 (routes), 4 (route passes actor) |
+| eb3a9e7 | feat: Salas muestra qué cambia antes de sincronizar con el grupo de Zoom        | 1 (UI), 2 (UI)                     |
+| f38cdd7 | fix: agregar una fecha a una serie cuya sala salió del grupo de Zoom lo explica | 3                                  |
+| f207569 | docs: cuentas anfitrionas de Zoom a partir de un grupo                          | 6                                  |
 
 Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
 
@@ -20,6 +20,7 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
 ### 1. Preview and confirmation before a mass sync
 
 **Domain** (`src/modules/configuracion/zoom-grupo-sincronizacion.domain.ts`, still pure):
+
 - New `evaluarRiesgoSincronizacion(plan, cuentas)` returns `{ masivo, afectadas, asignables }`.
   - "Assignable" uses the existing `esCuentaAsignable`: `activa`, `tieneLicencia`, `fueraDelGrupoAt` null.
   - `afectadas` counts the accounts in `desactivar ∪ marcarFuera` that are assignable today.
@@ -29,6 +30,7 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
 - `CuentaZoomActual` gains `tieneLicencia`.
 
 **Service** (`zoom-grupo-sincronizacion.service.ts`):
+
 - I extracted the shared reading and planning into helpers that both paths use:
   - `leerGrupoElegido`
   - `leerMiembrosDelGrupo` (token, members, empty-group rejection)
@@ -47,6 +49,7 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
   - The refusal follows the existing pattern for refusals («Ya hay una sincronización en curso», «Elegí un grupo…»): it is **not** stored. `ultimaSincronizacionAt` and `ultimaSincronizacionResultado` keep the previous result. Only errors are stored, as before.
 
 **Routes**:
+
 - `POST /api/v1/configuracion/zoom/grupo` now takes an optional body, validated with zod `{ vistaPrevia?: boolean, confirmar?: boolean }`. Unknown keys are stripped.
   - An empty or missing body means `{}`.
   - Malformed JSON, `null`, arrays, strings or wrong types get 400 `{ error: "El pedido de sincronización no es válido. Recargá la página y probá de nuevo." }`.
@@ -56,6 +59,7 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
 - The periodic `GET .../sincronizar` passes `{ actorId: null, confirmar: false }`. A masivo plan comes back `ok:false`, so the route answers 502 with the refusal text.
 
 **UI** (`src/components/zoom-grupo-config.tsx` and `.domain.ts`):
+
 - «Sincronizar con el grupo» first sends `POST { vistaPrevia: true }` (shows «Revisando…»), then shows `VistaPreviaSincronizacionPanel`, which is exported as a presentational component. The panel shows:
   - the summary, or «No cambia ninguna cuenta: las salas ya coinciden con el grupo.»;
   - «N sin licencia: esas cuentas no reciben reuniones nuevas hasta que tengan licencia en Zoom.»;
@@ -69,6 +73,7 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
 - The main sync button is disabled while the panel is open. Opening the group selector clears the panel.
 
 ### 2. License downgrade visible
+
 - The plan gains `sinLicencia` (deduplicated members with `licenciado=false`) and `pierdenLicencia` (matched accounts with `tieneLicencia=true` today whose member is unlicensed). New accounts never count as «pasan».
 - `resumen` appends «N sin licencia», plus « (M pasa/pasan a sin licencia)» when that applies. Example: «1 nueva, 0 desactivadas, 0 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)».
 - Without licensing remarks the old text is unchanged, including the exact «0 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones». «sin licencia» does not change between singular and plural; «pasa/pasan» does.
@@ -76,20 +81,26 @@ Every commit has the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthrop
 - The preview has `sinLicencia` and `pierdenLicencia` (emails), and the UI shows both.
 
 ### 3. Add-date on a shared-link series whose room left the group
+
 In `gestionar-encuentros.service.ts`, `agregarEncuentro` checks, right after `hostsElegibles` is computed: if the series has a shared Zoom event and its account is not among the assignable hosts, it throws `ConflictApiError` instead of reaching «ocupada».
+
 - If the account has `fueraDelGrupoAt`, the message is «La sala de esta serie salió del grupo de Zoom. Usá «Unificar enlace» o creá una serie nueva.»
 - Otherwise (manually deactivated or unlicensed), the message is «La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva.» See Deviation 2.
 - The single extra `findUnique` runs only on this failure path.
 - Account choice for new meetings, the «ocupada» case and reschedule logic are unchanged.
 
 ### 4. Audit actor
+
 The audit row now writes `actorUsuarioId: opciones.actorId ?? null`. The button route passes `actor.id` from the session; the cron route passes `null`.
 
 ### 5. `elegirGrupoZoom` clears the old result
+
 It reads the stored `grupoId` first. When the id differs from the new one, the upsert's `update` also sets `ultimaSincronizacionAt` and `ultimaSincronizacionResultado` to null. With the same id (for example a renamed group) both fields are left untouched.
 
 ### 6. Doc
+
 I created `docs/configuracion-zoom-grupo.md` (Spanish, voseo). It covers:
+
 - what the feature does, and that names, emails and licenses now come from Zoom;
 - the app type (Server-to-Server OAuth) with credentials in Configuración › Zoom, and the 7 granular scopes;
 - reviewing the group before syncing: members must be Licensed, and their emails must match so rooms are adopted rather than duplicated;
@@ -103,15 +114,16 @@ No systemd timer was added and `infra/ec2` was not touched.
 
 ## TDD evidence (RED → GREEN)
 
-| Step | RED | GREEN |
-|---|---|---|
-| Domain (`test/zoom-grupo-sincronizacion-domain.test.ts`) | 7 failed / 15 passed. `evaluarRiesgoSincronizacion is not a function` (4 tests); `expected undefined to deeply equal []` (sinLicencia/pierdenLicencia); resumen without «, 1 sin licencia» | domain + `functional-architecture`: 2 files, 151 tests passed |
-| Service (`test/zoom-grupo-sincronizacion-service.test.ts`) | 9 failed / 14 passed: masivo refusal, actor, license audit, group change clearing, 4 preview tests, and the first test (audit `sinLicencia` missing) | 23/23; with domain and `configuracion-page-salas`: 3 files, 48 tests |
-| Routes (`test/zoom-grupo-routes.test.ts`) | 8 failed / 14 passed: POST args `{actorId, confirmar}`, empty body, confirmar, vistaPrevia ×3, 400 validation, cron `{actorId:null, confirmar:false}` | with `salas-meet-route`: 2 files, 31 tests |
-| UI (`test/zoom-grupo-config-ui.test.ts`) | 6 failed / 14 passed: `Element type is invalid … got: undefined` (panel not exported); `pedidoDeSincronizacion is not a function`; `leerVistaPrevia is not a function`. The no-`confirm()` guard passed from the start, as a guard should | 20/20 |
-| gestionar-encuentros (`test/gestionar-encuentros-reunion-compartida.test.ts`) | 2 failed / 7 passed. Received «La sala de la serie está ocupada en ese horario.» where the group-exit and deactivated/unlicensed messages were expected (the reported bug) | all `test/gestionar-encuentros*`: 3 files, 22 tests |
+| Step                                                                          | RED                                                                                                                                                                                                                                       | GREEN                                                                |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Domain (`test/zoom-grupo-sincronizacion-domain.test.ts`)                      | 7 failed / 15 passed. `evaluarRiesgoSincronizacion is not a function` (4 tests); `expected undefined to deeply equal []` (sinLicencia/pierdenLicencia); resumen without «, 1 sin licencia»                                                | domain + `functional-architecture`: 2 files, 151 tests passed        |
+| Service (`test/zoom-grupo-sincronizacion-service.test.ts`)                    | 9 failed / 14 passed: masivo refusal, actor, license audit, group change clearing, 4 preview tests, and the first test (audit `sinLicencia` missing)                                                                                      | 23/23; with domain and `configuracion-page-salas`: 3 files, 48 tests |
+| Routes (`test/zoom-grupo-routes.test.ts`)                                     | 8 failed / 14 passed: POST args `{actorId, confirmar}`, empty body, confirmar, vistaPrevia ×3, 400 validation, cron `{actorId:null, confirmar:false}`                                                                                     | with `salas-meet-route`: 2 files, 31 tests                           |
+| UI (`test/zoom-grupo-config-ui.test.ts`)                                      | 6 failed / 14 passed: `Element type is invalid … got: undefined` (panel not exported); `pedidoDeSincronizacion is not a function`; `leerVistaPrevia is not a function`. The no-`confirm()` guard passed from the start, as a guard should | 20/20                                                                |
+| gestionar-encuentros (`test/gestionar-encuentros-reunion-compartida.test.ts`) | 2 failed / 7 passed. Received «La sala de la serie está ocupada en ese horario.» where the group-exit and deactivated/unlicensed messages were expected (the reported bug)                                                                | all `test/gestionar-encuentros*`: 3 files, 22 tests                  |
 
 Tests I changed rather than only added:
+
 - The service's first test now passes `{ confirmar: true }`. Its fixture removes 2 of 3 assignable accounts, so it is masivo. Its resumen gains «, 1 sin licencia» because u4 is unlicensed, and it now asserts `actorUsuarioId: null` and the new audit fields.
 - «elegir un grupo…» now expects the result to be cleared when the group changes. A new test covers the same-group case.
 - The route tests call `POST(request)`, because the handler now takes the request.

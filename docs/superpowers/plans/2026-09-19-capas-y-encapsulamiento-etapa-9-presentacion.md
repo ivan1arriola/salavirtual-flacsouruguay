@@ -31,6 +31,7 @@
 ### Task 1: Contrato arquitectónico de presentación
 
 **Files:**
+
 - Create: `test/presentation-layer-boundaries.test.ts`
 
 - [x] Escribir una prueba que exija las ubicaciones modulares y prohíba imports legacy desde `app/`.
@@ -40,6 +41,7 @@
 ### Task 2: Presentación de asistencia
 
 **Files:**
+
 - Create: `src/modules/asistencia/presentation/components/*.tsx`
 - Modify: `src/modules/asistencia/presentation.ts`
 - Modify: `src/components/assistant-*.tsx`, `src/components/coverage-assistance-actions.tsx`
@@ -53,6 +55,7 @@
 ### Task 3: Presentación de reuniones
 
 **Files:**
+
 - Create: `src/modules/reuniones/presentation/components/*.tsx`
 - Create: `src/modules/reuniones/presentation.ts`
 - Modify: `src/components/meeting-*.tsx`, `src/components/series-management.tsx`
@@ -66,6 +69,7 @@
 ### Task 4: Controladores delgados y bootstrap de UI
 
 **Files:**
+
 - Create: `src/bootstrap/ui/asistencia/*.server.tsx`
 - Create: `src/bootstrap/ui/reuniones/*.server.tsx`
 - Modify: rutas de asistencia y reuniones bajo `app/(gestion)`.

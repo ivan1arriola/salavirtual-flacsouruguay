@@ -18,7 +18,7 @@ async function main(): Promise<void> {
             select: {
               operacionPendiente: true,
               estadoIntegracion: true,
-              externalEventId: true,
+              externalEventId: true
             }
           }
         }
@@ -30,13 +30,14 @@ async function main(): Promise<void> {
   const plan = requests.map((request) => {
     const cancelled = request.instancias.filter(({ estado }) => estado === "CANCELADA");
     const safeToDelete = cancelled.filter(({ eventosProveedor }) =>
-      eventosProveedor.every((event) =>
-        event.operacionPendiente !== "CANCELAR" &&
-        (event.externalEventId === null || event.estadoIntegracion === "SINCRONIZADA")
+      eventosProveedor.every(
+        (event) =>
+          event.operacionPendiente !== "CANCELAR" &&
+          (event.externalEventId === null || event.estadoIntegracion === "SINCRONIZADA")
       )
     );
-    const pendingGoogleCancellation = cancelled.filter(({ id }) =>
-      !safeToDelete.some((safe) => safe.id === id)
+    const pendingGoogleCancellation = cancelled.filter(
+      ({ id }) => !safeToDelete.some((safe) => safe.id === id)
     );
     const activeCount = request.instancias.length - cancelled.length;
     const deleteRequest = activeCount === 0 && pendingGoogleCancellation.length === 0;
@@ -53,17 +54,32 @@ async function main(): Promise<void> {
     };
   });
 
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    requests: plan.length,
-    cancelledInstances: plan.reduce((total, item) => total + item.cancelledCount, 0),
-    safeToDeleteInstances: plan.reduce((total, item) => total + item.safeToDeleteCount, 0),
-    pendingGoogleCancellations: plan.reduce((total, item) => total + item.pendingGoogleCancellationCount, 0),
-    requestsWithoutActiveInstancesReadyToDelete: plan.filter(({ deleteRequest }) => deleteRequest).length
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        requests: plan.length,
+        cancelledInstances: plan.reduce((total, item) => total + item.cancelledCount, 0),
+        safeToDeleteInstances: plan.reduce((total, item) => total + item.safeToDeleteCount, 0),
+        pendingGoogleCancellations: plan.reduce(
+          (total, item) => total + item.pendingGoogleCancellationCount,
+          0
+        ),
+        requestsWithoutActiveInstancesReadyToDelete: plan.filter(({ deleteRequest }) => deleteRequest).length
+      },
+      null,
+      2
+    )
+  );
 
   if (!applyChanges) {
-    console.log(JSON.stringify(plan.map(({ cancelledIds: _cancelledIds, ...item }) => item), null, 2));
+    console.log(
+      JSON.stringify(
+        plan.map(({ cancelledIds: _cancelledIds, ...item }) => item),
+        null,
+        2
+      )
+    );
     return;
   }
 
@@ -72,7 +88,9 @@ async function main(): Promise<void> {
   let cleanedRequests = 0;
 
   for (const item of plan) {
-    if (!item.deleteRequest && item.cancelledIds.length === 0) continue;
+    if (!item.deleteRequest && item.cancelledIds.length === 0) {
+      continue;
+    }
 
     try {
       await db.$transaction(async (tx) => {
@@ -83,8 +101,11 @@ async function main(): Promise<void> {
         await tx.instanciaSala.deleteMany({ where: { id: { in: item.cancelledIds } } });
         await recalcularSolicitud(tx, item.solicitudId);
       });
-      if (item.deleteRequest) deletedRequests += 1;
-      else cleanedRequests += 1;
+      if (item.deleteRequest) {
+        deletedRequests += 1;
+      } else {
+        cleanedRequests += 1;
+      }
     } catch (error) {
       failures.push({
         solicitudId: item.solicitudId,
@@ -94,12 +115,21 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(JSON.stringify({
-    deletedRequests,
-    cleanedRequests,
-    skippedPendingGoogleCancellations: plan.reduce((total, item) => total + item.pendingGoogleCancellationCount, 0),
-    failures
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        deletedRequests,
+        cleanedRequests,
+        skippedPendingGoogleCancellations: plan.reduce(
+          (total, item) => total + item.pendingGoogleCancellationCount,
+          0
+        ),
+        failures
+      },
+      null,
+      2
+    )
+  );
 }
 
 main()

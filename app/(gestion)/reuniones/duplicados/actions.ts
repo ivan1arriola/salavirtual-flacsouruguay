@@ -9,9 +9,13 @@ import { revisarPosibleDuplicado } from "@/src/modules/reuniones/duplicados.serv
 
 export async function guardarRevisionDuplicado(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") redirect("/reuniones");
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    redirect("/reuniones");
+  }
 
   let estado = "revision-guardada";
   try {

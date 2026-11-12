@@ -17,7 +17,9 @@ const PURE_MODULES = ALL_TS_FILES.filter((relativePath) => {
   const parts = relativePath.replaceAll("\\", "/").split("/");
   if (parts.length > 2) {
     const layer = parts[1];
-    if (layer === "domain") return true;
+    if (layer === "domain") {
+      return true;
+    }
     if (["ports", "application", "infrastructure", "presentation"].includes(layer)) {
       return false;
     }
@@ -53,9 +55,7 @@ describe("arquitectura funcional", () => {
   for (const relativePath of PURE_MODULES) {
     it(`${relativePath} permanece libre de efectos externos`, () => {
       const source = readFileSync(new URL(relativePath, MODULES_ROOT), "utf8");
-      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(
-        ({ name }) => name
-      );
+      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(({ name }) => name);
 
       expect(effects).toEqual([]);
     });

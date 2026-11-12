@@ -90,7 +90,9 @@
   border: 0;
   border-radius: 7px;
   padding: 8px 11px;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
 .page :global(.meeting-form-steps a:hover),
@@ -659,7 +661,6 @@
   }
 }
 
-
 /* Nueva reunión: mobile-first blue hierarchy */
 .page :global(.meeting-form-v2) {
   gap: 14px;
@@ -668,7 +669,7 @@
 .page :global(.meeting-form-steps) {
   border: 1px solid #b7cbe5;
   background: #dfeafa;
-  box-shadow: 0 5px 18px rgba(32, 59, 104, .08);
+  box-shadow: 0 5px 18px rgba(32, 59, 104, 0.08);
 }
 
 .page :global(.meeting-form-steps a) {
@@ -700,7 +701,7 @@
   border-radius: 16px;
   background: #f1f6fd;
   padding: 20px 22px 22px;
-  box-shadow: 0 7px 22px rgba(32, 59, 104, .07);
+  box-shadow: 0 7px 22px rgba(32, 59, 104, 0.07);
   overflow: hidden;
 }
 
@@ -738,7 +739,7 @@
 .page :global(.date-mode-selector > legend),
 .page :global(.modality-choice > legend) {
   color: #243e64;
-  font-size: .82rem;
+  font-size: 0.82rem;
 }
 
 .page :global(.field input),
@@ -820,7 +821,7 @@
   border: 1px solid #b4c8e3;
   border-radius: 14px;
   background: #e4eefb;
-  box-shadow: 0 8px 24px rgba(30, 54, 89, .12);
+  box-shadow: 0 8px 24px rgba(30, 54, 89, 0.12);
 }
 
 .page :global(.meeting-form-actions-v2 .primary-action) {
@@ -849,7 +850,7 @@
     border-radius: 11px;
     background: #dce8f8;
     padding: 4px;
-    box-shadow: 0 7px 20px rgba(32, 59, 104, .12);
+    box-shadow: 0 7px 20px rgba(32, 59, 104, 0.12);
   }
 
   .page :global(.meeting-form-steps a) {
@@ -873,7 +874,7 @@
   }
 
   .page :global(.meeting-form-steps strong) {
-    font-size: .74rem;
+    font-size: 0.74rem;
     line-height: 1.15;
   }
 
@@ -1019,7 +1020,7 @@
     margin-top: 0;
     margin-bottom: calc(85px + env(safe-area-inset-bottom));
     border-radius: 13px;
-    box-shadow: 0 8px 24px rgba(24, 42, 70, .14);
+    box-shadow: 0 8px 24px rgba(24, 42, 70, 0.14);
     backdrop-filter: none;
   }
 
@@ -1028,11 +1029,11 @@
   }
 
   .page :global(.meeting-form-summary-v2 > strong) {
-    font-size: .86rem;
+    font-size: 0.86rem;
   }
 
   .page :global(.meeting-form-summary-v2 > span) {
-    font-size: .72rem;
+    font-size: 0.72rem;
   }
 
   .page :global(.meeting-form-actions-v2 .primary-action) {
@@ -1041,7 +1042,7 @@
     min-width: 0;
     white-space: normal;
     padding: 9px 11px;
-    font-size: .83rem;
+    font-size: 0.83rem;
   }
 
   .page :global(.meeting-form-actions-v2 .form-message) {
@@ -1058,7 +1059,7 @@
   }
 
   .page :global(.meeting-form-steps strong) {
-    font-size: .72rem;
+    font-size: 0.72rem;
     text-align: center;
   }
 
@@ -1069,10 +1070,9 @@
 
   .page :global(.meeting-form-actions-v2 .primary-action) {
     padding-inline: 8px;
-    font-size: .78rem;
+    font-size: 0.78rem;
   }
 }
-
 
 /* Keep native radio controls compact even inside the generic .field layout. */
 .page :global(.modality-choice input[type="radio"]),

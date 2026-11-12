@@ -3,11 +3,17 @@ import {
   actualizarOcurrenciaZoomHttp,
   buscarReunionZoomPorMarcaHttp,
   crearReunionZoomRecurrenteHttp,
-  eliminarOcurrenciaZoomHttp,
+  eliminarOcurrenciaZoomHttp
 } from "../src/integrations/zoom/zoom-client";
 
 function respuesta(cuerpo: unknown, ok = true, status = 200) {
-  return { ok, status, statusText: ok ? "OK" : "Error", json: async () => cuerpo, text: async () => JSON.stringify(cuerpo) };
+  return {
+    ok,
+    status,
+    statusText: ok ? "OK" : "Error",
+    json: async () => cuerpo,
+    text: async () => JSON.stringify(cuerpo)
+  };
 }
 
 describe("reuniones recurrentes de Zoom", () => {
@@ -89,24 +95,28 @@ describe("reuniones recurrentes de Zoom", () => {
 
     it("lanza un error con el estado cuando Zoom rechaza la creación", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ message: "sin licencia" }, false, 400)));
-      await expect(crearReunionZoomRecurrenteHttp("tok", "x@flacso.edu.uy", {
-        topic: "T",
-        startTime: new Date("2026-11-10T18:00:00Z"),
-        durationMinutes: 60,
-        timezone: "America/Montevideo",
-        recurrence: { type: 2, repeatInterval: 1, weeklyDays: "3", endTimes: 1 }
-      })).rejects.toThrow(/400/);
+      await expect(
+        crearReunionZoomRecurrenteHttp("tok", "x@flacso.edu.uy", {
+          topic: "T",
+          startTime: new Date("2026-11-10T18:00:00Z"),
+          durationMinutes: 60,
+          timezone: "America/Montevideo",
+          recurrence: { type: 2, repeatInterval: 1, weeklyDays: "3", endTimes: 1 }
+        })
+      ).rejects.toThrow(/400/);
     });
 
     it("lanza un error si Zoom no devuelve el enlace de acceso", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ id: 1 })));
-      await expect(crearReunionZoomRecurrenteHttp("tok", "x@flacso.edu.uy", {
-        topic: "T",
-        startTime: new Date("2026-11-10T18:00:00Z"),
-        durationMinutes: 60,
-        timezone: "America/Montevideo",
-        recurrence: { type: 2, repeatInterval: 1, weeklyDays: "3", endTimes: 1 }
-      })).rejects.toThrow(/enlace/i);
+      await expect(
+        crearReunionZoomRecurrenteHttp("tok", "x@flacso.edu.uy", {
+          topic: "T",
+          startTime: new Date("2026-11-10T18:00:00Z"),
+          durationMinutes: 60,
+          timezone: "America/Montevideo",
+          recurrence: { type: 2, repeatInterval: 1, weeklyDays: "3", endTimes: 1 }
+        })
+      ).rejects.toThrow(/enlace/i);
     });
   });
 
@@ -145,15 +155,20 @@ describe("reuniones recurrentes de Zoom", () => {
 
   describe("buscarReunionZoomPorMarcaHttp", () => {
     it("recorre las páginas y devuelve la reunión que lleva la marca", async () => {
-      const fetchMock = vi.fn()
-        .mockResolvedValueOnce(respuesta({
-          meetings: [{ id: 1, join_url: "https://z/1", agenda: "otra" }],
-          next_page_token: "pagina-2"
-        }))
-        .mockResolvedValueOnce(respuesta({
-          meetings: [{ id: 2, join_url: "https://z/2", agenda: "Texto [serie:abc] más texto" }],
-          next_page_token: ""
-        }));
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respuesta({
+            meetings: [{ id: 1, join_url: "https://z/1", agenda: "otra" }],
+            next_page_token: "pagina-2"
+          })
+        )
+        .mockResolvedValueOnce(
+          respuesta({
+            meetings: [{ id: 2, join_url: "https://z/2", agenda: "Texto [serie:abc] más texto" }],
+            next_page_token: ""
+          })
+        );
       vi.stubGlobal("fetch", fetchMock);
 
       const encontrada = await buscarReunionZoomPorMarcaHttp("tok", "sala01@flacso.edu.uy", "[serie:abc]");
@@ -165,18 +180,34 @@ describe("reuniones recurrentes de Zoom", () => {
     });
 
     it("devuelve null si ninguna reunión tiene la marca", async () => {
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ meetings: [{ id: 1, join_url: "https://z/1", agenda: "x" }] })));
-      await expect(buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:zzz]")).resolves.toBeNull();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(respuesta({ meetings: [{ id: 1, join_url: "https://z/1", agenda: "x" }] }))
+      );
+      await expect(
+        buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:zzz]")
+      ).resolves.toBeNull();
     });
 
     it("no confunde una marca con otra que la contiene como prefijo", async () => {
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ meetings: [{ id: 1, join_url: "https://z/1", agenda: "[serie:abc123]" }] })));
-      await expect(buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:abc]")).resolves.toBeNull();
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            respuesta({ meetings: [{ id: 1, join_url: "https://z/1", agenda: "[serie:abc123]" }] })
+          )
+      );
+      await expect(
+        buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:abc]")
+      ).resolves.toBeNull();
     });
 
     it("lanza un error cuando Zoom falla al listar", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ message: "no" }, false, 500)));
-      await expect(buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:abc]")).rejects.toThrow(/500/);
+      await expect(buscarReunionZoomPorMarcaHttp("tok", "x@flacso.edu.uy", "[serie:abc]")).rejects.toThrow(
+        /500/
+      );
     });
   });
 });

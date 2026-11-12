@@ -27,4 +27,3 @@ describe("formatDuration", () => {
     expect(formatDuration(inicio, antes)).toBe("0 min");
   });
 });
-

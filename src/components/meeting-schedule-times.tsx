@@ -40,16 +40,32 @@ export function MeetingScheduleTimes({
     `${formatTime(from)}–${formatTime(to)}${sameDay(from, to) ? "" : ` (hasta ${formatDate(to)})`}`;
 
   return (
-    <div className={`meeting-schedule-times${compact ? " is-compact" : ""}${viewerIsAssistant ? " is-assistant" : ""}`} aria-label="Horarios de la reunión y de monitoreo">
+    <div
+      className={`meeting-schedule-times${compact ? " is-compact" : ""}${viewerIsAssistant ? " is-assistant" : ""}`}
+      aria-label="Horarios de la reunión y de monitoreo"
+    >
       {requiresAssistance ? (
         <div className={`meeting-schedule-line is-coverage${coverageMissing ? " is-pending" : ""}`}>
           <Headset size={18} aria-hidden="true" />
           <div>
             <span>{viewerIsAssistant ? "Tu monitoreo" : "Horario de monitoreo"}</span>
             {coverageMissing ? (
-              <><strong>Horario técnico por confirmar</strong><small>Administración debe definir la llegada y salida del asistente antes de esta cobertura híbrida.</small></>
+              <>
+                <strong>Horario técnico por confirmar</strong>
+                <small>
+                  Administración debe definir la llegada y salida del asistente antes de esta cobertura
+                  híbrida.
+                </small>
+              </>
             ) : (
-              <><strong>{timeRange(assistanceStart, assistanceEnd)}</strong><small>{viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"} {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}: {formatTime(assistanceEnd)}</small></>
+              <>
+                <strong>{timeRange(assistanceStart, assistanceEnd)}</strong>
+                <small>
+                  {viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"}{" "}
+                  {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}:{" "}
+                  {formatTime(assistanceEnd)}
+                </small>
+              </>
             )}
           </div>
         </div>
@@ -59,7 +75,9 @@ export function MeetingScheduleTimes({
         <div>
           <span>Horario del encuentro</span>
           <strong>{timeRange(start, end)}</strong>
-          <small>La reunión empieza: {formatTime(start)} · Finaliza: {formatTime(end)}</small>
+          <small>
+            La reunión empieza: {formatTime(start)} · Finaliza: {formatTime(end)}
+          </small>
         </div>
       </div>
     </div>

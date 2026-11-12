@@ -84,10 +84,7 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
 
   it("evita asignar el correo equivocado cuando existen homónimos y evita falsos positivos de grupos pequeños", () => {
     const adapterSource = readFileSync(
-      join(
-        process.cwd(),
-        "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts"
-      ),
+      join(process.cwd(), "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts"),
       "utf8"
     );
     expect(adapterSource).not.toContain('salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño"');
@@ -108,4 +105,3 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
     expect(serviceSource).toContain('operacionPendiente: "CONFIGURAR_MEET"');
   });
 });
-

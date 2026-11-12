@@ -1,11 +1,4 @@
-import {
-  ArrowLeft,
-  CalendarClock,
-  CalendarRange,
-  FolderOpen,
-  UsersRound,
-  Video
-} from "lucide-react";
+import { ArrowLeft, CalendarClock, CalendarRange, FolderOpen, UsersRound, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -36,7 +29,10 @@ import {
   puedeGestionarPrograma
 } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
-import { proveedorActivoDeInstancia, type ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion.domain";
+import {
+  proveedorActivoDeInstancia,
+  type ProveedorReunion
+} from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
 
 export default async function ReunionDetailPage({
@@ -48,9 +44,13 @@ export default async function ReunionDetailPage({
   otroProveedor?: Readonly<{ proveedor: ProveedorReunion; cantidad: number; href: string }> | null;
 }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   const { solicitudId } = await params;
   const request = await db.solicitudSala.findUnique({
@@ -59,71 +59,80 @@ export default async function ReunionDetailPage({
       docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
     }
   });
-  if (!request || !await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId)) notFound();
+  if (!request || !(await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId))) {
+    notFound();
+  }
 
   const now = new Date();
-  const [seriesRequests, cohostAccounts, programRecipients, otherUsers, historicCohostEmails] = await Promise.all([
-    db.solicitudSala.findMany({
-      where: construirFiltroSerieSolicitud(request),
-      orderBy: { id: "asc" },
-      select: {
-        id: true,
-        estado: true,
-        modalidad: true,
-        inicioAsistenciaTecnicaAt: true,
-        finAsistenciaTecnicaAt: true,
-        instancias: {
-          orderBy: { inicioProgramadoAt: "asc" },
-          include: {
-            eventosProveedor: {
-              include: {
-                proveedor: true,
-                cuentaProveedor: true,
-                archivos: true
-              }
-            },
-            cohosts: {
-              include: {
-                cuentaGoogle: {
-                  include: { user: true }
+  const [seriesRequests, cohostAccounts, programRecipients, otherUsers, historicCohostEmails] =
+    await Promise.all([
+      db.solicitudSala.findMany({
+        where: construirFiltroSerieSolicitud(request),
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          estado: true,
+          modalidad: true,
+          inicioAsistenciaTecnicaAt: true,
+          finAsistenciaTecnicaAt: true,
+          instancias: {
+            orderBy: { inicioProgramadoAt: "asc" },
+            include: {
+              eventosProveedor: {
+                include: {
+                  proveedor: true,
+                  cuentaProveedor: true,
+                  archivos: true
                 }
-              }
-            },
-            cohostEmails: { select: { email: true } },
-            invitados: { select: { email: true } },
-            asignaciones: {
-              where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-              include: { asistenteTecnico: { include: { usuario: true } } }
-            },
-            postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
+              },
+              cohosts: {
+                include: {
+                  cuentaGoogle: {
+                    include: { user: true }
+                  }
+                }
+              },
+              cohostEmails: { select: { email: true } },
+              invitados: { select: { email: true } },
+              asignaciones: {
+                where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+                include: { asistenteTecnico: { include: { usuario: true } } }
+              },
+              postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
+            }
           }
         }
-      }
-    }),
-    db.cuentaGoogleFlacso.findMany({
-      where: { user: { activo: true } },
-      orderBy: { email: "asc" },
-      select: { id: true, email: true, userId: true, user: { select: { nombres: true, apellidos: true } } }
-    }),
-    destinatariosDocentesPrograma(db, request.docentePrograma.programaId),
-    db.usuario.findMany({ where: { activo: true }, take: 400, select: { nombres: true, apellidos: true, emailPrincipal: true } }),
-    db.cohostEmailReunion.findMany({ distinct: ["email"], take: 400, select: { email: true } })
-  ]);
+      }),
+      db.cuentaGoogleFlacso.findMany({
+        where: { user: { activo: true } },
+        orderBy: { email: "asc" },
+        select: { id: true, email: true, userId: true, user: { select: { nombres: true, apellidos: true } } }
+      }),
+      destinatariosDocentesPrograma(db, request.docentePrograma.programaId),
+      db.usuario.findMany({
+        where: { activo: true },
+        take: 400,
+        select: { nombres: true, apellidos: true, emailPrincipal: true }
+      }),
+      db.cohostEmailReunion.findMany({ distinct: ["email"], take: 400, select: { email: true } })
+    ]);
 
   const meetings = seriesRequests
-    .flatMap((seriesRequest) => seriesRequest.instancias.map((meeting) => ({
-      ...meeting,
-      solicitudId: seriesRequest.id,
-      modalidadSerie: seriesRequest.modalidad,
-      inicioAsistenciaBase: seriesRequest.inicioAsistenciaTecnicaAt,
-      finAsistenciaBase: seriesRequest.finAsistenciaTecnicaAt,
-      encuentrosEnSolicitud: seriesRequest.instancias.length
-    })))
+    .flatMap((seriesRequest) =>
+      seriesRequest.instancias.map((meeting) => ({
+        ...meeting,
+        solicitudId: seriesRequest.id,
+        modalidadSerie: seriesRequest.modalidad,
+        inicioAsistenciaBase: seriesRequest.inicioAsistenciaTecnicaAt,
+        finAsistenciaBase: seriesRequest.finAsistenciaTecnicaAt,
+        encuentrosEnSolicitud: seriesRequest.instancias.length
+      }))
+    )
     .filter((meeting) => proveedorActivoDeInstancia(meeting) === "GOOGLE_MEET")
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
 
-  const manageableMeetings = meetings.filter((meeting) =>
-    meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now
+  const manageableMeetings = meetings.filter(
+    (meeting) => meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now
   );
 
   const protectedUserIds = new Set([
@@ -133,9 +142,7 @@ export default async function ReunionDetailPage({
     )
   ]);
   const protectedCohostIds = new Set(
-    cohostAccounts
-      .filter(({ userId }) => protectedUserIds.has(userId))
-      .map(({ id }) => id)
+    cohostAccounts.filter(({ userId }) => protectedUserIds.has(userId)).map(({ id }) => id)
   );
   const initialCohostCuentaIds = unique([
     ...manageableMeetings.flatMap(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
@@ -145,10 +152,14 @@ export default async function ReunionDetailPage({
     manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
   );
 
-  const initialGuestEmails = unique(manageableMeetings.flatMap(meeting => meeting.invitados.map(guest => guest.email.toLowerCase())));
+  const initialGuestEmails = unique(
+    manageableMeetings.flatMap((meeting) => meeting.invitados.map((guest) => guest.email.toLowerCase()))
+  );
 
   const verificationByEmail = unique([
-    ...cohostAccounts.filter(({ id }) => initialCohostCuentaIds.includes(id)).map(({ email }) => email.toLowerCase()),
+    ...cohostAccounts
+      .filter(({ id }) => initialCohostCuentaIds.includes(id))
+      .map(({ email }) => email.toLowerCase()),
     ...initialManualCohostEmails
   ]).map((email) => {
     const applicable = manageableMeetings.filter((meeting) => {
@@ -157,19 +168,34 @@ export default async function ReunionDetailPage({
     });
     const confirmed = applicable.filter((meeting) => {
       const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-      if (!event || event.errorIntegracion || event.operacionPendiente) return false;
-      const details = detalleCohostsVerificados(event.payloadUltimo, event.codigoReunion, event.cuentaProveedor?.emailOrganizador, [email]);
+      if (!event || event.errorIntegracion || event.operacionPendiente) {
+        return false;
+      }
+      const details = detalleCohostsVerificados(
+        event.payloadUltimo,
+        event.codigoReunion,
+        event.cuentaProveedor?.emailOrganizador,
+        [email]
+      );
       return details.emailsConfirmados.includes(email);
     }).length;
-    return { email, confirmed, total: manageableMeetings.length, pending: manageableMeetings.length - confirmed };
+    return {
+      email,
+      confirmed,
+      total: manageableMeetings.length,
+      pending: manageableMeetings.length - confirmed
+    };
   });
 
-  const serieCancelada = request.estado === "CANCELADA" && seriesRequests.every((item) => item.estado === "CANCELADA");
+  const serieCancelada =
+    request.estado === "CANCELADA" && seriesRequests.every((item) => item.estado === "CANCELADA");
   const estadoVisible = serieCancelada
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
-      meetings.flatMap(({ eventosProveedor }) => eventosProveedor.map((event) => estadoIntegracionEfectivo(event)))
-    );
+        meetings.flatMap(({ eventosProveedor }) =>
+          eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
+        )
+      );
 
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
@@ -178,13 +204,12 @@ export default async function ReunionDetailPage({
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const activeEvent = seleccionarEventoProveedorActivo(meeting);
     const assignment = meeting.asignaciones[0];
-    const organizerAccount = activeEvent?.cuentaProveedor?.emailOrganizador
-      ?? activeEvent?.cuentaProveedor?.nombre
-      ?? "Cuenta pendiente";
+    const organizerAccount =
+      activeEvent?.cuentaProveedor?.emailOrganizador ??
+      activeEvent?.cuentaProveedor?.nombre ??
+      "Cuenta pendiente";
     const cohostLabels = unique(
-      extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
-        c.name ? `${c.name} · ${c.email}` : c.email
-      )
+      extraerCohostsUnificadosDeInstancia(meeting).map((c) => (c.name ? `${c.name} · ${c.email}` : c.email))
     );
     const eventVerification = detalleCohostsVerificados(
       event?.payloadUltimo,
@@ -212,57 +237,67 @@ export default async function ReunionDetailPage({
       inicioAsistencia: meeting.inicioAsistenciaTecnicaAt
         ? toLocalInput(meeting.inicioAsistenciaTecnicaAt)
         : null,
-      finAsistencia: meeting.finAsistenciaTecnicaAt
-        ? toLocalInput(meeting.finAsistenciaTecnicaAt)
-        : null,
+      finAsistencia: meeting.finAsistenciaTecnicaAt ? toLocalInput(meeting.finAsistenciaTecnicaAt) : null,
       horarioAsistenciaPersonalizado: Boolean(
-        meeting.inicioAsistenciaTecnicaAt && meeting.finAsistenciaTecnicaAt &&
-        meeting.inicioAsistenciaBase && meeting.finAsistenciaBase &&
+        meeting.inicioAsistenciaTecnicaAt &&
+        meeting.finAsistenciaTecnicaAt &&
+        meeting.inicioAsistenciaBase &&
+        meeting.finAsistenciaBase &&
         (meeting.inicioAsistenciaTecnicaAt.getTime() !== meeting.inicioAsistenciaBase.getTime() ||
           meeting.finAsistenciaTecnicaAt.getTime() !== meeting.finAsistenciaBase.getTime())
       ),
-      horarioAsistenciaBaseDisponible: Boolean(
-        meeting.inicioAsistenciaBase && meeting.finAsistenciaBase
-      ),
+      horarioAsistenciaBaseDisponible: Boolean(meeting.inicioAsistenciaBase && meeting.finAsistenciaBase),
       asistenteTecnico: assignment
         ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim()
         : null,
       postulantes: meeting.postulaciones.length,
       organizerAccount,
       cohosts: cohostLabels,
-      verifiedCohostEmails: !event?.errorIntegracion && !event?.operacionPendiente ? eventVerification.emailsConfirmados : [],
-      cohostsConfirmados: !event?.errorIntegracion && !event?.operacionPendiente && cohostsConfirmados(
-        event?.payloadUltimo, event?.codigoReunion, event?.cuentaProveedor?.emailOrganizador,
-        extraerCohostEmailsDeInstancia(meeting),
-      ),
+      verifiedCohostEmails:
+        !event?.errorIntegracion && !event?.operacionPendiente ? eventVerification.emailsConfirmados : [],
+      cohostsConfirmados:
+        !event?.errorIntegracion &&
+        !event?.operacionPendiente &&
+        cohostsConfirmados(
+          event?.payloadUltimo,
+          event?.codigoReunion,
+          event?.cuentaProveedor?.emailOrganizador,
+          extraerCohostEmailsDeInstancia(meeting)
+        ),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: activeEvent?.joinUrl ?? null,
-      grabacionUrl: recordingFile?.webViewUrl ?? (recordingFile?.driveFileId ? `https://drive.google.com/open?id=${recordingFile.driveFileId}` : null),
-      asistenciaUrl: attendanceFile?.webViewUrl ?? (attendanceFile?.driveFileId ? `https://drive.google.com/open?id=${attendanceFile.driveFileId}` : null),
+      grabacionUrl:
+        recordingFile?.webViewUrl ??
+        (recordingFile?.driveFileId ? `https://drive.google.com/open?id=${recordingFile.driveFileId}` : null),
+      asistenciaUrl:
+        attendanceFile?.webViewUrl ??
+        (attendanceFile?.driveFileId
+          ? `https://drive.google.com/open?id=${attendanceFile.driveFileId}`
+          : null),
       driveFolderUrl: driveFolderId ? `https://drive.google.com/drive/folders/${driveFolderId}` : null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
-      puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(
-        meeting.estado,
-        meeting.finProgramadoAt,
-        now
-      ),
+      puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(meeting.estado, meeting.finProgramadoAt, now),
       esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
-      temporalidad: meeting.finProgramadoAt < now
-        ? "PASADO" as const
-        : meeting.inicioProgramadoAt <= now ? "EN_CURSO" as const : "FUTURO" as const
+      temporalidad:
+        meeting.finProgramadoAt < now
+          ? ("PASADO" as const)
+          : meeting.inicioProgramadoAt <= now
+            ? ("EN_CURSO" as const)
+            : ("FUTURO" as const)
     };
   });
 
-  const nextMeeting = meetingViews.find((meeting) =>
-    meeting.temporalidad !== "PASADO"
-    && meeting.estado !== "CANCELADA"
-    && meeting.estado !== "NO_REALIZADA"
+  const nextMeeting = meetingViews.find(
+    (meeting) =>
+      meeting.temporalidad !== "PASADO" && meeting.estado !== "CANCELADA" && meeting.estado !== "NO_REALIZADA"
   );
   const uniqueCohosts = unique(meetingViews.flatMap(({ cohosts }) => cohosts));
   const teacherName = [
     request.docentePrograma.docente.usuario.nombres,
     request.docentePrograma.docente.usuario.apellidos
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   const assistanceSummary = nextMeeting
     ? nextMeeting.asistenteTecnico
       ? nextMeeting.asistenteTecnico
@@ -273,27 +308,34 @@ export default async function ReunionDetailPage({
 
   const integrationProblems = meetings.flatMap((meeting, index) => {
     const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
-    if (!event || !requiereAtencionIntegracionMeet(event)) return [];
-    return [{
-      eventoProveedorId: event.id,
-      ordinal: index + 1,
-      fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
-      hasMeet: Boolean(event.joinUrl || event.codigoReunion),
-      error: event.errorIntegracion,
-    }];
+    if (!event || !requiereAtencionIntegracionMeet(event)) {
+      return [];
+    }
+    return [
+      {
+        eventoProveedorId: event.id,
+        ordinal: index + 1,
+        fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
+        hasMeet: Boolean(event.joinUrl || event.codigoReunion),
+        error: event.errorIntegracion
+      }
+    ];
   });
 
   return (
     <div className="meeting-detail-v2">
       <Link className="meeting-detail-back" href="/reuniones?proveedor=meet">
-        <ArrowLeft size={15} aria-hidden="true" />Volver a agenda
+        <ArrowLeft size={15} aria-hidden="true" />
+        Volver a agenda
       </Link>
       {otroProveedor ? <OtroProveedorAviso {...otroProveedor} /> : null}
 
       <MeetingDetailTabs
         tabs={[
           {
-            id: "general", label: "General", content: (
+            id: "general",
+            label: "General",
+            content: (
               <>
                 <section className="meeting-detail-hero">
                   <div className="meeting-detail-hero-copy">
@@ -309,9 +351,13 @@ export default async function ReunionDetailPage({
                       <span aria-hidden="true">·</span>
                       <span>{request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
                       <span aria-hidden="true">·</span>
-                      <span>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</span>
+                      <span>
+                        {meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}
+                      </span>
                     </div>
-                    {request.descripcion ? <p className="meeting-detail-description">{request.descripcion}</p> : null}
+                    {request.descripcion ? (
+                      <p className="meeting-detail-description">{request.descripcion}</p>
+                    ) : null}
                   </div>
 
                   <div className="meeting-detail-hero-action">
@@ -319,13 +365,33 @@ export default async function ReunionDetailPage({
                       <>
                         <small>Próximo encuentro</small>
                         <strong>{nextMeeting.fechaLegible}</strong>
-                        <MeetingScheduleTimes startsAt={nextMeeting.inicio + ":00-03:00"} endsAt={nextMeeting.fin + ":00-03:00"} requiresAssistance={nextMeeting.requiereAsistenciaTecnica} modality={nextMeeting.modalidad} assistanceStartsAt={nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null} assistanceEndsAt={nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null} compact />
+                        <MeetingScheduleTimes
+                          startsAt={nextMeeting.inicio + ":00-03:00"}
+                          endsAt={nextMeeting.fin + ":00-03:00"}
+                          requiresAssistance={nextMeeting.requiereAsistenciaTecnica}
+                          modality={nextMeeting.modalidad}
+                          assistanceStartsAt={
+                            nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null
+                          }
+                          assistanceEndsAt={
+                            nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null
+                          }
+                          compact
+                        />
                         {nextMeeting.joinUrl ? (
-                          <a className="primary-action" href={nextMeeting.joinUrl} target="_blank" rel="noreferrer">
-                            <Video size={17} aria-hidden="true" />Entrar a Meet
+                          <a
+                            className="primary-action"
+                            href={nextMeeting.joinUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Video size={17} aria-hidden="true" />
+                            Entrar a Meet
                           </a>
                         ) : (
-                          <span className="meeting-detail-pending-link">El enlace de Meet todavía está pendiente.</span>
+                          <span className="meeting-detail-pending-link">
+                            El enlace de Meet todavía está pendiente.
+                          </span>
                         )}
                       </>
                     ) : (
@@ -343,7 +409,11 @@ export default async function ReunionDetailPage({
                     <CalendarClock size={18} aria-hidden="true" />
                     <div>
                       <span>Inicio del próximo encuentro</span>
-                      <strong>{nextMeeting ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}` : "Sin próximos"}</strong>
+                      <strong>
+                        {nextMeeting
+                          ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}`
+                          : "Sin próximos"}
+                      </strong>
                       <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
                     </div>
                   </article>
@@ -360,14 +430,20 @@ export default async function ReunionDetailPage({
                     <div>
                       <span>Monitoreo</span>
                       <strong>{assistanceSummary}</strong>
-                      <small>{nextMeeting?.requiereAsistenciaTecnica ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}` : "Según cada encuentro"}</small>
+                      <small>
+                        {nextMeeting?.requiereAsistenciaTecnica
+                          ? `Llegada: ${(nextMeeting.inicioAsistencia ?? nextMeeting.inicio).slice(11, 16)} · Salida: ${(nextMeeting.finAsistencia ?? nextMeeting.fin).slice(11, 16)}`
+                          : "Según cada encuentro"}
+                      </small>
                     </div>
                   </article>
                   <article>
                     <CalendarRange size={18} aria-hidden="true" />
                     <div>
                       <span>Serie</span>
-                      <strong>{meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}</strong>
+                      <strong>
+                        {meetings.length} {meetings.length === 1 ? "encuentro" : "encuentros"}
+                      </strong>
                       <small>UTC-3 · Montevideo</small>
                     </div>
                   </article>
@@ -376,7 +452,9 @@ export default async function ReunionDetailPage({
             )
           },
           {
-            id: "encuentros", label: "Encuentros", content: (
+            id: "encuentros",
+            label: "Encuentros",
+            content: (
               <MeetingDetailManager
                 solicitudId={request.id}
                 requestIds={seriesRequests.map(({ id }) => id)}
@@ -386,31 +464,46 @@ export default async function ReunionDetailPage({
             )
           },
           {
-            id: "personas", label: "Personas", content: (
+            id: "personas",
+            label: "Personas",
+            content: (
               <>
                 <SeriesManagement
                   solicitudId={request.id}
                   cohostOptions={cohostAccounts.map(({ id, email }) => ({
                     id,
                     email,
-                    name: [cohostAccounts.find((account) => account.id === id)?.user.nombres, cohostAccounts.find((account) => account.id === id)?.user.apellidos].filter(Boolean).join(" "),
+                    name: [
+                      cohostAccounts.find((account) => account.id === id)?.user.nombres,
+                      cohostAccounts.find((account) => account.id === id)?.user.apellidos
+                    ]
+                      .filter(Boolean)
+                      .join(" "),
                     required: protectedCohostIds.has(id)
                   }))}
                   initialCohostCuentaIds={initialCohostCuentaIds}
                   initialManualCohostEmails={initialManualCohostEmails}
                   initialGuestEmails={initialGuestEmails}
                   suggestedPeople={[
-                    ...otherUsers.filter(({ emailPrincipal }) => Boolean(emailPrincipal)).map(({ emailPrincipal, nombres, apellidos }) => ({
-                      email: emailPrincipal!.toLowerCase(), name: [nombres, apellidos].filter(Boolean).join(" "), source: "Usuario registrado"
-                    })),
-                    ...historicCohostEmails.map(({ email }) => ({ email: email.toLowerCase(), name: email.toLowerCase(), source: "Cohost anterior" }))
+                    ...otherUsers
+                      .filter(({ emailPrincipal }) => Boolean(emailPrincipal))
+                      .map(({ emailPrincipal, nombres, apellidos }) => ({
+                        email: emailPrincipal!.toLowerCase(),
+                        name: [nombres, apellidos].filter(Boolean).join(" "),
+                        source: "Usuario registrado"
+                      })),
+                    ...historicCohostEmails.map(({ email }) => ({
+                      email: email.toLowerCase(),
+                      name: email.toLowerCase(),
+                      source: "Cohost anterior"
+                    }))
                   ]}
                   verificationByEmail={verificationByEmail}
                   seriesInfo={{
                     titulo: request.titulo,
                     modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
                     encuentros: meetings.length,
-                    siguientes: manageableMeetings.length,
+                    siguientes: manageableMeetings.length
                   }}
                   programPeopleCount={programRecipients.length}
                   hasManageableMeetings={manageableMeetings.length > 0}
@@ -419,33 +512,92 @@ export default async function ReunionDetailPage({
             )
           },
           {
-            id: "archivos", label: "Archivos", content: (
+            id: "archivos",
+            label: "Archivos",
+            content: (
               <>
-                <p className="meeting-section-description">Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada encuentro.</p>
-                {meetingViews.some(({ grabacionUrl, asistenciaUrl, driveFolderUrl }) => grabacionUrl || asistenciaUrl || driveFolderUrl) ? (
+                <p className="meeting-section-description">
+                  Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada
+                  encuentro.
+                </p>
+                {meetingViews.some(
+                  ({ grabacionUrl, asistenciaUrl, driveFolderUrl }) =>
+                    grabacionUrl || asistenciaUrl || driveFolderUrl
+                ) ? (
                   <ul className="meeting-files-list">
-                    {meetingViews.flatMap((meeting) => [
-                      ...(meeting.grabacionUrl ? [{ label: "Grabación", url: meeting.grabacionUrl, icon: <Video size={16} aria-hidden="true" /> }] : []),
-                      ...(meeting.asistenciaUrl ? [{ label: "Asistencia de participantes", url: meeting.asistenciaUrl, icon: <UsersRound size={16} aria-hidden="true" /> }] : []),
-                      ...(meeting.driveFolderUrl ? [{ label: "Carpeta de Drive", url: meeting.driveFolderUrl, icon: <FolderOpen size={16} aria-hidden="true" /> }] : [])
-                    ].map((file) => (
-                      <li key={`${meeting.id}-${file.label}`}>
-                        <span><strong>Encuentro {meeting.ordinal}</strong><small>{meeting.fechaLegible}</small></span>
-                        <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">{file.icon}{file.label}</a>
-                      </li>
-                    )))}
+                    {meetingViews.flatMap((meeting) =>
+                      [
+                        ...(meeting.grabacionUrl
+                          ? [
+                              {
+                                label: "Grabación",
+                                url: meeting.grabacionUrl,
+                                icon: <Video size={16} aria-hidden="true" />
+                              }
+                            ]
+                          : []),
+                        ...(meeting.asistenciaUrl
+                          ? [
+                              {
+                                label: "Asistencia de participantes",
+                                url: meeting.asistenciaUrl,
+                                icon: <UsersRound size={16} aria-hidden="true" />
+                              }
+                            ]
+                          : []),
+                        ...(meeting.driveFolderUrl
+                          ? [
+                              {
+                                label: "Carpeta de Drive",
+                                url: meeting.driveFolderUrl,
+                                icon: <FolderOpen size={16} aria-hidden="true" />
+                              }
+                            ]
+                          : [])
+                      ].map((file) => (
+                        <li key={`${meeting.id}-${file.label}`}>
+                          <span>
+                            <strong>Encuentro {meeting.ordinal}</strong>
+                            <small>{meeting.fechaLegible}</small>
+                          </span>
+                          <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">
+                            {file.icon}
+                            {file.label}
+                          </a>
+                        </li>
+                      ))
+                    )}
                   </ul>
                 ) : (
-                  <p className="meeting-section-empty">Todavía no hay archivos asociados a los encuentros de esta reunión.</p>
+                  <p className="meeting-section-empty">
+                    Todavía no hay archivos asociados a los encuentros de esta reunión.
+                  </p>
                 )}
-                {actor.rol === "ADMINISTRACION" ? <MeetAttendanceEmails meetings={meetingViews.map(({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }))} /> : null}
+                {actor.rol === "ADMINISTRACION" ? (
+                  <MeetAttendanceEmails
+                    meetings={meetingViews.map(
+                      ({ id, descripcion, fechaLegible, temporalidad, codigoMeet }) => ({
+                        id,
+                        descripcion,
+                        fechaLegible,
+                        temporalidad,
+                        codigoMeet
+                      })
+                    )}
+                  />
+                ) : null}
               </>
             )
           },
           {
-            id: "actividad", label: "Actividad", content: (
+            id: "actividad",
+            label: "Actividad",
+            content: (
               <>
-                <p className="meeting-section-description">Estado actual de las integraciones y sus incidencias. Esta sección no es un historial completo de cambios.</p>
+                <p className="meeting-section-description">
+                  Estado actual de las integraciones y sus incidencias. Esta sección no es un historial
+                  completo de cambios.
+                </p>
                 <MeetingIntegrationProblems
                   problems={integrationProblems}
                   canRepair={actor.rol === "ADMINISTRACION"}
@@ -455,23 +607,20 @@ export default async function ReunionDetailPage({
           }
         ]}
       />
-
     </div>
   );
 }
 
-function cohostLabel(account: Readonly<{
-  email: string;
-  user: Readonly<{ nombres: string; apellidos: string | null }>;
-}>): string {
-  const name = [account.user.nombres, account.user.apellidos].filter(Boolean).join(" ").trim();
-  return name ? `${name} · ${account.email}` : account.email;
-}
-
 function requestStatusClass(status: string): string {
-  if (status === "CANCELADA") return "status-error";
-  if (status === "REQUIERE_REVISION") return "status-warning";
-  if (status === "PROVISIONADA") return "status-ok";
+  if (status === "CANCELADA") {
+    return "status-error";
+  }
+  if (status === "REQUIERE_REVISION") {
+    return "status-warning";
+  }
+  if (status === "PROVISIONADA") {
+    return "status-ok";
+  }
   return "status-neutral";
 }
 

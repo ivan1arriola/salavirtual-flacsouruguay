@@ -14,27 +14,46 @@ function leerArgumentos(argv: readonly string[]) {
   let apply = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--apply") apply = true;
-    else if (a === "--desde") desde = argv[++i] ?? null;
-    else if (a === "--hasta") hasta = argv[++i] ?? null;
-    else if (a === "--anfitrion") { const v = argv[++i]; if (v) anfitrionIds.push(v); }
-    else throw new Error(`Argumento desconocido: ${a}`);
+    if (a === "--apply") {
+      apply = true;
+    } else if (a === "--desde") {
+      desde = argv[++i] ?? null;
+    } else if (a === "--hasta") {
+      hasta = argv[++i] ?? null;
+    } else if (a === "--anfitrion") {
+      const v = argv[++i];
+      if (v) {
+        anfitrionIds.push(v);
+      }
+    } else {
+      throw new Error(`Argumento desconocido: ${a}`);
+    }
   }
-  if (!desde || !hasta) throw new Error("Indicar --desde YYYY-MM-DD y --hasta YYYY-MM-DD (el periodo es explícito).");
+  if (!desde || !hasta) {
+    throw new Error("Indicar --desde YYYY-MM-DD y --hasta YYYY-MM-DD (el periodo es explícito).");
+  }
   return { anfitrionIds, desde, hasta, apply };
 }
 
 async function main(): Promise<number> {
   const { anfitrionIds, desde, hasta, apply } = leerArgumentos(process.argv.slice(2));
   // El script lo ejecuta quien administra el servidor: actúa como administración.
-  const resumen = await solicitarRecuperacionZoom({ id: null, rol: "ADMINISTRACION" }, { anfitrionIds, desde, hasta, dryRun: !apply });
+  const resumen = await solicitarRecuperacionZoom(
+    { id: null, rol: "ADMINISTRACION" },
+    { anfitrionIds, desde, hasta, dryRun: !apply }
+  );
   console.log(JSON.stringify(resumen, null, 2));
-  if (resumen.tipo === "DRY_RUN") console.log("Dry-run: no se escribió nada. Revisar cantidad y fechas y volver a ejecutar con --apply.");
+  if (resumen.tipo === "DRY_RUN") {
+    console.log("Dry-run: no se escribió nada. Revisar cantidad y fechas y volver a ejecutar con --apply.");
+  }
   return resumen.tipo === "DRY_RUN" || resumen.tipo === "ENCOLADA" ? 0 : 1;
 }
 
 main()
-  .then(async (codigo) => { await db.$disconnect(); process.exit(codigo); })
+  .then(async (codigo) => {
+    await db.$disconnect();
+    process.exit(codigo);
+  })
   .catch(async (error: unknown) => {
     console.error(error instanceof Error ? error.message : "fallo desconocido");
     await db.$disconnect().catch(() => undefined);

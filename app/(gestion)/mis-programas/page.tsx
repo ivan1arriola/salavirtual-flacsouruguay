@@ -16,13 +16,19 @@ export default async function MisProgramasPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ estado?: string }> }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo) redirect("/acceso");
-  if (!puedeGestionarProgramasPropios(actor)) redirect("/");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
+  if (!puedeGestionarProgramasPropios(actor)) {
+    redirect("/");
+  }
 
   const [user, programs] = await Promise.all([
     db.usuario.findUnique({
@@ -44,7 +50,9 @@ export default async function MisProgramasPage({
       select: { id: true, nombre: true }
     })
   ]);
-  if (!user) redirect("/acceso");
+  if (!user) {
+    redirect("/acceso");
+  }
   const { estado } = await searchParams;
 
   return (
@@ -58,7 +66,9 @@ export default async function MisProgramasPage({
         <BookOpen size={28} color="var(--brand)" aria-hidden="true" />
       </header>
       {estado && messages[estado] ? (
-        <p className="form-notice" role="status">{messages[estado]}</p>
+        <p className="form-notice" role="status">
+          {messages[estado]}
+        </p>
       ) : null}
       <TeacherProgramsForm
         programs={programs.map(({ id, nombre }) => ({ id, name: nombre }))}

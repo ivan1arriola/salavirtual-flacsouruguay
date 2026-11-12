@@ -6,7 +6,9 @@ import { TeacherDashboard } from "@/src/components/dashboard/teacher/teacher-das
 
 export default async function HomePage() {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
 
   if (session.user.role === "ASISTENTE_TECNICO") {
     return <AssistantDashboard user={session.user} />;

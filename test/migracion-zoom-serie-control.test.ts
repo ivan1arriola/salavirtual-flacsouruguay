@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const control = readFileSync(new URL("../src/components/migracion-zoom-serie-control.tsx", import.meta.url), "utf8");
-const pagina = readFileSync(new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url), "utf8");
+const control = readFileSync(
+  new URL("../src/components/migracion-zoom-serie-control.tsx", import.meta.url),
+  "utf8"
+);
+const pagina = readFileSync(
+  new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url),
+  "utf8"
+);
 
 describe("pantalla de migración por serie", () => {
   it("aplica por serie contra la ruta de series y limita la selección a 5", () => {

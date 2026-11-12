@@ -9,7 +9,7 @@ type MeetIntegrationStatusProps = Readonly<{
 export function MeetIntegrationStatus({
   status,
   hasMeet = false,
-  hideSettingsWarning = false,
+  hideSettingsWarning = false
 }: MeetIntegrationStatusProps) {
   if (status === "PENDIENTE") {
     return (
@@ -20,7 +20,9 @@ export function MeetIntegrationStatus({
   }
 
   if (status === "ERROR" && hasMeet) {
-    if (hideSettingsWarning) return null;
+    if (hideSettingsWarning) {
+      return null;
+    }
     return (
       <span className="status status-warning">
         <AlertTriangle size={14} aria-hidden="true" /> Configuración de Meet pendiente
@@ -44,8 +46,8 @@ export function MeetPendingNotice() {
     <div className="integration-notice" role="status">
       <Clock3 size={19} aria-hidden="true" />
       <p>
-        <strong>Las salas asignadas son reservas internas.</strong>{" "}
-        “Meet pendiente” indica que todavía no existe código ni enlace de acceso.
+        <strong>Las salas asignadas son reservas internas.</strong> “Meet pendiente” indica que todavía no
+        existe código ni enlace de acceso.
       </p>
     </div>
   );
