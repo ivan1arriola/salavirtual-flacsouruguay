@@ -21,8 +21,7 @@ export default async function AsistenciaTecnicaPage({
 
   const { estado = "todas", q = "" } = await searchParams;
   const now = new Date();
-  const meetings = await db.instanciaSala.findMany(
-    db.instanciaSala.findMany({
+  const meetings = await db.instanciaSala.findMany({
       where: {
         requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: now },
@@ -81,8 +80,7 @@ export default async function AsistenciaTecnicaPage({
           include: { proveedor: true, cuentaProveedor: true }
         }
       }
-    }),
-  );
+  });
 
   const rows = meetings
     .map((meeting) => {
