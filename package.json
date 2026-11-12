@@ -55,7 +55,13 @@
     "deploy": "bash scripts/deploy-ec2.sh",
     "deploy:quick": "bash scripts/deploy-ec2.sh --skip-ci",
     "deploy:status": "bash scripts/deploy-ec2.sh --status",
-    "deploy:rollback": "bash scripts/deploy-ec2.sh --rollback"
+    "deploy:rollback": "bash scripts/deploy-ec2.sh --rollback",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "deadcode": "knip",
+    "architecture": "depcruise src app --config .dependency-cruiser.cjs --output-type err"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1164.0",
@@ -81,7 +87,15 @@
     "prisma": "^6.16.3",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.4.5",
+    "typescript-eslint": "^8.46.4",
+    "eslint-plugin-sonarjs": "^3.0.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "prettier": "^3.6.2",
+    "knip": "^5.68.0",
+    "dependency-cruiser": "^17.3.2"
   },
   "overrides": {
     "deepmerge-ts": "8.0.2",
