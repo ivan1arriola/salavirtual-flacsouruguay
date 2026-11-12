@@ -28,6 +28,7 @@
 ### Task 1: Inventario y eliminación segura de fachadas
 
 **Files:**
+
 - Modify: fachadas bajo `src/components/assistant-*.tsx`, `src/components/meeting-*.tsx`, `src/components/series-management.tsx`
 - Modify: consumidores restantes identificados por `rg`
 - Test: `test/presentation-layer-boundaries.test.ts`
@@ -39,6 +40,7 @@
 ### Task 2: Reglas finales de arquitectura
 
 **Files:**
+
 - Modify: `test/architecture-boundaries.test.ts`
 - Modify: `test/functional-architecture.test.ts`
 - Modify: `docs/arquitectura.md`

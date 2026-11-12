@@ -12,19 +12,20 @@ describe("OAuth Google: cerrar la sesión en una solicitud anterior al signIn", 
     order.push(`logout:${opts.redirect}`);
   });
 
-  const iniciarSesion = vi.fn(async (
-    provider: "google",
-    options: { redirectTo: "/" },
-    hint?: { login_hint: string }
-  ) => {
-    order.push(`login:${provider}:${options.redirectTo}:${hint?.login_hint ?? ""}`);
-  });
+  const iniciarSesion = vi.fn(
+    async (provider: "google", options: { redirectTo: "/" }, hint?: { login_hint: string }) => {
+      order.push(`login:${provider}:${options.redirectTo}:${hint?.login_hint ?? ""}`);
+    }
+  );
 
   it("espera la invalidación de la cookie antes de iniciar Google", async () => {
     let terminarLogout!: () => void;
-    const detenerLogout = vi.fn(() => new Promise<void>(resolve => {
-      terminarLogout = resolve;
-    }));
+    const detenerLogout = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          terminarLogout = resolve;
+        })
+    );
     const intento = iniciarGoogleConSesionLimpia(detenerLogout, iniciarSesion);
     expect(detenerLogout).toHaveBeenCalledWith({ redirect: false });
     expect(iniciarSesion).not.toHaveBeenCalled();
@@ -47,9 +48,11 @@ describe("OAuth Google: cerrar la sesión en una solicitud anterior al signIn", 
 
   it("no intenta Google si el cierre de sesión falla", async () => {
     iniciarSesion.mockClear();
-    await expect(iniciarGoogleConSesionLimpia(async () => {
-      throw new Error("No se pudo cerrar sesión");
-    }, iniciarSesion)).rejects.toThrow("No se pudo cerrar sesión");
+    await expect(
+      iniciarGoogleConSesionLimpia(async () => {
+        throw new Error("No se pudo cerrar sesión");
+      }, iniciarSesion)
+    ).rejects.toThrow("No se pudo cerrar sesión");
     expect(iniciarSesion).not.toHaveBeenCalled();
   });
 });

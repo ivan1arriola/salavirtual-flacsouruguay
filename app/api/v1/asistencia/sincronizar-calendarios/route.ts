@@ -3,11 +3,11 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import {
   hayErroresSincronizacionCalendarioAsistente,
-  reconciliarCalendariosAsistentes,
+  reconciliarCalendariosAsistentes
 } from "@/src/modules/asistencia/calendario-asistente.service";
 
 export const runtime = "nodejs";
@@ -23,14 +23,17 @@ export async function GET(request: Request) {
     db,
     descifrar: descifrarConfiguracion,
     publicarEvento: publicarEventoCalendarioAsistente,
-    eliminarEvento: eliminarEventoCalendarioAsistente,
+    eliminarEvento: eliminarEventoCalendarioAsistente
   });
   const errores = results.filter(({ estado }) => estado === "ERROR");
 
-  return NextResponse.json({
-    procesadas: results.length,
-    sincronizadas: results.length - errores.length,
-    errores: errores.length,
-    results,
-  }, { status: hayErroresSincronizacionCalendarioAsistente(results) ? 502 : 200 });
+  return NextResponse.json(
+    {
+      procesadas: results.length,
+      sincronizadas: results.length - errores.length,
+      errores: errores.length,
+      results
+    },
+    { status: hayErroresSincronizacionCalendarioAsistente(results) ? 502 : 200 }
+  );
 }

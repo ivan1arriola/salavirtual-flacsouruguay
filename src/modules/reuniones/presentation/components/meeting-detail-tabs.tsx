@@ -22,11 +22,11 @@ const ICONS = {
  * Desktop arranges them in two independent masonry-like columns; on phones
  * CSS stacks them in reading order without a scrollable tab bar.
  */
-export function MeetingDetailTabs({
-  tabs
-}: Readonly<{ tabs: readonly MeetingDetailSection[] }>) {
+export function MeetingDetailTabs({ tabs }: Readonly<{ tabs: readonly MeetingDetailSection[] }>) {
   function renderSection(section: MeetingDetailSection | undefined, index: number) {
-    if (!section) return null;
+    if (!section) {
+      return null;
+    }
     const Icon = ICONS[section.id];
     const numberedLabel = String(index + 1).padStart(2, "0");
     return (
@@ -38,29 +38,41 @@ export function MeetingDetailTabs({
         tabIndex={-1}
       >
         <div className="meeting-mosaic-panel-header">
-          <span className="meeting-mosaic-panel-icon"><Icon size={18} aria-hidden="true" /></span>
+          <span className="meeting-mosaic-panel-icon">
+            <Icon size={18} aria-hidden="true" />
+          </span>
           <div>
             <span className="meeting-mosaic-panel-counter">Sección {numberedLabel} / 05</span>
-            {section.id === "encuentros"
-              ? <span className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-encuentros">Cronograma</span>
-              : section.id === "general"
-                ? <strong className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-general">{section.label}</strong>
-                : <h2 id={`meeting-mosaic-heading-${section.id}`}>{section.label}</h2>}
+            {section.id === "encuentros" ? (
+              <span className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-encuentros">
+                Cronograma
+              </span>
+            ) : section.id === "general" ? (
+              <strong className="meeting-mosaic-panel-kicker" id="meeting-mosaic-heading-general">
+                {section.label}
+              </strong>
+            ) : (
+              <h2 id={`meeting-mosaic-heading-${section.id}`}>{section.label}</h2>
+            )}
           </div>
-          <a href="#secciones-reunion" className="meeting-mosaic-panel-back" aria-label="Volver al índice de secciones">Índice ↑</a>
+          <a
+            href="#secciones-reunion"
+            className="meeting-mosaic-panel-back"
+            aria-label="Volver al índice de secciones"
+          >
+            Índice ↑
+          </a>
         </div>
-        <div className="meeting-mosaic-panel-content">
-          {section.content}
-        </div>
+        <div className="meeting-mosaic-panel-content">{section.content}</div>
       </section>
     );
   }
 
-  const general = tabs.find(tab => tab.id === "general");
-  const encuentros = tabs.find(tab => tab.id === "encuentros");
-  const personas = tabs.find(tab => tab.id === "personas");
-  const archivos = tabs.find(tab => tab.id === "archivos");
-  const actividad = tabs.find(tab => tab.id === "actividad");
+  const general = tabs.find((tab) => tab.id === "general");
+  const encuentros = tabs.find((tab) => tab.id === "encuentros");
+  const personas = tabs.find((tab) => tab.id === "personas");
+  const archivos = tabs.find((tab) => tab.id === "archivos");
+  const actividad = tabs.find((tab) => tab.id === "actividad");
 
   return (
     <div className="meeting-tabs-workspace meeting-mosaic-workspace">
@@ -79,7 +91,9 @@ export function MeetingDetailTabs({
               key={tab.id}
               onClick={(event) => {
                 const parent = event.currentTarget.closest("details");
-                if (parent) parent.open = false;
+                if (parent) {
+                  parent.open = false;
+                }
               }}
             >
               <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -92,9 +106,7 @@ export function MeetingDetailTabs({
       <div className="meeting-mosaic-layout">
         {renderSection(general, 0)}
         <div className="meeting-mosaic-columns">
-          <div className="meeting-mosaic-primary">
-            {renderSection(encuentros, 1)}
-          </div>
+          <div className="meeting-mosaic-primary">{renderSection(encuentros, 1)}</div>
           <div className="meeting-mosaic-secondary">
             {renderSection(personas, 2)}
             {renderSection(archivos, 3)}

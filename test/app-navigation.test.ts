@@ -23,20 +23,21 @@ describe("role based application navigation", () => {
       "Centro de operaciones",
       "Configuración"
     ]);
-    expect(navigation.groups.find(({ label }) => label === "Recursos")?.items.map(({ label }) => label)).toEqual([
-      "Grabaciones y archivos",
-      "Personas y programas"
-    ]);
+    expect(
+      navigation.groups.find(({ label }) => label === "Recursos")?.items.map(({ label }) => label)
+    ).toEqual(["Grabaciones y archivos", "Personas y programas"]);
     expect(navigation.mobilePrimary.map(({ label }) => label)).toEqual([
       "Inicio",
       "Agenda",
       "Reuniones",
       "Monitoreo"
     ]);
-    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href))
-      .not.toContain("/reuniones/buscar-meet");
-    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href))
-      .not.toContain("/reuniones/duplicados");
+    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href)).not.toContain(
+      "/reuniones/buscar-meet"
+    );
+    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href)).not.toContain(
+      "/reuniones/duplicados"
+    );
   });
 
   it("exposes the complete teacher workflow through the main and more menus", () => {

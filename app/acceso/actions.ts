@@ -18,4 +18,3 @@ export async function iniciarSesionLocal(formData: FormData): Promise<void> {
     throw error;
   }
 }
-

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  actualizarReunionZoomHttp,
   crearReunionZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
@@ -87,8 +86,8 @@ describe("Zoom Client", () => {
         id: 98765432100,
         join_url: "https://flacso.zoom.us/j/98765432100?pwd=xyz",
         start_url: "https://flacso.zoom.us/s/98765432100?zak=abc",
-        password: "xyz",
-      }),
+        password: "xyz"
+      })
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -98,7 +97,7 @@ describe("Zoom Client", () => {
     expect(result.startUrl).toContain("zak=abc");
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.zoom.us/v2/meetings/98765432100",
-      expect.objectContaining({ headers: { Authorization: "Bearer bearer-token" } }),
+      expect.objectContaining({ headers: { Authorization: "Bearer bearer-token" } })
     );
   });
 });

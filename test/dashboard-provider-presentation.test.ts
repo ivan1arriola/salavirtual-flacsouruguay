@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getMeetingProviderPresentation
-} from "../src/modules/dashboard/meeting-provider.presentation";
+import { getMeetingProviderPresentation } from "../src/modules/dashboard/meeting-provider.presentation";
 
 describe("presentación del proveedor de reuniones", () => {
   it("nombra Zoom y no presenta cohosts para una reunión Zoom", () => {

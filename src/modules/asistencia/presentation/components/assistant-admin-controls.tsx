@@ -35,13 +35,15 @@ export function AssistantAdminControls(props: Props) {
     }>
   ) {
     if (
-      kind === "cease"
-      && body.cesadoHastaProximoInicioSesion === true
-      && props.asignacionesFuturas > 0
-      && !window.confirm(
+      kind === "cease" &&
+      body.cesadoHastaProximoInicioSesion === true &&
+      props.asignacionesFuturas > 0 &&
+      !window.confirm(
         `Este asistente tiene ${props.asignacionesFuturas} asignación(es) futura(s). El cese no las cancela. ¿Continuar?`
       )
-    ) return;
+    ) {
+      return;
+    }
 
     setSaving(kind);
     setMessage("");
@@ -54,7 +56,7 @@ export function AssistantAdminControls(props: Props) {
           body: JSON.stringify(body)
         }
       );
-      const result = await response.json().catch(() => ({})) as { error?: string };
+      const result = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         setMessage(result.error ?? "No se pudo actualizar el asistente.");
         return;
@@ -122,13 +124,23 @@ export function AssistantAdminControls(props: Props) {
             className="secondary-action"
             disabled={saving !== null || !props.usuarioActivo}
             type="button"
-            onClick={() => update("availability", {
-              disponibleGeneral: !props.disponibleGeneral
-            })}
+            onClick={() =>
+              update("availability", {
+                disponibleGeneral: !props.disponibleGeneral
+              })
+            }
           >
-            {props.disponibleGeneral
-              ? <><PauseCircle size={17} />Pausar asignaciones</>
-              : <><PlayCircle size={17} />Habilitar asignaciones</>}
+            {props.disponibleGeneral ? (
+              <>
+                <PauseCircle size={17} />
+                Pausar asignaciones
+              </>
+            ) : (
+              <>
+                <PlayCircle size={17} />
+                Habilitar asignaciones
+              </>
+            )}
           </button>
         </div>
 
@@ -145,18 +157,32 @@ export function AssistantAdminControls(props: Props) {
             className={props.cesadoHastaProximoInicioSesion ? "primary-action" : "secondary-action"}
             disabled={saving !== null || !props.usuarioActivo}
             type="button"
-            onClick={() => update("cease", {
-              cesadoHastaProximoInicioSesion: !props.cesadoHastaProximoInicioSesion
-            })}
+            onClick={() =>
+              update("cease", {
+                cesadoHastaProximoInicioSesion: !props.cesadoHastaProximoInicioSesion
+              })
+            }
           >
-            {props.cesadoHastaProximoInicioSesion
-              ? <><UserRoundCheck size={17} />Reactivar ahora</>
-              : <><UserRoundX size={17} />Cesar hasta próximo acceso</>}
+            {props.cesadoHastaProximoInicioSesion ? (
+              <>
+                <UserRoundCheck size={17} />
+                Reactivar ahora
+              </>
+            ) : (
+              <>
+                <UserRoundX size={17} />
+                Cesar hasta próximo acceso
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {message ? <p className="assistant-admin-control-message" role="status">{message}</p> : null}
+      {message ? (
+        <p className="assistant-admin-control-message" role="status">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }

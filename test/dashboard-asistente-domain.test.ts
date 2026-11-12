@@ -19,10 +19,12 @@ describe("dashboard funcional del asistente", () => {
 
   it("cuenta solo postulaciones interesadas en instancias todavía abiertas", () => {
     const abiertas = new Set(["abierta-interesada", "abierta-retirada"]);
-    expect(contarPostulacionesAbiertas(abiertas, [
-      { instanciaSalaId: "abierta-interesada", estado: "ME_INTERESA" },
-      { instanciaSalaId: "abierta-retirada", estado: "RETIRADO" },
-      { instanciaSalaId: "ya-asignada", estado: "ME_INTERESA" }
-    ])).toBe(1);
+    expect(
+      contarPostulacionesAbiertas(abiertas, [
+        { instanciaSalaId: "abierta-interesada", estado: "ME_INTERESA" },
+        { instanciaSalaId: "abierta-retirada", estado: "RETIRADO" },
+        { instanciaSalaId: "ya-asignada", estado: "ME_INTERESA" }
+      ])
+    ).toBe(1);
   });
 });

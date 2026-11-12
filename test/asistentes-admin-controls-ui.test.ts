@@ -8,12 +8,11 @@ function source(relativePath: string): string {
 
 describe("controles administrativos de asistentes de monitoreo", () => {
   it("expone un endpoint administrativo para el estado operativo", () => {
-    const path = join(
-      process.cwd(),
-      "app/api/v1/asistencia/asistentes/[usuarioId]/estado/route.ts"
-    );
+    const path = join(process.cwd(), "app/api/v1/asistencia/asistentes/[usuarioId]/estado/route.ts");
     expect(existsSync(path)).toBe(true);
-    if (!existsSync(path)) return;
+    if (!existsSync(path)) {
+      return;
+    }
 
     const route = readFileSync(path, "utf8");
     expect(route).toContain("export async function PATCH");
@@ -22,12 +21,8 @@ describe("controles administrativos de asistentes de monitoreo", () => {
   });
 
   it("permite pausar asignaciones y cesar o reactivar desde el detalle", () => {
-    const controls = source(
-      "src/modules/asistencia/presentation/components/assistant-admin-controls.tsx"
-    );
-    const page = source(
-      "src/bootstrap/ui/asistencia/asistente-detail-page.server.tsx"
-    );
+    const controls = source("src/modules/asistencia/presentation/components/assistant-admin-controls.tsx");
+    const page = source("src/bootstrap/ui/asistencia/asistente-detail-page.server.tsx");
 
     expect(controls).toContain("Pausar asignaciones");
     expect(controls).toContain("Habilitar asignaciones");
@@ -38,9 +33,7 @@ describe("controles administrativos de asistentes de monitoreo", () => {
   });
 
   it("agrega búsqueda y filtros de estado al listado administrativo", () => {
-    const page = source(
-      "src/bootstrap/ui/asistencia/asistentes-page.server.tsx"
-    );
+    const page = source("src/bootstrap/ui/asistencia/asistentes-page.server.tsx");
 
     expect(page).toContain('placeholder="Buscar por nombre o correo"');
     expect(page).toContain('<option value="operativos">Operativos</option>');

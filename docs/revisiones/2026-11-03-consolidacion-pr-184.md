@@ -4,18 +4,18 @@ Fecha: 2026-11-03. Destino: `feat/reemplazo-futuro-serie-zoom-20261103`.
 
 La integración debe hacerse en este PR y no directamente en `main`. **No cerrar un PR de origen como incorporado hasta comprobar que su contenido efectivo está en #184 y que el CI lo acepta.**
 
-| PR | Tema | Estado en #184 | Acción |
-| --- | --- | --- | --- |
-| #183 | Detección de IDs/enlaces Zoom distintos | **Incorporado en código** | Se copiaron los dos archivos modificados, incluidos alerta y acceso a corrección para Administración. Validar CI. |
-| #179 | ID de Zoom en detalle | **Ya presente en el código de partida** | Comprobar la regresión; no sobreescribir rediseño actual con componente anterior. |
-| #173 | Proveedor operativo Zoom | **Pendiente de revisión diferencial** | Rama 75 commits detrás de #184 y 86 archivos modificados; no sustituir los módulos de producción actuales con versiones antiguas sin reconciliación. |
-| #172 | Iconos y PWA | **Pendiente de integrar** | Incluye tres imágenes PNG binarias; requiere integrar blobs y comprobar contrato PWA en build y móviles. |
-| #165 | Actualización actions/cache 4 a 6 | **Incorporado en código** | Se actualizó `.github/workflows/check-build.yml` a `actions/cache@v6`; validación CI pendiente. |
-| #166 | Actualización en lote de dependencias | **Pendiente de integrar** | Resolver conflictos en package.json/lock, reconstruir lock coherente y probar. |
-| #167 | @prisma/client 7 | **Pendiente de integrar** | Debe coordinarse con #169 (prisma 7) y sus cambios incompatibles de configuración/generación. |
-| #168 | TypeScript 7 | **Pendiente de integrar** | Revisar compatibilidad con Next.js, tipos, lint y Vitest antes de fijar versión. |
-| #169 | Prisma 7 | **Pendiente de integrar** | Integrar conjuntamente con #167, validar schema, cliente y pruebas PostgreSQL. |
-| #170 | Vitest 5 | **Pendiente de integrar** | Revalidar configuración, coverage y tests. |
+| PR   | Tema                                    | Estado en #184                          | Acción                                                                                                                                               |
+| ---- | --------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #183 | Detección de IDs/enlaces Zoom distintos | **Incorporado en código**               | Se copiaron los dos archivos modificados, incluidos alerta y acceso a corrección para Administración. Validar CI.                                    |
+| #179 | ID de Zoom en detalle                   | **Ya presente en el código de partida** | Comprobar la regresión; no sobreescribir rediseño actual con componente anterior.                                                                    |
+| #173 | Proveedor operativo Zoom                | **Pendiente de revisión diferencial**   | Rama 75 commits detrás de #184 y 86 archivos modificados; no sustituir los módulos de producción actuales con versiones antiguas sin reconciliación. |
+| #172 | Iconos y PWA                            | **Pendiente de integrar**               | Incluye tres imágenes PNG binarias; requiere integrar blobs y comprobar contrato PWA en build y móviles.                                             |
+| #165 | Actualización actions/cache 4 a 6       | **Incorporado en código**               | Se actualizó `.github/workflows/check-build.yml` a `actions/cache@v6`; validación CI pendiente.                                                      |
+| #166 | Actualización en lote de dependencias   | **Pendiente de integrar**               | Resolver conflictos en package.json/lock, reconstruir lock coherente y probar.                                                                       |
+| #167 | @prisma/client 7                        | **Pendiente de integrar**               | Debe coordinarse con #169 (prisma 7) y sus cambios incompatibles de configuración/generación.                                                        |
+| #168 | TypeScript 7                            | **Pendiente de integrar**               | Revisar compatibilidad con Next.js, tipos, lint y Vitest antes de fijar versión.                                                                     |
+| #169 | Prisma 7                                | **Pendiente de integrar**               | Integrar conjuntamente con #167, validar schema, cliente y pruebas PostgreSQL.                                                                       |
+| #170 | Vitest 5                                | **Pendiente de integrar**               | Revalidar configuración, coverage y tests.                                                                                                           |
 
 ## Advertencias importantes
 

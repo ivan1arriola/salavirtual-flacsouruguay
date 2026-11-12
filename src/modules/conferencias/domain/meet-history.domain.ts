@@ -5,7 +5,7 @@ export const MEET_HISTORY_ACTIONS = [
   "MEET_MIGRADO_A_ESPACIO_PREVIEW",
   "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW",
   "ENLACE_MEET_ASIGNADO_A_SERIE",
-  "ENLACE_MEET_UNIFICADO_EN_SERIE",
+  "ENLACE_MEET_UNIFICADO_EN_SERIE"
 ] as const;
 
 export type MeetAudit = Readonly<{
@@ -35,49 +35,58 @@ export type MeetEvidence = Readonly<{
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : {};
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((x): x is string => typeof x === "string")
-    : [];
+  return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
 }
 
 function codes(value: Record<string, unknown>): string[] {
-  return [...new Set([
-    ...meetLinks(value.codigoReunion ?? value.codigoMeet, value.joinUrl ?? value.meetUrl).map((x) => x.code),
-    ...strings(value.codigosMeet).flatMap((x) => {
-      const link = normalizeMeetLink(x);
-      return link ? [link.code] : [];
-    }),
-  ])];
+  return [
+    ...new Set([
+      ...meetLinks(value.codigoReunion ?? value.codigoMeet, value.joinUrl ?? value.meetUrl).map(
+        (x) => x.code
+      ),
+      ...strings(value.codigosMeet).flatMap((x) => {
+        const link = normalizeMeetLink(x);
+        return link ? [link.code] : [];
+      })
+    ])
+  ];
 }
 
 export function readMeetEvidence(audit: MeetAudit): MeetEvidence | null {
-  if (!(MEET_HISTORY_ACTIONS as readonly string[]).includes(audit.accion)) return null;
+  if (!(MEET_HISTORY_ACTIONS as readonly string[]).includes(audit.accion)) {
+    return null;
+  }
   const before = record(audit.valorAnterior);
   const after = record(audit.valorNuevo);
   const target = evidenceTarget(audit, before, after);
-  if (!target) return null;
+  if (!target) {
+    return null;
+  }
   const change: MeetChange = {
     auditId: audit.id,
     at: audit.createdAt,
     before: codes(before),
     after: codes(after),
     origin: typeof after.origen === "string" ? after.origen : audit.accion,
-    reason: typeof after.motivo === "string"
-      ? after.motivo
-      : audit.accion.includes("MIGRADO")
-        ? "Migración a un espacio Meet Preview"
-        : audit.accion === "ENLACE_MEET_ASIGNADO_A_SERIE"
-          ? "Asignación de enlace a la serie"
-          : audit.accion === "ENLACE_MEET_UNIFICADO_EN_SERIE"
-            ? "Unificación de enlaces de la serie"
-            : null,
+    reason:
+      typeof after.motivo === "string"
+        ? after.motivo
+        : audit.accion.includes("MIGRADO")
+          ? "Migración a un espacio Meet Preview"
+          : audit.accion === "ENLACE_MEET_ASIGNADO_A_SERIE"
+            ? "Asignación de enlace a la serie"
+            : audit.accion === "ENLACE_MEET_UNIFICADO_EN_SERIE"
+              ? "Unificación de enlaces de la serie"
+              : null
   };
-  if (!change.before.length && !change.after.length) return null;
+  if (!change.before.length && !change.after.length) {
+    return null;
+  }
   return {
     meetingIds: [...new Set(target.meetingIds)],
     seriesId: target.seriesId,
@@ -99,23 +108,19 @@ function evidenceTarget(
       return audit.entidadTipo === "EventoProveedor"
         ? {
             meetingIds: typeof after.instanciaSalaId === "string" ? [after.instanciaSalaId] : [],
-            seriesId: null,
+            seriesId: null
           }
         : null;
     case "MEET_MIGRADO_A_ESPACIO_PREVIEW":
-      return audit.entidadTipo === "InstanciaSala"
-        ? { meetingIds: [audit.entidadId], seriesId: null }
-        : null;
+      return audit.entidadTipo === "InstanciaSala" ? { meetingIds: [audit.entidadId], seriesId: null } : null;
     case "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW":
       return audit.entidadTipo === "InstanciaSala"
         ? {
             meetingIds: strings(before.encuentros).filter((id) => strings(after.encuentros).includes(id)),
-            seriesId: null,
+            seriesId: null
           }
         : null;
     default:
-      return audit.entidadTipo === "SolicitudSala"
-        ? { meetingIds: [], seriesId: audit.entidadId }
-        : null;
+      return audit.entidadTipo === "SolicitudSala" ? { meetingIds: [], seriesId: audit.entidadId } : null;
   }
 }

@@ -16,17 +16,14 @@ import {
   normalizeMeetLink,
   registrarVerificacionCohosts,
   requiereAtencionIntegracionMeet,
-  type ConferenceProvisionRequest,
+  type ConferenceProvisionRequest
 } from "../src/modules/conferencias/domain";
 
 describe("conferencias/domain", () => {
   describe("cohosts.domain", () => {
     it("normaliza correos y elimina duplicados y espacios", () => {
       const emails = [" Docente@Flacso.edu.uy ", "docente@flacso.edu.uy", "asistente@flacso.edu.uy"];
-      expect(normalizeCohostEmails(emails)).toEqual([
-        "docente@flacso.edu.uy",
-        "asistente@flacso.edu.uy",
-      ]);
+      expect(normalizeCohostEmails(emails)).toEqual(["docente@flacso.edu.uy", "asistente@flacso.edu.uy"]);
     });
 
     it("provee guia de cuentas segun el dominio de los correos", () => {
@@ -47,25 +44,33 @@ describe("conferencias/domain", () => {
         "2026-09-19T15:00:00.000Z"
       );
 
-      expect(cohostsConfirmados(verified, "abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
-      expect(cohostsConfirmados(verified, "otro-codigo", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(false);
+      expect(
+        cohostsConfirmados(verified, "abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])
+      ).toBe(true);
+      expect(
+        cohostsConfirmados(verified, "otro-codigo", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])
+      ).toBe(false);
 
       const detalle = detalleCohostsVerificados(verified, "abc-defg-hij", "sala01@flacso.edu.uy", [
         "docente@flacso.edu.uy",
-        "otro@flacso.edu.uy",
+        "otro@flacso.edu.uy"
       ]);
       expect(detalle.confirmados).toBe(false);
       expect(detalle.emailsConfirmados).toEqual(["docente@flacso.edu.uy"]);
       expect(detalle.emailsPendientes).toEqual(["otro@flacso.edu.uy"]);
 
       const invalidated = invalidarVerificacionCohosts(verified);
-      expect(cohostsConfirmados(invalidated, "abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(false);
+      expect(
+        cohostsConfirmados(invalidated, "abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])
+      ).toBe(false);
     });
 
     it("considera confirmada una reunion sin cohosts (desired.length === 0)", () => {
       expect(cohostsConfirmados({}, "abc-defg-hij", "sala01@flacso.edu.uy", [])).toBe(true);
       expect(cohostsConfirmados(null, "abc-defg-hij", "sala01@flacso.edu.uy", [])).toBe(true);
-      expect(detalleCohostsVerificados(null, "abc-defg-hij", "sala01@flacso.edu.uy", []).confirmados).toBe(true);
+      expect(detalleCohostsVerificados(null, "abc-defg-hij", "sala01@flacso.edu.uy", []).confirmados).toBe(
+        true
+      );
     });
 
     it("resuelve códigos de reunión con o sin guiones y urls completas", () => {
@@ -78,11 +83,19 @@ describe("conferencias/domain", () => {
       );
 
       // Código sin guiones
-      expect(cohostsConfirmados(verified, "abcdefghij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+      expect(
+        cohostsConfirmados(verified, "abcdefghij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])
+      ).toBe(true);
       // URL completa
-      expect(cohostsConfirmados(verified, "https://meet.google.com/abc-defg-hij", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+      expect(
+        cohostsConfirmados(verified, "https://meet.google.com/abc-defg-hij", "sala01@flacso.edu.uy", [
+          "docente@flacso.edu.uy"
+        ])
+      ).toBe(true);
       // Código en mayúsculas
-      expect(cohostsConfirmados(verified, "ABC-DEFG-HIJ", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])).toBe(true);
+      expect(
+        cohostsConfirmados(verified, "ABC-DEFG-HIJ", "sala01@flacso.edu.uy", ["docente@flacso.edu.uy"])
+      ).toBe(true);
     });
   });
 
@@ -91,7 +104,7 @@ describe("conferencias/domain", () => {
       const healthConErrorScopes = {
         estadoIntegracion: "ERROR" as const,
         joinUrl: "https://meet.google.com/abc-defg-hij",
-        errorIntegracion: "403: Insufficient authentication scopes for spaces.members",
+        errorIntegracion: "403: Insufficient authentication scopes for spaces.members"
       };
       expect(esErrorNoBloqueanteDeScopesMeet(healthConErrorScopes)).toBe(true);
       expect(estadoIntegracionEfectivo(healthConErrorScopes)).toBe("SINCRONIZADA");
@@ -100,7 +113,7 @@ describe("conferencias/domain", () => {
     it("requiere atencion si el error es bloqueante o no tiene meet", () => {
       const healthSinMeet = {
         estadoIntegracion: "ERROR" as const,
-        errorIntegracion: "Network timeout",
+        errorIntegracion: "Network timeout"
       };
       expect(esErrorNoBloqueanteDeScopesMeet(healthSinMeet)).toBe(false);
       expect(requiereAtencionIntegracionMeet(healthSinMeet)).toBe(true);
@@ -112,11 +125,11 @@ describe("conferencias/domain", () => {
     it("extrae y normaliza URLs y codigos de Google Meet", () => {
       expect(normalizeMeetLink("abc-defg-hij")).toEqual({
         code: "abc-defg-hij",
-        url: "https://meet.google.com/abc-defg-hij",
+        url: "https://meet.google.com/abc-defg-hij"
       });
       expect(normalizeMeetLink("https://meet.google.com/abc-defg-hij?authuser=1")).toEqual({
         code: "abc-defg-hij",
-        url: "https://meet.google.com/abc-defg-hij",
+        url: "https://meet.google.com/abc-defg-hij"
       });
       expect(normalizeMeetLink("https://zoom.us/j/123456")).toBeNull();
 
@@ -136,7 +149,7 @@ describe("conferencias/domain", () => {
       calendarId: "sala01@flacso.edu.uy",
       calendarEventId: "evt-posgrado-01",
       cohostEmails: ["docente@flacso.edu.uy"],
-      guestEmails: ["alumno@flacso.edu.uy"],
+      guestEmails: ["alumno@flacso.edu.uy"]
     };
 
     it("crearCalendarEvent genera payload con attendees unificados y formato ISO", () => {
@@ -145,7 +158,7 @@ describe("conferencias/domain", () => {
       expect(event.summary).toBe("Reunión de Posgrado");
       expect(event.attendees).toEqual([
         { email: "docente@flacso.edu.uy" },
-        { email: "alumno@flacso.edu.uy" },
+        { email: "alumno@flacso.edu.uy" }
       ]);
     });
 
@@ -159,7 +172,7 @@ describe("conferencias/domain", () => {
     it("extraerConferenceData obtiene conferenceData del objeto payload", () => {
       expect(extraerConferenceData(null)).toBeUndefined();
       expect(extraerConferenceData({ conferenceData: { conferenceId: "xyz" } })).toEqual({
-        conferenceId: "xyz",
+        conferenceId: "xyz"
       });
     });
 
@@ -167,13 +180,13 @@ describe("conferencias/domain", () => {
       const provisioned = extraerMeetProvisionado({
         id: "evt-1",
         hangoutLink: "https://meet.google.com/abc-defg-hij",
-        conferenceData: { conferenceId: "abc-defg-hij" },
+        conferenceData: { conferenceId: "abc-defg-hij" }
       });
       expect(provisioned).toEqual({
         externalEventId: "evt-1",
         codigoReunion: "abc-defg-hij",
         joinUrl: "https://meet.google.com/abc-defg-hij",
-        payload: expect.any(Object),
+        payload: expect.any(Object)
       });
     });
 
@@ -182,7 +195,7 @@ describe("conferencias/domain", () => {
         summary: request.titulo,
         description: request.descripcion,
         start: { dateTime: request.inicio.toISOString(), timeZone: request.timezone },
-        end: { dateTime: request.fin.toISOString(), timeZone: request.timezone },
+        end: { dateTime: request.fin.toISOString(), timeZone: request.timezone }
       };
       expect(eventoCalendarCoincideConSolicitud(payload, request)).toBe(true);
 
@@ -191,4 +204,3 @@ describe("conferencias/domain", () => {
     });
   });
 });
-

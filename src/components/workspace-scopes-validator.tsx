@@ -15,7 +15,7 @@ const SCOPE_LABELS = [
   ["Meet · lectura", "meetings.space.readonly", "https://www.googleapis.com/auth/meetings.space.readonly"],
   ["Meet · cohosts", "meetings.space.created", "https://www.googleapis.com/auth/meetings.space.created"],
   ["Gmail", "gmail.send", "https://www.googleapis.com/auth/gmail.send"],
-  ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"],
+  ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"]
 ] as const;
 
 export function WorkspaceScopesValidator() {
@@ -39,7 +39,10 @@ export function WorkspaceScopesValidator() {
   }
 
   return (
-    <section className="form-section workspace-config workspace-scopes-card" aria-labelledby="workspace-scopes-title">
+    <section
+      className="form-section workspace-config workspace-scopes-card"
+      aria-labelledby="workspace-scopes-title"
+    >
       <header className="form-section-title">
         <ShieldCheck size={22} aria-hidden="true" />
         <div>
@@ -51,19 +54,26 @@ export function WorkspaceScopesValidator() {
       {!result ? (
         <div className="workspace-scopes-overview">
           <div className="workspace-scope-chips" aria-label="Permisos requeridos">
-            {SCOPE_LABELS.map(([label, key]) => <span key={key}>{label}</span>)}
+            {SCOPE_LABELS.map(([label, key]) => (
+              <span key={key}>{label}</span>
+            ))}
           </div>
 
           <div className="workspace-preview-note">
             <Info size={17} aria-hidden="true" />
             <div>
               <strong>Cohosts por API</strong>
-              <span>El permiso “Meet · cohosts” requiere además que el proyecto esté habilitado en Google Workspace Developer Preview.</span>
+              <span>
+                El permiso “Meet · cohosts” requiere además que el proyecto esté habilitado en Google
+                Workspace Developer Preview.
+              </span>
             </div>
           </div>
 
           <details className="workspace-technical-details">
-            <summary><Code2 size={16} aria-hidden="true" /> Ver scopes OAuth</summary>
+            <summary>
+              <Code2 size={16} aria-hidden="true" /> Ver scopes OAuth
+            </summary>
             <div className="config-scopes workspace-scope-code-list">
               {SCOPE_LABELS.map(([, key, scope]) => (
                 <code key={key}>{scope}</code>
@@ -76,12 +86,20 @@ export function WorkspaceScopesValidator() {
           <div className={`workspace-validation-summary${result.ok ? " is-ok" : " is-warning"}`}>
             {result.ok ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}
             <div>
-              <strong>{okRooms}/{roomAccounts.length} cuentas sala correctas</strong>
-              <span>{missingScopes.length === 0 ? "Todos los permisos requeridos están autorizados." : `${missingScopes.length} autorizaciones requieren atención.`}</span>
+              <strong>
+                {okRooms}/{roomAccounts.length} cuentas sala correctas
+              </strong>
+              <span>
+                {missingScopes.length === 0
+                  ? "Todos los permisos requeridos están autorizados."
+                  : `${missingScopes.length} autorizaciones requieren atención.`}
+              </span>
             </div>
           </div>
 
-          {accounts.map((account) => <ScopeAccountDetails account={account} key={`${account.tipo}-${account.subject}`} />)}
+          {accounts.map((account) => (
+            <ScopeAccountDetails account={account} key={`${account.tipo}-${account.subject}`} />
+          ))}
         </div>
       )}
 
@@ -104,7 +122,13 @@ function ScopeAccountDetails({ account }: Readonly<{ account: WorkspaceScopeAcco
       <summary>
         <span>
           <strong>{account.subject}</strong>
-          <small>{account.tipo === "GENERAL" ? "Cuenta delegada" : account.activa ? "Sala activa" : "Sala inactiva"}</small>
+          <small>
+            {account.tipo === "GENERAL"
+              ? "Cuenta delegada"
+              : account.activa
+                ? "Sala activa"
+                : "Sala inactiva"}
+          </small>
         </span>
         <span className={`status status-${account.ok ? "ok" : "error"}`}>
           {account.ok ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}

@@ -14,23 +14,23 @@ describe("F9: el servicio real de asistencia distingue denegaciones", () => {
   } as unknown as AsistenciaRepositoryPort;
 
   it("impide que un docente asigne a un asistente (403)", async () => {
-    await expect(asignarAsistenteUseCase({ repo },
-      { id: "docente", rol: "DOCENTE", activo: true }, {}
-    )).rejects.toMatchObject({ status: 403 });
+    await expect(
+      asignarAsistenteUseCase({ repo }, { id: "docente", rol: "DOCENTE", activo: true }, {})
+    ).rejects.toMatchObject({ status: 403 });
   });
   it("impide que un docente desvincule asistencia (403)", async () => {
-    await expect(desvincularAsistenteUseCase({ repo },
-      { id: "docente", rol: "DOCENTE", activo: true }, {}
-    )).rejects.toMatchObject({ status: 403 });
+    await expect(
+      desvincularAsistenteUseCase({ repo }, { id: "docente", rol: "DOCENTE", activo: true }, {})
+    ).rejects.toMatchObject({ status: 403 });
   });
   it("impide que una cuenta desactivada se postule (403)", async () => {
-    await expect(actualizarPostulacionUseCase({ repo },
-      { id: "asistente", rol: "ASISTENTE_TECNICO", activo: false }, {}
-    )).rejects.toMatchObject({ status: 403 });
+    await expect(
+      actualizarPostulacionUseCase({ repo }, { id: "asistente", rol: "ASISTENTE_TECNICO", activo: false }, {})
+    ).rejects.toMatchObject({ status: 403 });
   });
   it("impide que un administrador reporte duración como asistente (403)", async () => {
-    await expect(reportarDuracionUseCase({ repo },
-      { id: "admin", rol: "ADMINISTRACION", activo: true }, {}
-    )).rejects.toMatchObject({ status: 403 });
+    await expect(
+      reportarDuracionUseCase({ repo }, { id: "admin", rol: "ADMINISTRACION", activo: true }, {})
+    ).rejects.toMatchObject({ status: 403 });
   });
 });

@@ -558,7 +558,10 @@
   background: #ffffff;
   padding: 10px;
   box-shadow: 0 2px 8px rgba(31, 50, 76, 0.025);
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .recording-file-card:hover {
@@ -567,10 +570,18 @@
   transform: translateY(-1px);
 }
 
-.recording-file-card.is-recording { border-left-color: var(--brand); }
-.recording-file-card.is-transcript { border-left-color: #4b6fa8; }
-.recording-file-card.is-attendance { border-left-color: #52745c; }
-.recording-file-card.is-notes { border-left-color: #9b7134; }
+.recording-file-card.is-recording {
+  border-left-color: var(--brand);
+}
+.recording-file-card.is-transcript {
+  border-left-color: #4b6fa8;
+}
+.recording-file-card.is-attendance {
+  border-left-color: #52745c;
+}
+.recording-file-card.is-notes {
+  border-left-color: #9b7134;
+}
 
 .recording-file-card.is-placeholder {
   background: #f9fbfd;
@@ -606,10 +617,22 @@
   color: var(--text-secondary);
 }
 
-.is-recording .recording-file-icon { background: var(--brand-soft); color: var(--brand); }
-.is-transcript .recording-file-icon { background: #eaf0f9; color: #4b6fa8; }
-.is-attendance .recording-file-icon { background: #eaf2ec; color: #52745c; }
-.is-notes .recording-file-icon { background: #f7f0e5; color: #8c642c; }
+.is-recording .recording-file-icon {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.is-transcript .recording-file-icon {
+  background: #eaf0f9;
+  color: #4b6fa8;
+}
+.is-attendance .recording-file-icon {
+  background: #eaf2ec;
+  color: #52745c;
+}
+.is-notes .recording-file-icon {
+  background: #f7f0e5;
+  color: #8c642c;
+}
 
 .recording-file-copy {
   min-width: 0;
@@ -671,7 +694,10 @@
   font-size: 0.67rem;
   font-weight: 850;
   white-space: nowrap;
-  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
 }
 
 .recording-file-open:hover {
@@ -939,7 +965,6 @@
   border: 1px solid #fecaca;
 }
 
-
 .recordings-provider-badge {
   display: inline-block;
   margin-left: 8px;
@@ -965,7 +990,9 @@
   background: #eff6ff;
   color: #0b5cff;
   text-decoration: none;
-  transition: background-color 140ms ease, border-color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
 }
 
 .zoom-jump-pill:hover {
@@ -977,10 +1004,20 @@
   color: #0b5cff;
 }
 
-.recording-file-card.is-audio { border-left-color: #0b5cff; }
-.recording-file-card.is-chat { border-left-color: #0d9488; }
-.is-audio .recording-file-icon { background: #eff6ff; color: #0b5cff; }
-.is-chat .recording-file-icon { background: #f0fdfa; color: #0f766e; }
+.recording-file-card.is-audio {
+  border-left-color: #0b5cff;
+}
+.recording-file-card.is-chat {
+  border-left-color: #0d9488;
+}
+.is-audio .recording-file-icon {
+  background: #eff6ff;
+  color: #0b5cff;
+}
+.is-chat .recording-file-icon {
+  background: #f0fdfa;
+  color: #0f766e;
+}
 
 .recording-file-variant {
   display: block;

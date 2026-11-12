@@ -2,11 +2,7 @@ import type { EstadoTemporalReunion } from "./types";
 
 const MINUTOS_ANTICIPACION_EN_VIVO = 15;
 
-export function determinarEstadoTemporal(
-  inicio: Date,
-  fin: Date,
-  ahora: Date
-): EstadoTemporalReunion {
+export function determinarEstadoTemporal(inicio: Date, fin: Date, ahora: Date): EstadoTemporalReunion {
   const ahoraMs = ahora.getTime();
   const inicioMs = inicio.getTime();
   const finMs = fin.getTime();
@@ -72,4 +68,3 @@ export function calcularNivelUrgenciaTriage(
   }
   return "NORMAL";
 }
-

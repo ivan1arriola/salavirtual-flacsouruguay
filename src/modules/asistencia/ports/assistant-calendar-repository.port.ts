@@ -25,22 +25,13 @@ export type CredencialesWorkspaceCalendar = Readonly<{
 }>;
 
 export type AssistantCalendarRepositoryPort = Readonly<{
-  obtenerInstanciaParaCalendario: (
-    instanciaSalaId: string
-  ) => Promise<InstanciaParaCalendario | null>;
+  obtenerInstanciaParaCalendario: (instanciaSalaId: string) => Promise<InstanciaParaCalendario | null>;
 
-  obtenerInstanciasDeSolicitud: (
-    solicitudSalaId: string
-  ) => Promise<readonly string[]>;
+  obtenerInstanciasDeSolicitud: (solicitudSalaId: string) => Promise<readonly string[]>;
 
-  obtenerInstanciasDeAsistente: (
-    usuarioId: string
-  ) => Promise<readonly string[]>;
+  obtenerInstanciasDeAsistente: (usuarioId: string) => Promise<readonly string[]>;
 
-  obtenerInstanciasFuturasParaReconciliar: (
-    now: Date
-  ) => Promise<readonly string[]>;
+  obtenerInstanciasFuturasParaReconciliar: (now: Date) => Promise<readonly string[]>;
 
   obtenerCredencialesWorkspace: () => Promise<CredencialesWorkspaceCalendar | null>;
 }>;
-

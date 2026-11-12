@@ -1,6 +1,20 @@
 "use client";
 
-import { Clock, ExternalLink, FileAudio, FileSpreadsheet, FileText, FolderOpen, MessagesSquare, NotebookText, RotateCw, Search, UsersRound, Video, X } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  FileAudio,
+  FileSpreadsheet,
+  FileText,
+  FolderOpen,
+  MessagesSquare,
+  NotebookText,
+  RotateCw,
+  Search,
+  UsersRound,
+  Video,
+  X
+} from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -9,10 +23,7 @@ import {
   type TipoFiltroArtefacto
 } from "@/src/modules/archivos/presentation";
 import { crearHrefGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
-import {
-  etiquetaTipoArtefactoMeet,
-  type TipoArtefactoMeet
-} from "@/src/modules/archivos/presentation";
+import { etiquetaTipoArtefactoMeet, type TipoArtefactoMeet } from "@/src/modules/archivos/presentation";
 
 export type RecordingsLibraryProps = Readonly<{
   grupos: readonly GrupoEncuentroConArchivos[];
@@ -21,7 +32,13 @@ export type RecordingsLibraryProps = Readonly<{
   busqueda: string;
   filtro: TipoFiltroArtefacto;
   totalEncuentros: number;
-  conteos: Readonly<{ todos: number; grabaciones: number; asistencias: number; notas: number; transcripciones: number }>;
+  conteos: Readonly<{
+    todos: number;
+    grabaciones: number;
+    asistencias: number;
+    notas: number;
+    transcripciones: number;
+  }>;
   esAdmin?: boolean;
 }>;
 
@@ -44,12 +61,14 @@ export function RecordingsLibrary({
   filtro,
   conteos,
   totalEncuentros,
-  esAdmin = false,
+  esAdmin = false
 }: RecordingsLibraryProps) {
   const router = useRouter();
   const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
   const [regenerandoId, setRegenerandoId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(
+    null
+  );
   const [reparandoPlanillasVacias, setReparandoPlanillasVacias] = useState(false);
   const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<FeedbackPlanillas | null>(null);
 
@@ -70,15 +89,14 @@ export function RecordingsLibrary({
       const data = await response.json();
       if (!response.ok) {
         const detalle = typeof data.detalle === "string" ? data.detalle.trim() : "";
-        throw new Error([
-          data.error ?? "No se pudo generar la planilla de asistencia.",
-          detalle,
-        ].filter(Boolean).join(" "));
+        throw new Error(
+          [data.error ?? "No se pudo generar la planilla de asistencia.", detalle].filter(Boolean).join(" ")
+        );
       }
       setFeedback({
         id: instanciaId,
         tipo: "ok",
-        mensaje: "¡Planilla de Google Sheets generada con éxito!",
+        mensaje: "¡Planilla de Google Sheets generada con éxito!"
       });
       setTimeout(() => {
         window.location.reload();
@@ -87,7 +105,7 @@ export function RecordingsLibrary({
       setFeedback({
         id: instanciaId,
         tipo: "error",
-        mensaje: err instanceof Error ? err.message : "Error inesperado al generar planilla.",
+        mensaje: err instanceof Error ? err.message : "Error inesperado al generar planilla."
       });
     } finally {
       setRegenerandoId(null);
@@ -106,19 +124,26 @@ export function RecordingsLibrary({
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : "No se pudieron revisar las planillas.");
+        throw new Error(
+          typeof data.error === "string" ? data.error : "No se pudieron revisar las planillas."
+        );
       }
       const errores: ErrorPlanilla[] = Array.isArray(data.errores)
-        ? data.errores.filter((item: unknown): item is ErrorPlanilla =>
-            Boolean(item) && typeof item === "object" &&
-            typeof (item as ErrorPlanilla).eventoProveedorId === "string" &&
-            typeof (item as ErrorPlanilla).detalle === "string")
+        ? data.errores.filter(
+            (item: unknown): item is ErrorPlanilla =>
+              Boolean(item) &&
+              typeof item === "object" &&
+              typeof (item as ErrorPlanilla).eventoProveedorId === "string" &&
+              typeof (item as ErrorPlanilla).detalle === "string"
+          )
         : [];
       const fallidas = Number(data.fallidas) || 0;
       const reparadas = Number(data.reparadas) || 0;
       const revisadas = Number(data.revisadas) || 0;
       const bloqueoGoogle = errores.some(({ detalle }) =>
-        /unauthorized_client|delegation denied|insufficient authentication scopes|insufficient oauth|admin_policy_enforced/i.test(detalle)
+        /unauthorized_client|delegation denied|insufficient authentication scopes|insufficient oauth|admin_policy_enforced/i.test(
+          detalle
+        )
       );
       const mensaje = bloqueoGoogle
         ? `Google Workspace no autorizó la revisión de ${fallidas} planilla(s). Revisá la delegación y los permisos OAuth antes de reintentar.`
@@ -127,13 +152,27 @@ export function RecordingsLibrary({
           : reparadas > 0
             ? `Se reconstruyeron ${reparadas} planilla(s) de ${revisadas} revisadas.`
             : `Se revisaron ${revisadas} planilla(s); no se encontraron hojas vacías.`;
-      setFeedbackPlanillasVacias({ tipo: fallidas > 0 ? "error" : "ok", mensaje, reparadas, fallidas, revisadas, errores, bloqueoGoogle });
-      if (reparadas > 0) router.refresh();
+      setFeedbackPlanillasVacias({
+        tipo: fallidas > 0 ? "error" : "ok",
+        mensaje,
+        reparadas,
+        fallidas,
+        revisadas,
+        errores,
+        bloqueoGoogle
+      });
+      if (reparadas > 0) {
+        router.refresh();
+      }
     } catch (error) {
       setFeedbackPlanillasVacias({
         tipo: "error",
         mensaje: error instanceof Error ? error.message : "No se pudieron revisar las planillas.",
-        reparadas: 0, fallidas: 0, revisadas: 0, errores: [], bloqueoGoogle: false
+        reparadas: 0,
+        fallidas: 0,
+        revisadas: 0,
+        errores: [],
+        bloqueoGoogle: false
       });
     } finally {
       setReparandoPlanillasVacias(false);
@@ -156,7 +195,11 @@ export function RecordingsLibrary({
             placeholder="Buscar por materia, clase o docente..."
             value={busquedaEditada}
             onChange={(e) => setBusquedaEditada(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") navegar({ busqueda: busquedaEditada, pagina: 1 }); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                navegar({ busqueda: busquedaEditada, pagina: 1 });
+              }
+            }}
             aria-label="Buscar encuentros o archivos"
           />
           {busquedaEditada ? (
@@ -236,7 +279,9 @@ export function RecordingsLibrary({
                 {feedbackPlanillasVacias.errores.length > 0 ? (
                   <>
                     <details className="recordings-repair-details">
-                      <summary>Ver detalles técnicos por encuentro ({feedbackPlanillasVacias.errores.length})</summary>
+                      <summary>
+                        Ver detalles técnicos por encuentro ({feedbackPlanillasVacias.errores.length})
+                      </summary>
                       <ul>
                         {feedbackPlanillasVacias.errores.map((error, index) => (
                           <li key={`${error.eventoProveedorId}-${index}`}>
@@ -249,9 +294,11 @@ export function RecordingsLibrary({
                       type="button"
                       className="secondary-action recordings-retry-button"
                       disabled={reparandoPlanillasVacias}
-                      onClick={() => void handleRepararPlanillasVacias(
-                        [...new Set(feedbackPlanillasVacias.errores.map((item) => item.eventoProveedorId))]
-                      )}
+                      onClick={() =>
+                        void handleRepararPlanillasVacias([
+                          ...new Set(feedbackPlanillasVacias.errores.map((item) => item.eventoProveedorId))
+                        ])
+                      }
                     >
                       <RotateCw size={14} aria-hidden="true" />
                       Reintentar solo las fallidas
@@ -291,20 +338,25 @@ export function RecordingsLibrary({
           </div>
 
           {gruposPagina.map((grupo) => {
-            const fecha = typeof grupo.fechaInicio === "string" ? new Date(grupo.fechaInicio) : grupo.fechaInicio;
+            const fecha =
+              typeof grupo.fechaInicio === "string" ? new Date(grupo.fechaInicio) : grupo.fechaInicio;
             const orderedArtifacts = [...grupo.archivos].sort(
-              (a, b) => artifactSortOrder(a.tipo, a.etiquetaZoom, a.secundarioZoom) - artifactSortOrder(b.tipo, b.etiquetaZoom, b.secundarioZoom)
+              (a, b) =>
+                artifactSortOrder(a.tipo, a.etiquetaZoom, a.secundarioZoom) -
+                artifactSortOrder(b.tipo, b.etiquetaZoom, b.secundarioZoom)
             );
-            const grabacionPendiente = !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
+            const grabacionPendiente =
+              !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
               (grupo.estadoGrabacion === "EN_CURSO" || grupo.estadoGrabacion === "PROCESANDO");
 
             const colapsarSecundarios = grupo.proveedor === "ZOOM" && orderedArtifacts.length > 6;
             const principales = colapsarSecundarios
               ? orderedArtifacts.filter((a) => !a.secundarioZoom || a.pendienteZoom)
               : orderedArtifacts;
-            const secundarios = colapsarSecundarios && principales.length > 0
-              ? orderedArtifacts.filter((a) => a.secundarioZoom && !a.pendienteZoom)
-              : [];
+            const secundarios =
+              colapsarSecundarios && principales.length > 0
+                ? orderedArtifacts.filter((a) => a.secundarioZoom && !a.pendienteZoom)
+                : [];
 
             const renderArchivo = (archivo: (typeof orderedArtifacts)[number]) => (
               <article
@@ -326,7 +378,10 @@ export function RecordingsLibrary({
                   <p title={archivo.nombre ?? ""}>{archivo.nombre}</p>
                 </div>
 
-                <div className="recording-file-action" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                <div
+                  className="recording-file-action"
+                  style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}
+                >
                   {archivo.pendienteZoom ? (
                     <span className="recording-file-pending">
                       <Clock size={14} aria-hidden="true" />
@@ -346,7 +401,10 @@ export function RecordingsLibrary({
                       {actionButtonText(archivo.tipo, archivo.mimeType, archivo.etiquetaZoom)}
                     </a>
                   )}
-                  {esAdmin && grupo.proveedor !== "ZOOM" && archivo.tipo === "LISTA_ASISTENCIA" && archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
+                  {esAdmin &&
+                  grupo.proveedor !== "ZOOM" &&
+                  archivo.tipo === "LISTA_ASISTENCIA" &&
+                  archivo.mimeType !== "application/vnd.google-apps.spreadsheet" ? (
                     <button
                       type="button"
                       className="recording-file-open recording-file-convert-btn"
@@ -375,7 +433,9 @@ export function RecordingsLibrary({
                   <div className="recording-meeting-title">
                     <p>
                       {grupo.programa}
-                      <span className={`recordings-provider-badge ${grupo.proveedor === "ZOOM" ? "is-zoom" : "is-meet"}`}>
+                      <span
+                        className={`recordings-provider-badge ${grupo.proveedor === "ZOOM" ? "is-zoom" : "is-meet"}`}
+                      >
                         {grupo.proveedor === "ZOOM" ? "Zoom" : "Google Meet"}
                       </span>
                     </p>
@@ -383,14 +443,21 @@ export function RecordingsLibrary({
                     <small>{grupo.docente}</small>
 
                     {grabacionPendiente ? (
-                      <span className={`recordings-status-badge ${grupo.estadoGrabacion === "EN_CURSO" ? "is-live" : "is-processing"}`}>
+                      <span
+                        className={`recordings-status-badge ${grupo.estadoGrabacion === "EN_CURSO" ? "is-live" : "is-processing"}`}
+                      >
                         <Clock size={13} aria-hidden="true" />
-                        {grupo.estadoGrabacion === "EN_CURSO" ? "Grabación en curso" : "Video procesando en Google Meet"}
+                        {grupo.estadoGrabacion === "EN_CURSO"
+                          ? "Grabación en curso"
+                          : "Video procesando en Google Meet"}
                       </span>
                     ) : null}
                   </div>
 
-                  <div className="recording-meeting-folder" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div
+                    className="recording-meeting-folder"
+                    style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}
+                  >
                     {esAdmin && grupo.proveedor !== "ZOOM" ? (
                       <button
                         type="button"
@@ -436,18 +503,40 @@ export function RecordingsLibrary({
 
                 <div className="recording-file-grid">
                   {grabacionPendiente ? (
-                    <article className="recording-file-card is-recording is-placeholder" aria-label={grupo.estadoGrabacion === "EN_CURSO" ? "Grabación en curso" : "Grabación en procesamiento"}>
-                      <div className="recording-file-icon" aria-hidden="true"><Video size={20} /></div>
-                      <div className="recording-file-copy">
-                        <div className="recording-file-label"><strong>Grabación</strong><span>Google Meet</span></div>
-                        <p>{grupo.estadoGrabacion === "EN_CURSO" ? "La grabación está en curso. El video aparecerá aquí cuando Google Meet lo publique." : "Google Meet está procesando el video. Aparecerá aquí cuando esté disponible."}</p>
+                    <article
+                      className="recording-file-card is-recording is-placeholder"
+                      aria-label={
+                        grupo.estadoGrabacion === "EN_CURSO"
+                          ? "Grabación en curso"
+                          : "Grabación en procesamiento"
+                      }
+                    >
+                      <div className="recording-file-icon" aria-hidden="true">
+                        <Video size={20} />
                       </div>
-                      <div className="recording-file-action"><span className="recording-file-pending"><Clock size={14} aria-hidden="true" /> Grabación pendiente</span></div>
+                      <div className="recording-file-copy">
+                        <div className="recording-file-label">
+                          <strong>Grabación</strong>
+                          <span>Google Meet</span>
+                        </div>
+                        <p>
+                          {grupo.estadoGrabacion === "EN_CURSO"
+                            ? "La grabación está en curso. El video aparecerá aquí cuando Google Meet lo publique."
+                            : "Google Meet está procesando el video. Aparecerá aquí cuando esté disponible."}
+                        </p>
+                      </div>
+                      <div className="recording-file-action">
+                        <span className="recording-file-pending">
+                          <Clock size={14} aria-hidden="true" /> Grabación pendiente
+                        </span>
+                      </div>
                     </article>
                   ) : null}
                   {grupo.asistenciaHref ? (
                     <article className="recording-file-card is-attendance" key="asistencia-zoom">
-                      <div className="recording-file-icon" aria-hidden="true"><UsersRound size={20} /></div>
+                      <div className="recording-file-icon" aria-hidden="true">
+                        <UsersRound size={20} />
+                      </div>
                       <div className="recording-file-copy">
                         <div className="recording-file-label">
                           <strong>Asistencia</strong>
@@ -469,13 +558,9 @@ export function RecordingsLibrary({
                 {secundarios.length > 0 ? (
                   <details className="recording-extra-files">
                     <summary className="recording-extra-summary">
-                      <span>
-                        Pistas de audio individuales y archivos auxiliares ({secundarios.length})
-                      </span>
+                      <span>Pistas de audio individuales y archivos auxiliares ({secundarios.length})</span>
                     </summary>
-                    <div className="recording-file-grid is-nested">
-                      {secundarios.map(renderArchivo)}
-                    </div>
+                    <div className="recording-file-grid is-nested">{secundarios.map(renderArchivo)}</div>
                   </details>
                 ) : null}
               </article>
@@ -483,9 +568,25 @@ export function RecordingsLibrary({
           })}
           {totalPaginas > 1 ? (
             <nav className="recordings-pagination" aria-label="Paginación de encuentros">
-              <button className="secondary-action" type="button" disabled={paginaVisible === 1} onClick={() => navegar({ pagina: paginaVisible - 1 })}>Anterior</button>
-              <span aria-live="polite">Página {paginaVisible} de {totalPaginas}</span>
-              <button className="secondary-action" type="button" disabled={paginaVisible === totalPaginas} onClick={() => navegar({ pagina: paginaVisible + 1 })}>Siguiente</button>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={paginaVisible === 1}
+                onClick={() => navegar({ pagina: paginaVisible - 1 })}
+              >
+                Anterior
+              </button>
+              <span aria-live="polite">
+                Página {paginaVisible} de {totalPaginas}
+              </span>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={paginaVisible === totalPaginas}
+                onClick={() => navegar({ pagina: paginaVisible + 1 })}
+              >
+                Siguiente
+              </button>
             </nav>
           ) : null}
         </section>
@@ -495,61 +596,116 @@ export function RecordingsLibrary({
 }
 
 function zoomCategoryIcon(etiquetaZoom: string | undefined, size = 20) {
-  if (etiquetaZoom === "Audio") return <FileAudio size={size} aria-hidden="true" />;
-  if (etiquetaZoom === "Chat") return <MessagesSquare size={size} aria-hidden="true" />;
+  if (etiquetaZoom === "Audio") {
+    return <FileAudio size={size} aria-hidden="true" />;
+  }
+  if (etiquetaZoom === "Chat") {
+    return <MessagesSquare size={size} aria-hidden="true" />;
+  }
   return null;
 }
 
 function artifactTypeIcon(tipo: TipoArtefactoMeet, size = 14) {
-  if (tipo === "GRABACION") return <Video size={size} aria-hidden="true" />;
-  if (tipo === "TRANSCRIPCION") return <FileText size={size} aria-hidden="true" />;
-  if (tipo === "LISTA_ASISTENCIA") return <FileSpreadsheet size={size} aria-hidden="true" />;
-  if (tipo === "NOTAS") return <NotebookText size={size} aria-hidden="true" />;
+  if (tipo === "GRABACION") {
+    return <Video size={size} aria-hidden="true" />;
+  }
+  if (tipo === "TRANSCRIPCION") {
+    return <FileText size={size} aria-hidden="true" />;
+  }
+  if (tipo === "LISTA_ASISTENCIA") {
+    return <FileSpreadsheet size={size} aria-hidden="true" />;
+  }
+  if (tipo === "NOTAS") {
+    return <NotebookText size={size} aria-hidden="true" />;
+  }
   return <FileText size={size} aria-hidden="true" />;
 }
 
 function artifactToneClass(tipo: TipoArtefactoMeet, etiquetaZoom?: string): string {
-  if (tipo === "GRABACION") return "is-recording";
-  if (tipo === "TRANSCRIPCION") return "is-transcript";
-  if (tipo === "LISTA_ASISTENCIA") return "is-attendance";
-  if (tipo === "NOTAS") return "is-notes";
-  if (etiquetaZoom === "Audio") return "is-audio";
-  if (etiquetaZoom === "Chat") return "is-chat";
+  if (tipo === "GRABACION") {
+    return "is-recording";
+  }
+  if (tipo === "TRANSCRIPCION") {
+    return "is-transcript";
+  }
+  if (tipo === "LISTA_ASISTENCIA") {
+    return "is-attendance";
+  }
+  if (tipo === "NOTAS") {
+    return "is-notes";
+  }
+  if (etiquetaZoom === "Audio") {
+    return "is-audio";
+  }
+  if (etiquetaZoom === "Chat") {
+    return "is-chat";
+  }
   return "";
 }
 
 function artifactSortOrder(tipo: TipoArtefactoMeet, etiquetaZoom?: string, secundarioZoom?: boolean): number {
-  if (tipo === "GRABACION") return 0;
-  if (tipo === "TRANSCRIPCION") return 1;
-  if (tipo === "LISTA_ASISTENCIA") return 2;
-  if (tipo === "NOTAS") return 3;
-  if (etiquetaZoom === "Chat") return 4;
-  if (etiquetaZoom === "Audio" && !secundarioZoom) return 5;
-  if (secundarioZoom) return 7;
+  if (tipo === "GRABACION") {
+    return 0;
+  }
+  if (tipo === "TRANSCRIPCION") {
+    return 1;
+  }
+  if (tipo === "LISTA_ASISTENCIA") {
+    return 2;
+  }
+  if (tipo === "NOTAS") {
+    return 3;
+  }
+  if (etiquetaZoom === "Chat") {
+    return 4;
+  }
+  if (etiquetaZoom === "Audio" && !secundarioZoom) {
+    return 5;
+  }
+  if (secundarioZoom) {
+    return 7;
+  }
   return 6;
 }
 
 function actionButtonText(tipo: TipoArtefactoMeet, mimeType?: string | null, etiquetaZoom?: string): string {
-  if (tipo === "GRABACION") return "Reproducir grabación";
-  if (tipo === "LISTA_ASISTENCIA") return mimeType === "application/vnd.google-apps.spreadsheet" ? "Abrir planilla de asistencia" : "Ver asistencia";
-  if (tipo === "TRANSCRIPCION") return "Ver transcripción";
-  if (tipo === "NOTAS") return "Ver notas";
-  if (etiquetaZoom === "Audio") return "Escuchar audio";
-  if (etiquetaZoom === "Chat") return "Ver chat";
+  if (tipo === "GRABACION") {
+    return "Reproducir grabación";
+  }
+  if (tipo === "LISTA_ASISTENCIA") {
+    return mimeType === "application/vnd.google-apps.spreadsheet"
+      ? "Abrir planilla de asistencia"
+      : "Ver asistencia";
+  }
+  if (tipo === "TRANSCRIPCION") {
+    return "Ver transcripción";
+  }
+  if (tipo === "NOTAS") {
+    return "Ver notas";
+  }
+  if (etiquetaZoom === "Audio") {
+    return "Escuchar audio";
+  }
+  if (etiquetaZoom === "Chat") {
+    return "Ver chat";
+  }
   return "Abrir documento";
 }
 
-function artifactDetail(
-  mimeType?: string | null,
-  bytes?: bigint | number | null
-): string {
-  if (mimeType === "application/vnd.google-apps.document") return "Documento de Google";
-  if (mimeType === "application/vnd.google-apps.spreadsheet") return "Google Sheets";
+function artifactDetail(mimeType?: string | null, bytes?: bigint | number | null): string {
+  if (mimeType === "application/vnd.google-apps.document") {
+    return "Documento de Google";
+  }
+  if (mimeType === "application/vnd.google-apps.spreadsheet") {
+    return "Google Sheets";
+  }
   return formatFileSize(bytes);
 }
 
 function formatFileSize(bytes?: bigint | number | null): string {
-  if (bytes === undefined || bytes === null) return "Tamaño no disponible";
+  if (bytes === undefined || bytes === null) {
+    return "Tamaño no disponible";
+  }
   const numBytes = typeof bytes === "bigint" ? Number(bytes) : bytes;
   const megabytes = numBytes / (1024 * 1024);
   return megabytes >= 1024 ? `${(megabytes / 1024).toFixed(1)} GB` : `${megabytes.toFixed(1)} MB`;
@@ -562,4 +718,3 @@ function driveFolderUrl(folderId: string): string {
 function driveFileUrl(fileId: string): string {
   return `https://drive.google.com/open?id=${encodeURIComponent(fileId)}`;
 }
-

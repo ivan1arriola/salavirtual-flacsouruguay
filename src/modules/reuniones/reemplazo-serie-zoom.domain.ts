@@ -29,7 +29,9 @@ export function planificarReemplazoSerieZoom(
 ): PlanReemplazoSerie {
   const ids = encuentros.map(({ id }) => id);
   const erroresIniciales = [
-    ...(new Set(ids).size !== ids.length ? ["La serie contiene identificadores de encuentros duplicados."] : []),
+    ...(new Set(ids).size !== ids.length
+      ? ["La serie contiene identificadores de encuentros duplicados."]
+      : []),
     ...(!Number.isFinite(ahora.getTime()) ? ["La fecha de referencia es inválida."] : [])
   ];
 
@@ -37,36 +39,54 @@ export function planificarReemplazoSerieZoom(
     errores: readonly string[];
     conservar: readonly string[];
     copiar: readonly EncuentroParaReemplazo[];
-  }>((acc, encuentro) => {
-    if (!Number.isFinite(encuentro.inicio.getTime()) ||
+  }>(
+    (acc, encuentro) => {
+      if (
+        !Number.isFinite(encuentro.inicio.getTime()) ||
         !Number.isFinite(encuentro.fin.getTime()) ||
-        encuentro.fin <= encuentro.inicio) {
-      return { ...acc, errores: [...acc.errores, `El encuentro ${encuentro.id} tiene un horario inválido.`] };
-    }
-    if (["CANCELADA", "REALIZADA", "FINALIZADA", "EN_CURSO"].includes(encuentro.estado) ||
-        encuentro.inicio <= ahora) {
-      return { ...acc, conservar: [...acc.conservar, encuentro.id] };
-    }
-    if (encuentro.estado !== "PROGRAMADA") {
-      return { ...acc, errores: [...acc.errores, `El estado del encuentro ${encuentro.id} requiere revisión manual.`] };
-    }
-    if (encuentro.tieneLiquidacion) {
-      return { ...acc, errores: [...acc.errores, `El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`] };
-    }
-    return { ...acc, copiar: [...acc.copiar, encuentro] };
-  }, { errores: erroresIniciales, conservar: [], copiar: [] });
+        encuentro.fin <= encuentro.inicio
+      ) {
+        return {
+          ...acc,
+          errores: [...acc.errores, `El encuentro ${encuentro.id} tiene un horario inválido.`]
+        };
+      }
+      if (
+        ["CANCELADA", "REALIZADA", "FINALIZADA", "EN_CURSO"].includes(encuentro.estado) ||
+        encuentro.inicio <= ahora
+      ) {
+        return { ...acc, conservar: [...acc.conservar, encuentro.id] };
+      }
+      if (encuentro.estado !== "PROGRAMADA") {
+        return {
+          ...acc,
+          errores: [...acc.errores, `El estado del encuentro ${encuentro.id} requiere revisión manual.`]
+        };
+      }
+      if (encuentro.tieneLiquidacion) {
+        return {
+          ...acc,
+          errores: [
+            ...acc.errores,
+            `El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`
+          ]
+        };
+      }
+      return { ...acc, copiar: [...acc.copiar, encuentro] };
+    },
+    { errores: erroresIniciales, conservar: [], copiar: [] }
+  );
 
   const ordenados = evaluados.copiar.reduce<readonly EncuentroParaReemplazo[]>((orden, actual) => {
-    const indice = orden.findIndex((item) =>
-      actual.inicio.getTime() < item.inicio.getTime() ||
-      (actual.inicio.getTime() === item.inicio.getTime() && actual.id.localeCompare(item.id) < 0)
+    const indice = orden.findIndex(
+      (item) =>
+        actual.inicio.getTime() < item.inicio.getTime() ||
+        (actual.inicio.getTime() === item.inicio.getTime() && actual.id.localeCompare(item.id) < 0)
     );
-    return indice < 0
-      ? [...orden, actual]
-      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
-  const superpuestos = ordenados.some((actual, indice) =>
-    indice > 0 && actual.inicio < ordenados[indice - 1].fin
+  const superpuestos = ordenados.some(
+    (actual, indice) => indice > 0 && actual.inicio < ordenados[indice - 1].fin
   );
   const errores = [
     ...evaluados.errores,

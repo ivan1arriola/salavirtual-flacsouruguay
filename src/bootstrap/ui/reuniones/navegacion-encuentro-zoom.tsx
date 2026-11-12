@@ -5,7 +5,11 @@ import { OperationalAutoRefresh } from "@/src/components/operational-auto-refres
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export function NavegacionEncuentroZoom({ reunion, rol, historica }: Readonly<{
+export function NavegacionEncuentroZoom({
+  reunion,
+  rol,
+  historica
+}: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   historica: boolean;
@@ -17,11 +21,21 @@ export function NavegacionEncuentroZoom({ reunion, rol, historica }: Readonly<{
         <ArrowLeft size={17} aria-hidden="true" /> Volver a reuniones
       </Link>
       <div className={styles.refresh}>
-        <Link href={`/reuniones/${reunion.solicitudId}`} className={styles.back}><List size={16} aria-hidden="true" /> Ver serie y encuentros</Link>
-        {historica ? <span className={styles.historyTag}><History size={15} aria-hidden="true" /> Historial</span> : <>
-          <OperationalAutoRefresh enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"} />
-          <RefreshButton />
-        </>}
+        <Link href={`/reuniones/${reunion.solicitudId}`} className={styles.back}>
+          <List size={16} aria-hidden="true" /> Ver serie y encuentros
+        </Link>
+        {historica ? (
+          <span className={styles.historyTag}>
+            <History size={15} aria-hidden="true" /> Historial
+          </span>
+        ) : (
+          <>
+            <OperationalAutoRefresh
+              enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"}
+            />
+            <RefreshButton />
+          </>
+        )}
       </div>
     </nav>
   );

@@ -5,8 +5,7 @@ import { cifrarConfiguracion, descifrarConfiguracion } from "@/src/lib/config/en
 import { db } from "@/src/lib/db";
 import {
   guardarConfiguracionZoom,
-  obtenerCredencialesZoom,
-  zoomConfigSchema,
+  obtenerCredencialesZoom
 } from "@/src/modules/configuracion/zoom-config.service";
 import { obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 
@@ -20,7 +19,7 @@ async function requireAdmin() {
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email,
+    email: session.user.email
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -31,7 +30,9 @@ async function requireAdmin() {
 
 export async function GET() {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   const config = await db.configuracionZoom.findUnique({
     where: { id: "principal" },
@@ -40,8 +41,8 @@ export async function GET() {
       clientId: true,
       clientSecretCifrado: true,
       activa: true,
-      updatedAt: true,
-    },
+      updatedAt: true
+    }
   });
 
   return NextResponse.json({
@@ -51,35 +52,33 @@ export async function GET() {
           clientId: config.clientId ?? "",
           clientSecretConfigurado: Boolean(config.clientSecretCifrado),
           activa: config.activa,
-          updatedAt: config.updatedAt,
+          updatedAt: config.updatedAt
         }
-      : null,
+      : null
   });
 }
 
 export async function PUT(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const body = await request.json();
-    const result = await guardarConfiguracionZoom(
-      db,
-      cifrarConfiguracion,
-      actor.id,
-      body
-    );
+    const result = await guardarConfiguracionZoom(db, cifrarConfiguracion, actor.id, body);
     return NextResponse.json(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Error al guardar configuración de Zoom.";
+    const message = error instanceof Error ? error.message : "Error al guardar configuración de Zoom.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
 export async function POST(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const body = await request.json().catch(() => ({}));
@@ -107,17 +106,16 @@ export async function POST(request: Request) {
     const token = await obtenerZoomAccessToken({
       accountId,
       clientId,
-      clientSecret,
+      clientSecret
     });
 
     return NextResponse.json({
       ok: true,
       message: "Conexión exitosa con Zoom Server-to-Server OAuth.",
-      tokenGenerado: Boolean(token),
+      tokenGenerado: Boolean(token)
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Error al conectar con la API de Zoom.";
+    const message = error instanceof Error ? error.message : "Error al conectar con la API de Zoom.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

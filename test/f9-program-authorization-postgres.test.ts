@@ -17,15 +17,21 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
 
   beforeAll(async () => {
     const url = new URL(process.env.DATABASE_URL!);
-    if (!["127.0.0.1", "localhost"].includes(url.hostname) ||
-        url.pathname !== "/flacso_meet_history_ci") {
+    if (!["127.0.0.1", "localhost"].includes(url.hostname) || url.pathname !== "/flacso_meet_history_ci") {
       throw new Error("F9 requiere PostgreSQL CI aislado; jamás ejecutarlo en producción.");
     }
-    await db.usuario.createMany({ data: [
-      { id: userA, nombres: "Docente A", rol: "DOCENTE", emailPrincipal: tag + "-a@example.test" },
-      { id: userB, nombres: "Docente B", rol: "DOCENTE", emailPrincipal: tag + "-b@example.test" },
-      { id: admin, nombres: "Administrador", rol: "ADMINISTRACION", emailPrincipal: tag + "-admin@example.test" }
-    ] });
+    await db.usuario.createMany({
+      data: [
+        { id: userA, nombres: "Docente A", rol: "DOCENTE", emailPrincipal: tag + "-a@example.test" },
+        { id: userB, nombres: "Docente B", rol: "DOCENTE", emailPrincipal: tag + "-b@example.test" },
+        {
+          id: admin,
+          nombres: "Administrador",
+          rol: "ADMINISTRACION",
+          emailPrincipal: tag + "-admin@example.test"
+        }
+      ]
+    });
     const docenteA = await db.docente.create({ data: { usuarioId: userA } });
     const docenteB = await db.docente.create({ data: { usuarioId: userB } });
     const pA = await db.programa.create({ data: { nombre: tag + "-programa-a" } });
@@ -47,15 +53,21 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
       fechaInicioSolicitada: fecha,
       fechaFinSolicitada: new Date(fecha.getTime() + 60 * 60_000)
     };
-    requestA = (await db.solicitudSala.create({
-      data: { ...data, docenteProgramaId: associationA.id, creadaPorUsuarioId: userA }
-    })).id;
-    requestB = (await db.solicitudSala.create({
-      data: { ...data, docenteProgramaId: associationB.id, creadaPorUsuarioId: userB }
-    })).id;
+    requestA = (
+      await db.solicitudSala.create({
+        data: { ...data, docenteProgramaId: associationA.id, creadaPorUsuarioId: userA }
+      })
+    ).id;
+    requestB = (
+      await db.solicitudSala.create({
+        data: { ...data, docenteProgramaId: associationB.id, creadaPorUsuarioId: userB }
+      })
+    ).id;
   }, 20000);
 
-  afterAll(async () => { await db.$disconnect(); });
+  afterAll(async () => {
+    await db.$disconnect();
+  });
 
   it("permite leer el programa propio y deniega uno ajeno", async () => {
     const actorA = await resolveSessionActor(db, { id: userA });
@@ -67,30 +79,42 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
   it("impide cancelar un recurso ajeno y no cambia su estado ni crea auditoría", async () => {
     const actorA = (await resolveSessionActor(db, { id: userA }))!;
     const previous = await db.solicitudSala.findUniqueOrThrow({
-      where: { id: requestB }, select: { estado: true }
+      where: { id: requestB },
+      select: { estado: true }
     });
-    await expect(cancelarSolicitudesAtomicas(db, actorA, [requestB]))
-      .rejects.toMatchObject({ status: 403 });
-    expect((await db.solicitudSala.findUniqueOrThrow({
-      where: { id: requestB }, select: { estado: true }
-    })).estado).toBe(previous.estado);
-    expect(await db.auditoria.count({ where: {
-      accion: "REUNION_ELIMINADA", entidadId: requestB
-    } })).toBe(0);
+    await expect(cancelarSolicitudesAtomicas(db, actorA, [requestB])).rejects.toMatchObject({ status: 403 });
+    expect(
+      (
+        await db.solicitudSala.findUniqueOrThrow({
+          where: { id: requestB },
+          select: { estado: true }
+        })
+      ).estado
+    ).toBe(previous.estado);
+    expect(
+      await db.auditoria.count({
+        where: {
+          accion: "REUNION_ELIMINADA",
+          entidadId: requestB
+        }
+      })
+    ).toBe(0);
   });
 
   it("la cancelación de un encuentro propio sí está autorizada", async () => {
     const actorA = (await resolveSessionActor(db, { id: userA }))!;
     const result = await cancelarSolicitudesAtomicas(db, actorA, [requestA]);
     expect(result.solicitudesCanceladas).toBe(1);
-    expect((await db.solicitudSala.findUniqueOrThrow({ where: { id: requestA } })).estado)
-      .toBe("CANCELADA");
+    expect((await db.solicitudSala.findUniqueOrThrow({ where: { id: requestA } })).estado).toBe("CANCELADA");
   });
 
   it("una sesión con ID antiguo no puede tomar la cuenta de un admin por email", async () => {
-    expect(await resolveSessionActor(db, {
-      id: tag + "-deleted", email: tag + "-admin@example.test"
-    })).toBeNull();
+    expect(
+      await resolveSessionActor(db, {
+        id: tag + "-deleted",
+        email: tag + "-admin@example.test"
+      })
+    ).toBeNull();
   });
 
   it("un docente desactivado no puede administrar su programa", async () => {
@@ -98,8 +122,7 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
     const actorB = (await resolveSessionActor(db, { id: userB }))!;
     expect(actorB.activo).toBe(false);
     expect(await puedeGestionarPrograma(db, actorB, programB)).toBe(false);
-    await expect(cancelarSolicitudesAtomicas(db, actorB, [requestB]))
-      .rejects.toMatchObject({ status: 403 });
+    await expect(cancelarSolicitudesAtomicas(db, actorB, [requestB])).rejects.toMatchObject({ status: 403 });
   });
 
   it("el administrador vigente tiene acceso y una revocación del rol lo quita", async () => {

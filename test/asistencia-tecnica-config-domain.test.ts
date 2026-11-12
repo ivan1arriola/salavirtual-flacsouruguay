@@ -6,10 +6,9 @@ import {
 
 describe("configuración de reportes de asistencia técnica", () => {
   it("normaliza, valida y elimina correos repetidos", () => {
-    expect(normalizarCorreosCopiaReporte("ADMIN@FLACSO.EDU.UY\notro@flacso.edu.uy, admin@flacso.edu.uy")).toEqual([
-      "admin@flacso.edu.uy",
-      "otro@flacso.edu.uy"
-    ]);
+    expect(
+      normalizarCorreosCopiaReporte("ADMIN@FLACSO.EDU.UY\notro@flacso.edu.uy, admin@flacso.edu.uy")
+    ).toEqual(["admin@flacso.edu.uy", "otro@flacso.edu.uy"]);
   });
 
   it("admite arreglos y valores vacíos", () => {

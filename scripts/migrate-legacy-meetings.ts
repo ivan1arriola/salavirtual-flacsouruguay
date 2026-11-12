@@ -8,17 +8,10 @@ const applyChanges = process.argv.includes("--apply");
 async function main(): Promise<void> {
   try {
     const [programas, cuentas, solicitudes] = await cargarOrigen();
-    const meetings = solicitudes.reduce(
-      (total, solicitud) => total + solicitud.eventos.length,
-      0
-    );
+    const meetings = solicitudes.reduce((total, solicitud) => total + solicitud.eventos.length, 0);
     const sourceAssignments = solicitudes.reduce(
       (total, solicitud) =>
-        total +
-        solicitud.eventos.reduce(
-          (eventTotal, evento) => eventTotal + evento.asignaciones.length,
-          0
-        ),
+        total + solicitud.eventos.reduce((eventTotal, evento) => eventTotal + evento.asignaciones.length, 0),
       0
     );
     console.log(
@@ -35,7 +28,9 @@ async function main(): Promise<void> {
         2
       )
     );
-    if (!applyChanges) return;
+    if (!applyChanges) {
+      return;
+    }
 
     const { zoomProviderId } = await prepararCatalogos(programas, cuentas);
     const mapeos = await cargarMapeos();

@@ -2,8 +2,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url), "utf8");
-const carpetaMigracion = readdirSync(new URL("../prisma/migrations/", import.meta.url))
-  .find((nombre) => nombre.endsWith("_zoom_archivos_asistencia"));
+const carpetaMigracion = readdirSync(new URL("../prisma/migrations/", import.meta.url)).find((nombre) =>
+  nombre.endsWith("_zoom_archivos_asistencia")
+);
 const rutaSql = carpetaMigracion
   ? new URL(`../prisma/migrations/${carpetaMigracion}/migration.sql`, import.meta.url)
   : null;
@@ -11,19 +12,28 @@ const sql = rutaSql && existsSync(rutaSql) ? readFileSync(rutaSql, "utf8") : "";
 
 function modelo(nombre: string): string {
   const match = schema.match(new RegExp(`model ${nombre} \\{([\\s\\S]*?)\\n\\}`));
-  if (!match) throw new Error(`No existe el modelo ${nombre}.`);
+  if (!match) {
+    throw new Error(`No existe el modelo ${nombre}.`);
+  }
   return match[1];
 }
 
 function enumeracion(nombre: string): string[] {
   const match = schema.match(new RegExp(`enum ${nombre} \\{([\\s\\S]*?)\\n\\}`));
-  if (!match) throw new Error(`No existe el enum ${nombre}.`);
-  return match[1].split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("//"));
+  if (!match) {
+    throw new Error(`No existe el enum ${nombre}.`);
+  }
+  return match[1]
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("//"));
 }
 
 function campo(bloque: string, nombre: string): string {
   const linea = bloque.split("\n").find((l) => new RegExp(`^\\s+${nombre}\\s`).test(l));
-  if (!linea) throw new Error(`No existe el campo ${nombre}.`);
+  if (!linea) {
+    throw new Error(`No existe el campo ${nombre}.`);
+  }
   return linea.trim();
 }
 
@@ -36,8 +46,18 @@ describe("schema de inventario Zoom", () => {
     expect(campo(m, "cuentaProveedorId")).toMatch(/String\?/);
     expect(campo(m, "eventoProveedorId")).toMatch(/String\?/);
     expect(campo(m, "eventoProveedorId")).not.toContain("@unique");
-    for (const c of ["driveFolderId", "inventariadoAt", "proximoInventarioAt", "estadoAsistencia", "errorAsistencia",
-      "procesamientoPendiente", "vinculadaAt", "vinculadaPorId", "createdAt", "updatedAt"]) {
+    for (const c of [
+      "driveFolderId",
+      "inventariadoAt",
+      "proximoInventarioAt",
+      "estadoAsistencia",
+      "errorAsistencia",
+      "procesamientoPendiente",
+      "vinculadaAt",
+      "vinculadaPorId",
+      "createdAt",
+      "updatedAt"
+    ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
     expect(m).toContain("@@unique([cuentaZoomId, uuid])");
@@ -50,11 +70,39 @@ describe("schema de inventario Zoom", () => {
 
   it("ArchivoOrigenZoom guarda identidad, metadatos, estado, lease y destino sin borrado en cascada", () => {
     const m = modelo("ArchivoOrigenZoom");
-    for (const c of ["ocurrenciaId", "claveOrigen", "archivoZoomId", "coleccion", "tipoOriginal", "variante", "extension",
-      "inicioAt", "finAt", "tamanoBytes", "estadoOrigen", "descargable", "multiplicidadObservada", "estado",
-      "errorCodigo", "errorDetalle", "intentos", "proximoIntentoAt", "leaseVersion", "leaseHasta", "driveFileId",
-      "archivoReunionId", "uploadSessionCifrada", "bytesConfirmados", "nombreDestino", "mimeType", "webViewUrl",
-      "ultimaObservacionAt", "conservadoAt", "createdAt", "updatedAt"]) {
+    for (const c of [
+      "ocurrenciaId",
+      "claveOrigen",
+      "archivoZoomId",
+      "coleccion",
+      "tipoOriginal",
+      "variante",
+      "extension",
+      "inicioAt",
+      "finAt",
+      "tamanoBytes",
+      "estadoOrigen",
+      "descargable",
+      "multiplicidadObservada",
+      "estado",
+      "errorCodigo",
+      "errorDetalle",
+      "intentos",
+      "proximoIntentoAt",
+      "leaseVersion",
+      "leaseHasta",
+      "driveFileId",
+      "archivoReunionId",
+      "uploadSessionCifrada",
+      "bytesConfirmados",
+      "nombreDestino",
+      "mimeType",
+      "webViewUrl",
+      "ultimaObservacionAt",
+      "conservadoAt",
+      "createdAt",
+      "updatedAt"
+    ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
     expect(campo(m, "tamanoBytes")).toMatch(/BigInt\?/);
@@ -73,17 +121,42 @@ describe("schema de inventario Zoom", () => {
 
   it("los estados del inventario coinciden con el contrato compartido", () => {
     expect(enumeracion("EstadoArchivoZoom")).toEqual([
-      "DESCUBIERTO", "PROCESANDO_ORIGEN", "PENDIENTE", "COPIANDO", "CONSERVADO", "ERROR_REINTENTABLE", "REQUIERE_REVISION"
+      "DESCUBIERTO",
+      "PROCESANDO_ORIGEN",
+      "PENDIENTE",
+      "COPIANDO",
+      "CONSERVADO",
+      "ERROR_REINTENTABLE",
+      "REQUIERE_REVISION"
     ]);
     expect(enumeracion("PrioridadTransferenciaZoom")).toEqual(["RECIENTE", "HISTORICO"]);
   });
 
   it("BarridoArchivoZoom es reanudable y acota reintentos", () => {
     const m = modelo("BarridoArchivoZoom");
-    for (const c of ["cuentaZoomId", "anfitrionesSnapshot", "desde", "hasta", "anfitrionIndice", "ventanaDesde",
-      "ventanaHasta", "nextPageTokenCifrado", "estado", "paginasProcesadas", "ocurrenciasEncontradas",
-      "archivosEncontrados", "intentos", "proximoIntentoAt", "errorCodigo", "errorDetalle", "leaseVersion",
-      "leaseHasta", "solicitanteId", "createdAt", "updatedAt"]) {
+    for (const c of [
+      "cuentaZoomId",
+      "anfitrionesSnapshot",
+      "desde",
+      "hasta",
+      "anfitrionIndice",
+      "ventanaDesde",
+      "ventanaHasta",
+      "nextPageTokenCifrado",
+      "estado",
+      "paginasProcesadas",
+      "ocurrenciasEncontradas",
+      "archivosEncontrados",
+      "intentos",
+      "proximoIntentoAt",
+      "errorCodigo",
+      "errorDetalle",
+      "leaseVersion",
+      "leaseHasta",
+      "solicitanteId",
+      "createdAt",
+      "updatedAt"
+    ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
     expect(campo(m, "anfitrionesSnapshot")).toMatch(/Json/);
@@ -126,7 +199,12 @@ describe("migración aditiva de inventario Zoom", () => {
     for (const tipo of ["EstadoArchivoZoom", "EstadoBarridoArchivoZoom", "PrioridadTransferenciaZoom"]) {
       expect(sql).toContain(`CREATE TYPE "${tipo}"`);
     }
-    for (const tabla of ["OcurrenciaArchivoZoom", "ArchivoOrigenZoom", "BarridoArchivoZoom", "ReservaTransferenciaZoom"]) {
+    for (const tabla of [
+      "OcurrenciaArchivoZoom",
+      "ArchivoOrigenZoom",
+      "BarridoArchivoZoom",
+      "ReservaTransferenciaZoom"
+    ]) {
       expect(sql).toContain(`CREATE TABLE "${tabla}"`);
     }
     expect(sql).toContain('CREATE UNIQUE INDEX "OcurrenciaArchivoZoom_cuentaZoomId_uuid_key"');
@@ -142,16 +220,25 @@ describe("migración aditiva de inventario Zoom", () => {
     expect(sinComentarios).not.toMatch(/\bTRUNCATE\b|\bDELETE\s+FROM\b|\bUPDATE\s+"/i);
     expect(sinComentarios).not.toMatch(/\bRENAME\b/i);
     const alteradas = [...sinComentarios.matchAll(/ALTER TABLE "([^"]+)"/g)].map((m) => m[1]);
-    const nuevas = new Set(["OcurrenciaArchivoZoom", "ArchivoOrigenZoom", "BarridoArchivoZoom", "ReservaTransferenciaZoom"]);
+    const nuevas = new Set([
+      "OcurrenciaArchivoZoom",
+      "ArchivoOrigenZoom",
+      "BarridoArchivoZoom",
+      "ReservaTransferenciaZoom"
+    ]);
     expect(alteradas.filter((t) => !nuevas.has(t))).toEqual([]);
-    const alteraciones = [...sinComentarios.matchAll(/ALTER TABLE "[^"]+" ([A-Z]+ [A-Z]+)/g)].map((m) => m[1]);
+    const alteraciones = [...sinComentarios.matchAll(/ALTER TABLE "[^"]+" ([A-Z]+ [A-Z]+)/g)].map(
+      (m) => m[1]
+    );
     expect(new Set(alteraciones)).toEqual(new Set(["ADD CONSTRAINT"]));
   });
 
   it("las FK opcionales usan SET NULL y las obligatorias impiden borrados en cascada", () => {
     const fk = (nombre: string) => {
       const match = sql.match(new RegExp(`CONSTRAINT "${nombre}" FOREIGN KEY[^;]*;`));
-      if (!match) throw new Error(`Falta la FK ${nombre}`);
+      if (!match) {
+        throw new Error(`Falta la FK ${nombre}`);
+      }
       return match[0];
     };
     for (const nombre of [

@@ -4,14 +4,8 @@ import { X } from "lucide-react";
 import { signIn, signOut } from "next-auth/react";
 import { iniciarGoogleConSesionLimpia } from "@/src/lib/auth/google-login-browser-flow";
 import { useEffect, useState } from "react";
-import {
-  olvidarCuenta,
-  type CuentaRecordada
-} from "@/src/modules/usuarios/cuentas-recordadas.domain";
-import {
-  readRememberedAccounts,
-  writeRememberedAccounts
-} from "@/src/lib/browser/remembered-accounts";
+import { olvidarCuenta, type CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
+import { readRememberedAccounts, writeRememberedAccounts } from "@/src/lib/browser/remembered-accounts";
 
 export function RememberedAccounts() {
   const [accounts, setAccounts] = useState<readonly CuentaRecordada[]>([]);
@@ -27,7 +21,9 @@ export function RememberedAccounts() {
   }
 
   async function iniciarRecordada(account: CuentaRecordada) {
-    if (pending) return;
+    if (pending) {
+      return;
+    }
     setPending(account.id);
     setError(false);
     try {
@@ -38,19 +34,35 @@ export function RememberedAccounts() {
     }
   }
 
-  if (accounts.length === 0) return null;
+  if (accounts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="remembered-accounts" aria-labelledby="remembered-title">
       <h2 id="remembered-title">Cuentas de este navegador</h2>
-      {error ? <p role="alert" className="login-error">No se pudo iniciar el acceso con Google.</p> : null}
+      {error ? (
+        <p role="alert" className="login-error">
+          No se pudo iniciar el acceso con Google.
+        </p>
+      ) : null}
       <div>
         {accounts.map((account) => (
           <div className="remembered-account" key={account.id}>
             <div>
-              <button className="remembered-account-button" type="button" disabled={pending !== null} onClick={() => void iniciarRecordada(account)}>
-                <span className="avatar" aria-hidden="true">{account.nombre.slice(0, 1).toUpperCase()}</span>
-                <span><strong>{account.nombre}</strong><small>{account.identificador}</small></span>
+              <button
+                className="remembered-account-button"
+                type="button"
+                disabled={pending !== null}
+                onClick={() => void iniciarRecordada(account)}
+              >
+                <span className="avatar" aria-hidden="true">
+                  {account.nombre.slice(0, 1).toUpperCase()}
+                </span>
+                <span>
+                  <strong>{account.nombre}</strong>
+                  <small>{account.identificador}</small>
+                </span>
               </button>
             </div>
             <button

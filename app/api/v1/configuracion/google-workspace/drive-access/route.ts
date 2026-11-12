@@ -6,7 +6,7 @@ import { db } from "@/src/lib/db";
 import {
   mensajeErrorGoogleWorkspace,
   obtenerCredencialPrincipalGoogleWorkspace,
-  prepararAccesoSalasDrive,
+  prepararAccesoSalasDrive
 } from "@/src/modules/configuracion/api";
 
 export const runtime = "nodejs";
@@ -32,13 +32,15 @@ export async function POST() {
     if (!configuration?.serviceAccountSubject || !configuration?.driveDestinationId) {
       throw new Error("La configuración de Google Workspace está incompleta.");
     }
-    const message = await prepararAccesoSalasDrive({
-      serviceAccountEmail: configuration.serviceAccountEmail,
-      privateKey: configuration.privateKey,
-      subject: configuration.serviceAccountSubject
-    }, configuration.driveDestinationId, hosts.flatMap(({ emailOrganizador }) =>
-      emailOrganizador ? [emailOrganizador] : []
-    ));
+    const message = await prepararAccesoSalasDrive(
+      {
+        serviceAccountEmail: configuration.serviceAccountEmail,
+        privateKey: configuration.privateKey,
+        subject: configuration.serviceAccountSubject
+      },
+      configuration.driveDestinationId,
+      hosts.flatMap(({ emailOrganizador }) => (emailOrganizador ? [emailOrganizador] : []))
+    );
     return NextResponse.json({ message });
   } catch (error) {
     return NextResponse.json({ error: mensajeErrorGoogleWorkspace(error) }, { status: 400 });

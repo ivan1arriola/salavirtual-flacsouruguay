@@ -26,23 +26,31 @@ export function TeacherProgramsForm({
   );
 
   function toggle(programId: string, checked: boolean) {
-    setSelectedIds(checked
-      ? [...selectedIds, programId]
-      : selectedIds.filter((id) => id !== programId));
+    setSelectedIds(checked ? [...selectedIds, programId] : selectedIds.filter((id) => id !== programId));
   }
 
   return (
     <section className="content-section settings-wide">
       <div className="section-heading">
-        <div><h2>{title}</h2><p>{selectedIds.length} programas seleccionados.</p></div>
+        <div>
+          <h2>{title}</h2>
+          <p>{selectedIds.length} programas seleccionados.</p>
+        </div>
       </div>
       <form className="profile-form" action={saveAction}>
         {targetUserId ? <input type="hidden" name="usuarioId" value={targetUserId} /> : null}
-        {selectedIds.map((id) => <input key={id} type="hidden" name="programaIds" value={id} />)}
+        {selectedIds.map((id) => (
+          <input key={id} type="hidden" name="programaIds" value={id} />
+        ))}
         <label className="program-search">
           <Search size={17} aria-hidden="true" />
           <span className="sr-only">Buscar programas</span>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar programa" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar programa"
+          />
         </label>
         <div className="program-options">
           {visiblePrograms.map((program) => (
@@ -55,11 +63,16 @@ export function TeacherProgramsForm({
               <span>{program.name}</span>
             </label>
           ))}
-          {visiblePrograms.length === 0 ? <p className="muted-text">No hay programas que coincidan.</p> : null}
+          {visiblePrograms.length === 0 ? (
+            <p className="muted-text">No hay programas que coincidan.</p>
+          ) : null}
         </div>
         <div className="form-actions">
           <span className="muted-text">Los cambios se aplican a futuras reuniones.</span>
-          <button className="primary-action" type="submit"><Save size={17} />Guardar programas</button>
+          <button className="primary-action" type="submit">
+            <Save size={17} />
+            Guardar programas
+          </button>
         </div>
       </form>
     </section>

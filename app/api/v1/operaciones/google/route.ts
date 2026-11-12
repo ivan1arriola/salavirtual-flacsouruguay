@@ -13,7 +13,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const actor = await resolveSessionActor(db, {
-    id: session.user.id, email: session.user.email
+    id: session.user.id,
+    email: session.user.email
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -24,14 +25,26 @@ export async function GET() {
     orderBy: { updatedAt: "asc" },
     take: 100,
     select: {
-      clave: true, proveedor: true, tipo: true, cuenta: true, referencia: true, estado: true,
-      intentos: true, iniciadaAt: true, createdAt: true, updatedAt: true, errorCodigo: true
+      clave: true,
+      proveedor: true,
+      tipo: true,
+      cuenta: true,
+      referencia: true,
+      estado: true,
+      intentos: true,
+      iniciadaAt: true,
+      createdAt: true,
+      updatedAt: true,
+      errorCodigo: true
     }
   });
-  return NextResponse.json({
-    operacion: "RECONCILIACION_MANUAL",
-    elementos: rows,
-    totalEnPagina: rows.length,
-    nota: "Los resultados inciertos no deben reenviarse sin comprobar el estado remoto. Hasta 100 operaciones por página."
-  }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    {
+      operacion: "RECONCILIACION_MANUAL",
+      elementos: rows,
+      totalEnPagina: rows.length,
+      nota: "Los resultados inciertos no deben reenviarse sin comprobar el estado remoto. Hasta 100 operaciones por página."
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

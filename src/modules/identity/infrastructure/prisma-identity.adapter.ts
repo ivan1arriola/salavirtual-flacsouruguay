@@ -22,7 +22,13 @@ const loginSelect = {
 
 type PrismaIdentityDb = Pick<
   PrismaClient,
-  "usuario" | "cuentaGoogleFlacso" | "solicitudAccesoGoogle" | "docente" | "asistenteTecnico" | "auditoria" | "$transaction"
+  | "usuario"
+  | "cuentaGoogleFlacso"
+  | "solicitudAccesoGoogle"
+  | "docente"
+  | "asistenteTecnico"
+  | "auditoria"
+  | "$transaction"
 >;
 
 export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityRepository {
@@ -88,7 +94,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
           data: { cesadoHastaProximoInicioSesion: false }
         });
 
-        if (reactivados.count === 0) return;
+        if (reactivados.count === 0) {
+          return;
+        }
 
         await tx.auditoria.create({
           data: {
@@ -133,7 +141,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
           }
 
           if (decision === "REVINCULAR") {
-            if (!existingAccount.user.activo || existingAccount.user.fusionadoEnId) return null;
+            if (!existingAccount.user.activo || existingAccount.user.fusionadoEnId) {
+              return null;
+            }
 
             const updated = await tx.cuentaGoogleFlacso.update({
               where: { id: existingAccount.id },
@@ -188,7 +198,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
           include: { docente: { select: { id: true } } }
         });
 
-        if (existingUser && (!existingUser.activo || existingUser.fusionadoEnId)) return null;
+        if (existingUser && (!existingUser.activo || existingUser.fusionadoEnId)) {
+          return null;
+        }
 
         const user =
           existingUser ??
@@ -235,7 +247,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
         return createdAccount;
       });
 
-      if (!cuenta) return null;
+      if (!cuenta) {
+        return null;
+      }
 
       return {
         id: cuenta.id,
@@ -253,11 +267,7 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
       };
     },
 
-    async actualizarUltimoAccesoGoogle(
-      cuentaId: string,
-      subject: string,
-      fecha = new Date()
-    ): Promise<void> {
+    async actualizarUltimoAccesoGoogle(cuentaId: string, subject: string, fecha = new Date()): Promise<void> {
       await db.cuentaGoogleFlacso.update({
         where: { id: cuentaId },
         data: {
@@ -286,7 +296,9 @@ function nombresGoogle(perfil: PerfilGoogle, email: string): string {
 }
 
 function apellidosGoogle(perfil: PerfilGoogle): string | null {
-  if (perfil.apellidos?.trim()) return perfil.apellidos.trim();
+  if (perfil.apellidos?.trim()) {
+    return perfil.apellidos.trim();
+  }
   const parts = perfil.nombre?.trim().split(/\s+/) ?? [];
   return parts.length > 1 ? parts.slice(1).join(" ") : null;
 }
@@ -294,4 +306,3 @@ function apellidosGoogle(perfil: PerfilGoogle): string | null {
 function dominioEmail(email: string): string {
   return email.split("@")[1] ?? "";
 }
-

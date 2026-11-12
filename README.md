@@ -12,8 +12,8 @@ Todo cambio relacionado con el producto, la interfaz, el modelo de datos o los f
 
 La plataforma reemplaza a los proyectos anteriores:
 
-* `../flacso-zoom-plataforma-web`
-* `../flacso-zoom-sincronizador-desktop`
+- `../flacso-zoom-plataforma-web`
+- `../flacso-zoom-sincronizador-desktop`
 
 Google Meet es el proveedor operativo principal.
 
@@ -29,24 +29,24 @@ La plataforma busca mantener una arquitectura simple, mantenible y preparada par
 
 Sus principales objetivos son:
 
-* Mantener un modelo de datos normalizado en **3NF**.
-* Separar claramente entidades institucionales, solicitudes, eventos, proveedores, grabaciones y liquidaciones.
-* Mantener el núcleo de negocio independiente de Google Meet y Zoom.
-* Utilizar Google Meet como proveedor operativo principal.
-* Conservar Zoom para consulta, trazabilidad e importación de información histórica.
-* Permitir migraciones incrementales desde los sistemas anteriores sin interrumpir la operación.
-* Centralizar la configuración de integraciones institucionales desde la propia aplicación.
+- Mantener un modelo de datos normalizado en **3NF**.
+- Separar claramente entidades institucionales, solicitudes, eventos, proveedores, grabaciones y liquidaciones.
+- Mantener el núcleo de negocio independiente de Google Meet y Zoom.
+- Utilizar Google Meet como proveedor operativo principal.
+- Conservar Zoom para consulta, trazabilidad e importación de información histórica.
+- Permitir migraciones incrementales desde los sistemas anteriores sin interrumpir la operación.
+- Centralizar la configuración de integraciones institucionales desde la propia aplicación.
 
 ## Stack
 
 La aplicación utiliza:
 
-* **Next.js App Router**
-* **TypeScript**
-* **Prisma**
-* **PostgreSQL**
-* **Auth.js**
-* **Google Workspace APIs**
+- **Next.js App Router**
+- **TypeScript**
+- **Prisma**
+- **PostgreSQL**
+- **Auth.js**
+- **Google Workspace APIs**
 
 ## Estilos de interfaz
 
@@ -106,9 +106,9 @@ Para habilitar SES se requiere un rol IAM en EC2 con permiso `ses:SendEmail` lim
 
 Si ningún proveedor está configurado:
 
-* las notificaciones internas continúan funcionando;
-* el envío de correo electrónico se omite;
-* el flujo principal de la aplicación no falla.
+- las notificaciones internas continúan funcionando;
+- el envío de correo electrónico se omite;
+- el flujo principal de la aplicación no falla.
 
 ### Configuración SMTP de respaldo
 
@@ -145,15 +145,23 @@ Después del primer acceso a la aplicación, completar la configuración institu
 
 **Configuración > Google Workspace**
 
+## Verificaciones de calidad
+
+Ejecutá `npm ci` y luego `npm run lint`, `npm run format:check`, `npm run deadcode` y `npm run architecture`.
+`npm run format` aplica el formato de Prettier.
+
+`eslint-suppressions.json` registra infracciones previas por archivo y regla. Cuando corrijas una infracción
+registrada, actualizá el archivo con `npm run lint -- --prune-suppressions`.
+
 ## Documentación
 
 La documentación técnica y funcional se encuentra en `docs/`.
 
-* [Arquitectura](docs/arquitectura.md)
-* [Modelo de datos 3NF](docs/modelo-3nf.md)
-* [Migración desde FLACSO Zoom](docs/migracion-desde-flacso-zoom.md)
-* [Despliegue en EC2](docs/despliegue-ec2.md)
-* [Configuración de Google Workspace](docs/configuracion-google-workspace.md)
-* [Configuración de Amazon SES](docs/configuracion-amazon-ses.md)
-* [Reportes mensuales de asistencia técnica](docs/reportes-mensuales-asistencia.md)
-* [UI ligera](docs/ui-ligera.md)
+- [Arquitectura](docs/arquitectura.md)
+- [Modelo de datos 3NF](docs/modelo-3nf.md)
+- [Migración desde FLACSO Zoom](docs/migracion-desde-flacso-zoom.md)
+- [Despliegue en EC2](docs/despliegue-ec2.md)
+- [Configuración de Google Workspace](docs/configuracion-google-workspace.md)
+- [Configuración de Amazon SES](docs/configuracion-amazon-ses.md)
+- [Reportes mensuales de asistencia técnica](docs/reportes-mensuales-asistencia.md)
+- [UI ligera](docs/ui-ligera.md)

@@ -30,6 +30,7 @@
 ## Tareas
 
 ### Tarea 1: Cliente Técnico de Autenticación Google (`src/integrations/google/auth/`)
+
 - Crear `src/integrations/google/auth/google-auth.client.ts`:
   - Tipos `GoogleAuthCredentials`: `{ serviceAccountEmail: string; privateKey: string; subject?: string }`.
   - Scopes estándar: `GOOGLE_CALENDAR_SCOPES`, `GOOGLE_MEET_SCOPES`.
@@ -40,6 +41,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 2: Cliente Técnico de Google Calendar API (`src/integrations/google/calendar/`)
+
 - Crear `src/integrations/google/calendar/calendar-events.client.ts`:
   - Tipos `GoogleCalendarAttendee`, `GoogleCalendarEvent`.
   - Operaciones:
@@ -54,6 +56,7 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 3: Cliente Técnico de Google Meet API (`src/integrations/google/meet/`)
+
 - Crear `src/integrations/google/meet/meet-spaces.client.ts`:
   - Tipos `GoogleMeetSpace`, `GoogleMeetSpaceConfig`, `GoogleMeetSpaceMember`.
   - Operaciones de Espacios (Meet API v2):
@@ -71,12 +74,14 @@
 - Verificar con Vitest y `npm run check`.
 
 ### Tarea 4: Refactorización de `src/modules/meet/google-calendar.adapter.ts`
+
 - Migrar `google-calendar.adapter.ts` para consumir los clientes técnicos de `src/integrations/google/`.
 - Mantener intactas las firmas públicas y tipos exportados.
 - Preservar la lógica de negocio de cohosts: normalización de correos, exclusión de la cuenta de sala, verificación real contra membresías, y el fallback Legacy.
 - Ejecutar tests de regresión: `test/google-workspace-legacy-meet.test.ts`, `test/meet-cohosts-regression.test.ts`, `test/resincronizar-cohosts-route.test.ts`.
 
 ### Tarea 5: Fronteras Arquitectónicas y Verificación Integral
+
 - Actualizar `test/architecture-boundaries.test.ts` para auditar `src/integrations/google/` verificando que no importe módulos de negocio (`src/modules/`), Prisma ni frameworks de presentación.
 - Ejecutar:
   - `npx vitest run test/architecture-boundaries.test.ts`
@@ -85,4 +90,3 @@
   - `npm run validate:schema`
   - `npm run build`
 - Documentar resultados en `walkthrough.md` y registrar commit de la etapa.
-

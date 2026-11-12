@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export function AssistantUnassignButton({
   assignmentId,
-  title,
+  title
 }: Readonly<{
   assignmentId: string;
   title: string;
@@ -17,9 +17,11 @@ export function AssistantUnassignButton({
 
   async function unassign() {
     const confirmed = window.confirm(
-      `¿Quitar la asignación de “${title}”?\n\nLa reunión seguirá existiendo y el cambio quedará registrado en el historial.`,
+      `¿Quitar la asignación de “${title}”?\n\nLa reunión seguirá existiendo y el cambio quedará registrado en el historial.`
     );
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setSaving(true);
     setError("");
@@ -27,9 +29,9 @@ export function AssistantUnassignButton({
       const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asignacionId: assignmentId }),
+        body: JSON.stringify({ asignacionId: assignmentId })
       });
-      const result = await response.json().catch(() => ({})) as Readonly<{
+      const result = (await response.json().catch(() => ({}))) as Readonly<{
         error?: string;
         warning?: string | null;
       }>;
@@ -39,7 +41,9 @@ export function AssistantUnassignButton({
         return;
       }
 
-      if (result.warning) window.alert(result.warning);
+      if (result.warning) {
+        window.alert(result.warning);
+      }
       router.refresh();
     } catch {
       setError("No se pudo comunicar el cambio al servidor.");
@@ -59,7 +63,11 @@ export function AssistantUnassignButton({
         <UserMinus size={16} />
         {saving ? "Quitando…" : "Quitar asignación"}
       </button>
-      {error ? <small className="assistant-action-error" role="status">{error}</small> : null}
+      {error ? (
+        <small className="assistant-action-error" role="status">
+          {error}
+        </small>
+      ) : null}
     </div>
   );
 }

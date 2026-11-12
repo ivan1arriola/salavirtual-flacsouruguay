@@ -8,9 +8,13 @@ describe("objetivos táctiles de Mi agenda en móvil", () => {
     const mobileRules = css.match(/@media \(max-width: 560px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
     expect(mobileRules).toContain(".assistant-self-unassign-button");
-    expect(mobileRules).toMatch(/\.assistant-agenda-primary-actions > \.secondary-action\s*\{[^}]*min-height:\s*44px/s);
+    expect(mobileRules).toMatch(
+      /\.assistant-agenda-primary-actions > \.secondary-action\s*\{[^}]*min-height:\s*44px/s
+    );
     expect(mobileRules).toMatch(/\.assistant-self-unassign-button\s*\{[^}]*min-height:\s*44px/s);
     expect(mobileRules).toMatch(/\.assistant-agenda-open-meet\s*\{[^}]*min-height:\s*44px/s);
-    expect(mobileRules).toMatch(/\.assistant-agenda-link-actions \.assistant-agenda-open-meet,\s*\.assistant-agenda-link-actions \.copy-meet-button\s*\{[^}]*min-height:\s*44px/s);
+    expect(mobileRules).toMatch(
+      /\.assistant-agenda-link-actions \.assistant-agenda-open-meet,\s*\.assistant-agenda-link-actions \.copy-meet-button\s*\{[^}]*min-height:\s*44px/s
+    );
   });
 });

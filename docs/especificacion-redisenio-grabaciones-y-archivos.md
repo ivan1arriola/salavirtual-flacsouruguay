@@ -364,12 +364,12 @@ La tabla `ArchivoReunion` ya es la entidad adecuada para indexar artefactos sinc
 
 Tipos actuales relevantes:
 
-| Tipo | Fuente | Destino |
-| --- | --- | --- |
-| `GRABACION` | `conferenceRecords/{id}/recordings` | MP4 en Drive |
-| `TRANSCRIPCION` | `conferenceRecords/{id}/transcripts` | Google Doc |
-| `LISTA_ASISTENCIA` | participantes + sesiones | Google Doc generado |
-| `NOTAS` | `conferenceRecords/{id}/smartNotes` | Google Doc |
+| Tipo               | Fuente                               | Destino             |
+| ------------------ | ------------------------------------ | ------------------- |
+| `GRABACION`        | `conferenceRecords/{id}/recordings`  | MP4 en Drive        |
+| `TRANSCRIPCION`    | `conferenceRecords/{id}/transcripts` | Google Doc          |
+| `LISTA_ASISTENCIA` | participantes + sesiones             | Google Doc generado |
+| `NOTAS`            | `conferenceRecords/{id}/smartNotes`  | Google Doc          |
 
 No crear un segundo modelo paralelo para los artefactos modernos.
 

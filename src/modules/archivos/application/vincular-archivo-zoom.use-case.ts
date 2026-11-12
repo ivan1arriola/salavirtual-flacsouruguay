@@ -1,6 +1,9 @@
 import type { ResultadoVinculo, ZoomArchivoRepositoryPort } from "../ports";
 
-export type ActorVincularZoom = Readonly<{ id: string | null; rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO" }>;
+export type ActorVincularZoom = Readonly<{
+  id: string | null;
+  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+}>;
 
 export type ResultadoVincularOcurrenciaZoom =
   | ResultadoVinculo
@@ -16,11 +19,19 @@ export async function vincularOcurrenciaZoom(
   eventoId: string
 ): Promise<ResultadoVincularOcurrenciaZoom> {
   // Autorizar antes de tocar datos: quien no administra tampoco aprende si la ocurrencia existe.
-  if (actor.rol !== "ADMINISTRACION") return { tipo: "PROHIBIDO" };
+  if (actor.rol !== "ADMINISTRACION") {
+    return { tipo: "PROHIBIDO" };
+  }
   try {
-    return await deps.repo.vincularOcurrencia(ocurrenciaId, eventoId, actor.id === null ? null : { id: actor.id });
+    return await deps.repo.vincularOcurrencia(
+      ocurrenciaId,
+      eventoId,
+      actor.id === null ? null : { id: actor.id }
+    );
   } catch (error) {
-    if ((error as { code?: unknown } | null)?.code === "P2002") return { tipo: "CONFLICTO_DRIVE" };
+    if ((error as { code?: unknown } | null)?.code === "P2002") {
+      return { tipo: "CONFLICTO_DRIVE" };
+    }
     throw error;
   }
 }

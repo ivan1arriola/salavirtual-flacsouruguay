@@ -36,11 +36,19 @@ export async function seleccionarLoteEventosOperativosUseCase(
   for (const ventana of ventanas) {
     const restantes = Math.max(0, limite - seleccionados.length);
     const ids = await repository.listarEventosOperativos({ ...ventana, limite: restantes });
-    if (ventana.ventana === "CALIENTE") conteos.caliente = ids.length;
-    if (ventana.ventana === "INTERMEDIA") conteos.intermedia = ids.length;
-    if (ventana.ventana === "CIERRE") conteos.cierre = ids.length;
+    if (ventana.ventana === "CALIENTE") {
+      conteos.caliente = ids.length;
+    }
+    if (ventana.ventana === "INTERMEDIA") {
+      conteos.intermedia = ids.length;
+    }
+    if (ventana.ventana === "CIERRE") {
+      conteos.cierre = ids.length;
+    }
     for (const id of ids) {
-      if (seleccionados.length >= limite || vistos.has(id)) continue;
+      if (seleccionados.length >= limite || vistos.has(id)) {
+        continue;
+      }
       vistos.add(id);
       seleccionados.push(id);
     }

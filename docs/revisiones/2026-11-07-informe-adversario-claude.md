@@ -29,6 +29,7 @@ La regla propuesta toma el `start_time` de la primera instancia, un solo `durati
 - **Cruce de medianoche o cambio de día en la zona horaria local.** Si `weekly_days` se calcula en UTC y no en zona local, el día queda mal (ver 3.2).
 
 **Ajuste necesario**
+
 - Definir un predicado puro `esSerieRegular(instancias, tz)`. Debe exigir la misma hora de inicio local, la misma duración, el mismo día de semana y un intervalo constante de 7 días.
 - Si la serie es irregular, hay tres caminos posibles. Hay que elegir uno explícitamente:
   1. Rechazar la solicitud con un error claro.
@@ -42,11 +43,13 @@ La regla propuesta toma el `start_time` de la primera instancia, un solo `durati
 En `gestionar-encuentros.service.ts:346-357` el código dice: «Con una reunión compartida ya creada en Zoom, el horario de este encuentro vive en Sala Virtual y en Calendar: no hay nada que reprogramar en Zoom». Con `type: 8` eso es falso. El horario vive en Zoom, y si la BD cambia y Zoom no, hay una divergencia silenciosa.
 
 Consecuencias:
+
 - Un encuentro reprogramado en Sala Virtual sigue mostrando el horario viejo en Zoom, en la agenda y en los recordatorios de Zoom.
 - Si dos reuniones comparten sala y el horario nuevo choca con otra, Zoom no lo sabe. Con un anfitrión de capacidad 1 se rompe la garantía de «1 reunión concurrente por sala».
 - Los participantes reciben invitaciones con la hora vieja.
 
 **Ajuste necesario**
+
 - Para reprogramar, hay que hacer `PATCH /meetings/{id}?occurrence_id={occId}`. Para cancelar, `DELETE ...?occurrence_id=`.
 - Hay que persistir el `occurrence_id` por `InstanciaSala` o `EventoProveedor`. Hoy el esquema probablemente no lo tiene, así que haría falta una migración.
 - El plan ignora por completo `reprogramar`, `cancelar` y `eliminarReunionCompleta` (línea 633). Debe incluir tareas y tests para esos tres flujos.
@@ -63,6 +66,7 @@ La reunión se creó con `end_times: N`. Zoom no tiene un endpoint que añada un
 Hoy el plan no dice qué hacer. La línea 187 del servicio propaga `reunionProveedorId` al nuevo evento sin tocar Zoom, lo que causa justo la divergencia anterior.
 
 **Ajuste necesario**
+
 - Definir una política explícita. Recomiendo: si la nueva fecha encaja en la regla, extender la recurrencia (`PATCH end_times`). Si no encaja, o bien rechazar con mensaje claro, o bien extender y borrar la ocurrencia intermedia no deseada.
 - Aclarar que un `PATCH` de la recurrencia **regenera las ocurrencias** y puede perder las ediciones individuales hechas con `occurrence_id` **[verificar]**. El orden de operaciones importa: primero extender y después parchar.
 - Si la reunión se creó antes de agregar y el reclamo estaba en vuelo, hay una carrera (ver 2.5).
@@ -76,6 +80,7 @@ Zoom limita las series a 50 ocurrencias para diarias, semanales o mensuales (60 
 - `end_times` mayor que el máximo no es un error silencioso: Zoom rechaza la solicitud.
 
 **Ajuste necesario**
+
 - Validar `N <= LIMITE` en el dominio (`calcularRecurrenciaZoom`) y fallar de forma determinista, no con un error de Zoom.
 - Decidir qué hacer con series largas:
   - Partirlas en varias reuniones Zoom. Esto rompe la restricción 2 («un solo enlace»).
@@ -117,17 +122,20 @@ La garantía «1 reunión concurrente por sala» ahora depende de que Zoom conoz
 ## 3. Hallazgos menores o de borde
 
 ### 3.1 Tipos y contrato
+
 - `weekly_days` debe ser **string** (`"1,3"`), no array. El plan lo dice bien en Task 1, pero el dominio debe devolver un tipo ya serializado y ordenado, sin duplicados.
 - `end_times` es **number** y debe ser >= 1. Con `N = 1` hay que usar `type: 2`, como dice el plan. Con `N = 2` sigue siendo una serie válida.
 - `recurrence.type: 2` es semanal. Con `repeat_interval: 1` es cada semana. Si las fechas están espaciadas de a dos semanas, el plan genera la regla equivocada. El predicado de 2.1 debe detectarlo.
 
 ### 3.2 Zona horaria y días de la semana
+
 - Zoom usa `1=Domingo ... 7=Sábado`. JavaScript usa `getDay()` con `0=Domingo ... 6=Sábado`. Es un error de uno clásico; hay que tener un test explícito para cada día.
 - El día de la semana debe calcularse en la **zona horaria de la solicitud** (por ejemplo `America/Montevideo`), no en UTC. Una clase de martes 22:00 local puede ser miércoles 01:00 UTC.
 - `start_time` debe enviarse en formato local **sin `Z`** junto con `timezone`, o en UTC con `Z` y `timezone`. Mezclarlos desplaza la hora. Hay que fijar un solo formato y probarlo.
 - Los cambios de horario de verano son raros en Uruguay hoy, pero la lógica debe usar la zona IANA y no un offset fijo.
 
 ### 3.3 Otros
+
 - `duration` en Zoom son **minutos enteros**. Redondear y no truncar.
 - `crearReunionZoomHttp` (`type: 2`) con `start_time` en el pasado: hay que decidir qué pasa con un encuentro único que ya comenzó.
 - Los tests existentes (`integrations-zoom-recurrente.test.ts`, `conferencias-reunion-compartida*.test.ts`) afirman `type: 3` y deben actualizarse. El plan lo cubre solo de forma genérica en Task 6; conviene listarlos.

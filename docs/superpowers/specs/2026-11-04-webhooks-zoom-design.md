@@ -33,14 +33,14 @@ Fuera de alcance (entregas siguientes): `recording.completed`, eventos de partic
 
 Modelo nuevo `EventoWebhookZoom` (requiere una migración de Prisma aditiva, sin tocar tablas existentes):
 
-| Campo | Contenido |
-| --- | --- |
-| `claveEvento` (único) | `{evento}:{uuid o id}:{event_ts}` |
-| `evento`, `zoomMeetingId`, `zoomUuid` | identificación del evento |
-| `ocurridoAt`, `recibidoAt`, `procesadoAt` | tiempos |
-| `estado` | `RECIBIDO`, `PROCESADO`, `IGNORADO` o `ERROR` |
-| `detalle` | motivo corto en texto |
-| `cargaMinima` (JSON) | solo `id`, `uuid`, `start_time`, `end_time`, `topic` y los campos modificados; **sin** participantes, correos ni URLs de inicio |
+| Campo                                     | Contenido                                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `claveEvento` (único)                     | `{evento}:{uuid o id}:{event_ts}`                                                                                               |
+| `evento`, `zoomMeetingId`, `zoomUuid`     | identificación del evento                                                                                                       |
+| `ocurridoAt`, `recibidoAt`, `procesadoAt` | tiempos                                                                                                                         |
+| `estado`                                  | `RECIBIDO`, `PROCESADO`, `IGNORADO` o `ERROR`                                                                                   |
+| `detalle`                                 | motivo corto en texto                                                                                                           |
+| `cargaMinima` (JSON)                      | solo `id`, `uuid`, `start_time`, `end_time`, `topic` y los campos modificados; **sin** participantes, correos ni URLs de inicio |
 
 La inserción es `ON CONFLICT DO NOTHING`: un evento repetido o desordenado no se procesa dos veces. Los registros de más de 90 días se podan junto con la limpieza periódica existente. Alternativa si se prefiere evitar la migración: usar `Auditoria` con consulta previa, aceptando una condición de carrera mínima; se desaconseja.
 
@@ -54,15 +54,15 @@ La inserción es `ON CONFLICT DO NOTHING`: un evento repetido o desordenado no s
 
 Una función pura decide qué hacer; el servicio solo aplica el resultado.
 
-| Evento | Condición | Efecto |
-| --- | --- | --- |
-| `meeting.started` | encuentro `PROGRAMADA` | pasa a `EN_CURSO` |
-| `meeting.ended` | encuentro `EN_CURSO` o `PROGRAMADA` | pasa a `FINALIZADA` |
-| `meeting.started` / `meeting.ended` | encuentro `CANCELADA` o ya `FINALIZADA` | se ignora; nunca se «revive» un encuentro |
-| `meeting.updated` | los valores nuevos (hora, duración, título) **coinciden** con la base | se ignora (es el eco de un cambio hecho por Sala Virtual) |
-| `meeting.updated` | difieren de la base | `estadoIntegracion = ERROR`, `errorIntegracion` con el campo modificado y registro en `Auditoria`; **no se corrige solo** |
-| `meeting.deleted` | el encuentro ya está cancelado o con cancelación pendiente | se ignora (lo eliminó Sala Virtual) |
-| `meeting.deleted` | el encuentro sigue activo | `estadoIntegracion = ERROR`, «La reunión fue eliminada en Zoom», y registro en `Auditoria`; **no se recrea sola** |
+| Evento                              | Condición                                                             | Efecto                                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `meeting.started`                   | encuentro `PROGRAMADA`                                                | pasa a `EN_CURSO`                                                                                                         |
+| `meeting.ended`                     | encuentro `EN_CURSO` o `PROGRAMADA`                                   | pasa a `FINALIZADA`                                                                                                       |
+| `meeting.started` / `meeting.ended` | encuentro `CANCELADA` o ya `FINALIZADA`                               | se ignora; nunca se «revive» un encuentro                                                                                 |
+| `meeting.updated`                   | los valores nuevos (hora, duración, título) **coinciden** con la base | se ignora (es el eco de un cambio hecho por Sala Virtual)                                                                 |
+| `meeting.updated`                   | difieren de la base                                                   | `estadoIntegracion = ERROR`, `errorIntegracion` con el campo modificado y registro en `Auditoria`; **no se corrige solo** |
+| `meeting.deleted`                   | el encuentro ya está cancelado o con cancelación pendiente            | se ignora (lo eliminó Sala Virtual)                                                                                       |
+| `meeting.deleted`                   | el encuentro sigue activo                                             | `estadoIntegracion = ERROR`, «La reunión fue eliminada en Zoom», y registro en `Auditoria`; **no se recrea sola**         |
 
 La detección es **por diferencia contra la base**, no por quién hizo el cambio, para no depender de un campo de operador que Zoom puede no informar en las llamadas de una app de servidor a servidor.
 

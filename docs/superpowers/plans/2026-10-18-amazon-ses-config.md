@@ -32,6 +32,7 @@
 ### Task 1: Persist SES configuration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/<timestamp>_configuracion_correo_ses/migration.sql`
 - Create: `src/modules/configuracion/correo-ses.domain.ts`
@@ -40,6 +41,7 @@
 - Modify: `package.json` only if a migration helper script is needed.
 
 **Interfaces:**
+
 - Produces a typed configuration DTO with region, sender, nullable reply-to, active state, updated-by id, and update timestamp.
 - Produces read and update services that re-check active administrator status on the server.
 
@@ -53,6 +55,7 @@
 ### Task 2: Implement and compose the SES transport
 
 **Files:**
+
 - Modify: `package.json`, lock file.
 - Create: `src/modules/notificaciones/infrastructure/email/sesv2-email-transport.adapter.ts`
 - Modify: `src/modules/notificaciones/infrastructure/email/composite-email-transport.adapter.ts`
@@ -62,6 +65,7 @@
 - Test: `test/notificaciones-infrastructure.test.ts`
 
 **Interfaces:**
+
 - Consumes the typed SES config resolver from Task 1.
 - Produces `EmailTransportPort` and provider result `AMAZON_SES`.
 
@@ -76,6 +80,7 @@
 ### Task 3: Add admin configuration and unified test-send UX
 
 **Files:**
+
 - Create: `src/components/ses-email-settings-form.tsx`
 - Modify: `app/(gestion)/configuracion/page.tsx`
 - Modify: `app/(gestion)/configuracion/actions.ts`
@@ -85,6 +90,7 @@
 - Test: relevant settings and route tests under `test/`.
 
 **Interfaces:**
+
 - Form submits only non-secret SES settings to a server action.
 - Existing POST route and request body remain compatible; response provider can now be SES.
 
@@ -98,6 +104,7 @@
 ### Task 4: Document deployment prerequisites and validate
 
 **Files:**
+
 - Create: `docs/configuracion-amazon-ses.md`
 - Modify: `docs/despliegue-ec2.md`
 - Modify: `.env.example` only if needed to clarify that no SES AWS keys are required.

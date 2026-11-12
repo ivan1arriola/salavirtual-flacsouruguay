@@ -7,7 +7,10 @@
 import { setTimeout as dormir } from "node:timers/promises";
 import { crearWorkerZoomArchivos } from "../src/bootstrap/zoom-archivos.server";
 import { db } from "../src/lib/db";
-import { procesarColaZoomUseCase, procesarMantenimientoZoomUseCase } from "../src/modules/archivos/application";
+import {
+  procesarColaZoomUseCase,
+  procesarMantenimientoZoomUseCase
+} from "../src/modules/archivos/application";
 
 const unaVez = process.argv.includes("--once");
 
@@ -34,7 +37,9 @@ async function main(): Promise<number> {
   process.once("SIGINT", apagar("SIGINT"));
 
   const worker = await crearWorkerZoomArchivos();
-  for (const aviso of worker.salud.avisos ?? []) log("warn", aviso);
+  for (const aviso of worker.salud.avisos ?? []) {
+    log("warn", aviso);
+  }
   if (!worker.salud.ok) {
     log("error", "el worker no puede arrancar", { motivos: worker.salud.motivos });
     return 1;
@@ -45,15 +50,36 @@ async function main(): Promise<number> {
   const mantenimiento = procesarMantenimientoZoomUseCase(
     {
       tareas: [
-        { nombre: "inventario-vencidas", ejecutar: async () => log("info", "inventario", { resumen: await worker.inventariarVencidas() }) },
-        { nombre: "carpetas-vinculadas", ejecutar: async () => log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() }) },
-        { nombre: "asistencia-pendiente", ejecutar: async () => log("info", "asistencia", { resumen: await worker.sincronizarAsistenciaPendiente() }) },
-        { nombre: "recuperacion-historica", ejecutar: async () => log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() }) },
-        { nombre: "barrido-recientes", ejecutar: async () => log("info", "barrido", { resumen: await worker.barrerRecientes() }) }
+        {
+          nombre: "inventario-vencidas",
+          ejecutar: async () => log("info", "inventario", { resumen: await worker.inventariarVencidas() })
+        },
+        {
+          nombre: "carpetas-vinculadas",
+          ejecutar: async () => log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() })
+        },
+        {
+          nombre: "asistencia-pendiente",
+          ejecutar: async () =>
+            log("info", "asistencia", { resumen: await worker.sincronizarAsistenciaPendiente() })
+        },
+        {
+          nombre: "recuperacion-historica",
+          ejecutar: async () =>
+            log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() })
+        },
+        {
+          nombre: "barrido-recientes",
+          ejecutar: async () => log("info", "barrido", { resumen: await worker.barrerRecientes() })
+        }
       ],
       esperar,
       intervaloMs: config.intervaloMantenimientoMs,
-      alFallar: (nombre, error) => log("error", "tarea de mantenimiento falló", { tarea: nombre, error: error instanceof Error ? error.name : "desconocido" })
+      alFallar: (nombre, error) =>
+        log("error", "tarea de mantenimiento falló", {
+          tarea: nombre,
+          error: error instanceof Error ? error.name : "desconocido"
+        })
     },
     { signal: control.signal }
   );
@@ -63,7 +89,10 @@ async function main(): Promise<number> {
       reclamarArchivo: worker.reclamarArchivo,
       procesar: async (lease) => {
         const r = await worker.transferir(lease, control.signal);
-        log("info", "archivo procesado", { archivoId: lease.archivoId, resultado: (r as { tipo?: string } | undefined)?.tipo ?? "n/d" });
+        log("info", "archivo procesado", {
+          archivoId: lease.archivoId,
+          resultado: (r as { tipo?: string } | undefined)?.tipo ?? "n/d"
+        });
       },
       ahora: () => new Date(),
       esperar,

@@ -5,7 +5,9 @@ export type CuentaRecordada = Readonly<{
 }>;
 
 export function esCuentaRecordada(value: unknown): value is CuentaRecordada {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
   const account = value as Record<string, unknown>;
   return [account.id, account.nombre, account.identificador].every(
     (field) => typeof field === "string" && field.length > 0

@@ -7,9 +7,6 @@ import {
   crearPrismaTarifasRepositoryAdapter,
   crearServicioLiquidaciones,
   type LiquidacionesRepositoryPort,
-  type ModalidadAsistencia,
-  type PeriodoMes,
-  type PeriodoReporteMensual,
   type PlanillaPagosExporterPort,
   type ServicioLiquidaciones,
   type TarifasRepositoryPort
@@ -34,18 +31,6 @@ export function obtenerServicioLiquidaciones(): ServicioLiquidaciones {
     exporter: crearPlanillaPagosExporter(),
     enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
   });
-}
-
-export async function consultarTarifaVigente(modalidad: ModalidadAsistencia) {
-  return obtenerServicioLiquidaciones().consultarTarifaVigente(modalidad);
-}
-
-export async function generarPlanillaPagos(periodo: PeriodoReporteMensual) {
-  return obtenerServicioLiquidaciones().generarPlanillaPagos(periodo);
-}
-
-export async function consultarResumenAsistentes(periodo: PeriodoMes) {
-  return obtenerServicioLiquidaciones().consultarResumenAsistentes(periodo);
 }
 
 export async function enviarReportesMensuales(ahora?: Date) {

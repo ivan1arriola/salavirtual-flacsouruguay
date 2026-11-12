@@ -5,9 +5,7 @@ export type MeetingProviderPresentation = Readonly<{
   supportsCohosts: boolean;
 }>;
 
-export function getMeetingProviderPresentation(
-  providerType: string | null,
-): MeetingProviderPresentation {
+export function getMeetingProviderPresentation(providerType: string | null): MeetingProviderPresentation {
   if (providerType === "ZOOM") {
     return {
       name: "Zoom",

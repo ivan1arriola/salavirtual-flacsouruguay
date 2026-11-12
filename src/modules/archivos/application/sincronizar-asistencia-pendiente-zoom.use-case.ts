@@ -26,19 +26,45 @@ export async function sincronizarAsistenciaPendienteZoomUseCase(
   opciones: Readonly<{ limite: number }>
 ): Promise<ResumenAsistenciaPendienteZoom> {
   const ids = await deps.repo.listarOcurrenciasPorSincronizarAsistencia(deps.ahora(), opciones.limite);
-  let disponibles = 0, vacias = 0, pendientes = 0, conflictos = 0, errores = 0;
+  let disponibles = 0,
+    vacias = 0,
+    pendientes = 0,
+    conflictos = 0,
+    errores = 0;
   const codigos = new Set<string>();
   for (const id of ids) {
     try {
       const r = await deps.sincronizar(id);
-      if (r.tipo === "OK") { if (r.estadoReporte === "DISPONIBLE") disponibles++; else vacias++; }
-      else if (r.tipo === "PENDIENTE") pendientes++;
-      else if (r.tipo === "CONFLICTO") conflictos++;
-      else { errores++; if (codigos.size < 10) codigos.add(r.codigo); }
+      if (r.tipo === "OK") {
+        if (r.estadoReporte === "DISPONIBLE") {
+          disponibles++;
+        } else {
+          vacias++;
+        }
+      } else if (r.tipo === "PENDIENTE") {
+        pendientes++;
+      } else if (r.tipo === "CONFLICTO") {
+        conflictos++;
+      } else {
+        errores++;
+        if (codigos.size < 10) {
+          codigos.add(r.codigo);
+        }
+      }
     } catch {
       errores++;
-      if (codigos.size < 10) codigos.add("ERROR_INESPERADO");
+      if (codigos.size < 10) {
+        codigos.add("ERROR_INESPERADO");
+      }
     }
   }
-  return { revisadas: ids.length, disponibles, vacias, pendientes, conflictos, errores, codigosError: [...codigos] };
+  return {
+    revisadas: ids.length,
+    disponibles,
+    vacias,
+    pendientes,
+    conflictos,
+    errores,
+    codigosError: [...codigos]
+  };
 }

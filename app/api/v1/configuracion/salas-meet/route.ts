@@ -10,7 +10,11 @@ export const runtime = "nodejs";
 
 const hostFields = z.object({
   nombre: z.string().trim().min(1, "El nombre es obligatorio.").max(100),
-  email: z.string().trim().email("El correo de la sala no es válido.").transform((value) => value.toLowerCase()),
+  email: z
+    .string()
+    .trim()
+    .email("El correo de la sala no es válido.")
+    .transform((value) => value.toLowerCase()),
   prioridad: z.number().int().min(1).max(1000),
   limiteConcurrente: z.number().int().min(1).max(100).nullable(),
   tieneLicencia: z.boolean(),
@@ -20,49 +24,79 @@ const hostFields = z.object({
 
 const passwordSchema = z.string().trim().min(8, "La contraseña debe tener al menos 8 caracteres.").max(200);
 
-const createSchema = hostFields.extend({
-  password: passwordSchema.optional()
-}).superRefine(({ proveedorTipo, password, limiteConcurrente }, context) => {
-  if (proveedorTipo === "GOOGLE_MEET" && !password) {
-    context.addIssue({ code: "custom", path: ["password"], message: "La contraseña de la sala Meet es obligatoria." });
-  }
-  if (proveedorTipo === "ZOOM" && password) {
-    context.addIssue({ code: "custom", path: ["password"], message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual." });
-  }
-  if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
-    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
-  }
-});
+const createSchema = hostFields
+  .extend({
+    password: passwordSchema.optional()
+  })
+  .superRefine(({ proveedorTipo, password, limiteConcurrente }, context) => {
+    if (proveedorTipo === "GOOGLE_MEET" && !password) {
+      context.addIssue({
+        code: "custom",
+        path: ["password"],
+        message: "La contraseña de la sala Meet es obligatoria."
+      });
+    }
+    if (proveedorTipo === "ZOOM" && password) {
+      context.addIssue({
+        code: "custom",
+        path: ["password"],
+        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual."
+      });
+    }
+    if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
+      context.addIssue({
+        code: "custom",
+        path: ["limiteConcurrente"],
+        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+      });
+    }
+  });
 
-const updateSchema = hostFields.extend({
-  id: z.string().min(1),
-  password: z.union([z.literal(""), passwordSchema]).optional(),
-  notificarCambioPassword: z.boolean().default(true)
-}).superRefine(({ proveedorTipo, limiteConcurrente }, context) => {
-  if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
-    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
-  }
-});
+const updateSchema = hostFields
+  .extend({
+    id: z.string().min(1),
+    password: z.union([z.literal(""), passwordSchema]).optional(),
+    notificarCambioPassword: z.boolean().default(true)
+  })
+  .superRefine(({ proveedorTipo, limiteConcurrente }, context) => {
+    if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
+      context.addIssue({
+        code: "custom",
+        path: ["limiteConcurrente"],
+        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+      });
+    }
+  });
 
 /**
  * Las cuentas Zoom vienen del grupo elegido: acá solo se editan `prioridad` y `activa`.
  * Nombre, correo y licencia los fija la sincronización, así que se ignoran si llegan.
  */
-const zoomUpdateSchema = z.object({
-  id: z.string().min(1),
-  proveedorTipo: z.literal("ZOOM"),
-  prioridad: hostFields.shape.prioridad,
-  activa: hostFields.shape.activa,
-  limiteConcurrente: hostFields.shape.limiteConcurrente.optional(),
-  password: z.string().optional()
-}).superRefine(({ limiteConcurrente, password }, context) => {
-  if (limiteConcurrente !== undefined && limiteConcurrente !== 1) {
-    context.addIssue({ code: "custom", path: ["limiteConcurrente"], message: "Cada cuenta Zoom admite una sola reunión simultánea." });
-  }
-  if (password?.trim()) {
-    context.addIssue({ code: "custom", path: ["password"], message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual." });
-  }
-});
+const zoomUpdateSchema = z
+  .object({
+    id: z.string().min(1),
+    proveedorTipo: z.literal("ZOOM"),
+    prioridad: hostFields.shape.prioridad,
+    activa: hostFields.shape.activa,
+    limiteConcurrente: hostFields.shape.limiteConcurrente.optional(),
+    password: z.string().optional()
+  })
+  .superRefine(({ limiteConcurrente, password }, context) => {
+    if (limiteConcurrente !== undefined && limiteConcurrente !== 1) {
+      context.addIssue({
+        code: "custom",
+        path: ["limiteConcurrente"],
+        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+      });
+    }
+    if (password?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["password"],
+        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual."
+      });
+    }
+  });
 
 const deleteSchema = z.object({
   id: z.string().min(1)
@@ -84,11 +118,15 @@ type SafeHost = Readonly<{
 
 export async function POST(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const body: unknown = await request.json();
-    if (esCuentaZoom(body)) return cuentasZoomPorGrupo();
+    if (esCuentaZoom(body)) {
+      return cuentasZoomPorGrupo();
+    }
     const input = createSchema.parse(body);
     const host = await db.$transaction(async (tx) => {
       const provider = await tx.proveedorReunion.upsert({
@@ -108,7 +146,11 @@ export async function POST(request: Request) {
         },
         select: { id: true }
       });
-      if (duplicate) throw new Error(`Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`);
+      if (duplicate) {
+        throw new Error(
+          `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`
+        );
+      }
 
       const created = await tx.cuentaProveedor.create({
         data: {
@@ -143,7 +185,13 @@ export async function POST(request: Request) {
       return created;
     });
 
-    return NextResponse.json({ host: toSafeHost(host, false), message: `Sala ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} agregada.` }, { status: 201 });
+    return NextResponse.json(
+      {
+        host: toSafeHost(host, false),
+        message: `Sala ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} agregada.`
+      },
+      { status: 201 }
+    );
   } catch (error) {
     return errorResponse(error);
   }
@@ -151,11 +199,15 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const body: unknown = await request.json();
-    if (esCuentaZoom(body)) return await actualizarCuentaZoom(actor.id, zoomUpdateSchema.parse(body));
+    if (esCuentaZoom(body)) {
+      return await actualizarCuentaZoom(actor.id, zoomUpdateSchema.parse(body));
+    }
     const input = updateSchema.parse(body);
     const result = await db.$transaction(async (tx) => {
       const current = await tx.cuentaProveedor.findUnique({
@@ -178,7 +230,9 @@ export async function PUT(request: Request) {
 
       const emailChanged = current.emailOrganizador?.toLowerCase() !== input.email;
       if (emailChanged && current._count.eventosProveedor > 0) {
-        throw new Error("Esta cuenta ya tiene reuniones asociadas. Para reemplazarla, desactivala y agregá una cuenta nueva.");
+        throw new Error(
+          "Esta cuenta ya tiene reuniones asociadas. Para reemplazarla, desactivala y agregá una cuenta nueva."
+        );
       }
       if (emailChanged) {
         const duplicate = await tx.cuentaProveedor.findFirst({
@@ -189,7 +243,11 @@ export async function PUT(request: Request) {
           },
           select: { id: true }
         });
-        if (duplicate) throw new Error(`Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`);
+        if (duplicate) {
+          throw new Error(
+            `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`
+          );
+        }
       }
 
       const password = input.password || null;
@@ -223,7 +281,11 @@ export async function PUT(request: Request) {
       await tx.auditoria.create({
         data: {
           actorUsuarioId: actor.id,
-          accion: passwordChanged ? "CUENTA_MEET_PASSWORD_ACTUALIZADA" : current.proveedor.tipo === "ZOOM" ? "CUENTA_ZOOM_ACTUALIZADA" : "CUENTA_MEET_ACTUALIZADA",
+          accion: passwordChanged
+            ? "CUENTA_MEET_PASSWORD_ACTUALIZADA"
+            : current.proveedor.tipo === "ZOOM"
+              ? "CUENTA_ZOOM_ACTUALIZADA"
+              : "CUENTA_MEET_ACTUALIZADA",
           entidadTipo: "CuentaProveedor",
           entidadId: current.id,
           valorAnterior: {
@@ -259,7 +321,12 @@ export async function PUT(request: Request) {
 
     let notificados = 0;
     if (result.passwordChanged && result.password && input.notificarCambioPassword) {
-      notificados = await notificarCambioPassword(result.host.id, result.host.nombre, result.host.emailOrganizador, result.password);
+      notificados = await notificarCambioPassword(
+        result.host.id,
+        result.host.nombre,
+        result.host.emailOrganizador,
+        result.password
+      );
     }
 
     const passwordMessage = !result.passwordChanged
@@ -282,7 +349,9 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const actor = await requireAdmin();
-  if (actor instanceof NextResponse) return actor;
+  if (actor instanceof NextResponse) {
+    return actor;
+  }
 
   try {
     const input = deleteSchema.parse(await request.json());
@@ -298,7 +367,9 @@ export async function DELETE(request: Request) {
       if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
         throw new Error("La cuenta organizadora no existe.");
       }
-      if (current.proveedor.tipo === "ZOOM") return null;
+      if (current.proveedor.tipo === "ZOOM") {
+        return null;
+      }
 
       const activeMeetings = await tx.eventoProveedor.count({
         where: {
@@ -337,7 +408,9 @@ export async function DELETE(request: Request) {
       return current;
     });
 
-    if (!deleted) return cuentasZoomPorGrupo();
+    if (!deleted) {
+      return cuentasZoomPorGrupo();
+    }
     return NextResponse.json({ message: `${deleted.nombre} fue eliminada.` });
   } catch (error) {
     return errorResponse(error);
@@ -345,7 +418,9 @@ export async function DELETE(request: Request) {
 }
 
 function esCuentaZoom(body: unknown): boolean {
-  return typeof body === "object" && body !== null && "proveedorTipo" in body && body.proveedorTipo === "ZOOM";
+  return (
+    typeof body === "object" && body !== null && "proveedorTipo" in body && body.proveedorTipo === "ZOOM"
+  );
 }
 
 function cuentasZoomPorGrupo() {
@@ -411,7 +486,10 @@ async function requireAdmin(): Promise<{ id: string } | NextResponse> {
   }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
-    return NextResponse.json({ error: "La sesión está desactualizada. Volvé a iniciar sesión." }, { status: 401 });
+    return NextResponse.json(
+      { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
+      { status: 401 }
+    );
   }
   return { id: actor.id };
 }
@@ -477,7 +555,9 @@ async function notificarCambioPassword(
   }
 
   const unique = [...recipients.values()];
-  if (unique.length === 0) return 0;
+  if (unique.length === 0) {
+    return 0;
+  }
   await notificarUsuarios(db, unique, {
     tipo: "CREDENCIALES_SALA_CAMBIADAS",
     titulo: `Cambió la contraseña de ${nombre}`,

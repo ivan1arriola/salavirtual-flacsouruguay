@@ -2,11 +2,6 @@ import type { ZoomRecurrenceInput } from "@/src/integrations/zoom/zoom-client";
 
 export const MAX_ZOOM_OCCURRENCES = 50;
 
-export type InstanciaHorario = Readonly<{
-  inicio: Date;
-  fin?: Date;
-}>;
-
 export type RecurrenciaZoomCalculada = Readonly<{
   startTime: Date;
   durationMinutes: number;
@@ -60,18 +55,14 @@ function ordenarInstancias(
 ): readonly Readonly<{ inicio: Date; fin: Date }>[] {
   return items.reduce<readonly Readonly<{ inicio: Date; fin: Date }>[]>((orden, actual) => {
     const indice = orden.findIndex((item) => actual.inicio.getTime() < item.inicio.getTime());
-    return indice < 0
-      ? [...orden, actual]
-      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
 function ordenarNumeros(items: readonly number[]): readonly number[] {
   return items.reduce<readonly number[]>((orden, actual) => {
     const indice = orden.findIndex((item) => actual < item);
-    return indice < 0
-      ? [...orden, actual]
-      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
@@ -167,7 +158,9 @@ export function detectarOcurrenciasAjustar(
     const instanciaCoincidente = instanciasRequeridas.find(
       (inst) => formatearFechaIso(inst.inicio, timezone) === zoomDateIso
     );
-    if (!instanciaCoincidente) return [];
+    if (!instanciaCoincidente) {
+      return [];
+    }
 
     const instDuracionMinutos = Math.max(
       1,
@@ -178,11 +171,13 @@ export function detectarOcurrenciasAjustar(
 
     // Si difiere en hora de inicio (más de 1 min) o duración (más de 1 min), requiere ajuste
     if (diferenciaInicioMs > 60_000 || diferenciaDuracionMinutos > 1) {
-      return [{
-        occurrenceId: occ.occurrenceId,
-        startTime: instanciaCoincidente.inicio,
-        durationMinutes: instDuracionMinutos
-      }];
+      return [
+        {
+          occurrenceId: occ.occurrenceId,
+          startTime: instanciaCoincidente.inicio,
+          durationMinutes: instDuracionMinutos
+        }
+      ];
     }
     return [];
   });

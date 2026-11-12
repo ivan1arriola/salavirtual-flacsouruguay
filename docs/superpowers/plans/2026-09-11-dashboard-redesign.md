@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-09-11-dashboard-redesign.md`
 
 ## Global Constraints
+
 - Trabajar directamente sobre la rama `main`.
 - Prohibido llamar a `new Date()` o `Date.now()` en `src/modules/dashboard/dashboard.domain.ts` (debe recibir `ahora: Date`), validado por `test/functional-architecture.test.ts`.
 - Prohibidas mutaciones de colecciones (`.push(`, `.sort(`, `.set(`, etc.) y `let`/`var` en `dashboard.domain.ts` según las reglas de pureza funcional del repositorio.
@@ -23,11 +24,13 @@
 ### Task 1: Tipos y Dominio Funcional Puro (`types.ts` y `dashboard.domain.ts`)
 
 **Files:**
+
 - Create: `src/modules/dashboard/types.ts`
 - Create: `src/modules/dashboard/dashboard.domain.ts`
 - Test: `test/dashboard-domain.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tipos de fecha nativos `Date`.
 - Produces:
   - `EstadoTemporalReunion = "EN_VIVO" | "PROXIMA_HOY" | "FUTURA" | "FINALIZADA"`
@@ -39,6 +42,7 @@
 - [x] **Step 1: Escribir el test fallido para el dominio de dashboard**
 
 Crear `test/dashboard-domain.test.ts`:
+
 ```typescript
 import { describe, expect, it } from "vitest";
 import {
@@ -111,6 +115,7 @@ Expected: FAIL (módulos no encontrados).
 - [x] **Step 3: Implementar `types.ts` y `dashboard.domain.ts`**
 
 Crear `src/modules/dashboard/types.ts`:
+
 ```typescript
 export type EstadoTemporalReunion = "EN_VIVO" | "PROXIMA_HOY" | "FUTURA" | "FINALIZADA";
 
@@ -178,16 +183,13 @@ export interface AssistantOpportunityDTO {
 ```
 
 Crear `src/modules/dashboard/dashboard.domain.ts` (estrictamente puro, sin `new Date()`, sin `let`, sin mutaciones):
+
 ```typescript
 import type { EstadoTemporalReunion } from "./types";
 
 const MINUTOS_ANTICIPACION_EN_VIVO = 15;
 
-export function determinarEstadoTemporal(
-  inicio: Date,
-  fin: Date,
-  ahora: Date
-): EstadoTemporalReunion {
+export function determinarEstadoTemporal(inicio: Date, fin: Date, ahora: Date): EstadoTemporalReunion {
   const ahoraMs = ahora.getTime();
   const inicioMs = inicio.getTime();
   const finMs = fin.getTime();
@@ -272,12 +274,14 @@ git commit -m "feat(dashboard): agregar tipos y dominio funcional puro para redi
 ### Task 2: Adaptadores de Datos Prisma por Rol (`teacher`, `assistant`, `admin`)
 
 **Files:**
+
 - Create: `src/modules/dashboard/teacher-dashboard.adapter.ts`
 - Create: `src/modules/dashboard/assistant-dashboard.adapter.ts`
 - Create: `src/modules/dashboard/admin-dashboard.adapter.ts`
 - Test: `test/dashboard-adapters.test.ts`
 
 **Interfaces:**
+
 - Consumes: `db` de `@/src/lib/db`, tipos de `types.ts`, funciones de `dashboard.domain.ts`.
 - Produces:
   - `obtenerDashboardDocente(db: PrismaClient, usuarioId: string, ahora: Date)`
@@ -287,6 +291,7 @@ git commit -m "feat(dashboard): agregar tipos y dominio funcional puro para redi
 - [x] **Step 1: Escribir el test de adaptadores de dashboard**
 
 Crear `test/dashboard-adapters.test.ts`:
+
 ```typescript
 import { describe, expect, it } from "vitest";
 import { obtenerClaveDiaMontevideo } from "../src/modules/dashboard/dashboard.domain";
@@ -308,6 +313,7 @@ Expected: PASS.
 - [x] **Step 3: Implementar `teacher-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/teacher-dashboard.adapter.ts`:
+
 - Consulta las instancias programadas del docente (`finProgramadoAt >= ahora`).
 - Identifica la clase más inmediata para el Hero (si empieza hoy o está en curso).
 - Recupera las siguientes 5 reuniones y las 3 grabaciones recientes de sus programas.
@@ -316,6 +322,7 @@ Crear `src/modules/dashboard/teacher-dashboard.adapter.ts`:
 - [x] **Step 4: Implementar `assistant-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/assistant-dashboard.adapter.ts`:
+
 - Reutiliza el cálculo de horas mensuales de `obtenerDashboardAsistente`.
 - Incluye consulta directa de 3 reuniones próximas que requieren asistencia y no tienen asignación para postularse en 1 clic.
 - Transforma a `HeroMeetingDTO` y `AssistantOpportunityDTO[]`.
@@ -323,6 +330,7 @@ Crear `src/modules/dashboard/assistant-dashboard.adapter.ts`:
 - [x] **Step 5: Implementar `admin-dashboard.adapter.ts`**
 
 Crear `src/modules/dashboard/admin-dashboard.adapter.ts`:
+
 - Consulta acotada de alertas de triage (sin asistencia hoy, fallas Meet activas, grabaciones pendientes, incidencias).
 - Consulta cronológica de las salas del día (`inicioProgramadoAt` entre inicio y fin del día en Montevideo, `take: 8`).
 - Métricas consolidadas compactas (solicitudes en curso, reuniones de la semana).
@@ -344,11 +352,13 @@ git commit -m "feat(dashboard): agregar adaptadores Prisma especializados por ro
 ### Task 3: Componentes UI Compartidos (`DashboardHeader` y `LiveMeetingHero`)
 
 **Files:**
+
 - Create: `src/components/dashboard/dashboard-header.tsx`
 - Create: `src/components/dashboard/live-meeting-hero.tsx`
 - Test: `test/dashboard-components.test.ts`
 
 **Interfaces:**
+
 - Consumes: `HeroMeetingDTO`, `formatShortDate`, `formatDate`, `formatTime`, `CopyMeetLinkButton`.
 - Produces:
   - `<DashboardHeader userName={string} roleName={string} actions={ReactNode} />`
@@ -357,6 +367,7 @@ git commit -m "feat(dashboard): agregar adaptadores Prisma especializados por ro
 - [x] **Step 1: Escribir test para componentes base del dashboard**
 
 Crear `test/dashboard-components.test.ts`:
+
 ```typescript
 import { describe, expect, it } from "vitest";
 import { determinarEstadoTemporal } from "../src/modules/dashboard/dashboard.domain";
@@ -374,22 +385,24 @@ describe("componentes compartidos de dashboard", () => {
 - [x] **Step 2: Implementar `src/components/dashboard/dashboard-header.tsx`**
 
 Implementar un encabezado limpio y humano:
-- Saludo personalizado (*"Hola, [Nombre]"*).
+
+- Saludo personalizado (_"Hola, [Nombre]"_).
 - Subtítulo con fecha formateada en Montevideo y rol en badge estilizado.
 - Contenedor de acciones primarias y secundarias con soporte para responsive.
 
 - [x] **Step 3: Implementar `src/components/dashboard/live-meeting-hero.tsx`**
 
 Implementar la tarjeta Hero de alta visibilidad:
+
 - Si `meeting !== null`:
-  - Badge de estado dinámico (*"En vivo ahora"* con pulso animado o cuenta regresiva *"Empieza en X min"*).
+  - Badge de estado dinámico (_"En vivo ahora"_ con pulso animado o cuenta regresiva _"Empieza en X min"_).
   - Título del evento / clase, programa académico y modalidad (Virtual / Híbrida).
   - Horario formateado (`19:00–21:00`).
   - Botón primario: **"Entrar a Google Meet"** (`target="_blank"` hacia `meeting.joinUrl`).
   - Botón secundario: `<CopyMeetLinkButton url={meeting.joinUrl} />`.
   - Ficha de cohost técnico y estado de verificación.
 - Si `meeting === null`:
-  - Estado vacío amable y elegante con mensaje personalizado (ej. *"No tenés clases programadas para hoy"*).
+  - Estado vacío amable y elegante con mensaje personalizado (ej. _"No tenés clases programadas para hoy"_).
 
 - [x] **Step 4: Verificar TypeScript y tests**
 
@@ -408,18 +421,21 @@ git commit -m "feat(dashboard): crear componentes base DashboardHeader y LiveMee
 ### Task 4: Sub-dashboard de Docente (`TeacherDashboard`)
 
 **Files:**
+
 - Create: `src/components/dashboard/teacher/teacher-upcoming-list.tsx`
 - Create: `src/components/dashboard/teacher/teacher-recent-recordings.tsx`
 - Create: `src/components/dashboard/teacher/teacher-dashboard.tsx`
 - Modify: `src/components/teacher-dashboard.tsx` (re-exportar para compatibilidad)
 
 **Interfaces:**
+
 - Consumes: `obtenerDashboardDocente` de `teacher-dashboard.adapter.ts`, `DashboardHeader`, `LiveMeetingHero`.
 - Produces: `<TeacherDashboard user={session.user} />`.
 
 - [x] **Step 1: Implementar `teacher-upcoming-list.tsx`**
 
 Implementar una lista limpia de próximas sesiones:
+
 - Agrupación visual por fecha y hora.
 - Título con enlace a la reunión.
 - Modalidad y nombre del asistente técnico (si tiene).
@@ -428,6 +444,7 @@ Implementar una lista limpia de próximas sesiones:
 - [x] **Step 2: Implementar `teacher-recent-recordings.tsx`**
 
 Implementar la tarjeta de grabaciones recientes para docentes:
+
 - Muestra las últimas clases que ya tienen video sincronizado en Google Drive.
 - Botón para abrir el video en Google Drive o copiar el enlace para compartir con alumnos.
 - Enlace al final a `/grabaciones`.
@@ -435,6 +452,7 @@ Implementar la tarjeta de grabaciones recientes para docentes:
 - [x] **Step 3: Implementar `teacher-dashboard.tsx` y conectar con adapter**
 
 Orquestar el panel docente:
+
 - Llama a `obtenerDashboardDocente(db, user.id, new Date())`.
 - Renderiza `<DashboardHeader>`, `<LiveMeetingHero>`, `<TeacherUpcomingList>` y `<TeacherRecentRecordings>`.
 
@@ -457,18 +475,21 @@ git commit -m "feat(dashboard): implementar sub-dashboard optimizado para docent
 ### Task 5: Sub-dashboard de Asistente Técnico (`AssistantDashboard`)
 
 **Files:**
+
 - Create: `src/components/dashboard/assistant/assistant-open-opportunities.tsx`
 - Create: `src/components/dashboard/assistant/assistant-hours-summary.tsx`
 - Create: `src/components/dashboard/assistant/assistant-dashboard.tsx`
 - Modify: `src/components/assistant-dashboard.tsx` (re-exportar para compatibilidad)
 
 **Interfaces:**
+
 - Consumes: `obtenerDashboardAsistenteOptimizado` de `assistant-dashboard.adapter.ts`, `DashboardHeader`, `LiveMeetingHero`.
 - Produces: `<AssistantDashboard user={session.user} />`.
 
 - [x] **Step 1: Implementar `assistant-open-opportunities.tsx`**
 
 Implementar la sección de vacantes abiertas:
+
 - Muestra hasta 3 reuniones que buscan asistente técnico.
 - Permite postularse en 1 clic o navegar a `/agenda-abierta`.
 - Indica fecha, hora, sala y modalidad.
@@ -476,6 +497,7 @@ Implementar la sección de vacantes abiertas:
 - [x] **Step 2: Implementar `assistant-hours-summary.tsx`**
 
 Implementar el resumen de horas trabajadas y postulaciones activas:
+
 - Horas acumuladas en el mes (virtuales e híbridas).
 - Horas del mes anterior.
 - Estado de postulaciones respondidas vs pendientes.
@@ -483,6 +505,7 @@ Implementar el resumen de horas trabajadas y postulaciones activas:
 - [x] **Step 3: Implementar `assistant-dashboard.tsx` y conectar con adapter**
 
 Orquestar el panel del asistente:
+
 - Renderiza `<DashboardHeader>`, `<LiveMeetingHero>` (con badge de cohost confirmado en Meet), `<AssistantOpenOpportunities>`, `<AssistantHoursSummary>` y las siguientes coberturas.
 
 - [x] **Step 4: Actualizar `src/components/assistant-dashboard.tsx` para delegar al nuevo módulo**
@@ -504,24 +527,28 @@ git commit -m "feat(dashboard): implementar sub-dashboard optimizado para asiste
 ### Task 6: Sub-dashboard de Administración (`AdminDashboard`)
 
 **Files:**
+
 - Create: `src/components/dashboard/admin/admin-triage-section.tsx`
 - Create: `src/components/dashboard/admin/admin-today-timeline.tsx`
 - Create: `src/components/dashboard/admin/admin-metrics-bar.tsx`
 - Create: `src/components/dashboard/admin/admin-dashboard.tsx`
 
 **Interfaces:**
+
 - Consumes: `obtenerDashboardAdministracion` de `admin-dashboard.adapter.ts`, `DashboardHeader`, componentes de acción de `src/components/admin-attention-actions.tsx`.
 - Produces: `<AdminDashboard user={session.user} />`.
 
 - [x] **Step 1: Implementar `admin-triage-section.tsx`**
 
 Implementar la sección de Triage Urgente:
+
 - Si hay problemas: Tarjetas compactas con las acciones de 1 clic existentes (`AdminQuickAssignAction`, `AdminRetryMeetAction`, `AdminSyncRecordingsAction`).
-- Si todo está en orden: Banner verde *"Todo bajo control: No hay excepciones operativas pendientes para hoy"*.
+- Si todo está en orden: Banner verde _"Todo bajo control: No hay excepciones operativas pendientes para hoy"_.
 
 - [x] **Step 2: Implementar `admin-today-timeline.tsx`**
 
 Implementar el timeline de salas de hoy:
+
 - Cronología del día ordenada por hora de inicio.
 - Estado en vivo / próxima / finalizada.
 - Indicador claro de Asistente Técnico y badge de cohosts verificado/pendiente.
@@ -530,12 +557,14 @@ Implementar el timeline de salas de hoy:
 - [x] **Step 3: Implementar `admin-metrics-bar.tsx`**
 
 Implementar la barra de métricas secundarias en la parte inferior:
+
 - Solicitudes abiertas, reuniones de la semana, incidencias históricas.
 - Enlaces rápidos de administración (`/reuniones`, `/asistencia-tecnica`, `/grabaciones`).
 
 - [x] **Step 4: Implementar `admin-dashboard.tsx`**
 
 Orquestar el panel de administración unificado:
+
 - Carga `obtenerDashboardAdministracion(db, new Date())`.
 - Renderiza `<DashboardHeader>`, `<AdminTriageSection>`, `<AdminTodayTimeline>` y `<AdminMetricsBar>`.
 
@@ -556,11 +585,13 @@ git commit -m "feat(dashboard): implementar sub-dashboard de administracion con 
 ### Task 7: Integración en `app/(gestion)/page.tsx`, Estilos CSS y Verificación Total
 
 **Files:**
+
 - Modify: `app/(gestion)/page.tsx`
 - Modify: `styles/globals.css` (estilos para hero de clase en vivo, timeline y triage)
 - Test: `test/dashboard-views.test.ts`
 
 **Interfaces:**
+
 - Consumes: `<AdminDashboard>`, `<TeacherDashboard>`, `<AssistantDashboard>`, `auth()`.
 - Produces: Página raíz `/` limpia de menos de 40 líneas de código.
 
@@ -571,6 +602,7 @@ Validar que `HomePage` rutea correctamente a cada rol y redirige si no hay sesi�
 - [x] **Step 2: Refactorizar `app/(gestion)/page.tsx`**
 
 Reducir `app/(gestion)/page.tsx` a un despachador limpio:
+
 ```typescript
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -597,6 +629,7 @@ export default async function HomePage() {
 - [x] **Step 3: Ajustar estilos en `styles/globals.css`**
 
 Añadir y afinar estilos CSS para:
+
 - `.dashboard-hero-card` (tarjeta Hero con acentos visuales y pulso de "En vivo").
 - `.today-timeline` (cronología de salas limpia con badges).
 - `.triage-section` (grilla ordenada de atención urgente).
@@ -605,6 +638,7 @@ Añadir y afinar estilos CSS para:
 - [x] **Step 4: Ejecutar todas las verificaciones del proyecto**
 
 Run:
+
 1. `npm run check` (TypeScript estricto)
 2. `npm run validate:schema` (Prisma)
 3. `npx vitest run` (100% de la suite de pruebas)
@@ -616,4 +650,3 @@ Run:
 git add app/(gestion)/page.tsx styles/globals.css test/dashboard-views.test.ts
 git commit -m "feat(dashboard): conectar nuevo dashboard modular por rol y optimizar estilos UI"
 ```
-

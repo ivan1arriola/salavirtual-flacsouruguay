@@ -42,7 +42,11 @@ describe("integraciones google: drive", () => {
       expect(mockAuth.request).toHaveBeenCalledTimes(1);
       const callArgs = (mockAuth.request as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(callArgs.url).toContain("q=");
-      expect(callArgs.url).toContain(encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and name = 'Clase 01' and 'parent-root' in parents and trashed = false"));
+      expect(callArgs.url).toContain(
+        encodeURIComponent(
+          "mimeType = 'application/vnd.google-apps.folder' and name = 'Clase 01' and 'parent-root' in parents and trashed = false"
+        )
+      );
       expect(callArgs.method).toBe("GET");
     });
 
@@ -74,9 +78,9 @@ describe("integraciones google: drive", () => {
           .mockResolvedValueOnce({ data: {} })
       } as unknown as JWT;
 
-      await expect(
-        obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Error Carpeta")
-      ).rejects.toThrow("Drive no devolvió el ID de la carpeta creada.");
+      await expect(obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Error Carpeta")).rejects.toThrow(
+        "Drive no devolvió el ID de la carpeta creada."
+      );
     });
   });
 
@@ -140,4 +144,3 @@ describe("integraciones google: drive", () => {
     });
   });
 });
-

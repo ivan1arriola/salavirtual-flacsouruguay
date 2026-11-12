@@ -10,7 +10,9 @@ function latestCommitMessage() {
     }).trim();
   } catch (error) {
     console.log("No se pudo leer el commit actual; se omite el build de Vercel por seguridad.");
-    if (error instanceof Error) console.log(error.message);
+    if (error instanceof Error) {
+      console.log(error.message);
+    }
     return "";
   }
 }

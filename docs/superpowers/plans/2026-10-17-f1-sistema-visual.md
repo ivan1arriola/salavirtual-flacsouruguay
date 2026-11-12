@@ -32,11 +32,13 @@
 ### Task 1: Establish and document the token contract
 
 **Files:**
+
 - Modify: `app/brand.css`
 - Create: `docs/ui/sistema-visual.md`
 - Test: `test/design-tokens.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing CSS custom properties in `app/brand.css`.
 - Produces: documented CSS tokens for later UI phases; no component or API interface changes.
 
@@ -44,12 +46,12 @@
 
 Create `test/design-tokens.test.ts`. Parse `app/brand.css` with the PostCSS parser already used by the Next.js CSS toolchain. Assert the observable stylesheet contract:
 
-  - Resolve state aliases to `#24745b`, `#a96f00`, `#a94242`, and `#2c4777`, and preserve `--brand` at `#2c4777`.
-  - Verify `body` consumes `--font-sans` and that it resolves to the existing Inter system font stack.
-  - Verify the type scale from `--text-xs: 0.75rem` through `--text-3xl: 1.875rem`.
-  - Verify spacing from `--space-1: 0.25rem` through `--space-8: 2rem`.
-  - Verify radii `4px`, `6px`, `8px`, and `9999px`, plus `--border-width: 1px`.
-  - Verify interactive `:focus-visible` selectors use a 3px solid outline with `--focus-ring-color: #2c4777` and 2px offset.
+- Resolve state aliases to `#24745b`, `#a96f00`, `#a94242`, and `#2c4777`, and preserve `--brand` at `#2c4777`.
+- Verify `body` consumes `--font-sans` and that it resolves to the existing Inter system font stack.
+- Verify the type scale from `--text-xs: 0.75rem` through `--text-3xl: 1.875rem`.
+- Verify spacing from `--space-1: 0.25rem` through `--space-8: 2rem`.
+- Verify radii `4px`, `6px`, `8px`, and `9999px`, plus `--border-width: 1px`.
+- Verify interactive `:focus-visible` selectors use a 3px solid outline with `--focus-ring-color: #2c4777` and 2px offset.
 
 - [ ] **Step 2: Run the focused test and verify it fails**
 

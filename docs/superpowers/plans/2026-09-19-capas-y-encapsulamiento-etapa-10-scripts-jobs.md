@@ -28,6 +28,7 @@
 ### Task 1: Caso de uso de lote de artefactos
 
 **Files:**
+
 - Create: `src/modules/archivos/application/sincronizar-lote-operativo.ts`
 - Modify: `src/modules/archivos/ports/archivos-repository.port.ts`
 - Modify: `src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter.ts`
@@ -41,6 +42,7 @@
 ### Task 2: Bootstrap y rutas cron delgadas
 
 **Files:**
+
 - Modify: `src/bootstrap/archivos.server.ts`
 - Modify: `src/bootstrap/liquidaciones.server.ts`
 - Modify: `app/api/v1/reuniones/sincronizar-archivos/route.ts`

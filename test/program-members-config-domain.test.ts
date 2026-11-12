@@ -9,7 +9,9 @@ const programs = [
 
 describe("filtro de programas", () => {
   it("busca por nombre o código", () => {
-    expect(filterPrograms(programs, { query: "educación", state: "todos" }).map(({ id }) => id)).toEqual(["1"]);
+    expect(filterPrograms(programs, { query: "educación", state: "todos" }).map(({ id }) => id)).toEqual([
+      "1"
+    ]);
     expect(filterPrograms(programs, { query: "DS", state: "todos" }).map(({ id }) => id)).toEqual(["3"]);
   });
 

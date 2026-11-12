@@ -37,11 +37,11 @@ import "./monitoring-coverage-workflow.css";
 import "./assistants-monitoring-mobile.css";
 import "./role-dashboard-mobile.css";
 
-export default async function GestionLayout({
-  children
-}: Readonly<{ children: React.ReactNode }>) {
+export default async function GestionLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
@@ -62,23 +62,29 @@ export default async function GestionLayout({
       docente: { select: { _count: { select: { programas: { where: { activo: true } } } } } }
     }
   });
-  if (!user) redirect("/acceso");
-  if (requiereCompletarRegistro({
-    rol: user.rol,
-    programasActivos: user.docente?._count.programas ?? 0
-  })) {
+  if (!user) {
+    redirect("/acceso");
+  }
+  if (
+    requiereCompletarRegistro({
+      rol: user.rol,
+      programasActivos: user.docente?._count.programas ?? 0
+    })
+  ) {
     redirect("/completar-registro");
   }
 
   return (
-    <AppShell user={{
-      ...session.user,
-      id: actor.id,
-      role: actor.rol,
-      name: [user.nombres, user.apellidos].filter(Boolean).join(" "),
-      email: user.emailPrincipal ?? session.user.email,
-      image: user.imagenUrl ?? session.user.image
-    }}>
+    <AppShell
+      user={{
+        ...session.user,
+        id: actor.id,
+        role: actor.rol,
+        name: [user.nombres, user.apellidos].filter(Boolean).join(" "),
+        email: user.emailPrincipal ?? session.user.email,
+        image: user.imagenUrl ?? session.user.image
+      }}
+    >
       <Suspense fallback={null}>
         <AgendaDayEnhancer />
       </Suspense>

@@ -60,11 +60,7 @@ describe("vista de agenda", () => {
       meeting("i3", "s3", "2026-06-01T12:00:00.000Z")
     ];
 
-    expect(agruparEncuentrosPorSerie(meetings, true).map((group) => group[0].id)).toEqual([
-      "i2",
-      "i3",
-      "i1"
-    ]);
+    expect(agruparEncuentrosPorSerie(meetings, true).map((group) => group[0].id)).toEqual(["i2", "i3", "i1"]);
   });
 
   it("no agrupa títulos diferentes", () => {
@@ -78,7 +74,9 @@ describe("vista de agenda", () => {
 
   it("acepta un código o un enlace completo de Google Meet", () => {
     expect(normalizarCodigoReunionBuscado(" ABC-DEFG-HIJ ")).toBe("abc-defg-hij");
-    expect(normalizarCodigoReunionBuscado("https://meet.google.com/abc-defg-hij?authuser=1")).toBe("abc-defg-hij");
+    expect(normalizarCodigoReunionBuscado("https://meet.google.com/abc-defg-hij?authuser=1")).toBe(
+      "abc-defg-hij"
+    );
   });
 
   it("resuelve la paginación con valores seguros", () => {

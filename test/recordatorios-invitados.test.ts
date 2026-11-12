@@ -9,31 +9,49 @@ describe("recordatorios de invitados externos", () => {
     let reservado = false;
     const db: any = {
       instanciaSala: {
-        findMany: vi.fn().mockResolvedValue([{
-          id: "inst", inicioProgramadoAt: inicio,
-          finProgramadoAt: new Date("2030-10-24T15:00:00Z"),
-          inicioAsistenciaTecnicaAt: null, finAsistenciaTecnicaAt: null,
-          modalidadOverride: null, requiereAsistenciaTecnica: false,
-          invitados: [{ email: "persona@ejemplo.com" }],
-          solicitud: {
-            id: "req", titulo: "Seminario", modalidad: "VIRTUAL",
-            creadaPorUsuarioId: "u1",
-            docentePrograma: { docente: { usuarioId: "u2" }, programa: { nombre: "Género" } }
-          },
-          asignaciones: [],
-          eventosProveedor: [{ proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: "abc-defg-hij", joinUrl: "https://meet.google.com/abc-defg-hij",
-            cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" } }]
-        }]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "inst",
+            inicioProgramadoAt: inicio,
+            finProgramadoAt: new Date("2030-10-24T15:00:00Z"),
+            inicioAsistenciaTecnicaAt: null,
+            finAsistenciaTecnicaAt: null,
+            modalidadOverride: null,
+            requiereAsistenciaTecnica: false,
+            invitados: [{ email: "persona@ejemplo.com" }],
+            solicitud: {
+              id: "req",
+              titulo: "Seminario",
+              modalidad: "VIRTUAL",
+              creadaPorUsuarioId: "u1",
+              docentePrograma: { docente: { usuarioId: "u2" }, programa: { nombre: "Género" } }
+            },
+            asignaciones: [],
+            eventosProveedor: [
+              {
+                proveedor: { tipo: "GOOGLE_MEET" },
+                codigoReunion: "abc-defg-hij",
+                joinUrl: "https://meet.google.com/abc-defg-hij",
+                cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" }
+              }
+            ]
+          }
+        ]),
         findUnique: vi.fn().mockResolvedValue({
-          estado: "PROGRAMADA", inicioProgramadoAt: inicio, solicitud: { estado: "REGISTRADA" },
+          estado: "PROGRAMADA",
+          inicioProgramadoAt: inicio,
+          solicitud: { estado: "REGISTRADA" },
           invitados: [{ id: "guest" }]
         })
       },
       usuario: { findMany: vi.fn().mockResolvedValue([]) },
       recordatorioInvitadoReunion: {
         create: vi.fn().mockImplementation(async () => {
-          if (reservado) throw Object.assign(new Error("unique"), { code: "P2002" });
-          reservado = true; return { id: "reminder-1" };
+          if (reservado) {
+            throw Object.assign(new Error("unique"), { code: "P2002" });
+          }
+          reservado = true;
+          return { id: "reminder-1" };
         }),
         update: vi.fn().mockResolvedValue({})
       }

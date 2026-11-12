@@ -6,37 +6,40 @@ import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente,
+  publicarEventoCalendarioAsistente
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
-  sincronizarCalendariosAsistenteSolicitud,
+  sincronizarCalendariosAsistenteSolicitud
 } from "@/src/modules/asistencia/calendario-asistente.service";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 import type { ProvisionConferenciaResult } from "@/src/modules/conferencias/api";
-import { agregarEncuentro, eliminarReunionCompleta } from "@/src/modules/reuniones/gestionar-encuentros.service";
+import {
+  agregarEncuentro,
+  eliminarReunionCompleta
+} from "@/src/modules/reuniones/gestionar-encuentros.service";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
 
 export async function POST(request: Request, context: RouteContext) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { solicitudId } = await context.params;
-    const result = await agregarEncuentro(
-      { db },
-      actor,
-      solicitudId,
-      await request.json().catch(() => null),
-    );
-    const provisionamiento = await obtenerServicioConferencias()
-      .sincronizarEventosPendientes([result.eventoProveedorId]);
+    const result = await agregarEncuentro({ db }, actor, solicitudId, await request.json().catch(() => null));
+    const provisionamiento = await obtenerServicioConferencias().sincronizarEventosPendientes([
+      result.eventoProveedorId
+    ]);
     return NextResponse.json(
       { ...result, provisionamiento },
-      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 },
+      { status: provisionamiento.some(({ estado }) => estado !== "SINCRONIZADA") ? 202 : 201 }
     );
   } catch (error) {
     const mapped = toHttpError(error);
@@ -46,37 +49,45 @@ export async function POST(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { solicitudId } = await context.params;
     const local = await eliminarReunionCompleta({ db }, actor, solicitudId);
-    const sincronizacion = await obtenerServicioConferencias()
-      .sincronizarEventosPendientes(local.eventoProveedorIds);
+    const sincronizacion = await obtenerServicioConferencias().sincronizarEventosPendientes(
+      local.eventoProveedorIds
+    );
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
-      sincronizarCalendariosAsistenteSolicitud({
-        db,
-        descifrar: descifrarConfiguracion,
-        publicarEvento: publicarEventoCalendarioAsistente,
-        eliminarEvento: eliminarEventoCalendarioAsistente,
-      }, solicitudId)
+      sincronizarCalendariosAsistenteSolicitud(
+        {
+          db,
+          descifrar: descifrarConfiguracion,
+          publicarEvento: publicarEventoCalendarioAsistente,
+          eliminarEvento: eliminarEventoCalendarioAsistente
+        },
+        solicitudId
+      )
     );
     const calendarioAsistente = intentoCalendario.resultados;
-    const hasPending = sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
+    const hasPending =
+      sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
       intentoCalendario.error !== null ||
       hayErroresSincronizacionCalendarioAsistente(calendarioAsistente);
 
-    return NextResponse.json({
-      message: "Reunión eliminada.",
-      warning: advertenciaSincronizacion(
+    return NextResponse.json(
+      {
+        message: "Reunión eliminada.",
+        warning: advertenciaSincronizacion(sincronizacion, calendarioAsistente, intentoCalendario.error),
         sincronizacion,
-        calendarioAsistente,
-        intentoCalendario.error,
-      ),
-      sincronizacion,
-      calendarioAsistente,
-    }, { status: hasPending ? 202 : 200 });
+        calendarioAsistente
+      },
+      { status: hasPending ? 202 : 200 }
+    );
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
@@ -86,11 +97,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
 function advertenciaSincronizacion(
   results: readonly ProvisionConferenciaResult[],
   calendarioAsistente: readonly Readonly<{ estado: string }>[],
-  errorCalendario: string | null,
+  errorCalendario: string | null
 ): string | null {
   const warnings: string[] = [];
   if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
-    warnings.push("La reunión quedó cancelada en la aplicación, pero Google Meet todavía tiene cancelaciones pendientes.");
+    warnings.push(
+      "La reunión quedó cancelada en la aplicación, pero Google Meet todavía tiene cancelaciones pendientes."
+    );
   }
   if (errorCalendario || calendarioAsistente.some(({ estado }) => estado === "ERROR")) {
     warnings.push("Los calendarios de asistentes técnicos todavía tienen cancelaciones pendientes.");

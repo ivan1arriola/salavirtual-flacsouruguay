@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const control = readFileSync(new URL("../src/components/migracion-zoom-serie-control.tsx", import.meta.url), "utf8");
-const pagina = readFileSync(new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url), "utf8");
+const control = readFileSync(
+  new URL("../src/components/migracion-zoom-serie-control.tsx", import.meta.url),
+  "utf8"
+);
+const pagina = readFileSync(
+  new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url),
+  "utf8"
+);
 
 describe("panel de series Zoom", () => {
   it("la ruta antigua abre la vista de series Zoom", () => {
@@ -26,7 +32,9 @@ describe("panel de series Zoom", () => {
   it("antes de actuar abre un diálogo propio, accesible y que se cierra con Escape, sin window.confirm", () => {
     expect(control).toContain("textoConfirmacionAccion(accionPendiente.tipo, accionPendiente)");
     expect(control).toContain('aria-labelledby="confirmar-accion-serie"');
-    expect(control).toContain('if (event.key === "Escape") { setConfirmar(null); setAccionPendiente(null); return; }');
+    expect(control).toMatch(
+      /if \(event\.key === "Escape"\)\s*\{\s*setConfirmar\(null\);\s*setAccionPendiente\(null\);\s*return;\s*\}/
+    );
     expect(control).not.toContain("window.confirm");
   });
 

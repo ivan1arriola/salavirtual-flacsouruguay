@@ -32,17 +32,25 @@ async function main() {
         eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
       )
     );
-    return expected === request.estado ? [] : [{
-      id: request.id,
-      titulo: request.titulo,
-      anterior: request.estado,
-      esperado: expected
-    }];
+    return expected === request.estado
+      ? []
+      : [
+          {
+            id: request.id,
+            titulo: request.titulo,
+            anterior: request.estado,
+            esperado: expected
+          }
+        ];
   });
 
   console.table(changes);
-  console.log(`${changes.length} reuniones requieren actualización.${apply ? " Aplicando cambios…" : " Ejecución de prueba."}`);
-  if (!apply) return;
+  console.log(
+    `${changes.length} reuniones requieren actualización.${apply ? " Aplicando cambios…" : " Ejecución de prueba."}`
+  );
+  if (!apply) {
+    return;
+  }
 
   for (const change of changes) {
     await db.$transaction((tx) => recalcularSolicitud(tx, change.id));

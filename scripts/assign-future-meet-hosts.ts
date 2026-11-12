@@ -28,7 +28,9 @@ async function main(): Promise<void> {
         orderBy: { inicioProgramadoAt: "asc" }
       })
     ]);
-    if (!provider) throw new Error("No existe el proveedor Google Meet.");
+    if (!provider) {
+      throw new Error("No existe el proveedor Google Meet.");
+    }
 
     const result = asignarSalas(
       meetings.map((meeting) => ({
@@ -40,9 +42,7 @@ async function main(): Promise<void> {
       rooms
     );
     if (!result.ok) {
-      throw new Error(
-        `No hay salas suficientes para ${result.reunionIdsSinSala.length} reuniones.`
-      );
+      throw new Error(`No hay salas suficientes para ${result.reunionIdsSinSala.length} reuniones.`);
     }
     console.log(
       JSON.stringify(
@@ -56,7 +56,9 @@ async function main(): Promise<void> {
         2
       )
     );
-    if (!applyChanges) return;
+    if (!applyChanges) {
+      return;
+    }
 
     await db.$transaction(
       result.asignaciones.map((assignment) =>

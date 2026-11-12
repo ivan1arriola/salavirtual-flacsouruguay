@@ -11,16 +11,18 @@ const tunnel = spawn(
     "ServerAliveInterval=30",
     "-L",
     "15432:127.0.0.1:5432",
-    "servidor-flacso",
+    "servidor-flacso"
   ],
-  { stdio: "inherit" },
+  { stdio: "inherit" }
 );
 
 let next;
 let stopping = false;
 
 function stop(exitCode = 0) {
-  if (stopping) return;
+  if (stopping) {
+    return;
+  }
   stopping = true;
 
   tunnel.kill("SIGTERM");
@@ -33,7 +35,7 @@ function waitForTunnel() {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error("el puerto local no estuvo disponible a tiempo")),
-      10000,
+      10000
     );
 
     const checkPort = () => {
@@ -45,17 +47,15 @@ function waitForTunnel() {
       });
       socket.once("error", () => {
         socket.destroy();
-        if (!stopping) setTimeout(checkPort, 100);
+        if (!stopping) {
+          setTimeout(checkPort, 100);
+        }
       });
     };
 
     tunnel.once("error", reject);
     tunnel.once("exit", (code, signal) => {
-      reject(
-        new Error(
-          `terminó (${signal ?? `código ${code}`}) antes de estar disponible`,
-        ),
-      );
+      reject(new Error(`terminó (${signal ?? `código ${code}`}) antes de estar disponible`));
     });
     checkPort();
   });
@@ -68,20 +68,20 @@ tunnel.once("error", (error) => {
 
 tunnel.once("exit", (code, signal) => {
   if (!stopping) {
-    console.error(
-      `El túnel SSH terminó inesperadamente (${signal ?? `código ${code}`}).`,
-    );
+    console.error(`El túnel SSH terminó inesperadamente (${signal ?? `código ${code}`}).`);
     stop(code ?? 1);
   }
 });
 
 waitForTunnel()
   .then(() => {
-    if (stopping) return;
+    if (stopping) {
+      return;
+    }
 
     next = spawn("npm", ["run", "dev:next"], {
       stdio: "inherit",
-      env: process.env,
+      env: process.env
     });
 
     next.once("error", (error) => {
@@ -90,7 +90,9 @@ waitForTunnel()
     });
 
     next.once("exit", (code, signal) => {
-      if (!stopping) stop(code ?? (signal ? 1 : 0));
+      if (!stopping) {
+        stop(code ?? (signal ? 1 : 0));
+      }
     });
   })
   .catch((error) => {

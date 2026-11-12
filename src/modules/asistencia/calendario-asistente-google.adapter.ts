@@ -1,9 +1,9 @@
 export {
   publicarEventoCalendarioAsistente,
-  eliminarEventoCalendarioAsistente,
+  eliminarEventoCalendarioAsistente
 } from "./infrastructure/google/google-assistant-calendar-provider.adapter";
 export type {
   EventoCalendarioAsistente,
   GoogleCalendarCredentials,
-  AssistantCalendarProvider,
+  AssistantCalendarProvider
 } from "./ports";

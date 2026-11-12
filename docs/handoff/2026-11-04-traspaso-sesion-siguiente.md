@@ -17,6 +17,7 @@ Léelo entero antes de actuar: contiene reglas de trabajo, el estado real y rece
 ## 2. Estado de producción (todo en `main`)
 
 Desplegado y verificado con el CI:
+
 - Retiro de la bandera `ZOOM_REUNION_COMPARTIDA`: toda serie crea una sola reunión de Zoom compartida. Requisito ya cumplido: sin workers viejos.
 - Hotfix #187: la clave de series antiguas ya no lleva NUL (`legacy:programa|creada|título`); causaba el error 22021 de Postgres.
 - Diagnóstico por serie (`diagnostico-serie-zoom.*`), mensajes de resultado y regla de reintento (`mensajes-serie-zoom.domain.ts`).
@@ -32,6 +33,7 @@ Desplegado y verificado con el CI:
 Pendiente al cierre (2026-11-04): ramas sin revisar `codex/attendance-production-hardening`, `feature/zoom-primary-migration`, `docs/spec-webhooks-zoom`, unas 20 `ux/*` de octubre y `codex/asistencia-hibrida-horarios` (5 commits locales sin publicar). Descartadas y borradas: `fix/meet-archivos-20261018` (`cb95ec5`) y `feat/zoom-encuentros-operativos` (`0f05ec6`). Decisión abierta: ocultar o no los encuentros cancelados en la lista de la serie. Producción nunca se verificó en un navegador.
 
 Datos de producción ya corregidos a mano (con las funciones de la app, desde el servidor):
+
 - 8 series dejaron de tener enlaces distintos: Diploma violencias NNA y Diploma Conservación Preventiva (mixtas, unificadas y migradas), tres grupos de Taller Metodológico II, DCCH VII, Corrección y Descripción Ling. del Español Escrito, Diploma de especialización infancias Metodológico.
 - «Clases infancia» (2 solicitudes) cancelada; sus eventos de Meet y Zoom quedaron sincronizados. La reemplaza «Clases infancia (Zoom)».
 - Quedan a propósito: «Curso básico – Proyecto MIEM FLACSO» en Meet (conservado) y tres series de un solo encuentro con su reunión de Zoom propia (Encuentros sincrónicos IAPE, Taller de Tesis I, Taller de Escritura Creativa).
@@ -68,20 +70,24 @@ Datos de producción ya corregidos a mano (con las funciones de la app, desde el
 ## 5. Recetas probadas (sin secretos)
 
 **Leer producción en solo lectura**
+
 - Abrir el túnel: `ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -L 15432:127.0.0.1:5432 servidor-flacso` en segundo plano. Cerrarlo siempre al terminar (buscar el PID con `netstat -ano | grep :15432` y `taskkill //PID <pid> //F`).
 - En el script, tomar `DATABASE_URL` de `.env` y agregar `options=-c%20default_transaction_read_only%3Don`. Confirmar que la sesión es de solo lectura con `CREATE TEMP TABLE` (debe fallar con 25006) y abortar si no falla.
 - Ejecutar con `npx tsx --tsconfig tsconfig.json script.ts`. Importar `@prisma/client` con una URL `file:///.../node_modules/@prisma/client/index.js` si el script está fuera del repositorio.
 
 **Ejecutar funciones de la app en el servidor** (tiene las credenciales de Zoom y Google, que esta máquina no tiene)
+
 1. `scp` del script a `/tmp` del servidor.
 2. Crear el reemplazo de `server-only`: `/tmp/stubs/node_modules/server-only/index.js` (vacío) y su `package.json`.
 3. `ssh servidor-flacso 'sudo -n -u salavirtual bash -c "set -a; . /srv/apps/salavirtual-flacso/shared/.env.production; set +a; export NODE_PATH=/tmp/stubs/node_modules; cd /srv/apps/salavirtual-flacso/source && npx tsx --tsconfig tsconfig.json /tmp/script.ts <args>"'`.
 4. Borrar de `/tmp` el script y los reemplazos al terminar.
+
 - El código del servidor es el desplegado (`/srv/apps/salavirtual-flacso/source`). El script usa modo `prueba` (solo lectura) y modo `ejecutar`, de a una serie, y se detiene ante el primer error.
 - Funciones útiles: `obtenerDiagnosticosSeriesZoom`, `corregirSerieEnlaces`, `aplicarMigracionZoomSerie`, `cancelarSolicitudesAtomicas`, `obtenerServicioConferencias().sincronizarEventosPendientes(ids)`. Las dependencias salen de `crearDependenciasCorreccionSerie()` y `crearDependenciasMigracionZoom()` en `src/bootstrap/migracion-zoom.server.ts`.
 - Temporizadores del servidor: `salavirtual-google-pending` (cada 5 minutos, reconcilia Zoom y Meet conservados), `salavirtual-ops-health`, `salavirtual-reminders-24h`.
 
 **Delegar**
+
 - Codex: `codex exec -m gpt-6.1-sol -c model_reasoning_effort=medium -s workspace-write -C . --output-last-message <archivo> - < prompt.md`. No puede escribir en `.git`: no commitea; commitear después. Modelos útiles: `gpt-6.1-sol` (trabajo general), `gpt-6-astra` (el más potente).
 - Antigravity: `agy --model gemini-4-argon-medium|high --settings <json> -p "$(cat prompt.md)"`. Sin `--sandbox` (cuelga Vitest) ni `--mode auto` (no disponible). Permisos solo con reglas `write_file(<ruta exacta>)` y `command(<comando exacto>)`; `edit_file` no existe. Pedirle que use únicamente esos comandos, uno por vez. Trabajar en un worktree propio con un enlace a `node_modules`. Si se cuelga, terminar su proceso y completar a mano.
 - Revisar siempre el trabajo delegado: `npm run check`, `npx vitest run`, búsqueda de bytes de control y diff de tamaño esperado; para cambios críticos, un revisor independiente.

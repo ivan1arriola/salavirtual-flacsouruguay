@@ -4,9 +4,7 @@ import { AlertTriangle, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function OperationalIncidentForm({
-  instanciaId
-}: Readonly<{ instanciaId: string }>) {
+export function OperationalIncidentForm({ instanciaId }: Readonly<{ instanciaId: string }>) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");

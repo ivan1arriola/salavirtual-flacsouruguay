@@ -1,8 +1,4 @@
-import type {
-  NotificationRecipient,
-  PreferenciaCanales,
-  TipoNotificacion,
-} from "../domain";
+import type { NotificationRecipient, PreferenciaCanales, TipoNotificacion } from "../domain";
 
 export type CredencialGmailTransport = Readonly<{
   serviceAccountEmail: string;
@@ -11,10 +7,7 @@ export type CredencialGmailTransport = Readonly<{
 }>;
 
 export type NotificacionesRepositoryPort = Readonly<{
-  obtenerPreferencias: (
-    usuarioId: string,
-    tipo: TipoNotificacion
-  ) => Promise<PreferenciaCanales>;
+  obtenerPreferencias: (usuarioId: string, tipo: TipoNotificacion) => Promise<PreferenciaCanales>;
 
   guardarNotificacionEnBandeja: (data: {
     usuarioId: string;
@@ -27,21 +20,19 @@ export type NotificacionesRepositoryPort = Readonly<{
 
   esAsistenteCesado: (usuarioId: string) => Promise<boolean>;
 
-  obtenerDestinatariosDocentesPrograma: (
-    solicitudId: string
-  ) => Promise<readonly NotificationRecipient[]>;
-
+  obtenerDestinatariosDocentesPrograma: (solicitudId: string) => Promise<readonly NotificationRecipient[]>;
 
   obtenerCredencialesGmail: () => Promise<CredencialGmailTransport | null>;
 
   /** Aceptado por el proveedor no equivale a entregado al buzón. */
-  registrarResultadoCorreo?: (resultado: Readonly<{
-    usuarioId: string;
-    notificacionId?: string;
-    tipo: TipoNotificacion;
-    estado: "ACEPTADO" | "OMITIDO" | "ERROR";
-    transporte?: "AMAZON_SES" | "GMAIL_API" | "SMTP";
-    motivo?: string;
-  }>) => Promise<void>;
+  registrarResultadoCorreo?: (
+    resultado: Readonly<{
+      usuarioId: string;
+      notificacionId?: string;
+      tipo: TipoNotificacion;
+      estado: "ACEPTADO" | "OMITIDO" | "ERROR";
+      transporte?: "AMAZON_SES" | "GMAIL_API" | "SMTP";
+      motivo?: string;
+    }>
+  ) => Promise<void>;
 }>;
-

@@ -1,11 +1,18 @@
 import { clasificarTipoArchivoZoom } from "./zoom-archivos.domain";
 import { tipoArchivoReunionZoom } from "./zoom-inventario-estado.domain";
 
-export type CategoriaArchivoZoom = "VIDEO" | "AUDIO" | "CHAT" | "TRANSCRIPCION" | "LINEA_DE_TIEMPO" | "RESUMEN" | "OTROS";
+export type CategoriaArchivoZoom =
+  "VIDEO" | "AUDIO" | "CHAT" | "TRANSCRIPCION" | "LINEA_DE_TIEMPO" | "RESUMEN" | "OTROS";
 export type FiltroCategoriaZoom = "TODOS" | CategoriaArchivoZoom;
 
 export type EstadoArchivoZoomVista =
-  | "DESCUBIERTO" | "PROCESANDO_ORIGEN" | "PENDIENTE" | "COPIANDO" | "CONSERVADO" | "ERROR_REINTENTABLE" | "REQUIERE_REVISION";
+  | "DESCUBIERTO"
+  | "PROCESANDO_ORIGEN"
+  | "PENDIENTE"
+  | "COPIANDO"
+  | "CONSERVADO"
+  | "ERROR_REINTENTABLE"
+  | "REQUIERE_REVISION";
 
 /** Lo que la biblioteca sabe de un archivo del inventario: nunca incluye URLs de descarga de Zoom. */
 export type ArchivoInventarioZoomVista = Readonly<{
@@ -21,8 +28,13 @@ export type ArchivoInventarioZoomVista = Readonly<{
 }>;
 
 const ETIQUETAS: Readonly<Record<CategoriaArchivoZoom, string>> = {
-  VIDEO: "Video", AUDIO: "Audio", CHAT: "Chat", TRANSCRIPCION: "Transcripción y subtítulos",
-  LINEA_DE_TIEMPO: "Línea de tiempo", RESUMEN: "Resumen", OTROS: "Otros archivos"
+  VIDEO: "Video",
+  AUDIO: "Audio",
+  CHAT: "Chat",
+  TRANSCRIPCION: "Transcripción y subtítulos",
+  LINEA_DE_TIEMPO: "Línea de tiempo",
+  RESUMEN: "Resumen",
+  OTROS: "Otros archivos"
 };
 
 export function etiquetaCategoriaZoom(categoria: CategoriaArchivoZoom): string {
@@ -32,16 +44,23 @@ export function etiquetaCategoriaZoom(categoria: CategoriaArchivoZoom): string {
 /** Todo tipo, incluso uno desconocido, cae en una categoría: ningún archivo desaparece de «Todos». */
 export function categoriaArchivoZoom(tipoOriginal: string): CategoriaArchivoZoom {
   switch (clasificarTipoArchivoZoom(tipoOriginal)) {
-    case "MP4": return "VIDEO";
+    case "MP4":
+      return "VIDEO";
     case "M4A":
-    case "MP3": return "AUDIO";
-    case "CHAT": return "CHAT";
+    case "MP3":
+      return "AUDIO";
+    case "CHAT":
+      return "CHAT";
     case "TRANSCRIPT":
     case "CC":
-    case "AUDIO_TRANSCRIPT": return "TRANSCRIPCION";
-    case "TIMELINE": return "LINEA_DE_TIEMPO";
-    case "SUMMARY": return "RESUMEN";
-    default: return "OTROS";
+    case "AUDIO_TRANSCRIPT":
+      return "TRANSCRIPCION";
+    case "TIMELINE":
+      return "LINEA_DE_TIEMPO";
+    case "SUMMARY":
+      return "RESUMEN";
+    default:
+      return "OTROS";
   }
 }
 
@@ -49,7 +68,9 @@ export function filtrarArchivosZoomPorCategoria<T extends Pick<ArchivoInventario
   archivos: readonly T[],
   filtro: FiltroCategoriaZoom
 ): readonly T[] {
-  return filtro === "TODOS" ? archivos : archivos.filter((a) => categoriaArchivoZoom(a.tipoOriginal) === filtro);
+  return filtro === "TODOS"
+    ? archivos
+    : archivos.filter((a) => categoriaArchivoZoom(a.tipoOriginal) === filtro);
 }
 
 export type ResumenArchivosZoom = Readonly<{
@@ -91,13 +112,19 @@ export function respaldoCompletoZoom(
   archivos: readonly ArchivoInventarioZoomVista[],
   opciones: Readonly<{ procesamientoPendiente?: boolean }> = {}
 ): boolean {
-  if (opciones.procesamientoPendiente) return false;
+  if (opciones.procesamientoPendiente) {
+    return false;
+  }
   return archivos.length > 0 && archivos.every((a) => a.estado === "CONSERVADO");
 }
 
 /** Enlace a Drive solo para archivos ya conservados y únicamente https en hosts de Google. */
-export function enlaceArchivoZoom(archivo: Pick<ArchivoInventarioZoomVista, "estado" | "webViewUrl">): string | null {
-  if (archivo.estado !== "CONSERVADO" || !archivo.webViewUrl) return null;
+export function enlaceArchivoZoom(
+  archivo: Pick<ArchivoInventarioZoomVista, "estado" | "webViewUrl">
+): string | null {
+  if (archivo.estado !== "CONSERVADO" || !archivo.webViewUrl) {
+    return null;
+  }
   try {
     const url = new URL(archivo.webViewUrl);
     const hostGoogle = url.hostname === "drive.google.com" || url.hostname === "docs.google.com";
@@ -144,15 +171,28 @@ const VARIANTES_ZOOM_LEGIBLES: Readonly<Record<string, string>> = {
 };
 
 /** Traduce el identificador de variante de Zoom a una etiqueta humana en español. */
-export function describirVarianteZoom(variante: string | null | undefined, tipoOriginal?: string): string | null {
+export function describirVarianteZoom(
+  variante: string | null | undefined,
+  tipoOriginal?: string
+): string | null {
   const texto = variante?.trim() ?? "";
   if (!texto) {
     const tipo = (tipoOriginal ?? "").trim().toUpperCase();
-    if (tipo === "CHAT") return "Chat de la reunión";
-    if (tipo === "CC") return "Subtítulos (VTT)";
-    if (tipo === "TRANSCRIPT" || tipo === "AUDIO_TRANSCRIPT") return "Transcripción de audio";
-    if (tipo === "TIMELINE") return "Línea de tiempo";
-    if (tipo === "SUMMARY") return "Resumen de la reunión";
+    if (tipo === "CHAT") {
+      return "Chat de la reunión";
+    }
+    if (tipo === "CC") {
+      return "Subtítulos (VTT)";
+    }
+    if (tipo === "TRANSCRIPT" || tipo === "AUDIO_TRANSCRIPT") {
+      return "Transcripción de audio";
+    }
+    if (tipo === "TIMELINE") {
+      return "Línea de tiempo";
+    }
+    if (tipo === "SUMMARY") {
+      return "Resumen de la reunión";
+    }
     return null;
   }
   const pistaParticipante = /^audio\s+only\s*-\s*(.+)$/i.exec(texto);
@@ -160,7 +200,10 @@ export function describirVarianteZoom(variante: string | null | undefined, tipoO
     return `Pista de participante · ${pistaParticipante[1]!.trim()}`;
   }
   const conSubtitulos = /\(cc\)$/i.test(texto);
-  const clave = texto.replace(/\(cc\)$/i, "").trim().toLowerCase();
+  const clave = texto
+    .replace(/\(cc\)$/i, "")
+    .trim()
+    .toLowerCase();
   const base = VARIANTES_ZOOM_LEGIBLES[clave];
   if (base) {
     return conSubtitulos ? `${base} (con subtítulos)` : base;
@@ -172,9 +215,13 @@ export function describirVarianteZoom(variante: string | null | undefined, tipoO
  * Distingue las pistas individuales de audio por participante y archivos auxiliares técnicos
  * (p. ej. línea de tiempo JSON) para que la tarjeta muestre primero los archivos principales.
  */
-export function esArchivoSecundarioZoom(fila: Readonly<{ tipoOriginal: string; variante?: string | null }>): boolean {
+export function esArchivoSecundarioZoom(
+  fila: Readonly<{ tipoOriginal: string; variante?: string | null }>
+): boolean {
   const variante = fila.variante?.trim() ?? "";
-  if (/^audio\s+only\s*-/i.test(variante)) return true;
+  if (/^audio\s+only\s*-/i.test(variante)) {
+    return true;
+  }
   const cat = categoriaArchivoZoom(fila.tipoOriginal);
   return cat === "LINEA_DE_TIEMPO" || cat === "OTROS";
 }

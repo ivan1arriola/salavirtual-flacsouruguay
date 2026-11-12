@@ -4,7 +4,6 @@ import {
   puedeAdministrar,
   evaluarAccesoLocal,
   evaluarAccesoGoogle,
-  esPerfilGoogleVerificado,
   esPerfilGoogleInstitucional,
   resolverVinculacionSubjectGoogle,
   parseAuthConfig,
@@ -80,4 +79,3 @@ describe("identity domain", () => {
     );
   });
 });
-

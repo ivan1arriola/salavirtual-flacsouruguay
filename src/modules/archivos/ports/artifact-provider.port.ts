@@ -1,5 +1,4 @@
 import type {
-  GoogleArtifact,
   MeetActiveParticipantsScan,
   MeetArtifactsScan,
   MeetAttendanceDocument,
@@ -14,8 +13,6 @@ export type ArtifactProviderCredentials = Readonly<{
   adminEmail?: string | null;
 }>;
 
-export type MeetArtifactCredentials = ArtifactProviderCredentials;
-
 export type ArtifactProviderPort = Readonly<{
   buscarConferencia(codigo: string, inicio: Date, fin: Date): Promise<RegistroConferenciaMeet | null>;
   obtenerConferencia(conferenceName: string): Promise<RegistroConferenciaMeet>;
@@ -25,7 +22,16 @@ export type ArtifactProviderPort = Readonly<{
   obtenerOCrearCarpeta(parentId: string, name: string): Promise<string>;
   moverArchivo(fileId: string, folderId: string, name: string): Promise<MovedDriveFile>;
   subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile>;
-  subirPlanillaAsistencia?(folderId: string, name: string, data: NonNullable<MeetAttendanceDocument['planilla']>, inicio: Date, fin: Date, organizador: string, cohosts?: readonly string[], spreadsheetId?: string): Promise<MovedDriveFile>;
+  subirPlanillaAsistencia?(
+    folderId: string,
+    name: string,
+    data: NonNullable<MeetAttendanceDocument["planilla"]>,
+    inicio: Date,
+    fin: Date,
+    organizador: string,
+    cohosts?: readonly string[],
+    spreadsheetId?: string
+  ): Promise<MovedDriveFile>;
   obtenerParticipantesActivos(
     codigo: string,
     inicio: Date,

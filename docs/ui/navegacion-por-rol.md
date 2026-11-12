@@ -4,11 +4,11 @@ La navegación se define en `src/components/app-navigation.ts` y la presenta `Ap
 
 ## Administración
 
-| Grupo | Accesos |
-|---|---|
-| Trabajo diario | Inicio, Agenda, Reuniones, Monitoreo y Nueva reunión |
-| Recursos | Grabaciones y archivos, Personas y programas, Asistentes de monitoreo |
-| Sistema | Centro de operaciones, Configuración |
+| Grupo          | Accesos                                                               |
+| -------------- | --------------------------------------------------------------------- |
+| Trabajo diario | Inicio, Agenda, Reuniones, Monitoreo y Nueva reunión                  |
+| Recursos       | Grabaciones y archivos, Personas y programas, Asistentes de monitoreo |
+| Sistema        | Centro de operaciones, Configuración                                  |
 
 Agenda abre la vista de encuentros (`/reuniones?vista=encuentros`) y Reuniones abre la vista de series (`/reuniones?vista=series`). Buscar Meet, Duplicados y operaciones de Google Workspace se alcanzan desde el Centro de operaciones, que enlaza a las pantallas existentes.
 

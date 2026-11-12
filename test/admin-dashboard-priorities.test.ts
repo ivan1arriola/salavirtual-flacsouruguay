@@ -31,10 +31,7 @@ describe("prioridades del dashboard de administración", () => {
       duplicateRisks: 0
     });
 
-    expect(summary.map(({ label }) => label)).toEqual([
-      "Solicitudes activas",
-      "Próximos 7 días"
-    ]);
+    expect(summary.map(({ label }) => label)).toEqual(["Solicitudes activas", "Próximos 7 días"]);
     expect(summary.map(({ value }) => value)).toEqual([8, 12]);
   });
 

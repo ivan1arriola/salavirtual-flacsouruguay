@@ -1,5 +1,12 @@
-import type { ReferenciaOcurrenciaZoom, ResultadoPagina } from "@/src/modules/archivos/domain/zoom-archivos.types";
-import { DIAS_VENTANA_LISTADO_GRABACIONES, particionarPeriodoZoom, type VentanaZoom } from "@/src/modules/archivos/domain/zoom-recuperacion.domain";
+import type {
+  ReferenciaOcurrenciaZoom,
+  ResultadoPagina
+} from "@/src/modules/archivos/domain/zoom-archivos.types";
+import {
+  DIAS_VENTANA_LISTADO_GRABACIONES,
+  particionarPeriodoZoom,
+  type VentanaZoom
+} from "@/src/modules/archivos/domain/zoom-recuperacion.domain";
 import {
   ZoomApiError,
   codificarUuidZoom,
@@ -19,11 +26,12 @@ const MS_POR_DIA = 86_400_000;
  * Zoom documenta un máximo de 1 mes por consulta; ese límite real debe confirmarse
  * empíricamente antes de producción.
  */
-export type VentanaConsultaZoom = VentanaZoom & Readonly<{
-  cuentaZoomId: string;
-  /** true consulta la papelera de Zoom (recuperaciones). */
-  papelera?: boolean;
-}>;
+export type VentanaConsultaZoom = VentanaZoom &
+  Readonly<{
+    cuentaZoomId: string;
+    /** true consulta la papelera de Zoom (recuperaciones). */
+    papelera?: boolean;
+  }>;
 
 /**
  * Inventario de una ocurrencia. `respuesta` es la forma saneada que consume el dominio
@@ -45,8 +53,14 @@ export type ResumenReunionZoom =
 type Registro = Record<string, unknown>;
 
 const CAMPOS_SENSIBLES = new Set([
-  "password", "passcode", "recording_play_passcode", "play_url", "share_url",
-  "download_access_token", "start_url", "join_url"
+  "password",
+  "passcode",
+  "recording_play_passcode",
+  "play_url",
+  "share_url",
+  "download_access_token",
+  "start_url",
+  "join_url"
 ]);
 
 function esRegistro(valor: unknown): valor is Registro {
@@ -54,19 +68,26 @@ function esRegistro(valor: unknown): valor is Registro {
 }
 
 function texto(valor: unknown): string | null {
-  if (typeof valor === "number" && Number.isFinite(valor)) return String(valor);
+  if (typeof valor === "number" && Number.isFinite(valor)) {
+    return String(valor);
+  }
   return typeof valor === "string" && valor.trim() !== "" ? valor.trim() : null;
 }
 
 async function leerJson(response: Response, recurso: string): Promise<Registro> {
   const dato: unknown = await response.json().catch(() => null);
-  if (!esRegistro(dato)) throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+  if (!esRegistro(dato)) {
+    throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+  }
   return dato;
 }
 
 function fechaMontevideo(fecha: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: ZONA_NEGOCIO, year: "numeric", month: "2-digit", day: "2-digit"
+    timeZone: ZONA_NEGOCIO,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
   }).format(fecha);
 }
 
@@ -77,7 +98,9 @@ function desplazarDia(fecha: string, dias: number): string {
 
 function validarVentana(ventana: VentanaZoom): void {
   try {
-    if (particionarPeriodoZoom(ventana.desde, ventana.hasta, DIAS_VENTANA_LISTADO_GRABACIONES).length === 1) return;
+    if (particionarPeriodoZoom(ventana.desde, ventana.hasta, DIAS_VENTANA_LISTADO_GRABACIONES).length === 1) {
+      return;
+    }
   } catch {
     // Fecha inválida o rango invertido: se informa abajo con el mismo código.
   }
@@ -107,7 +130,9 @@ export async function listarGrabacionesAnfitrionZoomHttp(
     params.set("trash", "true");
     params.set("trash_type", "meeting_recordings");
   }
-  if (cursor) params.set("next_page_token", cursor);
+  if (cursor) {
+    params.set("next_page_token", cursor);
+  }
 
   const response = await pedirZoom(auth, recurso, (token) =>
     fetch(`${API}/users/${encodeURIComponent(anfitrionId)}/recordings?${params.toString()}`, {
@@ -116,15 +141,23 @@ export async function listarGrabacionesAnfitrionZoomHttp(
       signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS)
     })
   );
-  if (!response.ok) throw await errorPorRespuesta(recurso, response);
+  if (!response.ok) {
+    throw await errorPorRespuesta(recurso, response);
+  }
 
   const datos = await leerJson(response, recurso);
-  if (!Array.isArray(datos.meetings)) throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+  if (!Array.isArray(datos.meetings)) {
+    throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+  }
   const siguiente = texto(datos.next_page_token);
-  if (siguiente !== null && siguiente === cursor) throw new ZoomApiError("PAGINACION_REPETIDA", recurso);
+  if (siguiente !== null && siguiente === cursor) {
+    throw new ZoomApiError("PAGINACION_REPETIDA", recurso);
+  }
 
   const elementos = datos.meetings.flatMap((reunion: unknown): ReferenciaOcurrenciaZoom[] => {
-    if (!esRegistro(reunion)) throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+    if (!esRegistro(reunion)) {
+      throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
+    }
     const uuid = texto(reunion.uuid);
     const meetingId = texto(reunion.id);
     const inicio = texto(reunion.start_time) ? new Date(String(reunion.start_time)) : null;
@@ -132,25 +165,33 @@ export async function listarGrabacionesAnfitrionZoomHttp(
       throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
     }
     const dia = fechaMontevideo(inicio);
-    if (dia < ventana.desde || dia > ventana.hasta) return [];
-    return [{
-      cuentaZoomId: ventana.cuentaZoomId,
-      uuid,
-      meetingId,
-      anfitrionZoomId: texto(reunion.host_id) ?? anfitrionId,
-      inicioRealAt: inicio,
-      titulo: texto(reunion.topic) ?? ""
-    }];
+    if (dia < ventana.desde || dia > ventana.hasta) {
+      return [];
+    }
+    return [
+      {
+        cuentaZoomId: ventana.cuentaZoomId,
+        uuid,
+        meetingId,
+        anfitrionZoomId: texto(reunion.host_id) ?? anfitrionId,
+        inicioRealAt: inicio,
+        titulo: texto(reunion.topic) ?? ""
+      }
+    ];
   });
 
   return { elementos, siguiente };
 }
 
 function sanearElemento(elemento: unknown): unknown {
-  if (!esRegistro(elemento)) return elemento;
+  if (!esRegistro(elemento)) {
+    return elemento;
+  }
   const limpio: Registro = {};
   for (const [clave, valor] of Object.entries(elemento)) {
-    if (CAMPOS_SENSIBLES.has(clave)) continue;
+    if (CAMPOS_SENSIBLES.has(clave)) {
+      continue;
+    }
     if (clave === "download_url") {
       // No enumerable: el dominio la lee para saber si es descargable, pero JSON.stringify la omite.
       Object.defineProperty(limpio, clave, { value: valor, enumerable: false });
@@ -190,18 +231,26 @@ export async function obtenerInventarioOcurrenciaZoomHttp(
     await response.body?.cancel().catch(() => undefined);
     return null;
   }
-  if (!response.ok) throw await errorPorRespuesta(recurso, response);
+  if (!response.ok) {
+    throw await errorPorRespuesta(recurso, response);
+  }
 
   const datos = await leerJson(response, recurso);
   const uuidRespuesta = texto(datos.uuid);
-  if (uuidRespuesta !== null && uuidRespuesta !== uuid) throw new ZoomApiError("IDENTIDAD_INCONSISTENTE", recurso);
+  if (uuidRespuesta !== null && uuidRespuesta !== uuid) {
+    throw new ZoomApiError("IDENTIDAD_INCONSISTENTE", recurso);
+  }
 
   const respuesta = sanearInventario(datos);
   const urlDescarga = (archivoZoomId: string): string | null => {
     for (const valor of Object.values(respuesta)) {
-      if (!Array.isArray(valor)) continue;
+      if (!Array.isArray(valor)) {
+        continue;
+      }
       for (const elemento of valor) {
-        if (esRegistro(elemento) && texto(elemento.id) === archivoZoomId) return texto(elemento.download_url);
+        if (esRegistro(elemento) && texto(elemento.id) === archivoZoomId) {
+          return texto(elemento.download_url);
+        }
       }
     }
     return null;
@@ -233,6 +282,8 @@ export async function obtenerResumenReunionZoomHttp(
     await response.body?.cancel().catch(() => undefined);
     return { estado: "NO_DISPONIBLE" };
   }
-  if (!response.ok) throw await errorPorRespuesta(recurso, response);
+  if (!response.ok) {
+    throw await errorPorRespuesta(recurso, response);
+  }
   return { estado: "DISPONIBLE", resumen: await leerJson(response, recurso) };
 }

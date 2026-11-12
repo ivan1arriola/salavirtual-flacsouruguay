@@ -4,22 +4,16 @@ import {
   reclasificarOperacionesPendientesLoteUseCase,
   sincronizarCohostsExistenteUseCase,
   configurarMeetExistenteUseCase,
-  sincronizarEventosPendientesUseCase,
+  sincronizarEventosPendientesUseCase
 } from "./application";
 import type {
-  ConferenceProvisionRequest,
-  ConferenceProvisionResult,
   DescartarLoteResult,
   DescartarOperacionResult,
   ProvisionConferenciaResult,
-  ReclasificarLoteResult,
+  ReclasificarLoteResult
 } from "./domain";
 import { crearGoogleConferenceProvider } from "./infrastructure/google/google-conference-provider.adapter";
-import type {
-  ConferenceProvider,
-  ConferenceProviderFactory,
-  ConferenciasRepositoryPort,
-} from "./ports";
+import type { ConferenceProviderFactory, ConferenciasRepositoryPort } from "./ports";
 
 export * from "./domain";
 export * from "./ports";
@@ -31,17 +25,15 @@ export {
   sincronizarCohostsGoogleExistente,
   consultarCohostsEspacioMeet,
   type ResultadoVerificacionEspacioMeet,
-  type GoogleCalendarCredentials,
+  type GoogleCalendarCredentials
 } from "./infrastructure/google/google-conference-provider.adapter";
 export {
   crearPrismaConferenciasRepository,
-  type PrismaConferenciasRepositoryOptions,
+  type PrismaConferenciasRepositoryOptions
 } from "./infrastructure/prisma/prisma-conferencias-repository.adapter";
 
 export type ServicioConferencias = Readonly<{
-  sincronizarEventosPendientes: (
-    ids: readonly string[]
-  ) => Promise<readonly ProvisionConferenciaResult[]>;
+  sincronizarEventosPendientes: (ids: readonly string[]) => Promise<readonly ProvisionConferenciaResult[]>;
 
   sincronizarCohosts: (input: {
     organizerEmail: string;
@@ -61,9 +53,7 @@ export type ServicioConferencias = Readonly<{
     }
   ) => Promise<void>;
 
-  descartarOperacionPendiente: (
-    eventoProveedorId: string
-  ) => Promise<DescartarOperacionResult>;
+  descartarOperacionPendiente: (eventoProveedorId: string) => Promise<DescartarOperacionResult>;
 
   descartarOperacionesNoBloqueantesLote: () => Promise<DescartarLoteResult>;
 
@@ -107,7 +97,6 @@ export function crearServicioConferencias(
       return reclasificarOperacionesPendientesLoteUseCase(repository);
     },
 
-    crearProvider: providerFactory,
+    crearProvider: providerFactory
   };
 }
-

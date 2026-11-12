@@ -14,9 +14,15 @@ describe("programas propios del docente", () => {
   });
 
   it("permite a Administracion gestionar otro docente", () => {
-    expect(puedeGestionarProgramasDocente({ id: "admin", rol: "ADMINISTRACION", activo: true }, "docente")).toBe(true);
-    expect(puedeGestionarProgramasDocente({ id: "docente", rol: "DOCENTE", activo: true }, "docente")).toBe(true);
-    expect(puedeGestionarProgramasDocente({ id: "otro", rol: "DOCENTE", activo: true }, "docente")).toBe(false);
+    expect(
+      puedeGestionarProgramasDocente({ id: "admin", rol: "ADMINISTRACION", activo: true }, "docente")
+    ).toBe(true);
+    expect(puedeGestionarProgramasDocente({ id: "docente", rol: "DOCENTE", activo: true }, "docente")).toBe(
+      true
+    );
+    expect(puedeGestionarProgramasDocente({ id: "otro", rol: "DOCENTE", activo: true }, "docente")).toBe(
+      false
+    );
   });
 
   it("acepta una seleccion vacia y elimina identificadores repetidos", () => {

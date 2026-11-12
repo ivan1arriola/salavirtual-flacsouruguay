@@ -38,18 +38,32 @@ export async function moverCarpetasVinculadasZoomUseCase(
   }>,
   opciones: Readonly<{ limite: number; signal?: AbortSignal }>
 ): Promise<ResumenMoverCarpetasZoom> {
-  if (!deps.raizVinculados) return { movidas: 0, yaEnDestino: 0, noEncontradas: 0, fallidas: 0, sinRaiz: true };
+  if (!deps.raizVinculados) {
+    return { movidas: 0, yaEnDestino: 0, noEncontradas: 0, fallidas: 0, sinRaiz: true };
+  }
   let movidas = 0;
   let yaEnDestino = 0;
   let noEncontradas = 0;
   let fallidas = 0;
   for (const carpeta of await deps.repo.listarCarpetasPorMover(opciones.limite)) {
     try {
-      const destino = await resolverCarpetaMesZoom(deps.storage, deps.hash, carpeta.referencia.inicioRealAt, deps.raizVinculados);
+      const destino = await resolverCarpetaMesZoom(
+        deps.storage,
+        deps.hash,
+        carpeta.referencia.inicioRealAt,
+        deps.raizVinculados
+      );
       const r = await deps.storage.moverCarpeta(carpeta.driveFolderId, destino, opciones.signal);
-      if (r === "NO_ENCONTRADO") { noEncontradas++; continue; }
+      if (r === "NO_ENCONTRADO") {
+        noEncontradas++;
+        continue;
+      }
       await deps.repo.marcarCarpetaVinculada(carpeta.ocurrenciaId, deps.ahora());
-      if (r === "MOVIDA") movidas++; else yaEnDestino++;
+      if (r === "MOVIDA") {
+        movidas++;
+      } else {
+        yaEnDestino++;
+      }
     } catch {
       // Sin detalle: el mensaje podría traer URLs. La carpeta queda sin marcar y se reintenta en el próximo ciclo.
       fallidas++;

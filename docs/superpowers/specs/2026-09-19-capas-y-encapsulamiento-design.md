@@ -49,18 +49,18 @@ Este programa no introduce:
 
 La arquitectura usará estos límites de negocio:
 
-| Módulo | Responsabilidad | Código actual relacionado |
-| --- | --- | --- |
-| `identity` | autenticación, usuarios, roles y cuentas Google | `auth.ts`, `src/lib/auth`, `src/modules/usuarios` |
-| `programas` | programas, docentes y permisos académicos | `src/modules/programas`, partes de `usuarios` y `reuniones` |
-| `reuniones` | solicitudes, series, encuentros e instancias | `src/modules/solicitudes`, `src/modules/reuniones` |
-| `conferencias` | aprovisionamiento y estado del proveedor de videoconferencia | `src/modules/meet/provider.ts`, provisionamiento y operaciones de `meet` |
-| `asistencia` | disponibilidad, postulaciones, asignaciones y reportes | `src/modules/asistencia`, `src/modules/asistencias` |
-| `archivos` | grabaciones, transcripciones, notas y artefactos | adaptadores y servicios de artefactos dentro de `src/modules/meet` |
-| `notificaciones` | intención de notificación, destinatarios y canales | `src/modules/notificaciones` y envío de correo disperso |
-| `liquidaciones` | tarifas, horas, cierres y pagos | partes de `src/modules/asistencia` |
-| `configuracion` | configuración administrativa e integraciones | `src/modules/configuracion` |
-| `auditoria` | registro transversal de acciones | escrituras a `Auditoria` dispersas |
+| Módulo           | Responsabilidad                                              | Código actual relacionado                                                |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `identity`       | autenticación, usuarios, roles y cuentas Google              | `auth.ts`, `src/lib/auth`, `src/modules/usuarios`                        |
+| `programas`      | programas, docentes y permisos académicos                    | `src/modules/programas`, partes de `usuarios` y `reuniones`              |
+| `reuniones`      | solicitudes, series, encuentros e instancias                 | `src/modules/solicitudes`, `src/modules/reuniones`                       |
+| `conferencias`   | aprovisionamiento y estado del proveedor de videoconferencia | `src/modules/meet/provider.ts`, provisionamiento y operaciones de `meet` |
+| `asistencia`     | disponibilidad, postulaciones, asignaciones y reportes       | `src/modules/asistencia`, `src/modules/asistencias`                      |
+| `archivos`       | grabaciones, transcripciones, notas y artefactos             | adaptadores y servicios de artefactos dentro de `src/modules/meet`       |
+| `notificaciones` | intención de notificación, destinatarios y canales           | `src/modules/notificaciones` y envío de correo disperso                  |
+| `liquidaciones`  | tarifas, horas, cierres y pagos                              | partes de `src/modules/asistencia`                                       |
+| `configuracion`  | configuración administrativa e integraciones                 | `src/modules/configuracion`                                              |
+| `auditoria`      | registro transversal de acciones                             | escrituras a `Auditoria` dispersas                                       |
 
 `dashboard`, `mobile-admin`, `migracion`, `historico` e `historico-zoom` seguirán como módulos de consulta o compatibilidad mientras el equipo identifica sus dependencias. El programa no los forzará dentro de un dominio que no represente su función.
 
@@ -147,14 +147,14 @@ Los adaptadores Prisma traducen registros a modelos o DTOs de aplicación. Los a
 
 ## 6. Dependencias permitidas
 
-| Origen | Puede importar | No puede importar |
-| --- | --- | --- |
-| `presentation` | `application`, API pública del módulo, presentación compartida | `infrastructure`, Prisma, Google, entorno |
-| `application` | `domain`, `ports`, APIs públicas de otros módulos | Next.js, React, Prisma, SDK de proveedores |
-| `domain` | archivos del mismo dominio y tipos puros compartidos | otras capas, otros módulos internos, efectos externos |
-| `ports` | tipos puros de `domain` o contratos propios | implementaciones, frameworks, variables de entorno |
-| `infrastructure` | `ports`, `domain`, `application`, bibliotecas externas | `presentation`, reglas de UI |
-| `bootstrap` | todas las capas necesarias para componer un flujo | reglas de negocio nuevas |
+| Origen           | Puede importar                                                 | No puede importar                                     |
+| ---------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| `presentation`   | `application`, API pública del módulo, presentación compartida | `infrastructure`, Prisma, Google, entorno             |
+| `application`    | `domain`, `ports`, APIs públicas de otros módulos              | Next.js, React, Prisma, SDK de proveedores            |
+| `domain`         | archivos del mismo dominio y tipos puros compartidos           | otras capas, otros módulos internos, efectos externos |
+| `ports`          | tipos puros de `domain` o contratos propios                    | implementaciones, frameworks, variables de entorno    |
+| `infrastructure` | `ports`, `domain`, `application`, bibliotecas externas         | `presentation`, reglas de UI                          |
+| `bootstrap`      | todas las capas necesarias para componer un flujo              | reglas de negocio nuevas                              |
 
 Los módulos se comunican mediante `api.ts`. La capa de presentación expone sus componentes permitidos mediante `presentation.ts`; este archivo no reexporta código de servidor hacia un Client Component.
 
@@ -293,20 +293,20 @@ Los scripts que puedan escribir datos mantendrán dry-run, confirmación explíc
 
 El programa se dividirá en planes ejecutables independientes:
 
-| Etapa | Entrega |
-| --- | --- |
-| 1 | mapa de dependencias, convenciones, pruebas de arquitectura y estructura piloto |
-| 2 | `identity` y separación de Auth.js respecto del calendario del asistente |
-| 3 | clientes técnicos Google Auth, Calendar y Meet sin cambiar `MeetProvider` |
-| 4 | módulo `conferencias`, puerto estable y caso de uso de cohosts |
-| 5 | calendario del asistente con sus capas, puerto y adaptador Google |
-| 6 | notificaciones, plantillas y transportes encapsulados |
-| 7 | `archivos` con puertos para Meet y Drive |
-| 8 | separación interna de asistencia y liquidaciones |
-| 9 | presentación de reuniones y asistencia; rutas `app/` delgadas |
-| 10 | conversión de scripts y cron en adaptadores de casos de uso |
-| 11 | repositorios estratégicos y composición centralizada restante |
-| 12 | eliminación de fachadas legacy y reglas completas de CI |
+| Etapa | Entrega                                                                         |
+| ----- | ------------------------------------------------------------------------------- |
+| 1     | mapa de dependencias, convenciones, pruebas de arquitectura y estructura piloto |
+| 2     | `identity` y separación de Auth.js respecto del calendario del asistente        |
+| 3     | clientes técnicos Google Auth, Calendar y Meet sin cambiar `MeetProvider`       |
+| 4     | módulo `conferencias`, puerto estable y caso de uso de cohosts                  |
+| 5     | calendario del asistente con sus capas, puerto y adaptador Google               |
+| 6     | notificaciones, plantillas y transportes encapsulados                           |
+| 7     | `archivos` con puertos para Meet y Drive                                        |
+| 8     | separación interna de asistencia y liquidaciones                                |
+| 9     | presentación de reuniones y asistencia; rutas `app/` delgadas                   |
+| 10    | conversión de scripts y cron en adaptadores de casos de uso                     |
+| 11    | repositorios estratégicos y composición centralizada restante                   |
+| 12    | eliminación de fachadas legacy y reglas completas de CI                         |
 
 Cada etapa usará el patrón expandir, migrar y contraer:
 
@@ -386,13 +386,13 @@ La refactorización se considerará completa cuando:
 
 ## 19. Riesgos controlados
 
-| Riesgo | Control |
-| --- | --- |
-| mover archivos rompe imports sin mejorar límites | cada etapa debe eliminar una dependencia prohibida y agregar una prueba |
-| dos arquitecturas conviven sin fecha de salida | cada fachada declara consumidores pendientes y la etapa que la elimina |
-| interfaces demasiado amplias ocultan reglas | puertos orientados a casos de uso y revisión de tipos expuestos |
-| un barrel lleva código servidor al cliente | entradas separadas `api.ts`, `presentation.ts` y bootstrap `.server.ts` |
-| separar Prisma rompe transacciones o locks | adaptadores especializados conservan atomicidad y pruebas de concurrencia |
-| extraer Google altera fallbacks o retries | pruebas de caracterización antes de mover cada operación |
-| el login pierde la reconciliación de calendario | mantener reconciliación vigente hasta contar con entrega durable verificada |
-| una migración llega a producción con una refactorización | planes de datos separados y aprobación explícita antes de integrar |
+| Riesgo                                                   | Control                                                                     |
+| -------------------------------------------------------- | --------------------------------------------------------------------------- |
+| mover archivos rompe imports sin mejorar límites         | cada etapa debe eliminar una dependencia prohibida y agregar una prueba     |
+| dos arquitecturas conviven sin fecha de salida           | cada fachada declara consumidores pendientes y la etapa que la elimina      |
+| interfaces demasiado amplias ocultan reglas              | puertos orientados a casos de uso y revisión de tipos expuestos             |
+| un barrel lleva código servidor al cliente               | entradas separadas `api.ts`, `presentation.ts` y bootstrap `.server.ts`     |
+| separar Prisma rompe transacciones o locks               | adaptadores especializados conservan atomicidad y pruebas de concurrencia   |
+| extraer Google altera fallbacks o retries                | pruebas de caracterización antes de mover cada operación                    |
+| el login pierde la reconciliación de calendario          | mantener reconciliación vigente hasta contar con entrega durable verificada |
+| una migración llega a producción con una refactorización | planes de datos separados y aprobación explícita antes de integrar          |

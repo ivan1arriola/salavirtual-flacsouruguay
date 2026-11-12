@@ -5,13 +5,25 @@ import { useRouter } from "next/navigation";
 type Candidato = { id: string; titulo: string; programa: string; docente: string; fecha: string };
 
 function mensajeError(status: number): string {
-  if (status === 404) return "No se encontró el recurso solicitado.";
-  if (status === 409) return "No se pudo completar: el estado o vínculo cambió.";
-  if (status === 422) return "El encuentro seleccionado no es de Zoom.";
+  if (status === 404) {
+    return "No se encontró el recurso solicitado.";
+  }
+  if (status === 409) {
+    return "No se pudo completar: el estado o vínculo cambió.";
+  }
+  if (status === 422) {
+    return "El encuentro seleccionado no es de Zoom.";
+  }
   return "No se pudo completar la operación.";
 }
 
-export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocurrenciaId: string; vinculado?: boolean }) {
+export function ZoomHistoricoControl({
+  ocurrenciaId,
+  vinculado = false
+}: {
+  ocurrenciaId: string;
+  vinculado?: boolean;
+}) {
   const router = useRouter();
   const id = useId();
   const [candidatos, setCandidatos] = useState<Candidato[] | null>(null);
@@ -23,7 +35,9 @@ export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocur
     setCargando(true);
     setMensaje("");
     try {
-      const r = await fetch(`/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/candidatos`);
+      const r = await fetch(
+        `/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/candidatos`
+      );
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
         return;
@@ -41,11 +55,14 @@ export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocur
     setCargando(true);
     setMensaje("");
     try {
-      const r = await fetch(`/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/vincular`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoId: seleccion })
-      });
+      const r = await fetch(
+        `/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/vincular`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventoId: seleccion })
+        }
+      );
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
         return;
@@ -61,13 +78,22 @@ export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocur
   }
 
   if (vinculado) {
-    return mensaje ? <p className="zoom-control-feedback" aria-live="polite">{mensaje}</p> : null;
+    return mensaje ? (
+      <p className="zoom-control-feedback" aria-live="polite">
+        {mensaje}
+      </p>
+    ) : null;
   }
 
   return (
     <div className="zoom-link-control">
       <div className="zoom-link-actions">
-        <button type="button" className="secondary-action zoom-link-trigger" disabled={cargando} onClick={cargar}>
+        <button
+          type="button"
+          className="secondary-action zoom-link-trigger"
+          disabled={cargando}
+          onClick={cargar}
+        >
           Vincular a un encuentro
         </button>
         {cargando ? <span className="zoom-control-loading">Cargando…</span> : null}
@@ -77,7 +103,9 @@ export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocur
           <p className="zoom-control-empty">No hay encuentros candidatos.</p>
         ) : (
           <div className="zoom-candidate-picker">
-            <label htmlFor={id} className="zoom-candidate-label">Encuentro</label>
+            <label htmlFor={id} className="zoom-candidate-label">
+              Encuentro
+            </label>
             <select
               id={id}
               className="zoom-candidate-select"
@@ -103,7 +131,9 @@ export function ZoomHistoricoControl({ ocurrenciaId, vinculado = false }: { ocur
           </div>
         )
       ) : null}
-      <p className="zoom-control-feedback" aria-live="polite">{mensaje}</p>
+      <p className="zoom-control-feedback" aria-live="polite">
+        {mensaje}
+      </p>
     </div>
   );
 }
@@ -117,7 +147,9 @@ export function ZoomReintentarArchivo({ archivoId }: { archivoId: string }) {
     setCargando(true);
     setMensaje("");
     try {
-      const r = await fetch(`/api/v1/archivos/zoom/archivos/${encodeURIComponent(archivoId)}/reintentar`, { method: "POST" });
+      const r = await fetch(`/api/v1/archivos/zoom/archivos/${encodeURIComponent(archivoId)}/reintentar`, {
+        method: "POST"
+      });
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
         return;
@@ -133,10 +165,17 @@ export function ZoomReintentarArchivo({ archivoId }: { archivoId: string }) {
 
   return (
     <span className="zoom-retry-inline">
-      <button type="button" className="secondary-action zoom-retry-btn" disabled={cargando} onClick={reintentar}>
+      <button
+        type="button"
+        className="secondary-action zoom-retry-btn"
+        disabled={cargando}
+        onClick={reintentar}
+      >
         {cargando ? "Reintentando…" : "Reintentar"}
       </button>
-      <span className="zoom-retry-feedback" aria-live="polite">{mensaje}</span>
+      <span className="zoom-retry-feedback" aria-live="polite">
+        {mensaje}
+      </span>
     </span>
   );
 }

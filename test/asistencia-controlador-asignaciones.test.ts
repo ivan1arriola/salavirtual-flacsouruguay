@@ -24,7 +24,10 @@ describe("controlador de asignaciones", () => {
     const reservarYAsignarAsistente = vi.fn().mockResolvedValue(fila);
     const { controlador } = crear({ reservarYAsignarAsistente });
 
-    const res = await controlador.asignar(admin, { instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1" });
+    const res = await controlador.asignar(admin, {
+      instanciaSalaId: "inst-1",
+      asistenteTecnicoId: "asist-1"
+    });
 
     expect(res).toBe(fila);
     expect(reservarYAsignarAsistente).toHaveBeenCalledWith("inst-1", "asist-1", "admin-1");
@@ -47,7 +50,10 @@ describe("controlador de asignaciones", () => {
     const { controlador } = crear({ reservarYAsignarAsistente });
 
     await expect(
-      controlador.asignar({ id: "d-1", rol: "DOCENTE", activo: true }, { instanciaSalaId: "i", asistenteTecnicoId: "a" })
+      controlador.asignar(
+        { id: "d-1", rol: "DOCENTE", activo: true },
+        { instanciaSalaId: "i", asistenteTecnicoId: "a" }
+      )
     ).rejects.toThrow("Solo Administración puede asignar asistentes de monitoreo.");
     expect(reservarYAsignarAsistente).not.toHaveBeenCalled();
   });
@@ -66,26 +72,44 @@ describe("controlador de asignaciones", () => {
 
 describe("adaptador Prisma: reasignación", () => {
   it("reutiliza la fila única (instancia, asistente) y limpia la confirmación previa", async () => {
-    const { crearPrismaAsistenciaRepositoryAdapter } = await import("@/src/modules/asistencia/infrastructure");
+    const { crearPrismaAsistenciaRepositoryAdapter } =
+      await import("@/src/modules/asistencia/infrastructure");
     const upsert = vi.fn().mockResolvedValue({
-      id: "asig-1", instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1", estado: "ASIGNADO"
+      id: "asig-1",
+      instanciaSalaId: "inst-1",
+      asistenteTecnicoId: "asist-1",
+      estado: "ASIGNADO"
     });
     const tx = {
       $executeRaw: vi.fn(),
-      usuario: { findUnique: vi.fn().mockResolvedValue({ id: "admin-1", activo: true, rol: "ADMINISTRACION" }) },
+      usuario: {
+        findUnique: vi.fn().mockResolvedValue({ id: "admin-1", activo: true, rol: "ADMINISTRACION" })
+      },
       instanciaSala: {
         findUnique: vi.fn().mockResolvedValue({
-          id: "inst-1", requiereAsistenciaTecnica: true, estado: "PROGRAMADA",
-          inicioProgramadoAt: new Date(Date.now() + 3_600_000), finProgramadoAt: new Date(Date.now() + 7_200_000),
-          modalidadOverride: null, inicioAsistenciaTecnicaAt: null, finAsistenciaTecnicaAt: null,
+          id: "inst-1",
+          requiereAsistenciaTecnica: true,
+          estado: "PROGRAMADA",
+          inicioProgramadoAt: new Date(Date.now() + 3_600_000),
+          finProgramadoAt: new Date(Date.now() + 7_200_000),
+          modalidadOverride: null,
+          inicioAsistenciaTecnicaAt: null,
+          finAsistenciaTecnicaAt: null,
           solicitud: { id: "s-1", titulo: "Clase", modalidad: "VIRTUAL" },
           asignaciones: [{ id: "asig-2", asistenteTecnicoId: "asist-2" }]
         })
       },
       asistenteTecnico: {
         findUnique: vi.fn().mockResolvedValue({
-          id: "asist-1", usuarioId: "u-1", cesadoHastaProximoInicioSesion: false,
-          usuario: { activo: true, rol: "ASISTENTE_TECNICO", emailPrincipal: "ana@flacso.edu.uy", cuentasGoogle: [] }
+          id: "asist-1",
+          usuarioId: "u-1",
+          cesadoHastaProximoInicioSesion: false,
+          usuario: {
+            activo: true,
+            rol: "ASISTENTE_TECNICO",
+            emailPrincipal: "ana@flacso.edu.uy",
+            cuentasGoogle: []
+          }
         })
       },
       asignacionAsistenciaTecnica: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), upsert },
@@ -96,11 +120,23 @@ describe("adaptador Prisma: reasignación", () => {
     };
     const db = { $transaction: (fn: (t: typeof tx) => unknown) => fn(tx) };
 
-    await crearPrismaAsistenciaRepositoryAdapter(db as never).reservarYAsignarAsistente("inst-1", "asist-1", "admin-1");
+    await crearPrismaAsistenciaRepositoryAdapter(db as never).reservarYAsignarAsistente(
+      "inst-1",
+      "asist-1",
+      "admin-1"
+    );
 
-    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
-      where: { instanciaSalaId_asistenteTecnicoId: { instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1" } },
-      update: expect.objectContaining({ estado: "ASIGNADO", minutosConfirmados: null, montoConfirmado: null })
-    }));
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          instanciaSalaId_asistenteTecnicoId: { instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1" }
+        },
+        update: expect.objectContaining({
+          estado: "ASIGNADO",
+          minutosConfirmados: null,
+          montoConfirmado: null
+        })
+      })
+    );
   });
 });

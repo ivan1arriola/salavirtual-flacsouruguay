@@ -8,8 +8,6 @@ export const zoomConfigSchema = z.object({
   activa: z.boolean().default(true)
 });
 
-export type ZoomConfigInput = z.infer<typeof zoomConfigSchema>;
-
 export type ZoomCredentialsResolved =
   | Readonly<{
       disponible: true;
@@ -86,9 +84,7 @@ export async function guardarConfiguracionZoom(
     throw new Error("El Client Secret es obligatorio para la primera configuración.");
   }
 
-  const clientSecretCifrado = input.clientSecret
-    ? cifrar(input.clientSecret)
-    : existing?.clientSecretCifrado;
+  const clientSecretCifrado = input.clientSecret ? cifrar(input.clientSecret) : existing?.clientSecretCifrado;
 
   await db.configuracionZoom.upsert({
     where: { id: "principal" },

@@ -7,7 +7,7 @@ import {
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
-  postulacionAsistenciaSchema,
+  postulacionAsistenciaSchema
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
@@ -79,10 +79,9 @@ export async function actualizarPostulacionAsistencia(
     }
 
     const estado = estadoInteresParaAccion(input.accion);
-    const assistantName = [
-      assistant.usuario.nombres,
-      assistant.usuario.apellidos
-    ].filter(Boolean).join(" ") || "Un asistente de monitoreo";
+    const assistantName =
+      [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" ") ||
+      "Un asistente de monitoreo";
     const interest = await tx.postulacionAsistenciaTecnica.upsert({
       where: {
         instanciaSalaId_asistenteTecnicoId: {
@@ -112,9 +111,10 @@ export async function actualizarPostulacionAsistencia(
       where: { activo: true, rol: "ADMINISTRACION" },
       select: { id: true, emailPrincipal: true }
     });
-    const notificationType = estado === "ME_INTERESA"
-      ? "ASISTENCIA_POSTULACION" as const
-      : "ASISTENCIA_POSTULACION_RETIRADA" as const;
+    const notificationType =
+      estado === "ME_INTERESA"
+        ? ("ASISTENCIA_POSTULACION" as const)
+        : ("ASISTENCIA_POSTULACION_RETIRADA" as const);
     return {
       interest,
       notification: {
@@ -125,14 +125,15 @@ export async function actualizarPostulacionAsistencia(
           cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postuló a" : "retiró su postulación de"} ${meeting.solicitud.titulo}.`,
           href: "/monitoreo?estado=pendientes",
           metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
-          emailSubject: estado === "ME_INTERESA"
-            ? "Nueva postulación de monitoreo"
-            : "Postulación de monitoreo retirada"
+          emailSubject:
+            estado === "ME_INTERESA" ? "Nueva postulación de monitoreo" : "Postulación de monitoreo retirada"
         }
       }
     };
   });
-  await safelyNotify(() => notificarUsuarios(db, result.notification.recipients, result.notification.message));
+  await safelyNotify(() =>
+    notificarUsuarios(db, result.notification.recipients, result.notification.message)
+  );
   return result.interest;
 }
 
@@ -181,7 +182,11 @@ export async function renotificarAsistentesDisponibles(
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
       throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
     }
-    if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= new Date()) {
+    if (
+      !meeting?.requiereAsistenciaTecnica ||
+      meeting.estado !== "PROGRAMADA" ||
+      meeting.finProgramadoAt <= new Date()
+    ) {
       throw new ConflictApiError("La reunión ya no necesita cobertura de monitoreo.");
     }
     if (meeting.asignaciones.length > 0) {
@@ -234,7 +239,9 @@ export async function actualizarDisponibilidadSemanal(
       where: { usuarioId: actor.id },
       select: { id: true }
     });
-    if (!assistant) throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
+    if (!assistant) {
+      throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
+    }
     await tx.asistenteTecnico.update({
       where: { id: assistant.id },
       data: { disponibleGeneral: input.disponibleGeneral }
@@ -284,7 +291,7 @@ export async function sincronizarCohostsDeInstancia(
       db: dependencies.db,
       descifrar: dependencies.descifrar,
       cargarCredencialesEncuentro,
-      configurarEspacio: dependencies.configurarEspacio,
+      configurarEspacio: dependencies.configurarEspacio
     },
     instanciaSalaId
   );

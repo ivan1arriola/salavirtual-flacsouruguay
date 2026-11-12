@@ -69,9 +69,7 @@ const adminGroups: readonly NavigationGroup[] = [
   },
   {
     label: "Equipo de monitoreo",
-    items: [
-      { href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck }
-    ]
+    items: [{ href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck }]
   },
   {
     label: "Recursos",
@@ -121,7 +119,12 @@ const assistantGroups: readonly NavigationGroup[] = [
         search: { key: "tab", value: "mes" }
       },
       { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
-      { href: ASSISTANT_MONITORINGS_HREF, label: "Mis monitoreos", icon: CalendarCheck2, search: { key: "tab", value: "proximas", defaultActive: true } },
+      {
+        href: ASSISTANT_MONITORINGS_HREF,
+        label: "Mis monitoreos",
+        icon: CalendarCheck2,
+        search: { key: "tab", value: "proximas", defaultActive: true }
+      },
       {
         href: "/mi-agenda?tab=historico",
         label: "Historial",
@@ -147,11 +150,8 @@ const mobilePrimary: Readonly<Record<RolUsuario, readonly NavigationItem[]>> = {
 };
 
 export function getNavigationForRole(role: RolUsuario): RoleNavigation {
-  const groups = role === "ADMINISTRACION"
-    ? adminGroups
-    : role === "DOCENTE"
-      ? teacherGroups
-      : assistantGroups;
+  const groups =
+    role === "ADMINISTRACION" ? adminGroups : role === "DOCENTE" ? teacherGroups : assistantGroups;
 
   return { groups, mobilePrimary: mobilePrimary[role] };
 }
@@ -174,9 +174,10 @@ export function isNavigationItemActive(
 ): boolean {
   const route = item.href.split("?")[0];
   const routeActive = pathname === route || (!exact && route !== "/" && pathname.startsWith(`${route}/`));
-  if (!routeActive || !item.search) return routeActive;
+  if (!routeActive || !item.search) {
+    return routeActive;
+  }
 
   const queryValue = searchParams.get(item.search.key);
-  return queryValue === item.search.value
-    || (queryValue === null && item.search.defaultActive === true);
+  return queryValue === item.search.value || (queryValue === null && item.search.defaultActive === true);
 }

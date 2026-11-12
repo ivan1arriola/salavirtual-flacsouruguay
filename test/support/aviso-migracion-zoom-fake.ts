@@ -1,10 +1,18 @@
 /** Modelos en memoria de `avisoMigracionZoom` y `usuario` para probar la outbox sin base real. */
 export type FilaAviso = {
-  id: string; instanciaSalaId: string; email: string; estado: string;
-  intentos: number; errorCodigo: string | null; enviadoAt: Date | null; joinUrl: string;
+  id: string;
+  instanciaSalaId: string;
+  email: string;
+  estado: string;
+  intentos: number;
+  errorCodigo: string | null;
+  enviadoAt: Date | null;
+  joinUrl: string;
 };
 
-export function crearOutboxFake(usuarios: { id: string; nombres: string; emailPrincipal: string | null }[] = []) {
+export function crearOutboxFake(
+  usuarios: { id: string; nombres: string; emailPrincipal: string | null }[] = []
+) {
   const filas: FilaAviso[] = [];
   let seq = 0;
   const avisoMigracionZoom = {
@@ -13,8 +21,14 @@ export function crearOutboxFake(usuarios: { id: string; nombres: string; emailPr
         throw Object.assign(new Error("Unique"), { code: "P2002" });
       }
       const fila: FilaAviso = {
-        id: `av${++seq}`, instanciaSalaId: data.instanciaSalaId, email: data.email, estado: data.estado,
-        intentos: 1, errorCodigo: null, enviadoAt: null, joinUrl: data.joinUrl,
+        id: `av${++seq}`,
+        instanciaSalaId: data.instanciaSalaId,
+        email: data.email,
+        estado: data.estado,
+        intentos: 1,
+        errorCodigo: null,
+        enviadoAt: null,
+        joinUrl: data.joinUrl
       };
       filas.push(fila);
       return { id: fila.id };
@@ -25,19 +39,26 @@ export function crearOutboxFake(usuarios: { id: string; nombres: string; emailPr
     },
     updateMany: async ({ where, data }: any) => {
       const fila = filas.find((f) => f.id === where.id && f.estado === where.estado);
-      if (!fila) return { count: 0 };
+      if (!fila) {
+        return { count: 0 };
+      }
       const { intentos, ...resto } = data;
       Object.assign(fila, resto);
-      if (intentos?.increment) fila.intentos += intentos.increment;
+      if (intentos?.increment) {
+        fila.intentos += intentos.increment;
+      }
       return { count: 1 };
     },
     update: async ({ where, data }: any) => {
-      Object.assign(filas.find((f) => f.id === where.id)!, data);
+      Object.assign(
+        filas.find((f) => f.id === where.id)!,
+        data
+      );
       return {};
-    },
+    }
   };
   const usuario = {
-    findMany: async ({ where }: any) => usuarios.filter((u) => where.id.in.includes(u.id)),
+    findMany: async ({ where }: any) => usuarios.filter((u) => where.id.in.includes(u.id))
   };
   return { filas, avisoMigracionZoom, usuario };
 }

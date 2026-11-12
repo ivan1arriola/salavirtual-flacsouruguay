@@ -127,12 +127,13 @@ export async function reemplazarCuentasGooglePermitidas(
 
     const emailPrincipalAnterior = usuario.emailPrincipal?.trim().toLowerCase() ?? null;
     const cambioEmailPrincipal = emailPrincipalAnterior !== emailPrincipal;
-    const cuentaPrincipalGoogle = emailPrincipal && emails.includes(emailPrincipal)
-      ? await tx.cuentaGoogleFlacso.findUnique({
-          where: { email: emailPrincipal },
-          select: { emailVerificadoAt: true }
-        })
-      : null;
+    const cuentaPrincipalGoogle =
+      emailPrincipal && emails.includes(emailPrincipal)
+        ? await tx.cuentaGoogleFlacso.findUnique({
+            where: { email: emailPrincipal },
+            select: { emailVerificadoAt: true }
+          })
+        : null;
 
     await tx.usuario.update({
       where: { id: usuario.id },
@@ -140,7 +141,7 @@ export async function reemplazarCuentasGooglePermitidas(
         debeCambiarPassword: emails.length === 0,
         emailPrincipal,
         emailVerificadoAt: cambioEmailPrincipal
-          ? cuentaPrincipalGoogle?.emailVerificadoAt ?? null
+          ? (cuentaPrincipalGoogle?.emailVerificadoAt ?? null)
           : usuario.emailVerificadoAt
       }
     });

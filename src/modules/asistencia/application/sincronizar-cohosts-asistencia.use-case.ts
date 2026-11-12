@@ -1,16 +1,8 @@
 import {
   extraerCohostEmailsDeInstancia,
   invalidarVerificacionCohosts,
-  normalizeCohostEmails,
   registrarVerificacionCohosts
 } from "@/src/modules/conferencias/api";
-
-export type GoogleCredentials = Readonly<{
-  serviceAccountEmail?: string;
-  clientEmail?: string;
-  privateKey: string;
-  subject?: string;
-}>;
 
 export type SincronizarCohostsDeps = Readonly<{
   db: {
@@ -23,7 +15,11 @@ export type SincronizarCohostsDeps = Readonly<{
     };
   };
   descifrar: (value: string) => string;
-  cargarCredencialesEncuentro: (db: any, descifrar: (v: string) => string, emailOrganizador?: string | null) => Promise<any>;
+  cargarCredencialesEncuentro: (
+    db: any,
+    descifrar: (v: string) => string,
+    emailOrganizador?: string | null
+  ) => Promise<any>;
   configurarEspacio: (
     credentials: any,
     codigoReunion: string,
@@ -56,7 +52,9 @@ export async function sincronizarCohostsDeInstanciaUseCase(
   });
 
   const event = meeting?.eventosProveedor[0];
-  if (!meeting || !event?.codigoReunion) return;
+  if (!meeting || !event?.codigoReunion) {
+    return;
+  }
 
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
 

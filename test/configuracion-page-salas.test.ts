@@ -68,10 +68,7 @@ describe("datos de Configuración › Salas", () => {
     expect(consulta.by).toEqual(["cuentaProveedorId"]);
     expect(consulta.where.proveedor).toEqual({ tipo: "ZOOM" });
     expect(consulta.where.instancia).toMatchObject({
-      OR: [
-        { estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } },
-        { estado: "EN_CURSO" }
-      ]
+      OR: [{ estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } }, { estado: "EN_CURSO" }]
     });
 
     expect(datos.hosts.map(({ id, reunionesFuturas }) => [id, reunionesFuturas])).toEqual([

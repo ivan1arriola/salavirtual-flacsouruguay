@@ -1,4 +1,5 @@
 # SDD ledger — plan: docs/superpowers/plans/2026-11-05-cuentas-zoom-por-grupo.md
+
 Branch: feat/cuentas-zoom-por-grupo (from docs/spec-cuentas-zoom-por-grupo, which holds spec+plan)
 Pre-flight scan (pairs sharing file/interface):
 | T1->T4,T7 | produces fields; T4/T7 consume same names | ok |

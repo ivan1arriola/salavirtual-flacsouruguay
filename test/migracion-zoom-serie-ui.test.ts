@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const control = readFileSync(new URL("../src/components/migracion-zoom-aplicar-control.tsx", import.meta.url), "utf8");
+const control = readFileSync(
+  new URL("../src/components/migracion-zoom-aplicar-control.tsx", import.meta.url),
+  "utf8"
+);
 
 describe("pantalla de migración con series bloqueadas", () => {
   it("etiqueta el estado SERIE y lo cuenta como caso de atención", () => {
@@ -16,7 +19,7 @@ describe("pantalla de migración con series bloqueadas", () => {
   });
 
   it("permite marcar la excepción Conservar en Meet también en los encuentros de una serie bloqueada", () => {
-    expect(control).toMatch(/const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(fila\.estado\);/);
-    expect(control).toContain("{editable && <ExcepcionMeetControl");
+    expect(control).toMatch(/const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(\s*fila\.estado\s*\);/);
+    expect(control).toMatch(/\{editable &&\s*\(?\s*<ExcepcionMeetControl/);
   });
 });

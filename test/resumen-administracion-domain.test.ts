@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolverPeriodoMes, resumirAsignacionesPorAsistente, resumirTotales } from "../src/modules/asistencia/resumen-administracion.domain";
+import {
+  resolverPeriodoMes,
+  resumirAsignacionesPorAsistente,
+  resumirTotales
+} from "../src/modules/asistencia/resumen-administracion.domain";
 
 describe("resumen administrativo de asistentes", () => {
   it("agrupa reuniones, horas, importes y faltantes por asistente", () => {

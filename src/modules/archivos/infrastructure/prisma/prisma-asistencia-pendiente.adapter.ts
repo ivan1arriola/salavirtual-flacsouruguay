@@ -10,13 +10,21 @@ const ESPERA_REPORTE_MS = 15 * MIN;
  * Ocurrencias cuya asistencia falta: las nunca consultadas (hasta 30 días) y las que Zoom aún no tenía o fallaron
  * (solo los últimos 3 días, con 15 min entre intentos: `updatedAt` cambia al marcar el estado del reporte).
  */
-export function crearPrismaAsistenciaPendienteAdapter(deps: Readonly<{ db: PrismaClient }>): RepoAsistenciaPendienteZoom {
+export function crearPrismaAsistenciaPendienteAdapter(
+  deps: Readonly<{ db: PrismaClient }>
+): RepoAsistenciaPendienteZoom {
   return {
     async listarOcurrenciasPorSincronizarAsistencia(ahora, limite) {
       const filas = await deps.db.ocurrenciaArchivoZoom.findMany({
         where: {
           OR: [
-            { estadoAsistencia: "PENDIENTE", inicioRealAt: { gte: new Date(ahora.getTime() - 30 * DIA), lte: new Date(ahora.getTime() - ESPERA_REPORTE_MS) } },
+            {
+              estadoAsistencia: "PENDIENTE",
+              inicioRealAt: {
+                gte: new Date(ahora.getTime() - 30 * DIA),
+                lte: new Date(ahora.getTime() - ESPERA_REPORTE_MS)
+              }
+            },
             {
               estadoAsistencia: { in: ["NO_DISPONIBLE", "ERROR"] },
               inicioRealAt: { gte: new Date(ahora.getTime() - 3 * DIA) },

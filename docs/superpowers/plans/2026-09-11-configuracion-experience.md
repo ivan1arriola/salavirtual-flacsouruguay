@@ -24,10 +24,12 @@
 ### Task 1: Section domain and navigation contract
 
 **Files:**
+
 - Create: `src/modules/configuracion/settings-navigation.domain.ts`
 - Create: `test/settings-navigation-domain.test.ts`
 
 **Interfaces:**
+
 - Produces: `SettingsSection`, `SETTINGS_SECTIONS`, `resolveSettingsSection(value)` and `settingsHref(section)`.
 - Consumes: no application state.
 
@@ -35,7 +37,10 @@
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { resolveSettingsSection, settingsHref } from "../src/modules/configuracion/settings-navigation.domain";
+import {
+  resolveSettingsSection,
+  settingsHref
+} from "../src/modules/configuracion/settings-navigation.domain";
 
 describe("navegacion de configuracion", () => {
   it("abre el resumen ante una seccion ausente o desconocida", () => {
@@ -61,15 +66,19 @@ Expected: FAIL because `settings-navigation.domain.ts` does not exist.
 
 ```ts
 export const SETTINGS_SECTION_IDS = [
-  "resumen", "workspace", "salas", "programas", "asistencia", "correo", "historico"
+  "resumen",
+  "workspace",
+  "salas",
+  "programas",
+  "asistencia",
+  "correo",
+  "historico"
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTION_IDS)[number];
 
 export function resolveSettingsSection(value?: string): SettingsSection {
-  return SETTINGS_SECTION_IDS.includes(value as SettingsSection)
-    ? value as SettingsSection
-    : "resumen";
+  return SETTINGS_SECTION_IDS.includes(value as SettingsSection) ? (value as SettingsSection) : "resumen";
 }
 
 export function settingsHref(section: SettingsSection) {
@@ -88,6 +97,7 @@ Expected: PASS.
 ### Task 2: Administration frame and summary landing page
 
 **Files:**
+
 - Create: `src/components/settings-center-shell.tsx`
 - Create: `src/components/settings-overview.tsx`
 - Modify: `app/(gestion)/configuracion/page.tsx`
@@ -95,6 +105,7 @@ Expected: PASS.
 - Modify: `app/(gestion)/layout.tsx`
 
 **Interfaces:**
+
 - Consumes: `SettingsSection`, `SETTINGS_SECTIONS`, counts and integration state from the page.
 - Produces: desktop section rail, mobile section disclosure, section header, and summary cards.
 
@@ -103,7 +114,13 @@ Expected: PASS.
 ```ts
 it("expone todas las secciones en el orden de trabajo", () => {
   expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([
-    "resumen", "workspace", "salas", "programas", "asistencia", "correo", "historico"
+    "resumen",
+    "workspace",
+    "salas",
+    "programas",
+    "asistencia",
+    "correo",
+    "historico"
   ]);
 });
 ```
@@ -147,11 +164,13 @@ Expected: PASS.
 ### Task 3: Progressive Google Workspace hierarchy
 
 **Files:**
+
 - Modify: `src/components/workspace-config-form.tsx`
 - Modify: `app/(gestion)/configuracion/page.tsx`
 - Modify: `app/(gestion)/configuracion-redesign.css`
 
 **Interfaces:**
+
 - Consumes: current `WorkspaceConfigVisible` and existing form components.
 - Produces: health-first groups with closed historical and advanced panels.
 
@@ -160,13 +179,15 @@ Expected: PASS.
 Create `workspaceReadiness(initial)` in the navigation domain and test a complete and incomplete configuration:
 
 ```ts
-expect(workspaceReadiness({
-  serviceAccountEmail: "service@example.com",
-  privateKeyConfigurada: true,
-  serviceAccountSubject: "sala@example.com",
-  driveDestinationId: "folder",
-  activa: true
-}).readyCount).toBe(4);
+expect(
+  workspaceReadiness({
+    serviceAccountEmail: "service@example.com",
+    privateKeyConfigurada: true,
+    serviceAccountSubject: "sala@example.com",
+    driveDestinationId: "folder",
+    activa: true
+  }).readyCount
+).toBe(4);
 ```
 
 - [ ] **Step 2: Run the test and verify RED**
@@ -188,10 +209,12 @@ Expected: PASS.
 ### Task 4: Focused room list and editor
 
 **Files:**
+
 - Modify: `src/components/meet-hosts-config.tsx`
 - Modify: `app/(gestion)/configuracion-redesign.css`
 
 **Interfaces:**
+
 - Consumes: current `hosts` props and `/api/v1/configuracion/salas-meet` contract.
 - Produces: searchable summary rows, one open editor, separate create panel, unchanged update and delete payloads.
 
@@ -224,12 +247,14 @@ Expected: PASS.
 ### Task 5: Searchable program administration and responsive members
 
 **Files:**
+
 - Create: `src/components/program-members-config.domain.ts`
 - Create: `test/program-members-config-domain.test.ts`
 - Modify: `src/components/program-members-config.tsx`
 - Modify: `app/(gestion)/configuracion-redesign.css`
 
 **Interfaces:**
+
 - Consumes: existing programs, academic units, teachers and Server Action props.
 - Produces: search, active-state filter, summary counters, one expanded program and stacked mobile member rows.
 
@@ -267,6 +292,7 @@ Expected: PASS.
 ### Task 6: Secondary sections, historical search and complete validation
 
 **Files:**
+
 - Create: `src/components/historical-meetings-table.tsx`
 - Modify: `src/components/assistant-report-config-form.tsx`
 - Modify: `src/components/email-test-form.tsx`
@@ -275,6 +301,7 @@ Expected: PASS.
 - Create: `.frontend-design/configuracion/2026-09-11-configuracion.html`
 
 **Interfaces:**
+
 - Consumes: the existing historical meeting view model and current assistance/email actions.
 - Produces: consistent section presentation, client-side historical search, responsive history rows, and an interactive design review artifact.
 

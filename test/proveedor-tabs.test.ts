@@ -21,18 +21,26 @@ describe("pestañas Meet y Zoom", () => {
 
 describe("aviso de encuentros en el otro proveedor", () => {
   it("indica cuántos encuentros hay y enlaza al otro panel", () => {
-    const html = renderToStaticMarkup(createElement(OtroProveedorAviso, {
-      proveedor: "GOOGLE_MEET", cantidad: 3, href: "/reuniones/s1?proveedor=meet"
-    }));
+    const html = renderToStaticMarkup(
+      createElement(OtroProveedorAviso, {
+        proveedor: "GOOGLE_MEET",
+        cantidad: 3,
+        href: "/reuniones/s1?proveedor=meet"
+      })
+    );
     expect(html).toContain("3 encuentros");
     expect(html).toContain("Meet");
     expect(html).toContain('href="/reuniones/s1?proveedor=meet"');
   });
 
   it("usa el singular con un solo encuentro", () => {
-    const html = renderToStaticMarkup(createElement(OtroProveedorAviso, {
-      proveedor: "ZOOM", cantidad: 1, href: "/reuniones/s1?proveedor=zoom"
-    }));
+    const html = renderToStaticMarkup(
+      createElement(OtroProveedorAviso, {
+        proveedor: "ZOOM",
+        cantidad: 1,
+        href: "/reuniones/s1?proveedor=zoom"
+      })
+    );
     expect(html).toContain("1 encuentro ");
     expect(html).toContain("Zoom");
   });

@@ -1,9 +1,5 @@
 import ExcelJS from "exceljs";
-import {
-  etiquetaMes,
-  type FilaPlanillaPago,
-  type PeriodoReporteMensual
-} from "../../domain";
+import { etiquetaMes, type FilaPlanillaPago, type PeriodoReporteMensual } from "../../domain";
 import type { PlanillaPagosExporterPort } from "../../ports";
 
 const COLORS = {
@@ -135,9 +131,10 @@ function buildSheet(
         const amountCell = row.getCell(7);
         amountCell.fill = solid(item.moneda === "UYU" ? COLORS.warning : COLORS.danger);
         amountCell.font = { bold: true, color: { argb: COLORS.text } };
-        amountCell.note = item.moneda === "UYU"
-          ? "Esta reunión no tiene una tarifa aplicable ni un monto confirmado."
-          : `El importe está registrado en ${item.moneda}; no se convierte automáticamente a pesos uruguayos.`;
+        amountCell.note =
+          item.moneda === "UYU"
+            ? "Esta reunión no tiene una tarifa aplicable ni un monto confirmado."
+            : `El importe está registrado en ${item.moneda}; no se convierte automáticamente a pesos uruguayos.`;
       }
 
       rowIndex += 1;
@@ -186,7 +183,8 @@ function addDocumentHeader(sheet: ExcelJS.Worksheet, periodo: PeriodoReporteMens
 
   sheet.mergeCells("A2:G2");
   const subtitle = sheet.getCell("A2");
-  subtitle.value = "Los valores y los totales usan fórmulas. Las tarifas y montos confirmados quedan como columnas auxiliares ocultas para poder auditar el cálculo.";
+  subtitle.value =
+    "Los valores y los totales usan fórmulas. Las tarifas y montos confirmados quedan como columnas auxiliares ocultas para poder auditar el cálculo.";
   subtitle.fill = solid(COLORS.headerLight);
   subtitle.font = { size: 10, color: { argb: COLORS.muted } };
   subtitle.alignment = { wrapText: true, vertical: "middle" };
@@ -233,11 +231,12 @@ function styleDataRow(row: ExcelJS.Row, indexInGroup: number): void {
 }
 
 function formulaAmount(rowIndex: number, item: FilaPlanillaPago): ExcelJS.CellFormulaValue {
-  const result: string | number = item.moneda !== "UYU"
-    ? `REVISAR ${item.moneda}`
-    : item.montoCalculado === null
-      ? "SIN TARIFA"
-      : roundMoney(item.montoCalculado);
+  const result: string | number =
+    item.moneda !== "UYU"
+      ? `REVISAR ${item.moneda}`
+      : item.montoCalculado === null
+        ? "SIN TARIFA"
+        : roundMoney(item.montoCalculado);
 
   return {
     formula: `IF(J${rowIndex}<>"UYU","REVISAR "&J${rowIndex},IF(I${rowIndex}<>"",ROUND(I${rowIndex},2),IF(H${rowIndex}="","SIN TARIFA",ROUND(E${rowIndex}*H${rowIndex},2))))`,
@@ -277,8 +276,7 @@ function fechaLocalExcel(fecha: Date): Date {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(fecha);
-  const value = (type: "year" | "month" | "day") =>
-    Number(parts.find((part) => part.type === type)?.value);
+  const value = (type: "year" | "month" | "day") => Number(parts.find((part) => part.type === type)?.value);
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
 }
 

@@ -13,6 +13,9 @@ export function MeetingCountdown({ startAt }: Readonly<{ startAt: string }>) {
   }, []);
 
   return (
-    <span className="countdown"><Clock3 size={16} />{formatTiempoRestante(Date.parse(startAt), now)}</span>
+    <span className="countdown">
+      <Clock3 size={16} />
+      {formatTiempoRestante(Date.parse(startAt), now)}
+    </span>
   );
 }

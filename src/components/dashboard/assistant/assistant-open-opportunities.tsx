@@ -41,9 +41,7 @@ export function AssistantOpenOpportunities({
                   <strong className="assistant-opportunity-time">
                     {formatTime(inicio)}–{formatTime(fin)}
                   </strong>
-                  <span className="badge-tag">
-                    {opp.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
-                  </span>
+                  <span className="badge-tag">{opp.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
                 </div>
 
                 <div className="assistant-opportunity-content">
@@ -73,4 +71,3 @@ export function AssistantOpenOpportunities({
     </section>
   );
 }
-

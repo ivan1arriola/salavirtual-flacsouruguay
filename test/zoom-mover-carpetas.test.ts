@@ -11,7 +11,9 @@ const INICIO = new Date("2026-03-15T14:00:00Z");
 
 function cliente(...respuestas: Array<Record<string, unknown>>) {
   const request = vi.fn();
-  for (const r of respuestas) request.mockResolvedValueOnce(r);
+  for (const r of respuestas) {
+    request.mockResolvedValueOnce(r);
+  }
   return { request, auth: { request } as unknown as JWT };
 }
 
@@ -64,11 +66,22 @@ describe("resolverCarpetaMesZoom", () => {
 
 describe("moverCarpetasVinculadasZoomUseCase", () => {
   const ocurrencia = (id: string, carpeta = `carpeta-${id}`) => ({
-    ocurrenciaId: id, driveFolderId: carpeta,
-    referencia: { cuentaZoomId: "c", uuid: `u-${id}`, meetingId: "m", anfitrionZoomId: "h", inicioRealAt: INICIO, titulo: "Clase" }
+    ocurrenciaId: id,
+    driveFolderId: carpeta,
+    referencia: {
+      cuentaZoomId: "c",
+      uuid: `u-${id}`,
+      meetingId: "m",
+      anfitrionZoomId: "h",
+      inicioRealAt: INICIO,
+      titulo: "Clase"
+    }
   });
 
-  function armar(pendientes: ReturnType<typeof ocurrencia>[], opciones: { mover?: (id: string) => Promise<string>; raiz?: string | null } = {}) {
+  function armar(
+    pendientes: ReturnType<typeof ocurrencia>[],
+    opciones: { mover?: (id: string) => Promise<string>; raiz?: string | null } = {}
+  ) {
     const repo = {
       listarCarpetasPorMover: vi.fn(async () => pendientes),
       marcarCarpetaVinculada: vi.fn(async () => true)
@@ -77,7 +90,13 @@ describe("moverCarpetasVinculadasZoomUseCase", () => {
       asegurarCarpeta: vi.fn(async (_c: string, nombre: string, padre: string) => `${padre}/${nombre}`),
       moverCarpeta: vi.fn(async (id: string) => (opciones.mover ? opciones.mover(id) : "MOVIDA"))
     };
-    const deps = { repo, storage, hash, raizVinculados: opciones.raiz === undefined ? "VINCULADOS" : opciones.raiz, ahora: () => new Date("2026-11-11T12:00:00Z") };
+    const deps = {
+      repo,
+      storage,
+      hash,
+      raizVinculados: opciones.raiz === undefined ? "VINCULADOS" : opciones.raiz,
+      ahora: () => new Date("2026-11-11T12:00:00Z")
+    };
     return { repo, storage, run: () => moverCarpetasVinculadasZoomUseCase(deps as never, { limite: 10 }) };
   }
 
@@ -97,7 +116,12 @@ describe("moverCarpetasVinculadasZoomUseCase", () => {
 
   it("un fallo en una carpeta no impide las demás ni se marca como resuelta", async () => {
     const { repo, run } = armar([ocurrencia("o1"), ocurrencia("o2")], {
-      mover: async (id) => { if (id === "carpeta-o1") throw new Error("403 secreto"); return "MOVIDA"; }
+      mover: async (id) => {
+        if (id === "carpeta-o1") {
+          throw new Error("403 secreto");
+        }
+        return "MOVIDA";
+      }
     });
     const r = await run();
     expect(r).toMatchObject({ movidas: 1, fallidas: 1 });

@@ -4,7 +4,8 @@
 
 **Goal:** Implementar el módulo `identity` con arquitectura de 5 capas (`domain`, `ports`, `application`, `infrastructure`, `api.ts`), transformar `auth.ts` en un adaptador puro de Auth.js libre de dependencias de Prisma, cifrado y Google Calendar, y aislar la reconciliación del calendario del asistente técnico mediante un despachador seguro fuera del camino crítico.
 
-**Architecture:** 
+**Architecture:**
+
 - `src/modules/identity/domain/`: Tipos puros inmutables (`RolUsuario`, `UsuarioAutenticado`, `PerfilGoogle`), reglas de acceso Google y credenciales, esquemas Zod de validación y cálculo funcional de redirecciones autorizadas.
 - `src/modules/identity/ports/`: Contratos `IdentityRepository` (búsqueda de credenciales, resolución/autovinculación de cuenta Google, registro de acceso) y `CalendarioAsistenteDispatcher` (intención de reconciliación de calendario).
 - `src/modules/identity/application/`: Casos de uso `autenticarCredenciales` y `resolverUsuarioGoogle` coordinando reglas de dominio y puertos sin acoplamiento a frameworks.
@@ -32,6 +33,7 @@
 ### Task 1: Capa Domain del Módulo `identity`
 
 **Files:**
+
 - Create: `src/modules/identity/domain/identity.types.ts`
 - Create: `src/modules/identity/domain/roles.domain.ts`
 - Create: `src/modules/identity/domain/credentials.domain.ts`
@@ -40,6 +42,7 @@
 - Create: `test/identity-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `RolUsuario`, `ROLES_USUARIO`, `esRolUsuario`, `puedeAdministrar`, `puedeGestionarAsistencia`, `puedeDictarClases`.
   - `UsuarioAutenticado`, `UsuarioCredenciales`, `evaluarAccesoLocal`, `credencialesLoginSchema`, `normalizarIdentificadorAcceso`.
@@ -128,7 +131,9 @@ describe("identity domain", () => {
       APP_BASE_URL: "http://localhost:3000"
     });
     expect(config.trustHost).toBe(true);
-    expect(resolverRedireccionAutorizada("/reuniones", "http://localhost:3000")).toBe("http://localhost:3000/reuniones");
+    expect(resolverRedireccionAutorizada("/reuniones", "http://localhost:3000")).toBe(
+      "http://localhost:3000/reuniones"
+    );
   });
 });
 ```
@@ -141,6 +146,7 @@ Expected: FAIL (módulo aún no implementado).
 - [ ] **Step 3: Implement domain files**
 
 Crear:
+
 - `src/modules/identity/domain/identity.types.ts`
 - `src/modules/identity/domain/roles.domain.ts`
 - `src/modules/identity/domain/credentials.domain.ts`
@@ -165,11 +171,13 @@ git commit -m "feat(identity): implementar capa de dominio para autenticacion y 
 ### Task 2: Capa Ports del Módulo `identity`
 
 **Files:**
+
 - Create: `src/modules/identity/ports/identity-repository.port.ts`
 - Create: `src/modules/identity/ports/calendario-asistente-dispatcher.port.ts`
 - Create: `src/modules/identity/ports/index.ts`
 
 **Interfaces:**
+
 - Produces:
   - `IdentityRepository`: Contrato en lenguaje de negocio para consultar usuarios de acceso local, registrar inicios de sesión, resolver y autovincular cuentas Google.
   - `CalendarioAsistenteDispatcher`: Contrato `reconciliarCalendarioAsistente(usuarioId: string): Promise<void>`.
@@ -179,28 +187,13 @@ git commit -m "feat(identity): implementar capa de dominio para autenticacion y 
 Crear `src/modules/identity/ports/identity-repository.port.ts`:
 
 ```ts
-import type {
-  CuentaGoogleVinculada,
-  PerfilGoogle,
-  UsuarioCredenciales
-} from "../domain/identity.types";
+import type { CuentaGoogleVinculada, PerfilGoogle, UsuarioCredenciales } from "../domain/identity.types";
 
 export type IdentityRepository = Readonly<{
   buscarParaLoginLocal: (identificador: string) => Promise<UsuarioCredenciales | null>;
-  registrarAcceso: (
-    usuarioId: string,
-    proveedor: "credentials" | "google",
-    fecha?: Date
-  ) => Promise<void>;
-  resolverOCrearCuentaGoogle: (
-    perfil: PerfilGoogle,
-    fecha: Date
-  ) => Promise<CuentaGoogleVinculada | null>;
-  actualizarUltimoAccesoGoogle: (
-    cuentaId: string,
-    subject: string,
-    fecha: Date
-  ) => Promise<void>;
+  registrarAcceso: (usuarioId: string, proveedor: "credentials" | "google", fecha?: Date) => Promise<void>;
+  resolverOCrearCuentaGoogle: (perfil: PerfilGoogle, fecha: Date) => Promise<CuentaGoogleVinculada | null>;
+  actualizarUltimoAccesoGoogle: (cuentaId: string, subject: string, fecha: Date) => Promise<void>;
 }>;
 ```
 
@@ -236,12 +229,14 @@ git commit -m "feat(identity): definir puertos de persistencia y despacho de cal
 ### Task 3: Capa Application del Módulo `identity`
 
 **Files:**
+
 - Create: `src/modules/identity/application/autenticar-credenciales.use-case.ts`
 - Create: `src/modules/identity/application/resolver-usuario-google.use-case.ts`
 - Create: `src/modules/identity/application/index.ts`
 - Create: `test/identity-application.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `crearAutenticarCredencialesUseCase(repository, verificarPassword)`
   - `crearResolverUsuarioGoogleUseCase(repository, calendarioDispatcher?)`
@@ -256,10 +251,7 @@ import {
   crearAutenticarCredencialesUseCase,
   crearResolverUsuarioGoogleUseCase
 } from "@/src/modules/identity/application";
-import type {
-  IdentityRepository,
-  CalendarioAsistenteDispatcher
-} from "@/src/modules/identity/ports";
+import type { IdentityRepository, CalendarioAsistenteDispatcher } from "@/src/modules/identity/ports";
 
 describe("identity application use cases", () => {
   it("autentica con credenciales validas", async () => {
@@ -383,12 +375,14 @@ git commit -m "feat(identity): implementar casos de uso de autenticacion local y
 ### Task 4: Capa Infrastructure y Entrada Pública `api.ts`
 
 **Files:**
+
 - Create: `src/modules/identity/infrastructure/prisma-identity.adapter.ts`
 - Create: `src/modules/identity/infrastructure/asistencia-calendario-dispatcher.adapter.ts`
 - Create: `src/modules/identity/api.ts`
 - Create: `test/identity-infrastructure.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `crearPrismaIdentityAdapter(prismaOrTx): IdentityRepository`
   - `crearAsistenciaCalendarioDispatcher(options): CalendarioAsistenteDispatcher`
@@ -406,6 +400,7 @@ Expected: FAIL.
 - [ ] **Step 3: Implement adapters and `api.ts`**
 
 Implementar:
+
 - `prisma-identity.adapter.ts` (trasladando de forma limpia las queries de `google-login.adapter.ts` y `local-login.adapter.ts`).
 - `asistencia-calendario-dispatcher.adapter.ts` (invocando `sincronizarCalendariosAsistenteUsuario` con try/catch y console.warn).
 - `src/modules/identity/api.ts`.
@@ -427,6 +422,7 @@ git commit -m "feat(identity): implementar adaptadores de infraestructura y api 
 ### Task 5: Composición en `src/bootstrap/identity.server.ts` y Desacople de `auth.ts`
 
 **Files:**
+
 - Create: `src/bootstrap/identity.server.ts`
 - Modify: `auth.ts`
 - Modify: `src/lib/auth/google-login.adapter.ts` (fachada temporal)
@@ -438,6 +434,7 @@ git commit -m "feat(identity): implementar adaptadores de infraestructura y api 
 - Create: `test/identity-bootstrap.test.ts`
 
 **Interfaces:**
+
 - Consumes: `@/src/modules/identity/api`, `@/src/lib/db`, `@/src/lib/config/encryption`, `@/src/modules/asistencia/calendario-asistente.service`.
 - Produces: `obtenerServicioIdentity()` con `autenticarCredenciales` y `resolverUsuarioGoogle`.
 - Modifies `auth.ts`: Ya NO importa `db`, `descifrarConfiguracion`, ni adaptadores de Google Calendar. Delega en `obtenerServicioIdentity()`.
@@ -475,9 +472,11 @@ git commit -m "feat(auth): desacoplar auth.ts de prisma y calendario delegando e
 ### Task 6: Verificación Global de la Etapa 2
 
 **Files:**
+
 - None (verificación pura sobre el árbol completo)
 
 **Interfaces:**
+
 - Consumes: Todo el repositorio.
 - Produces: Validación estricta de TypeScript, suite completa de Vitest, esquema Prisma y compilación de producción.
 
@@ -500,4 +499,3 @@ Expected: PASS.
 
 Run: `npm run build`
 Expected: PASS con compilación exitosa.
-

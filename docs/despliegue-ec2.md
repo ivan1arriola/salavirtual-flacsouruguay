@@ -140,7 +140,7 @@ sudo journalctl -u salavirtual.service -n 100 --no-pager
 El healthcheck esperado es similar a:
 
 ```json
-{"ok":true,"app":"flacso-meet","database":"ok"}
+{ "ok": true, "app": "flacso-meet", "database": "ok" }
 ```
 
 ## 6. Probar Apache antes del DNS
@@ -234,6 +234,7 @@ npm run ci:local
 ```
 
 El script `scripts/deploy-ec2.sh`:
+
 1. Comprueba la conexión SSH a `servidor-flacso`.
 2. Verifica que el árbol de Git esté limpio y en rama `main`.
 3. Valida que el commit a desplegar esté en `origin/main` (ofrece hacer `git push origin main` si falta).

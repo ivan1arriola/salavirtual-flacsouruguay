@@ -2,7 +2,7 @@
 export type AnfitrionBarridoZoom = Readonly<{ anfitrionZoomId: string; cuentaProveedorId: string | null }>;
 
 export type EstadoBarridoZoom =
-  | "PENDIENTE" | "EN_CURSO" | "COMPLETADO" | "ERROR_REINTENTABLE" | "REQUIERE_REVISION" | "CANCELADO";
+  "PENDIENTE" | "EN_CURSO" | "COMPLETADO" | "ERROR_REINTENTABLE" | "REQUIERE_REVISION" | "CANCELADO";
 
 /** Posición persistida: anfitrión, ventana (fecha inicial inclusiva) y cursor de la página SIGUIENTE a procesar. */
 export type FuenteListadoZoom = "ACTIVAS" | "PAPELERA";
@@ -68,7 +68,11 @@ export type BarridoZoomRepositoryPort = Readonly<{
   crear(barrido: NuevoBarridoZoom): Promise<Readonly<{ id: string }>>;
   obtener(barridoId: string): Promise<BarridoZoom | null>;
   /** Reclama un barrido PENDIENTE/EN_CURSO/ERROR_REINTENTABLE listo para reintento, o con lease vencido. */
-  reclamar(barridoId: string, ahora: Date, duracionMs: number): Promise<Readonly<{ lease: LeaseBarridoZoom; barrido: BarridoZoom }> | null>;
+  reclamar(
+    barridoId: string,
+    ahora: Date,
+    duracionMs: number
+  ): Promise<Readonly<{ lease: LeaseBarridoZoom; barrido: BarridoZoom }> | null>;
   /** Persiste la posición DESPUÉS de haber guardado la página (nunca antes). */
   avanzar(lease: LeaseBarridoZoom, avance: AvanceBarridoZoom, ahora: Date): Promise<boolean>;
   registrarFallo(lease: LeaseBarridoZoom, fallo: FalloBarridoZoom): Promise<boolean>;

@@ -3,9 +3,7 @@ import {
   obtenerCredencialPrincipalGoogleWorkspace,
   obtenerCredencialGoogleParaSala,
   obtenerCredencialAdminReportsGoogle,
-  cargarCredencialesLegacyGoogleWorkspace,
-  obtenerCredencialesWorkspaceActivas,
-  obtenerCandidatosCredencialesParaOrganizador,
+  obtenerCandidatosCredencialesParaOrganizador
 } from "@/src/modules/configuracion/api";
 
 describe("google-workspace.service: unificación de credenciales", () => {
@@ -22,9 +20,9 @@ describe("google-workspace.service: unificación de credenciales", () => {
           driveDestinationId: "drive_folder_id",
           activa: true,
           version: 2,
-          updatedAt: new Date("2026-10-01T10:00:00Z"),
-        }),
-      },
+          updatedAt: new Date("2026-10-01T10:00:00Z")
+        })
+      }
     };
 
     const cred = await obtenerCredencialPrincipalGoogleWorkspace(dbMock as any, fakeDecrypt);
@@ -43,16 +41,16 @@ describe("google-workspace.service: unificación de credenciales", () => {
           id: "principal",
           serviceAccountEmail: "sa@flacso.edu.uy",
           privateKeyCifrada: "cifrada_123",
-          activa: false,
-        }),
-      },
+          activa: false
+        })
+      }
     };
 
     const cred = await obtenerCredencialPrincipalGoogleWorkspace(dbMock as any, fakeDecrypt);
     expect(cred).toBeNull();
 
     const credInactiveAllowed = await obtenerCredencialPrincipalGoogleWorkspace(dbMock as any, fakeDecrypt, {
-      requireActiva: false,
+      requireActiva: false
     });
     expect(credInactiveAllowed).not.toBeNull();
     expect(credInactiveAllowed?.activa).toBe(false);
@@ -65,16 +63,20 @@ describe("google-workspace.service: unificación de credenciales", () => {
           id: "principal",
           serviceAccountEmail: "sa@flacso.edu.uy",
           privateKeyCifrada: "key_enc",
-          activa: true,
-        }),
-      },
+          activa: true
+        })
+      }
     };
 
-    const salaCred = await obtenerCredencialGoogleParaSala(dbMock as any, "docente@flacso.edu.uy", fakeDecrypt);
+    const salaCred = await obtenerCredencialGoogleParaSala(
+      dbMock as any,
+      "docente@flacso.edu.uy",
+      fakeDecrypt
+    );
     expect(salaCred).toEqual({
       serviceAccountEmail: "sa@flacso.edu.uy",
       privateKey: "decrypted:key_enc",
-      subject: "docente@flacso.edu.uy",
+      subject: "docente@flacso.edu.uy"
     });
   });
 
@@ -85,9 +87,9 @@ describe("google-workspace.service: unificación de credenciales", () => {
           id: "principal",
           serviceAccountEmail: "sa@flacso.edu.uy",
           privateKeyCifrada: "key_enc",
-          activa: true,
-        }),
-      },
+          activa: true
+        })
+      }
     };
 
     const adminCred = await obtenerCredencialAdminReportsGoogle(
@@ -98,7 +100,7 @@ describe("google-workspace.service: unificación de credenciales", () => {
     expect(adminCred).toEqual({
       serviceAccountEmail: "sa@flacso.edu.uy",
       privateKey: "decrypted:key_enc",
-      adminEmail: "reports-admin@flacso.edu.uy",
+      adminEmail: "reports-admin@flacso.edu.uy"
     });
 
     const sinAdmin = await obtenerCredencialAdminReportsGoogle(dbMock as any, fakeDecrypt, "");
@@ -112,7 +114,7 @@ describe("google-workspace.service: unificación de credenciales", () => {
           id: "principal",
           serviceAccountEmail: "principal@flacso.edu.uy",
           privateKeyCifrada: "enc_p",
-          activa: true,
+          activa: true
         }),
         findMany: async () => [
           {
@@ -120,10 +122,10 @@ describe("google-workspace.service: unificación de credenciales", () => {
             serviceAccountEmail: "old@flacso.edu.uy",
             privateKeyCifrada: "enc_l",
             activa: true,
-            serviceAccountSubject: null,
-          },
-        ],
-      },
+            serviceAccountSubject: null
+          }
+        ]
+      }
     };
 
     const candidates = await obtenerCandidatosCredencialesParaOrganizador(
@@ -137,14 +139,13 @@ describe("google-workspace.service: unificación de credenciales", () => {
       serviceAccountEmail: "principal@flacso.edu.uy",
       privateKey: "decrypted:enc_p",
       subject: "sala01@flacso.edu.uy",
-      origen: "PRINCIPAL",
+      origen: "PRINCIPAL"
     });
     expect(candidates[1]).toEqual({
       serviceAccountEmail: "old@flacso.edu.uy",
       privateKey: "decrypted:enc_l",
       subject: "sala01@flacso.edu.uy",
-      origen: "LEGACY",
+      origen: "LEGACY"
     });
   });
 });
-

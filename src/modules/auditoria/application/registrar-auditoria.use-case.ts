@@ -5,13 +5,10 @@ import type { AuditoriaRepository } from "../ports/auditoria.port";
 export type RegistrarAuditoriaInput = ValidarEventoAuditoriaInput;
 
 export type ResultadoAuditoria =
-  | Readonly<{ ok: true; evento: EventoAuditoria }>
-  | Readonly<{ ok: false; error: string }>;
+  Readonly<{ ok: true; evento: EventoAuditoria }> | Readonly<{ ok: false; error: string }>;
 
 export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) {
-  return async function registrarAuditoria(
-    input: RegistrarAuditoriaInput
-  ): Promise<ResultadoAuditoria> {
+  return async function registrarAuditoria(input: RegistrarAuditoriaInput): Promise<ResultadoAuditoria> {
     const validacion = validarEventoAuditoria(input);
     if (!validacion.ok) {
       return { ok: false, error: validacion.error };
@@ -21,4 +18,3 @@ export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) 
     return { ok: true, evento: validacion.value };
   };
 }
-

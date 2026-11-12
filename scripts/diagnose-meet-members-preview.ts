@@ -13,16 +13,16 @@ function normalizePrivateKey(value: string): string {
 }
 
 async function main() {
-  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: false });
+  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: false
+  });
 
   const temporaryEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   const temporaryKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
   const temporarySubject = process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim();
 
   const serviceAccountEmail = temporaryEmail || config?.serviceAccountEmail;
-  const privateKey = temporaryKey
-    ? normalizePrivateKey(temporaryKey)
-    : config?.privateKey;
+  const privateKey = temporaryKey ? normalizePrivateKey(temporaryKey) : config?.privateKey;
   const delegatedSubject = temporarySubject || config?.serviceAccountSubject;
 
   if (!serviceAccountEmail || !privateKey || !delegatedSubject) {
@@ -37,9 +37,9 @@ async function main() {
     scopes: [
       "https://www.googleapis.com/auth/meetings.space.created",
       "https://www.googleapis.com/auth/meetings.space.settings",
-      "https://www.googleapis.com/auth/meetings.space.readonly",
+      "https://www.googleapis.com/auth/meetings.space.readonly"
     ],
-    subject: delegatedSubject,
+    subject: delegatedSubject
   });
 
   const created = await auth.request<{
@@ -52,14 +52,16 @@ async function main() {
     data: {
       config: {
         moderation: "ON",
-        accessType: "TRUSTED",
-      },
+        accessType: "TRUSTED"
+      }
     },
-    timeout: 30_000,
+    timeout: 30_000
   });
 
   const spaceName = created.data.name;
-  if (!spaceName) throw new Error("Meet no devolvió el nombre del espacio nuevo.");
+  if (!spaceName) {
+    throw new Error("Meet no devolvió el nombre del espacio nuevo.");
+  }
 
   const internalCohost = argValue("cohost") ?? "sala01@flacso.edu.uy";
   if (internalCohost.toLowerCase() === delegatedSubject.toLowerCase()) {
@@ -74,7 +76,7 @@ async function main() {
     url: `https://meet.googleapis.com/v2/${spaceName}/members`,
     method: "POST",
     data: { email: internalCohost, role: "COHOST" },
-    timeout: 30_000,
+    timeout: 30_000
   });
 
   const listed = await auth.request<{
@@ -82,22 +84,29 @@ async function main() {
   }>({
     url: `https://meet.googleapis.com/v2/${spaceName}/members?pageSize=20`,
     method: "GET",
-    timeout: 30_000,
+    timeout: 30_000
   });
 
-  console.log(JSON.stringify({
-    credentialSource: temporaryEmail || temporaryKey ? "temporary-env" : "stored-config",
-    serviceAccountEmail,
-    delegatedSubject,
-    createdSpace: Boolean(spaceName),
-    meetingCode: created.data.meetingCode ?? null,
-    meetingUri: created.data.meetingUri ?? null,
-    testCohost: internalCohost,
-    cohostCreated: member.data.email?.toLowerCase() === internalCohost.toLowerCase() && member.data.role === "COHOST",
-    memberEmail: member.data.email ?? null,
-    memberRole: member.data.role ?? null,
-    listedMembers: listed.data.members?.map(({ email, role }) => ({ email, role })) ?? [],
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        credentialSource: temporaryEmail || temporaryKey ? "temporary-env" : "stored-config",
+        serviceAccountEmail,
+        delegatedSubject,
+        createdSpace: Boolean(spaceName),
+        meetingCode: created.data.meetingCode ?? null,
+        meetingUri: created.data.meetingUri ?? null,
+        testCohost: internalCohost,
+        cohostCreated:
+          member.data.email?.toLowerCase() === internalCohost.toLowerCase() && member.data.role === "COHOST",
+        memberEmail: member.data.email ?? null,
+        memberRole: member.data.role ?? null,
+        listedMembers: listed.data.members?.map(({ email, role }) => ({ email, role })) ?? []
+      },
+      null,
+      2
+    )
+  );
 }
 
 main()

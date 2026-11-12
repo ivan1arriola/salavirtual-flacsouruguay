@@ -7,7 +7,7 @@
 }
 .item {
   display: grid;
-  grid-template-columns: minmax(145px, .7fr) minmax(220px, 1.5fr) minmax(170px, 1fr);
+  grid-template-columns: minmax(145px, 0.7fr) minmax(220px, 1.5fr) minmax(170px, 1fr);
   align-items: center;
   min-width: 0;
   gap: 16px;
@@ -26,20 +26,20 @@
 }
 .when {
   color: var(--text-secondary);
-  font-size: .78rem;
+  font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
 .when strong {
   color: var(--text);
-  font-size: .93rem;
+  font-size: 0.93rem;
 }
 .when small {
   color: var(--muted);
-  font-size: .75rem;
+  font-size: 0.75rem;
 }
 .title {
   color: var(--brand-deep);
-  font-size: .94rem;
+  font-size: 0.94rem;
   font-weight: 750;
   line-height: 1.35;
   text-decoration: none;
@@ -57,7 +57,7 @@
 .details p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: .79rem;
+  font-size: 0.79rem;
   line-height: 1.42;
   overflow-wrap: anywhere;
 }
@@ -65,7 +65,7 @@
   justify-items: start;
   align-content: center;
   color: var(--text-secondary);
-  font-size: .82rem;
+  font-size: 0.82rem;
   line-height: 1.4;
 }
 .modality {
@@ -73,7 +73,7 @@
   align-items: center;
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 750;
 }
 .virtual {
@@ -124,14 +124,14 @@
     text-align: center;
   }
   .when span {
-    font-size: .79rem;
+    font-size: 0.79rem;
     line-height: 1.2;
     font-weight: 700;
   }
   .when strong {
-    font-size: .75rem;
+    font-size: 0.75rem;
     line-height: 1.2;
-    letter-spacing: -.02em;
+    letter-spacing: -0.02em;
     overflow-wrap: anywhere;
   }
   .when small {
@@ -143,11 +143,11 @@
     gap: 3px;
   }
   .title {
-    font-size: .91rem;
+    font-size: 0.91rem;
     line-height: 1.36;
   }
   .details p {
-    font-size: .83rem;
+    font-size: 0.83rem;
   }
   .status {
     grid-column: 2;
@@ -171,6 +171,6 @@
     padding: 9px 4px;
   }
   .when strong {
-    font-size: .67rem;
+    font-size: 0.67rem;
   }
 }

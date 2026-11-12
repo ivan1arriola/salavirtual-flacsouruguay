@@ -8,7 +8,9 @@ describe("estilos de notificaciones", () => {
   it("mantiene los estilos de la pantalla fuera de las hojas globales", () => {
     const modulePath = path("app/(gestion)/notificaciones/notificaciones.module.css");
     expect(existsSync(modulePath)).toBe(true);
-    if (!existsSync(modulePath)) return;
+    if (!existsSync(modulePath)) {
+      return;
+    }
 
     const moduleCss = readFileSync(modulePath, "utf8");
     const page = readFileSync(path("app/(gestion)/notificaciones/page.tsx"), "utf8");

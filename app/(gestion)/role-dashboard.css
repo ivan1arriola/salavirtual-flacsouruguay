@@ -556,7 +556,9 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .dashboard-hero-card.is-live {
@@ -655,9 +657,18 @@
 }
 
 @keyframes pulse-live {
-  0% { transform: scale(0.9); opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0.8; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
 }
 
 .timing-pill {
@@ -810,7 +821,9 @@
   border-radius: 9px;
   border: 1px solid var(--line);
   background: #ffffff;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .teacher-upcoming-card:hover {
@@ -1129,7 +1142,9 @@
   border-radius: 10px;
   border: 1px solid var(--line);
   background: #ffffff;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .admin-timeline-item.is-live-now {
@@ -1236,7 +1251,9 @@
   gap: 10px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .admin-metric-card:hover {
@@ -1336,8 +1353,6 @@
   }
 }
 
-
-
 /* Asistente: estado compacto cuando no hay vacantes. */
 .assistant-opportunities-empty {
   display: inline-flex;
@@ -1372,35 +1387,94 @@
 }
 
 /* Dashboard administrativo: una sola jerarquía visual y color semántico */
-.admin-dashboard-redesigned { gap: 16px; }
-.admin-dashboard-redesigned .dashboard-content-section { box-shadow: none; }
-.admin-dashboard-redesigned .admin-today-section { order: 1; }
-.admin-dashboard-redesigned .admin-upcoming-section { order: 2; }
-.admin-dashboard-redesigned .admin-triage-section { order: 3; border-left: 3px solid #c99242; }
-.admin-dashboard-redesigned .admin-metrics-bar { order: 4; }
-.admin-dashboard-redesigned .section-heading p { max-width: 46ch; }
-.admin-dashboard-redesigned .admin-timeline-item { box-shadow: none; border-left-width: 3px; }
-.admin-dashboard-redesigned .admin-timeline-item:not(.is-live-now) { background: #fff; }
-.admin-dashboard-redesigned .badge-tag { background: #f1f4f6; color: #58677a; }
-.admin-dashboard-redesigned .status-text-ok { color: #24745b; }
-.admin-dashboard-redesigned .admin-timeline-guidance { display: none; }
-.admin-dashboard-redesigned .operations-attention-card { box-shadow: none; }
-.admin-dashboard-redesigned .tone-neutral { border-color: #d9e0e5; }
-@media (max-width: 700px) {
- .admin-dashboard-redesigned { gap: 10px; }
- .admin-dashboard-redesigned .dashboard-content-section { border-radius: 7px; padding: 13px; }
- .admin-dashboard-redesigned .section-heading { margin-bottom: 10px; }
- .admin-dashboard-redesigned .section-heading h2 { font-size: 1.02rem; }
- .admin-dashboard-redesigned .section-heading p { font-size: .76rem; }
- .admin-dashboard-redesigned .admin-today-timeline-list { gap: 7px; }
- .admin-dashboard-redesigned .admin-timeline-item { border-radius: 7px; }
- .admin-dashboard-redesigned .admin-timeline-academic { display: none; }
- .admin-dashboard-redesigned .admin-timeline-status-row { margin-top: 5px; }
- .admin-dashboard-redesigned .admin-timeline-actions { border-top: 1px solid #edf0f2; padding-top: 7px; }
- .admin-dashboard-redesigned .admin-metrics-bar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
- .admin-dashboard-redesigned .admin-metric-card { min-height: 0; box-shadow: none; padding: 9px; }
+.admin-dashboard-redesigned {
+  gap: 16px;
 }
-
+.admin-dashboard-redesigned .dashboard-content-section {
+  box-shadow: none;
+}
+.admin-dashboard-redesigned .admin-today-section {
+  order: 1;
+}
+.admin-dashboard-redesigned .admin-upcoming-section {
+  order: 2;
+}
+.admin-dashboard-redesigned .admin-triage-section {
+  order: 3;
+  border-left: 3px solid #c99242;
+}
+.admin-dashboard-redesigned .admin-metrics-bar {
+  order: 4;
+}
+.admin-dashboard-redesigned .section-heading p {
+  max-width: 46ch;
+}
+.admin-dashboard-redesigned .admin-timeline-item {
+  box-shadow: none;
+  border-left-width: 3px;
+}
+.admin-dashboard-redesigned .admin-timeline-item:not(.is-live-now) {
+  background: #fff;
+}
+.admin-dashboard-redesigned .badge-tag {
+  background: #f1f4f6;
+  color: #58677a;
+}
+.admin-dashboard-redesigned .status-text-ok {
+  color: #24745b;
+}
+.admin-dashboard-redesigned .admin-timeline-guidance {
+  display: none;
+}
+.admin-dashboard-redesigned .operations-attention-card {
+  box-shadow: none;
+}
+.admin-dashboard-redesigned .tone-neutral {
+  border-color: #d9e0e5;
+}
+@media (max-width: 700px) {
+  .admin-dashboard-redesigned {
+    gap: 10px;
+  }
+  .admin-dashboard-redesigned .dashboard-content-section {
+    border-radius: 7px;
+    padding: 13px;
+  }
+  .admin-dashboard-redesigned .section-heading {
+    margin-bottom: 10px;
+  }
+  .admin-dashboard-redesigned .section-heading h2 {
+    font-size: 1.02rem;
+  }
+  .admin-dashboard-redesigned .section-heading p {
+    font-size: 0.76rem;
+  }
+  .admin-dashboard-redesigned .admin-today-timeline-list {
+    gap: 7px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-item {
+    border-radius: 7px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-academic {
+    display: none;
+  }
+  .admin-dashboard-redesigned .admin-timeline-status-row {
+    margin-top: 5px;
+  }
+  .admin-dashboard-redesigned .admin-timeline-actions {
+    border-top: 1px solid #edf0f2;
+    padding-top: 7px;
+  }
+  .admin-dashboard-redesigned .admin-metrics-bar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .admin-dashboard-redesigned .admin-metric-card {
+    min-height: 0;
+    box-shadow: none;
+    padding: 9px;
+  }
+}
 
 /* Assistant dashboard: keep upcoming coverage cards readable at all widths.
    The previous horizontal flex row forced three content groups into ~300px. */

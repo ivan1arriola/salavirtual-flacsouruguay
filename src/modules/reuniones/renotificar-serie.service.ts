@@ -1,10 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
-import {
-  ConflictApiError,
-  ForbiddenApiError,
-  NotFoundApiError,
-} from "@/src/lib/http/api-error";
+import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
 import { formatShortDate, formatTime } from "@/src/lib/ui/format";
 import { notificarUsuarios, reunionEmailText } from "../notificaciones/notificaciones.service";
 import { destinatariosDocentesPrograma, puedeGestionarPrograma } from "./permisos-programa.service";
@@ -20,7 +16,7 @@ export async function renotificarSerieAlPrograma(
   dependencies: RenotificarSerieDependencies,
   actor: SessionActor,
   solicitudId: string,
-  options: Readonly<{ soloVistaPrevia?: boolean }> = {},
+  options: Readonly<{ soloVistaPrevia?: boolean }> = {}
 ): Promise<Readonly<{ destinatarios: number; encuentros: number; asunto?: string; texto?: string }>> {
   const request = await dependencies.db.solicitudSala.findUnique({
     where: { id: solicitudId },
@@ -39,15 +35,17 @@ export async function renotificarSerieAlPrograma(
           programa: { select: { nombre: true } },
           docente: {
             select: {
-              usuario: { select: { nombres: true, apellidos: true } },
-            },
-          },
-        },
-      },
-    },
+              usuario: { select: { nombres: true, apellidos: true } }
+            }
+          }
+        }
+      }
+    }
   });
-  if (!request) throw new NotFoundApiError("La reunión no existe.");
-  if (!await puedeGestionarPrograma(dependencies.db, actor, request.docentePrograma.programaId)) {
+  if (!request) {
+    throw new NotFoundApiError("La reunión no existe.");
+  }
+  if (!(await puedeGestionarPrograma(dependencies.db, actor, request.docentePrograma.programaId))) {
     throw new ForbiddenApiError("No tiene permisos para notificar esta serie.");
   }
 
@@ -62,7 +60,7 @@ export async function renotificarSerieAlPrograma(
       instancias: {
         where: {
           estado: "PROGRAMADA",
-          finProgramadoAt: { gt: new Date() },
+          finProgramadoAt: { gt: new Date() }
         },
         orderBy: { inicioProgramadoAt: "asc" },
         select: {
@@ -88,14 +86,14 @@ export async function renotificarSerieAlPrograma(
                 select: {
                   nombre: true,
                   emailOrganizador: true,
-                  secretRef: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+                  secretRef: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   });
   const meetings = seriesRequests
     .flatMap(({ instancias }) => instancias)
@@ -127,15 +125,16 @@ export async function renotificarSerieAlPrograma(
       const finFecha = formatShortDate(meeting.finProgramadoAt);
       return {
         inicio: `${capitalizar(inicioFecha)}, ${formatTime(meeting.inicioProgramadoAt)}`,
-        fin: inicioFecha === finFecha
-          ? formatTime(meeting.finProgramadoAt)
-          : `${capitalizar(finFecha)}, ${formatTime(meeting.finProgramadoAt)}`,
+        fin:
+          inicioFecha === finFecha
+            ? formatTime(meeting.finProgramadoAt)
+            : `${capitalizar(finFecha)}, ${formatTime(meeting.finProgramadoAt)}`,
         sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
         meet: meet?.codigoReunion,
         joinUrl: meet?.joinUrl,
-        proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET",
+        proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
       };
-    }),
+    })
   });
 
   const asunto = `Serie de reuniones: ${request.titulo}`;
@@ -144,20 +143,16 @@ export async function renotificarSerieAlPrograma(
     return { destinatarios: recipients.length, encuentros: meetings.length, asunto, texto };
   }
 
-  await notificarUsuarios(
-    dependencies.db,
-    recipients,
-    {
-      tipo: "REUNION_CREADA",
-      titulo: "Recordatorio de serie de reuniones",
-      cuerpo: `${request.titulo} tiene ${meetings.length} ${meetings.length === 1 ? "encuentro activo" : "encuentros activos o futuros"}.`,
-      href: `/reuniones/${request.id}`,
-      metadata: { solicitudId: request.id, renotificacion: true },
-      emailSubject: asunto,
-      emailText: texto,
-      emailActionLabel: "Ver reunión",
-    },
-  );
+  await notificarUsuarios(dependencies.db, recipients, {
+    tipo: "REUNION_CREADA",
+    titulo: "Recordatorio de serie de reuniones",
+    cuerpo: `${request.titulo} tiene ${meetings.length} ${meetings.length === 1 ? "encuentro activo" : "encuentros activos o futuros"}.`,
+    href: `/reuniones/${request.id}`,
+    metadata: { solicitudId: request.id, renotificacion: true },
+    emailSubject: asunto,
+    emailText: texto,
+    emailActionLabel: "Ver reunión"
+  });
 
   await dependencies.db.auditoria.create({
     data: {
@@ -167,24 +162,12 @@ export async function renotificarSerieAlPrograma(
       entidadId: request.id,
       valorNuevo: {
         destinatarios: recipients.length,
-        encuentros: meetings.length,
-      },
-    },
+        encuentros: meetings.length
+      }
+    }
   });
 
   return { destinatarios: recipients.length, encuentros: meetings.length };
-}
-
-function passwordCuenta(
-  descifrar: (value: string) => string,
-  secretRef: string | null | undefined,
-): string | null {
-  if (!secretRef) return null;
-  try {
-    return descifrar(secretRef);
-  } catch {
-    return null;
-  }
 }
 
 function capitalizar(value: string): string {

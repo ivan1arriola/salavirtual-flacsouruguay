@@ -11,10 +11,7 @@ import type {
   PlanillaPagosExporterPort,
   TarifasRepositoryPort
 } from "@/src/modules/liquidaciones/ports";
-import type {
-  FilaPlanillaPago,
-  FilaResumenAsistente
-} from "@/src/modules/liquidaciones/domain";
+import type { FilaPlanillaPago, FilaResumenAsistente } from "@/src/modules/liquidaciones/domain";
 
 describe("liquidaciones application", () => {
   it("consulta la tarifa vigente delegando al puerto", async () => {

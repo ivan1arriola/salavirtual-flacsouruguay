@@ -1,8 +1,4 @@
-import type {
-  CuentaGoogleVinculada,
-  PerfilGoogle,
-  UsuarioAutenticado
-} from "./identity.types";
+import type { CuentaGoogleVinculada, PerfilGoogle, UsuarioAutenticado } from "./identity.types";
 
 export function evaluarAccesoGoogle(
   perfil: PerfilGoogle,
@@ -30,14 +26,11 @@ export function evaluarAccesoGoogle(
 }
 
 export function esPerfilGoogleVerificado(perfil: PerfilGoogle): boolean {
-  return Boolean(perfil.subject.trim()) &&
-    perfil.emailVerificado &&
-    Boolean(perfil.email.trim());
+  return Boolean(perfil.subject.trim()) && perfil.emailVerificado && Boolean(perfil.email.trim());
 }
 
 export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
-  return esPerfilGoogleVerificado(perfil) &&
-    perfil.email.trim().toLowerCase().endsWith("@flacso.edu.uy");
+  return esPerfilGoogleVerificado(perfil) && perfil.email.trim().toLowerCase().endsWith("@flacso.edu.uy");
 }
 
 export function resolverVinculacionSubjectGoogle(
@@ -45,7 +38,8 @@ export function resolverVinculacionSubjectGoogle(
   subjectEntrante: string,
   subjectPerteneceAOtraCuenta: boolean
 ): "MANTENER" | "REVINCULAR" | "RECHAZAR" {
-  if (subjectPerteneceAOtraCuenta) return "RECHAZAR";
+  if (subjectPerteneceAOtraCuenta) {
+    return "RECHAZAR";
+  }
   return subjectActual === subjectEntrante ? "MANTENER" : "REVINCULAR";
 }
-

@@ -1,12 +1,4 @@
-import {
-  Activity,
-  AlertTriangle,
-  ArrowRight,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  Video
-} from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, Clock, Video } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
@@ -24,7 +16,9 @@ export function AdminTodayTimeline({
     <section className="dashboard-content-section admin-today-section" aria-labelledby="admin-today-title">
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
-          <span className="admin-section-icon"><CalendarDays aria-hidden="true" size={20} /></span>
+          <span className="admin-section-icon">
+            <CalendarDays aria-hidden="true" size={20} />
+          </span>
           <div>
             <h2 id="admin-today-title">Agenda de hoy</h2>
             <p>Reuniones programadas y su estado operativo.</p>
@@ -49,10 +43,7 @@ export function AdminTodayTimeline({
             const provider = getMeetingProviderPresentation(meeting.proveedorTipo);
 
             return (
-              <article
-                className={`admin-timeline-item ${isLive ? "is-live-now" : ""}`}
-                key={meeting.id}
-              >
+              <article className={`admin-timeline-item ${isLive ? "is-live-now" : ""}`} key={meeting.id}>
                 <div className="admin-timeline-when">
                   {isLive ? (
                     <span className="live-pill-sm">
@@ -65,10 +56,10 @@ export function AdminTodayTimeline({
                       <strong>{formatTime(inicio)}</strong>
                     </span>
                   )}
-                  <span className="timeline-sub-hour">
-                    {formatDate(inicio)} · Horario del encuentro
-                  </span>
-                  {isLive && provider.supportsCohosts ? <LiveParticipantsIndicator instanciaId={meeting.id} /> : null}
+                  <span className="timeline-sub-hour">{formatDate(inicio)} · Horario del encuentro</span>
+                  {isLive && provider.supportsCohosts ? (
+                    <LiveParticipantsIndicator instanciaId={meeting.id} />
+                  ) : null}
                 </div>
 
                 <div className="admin-timeline-info">
@@ -82,12 +73,22 @@ export function AdminTodayTimeline({
                   </div>
 
                   <div className="admin-timeline-academic">
-                    <span><strong>{meeting.programa}</strong></span>
+                    <span>
+                      <strong>{meeting.programa}</strong>
+                    </span>
                     <span aria-hidden="true">·</span>
                     <span>Docente: {meeting.docenteNombre}</span>
                   </div>
 
-                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} modality={meeting.modalidad} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
+                  <MeetingScheduleTimes
+                    startsAt={inicio}
+                    endsAt={fin}
+                    requiresAssistance={meeting.requiereAsistencia}
+                    modality={meeting.modalidad}
+                    assistanceStartsAt={meeting.inicioAsistenciaAt}
+                    assistanceEndsAt={meeting.finAsistenciaAt}
+                    compact
+                  />
 
                   <div className="admin-timeline-status-row">
                     <div className="admin-timeline-assistant">
@@ -113,7 +114,10 @@ export function AdminTodayTimeline({
                             <CheckCircle2 size={13} /> Confirmado en Meet
                           </span>
                         ) : meeting.cohostCount > 0 ? (
-                          <span className="status-text-warning" title="Permisos de cohost en proceso de confirmación">
+                          <span
+                            className="status-text-warning"
+                            title="Permisos de cohost en proceso de confirmación"
+                          >
                             <AlertTriangle size={13} /> Pendiente en Meet
                           </span>
                         ) : (

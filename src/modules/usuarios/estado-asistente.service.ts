@@ -11,16 +11,18 @@ export async function actualizarEstadoOperativoAsistente(
   actor: SessionActor,
   usuarioId: string,
   input: EstadoOperativoAsistenteInput
-): Promise<Readonly<{
-  disponibleGeneral: boolean;
-  cesadoHastaProximoInicioSesion: boolean;
-}>> {
+): Promise<
+  Readonly<{
+    disponibleGeneral: boolean;
+    cesadoHastaProximoInicioSesion: boolean;
+  }>
+> {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
     throw new Error("Solo Administración puede gestionar asistentes de monitoreo.");
   }
   if (
-    typeof input.disponibleGeneral !== "boolean"
-    && typeof input.cesadoHastaProximoInicioSesion !== "boolean"
+    typeof input.disponibleGeneral !== "boolean" &&
+    typeof input.cesadoHastaProximoInicioSesion !== "boolean"
   ) {
     throw new Error("No se indicó ningún cambio operativo.");
   }
@@ -65,8 +67,8 @@ export async function actualizarEstadoOperativoAsistente(
     };
 
     if (
-      anterior.disponibleGeneral === siguiente.disponibleGeneral
-      && anterior.cesadoHastaProximoInicioSesion === siguiente.cesadoHastaProximoInicioSesion
+      anterior.disponibleGeneral === siguiente.disponibleGeneral &&
+      anterior.cesadoHastaProximoInicioSesion === siguiente.cesadoHastaProximoInicioSesion
     ) {
       return siguiente;
     }
@@ -135,7 +137,9 @@ export async function registrarInicioSesionUsuario(
       },
       data: { cesadoHastaProximoInicioSesion: false }
     });
-    if (reactivados.count === 0) return;
+    if (reactivados.count === 0) {
+      return;
+    }
 
     await tx.auditoria.create({
       data: {

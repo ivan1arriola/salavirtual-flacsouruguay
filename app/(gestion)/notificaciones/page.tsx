@@ -16,12 +16,16 @@ export default async function NotificacionesPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ estado?: string }> }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   const { estado = "todas" } = await searchParams;
   const where = {
@@ -57,7 +61,9 @@ export default async function NotificacionesPage({
             <option value="todas">Todas</option>
             <option value="no-leidas">No leídas</option>
           </select>
-          <button className="secondary-action" type="submit">Filtrar</button>
+          <button className="secondary-action" type="submit">
+            Filtrar
+          </button>
         </form>
 
         <section className="content-section">
@@ -71,7 +77,10 @@ export default async function NotificacionesPage({
               {notifications.map((notification) => {
                 const content = (
                   <>
-                    <span className={`${styles.dot}${notification.leidaAt ? ` ${styles.read}` : ""}`} aria-hidden="true" />
+                    <span
+                      className={`${styles.dot}${notification.leidaAt ? ` ${styles.read}` : ""}`}
+                      aria-hidden="true"
+                    />
                     <span>
                       <strong>{notification.titulo}</strong>
                       {notification.cuerpo ? <small>{notification.cuerpo}</small> : null}
@@ -82,9 +91,14 @@ export default async function NotificacionesPage({
                   </>
                 );
                 return (
-                  <article className={`${styles.item}${notification.leidaAt ? "" : ` ${styles.unread}`}`} key={notification.id}>
+                  <article
+                    className={`${styles.item}${notification.leidaAt ? "" : ` ${styles.unread}`}`}
+                    key={notification.id}
+                  >
                     {notification.href ? (
-                      <Link className={styles.copy} href={notification.href}>{content}</Link>
+                      <Link className={styles.copy} href={notification.href}>
+                        {content}
+                      </Link>
                     ) : (
                       <span className={styles.copy}>{content}</span>
                     )}
@@ -92,9 +106,15 @@ export default async function NotificacionesPage({
                       {notification.leidaAt ? (
                         <span className="status status-neutral">Leída</span>
                       ) : (
-                        <NotificationReadButton className={styles.actionWrap} notificationId={notification.id} />
+                        <NotificationReadButton
+                          className={styles.actionWrap}
+                          notificationId={notification.id}
+                        />
                       )}
-                      <NotificationDeleteButton className={styles.actionWrap} notificationId={notification.id} />
+                      <NotificationDeleteButton
+                        className={styles.actionWrap}
+                        notificationId={notification.id}
+                      />
                     </span>
                   </article>
                 );

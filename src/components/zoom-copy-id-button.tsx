@@ -37,12 +37,17 @@ export function ZoomCopyIdButton({
         title="Copiar ID de reunión Zoom"
         type="button"
       >
-        {resultado === "copiado" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+        {resultado === "copiado" ? (
+          <Check size={14} aria-hidden="true" />
+        ) : (
+          <Copy size={14} aria-hidden="true" />
+        )}
         <span>{resultado === "copiado" ? "Copiado" : "Copiar ID"}</span>
       </button>
-      <span role="status" className="sr-only">{resultado ? MENSAJES[resultado] : ""}</span>
+      <span role="status" className="sr-only">
+        {resultado ? MENSAJES[resultado] : ""}
+      </span>
       {resultado === "error" ? <small className="zoom-join-error">{MENSAJES.error}</small> : null}
     </span>
   );
 }
-

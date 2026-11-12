@@ -34,7 +34,13 @@ describe("POST asistencia/conciliar", () => {
   });
 
   it("cuerpo inválido: 400 sin llegar al caso de uso", async () => {
-    for (const cuerpo of [null, {}, { ...valido, version: 0 }, { ...valido, registroId: 5 }, { ...valido, externo: "si" }]) {
+    for (const cuerpo of [
+      null,
+      {},
+      { ...valido, version: 0 },
+      { ...valido, registroId: 5 },
+      { ...valido, externo: "si" }
+    ]) {
       expect((await pedir(cuerpo)).status).toBe(400);
     }
     expect(mocks.conciliar).not.toHaveBeenCalled();
@@ -44,13 +50,18 @@ describe("POST asistencia/conciliar", () => {
     const r = await pedir(valido);
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ version: 3 });
-    expect(mocks.conciliar).toHaveBeenCalledWith({ id: "u", rol: "ADMINISTRACION" }, { ...valido, instanciaId: "i1" });
+    expect(mocks.conciliar).toHaveBeenCalledWith(
+      { id: "u", rol: "ADMINISTRACION" },
+      { ...valido, instanciaId: "i1" }
+    );
   });
 
   it("PROHIBIDO → 403, CONFLICTO → 409, NO_ENCONTRADO → 404, INVITADO_AJENO → 422", async () => {
     const casos: Array<[any, number]> = [
-      [{ tipo: "PROHIBIDO" }, 403], [{ tipo: "CONFLICTO" }, 409],
-      [{ tipo: "ERROR", codigo: "NO_ENCONTRADO" }, 404], [{ tipo: "ERROR", codigo: "INVITADO_AJENO" }, 422]
+      [{ tipo: "PROHIBIDO" }, 403],
+      [{ tipo: "CONFLICTO" }, 409],
+      [{ tipo: "ERROR", codigo: "NO_ENCONTRADO" }, 404],
+      [{ tipo: "ERROR", codigo: "INVITADO_AJENO" }, 422]
     ];
     for (const [resultado, status] of casos) {
       mocks.conciliar.mockResolvedValueOnce(resultado);

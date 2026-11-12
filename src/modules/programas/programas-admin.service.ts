@@ -65,7 +65,9 @@ export async function actualizarPrograma(
     if (!admin || !puedeAdministrarProgramas(admin)) {
       throw new Error("La sesión ya no tiene permisos de Administración.");
     }
-    if (!anterior) throw new Error("Programa no encontrado.");
+    if (!anterior) {
+      throw new Error("Programa no encontrado.");
+    }
 
     await validarNombreDisponible(tx, input.nombre, programaId);
     await validarUnidadAcademica(tx, input.unidadAcademicaId);
@@ -126,7 +128,9 @@ export async function eliminarPrograma(
     if (!admin || !puedeAdministrarProgramas(admin)) {
       throw new Error("La sesión ya no tiene permisos de Administración.");
     }
-    if (!programa) throw new Error("Programa no encontrado.");
+    if (!programa) {
+      throw new Error("Programa no encontrado.");
+    }
     if (reuniones > 0) {
       throw new Error(
         "Este programa tiene reuniones asociadas y no puede eliminarse sin perder historial. Marcá el programa como inactivo."
@@ -160,17 +164,23 @@ async function validarNombreDisponible(
     },
     select: { id: true }
   });
-  if (existente) throw new Error("Ya existe un programa con ese nombre.");
+  if (existente) {
+    throw new Error("Ya existe un programa con ese nombre.");
+  }
 }
 
 async function validarUnidadAcademica(
   tx: Prisma.TransactionClient,
   unidadAcademicaId: string | null | undefined
 ): Promise<void> {
-  if (!unidadAcademicaId) return;
+  if (!unidadAcademicaId) {
+    return;
+  }
   const unidad = await tx.unidadAcademica.findUnique({
     where: { id: unidadAcademicaId },
     select: { id: true }
   });
-  if (!unidad) throw new Error("La unidad académica seleccionada no existe.");
+  if (!unidad) {
+    throw new Error("La unidad académica seleccionada no existe.");
+  }
 }

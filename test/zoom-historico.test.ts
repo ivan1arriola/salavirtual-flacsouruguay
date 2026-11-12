@@ -23,11 +23,21 @@ const A1: AnfitrionInventarioZoom = { cuentaZoomId: "c", anfitrionZoomId: "h1", 
 const A2: AnfitrionInventarioZoom = { cuentaZoomId: "c", anfitrionZoomId: "h2", cuentaProveedorId: null };
 
 function ocurrencia(uuid: string, host = "h1"): ReferenciaOcurrenciaZoom {
-  return { cuentaZoomId: "c", uuid, meetingId: "m", anfitrionZoomId: host, inicioRealAt: new Date("2026-01-15T10:00:00Z"), titulo: "t" };
+  return {
+    cuentaZoomId: "c",
+    uuid,
+    meetingId: "m",
+    anfitrionZoomId: host,
+    inicioRealAt: new Date("2026-01-15T10:00:00Z"),
+    titulo: "t"
+  };
 }
 
 /** Repositorio de barridos en memoria con la misma semántica de lease por versión. */
-function repoBarridos(): BarridoZoomRepositoryPort & { estado: () => BarridoZoom; fallos: FalloBarridoZoom[] } {
+function repoBarridos(): BarridoZoomRepositoryPort & {
+  estado: () => BarridoZoom;
+  fallos: FalloBarridoZoom[];
+} {
   let b: BarridoZoom | null = null;
   let version = 0;
   const fallos: FalloBarridoZoom[] = [];
@@ -37,45 +47,73 @@ function repoBarridos(): BarridoZoomRepositoryPort & { estado: () => BarridoZoom
     estado: () => b!,
     async crear(n: NuevoBarridoZoom) {
       b = {
-        id: "b1", cuentaZoomId: n.cuentaZoomId, anfitriones: n.anfitriones, desde: n.desde, hasta: n.hasta,
-        posicion: { anfitrionIndice: 0, ventanaDesde: null, cursor: null, fuente: "ACTIVAS" }, estado: "PENDIENTE",
-        paginasProcesadas: 0, ocurrenciasEncontradas: 0, intentos: 0, errorCodigo: null, completadoAt: null, omisiones: []
+        id: "b1",
+        cuentaZoomId: n.cuentaZoomId,
+        anfitriones: n.anfitriones,
+        desde: n.desde,
+        hasta: n.hasta,
+        posicion: { anfitrionIndice: 0, ventanaDesde: null, cursor: null, fuente: "ACTIVAS" },
+        estado: "PENDIENTE",
+        paginasProcesadas: 0,
+        ocurrenciasEncontradas: 0,
+        intentos: 0,
+        errorCodigo: null,
+        completadoAt: null,
+        omisiones: []
       };
       return { id: "b1" };
     },
-    async obtener() { return b; },
+    async obtener() {
+      return b;
+    },
     async reclamar(_id, ahora, ms) {
-      if (!b || b.estado === "COMPLETADO" || b.estado === "REQUIERE_REVISION" || b.estado === "CANCELADO") return null;
+      if (!b || b.estado === "COMPLETADO" || b.estado === "REQUIERE_REVISION" || b.estado === "CANCELADO") {
+        return null;
+      }
       version++;
       b = { ...b, estado: "EN_CURSO" };
       return { lease: { barridoId: "b1", version, venceAt: new Date(ahora.getTime() + ms) }, barrido: b };
     },
     async avanzar(l, av: AvanceBarridoZoom, ahora) {
-      if (!vigente(l)) return false;
-      const omisiones = av.omision ? [...b!.omisiones, `${av.omision.anfitrionZoomId}:${av.omision.codigo}`] : b!.omisiones;
+      if (!vigente(l)) {
+        return false;
+      }
+      const omisiones = av.omision
+        ? [...b!.omisiones, `${av.omision.anfitrionZoomId}:${av.omision.codigo}`]
+        : b!.omisiones;
       const termina = av.siguiente === null;
       b = {
-        ...b!, posicion: av.siguiente ?? b!.posicion, paginasProcesadas: b!.paginasProcesadas + 1,
+        ...b!,
+        posicion: av.siguiente ?? b!.posicion,
+        paginasProcesadas: b!.paginasProcesadas + 1,
         ocurrenciasEncontradas: b!.ocurrenciasEncontradas + av.ocurrencias,
         // Igual que el adaptador real: los intentos se reinician al avanzar salvo que se pida conservarlos.
-        intentos: av.conservarIntentos ? b!.intentos : 0, omisiones,
+        intentos: av.conservarIntentos ? b!.intentos : 0,
+        omisiones,
         estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
         completadoAt: termina ? ahora : null
       };
       return true;
     },
     async registrarFallo(l, f) {
-      if (!vigente(l)) return false;
+      if (!vigente(l)) {
+        return false;
+      }
       fallos.push(f);
       const intentos = b!.intentos + 1;
       const revision = f.tipo === "REVISION" || (f.limiteIntentos != null && intentos >= f.limiteIntentos);
       b = {
-        ...b!, intentos, errorCodigo: f.codigo, estado: revision ? "REQUIERE_REVISION" : "ERROR_REINTENTABLE",
+        ...b!,
+        intentos,
+        errorCodigo: f.codigo,
+        estado: revision ? "REQUIERE_REVISION" : "ERROR_REINTENTABLE",
         posicion: f.reiniciarCursor ? { ...b!.posicion, cursor: null } : b!.posicion
       };
       return true;
     },
-    async listarPendientes() { return b && ["PENDIENTE", "ERROR_REINTENTABLE", "EN_CURSO"].includes(b.estado) ? ["b1"] : []; }
+    async listarPendientes() {
+      return b && ["PENDIENTE", "ERROR_REINTENTABLE", "EN_CURSO"].includes(b.estado) ? ["b1"] : [];
+    }
   };
 }
 
@@ -86,15 +124,23 @@ function origenFalso(paginas: Record<string, Pagina>) {
   const llamadas: string[] = [];
   return {
     llamadas,
-    async listarOcurrencias(a: AnfitrionInventarioZoom, v: { desde: string; hasta: string; papelera?: boolean }, cursor: string | null) {
+    async listarOcurrencias(
+      a: AnfitrionInventarioZoom,
+      v: { desde: string; hasta: string; papelera?: boolean },
+      cursor: string | null
+    ) {
       // `|P` al final = listado de la papelera de Zoom.
       const clave = `${a.anfitrionZoomId}|${v.desde}|${cursor ?? ""}${v.papelera ? "|P" : ""}`;
       llamadas.push(clave);
       const p = paginas[clave] ?? { elementos: [], siguiente: null };
-      if (p instanceof Error) throw p;
+      if (p instanceof Error) {
+        throw p;
+      }
       return p;
     },
-    async obtenerInventario() { return { recursos: [], observaciones: [], procesamientoPendiente: false }; }
+    async obtenerInventario() {
+      return { recursos: [], observaciones: [], procesamientoPendiente: false };
+    }
   };
 }
 
@@ -102,24 +148,47 @@ function errorZoom(code: string, status: number | null, codigoZoom: number | nul
   return Object.assign(new Error(code), { name: "ZoomApiError", code, status, codigoZoom });
 }
 
-const repoArchivos = () => ({ guardarInventario: vi.fn(async (o: { referencia: ReferenciaOcurrenciaZoom }) => ({ ocurrenciaId: `o-${o.referencia.uuid}`, nuevos: 0, actualizados: 0, requierenRevision: 0 })) });
+const repoArchivos = () => ({
+  guardarInventario: vi.fn(async (o: { referencia: ReferenciaOcurrenciaZoom }) => ({
+    ocurrenciaId: `o-${o.referencia.uuid}`,
+    nuevos: 0,
+    actualizados: 0,
+    requierenRevision: 0
+  }))
+});
 
 describe("crearRecuperacionZoom", () => {
   const base = (over = {}) => ({
-    origen: origenFalso({}), repoBarridos: repoBarridos(), cuentaZoomId: "c", ahora: () => AHORA,
-    anfitriones: async () => [A1, A2], ...over
+    origen: origenFalso({}),
+    repoBarridos: repoBarridos(),
+    cuentaZoomId: "c",
+    ahora: () => AHORA,
+    anfitriones: async () => [A1, A2],
+    ...over
   });
 
   it("solo administración: otro rol no crea barrido ni consulta Zoom", async () => {
     const deps = base();
-    const r = await crearRecuperacionZoom(deps, DOCENTE, { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-02-01", dryRun: false });
+    const r = await crearRecuperacionZoom(deps, DOCENTE, {
+      anfitrionIds: [],
+      desde: "2026-01-01",
+      hasta: "2026-02-01",
+      dryRun: false
+    });
     expect(r.tipo).toBe("PROHIBIDO");
     expect(deps.origen.llamadas).toEqual([]);
   });
 
   it("rechaza periodo invertido, futuro y anfitriones no configurados", async () => {
     const deps = base();
-    const pedir = (x: object) => crearRecuperacionZoom(deps, ADMIN, { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-02-01", dryRun: true, ...x });
+    const pedir = (x: object) =>
+      crearRecuperacionZoom(deps, ADMIN, {
+        anfitrionIds: [],
+        desde: "2026-01-01",
+        hasta: "2026-02-01",
+        dryRun: true,
+        ...x
+      });
     expect((await pedir({ desde: "2026-03-01", hasta: "2026-02-01" })).tipo).toBe("PETICION_INVALIDA");
     expect((await pedir({ hasta: "2026-12-31" })).tipo).toBe("PETICION_INVALIDA");
     expect((await pedir({ anfitrionIds: ["desconocido"] })).tipo).toBe("PETICION_INVALIDA");
@@ -129,7 +198,12 @@ describe("crearRecuperacionZoom", () => {
   it("fechas con formato válido pero imposibles (mes 13, día 31 de abril) son PETICION_INVALIDA, no una excepción", async () => {
     const deps = base();
     for (const desde of ["2026-13-01", "2026-04-31", "2026-00-10", "2026-02-30"]) {
-      const r = await crearRecuperacionZoom(deps, ADMIN, { anfitrionIds: [], desde, hasta: "2026-06-01", dryRun: true });
+      const r = await crearRecuperacionZoom(deps, ADMIN, {
+        anfitrionIds: [],
+        desde,
+        hasta: "2026-06-01",
+        dryRun: true
+      });
       expect(r).toEqual({ tipo: "PETICION_INVALIDA", motivo: "FECHA_INVALIDA" });
     }
   });
@@ -142,8 +216,19 @@ describe("crearRecuperacionZoom", () => {
     });
     const repo = repoBarridos();
     const crear = vi.spyOn(repo, "crear");
-    const r = await crearRecuperacionZoom(base({ origen, repoBarridos: repo }), ADMIN, { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-01-20", dryRun: true });
-    expect(r).toMatchObject({ tipo: "DRY_RUN", anfitriones: 2, ocurrencias: 3, desde: "2026-01-01", hasta: "2026-01-20" });
+    const r = await crearRecuperacionZoom(base({ origen, repoBarridos: repo }), ADMIN, {
+      anfitrionIds: [],
+      desde: "2026-01-01",
+      hasta: "2026-01-20",
+      dryRun: true
+    });
+    expect(r).toMatchObject({
+      tipo: "DRY_RUN",
+      anfitriones: 2,
+      ocurrencias: 3,
+      desde: "2026-01-01",
+      hasta: "2026-01-20"
+    });
     expect(crear).not.toHaveBeenCalled();
   });
 
@@ -152,13 +237,27 @@ describe("crearRecuperacionZoom", () => {
       "h1|2026-01-01|": errorZoom("SOLICITUD_RECHAZADA", 404, 1001),
       "h2|2026-01-01|": { elementos: [ocurrencia("u3", "h2")], siguiente: null }
     });
-    const r = await crearRecuperacionZoom(base({ origen }), ADMIN, { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-01-20", dryRun: true });
-    expect(r).toMatchObject({ tipo: "DRY_RUN", ocurrencias: 1, errores: [{ anfitrionZoomId: "h1", codigo: "SOLICITUD_RECHAZADA:404:z1001" }] });
+    const r = await crearRecuperacionZoom(base({ origen }), ADMIN, {
+      anfitrionIds: [],
+      desde: "2026-01-01",
+      hasta: "2026-01-20",
+      dryRun: true
+    });
+    expect(r).toMatchObject({
+      tipo: "DRY_RUN",
+      ocurrencias: 1,
+      errores: [{ anfitrionZoomId: "h1", codigo: "SOLICITUD_RECHAZADA:404:z1001" }]
+    });
   });
 
   it("apply: crea el barrido con los anfitriones validados y el solicitante", async () => {
     const repo = repoBarridos();
-    const r = await crearRecuperacionZoom(base({ repoBarridos: repo }), ADMIN, { anfitrionIds: ["h2"], desde: "2026-01-01", hasta: "2026-03-01", dryRun: false });
+    const r = await crearRecuperacionZoom(base({ repoBarridos: repo }), ADMIN, {
+      anfitrionIds: ["h2"],
+      desde: "2026-01-01",
+      hasta: "2026-03-01",
+      dryRun: false
+    });
     expect(r).toMatchObject({ tipo: "ENCOLADA", barridoId: "b1", anfitriones: 1, ventanas: 3 });
     expect(repo.estado().anfitriones).toEqual([{ anfitrionZoomId: "h2", cuentaProveedorId: null }]);
   });
@@ -168,12 +267,28 @@ describe("procesarPaginaRecuperacionZoom", () => {
   async function preparar(paginas: Record<string, Pagina>, hasta = "2026-02-20", anfitriones = [A1, A2]) {
     const repo = repoBarridos();
     await repo.crear({
-      cuentaZoomId: "c", solicitanteId: "u1", desde: "2026-01-01", hasta,
-      anfitriones: anfitriones.map((a) => ({ anfitrionZoomId: a.anfitrionZoomId, cuentaProveedorId: a.cuentaProveedorId }))
+      cuentaZoomId: "c",
+      solicitanteId: "u1",
+      desde: "2026-01-01",
+      hasta,
+      anfitriones: anfitriones.map((a) => ({
+        anfitrionZoomId: a.anfitrionZoomId,
+        cuentaProveedorId: a.cuentaProveedorId
+      }))
     });
     const archivos = repoArchivos();
     const origen = origenFalso(paginas);
-    const deps = { repoBarridos: repo, repoArchivos: archivos, origen, ahora: () => AHORA, leaseMs: 60_000, corteDias: 90, aleatorio: () => 0.5, limiteIntentos: 3, cuentaZoomId: "c" };
+    const deps = {
+      repoBarridos: repo,
+      repoArchivos: archivos,
+      origen,
+      ahora: () => AHORA,
+      leaseMs: 60_000,
+      corteDias: 90,
+      aleatorio: () => 0.5,
+      limiteIntentos: 3,
+      cuentaZoomId: "c"
+    };
     return { repo, archivos, origen, deps };
   }
 
@@ -187,7 +302,9 @@ describe("procesarPaginaRecuperacionZoom", () => {
     for (let i = 0; i < 20; i++) {
       const p = await procesarPaginaRecuperacionZoom(deps, "b1");
       vistos.push(p.tipo);
-      if (p.tipo === "COMPLETADO") break;
+      if (p.tipo === "COMPLETADO") {
+        break;
+      }
       // Tras cada página, lo anunciado como encontrado ya está guardado.
       expect(archivos.guardarInventario.mock.calls.length).toBe(repo.estado().ocurrenciasEncontradas);
     }
@@ -198,41 +315,70 @@ describe("procesarPaginaRecuperacionZoom", () => {
 
   it("una página vacía no detiene las ventanas siguientes (periodo de dos ventanas)", async () => {
     const { repo, archivos, deps, origen } = await preparar(
-      { "h1|2026-01-29|": { elementos: [ocurrencia("u9")], siguiente: null } }, "2026-02-20", [A1]
+      { "h1|2026-01-29|": { elementos: [ocurrencia("u9")], siguiente: null } },
+      "2026-02-20",
+      [A1]
     );
-    while ((await procesarPaginaRecuperacionZoom(deps, "b1")).tipo !== "COMPLETADO") { /* avanza */ }
+    while ((await procesarPaginaRecuperacionZoom(deps, "b1")).tipo !== "COMPLETADO") {
+      /* avanza */
+    }
     // Por cada ventana: primero las activas y luego la papelera, antes de pasar a la ventana siguiente.
-    expect(origen.llamadas).toEqual(["h1|2026-01-01|", "h1|2026-01-01||P", "h1|2026-01-29|", "h1|2026-01-29||P"]);
+    expect(origen.llamadas).toEqual([
+      "h1|2026-01-01|",
+      "h1|2026-01-01||P",
+      "h1|2026-01-29|",
+      "h1|2026-01-29||P"
+    ]);
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(1);
     expect(repo.estado().estado).toBe("COMPLETADO");
   });
 
   it("error en la segunda página: el cursor no avanza, se reintenta y reanuda sin repetir la primera", async () => {
-    const { repo, deps, origen } = await preparar({
-      "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "t2" },
-      "h1|2026-01-01|t2": errorZoom("ERROR_RED", null)
-    }, "2026-01-20", [A1]);
+    const { repo, deps, origen } = await preparar(
+      {
+        "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "t2" },
+        "h1|2026-01-01|t2": errorZoom("ERROR_RED", null)
+      },
+      "2026-01-20",
+      [A1]
+    );
     expect((await procesarPaginaRecuperacionZoom(deps, "b1")).tipo).toBe("AVANZO");
     const fallo = await procesarPaginaRecuperacionZoom(deps, "b1");
     expect(fallo.tipo).toBe("ERROR_REINTENTABLE");
-    expect(repo.estado().posicion).toEqual({ anfitrionIndice: 0, ventanaDesde: "2026-01-01", cursor: "t2", fuente: "ACTIVAS" });
+    expect(repo.estado().posicion).toEqual({
+      anfitrionIndice: 0,
+      ventanaDesde: "2026-01-01",
+      cursor: "t2",
+      fuente: "ACTIVAS"
+    });
     expect(repo.fallos[0]).toMatchObject({ tipo: "REINTENTABLE", codigo: "ERROR_RED" });
     expect(origen.llamadas.filter((l) => l === "h1|2026-01-01|")).toHaveLength(1);
   });
 
   it("tras agotar los intentos pasa a REQUIERE_REVISION y deja de reclamarse", async () => {
-    const { repo, deps } = await preparar({ "h1|2026-01-01|": errorZoom("ERROR_RED", null) }, "2026-01-20", [A1]);
-    for (let i = 0; i < 3; i++) await procesarPaginaRecuperacionZoom(deps, "b1");
+    const { repo, deps } = await preparar({ "h1|2026-01-01|": errorZoom("ERROR_RED", null) }, "2026-01-20", [
+      A1
+    ]);
+    for (let i = 0; i < 3; i++) {
+      await procesarPaginaRecuperacionZoom(deps, "b1");
+    }
     expect(repo.estado().estado).toBe("REQUIERE_REVISION");
     expect((await procesarPaginaRecuperacionZoom(deps, "b1")).tipo).toBe("NO_DISPONIBLE");
   });
 
   it("anfitrión inexistente en Zoom (404:z1001) se omite y los demás se procesan", async () => {
-    const { repo, deps, archivos } = await preparar({
-      "h1|2026-01-01|": errorZoom("SOLICITUD_RECHAZADA", 404, 1001),
-      "h2|2026-01-01|": { elementos: [ocurrencia("u3", "h2")], siguiente: null }
-    }, "2026-01-20");
-    for (let i = 0; i < 20 && repo.estado().estado !== "REQUIERE_REVISION" && repo.estado().estado !== "COMPLETADO"; i++) {
+    const { repo, deps, archivos } = await preparar(
+      {
+        "h1|2026-01-01|": errorZoom("SOLICITUD_RECHAZADA", 404, 1001),
+        "h2|2026-01-01|": { elementos: [ocurrencia("u3", "h2")], siguiente: null }
+      },
+      "2026-01-20"
+    );
+    for (
+      let i = 0;
+      i < 20 && repo.estado().estado !== "REQUIERE_REVISION" && repo.estado().estado !== "COMPLETADO";
+      i++
+    ) {
       await procesarPaginaRecuperacionZoom(deps, "b1");
     }
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(1);
@@ -242,10 +388,14 @@ describe("procesarPaginaRecuperacionZoom", () => {
   });
 
   it("cursor vencido (400 con cursor): reinicia la ventana consumiendo un intento", async () => {
-    const { repo, deps } = await preparar({
-      "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "viejo" },
-      "h1|2026-01-01|viejo": errorZoom("SOLICITUD_RECHAZADA", 400)
-    }, "2026-01-20", [A1]);
+    const { repo, deps } = await preparar(
+      {
+        "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "viejo" },
+        "h1|2026-01-01|viejo": errorZoom("SOLICITUD_RECHAZADA", 400)
+      },
+      "2026-01-20",
+      [A1]
+    );
     await procesarPaginaRecuperacionZoom(deps, "b1");
     const r = await procesarPaginaRecuperacionZoom(deps, "b1");
     expect(r.tipo).toBe("ERROR_REINTENTABLE");
@@ -254,10 +404,14 @@ describe("procesarPaginaRecuperacionZoom", () => {
   });
 
   it("un cursor repetido no entra en bucle: se trata como fallo reintentable", async () => {
-    const { deps, repo } = await preparar({
-      "h1|2026-01-01|": { elementos: [], siguiente: "t" },
-      "h1|2026-01-01|t": { elementos: [], siguiente: "t" }
-    }, "2026-01-20", [A1]);
+    const { deps, repo } = await preparar(
+      {
+        "h1|2026-01-01|": { elementos: [], siguiente: "t" },
+        "h1|2026-01-01|t": { elementos: [], siguiente: "t" }
+      },
+      "2026-01-20",
+      [A1]
+    );
     await procesarPaginaRecuperacionZoom(deps, "b1");
     const r = await procesarPaginaRecuperacionZoom(deps, "b1");
     expect(r.tipo).toBe("ERROR_REINTENTABLE");
@@ -265,9 +419,13 @@ describe("procesarPaginaRecuperacionZoom", () => {
   });
 
   it("si el inventario de una ocurrencia falla, la página se repite sin avanzar el cursor", async () => {
-    const { deps, repo, archivos } = await preparar({
-      "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: null }
-    }, "2026-01-20", [A1]);
+    const { deps, repo, archivos } = await preparar(
+      {
+        "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: null }
+      },
+      "2026-01-20",
+      [A1]
+    );
     archivos.guardarInventario.mockRejectedValueOnce(new Error("db caída"));
     const r = await procesarPaginaRecuperacionZoom(deps, "b1");
     expect(r.tipo).toBe("ERROR_REINTENTABLE");
@@ -276,7 +434,11 @@ describe("procesarPaginaRecuperacionZoom", () => {
   });
 
   it("un worker con lease obsoleto no confirma el avance", async () => {
-    const { deps, repo } = await preparar({ "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: null } }, "2026-01-20", [A1]);
+    const { deps, repo } = await preparar(
+      { "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: null } },
+      "2026-01-20",
+      [A1]
+    );
     const reclamar = repo.reclamar.bind(repo);
     // Otro worker reclama justo después de que este lee la página.
     deps.origen.listarOcurrencias = async (...args) => {
@@ -292,13 +454,39 @@ describe("procesarPaginaRecuperacionZoom", () => {
 describe("papelera de Zoom", () => {
   async function prep(paginas: Record<string, Pagina>, origenExtra: object = {}) {
     const repo = repoBarridos();
-    await repo.crear({ cuentaZoomId: "c", solicitanteId: "u1", desde: "2026-01-01", hasta: "2026-01-20", anfitriones: [{ anfitrionZoomId: "h1", cuentaProveedorId: null }] });
+    await repo.crear({
+      cuentaZoomId: "c",
+      solicitanteId: "u1",
+      desde: "2026-01-01",
+      hasta: "2026-01-20",
+      anfitriones: [{ anfitrionZoomId: "h1", cuentaProveedorId: null }]
+    });
     const archivos = repoArchivos();
     const origen = Object.assign(origenFalso(paginas), origenExtra);
-    return { repo, archivos, origen, deps: { repoBarridos: repo, repoArchivos: archivos, origen, ahora: () => AHORA, leaseMs: 60_000, corteDias: 90, aleatorio: () => 0.5, limiteIntentos: 3, cuentaZoomId: "c" } };
+    return {
+      repo,
+      archivos,
+      origen,
+      deps: {
+        repoBarridos: repo,
+        repoArchivos: archivos,
+        origen,
+        ahora: () => AHORA,
+        leaseMs: 60_000,
+        corteDias: 90,
+        aleatorio: () => 0.5,
+        limiteIntentos: 3,
+        cuentaZoomId: "c"
+      }
+    };
   }
-  const correr = async (deps: Parameters<typeof procesarPaginaRecuperacionZoom>[0], repo: ReturnType<typeof repoBarridos>) => {
-    for (let i = 0; i < 20 && !["COMPLETADO", "REQUIERE_REVISION"].includes(repo.estado().estado); i++) await procesarPaginaRecuperacionZoom(deps, "b1");
+  const correr = async (
+    deps: Parameters<typeof procesarPaginaRecuperacionZoom>[0],
+    repo: ReturnType<typeof repoBarridos>
+  ) => {
+    for (let i = 0; i < 20 && !["COMPLETADO", "REQUIERE_REVISION"].includes(repo.estado().estado); i++) {
+      await procesarPaginaRecuperacionZoom(deps, "b1");
+    }
   };
 
   it("tras las activas de una ventana consulta la papelera (cursor propio) y recién después termina", async () => {
@@ -320,14 +508,22 @@ describe("papelera de Zoom", () => {
     });
     await procesarPaginaRecuperacionZoom(deps, "b1");
     await procesarPaginaRecuperacionZoom(deps, "b1");
-    expect(repo.estado().posicion).toEqual({ anfitrionIndice: 0, ventanaDesde: "2026-01-01", cursor: null, fuente: "PAPELERA" });
+    expect(repo.estado().posicion).toEqual({
+      anfitrionIndice: 0,
+      ventanaDesde: "2026-01-01",
+      cursor: null,
+      fuente: "PAPELERA"
+    });
     expect(origen.llamadas.filter((l) => l === "h1|2026-01-01|")).toHaveLength(1);
   });
 
   it("una grabación de la papelera sin inventario (404) no bloquea el barrido: se registra y queda en revisión", async () => {
     const { repo, archivos, deps } = await prep(
       { "h1|2026-01-01||P": { elementos: [ocurrencia("trash-1"), ocurrencia("trash-2")], siguiente: null } },
-      { obtenerInventario: async (r: { uuid: string }) => (r.uuid === "trash-1" ? null : { recursos: [], observaciones: [], procesamientoPendiente: false }) }
+      {
+        obtenerInventario: async (r: { uuid: string }) =>
+          r.uuid === "trash-1" ? null : { recursos: [], observaciones: [], procesamientoPendiente: false }
+      }
     );
     await correr(deps, repo);
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(1);
@@ -341,8 +537,15 @@ describe("papelera de Zoom", () => {
       "h1|2026-01-01||P": { elementos: [ocurrencia("t1"), ocurrencia("t2")], siguiente: null }
     });
     const r = await crearRecuperacionZoom(
-      { origen, repoBarridos: repoBarridos(), cuentaZoomId: "c", ahora: () => AHORA, anfitriones: async () => [A1] },
-      ADMIN, { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-01-20", dryRun: true }
+      {
+        origen,
+        repoBarridos: repoBarridos(),
+        cuentaZoomId: "c",
+        ahora: () => AHORA,
+        anfitriones: async () => [A1]
+      },
+      ADMIN,
+      { anfitrionIds: [], desde: "2026-01-01", hasta: "2026-01-20", dryRun: true }
     );
     expect(r).toMatchObject({ tipo: "DRY_RUN", ocurrencias: 3, ocurrenciasPapelera: 2 });
   });
@@ -351,10 +554,31 @@ describe("papelera de Zoom", () => {
 describe("procesarPaginaRecuperacionZoom: hallazgos de la revisión final", () => {
   async function preparar2(paginas: Record<string, Pagina>, origenExtra: object = {}) {
     const repo = repoBarridos();
-    await repo.crear({ cuentaZoomId: "c", solicitanteId: "u1", desde: "2026-01-01", hasta: "2026-01-20", anfitriones: [{ anfitrionZoomId: "h1", cuentaProveedorId: null }] });
+    await repo.crear({
+      cuentaZoomId: "c",
+      solicitanteId: "u1",
+      desde: "2026-01-01",
+      hasta: "2026-01-20",
+      anfitriones: [{ anfitrionZoomId: "h1", cuentaProveedorId: null }]
+    });
     const archivos = repoArchivos();
     const origen = Object.assign(origenFalso(paginas), origenExtra);
-    return { repo, archivos, origen, deps: { repoBarridos: repo, repoArchivos: archivos, origen, ahora: () => AHORA, leaseMs: 60_000, corteDias: 90, aleatorio: () => 0.5, limiteIntentos: 3, cuentaZoomId: "c" } };
+    return {
+      repo,
+      archivos,
+      origen,
+      deps: {
+        repoBarridos: repo,
+        repoArchivos: archivos,
+        origen,
+        ahora: () => AHORA,
+        leaseMs: 60_000,
+        corteDias: 90,
+        aleatorio: () => 0.5,
+        limiteIntentos: 3,
+        cuentaZoomId: "c"
+      }
+    };
   }
 
   it("una ocurrencia listada cuyo inventario da 404 NO avanza el cursor ni se cuenta como encontrada", async () => {
@@ -374,13 +598,19 @@ describe("procesarPaginaRecuperacionZoom: hallazgos de la revisión final", () =
       "h1|2026-01-01|": { elementos: [ocurrencia("u1")], siguiente: "t2" },
       "h1|2026-01-01|t2": errorZoom("SOLICITUD_RECHAZADA", 400)
     });
-    for (let i = 0; i < 12 && repo.estado().estado !== "REQUIERE_REVISION"; i++) await procesarPaginaRecuperacionZoom(deps, "b1");
+    for (let i = 0; i < 12 && repo.estado().estado !== "REQUIERE_REVISION"; i++) {
+      await procesarPaginaRecuperacionZoom(deps, "b1");
+    }
     expect(repo.estado().estado).toBe("REQUIERE_REVISION");
   });
 });
 
 describe("vincularOcurrenciaZoom", () => {
-  const repo = (resultado: unknown) => ({ vincularOcurrencia: vi.fn(async () => resultado) }) as unknown as Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia">;
+  const repo = (resultado: unknown) =>
+    ({ vincularOcurrencia: vi.fn(async () => resultado) }) as unknown as Pick<
+      ZoomArchivoRepositoryPort,
+      "vincularOcurrencia"
+    >;
 
   it("solo administración: no llega al repositorio", async () => {
     const r = repo({ tipo: "VINCULADA", referenciasCreadas: 1 });
@@ -390,17 +620,28 @@ describe("vincularOcurrenciaZoom", () => {
 
   it("vincula pasando el actor y devuelve el resultado del repositorio", async () => {
     const r = repo({ tipo: "VINCULADA", referenciasCreadas: 2 });
-    expect(await vincularOcurrenciaZoom({ repo: r }, ADMIN, "o1", "e1")).toEqual({ tipo: "VINCULADA", referenciasCreadas: 2 });
+    expect(await vincularOcurrenciaZoom({ repo: r }, ADMIN, "o1", "e1")).toEqual({
+      tipo: "VINCULADA",
+      referenciasCreadas: 2
+    });
     expect(r.vincularOcurrencia).toHaveBeenCalledWith("o1", "e1", { id: "u1" });
   });
 
   it("un archivo de Drive ya referenciado por Meet se informa como conflicto, no como error 500", async () => {
-    const r = { vincularOcurrencia: vi.fn(async () => { throw Object.assign(new Error("x"), { code: "P2002" }); }) } as unknown as Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia">;
+    const r = {
+      vincularOcurrencia: vi.fn(async () => {
+        throw Object.assign(new Error("x"), { code: "P2002" });
+      })
+    } as unknown as Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia">;
     expect(await vincularOcurrenciaZoom({ repo: r }, ADMIN, "o1", "e1")).toEqual({ tipo: "CONFLICTO_DRIVE" });
   });
 
   it("otros errores se propagan", async () => {
-    const r = { vincularOcurrencia: vi.fn(async () => { throw new Error("boom"); }) } as unknown as Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia">;
+    const r = {
+      vincularOcurrencia: vi.fn(async () => {
+        throw new Error("boom");
+      })
+    } as unknown as Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia">;
     await expect(vincularOcurrenciaZoom({ repo: r }, ADMIN, "o1", "e1")).rejects.toThrow("boom");
   });
 });

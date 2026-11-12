@@ -90,11 +90,15 @@ async function main(): Promise<void> {
     instances: number;
   }[] = [];
 
-  if (outDir) mkdirSync(outDir, { recursive: true });
+  if (outDir) {
+    mkdirSync(outDir, { recursive: true });
+  }
 
   for (const items of byTeacher.values()) {
     const teacher = items[0]?.docentePrograma.docente.usuario;
-    if (!teacher) continue;
+    if (!teacher) {
+      continue;
+    }
 
     const cards = items.map((request) => {
       const meet = request.instancias[0]?.eventosProveedor[0];
@@ -122,17 +126,20 @@ async function main(): Promise<void> {
     const subject = "Próximas reuniones Google Meet";
     const message = buildMeetingDigestEmail({
       greetingName: firstName(teacher),
-      intro: "Te compartimos el detalle de tus próximas reuniones programadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
+      intro:
+        "Te compartimos el detalle de tus próximas reuniones programadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
       cards
     });
     const name = fullName(teacher);
 
-    sections.push([
-      `PARA: ${name} <${teacher.emailPrincipal ?? "sin email"}>`,
-      `ASUNTO: ${subject}`,
-      "",
-      message.text
-    ].join("\n"));
+    sections.push(
+      [
+        `PARA: ${name} <${teacher.emailPrincipal ?? "sin email"}>`,
+        `ASUNTO: ${subject}`,
+        "",
+        message.text
+      ].join("\n")
+    );
 
     if (outDir && teacher.emailPrincipal) {
       const safeEmail = teacher.emailPrincipal.replace(/[^a-z0-9._-]+/gi, "_");

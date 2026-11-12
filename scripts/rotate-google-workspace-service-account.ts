@@ -6,7 +6,7 @@ import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
   probarDestinoDrive,
-  validarScopesGoogle,
+  validarScopesGoogle
 } from "../src/modules/configuracion/google-workspace-test.adapter";
 
 type ServiceAccountJson = Readonly<{
@@ -30,7 +30,7 @@ async function probarPreview(
   serviceAccountEmail: string,
   privateKey: string,
   subject: string,
-  meetCode: string,
+  meetCode: string
 ): Promise<{ spaceName: string; memberCount: number }> {
   const auth = new JWT({
     email: serviceAccountEmail,
@@ -38,27 +38,29 @@ async function probarPreview(
     scopes: [
       "https://www.googleapis.com/auth/meetings.space.settings",
       "https://www.googleapis.com/auth/meetings.space.readonly",
-      "https://www.googleapis.com/auth/meetings.space.created",
+      "https://www.googleapis.com/auth/meetings.space.created"
     ],
-    subject,
+    subject
   });
 
   const space = await auth.request<{ name?: string }>({
     url: `https://meet.googleapis.com/v2/spaces/${encodeURIComponent(meetCode)}`,
     method: "GET",
-    timeout: 30_000,
+    timeout: 30_000
   });
-  if (!space.data.name) throw new Error("Meet no devolvió el nombre interno del espacio.");
+  if (!space.data.name) {
+    throw new Error("Meet no devolvió el nombre interno del espacio.");
+  }
 
   const members = await auth.request<{ members?: readonly unknown[] }>({
     url: `https://meet.googleapis.com/v2/${space.data.name}/members?pageSize=20`,
     method: "GET",
-    timeout: 30_000,
+    timeout: 30_000
   });
 
   return {
     spaceName: space.data.name,
-    memberCount: Array.isArray(members.data.members) ? members.data.members.length : 0,
+    memberCount: Array.isArray(members.data.members) ? members.data.members.length : 0
   };
 }
 
@@ -70,10 +72,14 @@ async function main() {
   const apply = hasFlag("apply");
   const deleteFile = hasFlag("delete-file");
 
-  if (!file) throw new Error("Falta --file=/ruta/credencial.json");
+  if (!file) {
+    throw new Error("Falta --file=/ruta/credencial.json");
+  }
 
   const parsed = JSON.parse(await readFile(file, "utf8")) as ServiceAccountJson;
-  if (parsed.type !== "service_account") throw new Error("El JSON no es una cuenta de servicio.");
+  if (parsed.type !== "service_account") {
+    throw new Error("El JSON no es una cuenta de servicio.");
+  }
   if (!parsed.project_id || !parsed.client_email || !parsed.private_key || !parsed.client_id) {
     throw new Error("El JSON no contiene todos los campos requeridos de una cuenta de servicio.");
   }
@@ -89,16 +95,20 @@ async function main() {
       serviceAccountSubject: true,
       driveDestinationId: true,
       activa: true,
-      version: true,
-    },
+      version: true
+    }
   });
-  if (!current) throw new Error("No existe la configuración principal de Google Workspace.");
-  if (!current.serviceAccountSubject) throw new Error("Falta la cuenta delegada principal.");
+  if (!current) {
+    throw new Error("No existe la configuración principal de Google Workspace.");
+  }
+  if (!current.serviceAccountSubject) {
+    throw new Error("Falta la cuenta delegada principal.");
+  }
 
   const credential = {
     serviceAccountEmail: parsed.client_email,
     privateKey: parsed.private_key,
-    subject: current.serviceAccountSubject,
+    subject: current.serviceAccountSubject
   };
 
   await probarCredencialGoogle(credential);
@@ -117,12 +127,7 @@ async function main() {
 
   let preview: { spaceName: string; memberCount: number } | null = null;
   if (previewSubject && meetCode) {
-    preview = await probarPreview(
-      parsed.client_email,
-      parsed.private_key,
-      previewSubject,
-      meetCode,
-    );
+    preview = await probarPreview(parsed.client_email, parsed.private_key, previewSubject, meetCode);
   }
 
   const summary = {
@@ -137,7 +142,7 @@ async function main() {
     previewMembers: preview?.memberCount ?? null,
     currentServiceAccount: current.serviceAccountEmail,
     currentVersion: current.version,
-    apply,
+    apply
   };
 
   if (!apply) {
@@ -148,7 +153,7 @@ async function main() {
   const previous = {
     serviceAccountEmail: current.serviceAccountEmail,
     privateKeyCifrada: current.privateKeyCifrada,
-    version: current.version,
+    version: current.version
   };
 
   try {
@@ -158,13 +163,13 @@ async function main() {
       data: {
         serviceAccountEmail: parsed.client_email,
         privateKeyCifrada: encrypted,
-        version: { increment: 1 },
-      },
+        version: { increment: 1 }
+      }
     });
 
     const stored = await db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" },
-      select: { serviceAccountEmail: true, privateKeyCifrada: true, version: true },
+      select: { serviceAccountEmail: true, privateKeyCifrada: true, version: true }
     });
     if (!stored?.privateKeyCifrada || stored.serviceAccountEmail !== parsed.client_email) {
       throw new Error("La base no confirmó la nueva cuenta de servicio.");
@@ -173,22 +178,30 @@ async function main() {
       throw new Error("La verificación del cifrado de la nueva clave falló.");
     }
 
-    if (deleteFile) await unlink(file);
+    if (deleteFile) {
+      await unlink(file);
+    }
 
-    console.log(JSON.stringify({
-      ...summary,
-      applied: true,
-      newVersion: stored.version,
-      inputFileDeleted: deleteFile,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          ...summary,
+          applied: true,
+          newVersion: stored.version,
+          inputFileDeleted: deleteFile
+        },
+        null,
+        2
+      )
+    );
   } catch (error) {
     await db.configuracionGoogleWorkspace.update({
       where: { id: "principal" },
       data: {
         serviceAccountEmail: previous.serviceAccountEmail,
         privateKeyCifrada: previous.privateKeyCifrada,
-        version: previous.version,
-      },
+        version: previous.version
+      }
     });
     throw error;
   }

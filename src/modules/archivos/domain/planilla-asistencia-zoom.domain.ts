@@ -30,16 +30,33 @@ export type CeldaPlanillaZoom = string | number;
 export type FilasPlanillaZoom = readonly (readonly CeldaPlanillaZoom[])[];
 
 export const COLUMNAS_RESUMEN_ZOOM = [
-  "Participante", "Correo informado por Zoom", "Correo confirmado", "Primera entrada (UY)", "Última salida (UY)",
-  "Minutos", "Asistencia (%)", "Conexiones", "Conciliación", "Rol comprobado"
+  "Participante",
+  "Correo informado por Zoom",
+  "Correo confirmado",
+  "Primera entrada (UY)",
+  "Última salida (UY)",
+  "Minutos",
+  "Asistencia (%)",
+  "Conexiones",
+  "Conciliación",
+  "Rol comprobado"
 ] as const;
 
 export const COLUMNAS_SESIONES_ZOOM = [
-  "Participante", "Correo informado por Zoom", "Entrada (UTC)", "Salida (UTC)", "Duración (seg)", "Estado", "Identificador de participante"
+  "Participante",
+  "Correo informado por Zoom",
+  "Entrada (UTC)",
+  "Salida (UTC)",
+  "Duración (seg)",
+  "Estado",
+  "Identificador de participante"
 ] as const;
 
 const ETIQUETA_CONCILIACION = {
-  SIN_CONCILIAR: "Sin conciliar", SUGERIDO: "Sugerido (sin confirmar)", CONCILIADO: "Conciliado", EXTERNO: "Externo"
+  SIN_CONCILIAR: "Sin conciliar",
+  SUGERIDO: "Sugerido (sin confirmar)",
+  CONCILIADO: "Conciliado",
+  EXTERNO: "Externo"
 } as const;
 
 /**
@@ -53,10 +70,17 @@ export function escaparCeldaPlanillaZoom(valor: string): string {
 const texto = (valor: string | null): string => escaparCeldaPlanillaZoom(valor ?? "");
 
 function horaUruguay(fecha: Date | null): string {
-  if (!fecha || !Number.isFinite(fecha.getTime())) return "";
+  if (!fecha || !Number.isFinite(fecha.getTime())) {
+    return "";
+  }
   return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false
+    timeZone: "America/Montevideo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
   }).format(fecha);
 }
 
@@ -66,9 +90,16 @@ export function filasResumenPlanillaZoom(registros: readonly RegistroPlanillaZoo
   return [
     COLUMNAS_RESUMEN_ZOOM,
     ...registros.map((r): readonly CeldaPlanillaZoom[] => [
-      texto(r.nombre), texto(r.emailObservado), texto(r.emailConfirmado),
-      horaUruguay(r.primeraEntradaAt), horaUruguay(r.ultimaSalidaAt),
-      r.minutos, r.porcentaje, r.sesiones, ETIQUETA_CONCILIACION[r.estadoConciliacion], r.rolComprobado ?? ""
+      texto(r.nombre),
+      texto(r.emailObservado),
+      texto(r.emailConfirmado),
+      horaUruguay(r.primeraEntradaAt),
+      horaUruguay(r.ultimaSalidaAt),
+      r.minutos,
+      r.porcentaje,
+      r.sesiones,
+      ETIQUETA_CONCILIACION[r.estadoConciliacion],
+      r.rolComprobado ?? ""
     ])
   ];
 }
@@ -77,9 +108,13 @@ export function filasSesionesPlanillaZoom(sesiones: readonly SesionPlanillaZoom[
   return [
     COLUMNAS_SESIONES_ZOOM,
     ...sesiones.map((s): readonly CeldaPlanillaZoom[] => [
-      texto(s.nombre), texto(s.email), iso(s.entradaAt), iso(s.salidaAt),
+      texto(s.nombre),
+      texto(s.email),
+      iso(s.entradaAt),
+      iso(s.salidaAt),
       Math.max(0, Math.round((s.salidaAt.getTime() - s.entradaAt.getTime()) / 1000)),
-      s.status ?? "", texto(s.participanteId)
+      s.status ?? "",
+      texto(s.participanteId)
     ])
   ];
 }
@@ -92,6 +127,7 @@ export function exportacionAsistenciaZoom(
   registros: readonly RegistroPlanillaZoom[],
   sesiones: readonly SesionPlanillaZoom[]
 ): Readonly<{ fuente: "zoom"; columnas: readonly string[]; registros: FilasPlanillaZoom }> {
-  const filas = conjunto === "resumen" ? filasResumenPlanillaZoom(registros) : filasSesionesPlanillaZoom(sesiones);
+  const filas =
+    conjunto === "resumen" ? filasResumenPlanillaZoom(registros) : filasSesionesPlanillaZoom(sesiones);
   return { fuente: "zoom", columnas: filas[0] as readonly string[], registros: filas.slice(1) };
 }

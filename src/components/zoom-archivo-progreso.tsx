@@ -17,11 +17,22 @@ import {
 import type { PaginaInventarioZoom } from "@/src/modules/archivos/ports";
 
 export const FILTROS_CATEGORIA_ZOOM: readonly FiltroCategoriaZoom[] = [
-  "TODOS", "VIDEO", "AUDIO", "CHAT", "TRANSCRIPCION", "LINEA_DE_TIEMPO", "RESUMEN", "OTROS"
+  "TODOS",
+  "VIDEO",
+  "AUDIO",
+  "CHAT",
+  "TRANSCRIPCION",
+  "LINEA_DE_TIEMPO",
+  "RESUMEN",
+  "OTROS"
 ];
 
 type VinculoZoom = "TODAS" | "SIN_VINCULO";
-type EstadoNavegacionZoom = Readonly<{ zoomPagina: number; zoomCategoria: FiltroCategoriaZoom; zoomVinculo: VinculoZoom }>;
+type EstadoNavegacionZoom = Readonly<{
+  zoomPagina: number;
+  zoomCategoria: FiltroCategoriaZoom;
+  zoomVinculo: VinculoZoom;
+}>;
 
 function formatearBytes(bytes: bigint): string {
   const mb = Number(bytes) / (1024 * 1024);
@@ -32,12 +43,21 @@ export function etiquetaFiltroZoom(filtro: FiltroCategoriaZoom): string {
   return filtro === "TODOS" ? "Todos" : etiquetaCategoriaZoom(filtro);
 }
 
-export function hrefInventarioZoom(cambios: Partial<EstadoNavegacionZoom>, actual: EstadoNavegacionZoom): string {
+export function hrefInventarioZoom(
+  cambios: Partial<EstadoNavegacionZoom>,
+  actual: EstadoNavegacionZoom
+): string {
   const v = { ...actual, ...cambios };
   const p = new URLSearchParams();
-  if (v.zoomPagina > 1) p.set("zoomPagina", String(v.zoomPagina));
-  if (v.zoomCategoria !== "TODOS") p.set("zoomCategoria", v.zoomCategoria);
-  if (v.zoomVinculo !== "TODAS") p.set("zoomVinculo", v.zoomVinculo);
+  if (v.zoomPagina > 1) {
+    p.set("zoomPagina", String(v.zoomPagina));
+  }
+  if (v.zoomCategoria !== "TODOS") {
+    p.set("zoomCategoria", v.zoomCategoria);
+  }
+  if (v.zoomVinculo !== "TODAS") {
+    p.set("zoomVinculo", v.zoomVinculo);
+  }
   const q = p.toString();
   return q ? `/grabaciones?${q}#archivos-zoom` : "/grabaciones#archivos-zoom";
 }
@@ -55,11 +75,12 @@ function renderFilaArchivoZoom(a: ArchivoInventarioZoomVista) {
   const ext = a.extension ? a.extension.toUpperCase() : null;
   const nombre = [cat, varianteLegible, ext].filter(Boolean).join(" · ");
   const conError = (a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION") && a.errorCodigo;
-  const estadoClase = a.estado === "CONSERVADO"
-    ? "is-saved"
-    : a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION"
-      ? "is-error"
-      : "is-pending";
+  const estadoClase =
+    a.estado === "CONSERVADO"
+      ? "is-saved"
+      : a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION"
+        ? "is-error"
+        : "is-pending";
 
   return (
     <li key={a.id} className={`zoom-file-item ${estadoClase}`}>
@@ -80,7 +101,7 @@ function renderFilaArchivoZoom(a: ArchivoInventarioZoomVista) {
           {etiquetaEstadoArchivoZoom(a.estado)}
           {conError ? ` (${a.errorCodigo})` : ""}
         </span>
-        {(a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION") ? (
+        {a.estado === "ERROR_REINTENTABLE" || a.estado === "REQUIERE_REVISION" ? (
           <ZoomReintentarArchivo archivoId={a.id} />
         ) : null}
       </div>
@@ -90,7 +111,11 @@ function renderFilaArchivoZoom(a: ArchivoInventarioZoomVista) {
 
 /** Inventario de archivos de Zoom (solo administración). Todo texto lo escapa React; no hay HTML crudo. */
 export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoProgresoProps) {
-  const actual: EstadoNavegacionZoom = { zoomPagina: datos.pagina, zoomCategoria: categoria, zoomVinculo: vinculo };
+  const actual: EstadoNavegacionZoom = {
+    zoomPagina: datos.pagina,
+    zoomCategoria: categoria,
+    zoomVinculo: vinculo
+  };
   return (
     <section id="archivos-zoom" className="zoom-inventory-section" aria-labelledby="archivos-zoom-titulo">
       <div className="recording-library-heading zoom-inventory-heading">
@@ -100,10 +125,16 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
             Ocurrencias inventariadas en Zoom, vinculación con encuentros y estado de conservación en Drive.
           </p>
         </div>
-        <span>{datos.totalOcurrencias} {datos.totalOcurrencias === 1 ? "reunión con archivos" : "reuniones con archivos"}</span>
+        <span>
+          {datos.totalOcurrencias}{" "}
+          {datos.totalOcurrencias === 1 ? "reunión con archivos" : "reuniones con archivos"}
+        </span>
       </div>
 
-      <nav className="recordings-controls zoom-inventory-controls" aria-label="Filtrar archivos de Zoom por categoría">
+      <nav
+        className="recordings-controls zoom-inventory-controls"
+        aria-label="Filtrar archivos de Zoom por categoría"
+      >
         <div className="recordings-filter-tabs">
           {FILTROS_CATEGORIA_ZOOM.map((f) => (
             <Link
@@ -118,7 +149,10 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
           <Link
             className={`filter-tab is-link-filter ${vinculo === "SIN_VINCULO" ? "is-active" : ""}`.trim()}
             aria-current={vinculo === "SIN_VINCULO" ? "true" : undefined}
-            href={hrefInventarioZoom({ zoomVinculo: vinculo === "TODAS" ? "SIN_VINCULO" : "TODAS", zoomPagina: 1 }, actual)}
+            href={hrefInventarioZoom(
+              { zoomVinculo: vinculo === "TODAS" ? "SIN_VINCULO" : "TODAS", zoomPagina: 1 },
+              actual
+            )}
           >
             {vinculo === "TODAS" ? "Solo sin vincular" : "Ver todas"}
           </Link>
@@ -127,21 +161,26 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
 
       {datos.ocurrencias.length === 0 ? (
         <div className="recordings-empty-state">
-          <p role="status">No hay archivos de Zoom inventariados{vinculo === "SIN_VINCULO" ? " sin vincular" : ""}.</p>
+          <p role="status">
+            No hay archivos de Zoom inventariados{vinculo === "SIN_VINCULO" ? " sin vincular" : ""}.
+          </p>
         </div>
       ) : (
         <ul className="zoom-occurrence-list">
           {datos.ocurrencias.map((o) => {
             const resumen = resumirArchivosZoom(o.archivos);
-            const completo = respaldoCompletoZoom(o.archivos, { procesamientoPendiente: o.procesamientoPendiente });
+            const completo = respaldoCompletoZoom(o.archivos, {
+              procesamientoPendiente: o.procesamientoPendiente
+            });
             const visibles = filtrarArchivosZoomPorCategoria(o.archivos, categoria);
             const colapsar = categoria === "TODOS" && visibles.length > 6;
             const principales = colapsar
               ? visibles.filter((a) => !esArchivoSecundarioZoom(a) || a.estado !== "CONSERVADO")
               : visibles;
-            const secundarios = colapsar && principales.length > 0
-              ? visibles.filter((a) => esArchivoSecundarioZoom(a) && a.estado === "CONSERVADO")
-              : [];
+            const secundarios =
+              colapsar && principales.length > 0
+                ? visibles.filter((a) => esArchivoSecundarioZoom(a) && a.estado === "CONSERVADO")
+                : [];
 
             return (
               <li key={o.id} className="recording-meeting-card zoom-occurrence-card">
@@ -160,15 +199,22 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
 
                   <div className="recording-meeting-title">
                     <div className="zoom-occurrence-badges">
-                      <span className={`zoom-link-badge ${o.eventoProveedorId ? "is-linked" : "is-unlinked"}`}>
+                      <span
+                        className={`zoom-link-badge ${o.eventoProveedorId ? "is-linked" : "is-unlinked"}`}
+                      >
                         {o.eventoProveedorId ? "Vinculada a un encuentro" : "Sin encuentro vinculado"}
                       </span>
                       <span className="zoom-inventory-timestamp">
-                        {o.inventariadoAt ? `Último inventario ${formatDateTime(o.inventariadoAt)}` : "Sin inventario todavía"}
+                        {o.inventariadoAt
+                          ? `Último inventario ${formatDateTime(o.inventariadoAt)}`
+                          : "Sin inventario todavía"}
                       </span>
                     </div>
                     <h3>{o.titulo}</h3>
-                    <p role="status" className={`zoom-backup-status ${completo ? "is-complete" : "is-incomplete"}`}>
+                    <p
+                      role="status"
+                      className={`zoom-backup-status ${completo ? "is-complete" : "is-incomplete"}`}
+                    >
                       {completo
                         ? "Respaldo completo en Drive."
                         : o.procesamientoPendiente
@@ -199,9 +245,7 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
                   <p className="zoom-empty-category">No hay archivos en esta categoría.</p>
                 ) : (
                   <>
-                    <ul className="zoom-file-grid">
-                      {principales.map(renderFilaArchivoZoom)}
-                    </ul>
+                    <ul className="zoom-file-grid">{principales.map(renderFilaArchivoZoom)}</ul>
                     {secundarios.length > 0 ? (
                       <details className="recording-extra-files">
                         <summary className="recording-extra-summary">
@@ -209,9 +253,7 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
                             Pistas individuales por participante y archivos auxiliares ({secundarios.length})
                           </span>
                         </summary>
-                        <ul className="zoom-file-grid is-nested">
-                          {secundarios.map(renderFilaArchivoZoom)}
-                        </ul>
+                        <ul className="zoom-file-grid is-nested">{secundarios.map(renderFilaArchivoZoom)}</ul>
                       </details>
                     ) : null}
                   </>
@@ -224,9 +266,25 @@ export function ZoomArchivoProgreso({ datos, categoria, vinculo }: ZoomArchivoPr
 
       {datos.totalPaginas > 1 ? (
         <div className="recordings-pagination" aria-label="Paginación de archivos de Zoom">
-          {datos.pagina > 1 ? <Link className="secondary-action" href={hrefInventarioZoom({ zoomPagina: datos.pagina - 1 }, actual)}>Anterior</Link> : null}
-          <span>Página {datos.pagina} de {datos.totalPaginas}</span>
-          {datos.pagina < datos.totalPaginas ? <Link className="secondary-action" href={hrefInventarioZoom({ zoomPagina: datos.pagina + 1 }, actual)}>Siguiente</Link> : null}
+          {datos.pagina > 1 ? (
+            <Link
+              className="secondary-action"
+              href={hrefInventarioZoom({ zoomPagina: datos.pagina - 1 }, actual)}
+            >
+              Anterior
+            </Link>
+          ) : null}
+          <span>
+            Página {datos.pagina} de {datos.totalPaginas}
+          </span>
+          {datos.pagina < datos.totalPaginas ? (
+            <Link
+              className="secondary-action"
+              href={hrefInventarioZoom({ zoomPagina: datos.pagina + 1 }, actual)}
+            >
+              Siguiente
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </section>

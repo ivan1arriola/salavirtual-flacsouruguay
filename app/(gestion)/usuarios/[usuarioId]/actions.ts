@@ -11,12 +11,16 @@ import { cesarAsistenteTecnicoHastaProximoInicioSesion } from "@/src/modules/usu
 
 export async function guardarProgramasUsuario(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") redirect("/");
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    redirect("/");
+  }
 
   const usuarioId = String(formData.get("usuarioId") ?? "");
   let estado = "programas-guardados";
@@ -35,12 +39,16 @@ export async function guardarProgramasUsuario(formData: FormData): Promise<void>
 
 export async function cesarAsistenteUsuario(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") redirect("/");
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    redirect("/");
+  }
 
   const usuarioId = String(formData.get("usuarioId") ?? "");
   let estado = "asistente-cesado";
@@ -61,12 +69,16 @@ export async function cesarAsistenteUsuario(formData: FormData): Promise<void> {
 
 export async function eliminarUsuario(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") redirect("/");
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    redirect("/");
+  }
 
   const usuarioId = String(formData.get("usuarioId") ?? "");
   const confirmacion = String(formData.get("confirmacion") ?? "");
@@ -75,7 +87,9 @@ export async function eliminarUsuario(formData: FormData): Promise<void> {
     await eliminarUsuarioCompleto(db, actor, usuarioId, confirmacion);
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar el usuario.";
-    redirect(`/usuarios/${encodeURIComponent(usuarioId)}?estado=error-eliminar&error=${encodeURIComponent(message)}`);
+    redirect(
+      `/usuarios/${encodeURIComponent(usuarioId)}?estado=error-eliminar&error=${encodeURIComponent(message)}`
+    );
   }
 
   revalidatePath("/usuarios");

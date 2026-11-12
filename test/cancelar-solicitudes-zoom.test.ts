@@ -20,7 +20,9 @@ function fakeDatabase(solicitudes: readonly unknown[]) {
   };
   return {
     tx,
-    db: { $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx) } as unknown as PrismaClient
+    db: {
+      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx)
+    } as unknown as PrismaClient
   };
 }
 
@@ -31,13 +33,18 @@ const solicitud = (id: string, estado = "PROVISIONADA") => ({
   createdAt: new Date("2026-10-10T11:00:00Z"),
   estado,
   docentePrograma: { programaId: "programa-1", docente: { usuarioId: "titular" } },
-  instancias: [{
-    detallesLiquidacion: [],
-    eventosProveedor: [
-      { id: "zoom-" + id, operacionPendiente: estado === "CANCELADA" ? "CANCELAR" : null,
-        proveedor: { tipo: "ZOOM" } }
-    ]
-  }]
+  instancias: [
+    {
+      detallesLiquidacion: [],
+      eventosProveedor: [
+        {
+          id: "zoom-" + id,
+          operacionPendiente: estado === "CANCELADA" ? "CANCELAR" : null,
+          proveedor: { tipo: "ZOOM" }
+        }
+      ]
+    }
+  ]
 });
 
 describe("cancelación de series con eventos Zoom", () => {
@@ -45,10 +52,12 @@ describe("cancelación de series con eventos Zoom", () => {
     const { db, tx } = fakeDatabase([solicitud("s1")]);
     const result = await cancelarSolicitudesAtomicas(db, actor, ["s1"]);
     expect(result.eventoProveedorIds).toEqual(["zoom-s1"]);
-    expect(tx.eventoProveedor.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: { in: ["zoom-s1"] } },
-      data: expect.objectContaining({ operacionPendiente: "CANCELAR" })
-    }));
+    expect(tx.eventoProveedor.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ["zoom-s1"] } },
+        data: expect.objectContaining({ operacionPendiente: "CANCELAR" })
+      })
+    );
   });
 
   it("reintenta los eventos Zoom de una solicitud ya cancelada con cancelación pendiente", async () => {

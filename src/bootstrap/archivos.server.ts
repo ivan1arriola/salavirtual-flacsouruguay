@@ -22,9 +22,7 @@ export function crearArchivosRepository() {
   return crearPrismaArchivosRepositoryAdapter(db);
 }
 
-export function crearArtifactProvider(
-  credentials: ArtifactProviderCredentials
-): ArtifactProviderPort {
+export function crearArtifactProvider(credentials: ArtifactProviderCredentials): ArtifactProviderPort {
   return crearGoogleArtifactsProviderAdapter(credentials);
 }
 
@@ -33,12 +31,10 @@ export async function sincronizarArtefactos(
   regenerarAsistencia = false
 ): Promise<readonly SyncArtifactsResult[]> {
   const repository = crearArchivosRepository();
-  return sincronizarArtefactosUseCase(
-    repository,
-    crearArtifactProvider,
-    descifrarConfiguracion,
-    { eventoProveedorIds, regenerarAsistencia }
-  );
+  return sincronizarArtefactosUseCase(repository, crearArtifactProvider, descifrarConfiguracion, {
+    eventoProveedorIds,
+    regenerarAsistencia
+  });
 }
 
 export async function repararPlanillasAsistenciaVacias(eventoProveedorIds?: readonly string[]) {
@@ -81,7 +77,13 @@ export async function listarArchivosMeetVisibles(
   return listarArchivosVisiblesUseCase(repository, actor);
 }
 
-export async function listarGrabacionesDb(actor: SessionActor, input: { pagina: number; busqueda: string; filtro: import("@/src/modules/archivos/domain").TipoFiltroArtefacto }) {
+export async function listarGrabacionesDb(
+  actor: SessionActor,
+  input: {
+    pagina: number;
+    busqueda: string;
+    filtro: import("@/src/modules/archivos/domain").TipoFiltroArtefacto;
+  }
+) {
   return listarGrabacionesDbUseCase(crearArchivosRepository(), actor, input);
 }
-

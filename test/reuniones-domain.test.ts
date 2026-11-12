@@ -17,7 +17,9 @@ import {
 
 describe("dias derivados de reuniones", () => {
   it("acepta solamente UUID como clave idempotente de creación", () => {
-    expect(claveIdempotenciaCreacionSchema.safeParse("c7ad82c1-3b81-4a20-b718-1336e82c267c").success).toBe(true);
+    expect(claveIdempotenciaCreacionSchema.safeParse("c7ad82c1-3b81-4a20-b718-1336e82c267c").success).toBe(
+      true
+    );
     expect(claveIdempotenciaCreacionSchema.safeParse("repetir-reunion").success).toBe(false);
   });
 
@@ -35,7 +37,14 @@ describe("dias derivados de reuniones", () => {
     const risks = detectarPosiblesReunionesDuplicadas([
       { ...base, id: "meeting-1" },
       { ...base, id: "meeting-2", solicitudId: "request-2", titulo: "Clase de Genero" },
-      { ...base, id: "meeting-3", solicitudId: "request-3", titulo: "Tutoría", inicio: new Date("2026-08-03T13:30:00Z"), fin: new Date("2026-08-03T14:30:00Z") }
+      {
+        ...base,
+        id: "meeting-3",
+        solicitudId: "request-3",
+        titulo: "Tutoría",
+        inicio: new Date("2026-08-03T13:30:00Z"),
+        fin: new Date("2026-08-03T14:30:00Z")
+      }
     ]);
 
     expect(risks.map(({ motivo }) => motivo)).toEqual([
@@ -55,11 +64,19 @@ describe("dias derivados de reuniones", () => {
       inicio: new Date("2026-08-03T13:00:00Z"),
       fin: new Date("2026-08-03T14:00:00Z")
     };
-    expect(detectarPosiblesReunionesDuplicadas([
-      { ...shared, id: "one", docenteId: "teacher-1" },
-      { ...shared, id: "two", docenteId: "teacher-2" },
-      { ...shared, id: "three", docenteId: "teacher-1", inicio: new Date("2026-08-03T14:00:00Z"), fin: new Date("2026-08-03T15:00:00Z") }
-    ])).toEqual([]);
+    expect(
+      detectarPosiblesReunionesDuplicadas([
+        { ...shared, id: "one", docenteId: "teacher-1" },
+        { ...shared, id: "two", docenteId: "teacher-2" },
+        {
+          ...shared,
+          id: "three",
+          docenteId: "teacher-1",
+          inicio: new Date("2026-08-03T14:00:00Z"),
+          fin: new Date("2026-08-03T15:00:00Z")
+        }
+      ])
+    ).toEqual([]);
   });
 
   it("genera una clave estable y valida las decisiones de revisión", () => {
@@ -88,10 +105,12 @@ describe("dias derivados de reuniones", () => {
       motivo: "COINCIDENCIA_EXACTA" as const
     };
 
-    expect(huellaRevisionDuplicado(risk)).not.toBe(huellaRevisionDuplicado({
-      ...risk,
-      derecha: { ...risk.derecha, inicio: new Date("2026-08-03T13:30:00Z") }
-    }));
+    expect(huellaRevisionDuplicado(risk)).not.toBe(
+      huellaRevisionDuplicado({
+        ...risk,
+        derecha: { ...risk.derecha, inicio: new Date("2026-08-03T13:30:00Z") }
+      })
+    );
   });
 
   it("calcula dias unicos respetando la zona horaria", () => {
@@ -132,21 +151,27 @@ describe("dias derivados de reuniones", () => {
       requiereAsistenciaTecnica: true,
       modalidad: "HIBRIDA" as const,
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-10T11:00:00-03:00",
-        fin: "2026-10-10T13:30:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-10T11:00:00-03:00",
+          fin: "2026-10-10T13:30:00-03:00"
+        }
+      ]
     };
 
     expect(crearReunionesSchema.safeParse(base).success).toBe(false);
-    expect(crearReunionesSchema.safeParse({
-      ...base,
-      instancias: [{
-        ...base.instancias[0],
-        asistenciaInicio: "2026-10-10T09:00:00-03:00",
-        asistenciaFin: "2026-10-10T14:00:00-03:00"
-      }]
-    }).success).toBe(true);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...base,
+        instancias: [
+          {
+            ...base.instancias[0],
+            asistenciaInicio: "2026-10-10T09:00:00-03:00",
+            asistenciaFin: "2026-10-10T14:00:00-03:00"
+          }
+        ]
+      }).success
+    ).toBe(true);
   });
 
   it("rechaza una cobertura híbrida que no empiece antes y termine después del encuentro", () => {
@@ -156,12 +181,14 @@ describe("dias derivados de reuniones", () => {
       requiereAsistenciaTecnica: true,
       modalidad: "HIBRIDA",
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-10T11:00:00-03:00",
-        fin: "2026-10-10T13:30:00-03:00",
-        asistenciaInicio: "2026-10-10T11:00:00-03:00",
-        asistenciaFin: "2026-10-10T13:30:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-10T11:00:00-03:00",
+          fin: "2026-10-10T13:30:00-03:00",
+          asistenciaInicio: "2026-10-10T11:00:00-03:00",
+          asistenciaFin: "2026-10-10T13:30:00-03:00"
+        }
+      ]
     });
     expect(result.success).toBe(false);
   });
@@ -173,24 +200,41 @@ describe("dias derivados de reuniones", () => {
       modalidad: "HIBRIDA" as const,
       requiereAsistenciaTecnica: true,
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-10T10:00:00-03:00",
-        fin: "2026-10-10T17:00:00-03:00",
-        asistenciaInicio: "2026-10-10T09:30:00-03:00",
-        asistenciaFin: "2026-10-10T17:30:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-10T10:00:00-03:00",
+          fin: "2026-10-10T17:00:00-03:00",
+          asistenciaInicio: "2026-10-10T09:30:00-03:00",
+          asistenciaFin: "2026-10-10T17:30:00-03:00"
+        }
+      ]
     };
 
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
-    expect(crearReunionesSchema.safeParse({
-      ...base, instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T09:31:00-03:00" }]
-    }).success).toBe(false);
-    expect(crearReunionesSchema.safeParse({
-      ...base, instancias: [{ ...base.instancias[0], asistenciaFin: "2026-10-10T17:29:00-03:00" }]
-    }).success).toBe(false);
-    expect(crearReunionesSchema.safeParse({
-      ...base, instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T08:30:00-03:00", asistenciaFin: "2026-10-10T18:00:00-03:00" }]
-    }).success).toBe(true);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...base,
+        instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T09:31:00-03:00" }]
+      }).success
+    ).toBe(false);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...base,
+        instancias: [{ ...base.instancias[0], asistenciaFin: "2026-10-10T17:29:00-03:00" }]
+      }).success
+    ).toBe(false);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...base,
+        instancias: [
+          {
+            ...base.instancias[0],
+            asistenciaInicio: "2026-10-10T08:30:00-03:00",
+            asistenciaFin: "2026-10-10T18:00:00-03:00"
+          }
+        ]
+      }).success
+    ).toBe(true);
   });
 
   it("permite la cobertura mínima cruzando medianoche sin cambiar la fecha del encuentro", () => {
@@ -200,12 +244,14 @@ describe("dias derivados de reuniones", () => {
       modalidad: "HIBRIDA" as const,
       requiereAsistenciaTecnica: true,
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-10T00:15:00-03:00",
-        fin: "2026-10-10T01:30:00-03:00",
-        asistenciaInicio: "2026-10-09T23:45:00-03:00",
-        asistenciaFin: "2026-10-10T02:00:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-10T00:15:00-03:00",
+          fin: "2026-10-10T01:30:00-03:00",
+          asistenciaInicio: "2026-10-09T23:45:00-03:00",
+          asistenciaFin: "2026-10-10T02:00:00-03:00"
+        }
+      ]
     };
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
   });
@@ -217,31 +263,39 @@ describe("dias derivados de reuniones", () => {
       requiereAsistenciaTecnica: true,
       modalidad: "VIRTUAL" as const,
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-15T10:00:00-03:00",
-        fin: "2026-10-15T17:00:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-15T10:00:00-03:00",
+          fin: "2026-10-15T17:00:00-03:00"
+        }
+      ]
     };
 
     // Compatibilidad con clientes API antiguos: el servicio guarda la cobertura fija.
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
     const fixed = {
       ...base,
-      instancias: [{
-        ...base.instancias[0],
-        asistenciaInicio: "2026-10-15T09:45:00-03:00",
-        asistenciaFin: "2026-10-15T17:00:00-03:00"
-      }]
+      instancias: [
+        {
+          ...base.instancias[0],
+          asistenciaInicio: "2026-10-15T09:45:00-03:00",
+          asistenciaFin: "2026-10-15T17:00:00-03:00"
+        }
+      ]
     };
     expect(crearReunionesSchema.safeParse(fixed).success).toBe(true);
-    expect(crearReunionesSchema.safeParse({
-      ...fixed,
-      instancias: [{ ...fixed.instancias[0], asistenciaInicio: "2026-10-15T09:30:00-03:00" }]
-    }).success).toBe(false);
-    expect(crearReunionesSchema.safeParse({
-      ...fixed,
-      instancias: [{ ...fixed.instancias[0], asistenciaFin: "2026-10-15T17:30:00-03:00" }]
-    }).success).toBe(false);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...fixed,
+        instancias: [{ ...fixed.instancias[0], asistenciaInicio: "2026-10-15T09:30:00-03:00" }]
+      }).success
+    ).toBe(false);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...fixed,
+        instancias: [{ ...fixed.instancias[0], asistenciaFin: "2026-10-15T17:30:00-03:00" }]
+      }).success
+    ).toBe(false);
   });
 
   it("híbridas: permite extender la llegada y la salida por encima de 30 minutos", () => {
@@ -251,12 +305,14 @@ describe("dias derivados de reuniones", () => {
       requiereAsistenciaTecnica: true,
       modalidad: "HIBRIDA",
       timezone: "America/Montevideo",
-      instancias: [{
-        inicio: "2026-10-15T10:00:00-03:00",
-        fin: "2026-10-15T17:00:00-03:00",
-        asistenciaInicio: "2026-10-15T08:00:00-03:00",
-        asistenciaFin: "2026-10-15T20:00:00-03:00"
-      }]
+      instancias: [
+        {
+          inicio: "2026-10-15T10:00:00-03:00",
+          fin: "2026-10-15T17:00:00-03:00",
+          asistenciaInicio: "2026-10-15T08:00:00-03:00",
+          asistenciaFin: "2026-10-15T20:00:00-03:00"
+        }
+      ]
     });
     expect(result.success).toBe(true);
   });
@@ -303,11 +359,20 @@ describe("dias derivados de reuniones", () => {
 
   it("valida timezone IANA y limita el tamaño de una alta", () => {
     const base = {
-      titulo: "Clase", docenteProgramaId: "dp", modalidad: "VIRTUAL",
-      timezone: "No/Es-Una-Zona", instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
+      titulo: "Clase",
+      docenteProgramaId: "dp",
+      modalidad: "VIRTUAL",
+      timezone: "No/Es-Una-Zona",
+      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
     };
     expect(crearReunionesSchema.safeParse(base).success).toBe(false);
-    expect(crearReunionesSchema.safeParse({ ...base, timezone: "America/Montevideo", instancias: Array.from({ length: 101 }, () => base.instancias[0]) }).success).toBe(false);
+    expect(
+      crearReunionesSchema.safeParse({
+        ...base,
+        timezone: "America/Montevideo",
+        instancias: Array.from({ length: 101 }, () => base.instancias[0])
+      }).success
+    ).toBe(false);
   });
 
   it("normaliza cohosts manuales sin exigir sala elegida a mano", () => {
@@ -325,10 +390,7 @@ describe("dias derivados de reuniones", () => {
       ]
     });
 
-    expect(result.cohostEmailsManual).toEqual([
-      "docente@flacso.edu.uy",
-      "apoyo@flacso.edu.uy"
-    ]);
+    expect(result.cohostEmailsManual).toEqual(["docente@flacso.edu.uy", "apoyo@flacso.edu.uy"]);
   });
 
   it("solo admite Zoom para reuniones nuevas", () => {
@@ -337,7 +399,7 @@ describe("dias derivados de reuniones", () => {
       docenteProgramaId: "dp",
       modalidad: "VIRTUAL",
       timezone: "America/Montevideo",
-      instancias: [{ inicio: "2027-08-03T13:00:00Z", fin: "2027-08-03T14:00:00Z" }],
+      instancias: [{ inicio: "2027-08-03T13:00:00Z", fin: "2027-08-03T14:00:00Z" }]
     };
     expect(crearReunionesSchema.parse(input).plataforma).toBe("ZOOM");
     expect(crearReunionesSchema.safeParse({ ...input, plataforma: "GOOGLE_MEET" }).success).toBe(false);
@@ -347,9 +409,7 @@ describe("dias derivados de reuniones", () => {
     expect(resolverAsignacionInicial("ADMINISTRACION", true, "assistant")).toBe("assistant");
     expect(resolverAsignacionInicial("ADMINISTRACION", true)).toBeNull();
     expect(resolverAsignacionInicial("DOCENTE", true)).toBeNull();
-    expect(() => resolverAsignacionInicial("DOCENTE", true, "assistant")).toThrow(
-      "Solo Administración"
-    );
+    expect(() => resolverAsignacionInicial("DOCENTE", true, "assistant")).toThrow("Solo Administración");
     expect(() => resolverAsignacionInicial("ADMINISTRACION", false, "assistant")).toThrow(
       "no requiere monitoreo"
     );

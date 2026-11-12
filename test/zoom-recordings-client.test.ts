@@ -16,7 +16,8 @@ afterEach(() => {
 });
 
 const fixture = (nombre: string) => readFileSync(`test/fixtures/zoom/${nombre}.json`, "utf8");
-const json = (texto: string, status = 200, headers?: Record<string, string>) => new Response(texto, { status, headers });
+const json = (texto: string, status = 200, headers?: Record<string, string>) =>
+  new Response(texto, { status, headers });
 const ventana = { cuentaZoomId: "cuenta-1", desde: "2026-11-03", hasta: "2026-11-30" } as const;
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
@@ -32,7 +33,8 @@ async function errorDe(promesa: Promise<unknown>): Promise<ZoomApiError> {
 
 describe("listado de grabaciones por anfitrión", () => {
   it("recorre dos páginas, expande la ventana ±1 día UTC y filtra por fecha de Montevideo", async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(json(fixture("recordings-pagina-1")))
       .mockResolvedValueOnce(json(fixture("recordings-pagina-2")));
     vi.stubGlobal("fetch", fetchMock);
@@ -61,7 +63,9 @@ describe("listado de grabaciones por anfitrión", () => {
     expect(url1.searchParams.get("to")).toBe("2026-12-01");
     expect(url1.searchParams.get("trash")).toBeNull();
     expect(url1.searchParams.get("next_page_token")).toBeNull();
-    expect(new URL(String(fetchMock.mock.calls[1][0])).searchParams.get("next_page_token")).toBe("TOKEN_PAGINA_2");
+    expect(new URL(String(fetchMock.mock.calls[1][0])).searchParams.get("next_page_token")).toBe(
+      "TOKEN_PAGINA_2"
+    );
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer tok");
   });
 
@@ -89,64 +93,114 @@ describe("listado de grabaciones por anfitrión", () => {
   });
 
   it("falla con un cursor repetido en lugar de entrar en bucle", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ meetings: [], next_page_token: "MISMO" }))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(json(JSON.stringify({ meetings: [], next_page_token: "MISMO" })))
+    );
     const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, "MISMO"));
     expect(error.code).toBe("PAGINACION_REPETIDA");
   });
 
   it("no da por completo un listado con respuesta incompleta", async () => {
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(json(JSON.stringify({ next_page_token: "" })))
-      .mockResolvedValueOnce(json(JSON.stringify({ meetings: [{ id: 1, start_time: "2026-11-05T14:00:00Z" }] }))));
-    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe("RESPUESTA_INCOMPLETA");
-    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe("RESPUESTA_INCOMPLETA");
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(JSON.stringify({ next_page_token: "" })))
+        .mockResolvedValueOnce(
+          json(JSON.stringify({ meetings: [{ id: 1, start_time: "2026-11-05T14:00:00Z" }] }))
+        )
+    );
+    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe(
+      "RESPUESTA_INCOMPLETA"
+    );
+    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe(
+      "RESPUESTA_INCOMPLETA"
+    );
   });
 
   it("rechaza ventanas de más de 28 días sin consultar Zoom", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", { ...ventana, desde: "2026-11-01", hasta: "2026-11-29" }, null));
+    const error = await errorDe(
+      listarGrabacionesAnfitrionZoomHttp(
+        "tok",
+        "h",
+        { ...ventana, desde: "2026-11-01", hasta: "2026-11-29" },
+        null
+      )
+    );
     expect(error.code).toBe("VENTANA_INVALIDA");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("propaga el rechazo de Zoom como error, no como página vacía, sin copiar su cuerpo", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: 300, message: "The next page token is invalid or expired." }), 400)));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          json(JSON.stringify({ code: 300, message: "The next page token is invalid or expired." }), 400)
+        )
+    );
     const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, "viejo"));
     expect(error.code).toBe("SOLICITUD_RECHAZADA");
     expect(error.message).not.toContain("next page token");
   });
 
   it("conserva solo el código numérico de Zoom para diagnosticar, nunca el mensaje ni cuerpos no numéricos", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: 300, message: "Invalid parameter: to https://x?token=SECRETO" }), 400)));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          json(JSON.stringify({ code: 300, message: "Invalid parameter: to https://x?token=SECRETO" }), 400)
+        )
+    );
     const error = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null));
     expect(error.codigoZoom).toBe(300);
     expect(error.message).not.toMatch(/SECRETO|Invalid parameter|https?:/);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json("<html>no es json</html>", 400)));
-    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom).toBeNull();
+    expect(
+      (await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom
+    ).toBeNull();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: "con texto" }), 400)));
-    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom).toBeNull();
+    expect(
+      (await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).codigoZoom
+    ).toBeNull();
   });
 
   it("403 se informa como capacidad pendiente", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json("{}", 403)));
-    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe("CAPACIDAD_PENDIENTE");
+    expect((await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null))).code).toBe(
+      "CAPACIDAD_PENDIENTE"
+    );
   });
 });
 
 describe("inventario de una ocurrencia", () => {
   const referencia = {
-    cuentaZoomId: "cuenta-1", uuid: "AbCdEf1234567890+/==", meetingId: "81234567890",
-    anfitrionZoomId: "HOST_SANEADO_1", inicioRealAt: new Date("2026-11-05T14:02:11Z"), titulo: "x"
+    cuentaZoomId: "cuenta-1",
+    uuid: "AbCdEf1234567890+/==",
+    meetingId: "81234567890",
+    anfitrionZoomId: "HOST_SANEADO_1",
+    inicioRealAt: new Date("2026-11-05T14:02:11Z"),
+    titulo: "x"
   };
 
   it("codifica dos veces un UUID con / y una sola vez uno común", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json(fixture("recordings-ocurrencia").replace("AbCdEf1234567890+/==", "/ab//cd==")));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(json(fixture("recordings-ocurrencia").replace("AbCdEf1234567890+/==", "/ab//cd==")));
     vi.stubGlobal("fetch", fetchMock);
     await obtenerInventarioOcurrenciaZoomHttp("tok", "/ab//cd==");
-    expect(String(fetchMock.mock.calls[0][0])).toContain("/meetings/%252Fab%252F%252Fcd%253D%253D/recordings");
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/meetings/%252Fab%252F%252Fcd%253D%253D/recordings"
+    );
 
-    fetchMock.mockResolvedValue(json(fixture("recordings-ocurrencia").replace("AbCdEf1234567890+/==", "abc+def==")));
+    fetchMock.mockResolvedValue(
+      json(fixture("recordings-ocurrencia").replace("AbCdEf1234567890+/==", "abc+def=="))
+    );
     await obtenerInventarioOcurrenciaZoomHttp("tok", "abc+def==");
     expect(String(fetchMock.mock.calls[1][0])).toContain("/meetings/abc%2Bdef%3D%3D/recordings");
   });
@@ -168,9 +222,13 @@ describe("inventario de una ocurrencia", () => {
   });
 
   it("distingue 404 (sin inventario) de un inventario vacío", async () => {
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(new Response(null, { status: 404 }))
-      .mockResolvedValueOnce(json(JSON.stringify({ uuid: "u", id: 1, recording_files: [] }))));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 404 }))
+        .mockResolvedValueOnce(json(JSON.stringify({ uuid: "u", id: 1, recording_files: [] })))
+    );
     expect(await obtenerInventarioOcurrenciaZoomHttp("tok", "u")).toBeNull();
     const vacio = await obtenerInventarioOcurrenciaZoomHttp("tok", "u");
     expect(vacio).not.toBeNull();
@@ -178,8 +236,13 @@ describe("inventario de una ocurrencia", () => {
   });
 
   it("rechaza una respuesta cuya identidad no coincide con la ocurrencia pedida", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ uuid: "otra", id: 81234567890, recording_files: [] }))));
-    expect((await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "pedida"))).code).toBe("IDENTIDAD_INCONSISTENTE");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(json(JSON.stringify({ uuid: "otra", id: 81234567890, recording_files: [] })))
+    );
+    expect((await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "pedida"))).code).toBe(
+      "IDENTIDAD_INCONSISTENTE"
+    );
   });
 
   it("403 es capacidad pendiente y no un inventario vacío", async () => {
@@ -194,15 +257,25 @@ describe("inventario de una ocurrencia", () => {
     const tokens = ["token-viejo", "token-nuevo"];
     let emitidos = 0;
     const llamadasApi: string[] = [];
-    vi.stubGlobal("fetch", vi.fn(async (url: string | URL, init?: RequestInit) => {
-      if (String(url).startsWith("https://zoom.us/oauth/token")) {
-        return new Response(JSON.stringify({ access_token: tokens[emitidos++], expires_in: 3600 }), { status: 200 });
-      }
-      const auth = String((init?.headers as Record<string, string>).Authorization);
-      llamadasApi.push(auth);
-      return auth === "Bearer token-viejo" ? new Response("{}", { status: 401 }) : json(fixture("recordings-ocurrencia"));
-    }));
-    const inventario = await obtenerInventarioOcurrenciaZoomHttp(crearProveedorTokenZoom(creds), "AbCdEf1234567890+/==");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        if (String(url).startsWith("https://zoom.us/oauth/token")) {
+          return new Response(JSON.stringify({ access_token: tokens[emitidos++], expires_in: 3600 }), {
+            status: 200
+          });
+        }
+        const auth = String((init?.headers as Record<string, string>).Authorization);
+        llamadasApi.push(auth);
+        return auth === "Bearer token-viejo"
+          ? new Response("{}", { status: 401 })
+          : json(fixture("recordings-ocurrencia"));
+      })
+    );
+    const inventario = await obtenerInventarioOcurrenciaZoomHttp(
+      crearProveedorTokenZoom(creds),
+      "AbCdEf1234567890+/=="
+    );
     expect(inventario).not.toBeNull();
     expect(llamadasApi).toEqual(["Bearer token-viejo", "Bearer token-nuevo"]);
     expect(emitidos).toBe(2);
@@ -212,13 +285,16 @@ describe("inventario de una ocurrencia", () => {
     const creds = { accountId: "acc-rec-401b", clientId: "cli-rec-401b", clientSecret: "s" };
     let n = 0;
     let llamadasApi = 0;
-    vi.stubGlobal("fetch", vi.fn(async (url: string | URL) => {
-      if (String(url).startsWith("https://zoom.us/oauth/token")) {
-        return new Response(JSON.stringify({ access_token: `t${n++}`, expires_in: 3600 }), { status: 200 });
-      }
-      llamadasApi += 1;
-      return new Response("{}", { status: 401 });
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) => {
+        if (String(url).startsWith("https://zoom.us/oauth/token")) {
+          return new Response(JSON.stringify({ access_token: `t${n++}`, expires_in: 3600 }), { status: 200 });
+        }
+        llamadasApi += 1;
+        return new Response("{}", { status: 401 });
+      })
+    );
     const error = await errorDe(obtenerInventarioOcurrenciaZoomHttp(crearProveedorTokenZoom(creds), "u"));
     expect(error.code).toBe("NO_AUTORIZADO");
     expect(llamadasApi).toBe(2);
@@ -233,7 +309,8 @@ describe("inventario de una ocurrencia", () => {
 
   it("429 respeta Retry-After y reintenta una sola vez", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(new Response("{}", { status: 429, headers: { "Retry-After": "3" } }))
       .mockResolvedValueOnce(json(JSON.stringify({ uuid: "u", id: 1, recording_files: [] })));
     vi.stubGlobal("fetch", fetchMock);
@@ -247,7 +324,9 @@ describe("inventario de una ocurrencia", () => {
 
   it("un segundo 429 se informa sin más reintentos", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn().mockImplementation(async () => new Response("{}", { status: 429, headers: { "Retry-After": "1" } }));
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response("{}", { status: 429, headers: { "Retry-After": "1" } }));
     vi.stubGlobal("fetch", fetchMock);
     const promesa = errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "u"));
     await vi.advanceTimersByTimeAsync(5000);
@@ -257,7 +336,9 @@ describe("inventario de una ocurrencia", () => {
   });
 
   it("un Retry-After excesivo no bloquea al worker", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 429, headers: { "Retry-After": "3600" } }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("{}", { status: 429, headers: { "Retry-After": "3600" } }));
     vi.stubGlobal("fetch", fetchMock);
     const error = await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "u"));
     expect(error.code).toBe("LIMITE_TASA");
@@ -275,7 +356,10 @@ describe("inventario de una ocurrencia", () => {
 
 describe("errores de red", () => {
   it("no filtran la URL firmada contenida en el error de fetch", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed: https://ssrweb.zoom.us/x?Signature=SECRETO")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("fetch failed: https://ssrweb.zoom.us/x?Signature=SECRETO"))
+    );
     const inventario = await errorDe(obtenerInventarioOcurrenciaZoomHttp("tok", "u"));
     const listado = await errorDe(listarGrabacionesAnfitrionZoomHttp("tok", "h", ventana, null));
     for (const e of [inventario, listado]) {
@@ -287,16 +371,31 @@ describe("errores de red", () => {
 
 describe("resumen de AI Companion", () => {
   it("scope faltante es capacidad pendiente, no ausencia", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(JSON.stringify({ code: 4711, message: "Invalid access token, does not contain scopes" }), 403)));
-    expect(await obtenerResumenReunionZoomHttp("tok", "u")).toEqual({ estado: "CAPACIDAD_PENDIENTE", recurso: "meeting_summary" });
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          json(JSON.stringify({ code: 4711, message: "Invalid access token, does not contain scopes" }), 403)
+        )
+    );
+    expect(await obtenerResumenReunionZoomHttp("tok", "u")).toEqual({
+      estado: "CAPACIDAD_PENDIENTE",
+      recurso: "meeting_summary"
+    });
   });
 
   it("devuelve el resumen disponible y 404 como no disponible", async () => {
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(json(JSON.stringify({ meeting_uuid: "u", summary_overview: "Resumen" })))
-      .mockResolvedValueOnce(new Response(null, { status: 404 })));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(JSON.stringify({ meeting_uuid: "u", summary_overview: "Resumen" })))
+        .mockResolvedValueOnce(new Response(null, { status: 404 }))
+    );
     expect(await obtenerResumenReunionZoomHttp("tok", "u")).toEqual({
-      estado: "DISPONIBLE", resumen: { meeting_uuid: "u", summary_overview: "Resumen" }
+      estado: "DISPONIBLE",
+      resumen: { meeting_uuid: "u", summary_overview: "Resumen" }
     });
     expect(await obtenerResumenReunionZoomHttp("tok", "u")).toEqual({ estado: "NO_DISPONIBLE" });
   });

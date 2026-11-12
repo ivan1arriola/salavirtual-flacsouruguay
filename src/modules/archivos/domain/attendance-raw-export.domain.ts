@@ -5,13 +5,22 @@
  */
 
 export type FuenteExportacionAsistencia = "meet" | "reports";
-export type FormatoExportacionAsistencia = "csv" | "json";
 
 export const COLUMNAS_BRUTAS_ASISTENCIA = [
-  "Fuente", "Participante", "Correo", "Identificador", "Tipo",
-  "Inicio (UTC)", "Fin (UTC)", "Duración (seg)", "Conferencia",
-  "Endpoint", "Código Meet original", "Tipo identificador",
-  "Timestamp auditoría", "Parámetros originales"
+  "Fuente",
+  "Participante",
+  "Correo",
+  "Identificador",
+  "Tipo",
+  "Inicio (UTC)",
+  "Fin (UTC)",
+  "Duración (seg)",
+  "Conferencia",
+  "Endpoint",
+  "Código Meet original",
+  "Tipo identificador",
+  "Timestamp auditoría",
+  "Parámetros originales"
 ] as const;
 
 export type ExportacionBrutaAsistencia = Readonly<{
@@ -25,10 +34,10 @@ export function seleccionarRegistrosBrutos(
   fuente: FuenteExportacionAsistencia
 ): ExportacionBrutaAsistencia {
   const seleccionados = datosBrutos.slice(1).filter((fila) => {
-    const tipo = String(fila[0] ?? "").trim().toUpperCase();
-    return fuente === "meet"
-      ? tipo === "MEET"
-      : tipo === "REPORTS" || tipo === "REPORTS_IDENTIDAD";
+    const tipo = String(fila[0] ?? "")
+      .trim()
+      .toUpperCase();
+    return fuente === "meet" ? tipo === "MEET" : tipo === "REPORTS" || tipo === "REPORTS_IDENTIDAD";
   });
   return {
     fuente,
@@ -37,7 +46,8 @@ export function seleccionarRegistrosBrutos(
       COLUMNAS_BRUTAS_ASISTENCIA.map((_, index) => {
         const valor = fila[index];
         return typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean"
-          ? valor : null;
+          ? valor
+          : null;
       })
     )
   };
@@ -46,9 +56,7 @@ export function seleccionarRegistrosBrutos(
 /** Escape estándar RFC 4180; mitiga fórmulas al abrir archivos CSV en Excel. */
 function campoCsv(valor: string | number | boolean | null): string {
   const original = valor == null ? "" : String(valor);
-  const texto = /^[\s\uFEFF]*[=+\-@]/.test(original) || /^[\t\r]/.test(original)
-    ? `'${original}`
-    : original;
+  const texto = /^[\s\uFEFF]*[=+\-@]/.test(original) || /^[\t\r]/.test(original) ? `'${original}` : original;
   return `"${texto.replaceAll('"', '""')}"`;
 }
 
@@ -71,12 +79,16 @@ export function serializarExportacionJson(
     exportadoAt: string;
   }>
 ): string {
-  return JSON.stringify({
-    ...metadata,
-    fuente: datos.fuente,
-    origenDatos: "ultima_planilla_sincronizada",
-    nota: "Incluye todos los registros de esta fuente preservados en Datos brutos, no una extracción completa de todos los endpoints/eventos de Google.",
-    columnas: datos.columnas,
-    registros: datos.registros
-  }, null, 2);
+  return JSON.stringify(
+    {
+      ...metadata,
+      fuente: datos.fuente,
+      origenDatos: "ultima_planilla_sincronizada",
+      nota: "Incluye todos los registros de esta fuente preservados en Datos brutos, no una extracción completa de todos los endpoints/eventos de Google.",
+      columnas: datos.columnas,
+      registros: datos.registros
+    },
+    null,
+    2
+  );
 }

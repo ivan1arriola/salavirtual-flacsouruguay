@@ -3,5 +3,5 @@ export {
   invalidarVerificacionCohosts,
   detalleCohostsVerificados,
   cohostsConfirmados,
-  type DetalleCohostsVerificados,
+  type DetalleCohostsVerificados
 } from "@/src/modules/conferencias/api";

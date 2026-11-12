@@ -9,9 +9,13 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 export function canonicalMeetCode(code: string | null | undefined): string {
-  if (!code || typeof code !== "string") return "";
+  if (!code || typeof code !== "string") {
+    return "";
+  }
   const normalized = normalizeMeetLink(code)?.code;
-  if (normalized) return normalized;
+  if (normalized) {
+    return normalized;
+  }
   const alphanumeric = code.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
   if (alphanumeric.length === 10) {
     return `${alphanumeric.slice(0, 3)}-${alphanumeric.slice(3, 7)}-${alphanumeric.slice(7, 10)}`;
@@ -35,12 +39,10 @@ export function registrarVerificacionCohosts(
       cohostVerification: {
         codigoReunion: canonicalMeetCode(codigoReunion) || codigoReunion.trim().toLowerCase(),
         organizer: organizer.trim().toLowerCase(),
-        emails: normalizeCohostEmails(emails).filter(
-          (email) => email !== organizer.trim().toLowerCase()
-        ),
-        verifiedAt,
-      },
-    },
+        emails: normalizeCohostEmails(emails).filter((email) => email !== organizer.trim().toLowerCase()),
+        verifiedAt
+      }
+    }
   };
 }
 
@@ -48,7 +50,7 @@ export function invalidarVerificacionCohosts(payload: unknown): Record<string, u
   const previous = record(payload);
   return {
     ...previous,
-    salaVirtual: { ...record(previous.salaVirtual), cohostVerification: null },
+    salaVirtual: { ...record(previous.salaVirtual), cohostVerification: null }
   };
 }
 
@@ -58,15 +60,15 @@ export function detalleCohostsVerificados(
   organizer: string | null | undefined,
   emails: readonly string[]
 ): DetalleCohostsVerificados {
-  const desired = normalizeCohostEmails(emails).filter(
-    (email) => email !== organizer?.trim().toLowerCase()
-  );
+  const desired = normalizeCohostEmails(emails).filter((email) => email !== organizer?.trim().toLowerCase());
   if (desired.length === 0) {
     return { confirmados: true, emailsConfirmados: [], emailsPendientes: [] };
   }
   const verification = record(record(record(payload).salaVirtual).cohostVerification);
   const codeCandidate = canonicalMeetCode(codigoReunion);
-  const storedCode = canonicalMeetCode(typeof verification.codigoReunion === "string" ? verification.codigoReunion : "");
+  const storedCode = canonicalMeetCode(
+    typeof verification.codigoReunion === "string" ? verification.codigoReunion : ""
+  );
 
   if (
     !codigoReunion ||
@@ -87,7 +89,7 @@ export function detalleCohostsVerificados(
   return {
     confirmados: emailsPendientes.length === 0 && desired.length > 0,
     emailsConfirmados,
-    emailsPendientes,
+    emailsPendientes
   };
 }
 
@@ -99,5 +101,3 @@ export function cohostsConfirmados(
 ): boolean {
   return detalleCohostsVerificados(payload, codigoReunion, organizer, emails).confirmados;
 }
-
-

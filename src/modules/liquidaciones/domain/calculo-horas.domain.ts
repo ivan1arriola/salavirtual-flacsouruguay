@@ -8,8 +8,7 @@ const utc3PartsFormatter = new Intl.DateTimeFormat("en-CA", {
 
 function yearAndMonthUtc3(fecha: Date): Readonly<{ year: number; month: number }> {
   const parts = utc3PartsFormatter.formatToParts(fecha);
-  const value = (type: "year" | "month") =>
-    Number(parts.find((part) => part.type === type)?.value);
+  const value = (type: "year" | "month") => Number(parts.find((part) => part.type === type)?.value);
   return { year: value("year"), month: value("month") };
 }
 
@@ -32,8 +31,12 @@ export function calcularMinutos(
   reportado: number | null,
   real: Readonly<{ inicio: Date | null; fin: Date | null }>
 ): number {
-  if (confirmado !== null) return Math.max(0, confirmado);
-  if (reportado !== null) return Math.max(0, reportado);
+  if (confirmado !== null) {
+    return Math.max(0, confirmado);
+  }
+  if (reportado !== null) {
+    return Math.max(0, reportado);
+  }
   const inicio = real.inicio ?? programado.inicio;
   const fin = real.fin ?? programado.fin;
   return Math.max(0, Math.round((fin.getTime() - inicio.getTime()) / 60_000));
@@ -44,7 +47,9 @@ export function calcularMonto(
   tarifaHora: number | null,
   minutos: number
 ): number | null {
-  if (montoConfirmado !== null) return montoConfirmado;
+  if (montoConfirmado !== null) {
+    return montoConfirmado;
+  }
   return tarifaHora === null ? null : (tarifaHora * minutos) / 60;
 }
 
@@ -82,7 +87,9 @@ export function formatearDuracion(minutos: number): string {
   const total = Math.max(0, Math.round(minutos));
   const horas = Math.floor(total / 60);
   const resto = total % 60;
-  if (resto === 0) return `${horas} h`;
+  if (resto === 0) {
+    return `${horas} h`;
+  }
   return `${horas} h ${resto} min`;
 }
 

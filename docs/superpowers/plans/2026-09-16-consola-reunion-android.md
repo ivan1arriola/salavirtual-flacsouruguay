@@ -24,10 +24,12 @@
 ### Task 1: Modelar estado operativo en backend
 
 **Files:**
+
 - Create: `src/modules/asistencia/estado-reunion.ts`
 - Create: `src/modules/asistencia/estado-reunion.test.ts`
 
 **Interfaces:**
+
 - Produces: `type EstadoReunionOperativa = "PROGRAMADA" | "ESPERANDO_INICIO" | "EN_CURSO" | "FINALIZADA" | "NO_INICIADA"`
 - Produces: `derivarEstadoReunion(input): EstadoReunionOperativa`
 
@@ -42,23 +44,63 @@ const fin = new Date("2026-09-16T20:00:00-03:00");
 
 describe("derivarEstadoReunion", () => {
   it("devuelve PROGRAMADA antes del horario", () => {
-    expect(derivarEstadoReunion({ ahora: new Date("2026-09-16T18:00:00-03:00"), inicio, fin, conferenciaInicio: null, conferenciaFin: null })).toBe("PROGRAMADA");
+    expect(
+      derivarEstadoReunion({
+        ahora: new Date("2026-09-16T18:00:00-03:00"),
+        inicio,
+        fin,
+        conferenciaInicio: null,
+        conferenciaFin: null
+      })
+    ).toBe("PROGRAMADA");
   });
 
   it("devuelve ESPERANDO_INICIO al llegar la hora sin conferencia", () => {
-    expect(derivarEstadoReunion({ ahora: new Date("2026-09-16T18:40:00-03:00"), inicio, fin, conferenciaInicio: null, conferenciaFin: null })).toBe("ESPERANDO_INICIO");
+    expect(
+      derivarEstadoReunion({
+        ahora: new Date("2026-09-16T18:40:00-03:00"),
+        inicio,
+        fin,
+        conferenciaInicio: null,
+        conferenciaFin: null
+      })
+    ).toBe("ESPERANDO_INICIO");
   });
 
   it("devuelve EN_CURSO con conferencia iniciada y no finalizada", () => {
-    expect(derivarEstadoReunion({ ahora: new Date("2026-09-16T18:45:00-03:00"), inicio, fin, conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"), conferenciaFin: null })).toBe("EN_CURSO");
+    expect(
+      derivarEstadoReunion({
+        ahora: new Date("2026-09-16T18:45:00-03:00"),
+        inicio,
+        fin,
+        conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"),
+        conferenciaFin: null
+      })
+    ).toBe("EN_CURSO");
   });
 
   it("devuelve FINALIZADA si la conferencia terminó", () => {
-    expect(derivarEstadoReunion({ ahora: new Date("2026-09-16T20:10:00-03:00"), inicio, fin, conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"), conferenciaFin: new Date("2026-09-16T20:03:00-03:00") })).toBe("FINALIZADA");
+    expect(
+      derivarEstadoReunion({
+        ahora: new Date("2026-09-16T20:10:00-03:00"),
+        inicio,
+        fin,
+        conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"),
+        conferenciaFin: new Date("2026-09-16T20:03:00-03:00")
+      })
+    ).toBe("FINALIZADA");
   });
 
   it("devuelve NO_INICIADA al terminar la franja sin conferencia", () => {
-    expect(derivarEstadoReunion({ ahora: new Date("2026-09-16T20:01:00-03:00"), inicio, fin, conferenciaInicio: null, conferenciaFin: null })).toBe("NO_INICIADA");
+    expect(
+      derivarEstadoReunion({
+        ahora: new Date("2026-09-16T20:01:00-03:00"),
+        inicio,
+        fin,
+        conferenciaInicio: null,
+        conferenciaFin: null
+      })
+    ).toBe("NO_INICIADA");
   });
 });
 ```
@@ -71,7 +113,8 @@ Expected: FAIL because module/function does not exist.
 - [ ] **Step 3: Implement minimal derivation**
 
 ```ts
-export type EstadoReunionOperativa = "PROGRAMADA" | "ESPERANDO_INICIO" | "EN_CURSO" | "FINALIZADA" | "NO_INICIADA";
+export type EstadoReunionOperativa =
+  "PROGRAMADA" | "ESPERANDO_INICIO" | "EN_CURSO" | "FINALIZADA" | "NO_INICIADA";
 
 export function derivarEstadoReunion(input: {
   ahora: Date;
@@ -103,11 +146,13 @@ git commit -m "feat: modelar estado operativo de reuniones"
 ### Task 2: Adaptador Google Meet para conferencia, participantes y grabación
 
 **Files:**
+
 - Create: `src/modules/google-meet/conference-status.ts`
 - Create: `src/modules/google-meet/conference-status.test.ts`
 - Modify: Google Meet client/helper existente identificado por `git grep "meet.googleapis.com\|conferenceRecords" src app`
 
 **Interfaces:**
+
 - Produces: `getMeetConferenceSnapshot(meetingCode: string): Promise<MeetConferenceSnapshot | null>`
 - Produces: `MeetConferenceSnapshot` con `startedAt`, `endedAt`, `participants`, `recording`.
 
@@ -177,10 +222,12 @@ git commit -m "feat: normalizar conferencia y artefactos de Meet"
 ### Task 3: Servicio de estado operativo de una reunión asignada
 
 **Files:**
+
 - Create: `src/modules/asistencia/reunion-operativa.service.ts`
 - Create: `src/modules/asistencia/reunion-operativa.service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `derivarEstadoReunion`, `getMeetConferenceSnapshot`
 - Produces: `getReunionOperativa(reunionId: string, actorId: string): Promise<ReunionOperativaDto>`
 
@@ -235,10 +282,12 @@ git commit -m "feat: agregar servicio de reunión operativa"
 ### Task 4: Endpoint móvil de consola
 
 **Files:**
+
 - Create: `app/api/v1/mobile/reuniones/[id]/operativa/route.ts`
 - Create or modify: route test following existing mobile API test conventions.
 
 **Interfaces:**
+
 - Consumes: `getReunionOperativa`
 - Produces: `GET /api/v1/mobile/reuniones/:id/operativa`
 
@@ -270,6 +319,7 @@ git commit -m "feat: exponer consola operativa por API móvil"
 ### Task 5: Persistir incidencias operativas
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: corresponding Prisma migration
 - Create: `src/modules/asistencia/incidencias.service.ts`
@@ -277,6 +327,7 @@ git commit -m "feat: exponer consola operativa por API móvil"
 - Create: `app/api/v1/mobile/reuniones/[id]/incidencias/route.ts`
 
 **Interfaces:**
+
 - Produces: `POST /api/v1/mobile/reuniones/:id/incidencias`
 - Input: `{ categoria: "DOCENTE_NO_INGRESA" | "AUDIO" | "GRABACION" | "SALA_INCORRECTA" | "OTRA", nota?: string }`
 
@@ -313,11 +364,13 @@ git commit -m "feat: registrar incidencias de asistencia"
 ### Task 6: Exponer cierre operativo
 
 **Files:**
+
 - Modify: `src/modules/asistencia/reunion-operativa.service.ts`
 - Create: `app/api/v1/mobile/reuniones/[id]/cierre/route.ts`
 - Test: service and route tests.
 
 **Interfaces:**
+
 - Produces: `POST /api/v1/mobile/reuniones/:id/cierre`
 - Input: `{ observacion?: string }`
 
@@ -346,12 +399,14 @@ git commit -m "feat: cerrar asistencia desde la consola móvil"
 ### Task 7: Modelos y API client en AppFLACSOAndroid
 
 **Files:**
+
 - Modify: `app/src/main/java/uy/edu/flacso/meetassistant/data/Models.kt`
 - Modify: `app/src/main/java/uy/edu/flacso/meetassistant/data/Contracts.kt`
 - Modify: `app/src/main/java/uy/edu/flacso/meetassistant/data/ApiClient.kt`
 - Add/update unit tests in the app module.
 
 **Interfaces:**
+
 - Consumes: backend operational DTO/endpoints.
 - Produces Kotlin enums/data classes matching exact backend values.
 
@@ -382,11 +437,13 @@ git commit -m "feat: consumir consola operativa desde Android"
 ### Task 8: Repository/ViewModel con polling y último estado válido
 
 **Files:**
+
 - Create: `app/src/main/java/uy/edu/flacso/meetassistant/meeting/OperationalMeetingRepository.kt`
 - Create: `app/src/main/java/uy/edu/flacso/meetassistant/meeting/OperationalMeetingViewModel.kt`
 - Create tests under matching test package.
 
 **Interfaces:**
+
 - Produces observable state containing `meeting`, `isRefreshing`, `isStale`, `errorMessage`.
 
 - [ ] **Step 1: Write tests for polling policy**
@@ -416,16 +473,19 @@ git commit -m "feat: actualizar estado operativo de reuniones"
 ### Task 9: Consola Compose
 
 **Files:**
+
 - Create: `app/src/main/java/uy/edu/flacso/meetassistant/ui/OperationalMeetingScreen.kt`
 - Modify: `app/src/main/java/uy/edu/flacso/meetassistant/ui/FlacsoMeetApp.kt`
 - Add Compose/UI tests if the project already has Compose test infrastructure.
 
 **Interfaces:**
+
 - Consumes: `OperationalMeetingViewModel`.
 
 - [ ] **Step 1: Implement state-specific header rendering with preview/test cases**
 
 Required copy:
+
 - `PROGRAMADA`: show schedule and normal details.
 - `ESPERANDO_INICIO`: label `Esperando inicio` and keep meeting visually prominent.
 - `EN_CURSO`: label `En curso`, timer from real start, active participant count and recording state.
@@ -463,6 +523,7 @@ git commit -m "feat: agregar consola de reunión en Android"
 ### Task 10: Verification integrada y documentación
 
 **Files:**
+
 - Modify: backend and Android README/docs only where needed for new endpoints/behavior.
 
 - [ ] **Step 1: Run backend verification**

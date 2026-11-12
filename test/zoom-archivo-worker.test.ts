@@ -12,16 +12,45 @@ const LIMITES = { topeBytes: 80n * GB, reservaRecienteBytes: 20n * GB, ventanaMs
 
 function reclamado(extra: Partial<ArchivoReclamadoZoom> = {}): ArchivoReclamadoZoom {
   return {
-    lease: LEASE, ocurrenciaId: "o1",
-    ocurrencia: { cuentaZoomId: "c", uuid: "u", meetingId: "1", anfitrionZoomId: "h", inicioRealAt: new Date("2026-11-09T10:00:00Z"), titulo: "Clase" },
-    eventoProveedorId: "e1", driveFolderId: "carpeta",
-    recurso: { claveOrigen: "k".repeat(64), archivoZoomId: "z1", coleccion: "recording_files", tipoOriginal: "MP4", variante: null, extension: "mp4", inicioAt: null, finAt: null, tamanoBytes: BigInt(2 * KIB), estadoOrigen: "completed", descargable: true },
-    nombreDestino: "a.mp4", driveFileId: null, uploadSessionCifrada: null, bytesConfirmados: 0n, intentos: 0,
+    lease: LEASE,
+    ocurrenciaId: "o1",
+    ocurrencia: {
+      cuentaZoomId: "c",
+      uuid: "u",
+      meetingId: "1",
+      anfitrionZoomId: "h",
+      inicioRealAt: new Date("2026-11-09T10:00:00Z"),
+      titulo: "Clase"
+    },
+    eventoProveedorId: "e1",
+    driveFolderId: "carpeta",
+    recurso: {
+      claveOrigen: "k".repeat(64),
+      archivoZoomId: "z1",
+      coleccion: "recording_files",
+      tipoOriginal: "MP4",
+      variante: null,
+      extension: "mp4",
+      inicioAt: null,
+      finAt: null,
+      tamanoBytes: BigInt(2 * KIB),
+      estadoOrigen: "completed",
+      descargable: true
+    },
+    nombreDestino: "a.mp4",
+    driveFileId: null,
+    uploadSessionCifrada: null,
+    bytesConfirmados: 0n,
+    intentos: 0,
     ...extra
   };
 }
 
-async function* bytes(total: number) { if (total > 0) yield new Uint8Array(total); }
+async function* bytes(total: number) {
+  if (total > 0) {
+    yield new Uint8Array(total);
+  }
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function repoFalso(archivo: ArchivoReclamadoZoom | null, sobre: Record<string, unknown> = {}) {
@@ -30,7 +59,11 @@ function repoFalso(archivo: ArchivoReclamadoZoom | null, sobre: Record<string, u
     guardarProgreso: vi.fn(async (..._a: any[]) => true),
     confirmarConservado: vi.fn(async (..._a: any[]) => true),
     registrarFallo: vi.fn(async (..._a: any[]) => true),
-    reservarTransferencia: vi.fn(async (_l: any, s: any, ..._r: any[]) => ({ tipo: "RESERVADA", reservaId: "r1", bytesReservados: s.bytes })),
+    reservarTransferencia: vi.fn(async (_l: any, s: any, ..._r: any[]) => ({
+      tipo: "RESERVADA",
+      reservaId: "r1",
+      bytesReservados: s.bytes
+    })),
     liberarReserva: vi.fn(async (..._a: any[]) => true),
     guardarCarpetaOcurrencia: vi.fn(async (..._a: any[]) => true),
     ...sobre
@@ -43,34 +76,75 @@ function storageFalso(sobre: Record<string, unknown> = {}) {
     asegurarCarpeta: vi.fn(),
     iniciarSubida: vi.fn(async (..._a: any[]) => "sesion-cifrada"),
     consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: 0n })),
-    subirBloque: vi.fn(async (_s: string, offset: bigint, b: Uint8Array, _t: unknown, o?: { ultimo?: boolean }) =>
-      o?.ultimo
-        ? { estado: "COMPLETA", destino: { id: "drive-id", nombre: "a.mp4", tamanoBytes: offset + BigInt(b.byteLength), mimeType: "video/mp4", webViewUrl: null } }
-        : { estado: "PARCIAL", bytesConfirmados: offset + BigInt(b.byteLength) }),
+    subirBloque: vi.fn(
+      async (_s: string, offset: bigint, b: Uint8Array, _t: unknown, o?: { ultimo?: boolean }) =>
+        o?.ultimo
+          ? {
+              estado: "COMPLETA",
+              destino: {
+                id: "drive-id",
+                nombre: "a.mp4",
+                tamanoBytes: offset + BigInt(b.byteLength),
+                mimeType: "video/mp4",
+                webViewUrl: null
+              }
+            }
+          : { estado: "PARCIAL", bytesConfirmados: offset + BigInt(b.byteLength) }
+    ),
     buscarConservado: vi.fn(async (..._a: any[]) => ({ tipo: "NINGUNO" })),
-    verificarArchivo: vi.fn(async (id: string) => ({ id, nombre: "a.mp4", tamanoBytes: BigInt(2 * KIB), mimeType: "video/mp4", webViewUrl: null })),
+    verificarArchivo: vi.fn(async (id: string) => ({
+      id,
+      nombre: "a.mp4",
+      tamanoBytes: BigInt(2 * KIB),
+      mimeType: "video/mp4",
+      webViewUrl: null
+    })),
     ...sobre
   };
 }
 
 function origenFalso(sobre: Record<string, unknown> = {}) {
   return {
-    abrirDescarga: vi.fn(async (_o, _r, offset: bigint) => ({ tipo: "CONTENIDO", contenido: bytes(2 * KIB - Number(offset)), offsetOrigen: offset, totalBytes: BigInt(2 * KIB) })),
+    abrirDescarga: vi.fn(async (_o, _r, offset: bigint) => ({
+      tipo: "CONTENIDO",
+      contenido: bytes(2 * KIB - Number(offset)),
+      offsetOrigen: offset,
+      totalBytes: BigInt(2 * KIB)
+    })),
     ...sobre
   };
 }
 
-function ejecutar(repo: ReturnType<typeof repoFalso>, origen: unknown, storage: unknown, extra: Record<string, unknown> = {}) {
+function ejecutar(
+  repo: ReturnType<typeof repoFalso>,
+  origen: unknown,
+  storage: unknown,
+  extra: Record<string, unknown> = {}
+) {
   return transferirArchivoZoomUseCase(
-    repo as never, origen as never, storage as never, LEASE, new AbortController().signal,
-    { ahora: () => AHORA, limites: LIMITES, bloqueBytes: KIB, aleatorio: () => 0.5, heartbeatMs: 1_000_000, leaseMs: 300_000, ...extra } as never
+    repo as never,
+    origen as never,
+    storage as never,
+    LEASE,
+    new AbortController().signal,
+    {
+      ahora: () => AHORA,
+      limites: LIMITES,
+      bloqueBytes: KIB,
+      aleatorio: () => 0.5,
+      heartbeatMs: 1_000_000,
+      leaseMs: 300_000,
+      ...extra
+    } as never
   );
 }
 
 describe("proximoIntentoZoom", () => {
   it("sigue 1 min, 5 min, 15 min, 1 h y se detiene en 6 h con jitter acotado", () => {
     const m = (n: number) => proximoIntentoZoom(n, AHORA, () => 0.5).getTime() - AHORA.getTime();
-    expect([1, 2, 3, 4, 5, 6, 50].map(m)).toEqual([60_000, 300_000, 900_000, 3_600_000, 21_600_000, 21_600_000, 21_600_000]);
+    expect([1, 2, 3, 4, 5, 6, 50].map(m)).toEqual([
+      60_000, 300_000, 900_000, 3_600_000, 21_600_000, 21_600_000, 21_600_000
+    ]);
     expect(proximoIntentoZoom(1, AHORA, () => 1).getTime() - AHORA.getTime()).toBe(72_000);
     expect(proximoIntentoZoom(5, AHORA, () => 1).getTime() - AHORA.getTime()).toBe(21_600_000);
   });
@@ -97,19 +171,34 @@ describe("transferirArchivoZoomUseCase", () => {
     const repo = repoFalso(reclamado());
     const storage = storageFalso();
     const origen = origenFalso({
-      abrirDescarga: vi.fn(async () => ({ tipo: "CONTENIDO", contenido: bytes(KIB), offsetOrigen: 0n, totalBytes: BigInt(2 * KIB) }))
+      abrirDescarga: vi.fn(async () => ({
+        tipo: "CONTENIDO",
+        contenido: bytes(KIB),
+        offsetOrigen: 0n,
+        totalBytes: BigInt(2 * KIB)
+      }))
     });
     const r = await ejecutar(repo, origen, storage);
     expect(r.tipo).not.toBe("CONSERVADO");
     expect(repo.confirmarConservado).not.toHaveBeenCalled();
-    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REINTENTABLE", codigo: "ORIGEN_INCOMPLETO" });
-    expect(storage.subirBloque.mock.calls.some((c) => (c[4] as { ultimo?: boolean } | undefined)?.ultimo)).toBe(false);
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({
+      tipo: "REINTENTABLE",
+      codigo: "ORIGEN_INCOMPLETO"
+    });
+    expect(
+      storage.subirBloque.mock.calls.some((c) => (c[4] as { ultimo?: boolean } | undefined)?.ultimo)
+    ).toBe(false);
   });
 
   it("sin total en la descarga, usa el tamaño del inventario para detectar el truncado", async () => {
     const repo = repoFalso(reclamado());
     const origen = origenFalso({
-      abrirDescarga: vi.fn(async () => ({ tipo: "CONTENIDO", contenido: bytes(KIB), offsetOrigen: 0n, totalBytes: null }))
+      abrirDescarga: vi.fn(async () => ({
+        tipo: "CONTENIDO",
+        contenido: bytes(KIB),
+        offsetOrigen: 0n,
+        totalBytes: null
+      }))
     });
     const r = await ejecutar(repo, origen, storageFalso());
     expect(r.tipo).not.toBe("CONSERVADO");
@@ -118,7 +207,15 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("Drive con un tamaño distinto del total esperado no se confirma aunque coincida con lo enviado", async () => {
     const repo = repoFalso(reclamado());
-    const storage = storageFalso({ verificarArchivo: vi.fn(async (id: string) => ({ id, nombre: "a.mp4", tamanoBytes: BigInt(KIB), mimeType: null, webViewUrl: null })) });
+    const storage = storageFalso({
+      verificarArchivo: vi.fn(async (id: string) => ({
+        id,
+        nombre: "a.mp4",
+        tamanoBytes: BigInt(KIB),
+        mimeType: null,
+        webViewUrl: null
+      }))
+    });
     const r = await ejecutar(repo, origenFalso(), storage);
     expect(r.tipo).toBe("FALLO");
     expect(repo.confirmarConservado).not.toHaveBeenCalled();
@@ -126,7 +223,18 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("caída después de subir y antes de la DB: reconcilia el mismo destino sin transferir de nuevo", async () => {
     const repo = repoFalso(reclamado({ driveFileId: "drive-id" }));
-    const storage = storageFalso({ buscarConservado: vi.fn(async (..._a: any[]) => ({ tipo: "UNO", destino: { id: "drive-id", nombre: "a.mp4", tamanoBytes: BigInt(2 * KIB), mimeType: null, webViewUrl: null } })) });
+    const storage = storageFalso({
+      buscarConservado: vi.fn(async (..._a: any[]) => ({
+        tipo: "UNO",
+        destino: {
+          id: "drive-id",
+          nombre: "a.mp4",
+          tamanoBytes: BigInt(2 * KIB),
+          mimeType: null,
+          webViewUrl: null
+        }
+      }))
+    });
     const origen = origenFalso();
     const r = await ejecutar(repo, origen, storage);
     expect(r.tipo).toBe("CONSERVADO");
@@ -137,15 +245,26 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("varios recursos con la misma marca: REQUIERE_REVISION, nunca elige uno", async () => {
     const repo = repoFalso(reclamado());
-    const r = await ejecutar(repo, origenFalso(), storageFalso({ buscarConservado: vi.fn(async (..._a: any[]) => ({ tipo: "AMBIGUO", cantidad: 2 })) }));
+    const r = await ejecutar(
+      repo,
+      origenFalso(),
+      storageFalso({ buscarConservado: vi.fn(async (..._a: any[]) => ({ tipo: "AMBIGUO", cantidad: 2 })) })
+    );
     expect(r.tipo).toBe("FALLO");
-    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REVISION", codigo: "DESTINO_AMBIGUO" });
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({
+      tipo: "REVISION",
+      codigo: "DESTINO_AMBIGUO"
+    });
     expect(repo.confirmarConservado).not.toHaveBeenCalled();
   });
 
   it("reanuda desde el offset confirmado por Drive, no desde el guardado localmente", async () => {
-    const repo = repoFalso(reclamado({ driveFileId: "drive-id", uploadSessionCifrada: "s", bytesConfirmados: 0n }));
-    const storage = storageFalso({ consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) })) });
+    const repo = repoFalso(
+      reclamado({ driveFileId: "drive-id", uploadSessionCifrada: "s", bytesConfirmados: 0n })
+    );
+    const storage = storageFalso({
+      consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) }))
+    });
     const origen = origenFalso();
     await ejecutar(repo, origen, storage);
     expect(origen.abrirDescarga.mock.calls[0]![2]).toBe(BigInt(KIB));
@@ -154,7 +273,9 @@ describe("transferirArchivoZoomUseCase", () => {
   });
 
   it("sesión vencida: reinicia desde cero con una sesión nueva", async () => {
-    const repo = repoFalso(reclamado({ driveFileId: "drive-id", uploadSessionCifrada: "vieja", bytesConfirmados: BigInt(KIB) }));
+    const repo = repoFalso(
+      reclamado({ driveFileId: "drive-id", uploadSessionCifrada: "vieja", bytesConfirmados: BigInt(KIB) })
+    );
     const storage = storageFalso({ consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "VENCIDA" })) });
     const origen = origenFalso();
     const r = await ejecutar(repo, origen, storage);
@@ -165,25 +286,42 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("sin cupo: vuelve a PENDIENTE como ESPERA/TOPE_DIARIO sin consumir intentos y sin tocar Drive", async () => {
     const liberacion = new Date(AHORA.getTime() + 3600_000);
-    const repo = repoFalso(reclamado(), { reservarTransferencia: vi.fn(async (..._a: any[]) => ({ tipo: "SIN_CUPO", disponibleBytes: 0n, liberacionEstimadaAt: liberacion })) });
+    const repo = repoFalso(reclamado(), {
+      reservarTransferencia: vi.fn(async (..._a: any[]) => ({
+        tipo: "SIN_CUPO",
+        disponibleBytes: 0n,
+        liberacionEstimadaAt: liberacion
+      }))
+    });
     const storage = storageFalso();
     const r = await ejecutar(repo, origenFalso(), storage);
     expect(r.tipo).toBe("ESPERA");
-    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "ESPERA", codigo: "TOPE_DIARIO", proximoIntentoAt: liberacion });
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({
+      tipo: "ESPERA",
+      codigo: "TOPE_DIARIO",
+      proximoIntentoAt: liberacion
+    });
     expect(storage.generarId).not.toHaveBeenCalled();
   });
 
   it("tamaño desconocido reserva 50 GB; recientes y históricos piden su prioridad", async () => {
     const reciente = repoFalso(reclamado({ recurso: { ...reclamado().recurso, tamanoBytes: null } }));
     await ejecutar(reciente, origenFalso(), storageFalso());
-    expect(reciente.reservarTransferencia.mock.calls[0]![1]).toMatchObject({ bytes: 50n * GB, prioridad: "RECIENTE" });
-    const historico = repoFalso(reclamado({ ocurrencia: { ...reclamado().ocurrencia, inicioRealAt: new Date("2026-01-01T00:00:00Z") } }));
+    expect(reciente.reservarTransferencia.mock.calls[0]![1]).toMatchObject({
+      bytes: 50n * GB,
+      prioridad: "RECIENTE"
+    });
+    const historico = repoFalso(
+      reclamado({ ocurrencia: { ...reclamado().ocurrencia, inicioRealAt: new Date("2026-01-01T00:00:00Z") } })
+    );
     await ejecutar(historico, origenFalso(), storageFalso());
     expect(historico.reservarTransferencia.mock.calls[0]![1]).toMatchObject({ prioridad: "HISTORICO" });
   });
 
   it("sin carpeta de la ocurrencia la resuelve, la persiste y la usa al iniciar la subida", async () => {
-    const repo = repoFalso(reclamado({ driveFolderId: null }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const repo = repoFalso(reclamado({ driveFolderId: null }), {
+      guardarCarpetaOcurrencia: vi.fn(async () => true)
+    });
     const storage = storageFalso();
     const resolverCarpeta = vi.fn(async () => "carpeta-resuelta");
     await ejecutar(repo, origenFalso(), storage, { resolverCarpeta });
@@ -192,7 +330,9 @@ describe("transferirArchivoZoomUseCase", () => {
   });
 
   it("una carpeta ya conocida no se vuelve a resolver", async () => {
-    const repo = repoFalso(reclamado({ driveFolderId: "ya" }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const repo = repoFalso(reclamado({ driveFolderId: "ya" }), {
+      guardarCarpetaOcurrencia: vi.fn(async () => true)
+    });
     const resolverCarpeta = vi.fn(async () => "otra");
     const storage = storageFalso();
     await ejecutar(repo, origenFalso(), storage, { resolverCarpeta });
@@ -201,27 +341,43 @@ describe("transferirArchivoZoomUseCase", () => {
   });
 
   it("sin carpeta configurable queda en espera visible, sin consumir intentos ni crear nada en Drive", async () => {
-    const repo = repoFalso(reclamado({ driveFolderId: null }), { guardarCarpetaOcurrencia: vi.fn(async () => true) });
+    const repo = repoFalso(reclamado({ driveFolderId: null }), {
+      guardarCarpetaOcurrencia: vi.fn(async () => true)
+    });
     const storage = storageFalso();
     const r = await ejecutar(repo, origenFalso(), storage, { resolverCarpeta: vi.fn(async () => null) });
     expect(r.tipo).toBe("ESPERA");
-    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "ESPERA", codigo: "CARPETA_NO_CONFIGURADA" });
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({
+      tipo: "ESPERA",
+      codigo: "CARPETA_NO_CONFIGURADA"
+    });
     expect(storage.generarId).not.toHaveBeenCalled();
   });
 
   it("reanudar solo reserva lo que falta", async () => {
     const repo = repoFalso(reclamado({ driveFileId: "d", uploadSessionCifrada: "s" }));
-    const storage = storageFalso({ consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) })) });
+    const storage = storageFalso({
+      consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) }))
+    });
     await ejecutar(repo, origenFalso(), storage);
     expect(repo.reservarTransferencia.mock.calls[0]![1]).toMatchObject({ bytes: BigInt(KIB) });
   });
 
   it("Drive caído: error reintentable con backoff persistente y la reserva se ajusta a lo transferido", async () => {
     const repo = repoFalso(reclamado({ intentos: 2 }));
-    const storage = storageFalso({ iniciarSubida: vi.fn(async (..._a: any[]) => { throw new Error("ECONNRESET https://secreto?token=1"); }) });
+    const storage = storageFalso({
+      iniciarSubida: vi.fn(async (..._a: any[]) => {
+        throw new Error("ECONNRESET https://secreto?token=1");
+      })
+    });
     const r = await ejecutar(repo, origenFalso(), storage);
     expect(r.tipo).toBe("FALLO");
-    const fallo = repo.registrarFallo.mock.calls[0]![1] as { tipo: string; proximoIntentoAt: Date; limiteIntentos: number; detalle: string };
+    const fallo = repo.registrarFallo.mock.calls[0]![1] as {
+      tipo: string;
+      proximoIntentoAt: Date;
+      limiteIntentos: number;
+      detalle: string;
+    };
     expect(fallo.tipo).toBe("REINTENTABLE");
     expect(fallo.proximoIntentoAt.getTime() - AHORA.getTime()).toBe(900_000); // 3er fallo = 15 min
     expect(fallo.limiteIntentos).toBe(10);
@@ -231,16 +387,35 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("429 de Zoom respeta Retry-After mayor", async () => {
     const repo = repoFalso(reclamado());
-    const err = Object.assign(new Error("Zoom: RATE_LIMIT"), { name: "ZoomApiError", code: "RATE_LIMIT", reintentarEnSegundos: 7200 });
-    await ejecutar(repo, origenFalso({ abrirDescarga: vi.fn(async (..._a: any[]) => { throw err; }) }), storageFalso());
+    const err = Object.assign(new Error("Zoom: RATE_LIMIT"), {
+      name: "ZoomApiError",
+      code: "RATE_LIMIT",
+      reintentarEnSegundos: 7200
+    });
+    await ejecutar(
+      repo,
+      origenFalso({
+        abrirDescarga: vi.fn(async (..._a: any[]) => {
+          throw err;
+        })
+      }),
+      storageFalso()
+    );
     const fallo = repo.registrarFallo.mock.calls[0]![1] as { proximoIntentoAt: Date };
     expect(fallo.proximoIntentoAt.getTime() - AHORA.getTime()).toBe(7_200_000);
   });
 
   it("Zoom ignora Range con descarte excesivo: REQUIERE_REVISION sin repetir descargas", async () => {
     const repo = repoFalso(reclamado({ driveFileId: "d", uploadSessionCifrada: "s" }));
-    const storage = storageFalso({ consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) })) });
-    const origen = origenFalso({ abrirDescarga: vi.fn(async (..._a: any[]) => ({ tipo: "REQUIERE_REVISION", motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO" })) });
+    const storage = storageFalso({
+      consultarSubida: vi.fn(async (..._a: any[]) => ({ estado: "PARCIAL", bytesConfirmados: BigInt(KIB) }))
+    });
+    const origen = origenFalso({
+      abrirDescarga: vi.fn(async (..._a: any[]) => ({
+        tipo: "REQUIERE_REVISION",
+        motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO"
+      }))
+    });
     const r = await ejecutar(repo, origen, storage);
     expect(r.tipo).toBe("FALLO");
     expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REVISION" });
@@ -268,10 +443,26 @@ describe("transferirArchivoZoomUseCase", () => {
     const repo = repoFalso(reclamado());
     const control = new AbortController();
     const storage = storageFalso({
-      subirBloque: vi.fn(async (_s: string, offset: bigint, b: Uint8Array) => { control.abort(); return { estado: "PARCIAL", bytesConfirmados: offset + BigInt(b.byteLength) }; })
+      subirBloque: vi.fn(async (_s: string, offset: bigint, b: Uint8Array) => {
+        control.abort();
+        return { estado: "PARCIAL", bytesConfirmados: offset + BigInt(b.byteLength) };
+      })
     });
-    const r = await transferirArchivoZoomUseCase(repo as never, origenFalso() as never, storage as never, LEASE, control.signal,
-      { ahora: () => AHORA, limites: LIMITES, bloqueBytes: KIB, aleatorio: () => 0.5, heartbeatMs: 1_000_000, leaseMs: 300_000 } as never);
+    const r = await transferirArchivoZoomUseCase(
+      repo as never,
+      origenFalso() as never,
+      storage as never,
+      LEASE,
+      control.signal,
+      {
+        ahora: () => AHORA,
+        limites: LIMITES,
+        bloqueBytes: KIB,
+        aleatorio: () => 0.5,
+        heartbeatMs: 1_000_000,
+        leaseMs: 300_000
+      } as never
+    );
     expect(r.tipo).toBe("INTERRUMPIDO");
     expect(repo.registrarFallo).not.toHaveBeenCalled();
     expect(repo.liberarReserva).toHaveBeenCalled();
@@ -279,31 +470,67 @@ describe("transferirArchivoZoomUseCase", () => {
 
   it("tamaño final distinto al subido: REQUIERE_REVISION", async () => {
     const repo = repoFalso(reclamado());
-    const storage = storageFalso({ verificarArchivo: vi.fn(async (..._a: any[]) => ({ id: "drive-id", nombre: "a", tamanoBytes: 1n, mimeType: null, webViewUrl: null })) });
+    const storage = storageFalso({
+      verificarArchivo: vi.fn(async (..._a: any[]) => ({
+        id: "drive-id",
+        nombre: "a",
+        tamanoBytes: 1n,
+        mimeType: null,
+        webViewUrl: null
+      }))
+    });
     const r = await ejecutar(repo, origenFalso(), storage);
     expect(r.tipo).toBe("FALLO");
-    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REVISION", codigo: "TAMANO_DISTINTO" });
+    expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({
+      tipo: "REVISION",
+      codigo: "TAMANO_DISTINTO"
+    });
     expect(repo.confirmarConservado).not.toHaveBeenCalled();
   });
 
   it("10 fallos consecutivos: el límite viaja al repositorio para marcar revisión sin borrar", async () => {
     const repo = repoFalso(reclamado({ intentos: 9 }));
-    await ejecutar(repo, origenFalso(), storageFalso({ generarId: vi.fn(async (..._a: any[]) => { throw new Error("x"); }) }));
+    await ejecutar(
+      repo,
+      origenFalso(),
+      storageFalso({
+        generarId: vi.fn(async (..._a: any[]) => {
+          throw new Error("x");
+        })
+      })
+    );
     expect(repo.registrarFallo.mock.calls[0]![1]).toMatchObject({ tipo: "REINTENTABLE", limiteIntentos: 10 });
   });
 });
 
 describe("procesarColaZoomUseCase", () => {
   it("respeta la concurrencia, termina con --once cuando la cola se vacía y no pierde ningún trabajo", async () => {
-    const pendientes = ["a", "b", "c", "d", "e"].map((id, i) => ({ archivoId: id, version: 1, venceAt: new Date(AHORA.getTime() + 1e6 + i) }));
-    let activos = 0, maxActivos = 0;
+    const pendientes = ["a", "b", "c", "d", "e"].map((id, i) => ({
+      archivoId: id,
+      version: 1,
+      venceAt: new Date(AHORA.getTime() + 1e6 + i)
+    }));
+    let activos = 0,
+      maxActivos = 0;
     const hechos: string[] = [];
     const reclamarArchivo = vi.fn(async (..._a: any[]) => pendientes.shift() ?? null);
-    await procesarColaZoomUseCase({
-      reclamarArchivo,
-      procesar: async (lease) => { activos++; maxActivos = Math.max(maxActivos, activos); await new Promise((r) => setTimeout(r, 5)); hechos.push(lease.archivoId); activos--; },
-      ahora: () => AHORA, esperar: async () => undefined, leaseMs: 300_000, esperaVaciaMs: 10
-    }, { signal: new AbortController().signal, concurrencia: 2, unaVez: true });
+    await procesarColaZoomUseCase(
+      {
+        reclamarArchivo,
+        procesar: async (lease) => {
+          activos++;
+          maxActivos = Math.max(maxActivos, activos);
+          await new Promise((r) => setTimeout(r, 5));
+          hechos.push(lease.archivoId);
+          activos--;
+        },
+        ahora: () => AHORA,
+        esperar: async () => undefined,
+        leaseMs: 300_000,
+        esperaVaciaMs: 10
+      },
+      { signal: new AbortController().signal, concurrencia: 2, unaVez: true }
+    );
     expect(maxActivos).toBe(2);
     expect(hechos.sort()).toEqual(["a", "b", "c", "d", "e"]);
   });
@@ -311,20 +538,40 @@ describe("procesarColaZoomUseCase", () => {
   it("se detiene sin reclamar más al recibir la señal de apagado", async () => {
     const control = new AbortController();
     const reclamarArchivo = vi.fn(async (..._a: any[]) => ({ archivoId: "x", version: 1, venceAt: AHORA }));
-    await procesarColaZoomUseCase({
-      reclamarArchivo, procesar: async () => { control.abort(); },
-      ahora: () => AHORA, esperar: async () => undefined, leaseMs: 300_000, esperaVaciaMs: 10
-    }, { signal: control.signal, concurrencia: 1 });
+    await procesarColaZoomUseCase(
+      {
+        reclamarArchivo,
+        procesar: async () => {
+          control.abort();
+        },
+        ahora: () => AHORA,
+        esperar: async () => undefined,
+        leaseMs: 300_000,
+        esperaVaciaMs: 10
+      },
+      { signal: control.signal, concurrencia: 1 }
+    );
     expect(reclamarArchivo).toHaveBeenCalledTimes(1);
   });
 
   it("con la cola vacía espera con la estrategia inyectada en lugar de girar", async () => {
     const control = new AbortController();
-    const esperar = vi.fn(async (..._a: any[]) => { if (esperar.mock.calls.length >= 2) control.abort(); });
-    await procesarColaZoomUseCase({
-      reclamarArchivo: async () => null, procesar: async () => undefined,
-      ahora: () => AHORA, esperar, leaseMs: 300_000, esperaVaciaMs: 10
-    }, { signal: control.signal, concurrencia: 1 });
+    const esperar = vi.fn(async (..._a: any[]) => {
+      if (esperar.mock.calls.length >= 2) {
+        control.abort();
+      }
+    });
+    await procesarColaZoomUseCase(
+      {
+        reclamarArchivo: async () => null,
+        procesar: async () => undefined,
+        ahora: () => AHORA,
+        esperar,
+        leaseMs: 300_000,
+        esperaVaciaMs: 10
+      },
+      { signal: control.signal, concurrencia: 1 }
+    );
     expect(esperar).toHaveBeenCalledWith(10, expect.anything());
   });
 });

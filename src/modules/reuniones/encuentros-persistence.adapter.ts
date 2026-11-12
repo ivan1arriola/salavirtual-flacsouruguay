@@ -1,9 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import {
-  estadoIntegracionEfectivo,
-  type GoogleCalendarCredentials,
-} from "@/src/modules/conferencias/api";
-import { obtenerCredencialGoogleParaSala } from "@/src/modules/configuracion/api";
+import type { GoogleCalendarCredentials } from "@/src/modules/conferencias/api";
+import { estadoIntegracionEfectivo } from "@/src/modules/conferencias/domain";
+import { obtenerCredencialGoogleParaSala } from "@/src/modules/configuracion/google-workspace.service";
 import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 
 export async function cargarCredencialesEncuentro(
@@ -21,10 +19,7 @@ export async function cargarCredencialesEncuentro(
   return salaCred;
 }
 
-export async function recalcularSolicitud(
-  tx: Prisma.TransactionClient,
-  solicitudId: string
-): Promise<void> {
+export async function recalcularSolicitud(tx: Prisma.TransactionClient, solicitudId: string): Promise<void> {
   const meetings = await tx.instanciaSala.findMany({
     where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } },
     orderBy: { inicioProgramadoAt: "asc" },
@@ -63,7 +58,7 @@ export async function recalcularSolicitud(
       tipoInstancias: meetings.length === 1 ? "UNICA" : "MULTIPLE",
       fechaInicioSolicitada: meetings[0].inicioProgramadoAt,
       fechaFinSolicitada: meetings.reduce(
-        (latest, item) => item.finProgramadoAt > latest ? item.finProgramadoAt : latest,
+        (latest, item) => (item.finProgramadoAt > latest ? item.finProgramadoAt : latest),
         meetings[0].finProgramadoAt
       ),
       requiereAsistenciaTecnica: meetings.some(({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica),

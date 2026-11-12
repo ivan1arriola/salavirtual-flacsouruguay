@@ -30,7 +30,10 @@ describe("ficha de asistencia Zoom", () => {
 
 describe("página de asistencia del encuentro (Zoom)", () => {
   const pagina = leer("app/(gestion)/reuniones/[solicitudId]/encuentros/[instanciaId]/asistencia/page.tsx");
-  const rama = pagina.slice(pagina.indexOf("eventosProveedor.length === 0"), pagina.indexOf("const evento = encuentro.eventosProveedor[0]"));
+  const rama = pagina.slice(
+    pagina.indexOf("eventosProveedor.length === 0"),
+    pagina.indexOf("const evento = encuentro.eventosProveedor[0]")
+  );
 
   it("la rama Zoom lee lo persistido y no usa Workspace ni la planilla de Meet", () => {
     expect(rama).toMatch(/leerAsistenciaZoomFicha/);

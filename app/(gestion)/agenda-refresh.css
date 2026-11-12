@@ -83,7 +83,11 @@
   min-height: 58px;
   border-radius: 8px;
   padding: 9px 12px;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .agenda-view-switch a:hover {
@@ -179,7 +183,10 @@
   border-color: #d8e0e7;
   border-radius: 12px;
   box-shadow: 0 7px 22px rgba(31, 50, 76, 0.045);
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
 .agenda-meeting-card:hover {
@@ -479,4 +486,3 @@
   color: #4b5563;
   padding-inline: 8px;
 }
-

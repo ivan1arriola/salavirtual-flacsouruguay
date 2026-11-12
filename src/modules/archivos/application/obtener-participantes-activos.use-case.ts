@@ -20,11 +20,7 @@ export async function obtenerParticipantesActivosUseCase(
 
   const configuracion = await repositorio.obtenerConfiguracionWorkspacePrincipal();
 
-  if (
-    !configuracion?.activa ||
-    !configuracion.serviceAccountEmail ||
-    !configuracion.privateKeyCifrada
-  ) {
+  if (!configuracion?.activa || !configuracion.serviceAccountEmail || !configuracion.privateKeyCifrada) {
     return { estado: "NO_DISPONIBLE", motivo: "SIN_CREDENCIALES", participantes: [] };
   }
 
@@ -47,4 +43,3 @@ export async function obtenerParticipantesActivosUseCase(
     participantes: scan.participantesActivos
   };
 }
-

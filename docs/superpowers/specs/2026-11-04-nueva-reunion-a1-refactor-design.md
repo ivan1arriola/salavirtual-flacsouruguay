@@ -40,15 +40,15 @@ Descomponer `meeting-form-zoom.tsx` (559 líneas) en un contenedor de estado y e
 
 ### Componentes (en `src/modules/reuniones/presentation/components/nueva-reunion/`)
 
-| Archivo | Contenido |
-| --- | --- |
-| `form-primitives.tsx` | `Field`, `FormSection`, `ChoicePanel` |
-| `academic-details.tsx` | título, programa y docente, descripción general |
-| `meeting-schedule-editor.tsx` | selector de modo de fechas, aviso de cobertura y router SINGLE / RECURRENT / MANUAL |
-| `recurrence-rule-editor.tsx` | rango, días, horas, cobertura y «Generar vista previa» |
-| `meeting-instances-editor.tsx` | filas de fechas: edición, quitar, notas, agregar |
-| `meeting-options.tsx` | monitoreo, grabación, modalidad, asignación de asistente |
-| `meeting-summary.tsx` | resumen del pie (cantidad, estado, monitoreo y grabación) |
+| Archivo                        | Contenido                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `form-primitives.tsx`          | `Field`, `FormSection`, `ChoicePanel`                                               |
+| `academic-details.tsx`         | título, programa y docente, descripción general                                     |
+| `meeting-schedule-editor.tsx`  | selector de modo de fechas, aviso de cobertura y router SINGLE / RECURRENT / MANUAL |
+| `recurrence-rule-editor.tsx`   | rango, días, horas, cobertura y «Generar vista previa»                              |
+| `meeting-instances-editor.tsx` | filas de fechas: edición, quitar, notas, agregar                                    |
+| `meeting-options.tsx`          | monitoreo, grabación, modalidad, asignación de asistente                            |
+| `meeting-summary.tsx`          | resumen del pie (cantidad, estado, monitoreo y grabación)                           |
 
 Los helpers `updateDate`, `toggleWeekday` y la constante `WEEKDAYS` viajan con el componente que los usa. Se mantienen los mismos nombres de clase, así que no hay cambios de CSS.
 

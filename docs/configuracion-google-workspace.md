@@ -119,6 +119,7 @@ otras instituciones cuando sean cuentas Google válidas.
 
 Una invitación Calendar, una fila local o una respuesta `409 ALREADY_EXISTS` no
 confirman ese rol:
+
 1. Cuando Google Calendar invita a un correo en el evento, Google Meet suele crear automáticamente su entrada en `spaces/{space}/members` con `role: "ROLE_UNSPECIFIED"`.
 2. Al recibir `409 ALREADY_EXISTS` en `POST /v2/spaces/{space}/members`, el adaptador inspecciona la lista completa de miembros paginada (`listarMiembrosMeetHttp`).
 3. Si el miembro figura con un rol distinto de `COHOST`, intenta promoverlo in-place (`PATCH`) y, si la API v2 de Google Meet rechaza la modificación in-place con `403` (`No tenés permisos para modificar el rol de este miembro.`) o `400`/`405`, elimina la membresía básica (`DELETE`) y la recrea con `POST` y `role: "COHOST"`.
@@ -129,6 +130,7 @@ verificación guardada para el mismo espacio, organizador y correos solicitados,
 sin errores ni operaciones pendientes.
 
 En **Configuración → Google Workspace**, el panel único `PendingMeetOperationsManager` permite:
+
 - **Sincronizar con Google** (lote completo) o **Reintentar** encuentro por encuentro.
 - **Descartar** tareas de ajuste (`CONFIGURAR_MEET`) no bloqueantes en encuentros que ya cuentan con su enlace Meet operativo (`joinUrl`).
 - Ejecutar **Verificación global de cohosts** (solo lectura, con soporte `Principal -> Legacy`) y **Reuniones existentes → Actualizar**.
@@ -136,6 +138,7 @@ En **Configuración → Google Workspace**, el panel único `PendingMeetOperatio
 ## Consola Operativa en Tiempo Real y Control Remoto
 
 Desde `/operacion/[instanciaId]`, Administración y el Asistente Técnico asignado pueden:
+
 - Monitorear en vivo la **Política de grabación** (`Solicitud: Requerida / No requerida`) separada del **Estado real en vivo en Meet** (`En vivo: Grabando / Inactiva`), junto con el estado de **Transcripción en vivo**.
 - Visualizar y editar el padrón de asistentes persistido en `RegistroAsistenciaMeet` (conectados ahora, desconectados, duración acumulada sin doble conteo de multisesión, origen del correo y rol).
 - Modificar en tiempo real el tipo de acceso del espacio Meet (`OPEN`, `TRUSTED`, `RESTRICTED` mediante `PATCH /v2/spaces/{space}?updateMask=config.access_type` con fallback `Principal -> Legacy`), la lista de cohosts y los parámetros operativos del encuentro.

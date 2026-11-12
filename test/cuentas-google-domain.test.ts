@@ -30,8 +30,9 @@ describe("cuentas Google permitidas", () => {
         emails: ["DOCENTE@FLACSO.EDU.UY", "docente@flacso.edu.uy"]
       }).emails
     ).toEqual(["docente@flacso.edu.uy"]);
-    expect(reemplazarCuentasGoogleSchema.parse({ emails: ["persona@gmail.com"] }).emails)
-      .toEqual(["persona@gmail.com"]);
+    expect(reemplazarCuentasGoogleSchema.parse({ emails: ["persona@gmail.com"] }).emails).toEqual([
+      "persona@gmail.com"
+    ]);
   });
 
   it("normaliza el correo principal editable", () => {
@@ -73,14 +74,8 @@ describe("cuentas Google permitidas", () => {
   });
 
   it("exige al menos Google o password como metodo de acceso", () => {
-    expect(tieneMetodoDeAcceso({ tienePassword: false, cantidadCuentasGoogle: 1 })).toBe(
-      true
-    );
-    expect(tieneMetodoDeAcceso({ tienePassword: true, cantidadCuentasGoogle: 0 })).toBe(
-      true
-    );
-    expect(tieneMetodoDeAcceso({ tienePassword: false, cantidadCuentasGoogle: 0 })).toBe(
-      false
-    );
+    expect(tieneMetodoDeAcceso({ tienePassword: false, cantidadCuentasGoogle: 1 })).toBe(true);
+    expect(tieneMetodoDeAcceso({ tienePassword: true, cantidadCuentasGoogle: 0 })).toBe(true);
+    expect(tieneMetodoDeAcceso({ tienePassword: false, cantidadCuentasGoogle: 0 })).toBe(false);
   });
 });

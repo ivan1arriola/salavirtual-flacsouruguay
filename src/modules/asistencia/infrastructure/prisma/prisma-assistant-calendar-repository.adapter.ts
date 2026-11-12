@@ -4,7 +4,7 @@ import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento
 import type {
   AssistantCalendarRepositoryPort,
   CredencialesWorkspaceCalendar,
-  InstanciaParaCalendario,
+  InstanciaParaCalendario
 } from "../../ports";
 
 export type PrismaAssistantCalendarRepositoryOptions = Readonly<{
@@ -18,9 +18,7 @@ export function crearPrismaAssistantCalendarRepository(
   const { db, descifrar } = options;
 
   return {
-    async obtenerInstanciaParaCalendario(
-      instanciaSalaId: string
-    ): Promise<InstanciaParaCalendario | null> {
+    async obtenerInstanciaParaCalendario(instanciaSalaId: string): Promise<InstanciaParaCalendario | null> {
       const meeting = await db.instanciaSala.findUnique({
         where: { id: instanciaSalaId },
         select: {
@@ -44,16 +42,16 @@ export function crearPrismaAssistantCalendarRepository(
                   programa: { select: { nombre: true } },
                   docente: {
                     select: {
-                      usuario: { select: { nombres: true, apellidos: true } },
-                    },
-                  },
-                },
-              },
-            },
+                      usuario: { select: { nombres: true, apellidos: true } }
+                    }
+                  }
+                }
+              }
+            }
           },
           proveedorActivoTipo: true,
           eventosProveedor: {
-            select: { joinUrl: true, proveedor: { select: { tipo: true } } },
+            select: { joinUrl: true, proveedor: { select: { tipo: true } } }
           },
           asignaciones: {
             select: {
@@ -72,24 +70,26 @@ export function crearPrismaAssistantCalendarRepository(
                           email: true,
                           dominio: true,
                           providerAccountId: true,
-                          emailVerificadoAt: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+                          emailVerificadoAt: true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
 
-      if (!meeting) return null;
+      if (!meeting) {
+        return null;
+      }
 
       const docente =
         [
           meeting.solicitud.docentePrograma.docente.usuario.nombres,
-          meeting.solicitud.docentePrograma.docente.usuario.apellidos,
+          meeting.solicitud.docentePrograma.docente.usuario.apellidos
         ]
           .filter(Boolean)
           .join(" ") || null;
@@ -110,62 +110,59 @@ export function crearPrismaAssistantCalendarRepository(
         programaNombre: meeting.solicitud.docentePrograma.programa.nombre,
         docenteNombreCompleto: docente,
         joinUrl: seleccionarEventoProveedorActivo(meeting)?.joinUrl ?? null,
-        asignaciones: meeting.asignaciones,
+        asignaciones: meeting.asignaciones
       };
     },
 
-    async obtenerInstanciasDeSolicitud(
-      solicitudSalaId: string
-    ): Promise<readonly string[]> {
+    async obtenerInstanciasDeSolicitud(solicitudSalaId: string): Promise<readonly string[]> {
       const instances = await db.instanciaSala.findMany({
         where: { solicitudSalaId },
-        select: { id: true },
+        select: { id: true }
       });
       return instances.map((instance) => instance.id);
     },
 
-    async obtenerInstanciasDeAsistente(
-      usuarioId: string
-    ): Promise<readonly string[]> {
+    async obtenerInstanciasDeAsistente(usuarioId: string): Promise<readonly string[]> {
       const assistant = await db.asistenteTecnico.findUnique({
         where: { usuarioId },
         select: {
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-            select: { instanciaSalaId: true },
-          },
-        },
+            select: { instanciaSalaId: true }
+          }
+        }
       });
 
-      if (!assistant) return [];
+      if (!assistant) {
+        return [];
+      }
       return [...new Set(assistant.asignaciones.map((a) => a.instanciaSalaId))];
     },
 
-    async obtenerInstanciasFuturasParaReconciliar(
-      now: Date
-    ): Promise<readonly string[]> {
+    async obtenerInstanciasFuturasParaReconciliar(now: Date): Promise<readonly string[]> {
       const instances = await db.instanciaSala.findMany({
         where: {
           OR: [
             { finAsistenciaTecnicaAt: { gte: now } },
-            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } },
+            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } }
           ],
-          asignaciones: { some: {} },
+          asignaciones: { some: {} }
         },
         select: { id: true },
-        orderBy: { inicioProgramadoAt: "asc" },
+        orderBy: { inicioProgramadoAt: "asc" }
       });
       return instances.map((instance) => instance.id);
     },
 
     async obtenerCredencialesWorkspace(): Promise<CredencialesWorkspaceCalendar | null> {
       const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
-      if (!cred) return null;
+      if (!cred) {
+        return null;
+      }
       return {
         serviceAccountEmail: cred.serviceAccountEmail,
-        privateKey: cred.privateKey,
+        privateKey: cred.privateKey
       };
-    },
+    }
   };
 }
-

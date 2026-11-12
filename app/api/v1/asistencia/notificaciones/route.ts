@@ -6,15 +6,19 @@ import { db } from "@/src/lib/db";
 import { renotificarAsistentesDisponibles } from "@/src/modules/asistencia/asistencia.service";
 import {
   notificarReunionesAsignadas,
-  renotificarReunionesSinAsignar,
+  renotificarReunionesSinAsignar
 } from "@/src/modules/asistencia/notificaciones-masivas.service";
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor) return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    if (!actor) {
+      return NextResponse.json({ error: "La sesión está desactualizada." }, { status: 401 });
+    }
 
     const body = await request.json().catch(() => ({}));
 

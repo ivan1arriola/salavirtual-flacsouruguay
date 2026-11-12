@@ -16,7 +16,7 @@
 .meeting-mosaic-columns {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(345px, .95fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(345px, 0.95fr);
   align-items: start;
   gap: 16px;
 }
@@ -33,7 +33,7 @@
   border: 1px solid #dce4eb;
   border-radius: 13px;
   background: #fff;
-  box-shadow: 0 4px 14px rgba(26, 46, 68, .035);
+  box-shadow: 0 4px 14px rgba(26, 46, 68, 0.035);
   scroll-margin-top: 85px;
 }
 .meeting-mosaic-panel--general {
@@ -58,7 +58,11 @@
   margin-bottom: 14px;
   border-bottom: 1px solid #e7ecf1;
 }
-.meeting-mosaic-panel-header > div { min-width: 0; display: grid; gap: 3px; }
+.meeting-mosaic-panel-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
 .meeting-mosaic-panel-icon {
   display: inline-flex;
   flex-shrink: 0;
@@ -73,10 +77,10 @@
 .meeting-mosaic-panel-counter {
   display: block;
   color: #68798a;
-  font-size: .64rem;
+  font-size: 0.64rem;
   font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: .075em;
+  letter-spacing: 0.075em;
 }
 .meeting-mosaic-panel-header h2,
 .meeting-mosaic-panel-kicker {
@@ -86,10 +90,16 @@
   font-weight: 800;
   line-height: 1.24;
 }
-.meeting-mosaic-panel-kicker { display: block; }
-.meeting-mosaic-panel-content { min-width: 0; }
+.meeting-mosaic-panel-kicker {
+  display: block;
+}
+.meeting-mosaic-panel-content {
+  min-width: 0;
+}
 .meeting-mosaic-panel-back,
-.meeting-mobile-outline { display: none; }
+.meeting-mobile-outline {
+  display: none;
+}
 
 /* Keep the current section's own form layout usable inside narrow mosaic tiles. */
 .meeting-mosaic-secondary .series-management-v2,
@@ -100,7 +110,7 @@
 }
 .meeting-mosaic-secondary .series-management-v2-content {
   display: grid;
-  grid-template-columns: minmax(0,1fr);
+  grid-template-columns: minmax(0, 1fr);
   padding: 10px;
 }
 .meeting-mosaic-secondary .series-management-tabs {
@@ -115,7 +125,7 @@
   gap: 4px;
   flex-wrap: wrap;
   padding: 10px 4px;
-  font-size: .72rem;
+  font-size: 0.72rem;
   line-height: 1.25;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -127,28 +137,50 @@
 /* An intrinsically narrow content area (sidebar visible, split window, etc.)
    stacks the independent columns without requiring a viewport-width guess. */
 @container (max-width: 930px) {
-  .meeting-mosaic-columns { grid-template-columns: minmax(0, 1fr); }
+  .meeting-mosaic-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .meeting-mosaic-secondary .series-settings-card dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 760px) {
-  .meeting-detail-v2 { gap: 12px; }
+  .meeting-detail-v2 {
+    gap: 12px;
+  }
   .meeting-mosaic-layout,
   .meeting-mosaic-primary,
-  .meeting-mosaic-secondary { gap: 12px; }
+  .meeting-mosaic-secondary {
+    gap: 12px;
+  }
   .meeting-mosaic-panel {
     padding: 13px;
     border-radius: 11px;
     scroll-margin-top: 72px;
   }
-  .meeting-mosaic-panel--general { border: 0; padding: 0; }
-  .meeting-mosaic-panel--general .meeting-mosaic-panel-header { padding: 0 4px 8px; }
-  .meeting-mosaic-panel-header { margin-bottom: 12px; padding-bottom: 10px; gap: 9px; }
-  .meeting-mosaic-panel-icon { width: 33px; height: 33px; }
-  .meeting-mosaic-panel-counter { font-size: .61rem; }
+  .meeting-mosaic-panel--general {
+    border: 0;
+    padding: 0;
+  }
+  .meeting-mosaic-panel--general .meeting-mosaic-panel-header {
+    padding: 0 4px 8px;
+  }
+  .meeting-mosaic-panel-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    gap: 9px;
+  }
+  .meeting-mosaic-panel-icon {
+    width: 33px;
+    height: 33px;
+  }
+  .meeting-mosaic-panel-counter {
+    font-size: 0.61rem;
+  }
   .meeting-mosaic-panel-header h2,
-  .meeting-mosaic-panel-kicker { font-size: .95rem; }
+  .meeting-mosaic-panel-kicker {
+    font-size: 0.95rem;
+  }
 
   .meeting-mobile-outline {
     display: block;
@@ -168,13 +200,36 @@
     min-height: 56px;
     list-style: none;
   }
-  .meeting-mobile-outline > summary::-webkit-details-marker { display: none; }
-  .meeting-mobile-outline > summary > span { min-width: 0; display: grid; gap: 3px; }
-  .meeting-mobile-outline > summary strong { color: #233b53; font-size: .84rem; }
-  .meeting-mobile-outline > summary small { color: #68798a; font-size: .72rem; line-height: 1.35; }
-  .meeting-mobile-outline > summary > svg { flex-shrink: 0; color: #3f5974; transition: transform .18s; }
-  .meeting-mobile-outline[open] > summary > svg { transform: rotate(180deg); }
-  .meeting-mobile-outline-links { display: grid; gap: 0; padding: 0 7px 7px; }
+  .meeting-mobile-outline > summary::-webkit-details-marker {
+    display: none;
+  }
+  .meeting-mobile-outline > summary > span {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+  .meeting-mobile-outline > summary strong {
+    color: #233b53;
+    font-size: 0.84rem;
+  }
+  .meeting-mobile-outline > summary small {
+    color: #68798a;
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+  .meeting-mobile-outline > summary > svg {
+    flex-shrink: 0;
+    color: #3f5974;
+    transition: transform 0.18s;
+  }
+  .meeting-mobile-outline[open] > summary > svg {
+    transform: rotate(180deg);
+  }
+  .meeting-mobile-outline-links {
+    display: grid;
+    gap: 0;
+    padding: 0 7px 7px;
+  }
   .meeting-mobile-outline-links a {
     display: flex;
     align-items: center;
@@ -184,14 +239,20 @@
     border-radius: 7px;
     color: #294d72;
     text-decoration: none;
-    font-size: .82rem;
+    font-size: 0.82rem;
     font-weight: 750;
   }
   .meeting-mobile-outline-links a:focus-visible {
     outline: 3px solid var(--focus-ring-color);
   }
-  .meeting-mobile-outline-links a:hover { background: #f0f4f8; }
-  .meeting-mobile-outline-links a > span { color: #738498; font-size: .7rem; font-variant-numeric: tabular-nums; }
+  .meeting-mobile-outline-links a:hover {
+    background: #f0f4f8;
+  }
+  .meeting-mobile-outline-links a > span {
+    color: #738498;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+  }
 
   .meeting-mosaic-panel-back {
     display: inline-flex;
@@ -202,14 +263,22 @@
     padding: 8px;
     border-radius: 6px;
     color: #48637e;
-    font-size: .72rem;
+    font-size: 0.72rem;
     font-weight: 750;
     text-decoration: none;
   }
-  .meeting-mosaic-panel-back:focus-visible { outline: 3px solid var(--focus-ring-color); }
-  .meeting-mosaic-panel-back:hover { background: #f0f4f8; }
-  .meeting-mosaic-secondary .series-settings-card dl { grid-template-columns: minmax(0, 1fr); }
-  .meeting-mosaic-secondary .series-management-tabs > button { min-height: 44px; }
+  .meeting-mosaic-panel-back:focus-visible {
+    outline: 3px solid var(--focus-ring-color);
+  }
+  .meeting-mosaic-panel-back:hover {
+    background: #f0f4f8;
+  }
+  .meeting-mosaic-secondary .series-settings-card dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meeting-mosaic-secondary .series-management-tabs > button {
+    min-height: 44px;
+  }
   /* Preserve a dense but readable two-column meeting summary on standard phones. */
   .meeting-mosaic-panel--general .meeting-detail-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -221,14 +290,23 @@
     gap: 6px;
     padding: 10px;
   }
-  .meeting-mosaic-panel--general .meeting-detail-summary article > svg { width: 29px; height: 29px; }
+  .meeting-mosaic-panel--general .meeting-detail-summary article > svg {
+    width: 29px;
+    height: 29px;
+  }
 }
 @media (max-width: 360px) {
-  .meeting-mosaic-panel--general .meeting-detail-summary { grid-template-columns: minmax(0,1fr); }
-  .meeting-mosaic-secondary .series-management-tabs > button { font-size: .68rem; }
+  .meeting-mosaic-panel--general .meeting-detail-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meeting-mosaic-secondary .series-management-tabs > button {
+    font-size: 0.68rem;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .meeting-mobile-outline > summary > svg { transition: none; }
+  .meeting-mobile-outline > summary > svg {
+    transition: none;
+  }
 }
 
 /* Inside Personas: separate disclosure tools replace a second tab bar. */
@@ -253,22 +331,28 @@
   color: #294c71;
   background: #f3f7fb;
   border-radius: 9px;
-  font-size: .83rem;
+  font-size: 0.83rem;
   font-weight: 800;
   cursor: pointer;
   list-style: none;
 }
-.series-management-tool-disclosure > summary::-webkit-details-marker { display: none; }
-.series-management-tool-disclosure > summary > svg:first-child { color: #315879; }
+.series-management-tool-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.series-management-tool-disclosure > summary > svg:first-child {
+  color: #315879;
+}
 .series-management-tool-disclosure > summary > svg:last-child {
   margin-left: auto;
-  transition: transform .18s;
+  transition: transform 0.18s;
 }
 .series-management-tool-disclosure[open] > summary {
   border-radius: 8px 8px 0 0;
   border-bottom: 1px solid #dce4ed;
 }
-.series-management-tool-disclosure[open] > summary > svg:last-child { transform: rotate(180deg); }
+.series-management-tool-disclosure[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
 .series-management-tool-disclosure > .series-tool-card {
   min-width: 0;
   max-width: 100%;
@@ -279,5 +363,7 @@
   outline-offset: -3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .series-management-tool-disclosure > summary > svg:last-child { transition: none; }
+  .series-management-tool-disclosure > summary > svg:last-child {
+    transition: none;
+  }
 }

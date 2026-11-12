@@ -3,5 +3,5 @@ export {
   compartirConferenciaGoogleCalendar,
   configurarGoogleMeetExistente,
   sincronizarCohostsGoogleExistente,
-  type GoogleCalendarCredentials,
+  type GoogleCalendarCredentials
 } from "@/src/modules/conferencias/api";

@@ -32,7 +32,9 @@ export function AgendaDayEnhancer() {
   const searchKey = searchParams.toString();
 
   useEffect(() => {
-    if (pathname !== "/reuniones") return;
+    if (pathname !== "/reuniones") {
+      return;
+    }
 
     const apply = () => enhanceAgenda();
     apply();
@@ -49,9 +51,12 @@ export function AgendaDayEnhancer() {
 
 function enhanceAgenda(): void {
   const root = document.querySelector<HTMLElement>(".meetings-agenda-page.agenda-v2");
-  if (!root) return;
+  if (!root) {
+    return;
+  }
 
-  root.querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
+  root
+    .querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
     .forEach((heading) => heading.remove());
 
   const now = new Date();
@@ -70,21 +75,27 @@ function enhanceAgenda(): void {
 
       const dateText = card.querySelector<HTMLElement>(".agenda-meeting-date > span")?.textContent ?? "";
       const dayLabel = normalizeDateLabel(dateText.split("→")[0] ?? "");
-      if (!dayLabel) return;
+      if (!dayLabel) {
+        return;
+      }
 
       if (dayLabel !== previousDay) {
         previousDay = dayLabel;
         stripeIndex = 0;
         toneIndex = stableTone(dayLabel);
-        card.before(createDayHeading(
-          dayLabel,
-          relativeDayLabel(dayLabel, todayLabel, tomorrowLabel, yesterdayLabel),
-          toneIndex
-        ));
+        card.before(
+          createDayHeading(
+            dayLabel,
+            relativeDayLabel(dayLabel, todayLabel, tomorrowLabel, yesterdayLabel),
+            toneIndex
+          )
+        );
       }
 
       card.classList.add("agenda-day-card", DAY_TONE_CLASSES[toneIndex]);
-      if (stripeIndex % 2 === 1) card.classList.add("is-zebra");
+      if (stripeIndex % 2 === 1) {
+        card.classList.add("is-zebra");
+      }
       stripeIndex += 1;
 
       updateLiveEncounterStatus(card, dayLabel, todayLabel);
@@ -93,10 +104,10 @@ function enhanceAgenda(): void {
 }
 
 function cleanupAgendaEnhancement(): void {
-  document.querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
+  document
+    .querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
     .forEach((heading) => heading.remove());
-  document.querySelectorAll<HTMLElement>(".agenda-day-card")
-    .forEach((card) => clearDayClasses(card));
+  document.querySelectorAll<HTMLElement>(".agenda-day-card").forEach((card) => clearDayClasses(card));
 }
 
 function createDayHeading(dayLabel: string, relative: string, toneIndex: number): HTMLElement {
@@ -123,9 +134,15 @@ function relativeDayLabel(
   tomorrowLabel: string,
   yesterdayLabel: string
 ): string {
-  if (dayLabel === todayLabel) return "Hoy";
-  if (dayLabel === tomorrowLabel) return "Mañana";
-  if (dayLabel === yesterdayLabel) return "Ayer";
+  if (dayLabel === todayLabel) {
+    return "Hoy";
+  }
+  if (dayLabel === tomorrowLabel) {
+    return "Mañana";
+  }
+  if (dayLabel === yesterdayLabel) {
+    return "Ayer";
+  }
   return "Día";
 }
 
@@ -146,18 +163,28 @@ function normalizeDateLabel(value: string): string {
 }
 
 function updateLiveEncounterStatus(card: HTMLElement, dayLabel: string, todayLabel: string): void {
-  if (card.classList.contains("agenda-series-card")) return;
+  if (card.classList.contains("agenda-series-card")) {
+    return;
+  }
 
   const status = card.querySelector<HTMLElement>(".agenda-meeting-card-header > .status");
-  if (!status) return;
+  if (!status) {
+    return;
+  }
 
   const currentStatus = status.textContent?.trim().toLocaleLowerCase("es-UY") ?? "";
-  if (currentStatus === "cancelada" || currentStatus === "no realizada") return;
-  if (dayLabel !== todayLabel) return;
+  if (currentStatus === "cancelada" || currentStatus === "no realizada") {
+    return;
+  }
+  if (dayLabel !== todayLabel) {
+    return;
+  }
 
   const range = card.querySelector<HTMLElement>(".agenda-meeting-date > strong")?.textContent ?? "";
   const match = range.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
-  if (!match) return;
+  if (!match) {
+    return;
+  }
 
   const nowParts = timePartsFormatter.formatToParts(new Date());
   const hour = Number(nowParts.find((part) => part.type === "hour")?.value ?? "0");

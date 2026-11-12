@@ -57,10 +57,18 @@ describe("asistencia domain complete", () => {
     });
 
     it("resuelve accion historial asistente", () => {
-      expect(resolverAccionHistorialAsistente("ASISTENTE_ASIGNADO", null, "asist-1", "asist-1")).toBe("ASIGNADO");
-      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-1")).toBe("DESVINCULADO");
-      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-2")).toBe("REASIGNADO");
-      expect(resolverAccionHistorialAsistente("ASISTENTE_DESVINCULADO", "asist-1", null, "asist-1")).toBe("DESVINCULADO");
+      expect(resolverAccionHistorialAsistente("ASISTENTE_ASIGNADO", null, "asist-1", "asist-1")).toBe(
+        "ASIGNADO"
+      );
+      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-1")).toBe(
+        "DESVINCULADO"
+      );
+      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-2")).toBe(
+        "REASIGNADO"
+      );
+      expect(resolverAccionHistorialAsistente("ASISTENTE_DESVINCULADO", "asist-1", null, "asist-1")).toBe(
+        "DESVINCULADO"
+      );
       expect(resolverAccionHistorialAsistente("OTRO", null, null, "asist-1")).toBeNull();
     });
   });

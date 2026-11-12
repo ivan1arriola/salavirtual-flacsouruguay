@@ -1,9 +1,7 @@
 import { z } from "zod";
 import type { RolUsuario } from "./roles";
 
-const emailGoogleSchema = z
-  .email()
-  .transform((email) => email.trim().toLowerCase());
+const emailGoogleSchema = z.email().transform((email) => email.trim().toLowerCase());
 
 const emailPrincipalSchema = z.union([
   z
@@ -49,7 +47,7 @@ export function resolverEmailPrincipal(input: ResolucionEmailPrincipal): string 
   if (input.emailsGoogle.length > 0) {
     return emailActual && input.emailsGoogle.includes(emailActual)
       ? emailActual
-      : input.emailsGoogle[0] ?? null;
+      : (input.emailsGoogle[0] ?? null);
   }
 
   if (input.emailPrincipalSolicitado !== undefined) {

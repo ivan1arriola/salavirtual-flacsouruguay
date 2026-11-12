@@ -19,7 +19,9 @@ export function AssistantInterestButton({
   const blocked = Boolean(disabledReason) && !interested;
 
   function updateInterest() {
-    if (blocked) return;
+    if (blocked) {
+      return;
+    }
     setMessage("");
     startTransition(async () => {
       const response = await fetch("/api/v1/asistencia/postulaciones", {
@@ -52,7 +54,11 @@ export function AssistantInterestButton({
         {pending ? "Actualizando…" : interested ? "Retirar" : blocked ? "Conflicto horario" : "Postularme"}
       </button>
       {blocked && disabledReason ? <small className="muted-text">{disabledReason}</small> : null}
-      {message ? <small className="inline-error" role="alert">{message}</small> : null}
+      {message ? (
+        <small className="inline-error" role="alert">
+          {message}
+        </small>
+      ) : null}
     </div>
   );
 }

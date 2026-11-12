@@ -24,8 +24,8 @@ describe("agenda de reuniones en móvil", () => {
   it("expone un resumen operativo y detalles desplegables en ambas vistas", () => {
     expect(page.match(/className="agenda-mobile-glance"/g)).toHaveLength(2);
     expect(page.match(/className="agenda-mobile-details-control"/g)).toHaveLength(2);
-    expect(page).toContain('id={`agenda-details-${request.id}`}');
-    expect(page).toContain('id={`agenda-details-${meeting.id}`}');
+    expect(page).toContain("id={`agenda-details-${request.id}`}");
+    expect(page).toContain("id={`agenda-details-${meeting.id}`}");
     expect(styles).toContain(":has(.agenda-mobile-details-input:checked)");
     expect(page).toContain('className="agenda-access-panel"');
     expect(page).toContain('className="agenda-meeting-card-footer"');

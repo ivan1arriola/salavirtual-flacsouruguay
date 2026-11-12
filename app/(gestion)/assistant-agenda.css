@@ -158,7 +158,9 @@
   gap: 18px;
   border-bottom: 1px solid #e4ebf1;
   padding: 17px 20px;
-  transition: background-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .assistant-agenda-item:last-child {
@@ -382,7 +384,10 @@
   font-weight: 850;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(23, 108, 120, 0.14);
-  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
 }
 
 .assistant-agenda-open-meet:hover {
@@ -670,7 +675,10 @@
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 4px 14px rgba(31, 50, 76, 0.035);
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
 }
 
 .open-agenda-card:hover {

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { clasificarAccesosPropios, procesarRecordatorios24h } from "../src/modules/reuniones/recordatorios-24h.service";
+import {
+  clasificarAccesosPropios,
+  procesarRecordatorios24h
+} from "../src/modules/reuniones/recordatorios-24h.service";
 import { construirRecordatorioReunion } from "../src/modules/reuniones/recordatorio-reunion-email.domain";
 
 const inicio = new Date("2026-10-24T13:00:00.000Z");
@@ -23,39 +26,83 @@ const meeting = {
     }
   },
   asignaciones: [{ asistenteTecnico: { usuarioId: "assistant", cesadoHastaProximoInicioSesion: false } }],
-  eventosProveedor: [{
-    proveedor: { tipo: "GOOGLE_MEET" },
-    codigoReunion: "abc-defg-hij",
-    joinUrl: "https://meet.google.com/abc-defg-hij",
-    cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }
-  }]
+  eventosProveedor: [
+    {
+      proveedor: { tipo: "GOOGLE_MEET" },
+      codigoReunion: "abc-defg-hij",
+      joinUrl: "https://meet.google.com/abc-defg-hij",
+      cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }
+    }
+  ]
 };
 const users = [
-  { id: "creator", nombres: "Cora", emailPrincipal: "cora@flacso.edu.uy", cuentasGoogle: [], emailAliases: [], preferenciasNotificacion: [] },
-  { id: "teacher", nombres: "Ana", emailPrincipal: "ana@flacso.edu.uy", cuentasGoogle: [{ email: "ana.personal@flacso.edu.uy" }], emailAliases: [], preferenciasNotificacion: [] },
-  { id: "assistant", nombres: "Juan", emailPrincipal: "juan@flacso.edu.uy", cuentasGoogle: [], emailAliases: [], preferenciasNotificacion: [] }
+  {
+    id: "creator",
+    nombres: "Cora",
+    emailPrincipal: "cora@flacso.edu.uy",
+    cuentasGoogle: [],
+    emailAliases: [],
+    preferenciasNotificacion: []
+  },
+  {
+    id: "teacher",
+    nombres: "Ana",
+    emailPrincipal: "ana@flacso.edu.uy",
+    cuentasGoogle: [{ email: "ana.personal@flacso.edu.uy" }],
+    emailAliases: [],
+    preferenciasNotificacion: []
+  },
+  {
+    id: "assistant",
+    nombres: "Juan",
+    emailPrincipal: "juan@flacso.edu.uy",
+    cuentasGoogle: [],
+    emailAliases: [],
+    preferenciasNotificacion: []
+  }
 ];
 
-function dbFake(rows: typeof meeting[] = [meeting], prefs: Array<Omit<(typeof users)[number], "preferenciasNotificacion"> & { preferenciasNotificacion: Array<{ email: boolean; push: boolean }> }> = users) {
+function dbFake(
+  rows: (typeof meeting)[] = [meeting],
+  prefs: Array<
+    Omit<(typeof users)[number], "preferenciasNotificacion"> & {
+      preferenciasNotificacion: Array<{ email: boolean; push: boolean }>;
+    }
+  > = users
+) {
   const registro = new Map<string, string>();
   let seq = 0;
   const create = vi.fn(async ({ data }: any) => {
     const key = [data.instanciaSalaId, data.usuarioId, data.inicioProgramadoAt.toISOString()].join("|");
-    if (registro.has(key)) throw Object.assign(new Error("duplicate"), { code: "P2002" });
+    if (registro.has(key)) {
+      throw Object.assign(new Error("duplicate"), { code: "P2002" });
+    }
     registro.set(key, String(++seq));
     return { id: String(seq) };
   });
   const update = vi.fn(async () => ({}));
   const findMany = vi.fn(async (_args?: any) => rows);
   const usuarios = vi.fn(async (_args?: any) => prefs);
-  const findUnique = vi.fn(async (_args?: any) => ({ estado: "PROGRAMADA", inicioProgramadoAt: inicio, solicitud: { estado: "REGISTRADA" } }));
+  const findUnique = vi.fn(async (_args?: any) => ({
+    estado: "PROGRAMADA",
+    inicioProgramadoAt: inicio,
+    solicitud: { estado: "REGISTRADA" }
+  }));
   const notificacion = vi.fn(async () => ({}));
-  return { db: {
-    instanciaSala: { findMany, findUnique },
-    usuario: { findMany: usuarios },
-    recordatorioReunion: { create, update },
-    notificacion: { create: notificacion }
-  } as any, create, update, findMany, usuarios, findUnique, notificacion };
+  return {
+    db: {
+      instanciaSala: { findMany, findUnique },
+      usuario: { findMany: usuarios },
+      recordatorioReunion: { create, update },
+      notificacion: { create: notificacion }
+    } as any,
+    create,
+    update,
+    findMany,
+    usuarios,
+    findUnique,
+    notificacion
+  };
 }
 
 describe("recordatorios de reuniones 24 horas antes", () => {
@@ -86,7 +133,9 @@ describe("recordatorios de reuniones 24 horas antes", () => {
     expect(orden[0]).toBe("verificar");
     expect(mock.create).toHaveBeenCalledTimes(3);
     expect(mock.notificacion).toHaveBeenCalledTimes(3);
-    expect(mock.findMany.mock.calls[0][0].where.inicioProgramadoAt.lte).toEqual(new Date(ahora.getTime() + 24 * 60 * 60 * 1000));
+    expect(mock.findMany.mock.calls[0][0].where.inicioProgramadoAt.lte).toEqual(
+      new Date(ahora.getTime() + 24 * 60 * 60 * 1000)
+    );
 
     // Un worker concurrente / segunda ejecución no puede volver a enviar.
     const second = await procesarRecordatorios24h(mock.db, { verificarCohosts, enviarCorreo }, ahora);
@@ -96,7 +145,9 @@ describe("recordatorios de reuniones 24 horas antes", () => {
 
   it("no presenta cuentas locales como habilitadas cuando Meet no responde", () => {
     expect(clasificarAccesosPropios(["a@flacso.edu.uy"], null, null)).toEqual({
-      estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: []
+      estado: "NO_VERIFICABLE",
+      cuentasConfirmadas: [],
+      cuentasSinPermiso: []
     });
     const noPermitida = clasificarAccesosPropios(["a@flacso.edu.uy"], new Set(), null);
     expect(noPermitida.estado).toBe("SIN_PERMISOS");
@@ -125,27 +176,39 @@ describe("recordatorios de reuniones 24 horas antes", () => {
   it("detiene un envío si la reunión fue reprogramada luego de la reserva", async () => {
     const mock = dbFake();
     mock.findUnique.mockResolvedValue({
-      estado: "PROGRAMADA", inicioProgramadoAt: new Date(inicio.getTime() + 3600_000),
+      estado: "PROGRAMADA",
+      inicioProgramadoAt: new Date(inicio.getTime() + 3600_000),
       solicitud: { estado: "REGISTRADA" }
     });
     const send = vi.fn();
-    const run = await procesarRecordatorios24h(mock.db, {
-      verificarCohosts: async () => new Set(), enviarCorreo: send
-    }, ahora);
+    const run = await procesarRecordatorios24h(
+      mock.db,
+      {
+        verificarCohosts: async () => new Set(),
+        enviarCorreo: send
+      },
+      ahora
+    );
     expect(run.enviados).toBe(0);
     expect(send).not.toHaveBeenCalled();
     expect(mock.update).toHaveBeenCalledWith(expect.objectContaining({ data: { estado: "OBSOLETO" } }));
   });
 
   it("respeta preferencias de correo y no reintenta automáticamente rechazos inciertos", async () => {
-    const prefs = users.map(u => ({
-      ...u, preferenciasNotificacion: [{ email: u.id !== "assistant", push: false }]
+    const prefs = users.map((u) => ({
+      ...u,
+      preferenciasNotificacion: [{ email: u.id !== "assistant", push: false }]
     }));
     const mock = dbFake([meeting], prefs);
     const send = vi.fn(async () => ({ sent: false, error: "No confirmado" }));
-    const result = await procesarRecordatorios24h(mock.db, {
-      verificarCohosts: async () => null, enviarCorreo: send
-    }, ahora);
+    const result = await procesarRecordatorios24h(
+      mock.db,
+      {
+        verificarCohosts: async () => null,
+        enviarCorreo: send
+      },
+      ahora
+    );
     expect(result).toMatchObject({ errores: 2, enviados: 0, verificacionesFallidas: 1 });
     expect(send).toHaveBeenCalledTimes(2);
     expect(mock.notificacion).not.toHaveBeenCalled();

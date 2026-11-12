@@ -64,10 +64,7 @@ export async function obtenerDatosPaginaConfiguracion(
     db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
-        OR: [
-          { operacionPendiente: { not: null } },
-          { estadoIntegracion: "ERROR" }
-        ]
+        OR: [{ operacionPendiente: { not: null } }, { estadoIntegracion: "ERROR" }]
       },
       orderBy: [{ instancia: { inicioProgramadoAt: "asc" } }],
       select: {
@@ -114,88 +111,105 @@ export async function obtenerDatosPaginaConfiguracion(
     section === "salas"
       ? db.configuracionZoom.findUnique({
           where: { id: "principal" },
-          select: { grupoId: true, grupoNombre: true, ultimaSincronizacionAt: true, ultimaSincronizacionResultado: true }
+          select: {
+            grupoId: true,
+            grupoNombre: true,
+            ultimaSincronizacionAt: true,
+            ultimaSincronizacionResultado: true
+          }
         })
       : Promise.resolve(null)
   ]);
 
-  const hosts = accounts.map((account) => ({ ...account, reunionesFuturas: futureMeetingsByAccount[account.id] ?? 0 }));
+  const hosts = accounts.map((account) => ({
+    ...account,
+    reunionesFuturas: futureMeetingsByAccount[account.id] ?? 0
+  }));
 
-  const [programs, teachers, academicUnits] = section === "programas"
-    ? await Promise.all([
-        db.programa.findMany({
-          orderBy: { nombre: "asc" },
-          select: {
-            id: true,
-            nombre: true,
-            codigo: true,
-            activo: true,
-            unidadAcademicaId: true,
-            unidadAcademica: { select: { id: true, nombre: true, activa: true } },
-            docentes: {
-              where: { activo: true },
-              select: {
-                docente: {
-                  select: {
-                    usuario: {
-                      select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true }
+  const [programs, teachers, academicUnits] =
+    section === "programas"
+      ? await Promise.all([
+          db.programa.findMany({
+            orderBy: { nombre: "asc" },
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              activo: true,
+              unidadAcademicaId: true,
+              unidadAcademica: { select: { id: true, nombre: true, activa: true } },
+              docentes: {
+                where: { activo: true },
+                select: {
+                  docente: {
+                    select: {
+                      usuario: {
+                        select: {
+                          id: true,
+                          nombres: true,
+                          apellidos: true,
+                          emailPrincipal: true,
+                          activo: true
+                        }
+                      }
                     }
                   }
                 }
               }
             }
-          }
-        }),
-        db.usuario.findMany({
-          where: { rol: "DOCENTE", activo: true },
+          }),
+          db.usuario.findMany({
+            where: { rol: "DOCENTE", activo: true },
+            orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+            select: {
+              id: true,
+              nombres: true,
+              apellidos: true,
+              emailPrincipal: true,
+              activo: true
+            }
+          }),
+          db.unidadAcademica.findMany({
+            orderBy: { nombre: "asc" },
+            select: { id: true, nombre: true, activa: true }
+          })
+        ])
+      : [[], [], []];
+
+  const adminReportRecipients =
+    section === "asistencia"
+      ? await db.usuario.findMany({
+          where: { rol: "ADMINISTRACION", activo: true, emailPrincipal: { not: null } },
           orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-          select: {
-            id: true,
-            nombres: true,
-            apellidos: true,
-            emailPrincipal: true,
-            activo: true
-          }
-        }),
-        db.unidadAcademica.findMany({
-          orderBy: { nombre: "asc" },
-          select: { id: true, nombre: true, activa: true }
+          select: { emailPrincipal: true }
         })
-      ])
-    : [[], [], []];
+      : [];
 
-  const adminReportRecipients = section === "asistencia"
-    ? await db.usuario.findMany({
-        where: { rol: "ADMINISTRACION", activo: true, emailPrincipal: { not: null } },
-        orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-        select: { emailPrincipal: true }
-      })
-    : [];
-
-  const historicalMeetings = section === "historico"
-    ? await db.eventoProveedor.findMany({
-        where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
-        orderBy: { instancia: { inicioProgramadoAt: "desc" } },
-        take: 100,
-        include: {
-          cuentaProveedor: true,
-          instancia: {
-            include: {
-              solicitud: {
-                include: {
-                  docentePrograma: {
-                    include: {
-                      programa: true,
-                      docente: { include: { usuario: true } }
+  const historicalMeetings =
+    section === "historico"
+      ? await db.eventoProveedor.findMany({
+          where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
+          orderBy: { instancia: { inicioProgramadoAt: "desc" } },
+          take: 100,
+          include: {
+            cuentaProveedor: true,
+            instancia: {
+              include: {
+                solicitud: {
+                  include: {
+                    docentePrograma: {
+                      include: {
+                        programa: true,
+                        docente: { include: { usuario: true } }
+                      }
                     }
                   }
                 }
               }
             }
           }
-        }
-      })
-    : [];
+        })
+      : [];
 
   const availableHosts = hosts.filter(esCuentaAsignable).length;
 
@@ -216,7 +230,8 @@ export async function obtenerDatosPaginaConfiguracion(
     externalEventId: ep.externalEventId,
     joinUrl: ep.joinUrl,
     codigoReunion: ep.codigoReunion,
-    operacionPendiente: ep.operacionPendiente as "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
+    operacionPendiente: ep.operacionPendiente as
+      "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
     estadoIntegracion: ep.estadoIntegracion,
     errorIntegracion: ep.errorIntegracion,
     updatedAt: ep.updatedAt.toISOString()
@@ -239,4 +254,3 @@ export async function obtenerDatosPaginaConfiguracion(
     zoomGrupo
   };
 }
-

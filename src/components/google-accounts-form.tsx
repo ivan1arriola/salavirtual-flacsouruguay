@@ -21,10 +21,7 @@ export function GoogleAccountsForm({
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const firstGoogleEmail = useMemo(
-    () => emails.map((email) => email.trim()).find(Boolean) ?? null,
-    [emails]
-  );
+  const firstGoogleEmail = useMemo(() => emails.map((email) => email.trim()).find(Boolean) ?? null, [emails]);
   const effectivePrincipalEmail = firstGoogleEmail ?? principalEmail;
 
   async function save() {
@@ -75,7 +72,10 @@ export function GoogleAccountsForm({
       </p>
 
       <div className="section-heading compact-heading">
-        <div><h3>Cuentas Google autorizadas</h3><p>Permiten iniciar sesión con Google.</p></div>
+        <div>
+          <h3>Cuentas Google autorizadas</h3>
+          <p>Permiten iniciar sesión con Google.</p>
+        </div>
       </div>
       <div className="account-email-list">
         {emails.map((email, index) => (
@@ -84,9 +84,11 @@ export function GoogleAccountsForm({
               type="email"
               value={email}
               placeholder="persona@gmail.com"
-              onChange={(event) => setEmails(
-                emails.map((current, position) => position === index ? event.target.value : current)
-              )}
+              onChange={(event) =>
+                setEmails(
+                  emails.map((current, position) => (position === index ? event.target.value : current))
+                )
+              }
             />
             <button
               className="icon-button"
@@ -94,22 +96,23 @@ export function GoogleAccountsForm({
               title="Quitar cuenta"
               onClick={() => setEmails(emails.filter((_, position) => position !== index))}
             >
-              <Trash2 size={18} /><span className="sr-only">Quitar cuenta</span>
+              <Trash2 size={18} />
+              <span className="sr-only">Quitar cuenta</span>
             </button>
           </div>
         ))}
       </div>
       <footer className="form-actions">
-        <button
-          className="secondary-action"
-          type="button"
-          onClick={() => setEmails([...emails, ""])}
-        >
-          <Plus size={17} />Agregar cuenta
+        <button className="secondary-action" type="button" onClick={() => setEmails([...emails, ""])}>
+          <Plus size={17} />
+          Agregar cuenta
         </button>
-        <span className="muted-text" role="status">{message}</span>
+        <span className="muted-text" role="status">
+          {message}
+        </span>
         <button className="primary-action" type="button" disabled={saving} onClick={save}>
-          <Save size={17} />Guardar
+          <Save size={17} />
+          Guardar
         </button>
       </footer>
     </section>

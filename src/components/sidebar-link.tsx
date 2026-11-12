@@ -21,12 +21,7 @@ export function SidebarLink({
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const active = isNavigationItemActive(
-    { href, search: activeSearch },
-    pathname,
-    searchParams,
-    exact
-  );
+  const active = isNavigationItemActive({ href, search: activeSearch }, pathname, searchParams, exact);
 
   return (
     <Link

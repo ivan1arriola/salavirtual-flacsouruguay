@@ -19,10 +19,11 @@ export function usosActivos(
   ahora: Date,
   excluirEventoId?: string
 ): number {
-  return usos.filter((uso) =>
-    uso.eventoProveedorId !== excluirEventoId
-    && (ESTADOS_ACTIVOS as readonly string[]).includes(uso.instanciaEstado)
-    && uso.instanciaFin.getTime() > ahora.getTime()
+  return usos.filter(
+    (uso) =>
+      uso.eventoProveedorId !== excluirEventoId &&
+      (ESTADOS_ACTIVOS as readonly string[]).includes(uso.instanciaEstado) &&
+      uso.instanciaFin.getTime() > ahora.getTime()
   ).length;
 }
 

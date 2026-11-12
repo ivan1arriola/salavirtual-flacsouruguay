@@ -3,11 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const component = (file: string) =>
   readFileSync(new URL(`../src/components/dashboard/admin/${file}`, import.meta.url), "utf8");
-const styles = readFileSync(
-  new URL("../app/(gestion)/admin-dashboard-mobile.css", import.meta.url), "utf8"
-);
+const styles = readFileSync(new URL("../app/(gestion)/admin-dashboard-mobile.css", import.meta.url), "utf8");
 const upcomingStyles = readFileSync(
-  new URL("../src/components/dashboard/admin/admin-upcoming-list.module.css", import.meta.url), "utf8"
+  new URL("../src/components/dashboard/admin/admin-upcoming-list.module.css", import.meta.url),
+  "utf8"
 );
 
 describe("dashboard administración en teléfonos", () => {
@@ -29,7 +28,7 @@ describe("dashboard administración en teléfonos", () => {
     expect(dashboard).not.toContain("/reuniones/buscar-meet");
     expect(dashboard).toContain('href="/monitoreo"');
     expect(dashboard).toContain('href="/reuniones/nueva"');
-    expect(today).toContain('href={`/operacion/${meeting.id}`}');
+    expect(today).toContain("href={`/operacion/${meeting.id}`}");
     expect(today).toContain("<CopyMeetLinkButton");
     expect(today).toContain("meeting.joinUrl");
     expect(today).toContain("provider.joinLabel");
@@ -49,7 +48,7 @@ describe("dashboard administración en teléfonos", () => {
     const upcoming = component("admin-upcoming-list.tsx");
     expect(upcoming).toContain('aria-labelledby="admin-upcoming-title"');
     expect(upcoming).toContain("<ol className={styles.list}>");
-    expect(upcoming).toContain('<time className={styles.when}');
+    expect(upcoming).toContain("<time className={styles.when}");
     expect(upcoming).toContain("styles.hybrid");
     expect(upcomingStyles).toContain("grid-template-columns: 76px minmax(0, 1fr)");
     expect(styles).toContain("button:focus-visible");

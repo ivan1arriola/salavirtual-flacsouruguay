@@ -11,10 +11,7 @@ const ROLE_OPTIONS: ReadonlyArray<Readonly<{ value: RolUsuario; label: string }>
   { value: "ADMINISTRACION", label: "Administracion" }
 ];
 
-export function UserRoleForm({
-  userId,
-  initialRole
-}: Readonly<{ userId: string; initialRole: RolUsuario }>) {
+export function UserRoleForm({ userId, initialRole }: Readonly<{ userId: string; initialRole: RolUsuario }>) {
   const router = useRouter();
   const [role, setRole] = useState<RolUsuario>(initialRole);
   const [savedRole, setSavedRole] = useState<RolUsuario>(initialRole);
@@ -43,18 +40,33 @@ export function UserRoleForm({
   return (
     <section className="form-section account-form">
       <div className="section-heading compact-heading">
-        <div><h2>Rol y permisos</h2><p>Define las funciones disponibles para esta persona.</p></div>
+        <div>
+          <h2>Rol y permisos</h2>
+          <p>Define las funciones disponibles para esta persona.</p>
+        </div>
       </div>
       <label className="field">
         <span>Tipo de usuario</span>
         <select value={role} onChange={(event) => setRole(event.target.value as RolUsuario)}>
-          {ROLE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          {ROLE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </label>
       <footer className="form-actions">
-        <span className="muted-text" role="status">{message}</span>
-        <button className="primary-action" type="button" disabled={saving || role === savedRole} onClick={save}>
-          <Save size={17} />Guardar rol
+        <span className="muted-text" role="status">
+          {message}
+        </span>
+        <button
+          className="primary-action"
+          type="button"
+          disabled={saving || role === savedRole}
+          onClick={save}
+        >
+          <Save size={17} />
+          Guardar rol
         </button>
       </footer>
     </section>

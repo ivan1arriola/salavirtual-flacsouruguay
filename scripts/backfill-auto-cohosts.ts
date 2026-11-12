@@ -68,30 +68,40 @@ async function main(): Promise<void> {
     const missingEmails = expectedEmails.filter((email) => !currentEmails.has(email));
 
     return missingAccountIds.length || missingEmails.length
-      ? [{
-          instanciaSalaId: meeting.id,
-          missingAccountIds,
-          missingEmails,
-          hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
-        }]
+      ? [
+          {
+            instanciaSalaId: meeting.id,
+            missingAccountIds,
+            missingEmails,
+            hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
+          }
+        ]
       : [];
   });
 
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    syncGoogle,
-    syncAllGoogle,
-    meetingsReviewed: meetings.length,
-    instancesToUpdate: plan.length,
-    googleAccountsToAdd: plan.reduce((total, item) => total + item.missingAccountIds.length, 0),
-    emailCohostsToAdd: plan.reduce((total, item) => total + item.missingEmails.length, 0),
-    instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
-    instancesToSyncWithGoogle: syncAllGoogle
-      ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
-      : plan.filter(({ hasMeetCode }) => hasMeetCode).length
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        syncGoogle,
+        syncAllGoogle,
+        meetingsReviewed: meetings.length,
+        instancesToUpdate: plan.length,
+        googleAccountsToAdd: plan.reduce((total, item) => total + item.missingAccountIds.length, 0),
+        emailCohostsToAdd: plan.reduce((total, item) => total + item.missingEmails.length, 0),
+        instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
+        instancesToSyncWithGoogle: syncAllGoogle
+          ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
+          : plan.filter(({ hasMeetCode }) => hasMeetCode).length
+      },
+      null,
+      2
+    )
+  );
 
-  if (!applyChanges) return;
+  if (!applyChanges) {
+    return;
+  }
 
   for (const item of plan) {
     if (item.missingAccountIds.length > 0) {
@@ -129,11 +139,14 @@ async function main(): Promise<void> {
       : plan.filter(({ hasMeetCode }) => hasMeetCode);
     for (const item of syncTargets) {
       try {
-        await sincronizarCohostsDeInstancia({
-          db,
-          descifrar: descifrarConfiguracion,
-          configurarEspacio: configurarGoogleMeetExistente
-        }, item.instanciaSalaId);
+        await sincronizarCohostsDeInstancia(
+          {
+            db,
+            descifrar: descifrarConfiguracion,
+            configurarEspacio: configurarGoogleMeetExistente
+          },
+          item.instanciaSalaId
+        );
       } catch (error) {
         failures.push({
           instanciaSalaId: item.instanciaSalaId,

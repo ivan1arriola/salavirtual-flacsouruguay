@@ -1,11 +1,5 @@
-import type {
-  NotificationMessage,
-  NotificationRecipient,
-} from "../domain";
-import type {
-  EmailTransportPort,
-  NotificacionesRepositoryPort,
-} from "../ports";
+import type { NotificationMessage, NotificationRecipient } from "../domain";
+import type { EmailTransportPort, NotificacionesRepositoryPort } from "../ports";
 import { notificarUsuarioUseCase } from "./notificar-usuario.use-case";
 
 export async function notificarUsuariosUseCase(
@@ -15,17 +9,11 @@ export async function notificarUsuariosUseCase(
   message: NotificationMessage,
   appBaseUrl = "https://salavirtual.flacso.edu.uy"
 ): Promise<void> {
-  const programRecipients = await destinatariosProgramaParaNotificacion(
-    repository,
-    message
-  );
+  const programRecipients = await destinatariosProgramaParaNotificacion(repository, message);
 
   const uniqueRecipients = Array.from(
     new Map(
-      [...recipients, ...programRecipients].map((recipient) => [
-        recipient.usuarioId,
-        recipient,
-      ])
+      [...recipients, ...programRecipients].map((recipient) => [recipient.usuarioId, recipient])
     ).values()
   );
 
@@ -33,13 +21,7 @@ export async function notificarUsuariosUseCase(
   // GoogleCuentaOcupadaError. Una tanda debe procesarse en orden, sin
   // reintentar automáticamente operaciones cuya aceptación es incierta.
   for (const recipient of uniqueRecipients) {
-    await notificarUsuarioUseCase(
-      repository,
-      emailTransport,
-      recipient,
-      message,
-      appBaseUrl
-    );
+    await notificarUsuarioUseCase(repository, emailTransport, recipient, message, appBaseUrl);
   }
 }
 
@@ -47,16 +29,14 @@ async function destinatariosProgramaParaNotificacion(
   repository: NotificacionesRepositoryPort,
   message: NotificationMessage
 ): Promise<readonly NotificationRecipient[]> {
-  if (
-    message.tipo !== "REUNION_CREADA" &&
-    message.tipo !== "ASISTENCIA_ASIGNACION"
-  ) {
+  if (message.tipo !== "REUNION_CREADA" && message.tipo !== "ASISTENCIA_ASIGNACION") {
     return [];
   }
 
   const solicitudId = message.href?.match(/^\/reuniones\/([^/?#]+)/)?.[1];
-  if (!solicitudId) return [];
+  if (!solicitudId) {
+    return [];
+  }
 
   return repository.obtenerDestinatariosDocentesPrograma(solicitudId);
 }
-

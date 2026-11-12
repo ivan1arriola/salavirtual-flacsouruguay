@@ -13,7 +13,9 @@ async function* generar(total: number, tamanoChunk = 64 * 1024, onYield?: (acum:
   while (enviado < total) {
     const n = Math.min(tamanoChunk, total - enviado);
     const chunk = new Uint8Array(n);
-    for (let i = 0; i < n; i++) chunk[i] = (enviado + i) % 251;
+    for (let i = 0; i < n; i++) {
+      chunk[i] = (enviado + i) % 251;
+    }
     enviado += n;
     onYield?.(enviado);
     yield chunk;
@@ -35,18 +37,28 @@ function destinoFalso(opciones: { aceptaHasta?: (offset: bigint, len: number) =>
 describe("transferirStreamZoom", () => {
   it("si el origen termina antes del total conocido NO finaliza la subida (ORIGEN_INCOMPLETO)", async () => {
     const destino = destinoFalso();
-    await expect(transferirStreamZoom({
-      stream: generar(3 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB,
-      totalConocido: BigInt(5 * KIB), subirBloque: destino.subir
-    })).rejects.toMatchObject({ codigo: "ORIGEN_INCOMPLETO" });
+    await expect(
+      transferirStreamZoom({
+        stream: generar(3 * KIB),
+        offsetConfirmado: 0n,
+        offsetOrigen: 0n,
+        bloqueBytes: KIB,
+        totalConocido: BigInt(5 * KIB),
+        subirBloque: destino.subir
+      })
+    ).rejects.toMatchObject({ codigo: "ORIGEN_INCOMPLETO" });
     expect(destino.bloques.some((b) => b.ultimo)).toBe(false);
   });
 
   it("con total conocido que coincide con lo recibido finaliza normalmente", async () => {
     const destino = destinoFalso();
     const r = await transferirStreamZoom({
-      stream: generar(3 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB,
-      totalConocido: BigInt(3 * KIB), subirBloque: destino.subir
+      stream: generar(3 * KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(3 * KIB),
+      subirBloque: destino.subir
     });
     expect(r.bytesTotales).toBe(BigInt(3 * KIB));
     expect(destino.bloques.at(-1)?.ultimo).toBe(true);
@@ -60,11 +72,20 @@ describe("transferirStreamZoom", () => {
     let maxRetenido = 0;
     const subir: SubidaBloqueZoom = async (offset, bytes, { ultimo }) => {
       confirmado += bytes.byteLength;
-      return ultimo ? { estado: "COMPLETA" } : { estado: "PARCIAL", bytesConfirmados: offset + BigInt(bytes.byteLength) };
+      return ultimo
+        ? { estado: "COMPLETA" }
+        : { estado: "PARCIAL", bytesConfirmados: offset + BigInt(bytes.byteLength) };
     };
     const r = await transferirStreamZoom({
-      stream: generar(total, 64 * 1024, (acum) => { producido = acum; maxRetenido = Math.max(maxRetenido, producido - confirmado); }),
-      offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: bloque, totalConocido: BigInt(total), subirBloque: subir
+      stream: generar(total, 64 * 1024, (acum) => {
+        producido = acum;
+        maxRetenido = Math.max(maxRetenido, producido - confirmado);
+      }),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: bloque,
+      totalConocido: BigInt(total),
+      subirBloque: subir
     });
     expect(r.bytesTotales).toBe(BigInt(total));
     expect(maxRetenido).toBeLessThanOrEqual(bloque + 64 * 1024 + 1);
@@ -74,24 +95,46 @@ describe("transferirStreamZoom", () => {
     const d = destinoFalso();
     const total = 2 * KIB + 1000;
     const r = await transferirStreamZoom({
-      stream: generar(total), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: BigInt(total), subirBloque: d.subir
+      stream: generar(total),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(total),
+      subirBloque: d.subir
     });
-    expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([[KIB, false], [KIB, false], [1000, true]]);
+    expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([
+      [KIB, false],
+      [KIB, false],
+      [1000, true]
+    ]);
     expect(r.bytesTotales).toBe(BigInt(total));
   });
 
   it("archivo múltiplo exacto del bloque: lectura adelantada marca el último bloque completo como final", async () => {
     const d = destinoFalso();
     await transferirStreamZoom({
-      stream: generar(2 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: BigInt(2 * KIB), subirBloque: d.subir
+      stream: generar(2 * KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(2 * KIB),
+      subirBloque: d.subir
     });
-    expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([[KIB, false], [KIB, true]]);
+    expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([
+      [KIB, false],
+      [KIB, true]
+    ]);
   });
 
   it("archivo de 0 bytes finaliza con un bloque vacío", async () => {
     const d = destinoFalso();
     const r = await transferirStreamZoom({
-      stream: generar(0), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: 0n, subirBloque: d.subir
+      stream: generar(0),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: 0n,
+      subirBloque: d.subir
     });
     expect(d.bloques).toEqual([{ offset: 0n, len: 0, ultimo: true }]);
     expect(r.bytesTotales).toBe(0n);
@@ -100,7 +143,12 @@ describe("transferirStreamZoom", () => {
   it("tamaño desconocido: el fin se detecta al terminar el stream", async () => {
     const d = destinoFalso();
     const r = await transferirStreamZoom({
-      stream: generar(KIB + 5), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: null, subirBloque: d.subir
+      stream: generar(KIB + 5),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: null,
+      subirBloque: d.subir
     });
     expect(d.bloques.at(-1)).toEqual({ offset: BigInt(KIB), len: 5, ultimo: true });
     expect(r.bytesTotales).toBe(BigInt(KIB + 5));
@@ -111,7 +159,11 @@ describe("transferirStreamZoom", () => {
     const offset = 3 * KIB;
     const r = await transferirStreamZoom({
       stream: desde(generar(5 * KIB), offset),
-      offsetConfirmado: BigInt(offset), offsetOrigen: BigInt(offset), bloqueBytes: KIB, totalConocido: BigInt(5 * KIB), subirBloque: d.subir
+      offsetConfirmado: BigInt(offset),
+      offsetOrigen: BigInt(offset),
+      bloqueBytes: KIB,
+      totalConocido: BigInt(5 * KIB),
+      subirBloque: d.subir
     });
     expect(d.bloques[0]!.offset).toBe(BigInt(offset));
     expect(r.bytesTotales).toBe(BigInt(5 * KIB));
@@ -124,8 +176,13 @@ describe("transferirStreamZoom", () => {
     const offset = 3 * KIB;
     const completo = Buffer.concat([Buffer.from(await juntar(generar(5 * KIB)))]);
     const r = await transferirStreamZoom({
-      stream: generar(5 * KIB), offsetConfirmado: BigInt(offset), offsetOrigen: 0n, bloqueBytes: KIB,
-      totalConocido: BigInt(5 * KIB), maxDescarteBytes: BigInt(10 * KIB), subirBloque: d.subir
+      stream: generar(5 * KIB),
+      offsetConfirmado: BigInt(offset),
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(5 * KIB),
+      maxDescarteBytes: BigInt(10 * KIB),
+      subirBloque: d.subir
     });
     expect(r.bytesDescartados).toBe(BigInt(offset));
     expect(d.bloques[0]!.offset).toBe(BigInt(offset));
@@ -137,8 +194,13 @@ describe("transferirStreamZoom", () => {
   it("si el prefijo a descartar supera el máximo, falla con REQUIERE_REVISION sin subir nada", async () => {
     const d = destinoFalso();
     const error = await transferirStreamZoom({
-      stream: generar(5 * KIB), offsetConfirmado: BigInt(4 * KIB), offsetOrigen: 0n, bloqueBytes: KIB,
-      totalConocido: BigInt(5 * KIB), maxDescarteBytes: BigInt(KIB), subirBloque: d.subir
+      stream: generar(5 * KIB),
+      offsetConfirmado: BigInt(4 * KIB),
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(5 * KIB),
+      maxDescarteBytes: BigInt(KIB),
+      subirBloque: d.subir
     }).catch((e) => e);
     expect(error).toBeInstanceOf(TransferenciaZoomError);
     expect(error.codigo).toBe("DESCARTE_EXCEDIDO");
@@ -148,7 +210,12 @@ describe("transferirStreamZoom", () => {
   it("si el origen empieza más allá del offset confirmado no sube nada (hueco)", async () => {
     const d = destinoFalso();
     const error = await transferirStreamZoom({
-      stream: generar(KIB), offsetConfirmado: 0n, offsetOrigen: BigInt(KIB), bloqueBytes: KIB, totalConocido: null, subirBloque: d.subir
+      stream: generar(KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: BigInt(KIB),
+      bloqueBytes: KIB,
+      totalConocido: null,
+      subirBloque: d.subir
     }).catch((e) => e);
     expect(error.codigo).toBe("ORIGEN_DESALINEADO");
     expect(d.bloques).toHaveLength(0);
@@ -157,8 +224,12 @@ describe("transferirStreamZoom", () => {
   it("último ACK perdido: si Drive ya tiene todo y el stream queda vacío, finaliza con bloque vacío", async () => {
     const d = destinoFalso();
     const r = await transferirStreamZoom({
-      stream: generar(0), offsetConfirmado: BigInt(2 * KIB), offsetOrigen: BigInt(2 * KIB), bloqueBytes: KIB,
-      totalConocido: BigInt(2 * KIB), subirBloque: d.subir
+      stream: generar(0),
+      offsetConfirmado: BigInt(2 * KIB),
+      offsetOrigen: BigInt(2 * KIB),
+      bloqueBytes: KIB,
+      totalConocido: BigInt(2 * KIB),
+      subirBloque: d.subir
     });
     expect(d.bloques).toEqual([{ offset: BigInt(2 * KIB), len: 0, ultimo: true }]);
     expect(r.bytesTotales).toBe(BigInt(2 * KIB));
@@ -167,7 +238,12 @@ describe("transferirStreamZoom", () => {
   it("Drive confirma menos de lo enviado: detiene la transferencia para reanudar desde el offset real", async () => {
     const d = destinoFalso({ aceptaHasta: (offset) => offset + BigInt(KIB / 2) });
     const error = await transferirStreamZoom({
-      stream: generar(3 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: BigInt(3 * KIB), subirBloque: d.subir
+      stream: generar(3 * KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: BigInt(3 * KIB),
+      subirBloque: d.subir
     }).catch((e) => e);
     expect(error.codigo).toBe("CONFIRMACION_PARCIAL");
     expect(error.bytesConfirmados).toBe(BigInt(KIB / 2));
@@ -175,7 +251,11 @@ describe("transferirStreamZoom", () => {
 
   it("la sesión vencida se propaga para reiniciar desde cero", async () => {
     const error = await transferirStreamZoom({
-      stream: generar(2 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: null,
+      stream: generar(2 * KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: null,
       subirBloque: async () => ({ estado: "VENCIDA" })
     }).catch((e) => e);
     expect(error.codigo).toBe("SESION_VENCIDA");
@@ -185,25 +265,43 @@ describe("transferirStreamZoom", () => {
     const control = new AbortController();
     let llamadas = 0;
     const error = await transferirStreamZoom({
-      stream: generar(10 * KIB), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: KIB, totalConocido: null, signal: control.signal,
-      subirBloque: async (offset, bytes) => { llamadas++; control.abort(); return { estado: "PARCIAL", bytesConfirmados: offset + BigInt(bytes.byteLength) }; }
+      stream: generar(10 * KIB),
+      offsetConfirmado: 0n,
+      offsetOrigen: 0n,
+      bloqueBytes: KIB,
+      totalConocido: null,
+      signal: control.signal,
+      subirBloque: async (offset, bytes) => {
+        llamadas++;
+        control.abort();
+        return { estado: "PARCIAL", bytesConfirmados: offset + BigInt(bytes.byteLength) };
+      }
     }).catch((e) => e);
     expect(error.codigo).toBe("ABORTADA");
     expect(llamadas).toBe(1);
   });
 
   it("rechaza un tamaño de bloque que no sea múltiplo de 256 KiB", async () => {
-    await expect(transferirStreamZoom({
-      stream: generar(10), offsetConfirmado: 0n, offsetOrigen: 0n, bloqueBytes: 1000, totalConocido: null,
-      subirBloque: async () => ({ estado: "COMPLETA" })
-    })).rejects.toThrow(/256/);
+    await expect(
+      transferirStreamZoom({
+        stream: generar(10),
+        offsetConfirmado: 0n,
+        offsetOrigen: 0n,
+        bloqueBytes: 1000,
+        totalConocido: null,
+        subirBloque: async () => ({ estado: "COMPLETA" })
+      })
+    ).rejects.toThrow(/256/);
   });
 });
 
 async function* desde(origen: AsyncIterable<Uint8Array>, offset: number) {
   let visto = 0;
   for await (const chunk of origen) {
-    if (visto + chunk.byteLength <= offset) { visto += chunk.byteLength; continue; }
+    if (visto + chunk.byteLength <= offset) {
+      visto += chunk.byteLength;
+      continue;
+    }
     yield chunk.subarray(Math.max(0, offset - visto));
     visto += chunk.byteLength;
   }
@@ -211,6 +309,8 @@ async function* desde(origen: AsyncIterable<Uint8Array>, offset: number) {
 
 async function juntar(origen: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
   const partes: Uint8Array[] = [];
-  for await (const c of origen) partes.push(c);
+  for await (const c of origen) {
+    partes.push(c);
+  }
   return Buffer.concat(partes);
 }

@@ -45,4 +45,3 @@ export type IntentoSincronizacionCalendarioAsistente = Readonly<{
   resultados: readonly ResultadoSincronizacionCalendarioAsistente[];
   error: string | null;
 }>;
-

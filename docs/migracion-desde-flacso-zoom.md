@@ -6,18 +6,18 @@ Reemplazar la operacion Zoom por una plataforma Meet, preservando datos historic
 
 ## Mapeo inicial
 
-| Plataforma Zoom actual | Gestor Meet nuevo |
-| --- | --- |
-| `User` | `Usuario` + alias y cuentas Google |
-| `Docente` | `Docente` |
-| `AsistenteZoom` | `AsistenteTecnico` |
-| `Programa` | `Programa` |
-| relacion docente/programa | `DocentePrograma` |
-| `CuentaZoom` | `CuentaProveedor` con proveedor `ZOOM_HISTORICO` |
-| `SolicitudSala` | `SolicitudSala` |
-| `EventoZoom` | `InstanciaSala` + `EventoProveedor` |
-| `Liquidacion` | `LiquidacionAsistenciaTecnica` |
-| `LiquidacionDetalle` | `DetalleLiquidacionAsistenciaTecnica` |
+| Plataforma Zoom actual    | Gestor Meet nuevo                                |
+| ------------------------- | ------------------------------------------------ |
+| `User`                    | `Usuario` + alias y cuentas Google               |
+| `Docente`                 | `Docente`                                        |
+| `AsistenteZoom`           | `AsistenteTecnico`                               |
+| `Programa`                | `Programa`                                       |
+| relacion docente/programa | `DocentePrograma`                                |
+| `CuentaZoom`              | `CuentaProveedor` con proveedor `ZOOM_HISTORICO` |
+| `SolicitudSala`           | `SolicitudSala`                                  |
+| `EventoZoom`              | `InstanciaSala` + `EventoProveedor`              |
+| `Liquidacion`             | `LiquidacionAsistenciaTecnica`                   |
+| `LiquidacionDetalle`      | `DetalleLiquidacionAsistenciaTecnica`            |
 
 ## Fases
 
@@ -34,14 +34,14 @@ Reemplazar la operacion Zoom por una plataforma Meet, preservando datos historic
 
 La importacion desde la base anterior se ejecuto con reconciliacion de conteos:
 
-| Registro | Importados |
-| --- | ---: |
-| Programas | 9 |
-| Solicitudes | 95 |
-| Reuniones/instancias | 218 |
-| Cuentas host Zoom historicas | 14 |
-| Codigos de reunion disponibles | 97 |
-| Asignaciones de asistencia totales | 84 |
+| Registro                           | Importados |
+| ---------------------------------- | ---------: |
+| Programas                          |          9 |
+| Solicitudes                        |         95 |
+| Reuniones/instancias               |        218 |
+| Cuentas host Zoom historicas       |         14 |
+| Codigos de reunion disponibles     |         97 |
+| Asignaciones de asistencia totales |         84 |
 
 Las 218 reuniones quedaron vinculadas exclusivamente al proveedor
 `ZOOM_HISTORICO`. De las reuniones importadas, 200 estan programadas, 15
@@ -67,13 +67,13 @@ Los dias se calculan desde cada fecha y zona horaria en lugar de duplicarlos.
 
 ## Migracion de roles
 
-| Rol anterior | Rol nuevo |
-| --- | --- |
-| `ADMINISTRADOR` | `ADMINISTRACION` |
-| `CONTADURIA` | `ADMINISTRACION` |
-| `SOPORTE_ZOOM` | `ASISTENTE_TECNICO` |
+| Rol anterior     | Rol nuevo           |
+| ---------------- | ------------------- |
+| `ADMINISTRADOR`  | `ADMINISTRACION`    |
+| `CONTADURIA`     | `ADMINISTRACION`    |
+| `SOPORTE_ZOOM`   | `ASISTENTE_TECNICO` |
 | `ASISTENTE_ZOOM` | `ASISTENTE_TECNICO` |
-| `DOCENTE` | `DOCENTE` |
+| `DOCENTE`        | `DOCENTE`           |
 
 Los usuarios de Contabilidad no se eliminan durante la importacion: se migran a
 `ADMINISTRACION`, que recibe sus permisos y flujos.

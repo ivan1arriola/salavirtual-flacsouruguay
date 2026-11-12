@@ -25,7 +25,9 @@ const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
 export default async function AgendaAbiertaPage() {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
@@ -33,10 +35,13 @@ export default async function AgendaAbiertaPage() {
   if (!actor?.activo || !["ASISTENTE_TECNICO", "ADMINISTRACION"].includes(actor.rol)) {
     redirect("/reuniones");
   }
-  const assistant = actor.rol === "ASISTENTE_TECNICO"
-    ? await db.asistenteTecnico.findUnique({ where: { usuarioId: actor.id }, select: { id: true } })
-    : null;
-  if (actor.rol === "ASISTENTE_TECNICO" && !assistant) redirect("/");
+  const assistant =
+    actor.rol === "ASISTENTE_TECNICO"
+      ? await db.asistenteTecnico.findUnique({ where: { usuarioId: actor.id }, select: { id: true } })
+      : null;
+  if (actor.rol === "ASISTENTE_TECNICO" && !assistant) {
+    redirect("/");
+  }
 
   const ahora = new Date();
   const meetings = await db.instanciaSala.findMany({
@@ -145,9 +150,10 @@ export default async function AgendaAbiertaPage() {
 
   const monthSummary = resumirAsistencias(personalMonth);
   const currentMonthMinutes = monthSummary.minutosVirtuales + monthSummary.minutosHibridos;
-  const activeApplicationsCount = actor.rol === "ASISTENTE_TECNICO"
-    ? interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").length
-    : 0;
+  const activeApplicationsCount =
+    actor.rol === "ASISTENTE_TECNICO"
+      ? interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").length
+      : 0;
 
   const assignedList: AsignacionExistente[] = assistantAssignments.map(({ instancia }) => ({
     id: instancia.id,
@@ -178,15 +184,21 @@ export default async function AgendaAbiertaPage() {
         <section className="open-agenda-summary-bar" aria-label="Resumen de disponibilidad">
           <div className="open-agenda-summary-item">
             <Clock3 size={18} aria-hidden="true" />
-            <span>Horas asignadas este mes: <strong>{formatMinutes(currentMonthMinutes)}</strong></span>
+            <span>
+              Horas asignadas este mes: <strong>{formatMinutes(currentMonthMinutes)}</strong>
+            </span>
           </div>
           <div className="open-agenda-summary-item">
             <Hand size={18} aria-hidden="true" />
-            <span>Reuniones abiertas: <strong>{meetings.length}</strong></span>
+            <span>
+              Reuniones abiertas: <strong>{meetings.length}</strong>
+            </span>
           </div>
           <div className="open-agenda-summary-item">
             <CheckCircle2 size={18} aria-hidden="true" />
-            <span>Tus postulaciones: <strong>{activeApplicationsCount}</strong></span>
+            <span>
+              Tus postulaciones: <strong>{activeApplicationsCount}</strong>
+            </span>
           </div>
         </section>
       ) : null}
@@ -229,7 +241,8 @@ export default async function AgendaAbiertaPage() {
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
                     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-                    const missingHybridSchedule = modalidad === "HIBRIDA" &&
+                    const missingHybridSchedule =
+                      modalidad === "HIBRIDA" &&
                       (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt);
                     const durationMin = Math.max(
                       1,
@@ -239,17 +252,25 @@ export default async function AgendaAbiertaPage() {
                       { inicio: inicioAsistencia, fin: finAsistencia },
                       assignedList
                     );
-                    const cardStateClass = conflict.estado === "CONFLICTO"
-                      ? " has-conflict"
-                      : conflict.estado === "MUY_PROXIMO"
-                        ? " has-warning"
-                        : " is-available";
+                    const cardStateClass =
+                      conflict.estado === "CONFLICTO"
+                        ? " has-conflict"
+                        : conflict.estado === "MUY_PROXIMO"
+                          ? " has-warning"
+                          : " is-available";
 
                     return (
                       <article className={`open-agenda-card${cardStateClass}`} key={meeting.id}>
                         <div className="open-agenda-card-meta">
                           <span className="time-tag">
-                            {missingHybridSchedule ? "Cobertura técnica: horario por confirmar" : <>Cobertura: {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} ({formatMinutes(durationMin)})</>}
+                            {missingHybridSchedule ? (
+                              "Cobertura técnica: horario por confirmar"
+                            ) : (
+                              <>
+                                Cobertura: {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} (
+                                {formatMinutes(durationMin)})
+                              </>
+                            )}
                           </span>
                           <span className={`mode-pill mode-${modalidad.toLowerCase()}`}>
                             {modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
@@ -259,9 +280,24 @@ export default async function AgendaAbiertaPage() {
                         <div className="open-agenda-card-body">
                           <span className="open-agenda-card-program">{association.programa.nombre}</span>
                           <h3 className="open-agenda-card-title">{meeting.solicitud.titulo}</h3>
-                          <p className="open-agenda-card-teacher">Docente: {teacher.nombres} {teacher.apellidos}</p>
-                          <MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance modality={modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"} compact />
-                          {missingHybridSchedule ? <small className="status status-warning">Falta definir llegada y salida para esta cobertura híbrida</small> : null}
+                          <p className="open-agenda-card-teacher">
+                            Docente: {teacher.nombres} {teacher.apellidos}
+                          </p>
+                          <MeetingScheduleTimes
+                            startsAt={meeting.inicioProgramadoAt}
+                            endsAt={meeting.finProgramadoAt}
+                            requiresAssistance
+                            modality={modalidad}
+                            assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt}
+                            assistanceEndsAt={meeting.finAsistenciaTecnicaAt}
+                            viewerIsAssistant={actor.rol === "ASISTENTE_TECNICO"}
+                            compact
+                          />
+                          {missingHybridSchedule ? (
+                            <small className="status status-warning">
+                              Falta definir llegada y salida para esta cobertura híbrida
+                            </small>
+                          ) : null}
                           {meet?.cuentaProveedor?.emailOrganizador || meet?.cuentaProveedor?.nombre ? (
                             <small className="muted-text">
                               Cuenta: {meet.cuentaProveedor.emailOrganizador ?? meet.cuentaProveedor.nombre}
@@ -299,7 +335,9 @@ export default async function AgendaAbiertaPage() {
                             disabledReason={
                               missingHybridSchedule
                                 ? "Administración debe definir la hora exacta de llegada y salida antes de abrir esta cobertura híbrida."
-                                : conflict.estado === "CONFLICTO" ? conflict.detalle : undefined
+                                : conflict.estado === "CONFLICTO"
+                                  ? conflict.detalle
+                                  : undefined
                             }
                             interested={Boolean(interested)}
                             meetingId={meeting.id}
@@ -331,7 +369,9 @@ export default async function AgendaAbiertaPage() {
                   const meetingApplicants = interests
                     .filter((item) => item.instanciaSalaId === meeting.id && "asistenteTecnico" in item)
                     .map((item) => {
-                      if (!("asistenteTecnico" in item)) return null;
+                      if (!("asistenteTecnico" in item)) {
+                        return null;
+                      }
                       const ast = item.asistenteTecnico;
                       const candPeriod = {
                         inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
@@ -347,8 +387,15 @@ export default async function AgendaAbiertaPage() {
                       const meetingMonth = meeting.inicioProgramadoAt.getUTCMonth();
                       const meetingYear = meeting.inicioProgramadoAt.getUTCFullYear();
                       const monthlyMinutes = astAssignments
-                        .filter((a) => a.inicio.getUTCMonth() === meetingMonth && a.inicio.getUTCFullYear() === meetingYear)
-                        .reduce((acc, a) => acc + Math.round((a.fin.getTime() - a.inicio.getTime()) / 60_000), 0);
+                        .filter(
+                          (a) =>
+                            a.inicio.getUTCMonth() === meetingMonth &&
+                            a.inicio.getUTCFullYear() === meetingYear
+                        )
+                        .reduce(
+                          (acc, a) => acc + Math.round((a.fin.getTime() - a.inicio.getTime()) / 60_000),
+                          0
+                        );
 
                       return {
                         id: ast.id,
@@ -375,15 +422,24 @@ export default async function AgendaAbiertaPage() {
                       <td className="date-cell">
                         {formatDateTime(meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt)}
                         {meeting.inicioAsistenciaTecnicaAt || meeting.finAsistenciaTecnicaAt ? (
-                          <small>Meet {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</small>
+                          <small>
+                            Meet {formatTime(meeting.inicioProgramadoAt)}–
+                            {formatTime(meeting.finProgramadoAt)}
+                          </small>
                         ) : null}
                       </td>
                       <td>
                         <strong>{meeting.solicitud.titulo}</strong>
-                        <small>{association.docente.usuario.nombres} {association.docente.usuario.apellidos}</small>
+                        <small>
+                          {association.docente.usuario.nombres} {association.docente.usuario.apellidos}
+                        </small>
                       </td>
                       <td>{association.programa.nombre}</td>
-                      <td>{meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta"}</td>
+                      <td>
+                        {meet?.cuentaProveedor?.emailOrganizador ??
+                          meet?.cuentaProveedor?.nombre ??
+                          "Sin cuenta"}
+                      </td>
                       <td>
                         <AssistantAssignmentSelect
                           applicants={applicantOptions}

@@ -37,13 +37,10 @@ export function DashboardHeader({
           </span>
         </div>
         <h1 className="dashboard-header-title">Hola, {firstName}</h1>
-        <p className="dashboard-header-subtitle">
-          {subtitle ?? defaultSubtitles[role] ?? ""}
-        </p>
+        <p className="dashboard-header-subtitle">{subtitle ?? defaultSubtitles[role] ?? ""}</p>
       </div>
 
       {actions ? <div className="dashboard-header-actions">{actions}</div> : null}
     </header>
   );
 }
-

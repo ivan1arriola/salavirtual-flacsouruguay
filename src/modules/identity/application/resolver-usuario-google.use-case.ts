@@ -4,18 +4,13 @@ import {
   type PerfilGoogle,
   type UsuarioAutenticado
 } from "../domain";
-import type {
-  CalendarioAsistenteDispatcher,
-  IdentityRepository
-} from "../ports";
+import type { CalendarioAsistenteDispatcher, IdentityRepository } from "../ports";
 
 export function crearResolverUsuarioGoogleUseCase(
   repository: IdentityRepository,
   calendarioDispatcher?: CalendarioAsistenteDispatcher
 ) {
-  return async function resolverUsuarioGoogle(
-    perfil: PerfilGoogle
-  ): Promise<UsuarioAutenticado | null> {
+  return async function resolverUsuarioGoogle(perfil: PerfilGoogle): Promise<UsuarioAutenticado | null> {
     if (!esPerfilGoogleVerificado(perfil)) {
       return null;
     }
@@ -40,11 +35,13 @@ export function crearResolverUsuarioGoogleUseCase(
       try {
         await calendarioDispatcher.reconciliarCalendarioAsistente(autenticado.id);
       } catch (error) {
-        console.warn("No se pudo completar la reconciliacion de Google Calendar del asistente tecnico", error);
+        console.warn(
+          "No se pudo completar la reconciliacion de Google Calendar del asistente tecnico",
+          error
+        );
       }
     }
 
     return autenticado;
   };
 }
-

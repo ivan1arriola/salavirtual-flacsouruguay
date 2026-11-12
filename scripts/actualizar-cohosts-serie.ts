@@ -10,7 +10,9 @@ const applyChanges = process.argv.includes("--apply");
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 
 async function main(): Promise<void> {
-  if (desiredEmails.length === 0) throw new Error("Indicá al menos un --cohost.");
+  if (desiredEmails.length === 0) {
+    throw new Error("Indicá al menos un --cohost.");
+  }
   if (desiredEmails.some((email) => removedEmails.includes(email))) {
     throw new Error("Una dirección no puede agregarse y quitarse a la vez.");
   }
@@ -18,7 +20,9 @@ async function main(): Promise<void> {
     where: { id: solicitudId },
     select: { id: true, titulo: true, docenteProgramaId: true, createdAt: true }
   });
-  if (!request) throw new Error(`No existe la solicitud ${solicitudId}.`);
+  if (!request) {
+    throw new Error(`No existe la solicitud ${solicitudId}.`);
+  }
   const meetings = await db.instanciaSala.findMany({
     where: {
       solicitud: {
@@ -39,7 +43,9 @@ async function main(): Promise<void> {
       }
     }
   });
-  if (meetings.length === 0) throw new Error("La serie no tiene encuentros.");
+  if (meetings.length === 0) {
+    throw new Error("La serie no tiene encuentros.");
+  }
   const googleAccounts = await db.cuentaGoogleFlacso.findMany({
     where: { email: { in: desiredEmails } },
     select: { id: true, email: true }
@@ -49,7 +55,9 @@ async function main(): Promise<void> {
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
   const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
-  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: true
+  });
   if (!configuration) {
     throw new Error("Google Workspace no está configurado.");
   }
@@ -73,14 +81,22 @@ async function main(): Promise<void> {
       ...meeting.cohostEmails.map(({ email }) => email)
     ]
   }));
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    serie: { solicitudId, titulo: request.titulo, encuentros: meetings.length },
-    cohostsDeseados: desiredEmails,
-    cohostsQuitados: removedEmails,
-    plan
-  }, null, 2));
-  if (!applyChanges) return;
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        serie: { solicitudId, titulo: request.titulo, encuentros: meetings.length },
+        cohostsDeseados: desiredEmails,
+        cohostsQuitados: removedEmails,
+        plan
+      },
+      null,
+      2
+    )
+  );
+  if (!applyChanges) {
+    return;
+  }
 
   const updatedPayloads = new Map<string, Prisma.InputJsonValue>();
   for (const { event, calendarId } of events) {
@@ -110,44 +126,47 @@ async function main(): Promise<void> {
     updatedPayloads.set(event.id, JSON.parse(JSON.stringify(updated.data)) as Prisma.InputJsonValue);
   }
 
-  await db.$transaction(async (tx) => {
-    for (const { meeting, event } of events) {
-      await tx.cohostEmailReunion.deleteMany({
-        where: { instanciaSalaId: meeting.id, email: { in: [...desiredEmails, ...removedEmails] } }
-      });
-      await tx.cohostReunion.deleteMany({
-        where: {
-          instanciaSalaId: meeting.id,
-          cuentaGoogle: { email: { in: removedEmails } }
+  await db.$transaction(
+    async (tx) => {
+      for (const { meeting, event } of events) {
+        await tx.cohostEmailReunion.deleteMany({
+          where: { instanciaSalaId: meeting.id, email: { in: [...desiredEmails, ...removedEmails] } }
+        });
+        await tx.cohostReunion.deleteMany({
+          where: {
+            instanciaSalaId: meeting.id,
+            cuentaGoogle: { email: { in: removedEmails } }
+          }
+        });
+        for (const email of desiredEmails) {
+          const cuentaGoogleId = linkedByEmail.get(email);
+          if (cuentaGoogleId) {
+            await tx.cohostReunion.upsert({
+              where: { instanciaSalaId_cuentaGoogleId: { instanciaSalaId: meeting.id, cuentaGoogleId } },
+              create: { instanciaSalaId: meeting.id, cuentaGoogleId },
+              update: {}
+            });
+          } else {
+            await tx.cohostEmailReunion.create({ data: { instanciaSalaId: meeting.id, email } });
+          }
+        }
+        await tx.eventoProveedor.update({
+          where: { id: event.id },
+          data: { payloadUltimo: updatedPayloads.get(event.id), sincronizadoAt: new Date() }
+        });
+      }
+      await tx.auditoria.create({
+        data: {
+          accion: "COHOSTS_SERIE_ACTUALIZADOS",
+          entidadTipo: "SolicitudSala",
+          entidadId: request.id,
+          valorAnterior: { encuentros: plan.map(({ instanciaId, actuales }) => ({ instanciaId, actuales })) },
+          valorNuevo: { cohosts: desiredEmails, quitados: removedEmails, encuentros: meetings.length }
         }
       });
-      for (const email of desiredEmails) {
-        const cuentaGoogleId = linkedByEmail.get(email);
-        if (cuentaGoogleId) {
-          await tx.cohostReunion.upsert({
-            where: { instanciaSalaId_cuentaGoogleId: { instanciaSalaId: meeting.id, cuentaGoogleId } },
-            create: { instanciaSalaId: meeting.id, cuentaGoogleId },
-            update: {}
-          });
-        } else {
-          await tx.cohostEmailReunion.create({ data: { instanciaSalaId: meeting.id, email } });
-        }
-      }
-      await tx.eventoProveedor.update({
-        where: { id: event.id },
-        data: { payloadUltimo: updatedPayloads.get(event.id), sincronizadoAt: new Date() }
-      });
-    }
-    await tx.auditoria.create({
-      data: {
-        accion: "COHOSTS_SERIE_ACTUALIZADOS",
-        entidadTipo: "SolicitudSala",
-        entidadId: request.id,
-        valorAnterior: { encuentros: plan.map(({ instanciaId, actuales }) => ({ instanciaId, actuales })) },
-        valorNuevo: { cohosts: desiredEmails, quitados: removedEmails, encuentros: meetings.length }
-      }
-    });
-  }, { timeout: 30_000 });
+    },
+    { timeout: 30_000 }
+  );
 }
 
 type CalendarAttendee = Readonly<{
@@ -180,13 +199,18 @@ function mergeAttendees(
       });
     }
   }
-  for (const email of desired) result.set(email, { email });
+  for (const email of desired) {
+    result.set(email, { email });
+  }
   return [...result.values()];
 }
 
 function sameAttendees(left: readonly CalendarAttendee[], right: readonly CalendarAttendee[]): boolean {
   const emails = (attendees: readonly CalendarAttendee[]) =>
-    attendees.map(({ email }) => normalizeEmail(email)).sort().join(",");
+    attendees
+      .map(({ email }) => normalizeEmail(email))
+      .sort()
+      .join(",");
   return emails(left) === emails(right);
 }
 
@@ -197,19 +221,23 @@ function calendarEventUrl(calendarId: string, eventId: string): string {
 function argumentValue(name: string): string {
   const index = process.argv.indexOf(name);
   const value = index >= 0 ? process.argv[index + 1]?.trim() : "";
-  if (!value) throw new Error(`Falta ${name}.`);
+  if (!value) {
+    throw new Error(`Falta ${name}.`);
+  }
   return value;
 }
 
 function argumentValues(name: string): string[] {
-  return process.argv.flatMap((value, index) => value === name && process.argv[index + 1]
-    ? [process.argv[index + 1]]
-    : []);
+  return process.argv.flatMap((value, index) =>
+    value === name && process.argv[index + 1] ? [process.argv[index + 1]] : []
+  );
 }
 
 function normalizeEmail(value: string): string {
   const email = value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(`Correo inválido: ${value}`);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error(`Correo inválido: ${value}`);
+  }
   return email;
 }
 

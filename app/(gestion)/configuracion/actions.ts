@@ -34,7 +34,9 @@ export async function actualizarProgramaAdmin(formData: FormData): Promise<void>
   const context = programReturnContext(formData);
   const programaId = String(formData.get("programaId") ?? "");
   try {
-    if (!programaId) throw new Error("Programa no válido.");
+    if (!programaId) {
+      throw new Error("Programa no válido.");
+    }
     await actualizarPrograma(db, actor, programaId, programaInput(formData));
   } catch (error) {
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
@@ -50,7 +52,9 @@ export async function eliminarProgramaAdmin(formData: FormData): Promise<void> {
   const programaId = String(formData.get("programaId") ?? "");
   const confirmacion = String(formData.get("confirmacion") ?? "");
   try {
-    if (!programaId) throw new Error("Programa no válido.");
+    if (!programaId) {
+      throw new Error("Programa no válido.");
+    }
     await eliminarPrograma(db, actor, programaId, confirmacion);
   } catch (error) {
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
@@ -67,7 +71,9 @@ export async function agregarIntegrantePrograma(formData: FormData): Promise<voi
   const usuarioId = String(formData.get("usuarioId") ?? "");
 
   try {
-    if (!programaId || !usuarioId) throw new Error("Seleccioná una persona para agregar.");
+    if (!programaId || !usuarioId) {
+      throw new Error("Seleccioná una persona para agregar.");
+    }
     const programaIds = await programasActivosDelDocente(usuarioId);
     await actualizarProgramasDocente(db, actor, usuarioId, {
       programaIds: [...programaIds, programaId]
@@ -87,9 +93,13 @@ export async function quitarIntegrantePrograma(formData: FormData): Promise<void
   const usuarioId = String(formData.get("usuarioId") ?? "");
 
   try {
-    if (!programaId || !usuarioId) throw new Error("La asociación seleccionada no es válida.");
+    if (!programaId || !usuarioId) {
+      throw new Error("La asociación seleccionada no es válida.");
+    }
     const programaIds = await programasActivosDelDocente(usuarioId);
-    if (!programaIds.includes(programaId)) throw new Error("La persona ya no pertenece a este programa.");
+    if (!programaIds.includes(programaId)) {
+      throw new Error("La persona ya no pertenece a este programa.");
+    }
     await actualizarProgramasDocente(db, actor, usuarioId, {
       programaIds: programaIds.filter((id) => id !== programaId)
     });
@@ -134,10 +144,12 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
       correosCopiaReporteMensual: formData.get("correosCopiaReporteMensual")
     });
   } catch (error) {
-    redirect(asistenciaRedirect(
-      undefined,
-      errorMessage(error, "No se pudo actualizar la configuración de asistencia técnica.")
-    ));
+    redirect(
+      asistenciaRedirect(
+        undefined,
+        errorMessage(error, "No se pudo actualizar la configuración de asistencia técnica.")
+      )
+    );
   }
 
   revalidatePath("/configuracion");
@@ -154,7 +166,9 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
       replyToEmail: formData.get("replyToEmail")
     });
   } catch (error) {
-    redirect(`/configuracion?seccion=correo&error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`);
+    redirect(
+      `/configuracion?seccion=correo&error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
+    );
   }
   revalidatePath("/configuracion");
   redirect("/configuracion?seccion=correo&estado=correo-ses-actualizado");
@@ -162,9 +176,13 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo || actor.rol !== "ADMINISTRACION") redirect("/");
+  if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
+    redirect("/");
+  }
   return actor;
 }
 
@@ -178,7 +196,9 @@ async function programasActivosDelDocente(usuarioId: string): Promise<string[]> 
       }
     }
   });
-  if (!user || user.rol !== "DOCENTE") throw new Error("La persona seleccionada no es docente.");
+  if (!user || user.rol !== "DOCENTE") {
+    throw new Error("La persona seleccionada no es docente.");
+  }
   return user.docente?.programas.map(({ programaId }) => programaId) ?? [];
 }
 
@@ -210,20 +230,36 @@ function programReturnContext(formData: FormData): ProgramReturnContext {
   return formData.get("contexto") === "usuarios" ? "usuarios" : "configuracion";
 }
 
-function programRedirect(programaId: string, estado?: string, error?: string, context: ProgramReturnContext = "configuracion"): string {
-  const params = context === "usuarios"
-    ? new URLSearchParams({ vista: "programas" })
-    : new URLSearchParams({ seccion: "programas" });
-  if (programaId) params.set("programa", programaId);
-  if (estado) params.set("estado", estado);
-  if (error) params.set("error", error);
+function programRedirect(
+  programaId: string,
+  estado?: string,
+  error?: string,
+  context: ProgramReturnContext = "configuracion"
+): string {
+  const params =
+    context === "usuarios"
+      ? new URLSearchParams({ vista: "programas" })
+      : new URLSearchParams({ seccion: "programas" });
+  if (programaId) {
+    params.set("programa", programaId);
+  }
+  if (estado) {
+    params.set("estado", estado);
+  }
+  if (error) {
+    params.set("error", error);
+  }
   return `${context === "usuarios" ? "/usuarios" : "/configuracion"}?${params.toString()}`;
 }
 
 function asistenciaRedirect(estado?: string, error?: string): string {
   const params = new URLSearchParams({ seccion: "asistencia" });
-  if (estado) params.set("estado", estado);
-  if (error) params.set("error", error);
+  if (estado) {
+    params.set("estado", estado);
+  }
+  if (error) {
+    params.set("error", error);
+  }
   return `/configuracion?${params.toString()}`;
 }
 

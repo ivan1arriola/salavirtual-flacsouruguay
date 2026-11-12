@@ -20,12 +20,7 @@ export function CopyMeetLinkButton({
   }
 
   return (
-    <button
-      className="copy-meet-button"
-      onClick={copy}
-      title={title}
-      type="button"
-    >
+    <button className="copy-meet-button" onClick={copy} title={title} type="button">
       {copied ? <Check size={14} /> : <Copy size={14} />}
       {copied ? "Copiado" : "Copiar link"}
     </button>
@@ -48,13 +43,7 @@ export function MeetLinkActions({
   const openLabel = provider === "ZOOM" || provider === "ZOOM_HISTORICO" ? "Abrir Zoom" : "Abrir Meet";
   return (
     <span className={`meet-link-actions ${className}`.trim()}>
-      <a
-        className={openClassName}
-        href={url}
-        rel="noreferrer"
-        target="_blank"
-        title={openLabel}
-      >
+      <a className={openClassName} href={url} rel="noreferrer" target="_blank" title={openLabel}>
         <ExternalLink size={iconOnly ? 16 : 15} />
         <span className={iconOnly ? "sr-only" : ""}>{openLabel}</span>
       </a>

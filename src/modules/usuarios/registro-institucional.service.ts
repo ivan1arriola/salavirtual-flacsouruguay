@@ -19,17 +19,21 @@ export async function completarRegistroInstitucional(
     if (!user?.activo || user.rol !== "DOCENTE") {
       throw new Error("La sesión ya no corresponde a un docente activo.");
     }
-    const docente = user.docente ?? await tx.docente.create({
-      data: { usuarioId: user.id },
-      select: { id: true }
-    });
+    const docente =
+      user.docente ??
+      (await tx.docente.create({
+        data: { usuarioId: user.id },
+        select: { id: true }
+      }));
     const programa = input.programaId
       ? await tx.programa.findFirst({
           where: { id: input.programaId, activo: true },
           select: { id: true, nombre: true }
         })
       : await encontrarOCrearPrograma(tx, input.programaNuevo!);
-    if (!programa) throw new Error("El programa seleccionado no existe o está inactivo.");
+    if (!programa) {
+      throw new Error("El programa seleccionado no existe o está inactivo.");
+    }
 
     await tx.docentePrograma.upsert({
       where: { docenteId_programaId: { docenteId: docente.id, programaId: programa.id } },
@@ -56,8 +60,12 @@ async function encontrarOCrearPrograma(tx: TransactionClient, nombre: string) {
     where: { nombre: { equals: nombre, mode: "insensitive" } },
     select: { id: true, nombre: true, activo: true }
   });
-  if (existing && !existing.activo) throw new Error("Ya existe un programa inactivo con ese nombre.");
-  if (existing) return existing;
+  if (existing && !existing.activo) {
+    throw new Error("Ya existe un programa inactivo con ese nombre.");
+  }
+  if (existing) {
+    return existing;
+  }
   return tx.programa.create({
     data: { nombre, activo: true },
     select: { id: true, nombre: true }

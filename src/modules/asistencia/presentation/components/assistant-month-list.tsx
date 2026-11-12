@@ -48,14 +48,18 @@ export function AssistantMonthList({
   }
 
   function closeReport() {
-    if (pending) return;
+    if (pending) {
+      return;
+    }
     setSelected(null);
     setError("");
   }
 
   async function submitReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selected) return;
+    if (!selected) {
+      return;
+    }
     setPending(true);
     setError("");
     const response = await fetch("/api/v1/asistencia/duracion", {
@@ -66,11 +70,13 @@ export function AssistantMonthList({
         inicioReal: montevideoInputToIso(actualStart),
         finReal: montevideoInputToIso(actualEnd),
         comentario: comment || undefined,
-        incidencia: hasIncident ? {
-          tipo: incidentType,
-          severidad: incidentSeverity,
-          descripcion: incidentDescription
-        } : undefined
+        incidencia: hasIncident
+          ? {
+              tipo: incidentType,
+              severidad: incidentSeverity,
+              descripcion: incidentDescription
+            }
+          : undefined
       })
     });
     const result = await response.json().catch(() => ({}));
@@ -93,15 +99,23 @@ export function AssistantMonthList({
             </time>
             <div className="assistant-meeting-copy">
               <strong>{meeting.titulo}</strong>
-              <small>{meeting.programa} · {meeting.docente}</small>
+              <small>
+                {meeting.programa} · {meeting.docente}
+              </small>
               <div className="meeting-detail-line">
                 <span className={`modality modality-${meeting.modalidad.toLowerCase()}`}>
                   {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                 </span>
-                <span><Clock3 size={14} />{timeFormatter.format(meeting.inicioAt)} ({formatMinutes(meeting.minutos)})</span>
+                <span>
+                  <Clock3 size={14} />
+                  {timeFormatter.format(meeting.inicioAt)} ({formatMinutes(meeting.minutos)})
+                </span>
               </div>
               {meeting.comentarioReporte ? (
-                <p className="report-note"><MessageSquareText size={14} />{meeting.comentarioReporte}</p>
+                <p className="report-note">
+                  <MessageSquareText size={14} />
+                  {meeting.comentarioReporte}
+                </p>
               ) : null}
             </div>
             <div className="assistant-meeting-actions">
@@ -127,44 +141,136 @@ export function AssistantMonthList({
 
       {selected ? (
         <div className="dialog-backdrop" role="presentation" onMouseDown={closeReport}>
-          <section className="duration-dialog" role="dialog" aria-modal="true" aria-labelledby="duration-title" onMouseDown={(event) => event.stopPropagation()}>
+          <section
+            className="duration-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="duration-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div>
               <p className="page-eyebrow">Cierre de monitoreo</p>
-              <h2 id="duration-title">{selected.cierreConfirmado ? "Ajustar cierre" : "Finalizar monitoreo"}</h2>
+              <h2 id="duration-title">
+                {selected.cierreConfirmado ? "Ajustar cierre" : "Finalizar monitoreo"}
+              </h2>
               <p>Confirmá el horario real y registrá cualquier incidencia operativa.</p>
             </div>
             <form onSubmit={submitReport}>
               <div className="duration-time-grid">
                 <label className="field">
                   <span>Inicio efectivo</span>
-                  <input type="datetime-local" required value={actualStart} onChange={(event) => { const value = event.target.value; setActualStart(value); updateCalculatedMinutes(value, actualEnd, setMinutes); }} disabled={pending} />
+                  <input
+                    type="datetime-local"
+                    required
+                    value={actualStart}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setActualStart(value);
+                      updateCalculatedMinutes(value, actualEnd, setMinutes);
+                    }}
+                    disabled={pending}
+                  />
                 </label>
                 <label className="field">
                   <span>Fin efectivo</span>
-                  <input type="datetime-local" required value={actualEnd} onChange={(event) => { const value = event.target.value; setActualEnd(value); updateCalculatedMinutes(actualStart, value, setMinutes); }} disabled={pending} />
+                  <input
+                    type="datetime-local"
+                    required
+                    value={actualEnd}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setActualEnd(value);
+                      updateCalculatedMinutes(actualStart, value, setMinutes);
+                    }}
+                    disabled={pending}
+                  />
                 </label>
               </div>
-              <div className="duration-summary"><Clock3 size={16} /><span>Duración calculada</span><strong>{minutes ? formatMinutes(Number(minutes)) : "—"}</strong><small>Programada: {formatMinutes(selected.minutosProgramados)}</small></div>
+              <div className="duration-summary">
+                <Clock3 size={16} />
+                <span>Duración calculada</span>
+                <strong>{minutes ? formatMinutes(Number(minutes)) : "—"}</strong>
+                <small>Programada: {formatMinutes(selected.minutosProgramados)}</small>
+              </div>
               <label className="field">
                 <span>Comentarios u observaciones</span>
-                <textarea rows={3} maxLength={1000} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Ej.: la reunión se extendió por consultas." disabled={pending} />
+                <textarea
+                  rows={3}
+                  maxLength={1000}
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Ej.: la reunión se extendió por consultas."
+                  disabled={pending}
+                />
               </label>
               <label className="incident-toggle">
-                <input type="checkbox" checked={hasIncident} onChange={(event) => setHasIncident(event.target.checked)} disabled={pending} />
+                <input
+                  type="checkbox"
+                  checked={hasIncident}
+                  onChange={(event) => setHasIncident(event.target.checked)}
+                  disabled={pending}
+                />
                 <AlertTriangle size={17} />
-                <span><strong>Hubo una incidencia</strong><small>Problemas de acceso, audio, grabación, monitoreo u otros.</small></span>
+                <span>
+                  <strong>Hubo una incidencia</strong>
+                  <small>Problemas de acceso, audio, grabación, monitoreo u otros.</small>
+                </span>
               </label>
               {hasIncident ? (
                 <div className="incident-fields">
-                  <label className="field"><span>Tipo</span><input required value={incidentType} maxLength={80} onChange={(event) => setIncidentType(event.target.value)} disabled={pending} /></label>
-                  <label className="field"><span>Severidad</span><select value={incidentSeverity} onChange={(event) => setIncidentSeverity(event.target.value)} disabled={pending}><option value="BAJA">Baja</option><option value="MEDIA">Media</option><option value="ALTA">Alta</option><option value="CRITICA">Crítica</option></select></label>
-                  <label className="field incident-description"><span>Descripción</span><textarea required rows={3} minLength={3} maxLength={1000} value={incidentDescription} onChange={(event) => setIncidentDescription(event.target.value)} disabled={pending} /></label>
+                  <label className="field">
+                    <span>Tipo</span>
+                    <input
+                      required
+                      value={incidentType}
+                      maxLength={80}
+                      onChange={(event) => setIncidentType(event.target.value)}
+                      disabled={pending}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Severidad</span>
+                    <select
+                      value={incidentSeverity}
+                      onChange={(event) => setIncidentSeverity(event.target.value)}
+                      disabled={pending}
+                    >
+                      <option value="BAJA">Baja</option>
+                      <option value="MEDIA">Media</option>
+                      <option value="ALTA">Alta</option>
+                      <option value="CRITICA">Crítica</option>
+                    </select>
+                  </label>
+                  <label className="field incident-description">
+                    <span>Descripción</span>
+                    <textarea
+                      required
+                      rows={3}
+                      minLength={3}
+                      maxLength={1000}
+                      value={incidentDescription}
+                      onChange={(event) => setIncidentDescription(event.target.value)}
+                      disabled={pending}
+                    />
+                  </label>
                 </div>
               ) : null}
-              {error ? <p className="inline-error" role="alert">{error}</p> : null}
+              {error ? (
+                <p className="inline-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
               <div className="dialog-actions">
-                <button className="secondary-action" type="button" onClick={closeReport} disabled={pending}>Cancelar</button>
-                <button className="primary-action" type="submit" disabled={pending}>{pending ? "Guardando…" : selected.cierreConfirmado ? "Guardar ajuste" : "Finalizar monitoreo"}</button>
+                <button className="secondary-action" type="button" onClick={closeReport} disabled={pending}>
+                  Cancelar
+                </button>
+                <button className="primary-action" type="submit" disabled={pending}>
+                  {pending
+                    ? "Guardando…"
+                    : selected.cierreConfirmado
+                      ? "Guardar ajuste"
+                      : "Finalizar monitoreo"}
+                </button>
               </div>
             </form>
           </section>
@@ -192,11 +298,9 @@ function montevideoInputToIso(value: string): string {
   return new Date(`${value}:00-03:00`).toISOString();
 }
 
-function updateCalculatedMinutes(
-  start: string,
-  end: string,
-  setMinutes: (value: string) => void
-) {
-  const minutes = Math.round((new Date(`${end}:00-03:00`).getTime() - new Date(`${start}:00-03:00`).getTime()) / 60_000);
+function updateCalculatedMinutes(start: string, end: string, setMinutes: (value: string) => void) {
+  const minutes = Math.round(
+    (new Date(`${end}:00-03:00`).getTime() - new Date(`${start}:00-03:00`).getTime()) / 60_000
+  );
   setMinutes(minutes > 0 ? String(minutes) : "");
 }

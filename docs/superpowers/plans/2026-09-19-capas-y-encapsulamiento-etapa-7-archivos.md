@@ -6,6 +6,7 @@
 **Goal:** Implementar las 5 capas arquitectónicas para el módulo `src/modules/archivos/` (`domain`, `ports`, `application`, `infrastructure`, `presentation`, `api.ts`, `presentation.ts`), extraer el cliente técnico de Google Drive en `src/integrations/google/drive/`, desacoplar la sincronización de grabaciones/asistencia/transcripciones y la inspección de participantes en vivo en casos de uso puros, y preservar fachadas retrocompatibles en `src/modules/meet/`.
 
 **Architecture:** Monolito modular desacoplado.
+
 - `src/integrations/google/drive/`: Cliente técnico HTTP puro para la API de Google Drive v3 (`https://www.googleapis.com/drive/v3` y `https://www.googleapis.com/upload/drive/v3`), sin reglas de negocio.
 - `src/modules/archivos/domain/`: Tipos puros e inmutables (`TipoArtefactoMeet`, `RegistroConferenciaMeet`, `FilaAsistenciaMeet`, `AlcanceGrabaciones`, `EstadoVisualGrabacion`, `GrupoEncuentroConArchivos`, `SyncArtifactsResult`, `LiveParticipantsResult`), funciones puras de resolución de nombres, estados y filtros (`nombreCarpetaReunion`, `nombreArchivoReunion`, `elegirConferenciaMeet`, `asistenciaMeetCompleta`, `crearHtmlAsistencia`, `obtenerAlcanceGrabaciones`, `puedeSincronizarGrabaciones`, `resolverEstadoVisualGrabacion`, `filtrarEncuentrosConArchivos`).
 - `src/modules/archivos/ports/`: Contrato de proveedor externo `ArtifactProviderPort` y contrato de repositorio `ArchivosRepositoryPort`.
@@ -46,6 +47,7 @@
 ## Tareas
 
 ### Tarea 1: Cliente Técnico Google Drive (`src/integrations/google/drive/`)
+
 - Crear `src/integrations/google/drive/drive-files.client.ts`:
   - `obtenerOCrearCarpetaDrive(auth: JWT, parentId: string, name: string): Promise<string>`.
   - `moverArchivoDrive(auth: JWT, fileId: string, folderId: string, name: string): Promise<MovedDriveFile>`.
@@ -60,6 +62,7 @@
 - Crear tests en `test/integrations-google-drive.test.ts`.
 
 ### Tarea 2: Capa de Dominio (`src/modules/archivos/domain/`)
+
 - Crear `src/modules/archivos/domain/meet-artifacts.domain.ts`:
   - `TipoArtefactoMeet`, `TIPOS_ARTEFACTO_SINCRONIZABLES`, `DatosCarpetaReunion`, `DatosNombreArtefacto`, `FilaAsistenciaMeet`, `RegistroConferenciaMeet`, `SesionParticipanteMeet`.
   - `etiquetaTipoArtefactoMeet`, `nombreCarpetaReunion`, `nombreArchivoReunion`, `elegirConferenciaMeet`, `asistenciaMeetCompleta`, `crearHtmlAsistencia`.
@@ -73,6 +76,7 @@
 - Crear tests en `test/archivos-domain.test.ts` y verificar que pase `test/functional-architecture.test.ts`.
 
 ### Tarea 3: Capa de Puertos (`src/modules/archivos/ports/`)
+
 - Crear `src/modules/archivos/ports/artifact-provider.port.ts`:
   - `ArtifactProviderPort`:
     - `buscarConferencia(codigo: string, inicio: Date, fin: Date): Promise<RegistroConferenciaMeet | null>`
@@ -90,6 +94,7 @@
 - Crear `src/modules/archivos/ports/index.ts`.
 
 ### Tarea 4: Capa de Aplicación (`src/modules/archivos/application/`)
+
 - Crear `src/modules/archivos/application/sincronizar-artefactos.use-case.ts`:
   - Lógica de sincronización de grabaciones, transcripciones, notas y asistencia, con cálculo de estados y límites de concurrencia.
 - Crear `src/modules/archivos/application/obtener-participantes-activos.use-case.ts`:
@@ -100,6 +105,7 @@
 - Crear tests en `test/archivos-application.test.ts`.
 
 ### Tarea 5: Capa de Infraestructura (`src/modules/archivos/infrastructure/`)
+
 - Crear `src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts`:
   - Implementación de `ArtifactProviderPort` delegando a Meet REST API y cliente técnico de Drive.
 - Crear `src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter.ts`:
@@ -108,6 +114,7 @@
 - Crear tests en `test/archivos-infrastructure.test.ts`.
 
 ### Tarea 6: Raíz de Composición, API Pública y Fachadas
+
 - Crear `src/modules/archivos/api.ts`.
 - Crear `src/modules/archivos/presentation.ts`.
 - Crear `src/bootstrap/archivos.server.ts` con `import "server-only"`.
@@ -122,10 +129,10 @@
   - `src/modules/meet/live-participants.service.ts`
 
 ### Tarea 7: Verificación Integral
+
 - Ejecutar arnés de arquitectura: `test/architecture-boundaries.test.ts`.
 - Ejecutar pureza funcional: `test/functional-architecture.test.ts`.
 - Ejecutar suite completa: `npm test`.
 - Ejecutar `npm run check`.
 - Ejecutar `npm run validate:schema`.
 - Ejecutar `npm run build`.
-

@@ -16,11 +16,13 @@ export interface LecturaPlanillaAsistenciaZoomPort {
 
 export interface PlanillasAsistenciaZoomPort {
   /** Crea la planilla directamente en la carpeta destino o actualiza la ya existente del mismo marcador. */
-  crearOActualizar(entrada: Readonly<{
-    titulo: string;
-    carpetaId: string;
-    marcador: string;
-    resumen: FilasPlanillaZoom;
-    sesiones: FilasPlanillaZoom;
-  }>): Promise<Readonly<{ webViewUrl: string | null; creada: boolean }>>;
+  crearOActualizar(
+    entrada: Readonly<{
+      titulo: string;
+      carpetaId: string;
+      marcador: string;
+      resumen: FilasPlanillaZoom;
+      sesiones: FilasPlanillaZoom;
+    }>
+  ): Promise<Readonly<{ webViewUrl: string | null; creada: boolean }>>;
 }

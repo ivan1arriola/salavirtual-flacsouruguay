@@ -10,7 +10,7 @@ import {
   eliminarOcurrenciaZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
-  obtenerZoomAccessToken,
+  obtenerZoomAccessToken
 } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
@@ -21,12 +21,14 @@ import type { DependenciasMigracionZoom } from "@/src/modules/reuniones/migracio
 
 async function calendarAuth(calendarId: string) {
   const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion);
-  if (!cred) throw new Error("Credenciales de Google Workspace no configuradas.");
+  if (!cred) {
+    throw new Error("Credenciales de Google Workspace no configuradas.");
+  }
   // El evento vive en el calendario del organizador Meet: se actúa como ese usuario.
   return crearGoogleCalendarAuthClient({
     serviceAccountEmail: cred.serviceAccountEmail,
     privateKey: cred.privateKey,
-    subject: calendarId,
+    subject: calendarId
   });
 }
 
@@ -37,38 +39,44 @@ export function crearDependenciasMigracionZoom(): DependenciasMigracionZoom {
     sincronizarEventos: (ids) => obtenerServicioConferencias().sincronizarEventosPendientes(ids),
     async verificarReunionZoom(meetingId) {
       const creds = await obtenerCredencialesZoom(db, descifrarConfiguracion);
-      if (!creds.disponible) throw new Error(creds.error || "Credenciales de Zoom no configuradas.");
+      if (!creds.disponible) {
+        throw new Error(creds.error || "Credenciales de Zoom no configuradas.");
+      }
       const token = await obtenerZoomAccessToken({
         accountId: creds.accountId,
         clientId: creds.clientId,
-        clientSecret: creds.clientSecret,
+        clientSecret: creds.clientSecret
       });
       const { joinUrl } = await obtenerReunionZoomHttp(token, meetingId);
       return { joinUrl };
     },
     calendar: {
       async obtener({ calendarId, eventId }) {
-        return obtenerEventoCalendar(await calendarAuth(calendarId), calendarId, eventId, { conferenceDataVersion: 1 });
+        return obtenerEventoCalendar(await calendarAuth(calendarId), calendarId, eventId, {
+          conferenceDataVersion: 1
+        });
       },
       async actualizar({ calendarId, eventId, cambio }) {
         // Sin avisos de Google: los correos individuales se envían desde Sala Virtual,
         // deduplicados, una vez cambiado el proveedor activo.
         await actualizarEventoCalendarHttp(await calendarAuth(calendarId), calendarId, eventId, cambio, {
           conferenceDataVersion: 1,
-          sendUpdates: "none",
+          sendUpdates: "none"
         });
-      },
-    },
+      }
+    }
   };
 }
 
 async function tokenZoom(): Promise<string> {
   const creds = await obtenerCredencialesZoom(db, descifrarConfiguracion);
-  if (!creds.disponible) throw new Error(creds.error || "Credenciales de Zoom no configuradas.");
+  if (!creds.disponible) {
+    throw new Error(creds.error || "Credenciales de Zoom no configuradas.");
+  }
   return obtenerZoomAccessToken({
     accountId: creds.accountId,
     clientId: creds.clientId,
-    clientSecret: creds.clientSecret,
+    clientSecret: creds.clientSecret
   });
 }
 
@@ -85,7 +93,7 @@ export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie 
         return {
           meetingId: res.meetingId,
           joinUrl: res.joinUrl,
-          occurrences: res.occurrences,
+          occurrences: res.occurrences
         };
       },
       async eliminar(meetingId) {
@@ -96,7 +104,7 @@ export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie 
       },
       async actualizarOcurrencia(meetingId, occurrenceId, input) {
         await actualizarOcurrenciaZoomHttp(await tokenZoom(), meetingId, occurrenceId, input);
-      },
-    },
+      }
+    }
   };
 }

@@ -4,10 +4,7 @@ import Google from "next-auth/providers/google";
 import { obtenerServicioIdentity } from "@/src/bootstrap/identity.server";
 import { authConfig } from "@/src/lib/auth/config";
 import { db } from "@/src/lib/db";
-import {
-  esRolUsuario,
-  resolverRedireccionAutorizada
-} from "@/src/modules/identity/api";
+import { esRolUsuario, resolverRedireccionAutorizada } from "@/src/modules/identity/api";
 
 const identity = obtenerServicioIdentity();
 

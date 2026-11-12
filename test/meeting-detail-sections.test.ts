@@ -38,14 +38,14 @@ describe("secciones de la ficha de reunión", () => {
     expect(layout).not.toContain("hidden={!selected}");
     expect(styles).toContain("container-type: inline-size");
     expect(styles).toContain("@container (max-width: 930px)");
-    expect(styles).toContain(".meeting-mosaic-columns { grid-template-columns: minmax(0, 1fr); }");
+    expect(styles).toMatch(/\.meeting-mosaic-columns\s*\{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
   });
 
   it("permite consultar todas las secciones en una página continua en móvil", () => {
     expect(layout).toContain('id="secciones-reunion"');
-    expect(layout).toContain('href={`#${tab.id}`}');
-    expect(layout).toContain('id={section.id}');
-    expect(layout).toContain('tabIndex={-1}');
+    expect(layout).toContain("href={`#${tab.id}`}");
+    expect(layout).toContain("id={section.id}");
+    expect(layout).toContain("tabIndex={-1}");
     expect(styles).toContain("@media (max-width: 760px)");
     expect(styles).toContain("min-height: 44px");
     expect(styles).toContain(".meeting-mobile-outline");
@@ -58,7 +58,7 @@ describe("secciones de la ficha de reunión", () => {
 
   it("sustituye también las pestañas internas de Personas por paneles desplegables", () => {
     expect(admin).not.toContain('role="tablist"');
-    expect(admin).not.toContain('setTab(');
+    expect(admin).not.toContain("setTab(");
     expect(admin).toContain('className="series-management-tool-disclosure"');
     expect(styles).toContain(".series-management-tool-disclosure > summary");
   });

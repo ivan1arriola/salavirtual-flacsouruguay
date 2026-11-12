@@ -28,6 +28,7 @@
 ### Task 1: Puerto y caso de uso de asignaciones
 
 **Files:**
+
 - Modify: `src/modules/asistencia/ports/asistencia-repository.port.ts`
 - Modify: `src/modules/asistencia/application/servicio-asistencia.ts`
 - Modify: `src/modules/asistencia/infrastructure/prisma/prisma-asistencia-repository.adapter.ts`
@@ -42,6 +43,7 @@
 ### Task 2: Route Handlers delgados de asignaciones
 
 **Files:**
+
 - Modify: `app/api/v1/asistencia/asignaciones/route.ts`
 - Modify: `app/api/v1/asistencia/asignaciones/desvincular/route.ts`
 - Test: `test/asistencia-route-boundaries.test.ts`

@@ -74,7 +74,11 @@ export interface AdminDashboardData {
     };
     readonly openIncidents: {
       readonly count: number;
-      readonly examples: readonly { readonly id: string; readonly title: string; readonly description: string }[];
+      readonly examples: readonly {
+        readonly id: string;
+        readonly title: string;
+        readonly description: string;
+      }[];
       readonly firstIncidentSolicitudId: string | null;
     };
     readonly duplicateRisks: {
@@ -366,19 +370,16 @@ export async function obtenerDashboardAdministracion(
 
     const cohostsConfirmadosEnMeet = Boolean(
       !meetCohosts?.errorIntegracion &&
-        !meetCohosts?.operacionPendiente &&
-        cohostsConfirmados(
-          meetCohosts?.payloadUltimo,
-          meetCohosts?.codigoReunion,
-          meetCohosts?.cuentaProveedor?.emailOrganizador,
-          cohostEmails
-        )
+      !meetCohosts?.operacionPendiente &&
+      cohostsConfirmados(
+        meetCohosts?.payloadUltimo,
+        meetCohosts?.codigoReunion,
+        meetCohosts?.cuentaProveedor?.emailOrganizador,
+        cohostEmails
+      )
     );
 
-    const organizer =
-      meet?.cuentaProveedor?.emailOrganizador ??
-      meet?.cuentaProveedor?.nombre ??
-      "Pendiente";
+    const organizer = meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Pendiente";
 
     const estadoTemporal = determinarEstadoTemporal(
       meeting.inicioProgramadoAt,
@@ -392,11 +393,15 @@ export async function obtenerDashboardAdministracion(
       titulo: meeting.solicitud.titulo,
       programa: association.programa.nombre,
       docenteNombre: `${teacher.nombres} ${teacher.apellidos ?? ""}`.trim(),
-      modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad),
+      modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
       finProgramadoAt: meeting.finProgramadoAt.toISOString(),
-      inicioAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString() : null,
-      finAsistenciaAt: meeting.requiereAsistenciaTecnica ? (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString() : null,
+      inicioAsistenciaAt: meeting.requiereAsistenciaTecnica
+        ? (meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt).toISOString()
+        : null,
+      finAsistenciaAt: meeting.requiereAsistenciaTecnica
+        ? (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt).toISOString()
+        : null,
       joinUrl: meet?.joinUrl ?? null,
       proveedorTipo: meet?.proveedor.tipo ?? null,
       estadoIntegracion: meet?.estadoIntegracion ?? null,
@@ -429,9 +434,7 @@ export async function obtenerDashboardAdministracion(
       modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
       finProgramadoAt: meeting.finProgramadoAt.toISOString(),
-      asistenteNombre: assistant
-        ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim()
-        : null,
+      asistenteNombre: assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : null,
       requiereAsistencia: meeting.requiereAsistenciaTecnica
     };
   });

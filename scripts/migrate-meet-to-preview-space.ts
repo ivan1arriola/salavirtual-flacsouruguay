@@ -14,18 +14,27 @@ const TIMEOUT_MS = 30_000;
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
-  return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length)?.trim() || undefined;
+  return (
+    process.argv
+      .find((arg) => arg.startsWith(prefix))
+      ?.slice(prefix.length)
+      ?.trim() || undefined
+  );
 }
 
 function requiredArg(name: string): string {
   const value = argValue(name);
-  if (!value) throw new Error(`Falta --${name}=...`);
+  if (!value) {
+    throw new Error(`Falta --${name}=...`);
+  }
   return value;
 }
 
 function requiredEnv(name: "GOOGLE_SERVICE_ACCOUNT_EMAIL" | "GOOGLE_PRIVATE_KEY"): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`${name} es obligatorio para esta migración temporal.`);
+  if (!value) {
+    throw new Error(`${name} es obligatorio para esta migración temporal.`);
+  }
   return value;
 }
 
@@ -65,7 +74,12 @@ type CalendarEvent = Readonly<{
   htmlLink?: string;
   hangoutLink?: string;
   conferenceData?: CalendarConferenceData;
-  attendees?: readonly Readonly<{ email?: string; responseStatus?: string; organizer?: boolean; self?: boolean }>[];
+  attendees?: readonly Readonly<{
+    email?: string;
+    responseStatus?: string;
+    organizer?: boolean;
+    self?: boolean;
+  }>[];
   [key: string]: unknown;
 }>;
 
@@ -101,10 +115,10 @@ async function main(): Promise<void> {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { email: true } },
-            },
-          },
-        },
+              cuentasGoogle: { select: { email: true } }
+            }
+          }
+        }
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -114,12 +128,12 @@ async function main(): Promise<void> {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { email: true } },
-                },
-              },
-            },
-          },
-        },
+                  cuentasGoogle: { select: { email: true } }
+                }
+              }
+            }
+          }
+        }
       },
       cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
@@ -131,14 +145,16 @@ async function main(): Promise<void> {
           codigoReunion: true,
           joinUrl: true,
           payloadUltimo: true,
-          cuentaProveedor: { select: { emailOrganizador: true } },
+          cuentaProveedor: { select: { emailOrganizador: true } }
         },
-        take: 1,
-      },
-    },
+        take: 1
+      }
+    }
   });
 
-  if (!meeting) throw new Error(`No existe la reunión ${meetingId}.`);
+  if (!meeting) {
+    throw new Error(`No existe la reunión ${meetingId}.`);
+  }
   if (!new Set(["PROGRAMADA", "EN_CURSO"]).has(meeting.estado)) {
     throw new Error(`La reunión ${meetingId} no está activa.`);
   }
@@ -159,55 +175,63 @@ async function main(): Promise<void> {
     ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
     ...assistants.flatMap((assistant) =>
       assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-    ),
+    )
   ]).filter((email) => email !== organizer);
 
   const calendarAuth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     subject: organizer,
-    scopes: [CALENDAR_SCOPE],
+    scopes: [CALENDAR_SCOPE]
   });
   const meetAuth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     subject: organizer,
-    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
+    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE]
   });
 
   const calendarUrl = `${CALENDAR_API}/calendars/${encodeURIComponent(organizer)}/events/${encodeURIComponent(event.externalEventId)}`;
   const currentCalendar = await calendarAuth.request<CalendarEvent>({
     url: `${calendarUrl}?conferenceDataVersion=1`,
     method: "GET",
-    timeout: TIMEOUT_MS,
+    timeout: TIMEOUT_MS
   });
 
   const previousConferenceData = currentCalendar.data.conferenceData;
   const previousJoinUrl = currentCalendar.data.hangoutLink ?? event.joinUrl ?? null;
   const previousMeetingCode = previousConferenceData?.conferenceId ?? event.codigoReunion ?? null;
 
-  console.log(JSON.stringify({
-    mode: apply ? "apply" : "dry-run",
-    credentialSource: "temporary-env",
-    serviceAccountEmail,
-    meetingId: meeting.id,
-    solicitudId: meeting.solicitud.id,
-    titulo: meeting.solicitud.titulo,
-    inicio: meeting.inicioProgramadoAt.toISOString(),
-    fin: meeting.finProgramadoAt.toISOString(),
-    organizer,
-    calendarEventId: event.externalEventId,
-    previousMeetingCode,
-    previousJoinUrl,
-    desiredCohosts,
-    sendUpdates,
-    willCreateNewMeetSpace: true,
-    willKeepCalendarEvent: true,
-    willReplaceConferenceData: true,
-    willUpdateDatabaseAfterCalendarVerification: true,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        mode: apply ? "apply" : "dry-run",
+        credentialSource: "temporary-env",
+        serviceAccountEmail,
+        meetingId: meeting.id,
+        solicitudId: meeting.solicitud.id,
+        titulo: meeting.solicitud.titulo,
+        inicio: meeting.inicioProgramadoAt.toISOString(),
+        fin: meeting.finProgramadoAt.toISOString(),
+        organizer,
+        calendarEventId: event.externalEventId,
+        previousMeetingCode,
+        previousJoinUrl,
+        desiredCohosts,
+        sendUpdates,
+        willCreateNewMeetSpace: true,
+        willKeepCalendarEvent: true,
+        willReplaceConferenceData: true,
+        willUpdateDatabaseAfterCalendarVerification: true
+      },
+      null,
+      2
+    )
+  );
 
-  if (!apply) return;
+  if (!apply) {
+    return;
+  }
 
   const created = await meetAuth.request<MeetSpace>({
     url: `${MEET_API}/spaces`,
@@ -217,9 +241,11 @@ async function main(): Promise<void> {
       config: {
         moderation: desiredCohosts.length > 0 ? "ON" : "OFF",
         accessType: "TRUSTED",
-        attendanceReportGenerationType: meeting.requiereAsistenciaTecnica ? "GENERATE_REPORT" : "DO_NOT_GENERATE",
-      },
-    },
+        attendanceReportGenerationType: meeting.requiereAsistenciaTecnica
+          ? "GENERATE_REPORT"
+          : "DO_NOT_GENERATE"
+      }
+    }
   });
 
   const newSpaceName = created.data.name;
@@ -234,19 +260,19 @@ async function main(): Promise<void> {
       url: `${MEET_API}/${newSpaceName}/members`,
       method: "POST",
       timeout: TIMEOUT_MS,
-      data: { email: cohost, role: "COHOST" },
+      data: { email: cohost, role: "COHOST" }
     });
   }
 
   const listed = await meetAuth.request<{ members?: Array<{ email?: string; role?: string }> }>({
     url: `${MEET_API}/${newSpaceName}/members?pageSize=100`,
     method: "GET",
-    timeout: TIMEOUT_MS,
+    timeout: TIMEOUT_MS
   });
   const actualCohosts = new Set(
     (listed.data.members ?? [])
       .filter(({ role }) => role === "COHOST")
-      .flatMap(({ email }) => email ? [email.trim().toLowerCase()] : [])
+      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
   );
   const missingCohosts = desiredCohosts.filter((email) => !actualCohosts.has(email));
   if (missingCohosts.length > 0) {
@@ -257,14 +283,16 @@ async function main(): Promise<void> {
     conferenceId: newMeetingCode,
     conferenceSolution: {
       key: { type: "hangoutsMeet" },
-      name: "Google Meet",
+      name: "Google Meet"
     },
-    entryPoints: [{
-      entryPointType: "video",
-      uri: newJoinUrl,
-      label: newJoinUrl.replace(/^https?:\/\//, ""),
-      meetingCode: newMeetingCode,
-    }],
+    entryPoints: [
+      {
+        entryPointType: "video",
+        uri: newJoinUrl,
+        label: newJoinUrl.replace(/^https?:\/\//, ""),
+        meetingCode: newMeetingCode
+      }
+    ]
   };
 
   let calendarChanged = false;
@@ -273,14 +301,14 @@ async function main(): Promise<void> {
       url: `${calendarUrl}?conferenceDataVersion=1&sendUpdates=${encodeURIComponent(sendUpdates)}`,
       method: "PATCH",
       timeout: TIMEOUT_MS,
-      data: { conferenceData: newConferenceData },
+      data: { conferenceData: newConferenceData }
     });
     calendarChanged = true;
 
     const verified = await calendarAuth.request<CalendarEvent>({
       url: `${calendarUrl}?conferenceDataVersion=1`,
       method: "GET",
-      timeout: TIMEOUT_MS,
+      timeout: TIMEOUT_MS
     });
 
     const verifiedVideoUrl = verified.data.conferenceData?.entryPoints?.find(
@@ -308,8 +336,8 @@ async function main(): Promise<void> {
           errorIntegracion: null,
           conferenceRecordName: null,
           archivosSincronizadosAt: null,
-          errorArchivos: null,
-        },
+          errorArchivos: null
+        }
       });
 
       await tx.auditoria.create({
@@ -320,7 +348,7 @@ async function main(): Promise<void> {
           valorAnterior: toJson({
             codigoReunion: previousMeetingCode,
             joinUrl: previousJoinUrl,
-            calendarEventId: event.externalEventId,
+            calendarEventId: event.externalEventId
           }),
           valorNuevo: toJson({
             codigoReunion: newMeetingCode,
@@ -328,25 +356,31 @@ async function main(): Promise<void> {
             calendarEventId: event.externalEventId,
             spaceName: newSpaceName,
             cohosts: desiredCohosts,
-            sendUpdates,
-          }),
-        },
+            sendUpdates
+          })
+        }
       });
     });
 
-    console.log(JSON.stringify({
-      migrated: true,
-      meetingId: meeting.id,
-      calendarEventId: event.externalEventId,
-      calendarEventPreserved: true,
-      previousMeetingCode,
-      previousJoinUrl,
-      newSpaceName,
-      newMeetingCode,
-      newJoinUrl,
-      cohostsVerified: desiredCohosts,
-      sendUpdates,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          migrated: true,
+          meetingId: meeting.id,
+          calendarEventId: event.externalEventId,
+          calendarEventPreserved: true,
+          previousMeetingCode,
+          previousJoinUrl,
+          newSpaceName,
+          newMeetingCode,
+          newJoinUrl,
+          cohostsVerified: desiredCohosts,
+          sendUpdates
+        },
+        null,
+        2
+      )
+    );
   } catch (error) {
     if (calendarChanged && previousConferenceData) {
       try {
@@ -354,21 +388,33 @@ async function main(): Promise<void> {
           url: `${calendarUrl}?conferenceDataVersion=1&sendUpdates=none`,
           method: "PATCH",
           timeout: TIMEOUT_MS,
-          data: { conferenceData: previousConferenceData },
+          data: { conferenceData: previousConferenceData }
         });
-        console.error(JSON.stringify({
-          rollbackCalendar: true,
-          restoredMeetingCode: previousMeetingCode,
-          restoredJoinUrl: previousJoinUrl,
-        }, null, 2));
+        console.error(
+          JSON.stringify(
+            {
+              rollbackCalendar: true,
+              restoredMeetingCode: previousMeetingCode,
+              restoredJoinUrl: previousJoinUrl
+            },
+            null,
+            2
+          )
+        );
       } catch (rollbackError) {
-        console.error(JSON.stringify({
-          rollbackCalendar: false,
-          critical: true,
-          previousMeetingCode,
-          previousJoinUrl,
-          rollbackError: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
-        }, null, 2));
+        console.error(
+          JSON.stringify(
+            {
+              rollbackCalendar: false,
+              critical: true,
+              previousMeetingCode,
+              previousJoinUrl,
+              rollbackError: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+            },
+            null,
+            2
+          )
+        );
       }
     }
     throw error;

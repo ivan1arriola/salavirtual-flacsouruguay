@@ -170,7 +170,6 @@
   }
 }
 
-
 /* Controles administrativos de asistentes técnicos */
 .assistant-admin-filter {
   display: grid;
@@ -372,7 +371,6 @@
     border-bottom: 0;
   }
 }
-
 
 .assistant-user-statuses {
   display: flex;

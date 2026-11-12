@@ -25,10 +25,12 @@
 ### Task 1: Contrato de API y UI
 
 **Files:**
+
 - Create: `test/asistencia-desvinculacion-ui.test.ts`
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
+
 - Consumes: `POST /api/v1/asistencia/asignaciones/desvincular`, `AssistantMeetingsTable`, detalle `/asistentes/[usuarioId]`.
 - Produces: contrato verificable de endpoint, acción “Quitar asignación” e historial visible.
 
@@ -44,10 +46,12 @@ Expected: FAIL porque la ruta y la UI todavía no implementan el contrato.
 ### Task 2: Endpoint de desvinculación con sincronizaciones externas
 
 **Files:**
+
 - Create: `app/api/v1/asistencia/asignaciones/desvincular/route.ts`
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
+
 - Consumes: `desvincularAsistenteAsignado(db, actor, { asignacionId })`.
 - Produces: `POST` con respuesta `{ assignment, warning, calendarioAsistente }`.
 
@@ -63,6 +67,7 @@ Expected: el contrato de endpoint pasa; la parte de UI continúa fallando hasta 
 ### Task 3: Acción administrativa e historial visible
 
 **Files:**
+
 - Create: `src/components/assistant-unassign-button.tsx`
 - Create: `src/components/assistant-history.tsx`
 - Modify: `src/components/assistant-meetings-table.tsx`
@@ -71,6 +76,7 @@ Expected: el contrato de endpoint pasa; la parte de UI continúa fallando hasta 
 - Test: `test/asistencia-desvinculacion-ui.test.ts`
 
 **Interfaces:**
+
 - Consumes: assignment `id`, `titulo`, endpoint dedicado, `RegistroHistorialAsistenciaPersonal[]`.
 - Produces: botón de desvinculación por fila, refresco del servidor al completar y panel de historial cronológico.
 
@@ -98,10 +104,12 @@ Expected: PASS.
 ### Task 4: Limpieza y verificación final
 
 **Files:**
+
 - Delete: `docs/test-write.txt`
 - Review: todos los archivos modificados del PR.
 
 **Interfaces:**
+
 - Produces: rama lista para integrar.
 
 - [ ] **Step 1: Remove probe file**

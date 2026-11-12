@@ -223,11 +223,11 @@ Cada encuentro utiliza una cuenta Google institucional asignada por Sala Virtual
 
 Las cuentas disponibles van desde:
 
-` sala01@flacso.edu.uy `
+`sala01@flacso.edu.uy`
 
 hasta:
 
-` sala10@flacso.edu.uy `
+`sala10@flacso.edu.uy`
 
 La cuenta asignada se muestra en **Mi agenda** y en otras vistas de la reunión.
 
@@ -247,8 +247,8 @@ donde `XX` debe reemplazarse por el número de la cuenta utilizando siempre dos 
 
 Ejemplos:
 
-| Cuenta | Contraseña |
-| --- | --- |
+| Cuenta                 | Contraseña      |
+| ---------------------- | --------------- |
 | `sala01@flacso.edu.uy` | `Sala01FLACSO+` |
 | `sala02@flacso.edu.uy` | `Sala02FLACSO+` |
 | `sala05@flacso.edu.uy` | `Sala05FLACSO+` |

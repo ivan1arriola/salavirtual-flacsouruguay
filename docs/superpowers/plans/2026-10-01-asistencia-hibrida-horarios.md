@@ -31,11 +31,13 @@
 ### Task 1: Integrar y auditar la rama remota funcional
 
 **Files:**
+
 - Modify: `main` by fast-forwarding to `origin/feature/asistencia-hibrida-horarios` after review
 - Inspect: all files changed by the remote branch
 - Test: existing project test suite and schema validation
 
 **Interfaces:**
+
 - Consumes: `origin/main`, `origin/feature/asistencia-hibrida-horarios`
 - Produces: local branch containing the remote implementation and a bounded list of remaining defects
 
@@ -58,6 +60,7 @@ Do not rewrite or merge unrelated remote branches; keep the change limited to th
 ### Task 2: Enforce effective schedule and full technical-hour calculation
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Modify: `prisma/sql/add-asistencia-hibrida-horarios.sql`
 - Modify: `src/modules/reuniones/encuentros.domain.ts`
@@ -70,6 +73,7 @@ Do not rewrite or merge unrelated remote branches; keep the change limited to th
 - Test: `test/encuentros-domain.test.ts`, `test/reuniones-domain.test.ts`, `test/asignacion-sugerencias-domain.test.ts`
 
 **Interfaces:**
+
 - Consumes: `modalidadOverride`, `inicioAsistenciaTecnicaAt`, `finAsistenciaTecnicaAt`
 - Produces: effective schedule values and payment records whose duration is `finAsistencia - inicioAsistencia` for presencial/híbrida coverage
 
@@ -92,6 +96,7 @@ Run the domain, assistance, and liquidation tests and verify the 5-hour example 
 ### Task 3: Keep Calendar segments related and idempotent
 
 **Files:**
+
 - Modify: `src/modules/asistencia/application/sincronizar-calendario-instancia.use-case.ts`
 - Modify: `src/modules/asistencia/infrastructure/google/google-assistant-calendar-provider.adapter.ts`
 - Modify: `src/modules/asistencia/infrastructure/prisma/prisma-assistant-calendar-repository.adapter.ts`
@@ -100,6 +105,7 @@ Run the domain, assistance, and liquidation tests and verify the 5-hour example 
 - Test: `test/calendario-asistente-application.test.ts`, `test/calendario-asistente-domain.test.ts`, `test/calendario-asistente-infrastructure.test.ts`
 
 **Interfaces:**
+
 - Consumes: effective activity interval and effective technical interval from Task 2
 - Produces: stable preparation/coverage/closure event identifiers, cleanup of obsolete segments, and one Meet event without duplication
 
@@ -118,6 +124,7 @@ Verify idempotency, stable IDs, and no duplicated Meet event.
 ### Task 4: Finish Admin controls and effective-hour presentation
 
 **Files:**
+
 - Modify: `src/modules/reuniones/gestionar-encuentros.service.ts`
 - Modify: `src/modules/reuniones/presentation/components/meeting-detail-manager.tsx`
 - Modify: `src/modules/reuniones/presentation/components/meeting-form-v2.tsx`
@@ -126,6 +133,7 @@ Verify idempotency, stable IDs, and no duplicated Meet event.
 - Test: `test/encuentros-domain.test.ts`, relevant meeting-management tests or new focused test
 
 **Interfaces:**
+
 - Consumes: effective schedule and synchronization operations from Tasks 2–3
 - Produces: explicit puntual actions for modality, assistance interval, reset, and labels showing personalized configuration
 
@@ -148,6 +156,7 @@ Verify creation, editing, reset, and the 09:00–14:00 / 11:00–13:30 presentat
 ### Task 5: Update dependent contracts and publish
 
 **Files:**
+
 - Modify: `src/bootstrap/ui/asistencia/agenda-abierta-page.server.tsx`
 - Modify: `src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx`
 - Modify: `src/bootstrap/ui/asistencia/mi-agenda-page.server.tsx`
@@ -162,6 +171,7 @@ Verify creation, editing, reset, and the 09:00–14:00 / 11:00–13:30 presentat
 - Test: full `test/` suite and CI-equivalent local checks
 
 **Interfaces:**
+
 - Consumes: effective schedule contract from Tasks 2–4
 - Produces: consistent activity and technical intervals across web, mobile, dashboards, availability, and payment reporting
 
@@ -184,4 +194,3 @@ Advance local `main` to the validated feature commit with fast-forward only, pus
 - [ ] **Step 5: Report publication separately from CI/deployment**
 
 Inspect the final CI result. Do not claim production deployment or live health unless the deployment workflow and service checks provide evidence.
-

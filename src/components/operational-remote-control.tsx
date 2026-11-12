@@ -40,9 +40,7 @@ export function OperationalRemoteControlPanel({
 }>) {
   const router = useRouter();
   const [tipoAcceso, setTipoAcceso] = useState<"OPEN" | "TRUSTED" | "RESTRICTED">(
-    tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED"
-      ? tipoAccesoActual
-      : "TRUSTED"
+    tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED" ? tipoAccesoActual : "TRUSTED"
   );
   const [requiereGrabacion, setRequiereGrabacion] = useState(requiereGrabacionActual);
   const [modalidad, setModalidad] = useState<"HIBRIDA" | "VIRTUAL">(modalidadActual);
@@ -54,21 +52,13 @@ export function OperationalRemoteControlPanel({
 
   useEffect(() => {
     setTipoAcceso(
-      tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED"
-        ? tipoAccesoActual
-        : "TRUSTED"
+      tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED" ? tipoAccesoActual : "TRUSTED"
     );
     setRequiereGrabacion(requiereGrabacionActual);
     setModalidad(modalidadActual);
     setInicioAsistencia(toLocalDateTimeInput(inicioAsistenciaIso));
     setFinAsistencia(toLocalDateTimeInput(finAsistenciaIso));
-  }, [
-    tipoAccesoActual,
-    requiereGrabacionActual,
-    modalidadActual,
-    inicioAsistenciaIso,
-    finAsistenciaIso
-  ]);
+  }, [tipoAccesoActual, requiereGrabacionActual, modalidadActual, inicioAsistenciaIso, finAsistenciaIso]);
 
   async function enviarActualizacion(payload: Record<string, unknown>, mensajeExito: string) {
     setPending(true);
@@ -129,19 +119,15 @@ export function OperationalRemoteControlPanel({
   async function agregarCohost(e: React.FormEvent) {
     e.preventDefault();
     const limpio = nuevoCohost.trim().toLowerCase();
-    if (!limpio) return;
-    await enviarActualizacion(
-      { agregarCohostEmail: limpio },
-      `Cohost ${limpio} agregado y sincronizado.`
-    );
+    if (!limpio) {
+      return;
+    }
+    await enviarActualizacion({ agregarCohostEmail: limpio }, `Cohost ${limpio} agregado y sincronizado.`);
     setNuevoCohost("");
   }
 
   async function quitarCohost(email: string) {
-    await enviarActualizacion(
-      { quitarCohostEmail: email },
-      `Cohost ${email} quitado.`
-    );
+    await enviarActualizacion({ quitarCohostEmail: email }, `Cohost ${email} quitado.`);
   }
 
   return (
@@ -149,7 +135,10 @@ export function OperationalRemoteControlPanel({
       <summary>
         <div>
           <h2>Control remoto en tiempo real</h2>
-          <p>Modificá política de acceso Meet, requisito de grabación, horarios y cohosts a distancia desde Sala Virtual.</p>
+          <p>
+            Modificá política de acceso Meet, requisito de grabación, horarios y cohosts a distancia desde
+            Sala Virtual.
+          </p>
         </div>
         <span className="status status-ok">
           <Shield size={13} aria-hidden="true" /> Control activo
@@ -167,7 +156,9 @@ export function OperationalRemoteControlPanel({
                 disabled={pending || !tieneMeet}
               >
                 <option value="OPEN">Abierto (OPEN — cualquiera con enlace entra directo)</option>
-                <option value="TRUSTED">Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)</option>
+                <option value="TRUSTED">
+                  Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)
+                </option>
                 <option value="RESTRICTED">Restringido (RESTRICTED — solo invitados autorizados)</option>
               </select>
             </label>
@@ -183,7 +174,8 @@ export function OperationalRemoteControlPanel({
                 <option value="NO">Grabación no requerida (opcional)</option>
               </select>
               <small className="muted-text">
-                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los controles de Google Meet.
+                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los
+                controles de Google Meet.
               </small>
             </label>
 
@@ -259,7 +251,10 @@ export function OperationalRemoteControlPanel({
             </ul>
           )}
 
-          <form onSubmit={agregarCohost} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <form
+            onSubmit={agregarCohost}
+            style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "flex-end" }}
+          >
             <label className="field" style={{ flex: "1 1 240px", margin: 0 }}>
               <span>Agregar cohost en vivo (correo Google)</span>
               <input
@@ -313,7 +308,9 @@ export function OperationalAttendeeDatabaseManager({
   const [addingManual, setAddingManual] = useState(false);
   const [nombreEdit, setNombreEdit] = useState("");
   const [emailEdit, setEmailEdit] = useState("");
-  const [rolEdit, setRolEdit] = useState<"HOST" | "COHOST" | "DOCENTE" | "ASISTENTE_TECNICO" | "PARTICIPANTE">("PARTICIPANTE");
+  const [rolEdit, setRolEdit] = useState<
+    "HOST" | "COHOST" | "DOCENTE" | "ASISTENTE_TECNICO" | "PARTICIPANTE"
+  >("PARTICIPANTE");
   const [enGrupoEdit, setEnGrupoEdit] = useState(false);
   const [salaGrupoEdit, setSalaGrupoEdit] = useState("");
   const [notasEdit, setNotasEdit] = useState("");
@@ -338,9 +335,9 @@ export function OperationalAttendeeDatabaseManager({
   const listaFiltrada = termino
     ? listaBase.filter(
         (item) =>
-          item.nombre.toLowerCase().includes(termino)
-          || (item.email ?? "").toLowerCase().includes(termino)
-          || (item.salaGrupoPequeno ?? "").toLowerCase().includes(termino)
+          item.nombre.toLowerCase().includes(termino) ||
+          (item.email ?? "").toLowerCase().includes(termino) ||
+          (item.salaGrupoPequeno ?? "").toLowerCase().includes(termino)
       )
     : listaBase;
 
@@ -580,9 +577,7 @@ export function OperationalAttendeeDatabaseManager({
       <div className="section-heading">
         <div>
           <h2>Asistentes de la reunión ({asistentes.length})</h2>
-          <p>
-            Registro en vivo persistido en PostgreSQL con correos, tiempos de conexión y estado actual.
-          </p>
+          <p>Registro en vivo persistido en PostgreSQL con correos, tiempos de conexión y estado actual.</p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           {enGruposPequenos ? (
@@ -725,7 +720,11 @@ export function OperationalAttendeeDatabaseManager({
 
       {message ? (
         <p aria-live="polite" className="muted-text" style={{ margin: "10px 16px" }}>
-          <CheckCircle2 size={14} aria-hidden="true" style={{ marginRight: "0.3rem", verticalAlign: "middle" }} />
+          <CheckCircle2
+            size={14}
+            aria-hidden="true"
+            style={{ marginRight: "0.3rem", verticalAlign: "middle" }}
+          />
           {message}
         </p>
       ) : null}
@@ -754,41 +753,69 @@ export function OperationalAttendeeDatabaseManager({
 
 function toLocalDateTimeInput(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
   const offsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function formatHoraLocal(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
   return date.toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" });
 }
 
 function rolLabel(rol: string): string {
-  if (rol === "HOST") return "Host";
-  if (rol === "COHOST") return "Cohost";
-  if (rol === "DOCENTE") return "Docente";
-  if (rol === "ASISTENTE_TECNICO") return "Asistente";
+  if (rol === "HOST") {
+    return "Host";
+  }
+  if (rol === "COHOST") {
+    return "Cohost";
+  }
+  if (rol === "DOCENTE") {
+    return "Docente";
+  }
+  if (rol === "ASISTENTE_TECNICO") {
+    return "Asistente";
+  }
   return "Participante";
 }
 
 function rolBadgeClass(rol: string): string {
-  if (rol === "HOST" || rol === "COHOST") return "status-ok";
-  if (rol === "DOCENTE" || rol === "ASISTENTE_TECNICO") return "status-warning";
+  if (rol === "HOST" || rol === "COHOST") {
+    return "status-ok";
+  }
+  if (rol === "DOCENTE" || rol === "ASISTENTE_TECNICO") {
+    return "status-warning";
+  }
   return "status-neutral";
 }
 
 function tipoAccesoParticipanteLabel(tipo: string): string {
-  if (tipo === "CUENTA_GOOGLE") return "Cuenta Google";
-  if (tipo === "TELEFONO") return "Teléfono";
+  if (tipo === "CUENTA_GOOGLE") {
+    return "Cuenta Google";
+  }
+  if (tipo === "TELEFONO") {
+    return "Teléfono";
+  }
   return "Anónimo";
 }
 
 function origenCorreoLabel(origen: string): string {
-  if (origen === "GOOGLE_MEET") return "Meet";
-  if (origen === "REPORTS_API" || origen === "GOOGLE_REPORTS") return "Workspace";
-  if (origen === "DIRECTORIO_FLACSO") return "FLACSO";
-  if (origen === "MANUAL") return "Manual";
+  if (origen === "GOOGLE_MEET") {
+    return "Meet";
+  }
+  if (origen === "REPORTS_API" || origen === "GOOGLE_REPORTS") {
+    return "Workspace";
+  }
+  if (origen === "DIRECTORIO_FLACSO") {
+    return "FLACSO";
+  }
+  if (origen === "MANUAL") {
+    return "Manual";
+  }
   return "Sin correo";
 }

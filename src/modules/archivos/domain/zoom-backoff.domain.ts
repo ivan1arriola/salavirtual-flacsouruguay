@@ -18,7 +18,9 @@ export function proximoIntentoZoom(
   const base = ESCALA_MS[indice]!;
   const jitter = 1 + (aleatorio() * 0.4 - 0.2);
   const propia = Math.min(Math.round(base * jitter), MAXIMO_BACKOFF_ZOOM_MS);
-  const proveedor = reintentarEnSegundos !== null && Number.isFinite(reintentarEnSegundos) && reintentarEnSegundos > 0
-    ? reintentarEnSegundos * 1000 : 0;
+  const proveedor =
+    reintentarEnSegundos !== null && Number.isFinite(reintentarEnSegundos) && reintentarEnSegundos > 0
+      ? reintentarEnSegundos * 1000
+      : 0;
   return new Date(ahora.getTime() + Math.max(propia, proveedor));
 }

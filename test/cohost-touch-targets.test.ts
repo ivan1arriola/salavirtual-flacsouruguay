@@ -2,13 +2,17 @@ import { readFileSync } from "node:fs";
 import postcss, { type Declaration, type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
-const stylesheet = postcss.parse(readFileSync(new URL("../app/(gestion)/operations.css", import.meta.url), "utf8"));
+const stylesheet = postcss.parse(
+  readFileSync(new URL("../app/(gestion)/operations.css", import.meta.url), "utf8")
+);
 
 describe("selector de cohosts en móvil", () => {
   it("proporciona un área pulsable de 44px por persona en el formulario de reunión", () => {
     let row: Rule | undefined;
     stylesheet.walkAtRules("media", (media) => {
-      if (media.params !== "(max-width: 760px)") return;
+      if (media.params !== "(max-width: 760px)") {
+        return;
+      }
       media.walkRules(".cohost-disclosure .checkbox-list label", (candidate) => {
         row = candidate as Rule;
       });

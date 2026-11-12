@@ -9,7 +9,7 @@ Por decisión institucional, las planillas de Google Sheets generadas por Sala V
 La autorización se otorga exclusivamente al archivo individual mediante Google Drive API:
 
 ```json
-{"type":"anyone","role":"reader","allowFileDiscovery":false}
+{ "type": "anyone", "role": "reader", "allowFileDiscovery": false }
 ```
 
 - No se publica el archivo en búsquedas; una persona necesita obtener su enlace.

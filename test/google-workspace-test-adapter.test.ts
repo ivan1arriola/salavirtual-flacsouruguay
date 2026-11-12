@@ -57,10 +57,12 @@ beforeEach(() => {
 
 describe("pruebas de Google Workspace", () => {
   it("valida la cuenta de servicio solicitando únicamente Calendar", async () => {
-    await expect(probarCredencialGoogle({
-      serviceAccountEmail: credential.serviceAccountEmail,
-      privateKey: credential.privateKey
-    })).resolves.toContain("Google aceptó");
+    await expect(
+      probarCredencialGoogle({
+        serviceAccountEmail: credential.serviceAccountEmail,
+        privateKey: credential.privateKey
+      })
+    ).resolves.toContain("Google aceptó");
 
     expect(google.authorize).toHaveBeenCalledOnce();
     expect(google.options[0]).toMatchObject({
@@ -75,7 +77,15 @@ describe("pruebas de Google Workspace", () => {
 
     expect(google.options[0]).toMatchObject({
       subject: credential.subject,
-      scopes: [scopes.calendar, scopes.drive, scopes.meetSettings, scopes.meetRead, scopes.meetCreated, scopes.gmail, scopes.sheets]
+      scopes: [
+        scopes.calendar,
+        scopes.drive,
+        scopes.meetSettings,
+        scopes.meetRead,
+        scopes.meetCreated,
+        scopes.gmail,
+        scopes.sheets
+      ]
     });
     expect(google.request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -106,8 +116,12 @@ describe("pruebas de Google Workspace", () => {
   it("identifica individualmente scopes no delegados o bloqueados por política", async () => {
     google.authorize.mockImplementation(async (options: Record<string, unknown>) => {
       const requested = options.scopes as readonly string[];
-      if (requested.includes(scopes.meetSettings)) throw new Error("unauthorized_client");
-      if (requested.includes(scopes.gmail)) throw new Error("admin_policy_enforced");
+      if (requested.includes(scopes.meetSettings)) {
+        throw new Error("unauthorized_client");
+      }
+      if (requested.includes(scopes.gmail)) {
+        throw new Error("admin_policy_enforced");
+      }
       return {};
     });
 
@@ -138,9 +152,18 @@ describe("pruebas de Google Drive", () => {
   it("confirma lectura y escritura creando y eliminando una carpeta temporal", async () => {
     google.request.mockImplementation(async (request: Record<string, unknown>) => {
       if (request.method === "GET") {
-        return { data: { id: "folder", name: "Grabaciones", mimeType: "application/vnd.google-apps.folder", trashed: false } };
+        return {
+          data: {
+            id: "folder",
+            name: "Grabaciones",
+            mimeType: "application/vnd.google-apps.folder",
+            trashed: false
+          }
+        };
       }
-      if (request.method === "POST") return { data: { id: "probe" } };
+      if (request.method === "POST") {
+        return { data: { id: "probe" } };
+      }
       return { data: {} };
     });
 
@@ -162,10 +185,14 @@ describe("pruebas de Google Drive", () => {
 
   it("falla si Drive no devuelve ID para la prueba de escritura", async () => {
     google.request
-      .mockResolvedValueOnce({ data: { id: "folder", mimeType: "application/vnd.google-apps.folder", trashed: false } })
+      .mockResolvedValueOnce({
+        data: { id: "folder", mimeType: "application/vnd.google-apps.folder", trashed: false }
+      })
       .mockResolvedValueOnce({ data: {} });
 
-    await expect(probarDestinoDrive(credential, "folder")).rejects.toThrow("no confirmó la prueba de escritura");
+    await expect(probarDestinoDrive(credential, "folder")).rejects.toThrow(
+      "no confirmó la prueba de escritura"
+    );
   });
 
   it("envía la carpeta temporal a la papelera si no puede eliminarla", async () => {
@@ -173,13 +200,22 @@ describe("pruebas de Google Drive", () => {
       if (request.method === "GET") {
         return { data: { id: "folder", mimeType: "application/vnd.google-apps.folder", trashed: false } };
       }
-      if (request.method === "POST") return { data: { id: "probe" } };
-      if (request.method === "DELETE") throw new Error("delete denied");
+      if (request.method === "POST") {
+        return { data: { id: "probe" } };
+      }
+      if (request.method === "DELETE") {
+        throw new Error("delete denied");
+      }
       return { data: {} };
     });
 
     await expect(probarDestinoDrive(credential, "folder")).resolves.toContain("folder");
-    expect(google.request.mock.calls.map(([request]) => request.method)).toEqual(["GET", "POST", "DELETE", "PATCH"]);
+    expect(google.request.mock.calls.map(([request]) => request.method)).toEqual([
+      "GET",
+      "POST",
+      "DELETE",
+      "PATCH"
+    ]);
     expect(google.request.mock.calls[3]?.[0]).toMatchObject({ data: { trashed: true } });
   });
 
@@ -195,11 +231,13 @@ describe("pruebas de Google Drive", () => {
       })
       .mockResolvedValue({ data: { id: "permission" } });
 
-    await expect(prepararAccesoSalasDrive(credential, "folder", [
-      "sala01@flacso.edu.uy",
-      "sala02@flacso.edu.uy",
-      "sala03@flacso.edu.uy"
-    ])).resolves.toBe("1 salas ya tenían acceso; 2 fueron habilitadas con administración de contenido.");
+    await expect(
+      prepararAccesoSalasDrive(credential, "folder", [
+        "sala01@flacso.edu.uy",
+        "sala02@flacso.edu.uy",
+        "sala03@flacso.edu.uy"
+      ])
+    ).resolves.toBe("1 salas ya tenían acceso; 2 fueron habilitadas con administración de contenido.");
 
     const posts = google.request.mock.calls
       .map(([request]) => request as Record<string, unknown>)

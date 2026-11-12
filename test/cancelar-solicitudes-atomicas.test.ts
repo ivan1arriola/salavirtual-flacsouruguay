@@ -23,7 +23,9 @@ function fakeDatabase(solicitudes: readonly unknown[]) {
   };
   return {
     tx,
-    db: { $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx) } as unknown as PrismaClient
+    db: {
+      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx)
+    } as unknown as PrismaClient
   };
 }
 
@@ -34,14 +36,19 @@ const solicitud = (id: string, liquidada = false, estado = "PROVISIONADA") => ({
   createdAt: new Date("2026-10-10T11:00:00Z"),
   estado,
   docentePrograma: { programaId: "programa-1" },
-  instancias: [{
-    detallesLiquidacion: liquidada ? [{ id: "liquidacion" }] : [],
-    eventosProveedor: [
-      { id: "google-" + id, operacionPendiente: estado === "CANCELADA" ? "CANCELAR" : null,
-        proveedor: { tipo: "GOOGLE_MEET" } },
-      { id: "zoom-" + id, operacionPendiente: null, proveedor: { tipo: "ZOOM_HISTORICO" } }
-    ]
-  }]
+  instancias: [
+    {
+      detallesLiquidacion: liquidada ? [{ id: "liquidacion" }] : [],
+      eventosProveedor: [
+        {
+          id: "google-" + id,
+          operacionPendiente: estado === "CANCELADA" ? "CANCELAR" : null,
+          proveedor: { tipo: "GOOGLE_MEET" }
+        },
+        { id: "zoom-" + id, operacionPendiente: null, proveedor: { tipo: "ZOOM_HISTORICO" } }
+      ]
+    }
+  ]
 });
 
 describe("cancelación atómica de solicitudes de una serie", () => {

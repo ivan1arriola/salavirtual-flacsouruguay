@@ -19,9 +19,7 @@ import type {
 
 export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): LiquidacionesRepositoryPort {
   return {
-    async obtenerFilasPlanillaPagos(
-      periodo: PeriodoReporteMensual
-    ): Promise<readonly FilaPlanillaPago[]> {
+    async obtenerFilasPlanillaPagos(periodo: PeriodoReporteMensual): Promise<readonly FilaPlanillaPago[]> {
       const assignments = await db.asignacionAsistenciaTecnica.findMany({
         where: {
           estado: { in: ["ASIGNADO", "ACEPTADO"] },
@@ -79,9 +77,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
       });
     },
 
-    async obtenerResumenAsistentes(
-      periodo: PeriodoMes
-    ): Promise<readonly FilaResumenAsistente[]> {
+    async obtenerResumenAsistentes(periodo: PeriodoMes): Promise<readonly FilaResumenAsistente[]> {
       const [assistants, assignments] = await Promise.all([
         db.asistenteTecnico.findMany({
           orderBy: { usuario: { nombres: "asc" } },
@@ -186,7 +182,9 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           };
         });
 
-        if (!asistente.usuario.activo && registros.length === 0) continue;
+        if (!asistente.usuario.activo && registros.length === 0) {
+          continue;
+        }
 
         const resumen = resumirAsistencias(registros);
         const nombre = `${asistente.usuario.nombres} ${asistente.usuario.apellidos ?? ""}`.trim();
@@ -247,7 +245,9 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
       };
 
       if (existing) {
-        if (existing.estado !== "ERROR") return null;
+        if (existing.estado !== "ERROR") {
+          return null;
+        }
         const claimed = await db.envioReporteMensualAsistencia.updateMany({
           where: { id: existing.id, estado: "ERROR" },
           data: {

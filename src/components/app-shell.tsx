@@ -61,7 +61,12 @@ export async function AppShell({
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
-            <ProfileMenu compact user={user} account={rememberedAccount} unreadNotifications={unreadNotifications} />
+            <ProfileMenu
+              compact
+              user={user}
+              account={rememberedAccount}
+              unreadNotifications={unreadNotifications}
+            />
           </span>
         </header>
         <main className="workspace">{children}</main>
@@ -78,10 +83,7 @@ export async function AppShell({
               <span>{shortLabel ?? label}</span>
             </SidebarLink>
           ))}
-          <DismissibleDetails
-            className="mobile-nav-more"
-            dataTour={moreTourForRole(user.role)}
-          >
+          <DismissibleDetails className="mobile-nav-more" dataTour={moreTourForRole(user.role)}>
             <summary>
               <Menu size={20} aria-hidden="true" />
               <span>Más</span>
@@ -117,7 +119,10 @@ export async function AppShell({
   );
 }
 
-function SidebarGroup({ group, role }: Readonly<{
+function SidebarGroup({
+  group,
+  role
+}: Readonly<{
   group: NavigationGroup;
   role: Session["user"]["role"];
 }>) {
@@ -146,29 +151,55 @@ function SidebarGroup({ group, role }: Readonly<{
 function tourForHref(role: Session["user"]["role"], href: string): string | undefined {
   const route = href.split("?")[0];
   if (role === "DOCENTE") {
-    if (route === "/reuniones") return "teacher-agenda";
-    if (route === "/reuniones/nueva") return "teacher-create";
-    if (route === "/mis-programas") return "teacher-programs";
-    if (route === "/grabaciones") return "teacher-recordings";
+    if (route === "/reuniones") {
+      return "teacher-agenda";
+    }
+    if (route === "/reuniones/nueva") {
+      return "teacher-create";
+    }
+    if (route === "/mis-programas") {
+      return "teacher-programs";
+    }
+    if (route === "/grabaciones") {
+      return "teacher-recordings";
+    }
   }
   if (role === "ASISTENTE_TECNICO") {
-    if (route === "/") return "assistant-dashboard";
-    if (route === "/mi-agenda") return "assistant-my-agenda";
-    if (route === "/agenda-abierta") return "assistant-open-agenda";
-    if (route === "/grabaciones") return "assistant-recordings";
-    if (route === "/mi-perfil") return "assistant-profile";
+    if (route === "/") {
+      return "assistant-dashboard";
+    }
+    if (route === "/mi-agenda") {
+      return "assistant-my-agenda";
+    }
+    if (route === "/agenda-abierta") {
+      return "assistant-open-agenda";
+    }
+    if (route === "/grabaciones") {
+      return "assistant-recordings";
+    }
+    if (route === "/mi-perfil") {
+      return "assistant-profile";
+    }
   }
   return undefined;
 }
 
 function moreTourForRole(role: Session["user"]["role"]): string | undefined {
-  if (role === "DOCENTE") return "teacher-more";
-  if (role === "ASISTENTE_TECNICO") return "assistant-more";
+  if (role === "DOCENTE") {
+    return "teacher-more";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "assistant-more";
+  }
   return undefined;
 }
 
 function roleLabel(role: Session["user"]["role"]): string {
-  if (role === "ADMINISTRACION") return "Administración";
-  if (role === "ASISTENTE_TECNICO") return "Monitoreo";
+  if (role === "ADMINISTRACION") {
+    return "Administración";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "Monitoreo";
+  }
   return "Docente";
 }

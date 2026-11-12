@@ -9,7 +9,8 @@ describe("gestión administrativa de integrantes por programa", () => {
     const createAudit = vi.fn().mockResolvedValue({});
     const tx = {
       usuario: {
-        findUnique: vi.fn()
+        findUnique: vi
+          .fn()
           .mockResolvedValueOnce({ id: "admin", rol: "ADMINISTRACION", activo: true })
           .mockResolvedValueOnce({
             id: "docente-user",

@@ -8,7 +8,6 @@ import {
 } from "../src/modules/dashboard/dashboard.domain";
 
 describe("integración de vistas de dashboard", () => {
-
   it("mantiene / como dashboard principal y despacha por rol", () => {
     const source = readFileSync(join(process.cwd(), "app/(gestion)/page.tsx"), "utf8");
 
@@ -63,6 +62,4 @@ describe("integración de vistas de dashboard", () => {
     expect(timeline).toContain("isLive && provider.supportsCohosts");
     expect(timeline).toContain("provider.joinLabel");
   });
-
 });
-

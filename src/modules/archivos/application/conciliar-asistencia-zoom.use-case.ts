@@ -28,21 +28,33 @@ export async function conciliarAsistenciaZoomUseCase(
   entrada: EntradaConciliacionZoom
 ): Promise<ResultadoConciliacionZoom> {
   const contexto = await deps.repo.obtenerContexto(entrada.registroId);
-  if (!contexto) return { tipo: "ERROR", codigo: "NO_ENCONTRADO" };
+  if (!contexto) {
+    return { tipo: "ERROR", codigo: "NO_ENCONTRADO" };
+  }
   // Autorizar antes que nada más: quien no puede conciliar tampoco aprende el estado del registro.
-  if (!puedeConciliarAsistenciaZoom(actor, contexto)) return { tipo: "PROHIBIDO" };
+  if (!puedeConciliarAsistenciaZoom(actor, contexto)) {
+    return { tipo: "PROHIBIDO" };
+  }
   if (entrada.instanciaId !== undefined && contexto.instanciaId !== entrada.instanciaId) {
     return { tipo: "ERROR", codigo: "NO_ENCONTRADO" };
   }
   const cambio = calcularCambioConciliacionZoom(entrada);
-  if (!cambio) return { tipo: "ERROR", codigo: "PETICION_INVALIDA" };
-  if (contexto.version !== entrada.version) return { tipo: "CONFLICTO" };
+  if (!cambio) {
+    return { tipo: "ERROR", codigo: "PETICION_INVALIDA" };
+  }
+  if (contexto.version !== entrada.version) {
+    return { tipo: "CONFLICTO" };
+  }
 
   const resultado = await deps.repo.aplicar(entrada.registroId, entrada.version, cambio, actor.id);
   switch (resultado.tipo) {
-    case "APLICADO": return { tipo: "OK", version: resultado.version };
-    case "CONFLICTO": return { tipo: "CONFLICTO" };
-    case "INVITADO_AJENO": return { tipo: "ERROR", codigo: "INVITADO_AJENO" };
-    case "NO_ENCONTRADO": return { tipo: "ERROR", codigo: "NO_ENCONTRADO" };
+    case "APLICADO":
+      return { tipo: "OK", version: resultado.version };
+    case "CONFLICTO":
+      return { tipo: "CONFLICTO" };
+    case "INVITADO_AJENO":
+      return { tipo: "ERROR", codigo: "INVITADO_AJENO" };
+    case "NO_ENCONTRADO":
+      return { tipo: "ERROR", codigo: "NO_ENCONTRADO" };
   }
 }

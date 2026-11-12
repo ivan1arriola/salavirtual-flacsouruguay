@@ -125,8 +125,11 @@ export function ZoomGrupoConfig({
         body: JSON.stringify({ vistaPrevia: true })
       });
       const resultado = leerVistaPrevia(await response.json().catch(() => null));
-      if (resultado.ok) setVistaPrevia(resultado.vistaPrevia);
-      else setAviso({ ok: false, texto: resultado.mensaje });
+      if (resultado.ok) {
+        setVistaPrevia(resultado.vistaPrevia);
+      } else {
+        setAviso({ ok: false, texto: resultado.mensaje });
+      }
     } catch {
       setAviso({ ok: false, texto: SIN_CONEXION });
     } finally {
@@ -147,7 +150,9 @@ export function ZoomGrupoConfig({
       const resultado = resultadoSincronizacion(await response.json().catch(() => null));
       setAviso({ ok: resultado.ok, texto: resultado.mensaje });
       setVistaPrevia(null);
-      if (resultado.ok) router.refresh();
+      if (resultado.ok) {
+        router.refresh();
+      }
     } catch {
       setAviso({ ok: false, texto: SIN_CONEXION });
     } finally {
@@ -161,7 +166,10 @@ export function ZoomGrupoConfig({
     <section className="form-section workspace-config settings-room-editor" aria-label="Grupo de Zoom">
       <header className="form-section-title">
         <UsersRound size={22} aria-hidden="true" />
-        <div><h2>Grupo de Zoom</h2><p>Las cuentas anfitrionas de Zoom son los miembros de este grupo.</p></div>
+        <div>
+          <h2>Grupo de Zoom</h2>
+          <p>Las cuentas anfitrionas de Zoom son los miembros de este grupo.</p>
+        </div>
       </header>
       <div className="form-grid">
         {grupoId ? null : (
@@ -183,15 +191,24 @@ export function ZoomGrupoConfig({
         </div>
         {eligiendo && grupos ? (
           grupos.length === 0 ? (
-            <p className="config-secret-state field-wide">No hay grupos en la cuenta de Zoom. Creá uno en Zoom y volvé a intentar.</p>
+            <p className="config-secret-state field-wide">
+              No hay grupos en la cuenta de Zoom. Creá uno en Zoom y volvé a intentar.
+            </p>
           ) : (
             <label className="field field-wide">
               <span>Grupo de Zoom</span>
-              <select value={seleccion} onChange={(event) => setSeleccion(event.target.value)} disabled={ocupado}>
-                <option value="" disabled>Elegí un grupo</option>
+              <select
+                value={seleccion}
+                onChange={(event) => setSeleccion(event.target.value)}
+                disabled={ocupado}
+              >
+                <option value="" disabled>
+                  Elegí un grupo
+                </option>
                 {grupos.map((grupo) => (
                   <option key={grupo.id} value={grupo.id}>
-                    {grupo.nombre} ({grupo.totalMiembros} {grupo.totalMiembros === 1 ? "miembro" : "miembros"})
+                    {grupo.nombre} ({grupo.totalMiembros} {grupo.totalMiembros === 1 ? "miembro" : "miembros"}
+                    )
                   </option>
                 ))}
               </select>
@@ -209,30 +226,46 @@ export function ZoomGrupoConfig({
       ) : null}
       <footer className="form-actions">
         <span className={`form-message${pendiente ? " saving" : aviso?.ok ? " done" : ""}`} role="status">
-          {pendiente ? TEXTO_PENDIENTE[pendiente] : aviso?.texto ?? ""}
+          {pendiente ? TEXTO_PENDIENTE[pendiente] : (aviso?.texto ?? "")}
         </span>
         <div className="workspace-actions">
           {eligiendo ? (
             <>
               <button className="secondary-action" type="button" onClick={cerrarSelector} disabled={ocupado}>
-                <X size={16} />Cancelar
+                <X size={16} />
+                Cancelar
               </button>
-              <button className="secondary-action" type="button" onClick={guardarGrupo} disabled={ocupado || !seleccion}>
-                <Save size={16} />{pendiente === "guardar" ? "Guardando…" : "Guardar grupo"}
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={guardarGrupo}
+                disabled={ocupado || !seleccion}
+              >
+                <Save size={16} />
+                {pendiente === "guardar" ? "Guardando…" : "Guardar grupo"}
               </button>
             </>
           ) : (
             <button className="secondary-action" type="button" onClick={abrirSelector} disabled={ocupado}>
-              <UsersRound size={16} />{grupoId ? "Cambiar grupo" : "Elegir grupo"}
+              <UsersRound size={16} />
+              {grupoId ? "Cambiar grupo" : "Elegir grupo"}
             </button>
           )}
           <button
             className="primary-action"
             type="button"
             onClick={revisarSincronizacion}
-            disabled={!puedeRevisarSincronizacion({ grupoId, ocupado, eligiendo, hayVistaPrevia: vistaPrevia !== null })}
+            disabled={
+              !puedeRevisarSincronizacion({
+                grupoId,
+                ocupado,
+                eligiendo,
+                hayVistaPrevia: vistaPrevia !== null
+              })
+            }
           >
-            <RefreshCw size={16} />{pendiente === "vistaPrevia" ? "Revisando…" : "Sincronizar con el grupo"}
+            <RefreshCw size={16} />
+            {pendiente === "vistaPrevia" ? "Revisando…" : "Sincronizar con el grupo"}
           </button>
         </div>
       </footer>
@@ -245,11 +278,19 @@ function reunionesFuturas(cantidad: number): string {
 }
 
 function ListaDeCuentas({ titulo, cuentas }: Readonly<{ titulo: string; cuentas: readonly string[] }>) {
-  if (cuentas.length === 0) return null;
+  if (cuentas.length === 0) {
+    return null;
+  }
   return (
     <details open>
-      <summary>{titulo} ({cuentas.length})</summary>
-      <ul>{cuentas.map((cuenta, indice) => <li key={`${indice}-${cuenta}`}>{cuenta}</li>)}</ul>
+      <summary>
+        {titulo} ({cuentas.length})
+      </summary>
+      <ul>
+        {cuentas.map((cuenta, indice) => (
+          <li key={`${indice}-${cuenta}`}>{cuenta}</li>
+        ))}
+      </ul>
     </details>
   );
 }
@@ -268,16 +309,21 @@ export function VistaPreviaSincronizacionPanel({
 }>) {
   const { masivo, avisoMasivo, sinLicencia } = vistaPrevia;
   return (
-    <div className={`workspace-resync-feedback ${masivo ? "is-error" : "is-warning"}`} role={masivo ? "alert" : "status"}>
+    <div
+      className={`workspace-resync-feedback ${masivo ? "is-error" : "is-warning"}`}
+      role={masivo ? "alert" : "status"}
+    >
       {masivo ? <TriangleAlert size={17} aria-hidden="true" /> : <Info size={17} aria-hidden="true" />}
       <div>
         <strong>
-          {masivo ? "Atención: esta sincronización cambia muchas cuentas" : "Revisá lo que va a cambiar antes de sincronizar"}
+          {masivo
+            ? "Atención: esta sincronización cambia muchas cuentas"
+            : "Revisá lo que va a cambiar antes de sincronizar"}
         </strong>
         {masivo ? (
           <span>
-            {avisoMasivo ?? "Esta sincronización cambiaría muchas cuentas."} Comprobá que el grupo elegido sea el correcto:
-            si no lo es, cancelá y elegí otro grupo.
+            {avisoMasivo ?? "Esta sincronización cambiaría muchas cuentas."} Comprobá que el grupo elegido sea
+            el correcto: si no lo es, cancelá y elegí otro grupo.
           </span>
         ) : null}
         <span>
@@ -286,22 +332,29 @@ export function VistaPreviaSincronizacionPanel({
             : `Resultado: ${vistaPrevia.resumen}.`}
         </span>
         {sinLicencia.length > 0 ? (
-          <span>{sinLicencia.length} sin licencia: esas cuentas no reciben reuniones nuevas hasta que tengan licencia en Zoom.</span>
+          <span>
+            {sinLicencia.length} sin licencia: esas cuentas no reciben reuniones nuevas hasta que tengan
+            licencia en Zoom.
+          </span>
         ) : null}
         <ListaDeCuentas titulo="Cuentas nuevas" cuentas={vistaPrevia.crear} />
         <ListaDeCuentas titulo="Se reactivan" cuentas={vistaPrevia.reactivar} />
         <ListaDeCuentas titulo="Se desactivan" cuentas={vistaPrevia.desactivar} />
         <ListaDeCuentas
           titulo="Quedan fuera del grupo"
-          cuentas={vistaPrevia.marcarFuera.map(({ email, reunionesFuturas: n }) => `${email} (${reunionesFuturas(n)})`)}
+          cuentas={vistaPrevia.marcarFuera.map(
+            ({ email, reunionesFuturas: n }) => `${email} (${reunionesFuturas(n)})`
+          )}
         />
         <ListaDeCuentas titulo="Pasan a sin licencia" cuentas={vistaPrevia.pierdenLicencia} />
         <div className="workspace-actions">
           <button className="secondary-action" type="button" onClick={onCancelar} disabled={ocupado}>
-            <X size={16} />Cancelar
+            <X size={16} />
+            Cancelar
           </button>
           <button className="primary-action" type="button" onClick={onConfirmar} disabled={ocupado}>
-            <RefreshCw size={16} />{ocupado ? "Sincronizando…" : "Confirmar y sincronizar"}
+            <RefreshCw size={16} />
+            {ocupado ? "Sincronizando…" : "Confirmar y sincronizar"}
           </button>
         </div>
       </div>

@@ -48,11 +48,13 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 1: Esquema de la reunión compartida
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (modelo `EventoProveedor`, nuevo `ReunionProveedor`, relaciones en `ProveedorReunion` y `CuentaProveedor`)
 - Create: `prisma/migrations/<timestamp>_reunion_proveedor_compartida/migration.sql`
 - Test: `test/schema-contract.test.ts`
 
 **Interfaces:**
+
 - Produces: modelo `ReunionProveedor { id; proveedorId; cuentaProveedorId?; serieClave String; externalId String?; joinUrl String?; estadoCreacion String @default("PENDIENTE") /* PENDIENTE | CREANDO | CREADA | ELIMINADA */; reclamoToken String?; reclamoAt DateTime?; estadoIntegracion EstadoIntegracion @default(PENDIENTE); errorIntegracion String?; createdAt; updatedAt; @@unique([proveedorId, externalId]); @@unique([proveedorId, serieClave]); eventos EventoProveedor[] }`; modelo `CambioEnlaceCita { id; instanciaSalaId; reunionProveedorId; enlaceNuevo String; estado String @default("PENDIENTE") /* PENDIENTE | PARCHEADA | VERIFICADA */; reunionAnteriorExternalId String?; eliminarDespuesDe DateTime?; reunionAnteriorEliminadaAt DateTime?; sinCita Boolean @default(false); @@unique([instanciaSalaId, reunionProveedorId]) }` (una fila por encuentro de la serie, tenga o no cita de Calendar; `sinCita` indica que no hay cita que parchear y la fila nace `VERIFICADA`; `reunionAnteriorEliminadaAt` evita repetir la eliminación); modelo `AvisoEnlaceSerie { id; serieClave String; email String; tipo String /* MIGRACION_SERIE | CORRECCION_ENLACE */; estado String; enviadoAt DateTime?; @@unique([serieClave, email, tipo]) }`; campo `EventoProveedor.reunionProveedorId String?` con relación y `@@index([reunionProveedorId])`; se elimina `@@unique([proveedorId, externalEventId])` de `EventoProveedor` y se reemplaza por `@@index([proveedorId, externalEventId])`.
 
 - [ ] **Step 1: Failing test** en `test/schema-contract.test.ts`: el esquema contiene el modelo `ReunionProveedor` con ambas unicidades y los campos de estado de creación, los modelos `CambioEnlaceCita` y `AvisoEnlaceSerie` con sus unicidades, `reunionProveedorId` en `EventoProveedor`, y ya no contiene `@@unique([proveedorId, externalEventId])` en `EventoProveedor`; la migración crea la tabla, agrega la columna y reemplaza el índice único.
@@ -63,10 +65,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 2: Cliente Zoom para reuniones recurrentes
 
 **Files:**
+
 - Modify: `src/integrations/zoom/zoom-client.ts`
 - Test: `test/integrations-zoom-client.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `crearReunionZoomRecurrenteHttp(token: string, userEmail: string, input: { topic: string; agenda?: string | null; requiereGrabacion?: boolean }): Promise<ZoomMeetingResult>` — `POST /users/{email}/meetings` con `type: 3` (recurrente sin horario fijo) y los `settings` necesarios, **sin** `start_time` ni `recurrence` (verificar el cuerpo exacto contra la documentación de Zoom y una prueba real antes de fijarlo); devuelve `meetingId`, `joinUrl`, `startUrl?`. La `agenda` lleva la marca `[serie:<serieClave>]`.
   - `buscarReunionZoomPorMarcaHttp(token: string, userEmail: string, marca: string): Promise<ZoomMeetingResult | null>` — lista las reuniones del anfitrión y devuelve la que contenga la marca en su agenda, o `null`; recorre las páginas.
@@ -77,10 +81,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 3: Dominio de uso de la reunión compartida
 
 **Files:**
+
 - Create: `src/modules/reuniones/reunion-compartida.domain.ts`
 - Test: `test/reunion-compartida-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type UsoReunionCompartida = Readonly<{ eventoProveedorId: string; instanciaEstado: string; instanciaFin: Date }>`
   - `usosActivos(usos: readonly UsoReunionCompartida[], ahora: Date, excluirEventoId?: string): number` — cuenta los usos activos: `instanciaEstado` en `PROGRAMADA` o `EN_CURSO` y `instanciaFin` posterior a `ahora`, sin contar el excluido. Los cancelados y los pasados no cuentan.
@@ -93,10 +99,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 4: Aprovisionamiento con reunión compartida
 
 **Files:**
+
 - Modify: `src/modules/conferencias/ports/conferencias-repository.port.ts`, `src/modules/conferencias/infrastructure/prisma/prisma-conferencias-repository.adapter.ts`, `src/modules/conferencias/application/provisionar-conferencias.use-case.ts`
 - Test: `test/conferencias-application.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1–3.
 - Produces en `ConferenciasRepositoryPort`:
   - `reclamarCreacionReunionCompartida(eventoProveedorId: string, token: string, ahora: Date): Promise<Readonly<{ reunionId: string; resultado: "RECLAMADA" | "EN_CURSO_POR_OTRO" | "YA_CREADA"; externalId: string | null; joinUrl: string | null }> | null>` — `null` si el evento no tiene `reunionProveedorId`. Es una **actualización condicional** (`PENDIENTE` → `CREANDO` con `reclamoToken` y `reclamoAt`; también retoma un reclamo `CREANDO` con más de 5 minutos), no un bloqueo asesor: este se libera al cerrar la transacción y el POST a Zoom ocurre fuera.
@@ -114,10 +122,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 5: Series nuevas con una sola reunión
 
 **Files:**
+
 - Modify: `src/modules/reuniones/crear-reuniones.service.ts`
 - Test: `test/crear-reuniones-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 (modelo), Task 3 (`claveSerieReunion` para `serieClave`).
 - Produces: con la bandera `ZOOM_REUNION_COMPARTIDA` encendida (Task 9), al crear una solicitud Zoom, se crea **una** `ReunionProveedor` (`cuentaProveedorId = cuentaHostId`, `serieClave` derivado de `serieReunionId`) y cada `EventoProveedor` se crea con ese `reunionProveedorId`.
 
@@ -127,10 +137,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 6: Agregar, reprogramar y cancelar encuentros y series
 
 **Files:**
+
 - Modify: `src/modules/reuniones/gestionar-encuentros.service.ts`, `src/modules/reuniones/cancelar-solicitudes-atomicas.service.ts`
 - Test: `test/gestionar-encuentros-service.test.ts`, `test/cancelar-solicitudes-zoom.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1, 3, 4.
 - Comportamiento: `agregarEncuentro` en una serie Zoom con reunión compartida crea el `EventoProveedor` con ese `reunionProveedorId` y la misma cuenta; si la cuenta está ocupada en el horario nuevo lanza `ConflictApiError("La sala de la serie está ocupada en ese horario.")` y no elige otra. `actualizarEncuentro` (`EDITAR_FECHA`) sigue validando la cuenta de la serie pero, si el evento tiene reunión compartida, **no** deja ninguna operación pendiente en Zoom (el horario vive en Sala Virtual y en Calendar; el título de la reunión no lo cambia este servicio); sin reunión compartida mantiene el comportamiento actual. La condición exacta es: el evento activo del encuentro es de Zoom y tiene `reunionProveedorId` y `externalEventId`; en cualquier otro caso (Meet, Zoom antiguo sin reunión compartida) se conserva el comportamiento previo.
 - **Cita histórica de Google Calendar:** esta tarea no la cambia. Hoy, al reprogramar o cancelar un encuentro ya migrado, la cita de Calendar (que pertenece al evento Meet histórico) no se actualiza; se mantiene como limitación conocida y se anota en el spec, fuera de este plan.
@@ -142,10 +154,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 7: Migración Meet→Zoom por serie
 
 **Files:**
+
 - Modify: `src/modules/reuniones/migracion-zoom-preview.domain.ts`, `src/modules/reuniones/migracion-zoom.service.ts`, `src/modules/reuniones/migracion-zoom-aplicar.service.ts`, `src/modules/reuniones/migracion-zoom-avisos.service.ts`, `app/api/v1/reuniones/migracion-zoom/**` (rutas existentes), `src/components/migracion-zoom-aplicar-control.tsx`
 - Test: `test/migracion-zoom-preview.test.ts`, `test/migracion-zoom-service.test.ts`, `test/migracion-zoom-aplicar.test.ts`, `test/migracion-zoom-routes.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1–6.
 - Produces:
   - Vista previa por serie: `planificarMigracionZoomPorSerie(input): readonly FilaSerieMigracionZoom[]` con `FilaSerieMigracionZoom = { serieClave: string; encuentroIds: readonly string[]; estado: EstadoVistaPreviaZoom; hostId: string | null }`. Un único host debe tener capacidad para **todos** los horarios (`elegirCuentaHostParaPeriodos` con todos los periodos de la serie). El estado `SERIE` (bloqueo provisorio) desaparece. Una serie con excepciones en solo algunos encuentros queda `REVISAR`. Una serie **mixta** (con encuentros ya en Zoom que tienen reuniones propias distintas) también queda `REVISAR`: por defecto no es migrable, y su resolución es una **decisión pendiente** (unificarla dentro de esta misma operación reutilizando la lógica del plan de corrección, o corregirla antes). Una serie con encuentros en Zoom que ya comparten la reunión compartida y el resto en Meet sí es migrable: las reservas de los encuentros de la propia serie no cuentan como colisión de sala entre sí (comparten la misma reunión y cuenta, y sus horarios no se superponen).
@@ -158,10 +172,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 8: Inicio como anfitrión y verificación final
 
 **Files:**
+
 - Modify: `src/modules/reuniones/iniciar-reunion-zoom.service.ts`
 - Test: `test/iniciar-reunion-zoom.test.ts`
 
 **Interfaces:**
+
 - `obtenerEnlaceInicioZoom` toma el ID externo de la reunión compartida cuando el evento tiene `reunionProveedorId`; si no, de `externalEventId` como hoy.
 
 - [ ] **Step 1: Failing test:** con un evento con reunión compartida pide el `start_url` con el ID de la reunión compartida.
@@ -173,10 +189,12 @@ Task 1, **Task 9 (bandera)**, Task 2, Task 3, Task 4, Task 5, Task 6, Task 7 y T
 ### Task 9: Bandera de creación compartida y orden de despliegue
 
 **Files:**
+
 - Modify: `src/modules/reuniones/crear-reuniones.service.ts` (lectura de la bandera), `docs/despliegue-ec2.md` (nota de despliegue)
 - Test: `test/crear-reuniones-service.test.ts`
 
 **Interfaces:**
+
 - `reunionCompartidaHabilitada(env: Readonly<Record<string, string | undefined>>): boolean` — verdadero solo si `ZOOM_REUNION_COMPARTIDA` vale `"1"` o `"true"`; apagada por defecto. Las Tasks 4 a 7 respetan la bandera: con ella apagada nada cambia respecto de hoy.
 
 - [ ] **Step 1: Failing tests:** la función es falsa sin la variable, con `"0"` y con cualquier otro valor; verdadera con `"1"` y `"true"`; `crearReuniones` con la bandera apagada no crea `ReunionProveedor`.

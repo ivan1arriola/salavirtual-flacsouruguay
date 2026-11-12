@@ -13,14 +13,18 @@ export function filterPrograms<T extends SearchableProgram>(
   const query = normalize(filters.query);
 
   return programs.filter((program) => {
-    const matchesState = filters.state === "todos"
-      || (filters.state === "activos" && program.activo)
-      || (filters.state === "inactivos" && !program.activo);
-    if (!matchesState) return false;
-    if (!query) return true;
+    const matchesState =
+      filters.state === "todos" ||
+      (filters.state === "activos" && program.activo) ||
+      (filters.state === "inactivos" && !program.activo);
+    if (!matchesState) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
 
-    return [program.nombre, program.codigo ?? ""]
-      .some((value) => normalize(value).includes(query));
+    return [program.nombre, program.codigo ?? ""].some((value) => normalize(value).includes(query));
   });
 }
 

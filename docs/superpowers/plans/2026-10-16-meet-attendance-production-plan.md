@@ -32,11 +32,13 @@
 ### Task 1: Pure interval and code normalization
 
 **Files:**
+
 - Create: `src/modules/archivos/domain/meet-attendance-summary.domain.ts`
 - Modify: `src/modules/archivos/domain/index.ts`
 - Test: `test/meet-attendance-summary.test.ts`
 
 **Interfaces:**
+
 - Produces `resumirIntervalosAsistencia(intervalos: readonly { inicio: string; fin: string }[], inicioProgramadoAt: Date, finProgramadoAt: Date): ResumenIntervalosAsistencia`, where the result has `primeraConexion: string | null`, `ultimaDesconexion: string | null`, `minutosConectados: number`, `porcentaje: number`, `cumpleCincoSextos: boolean`, and `conexiones: number`.
 - Produces `normalizarCodigoMeet(codigo: string): string`, lowercasing and removing separators for comparisons; raw values remain unchanged in exports.
 
@@ -49,12 +51,14 @@
 ### Task 2: Reports API events and conference isolation
 
 **Files:**
+
 - Modify: `src/modules/archivos/infrastructure/google/google-meet-audit-emails.client.ts`
 - Modify: `src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts`
 - Test: `test/google-meet-audit-emails.test.ts`
 - Test: `test/google-api-retry.test.ts`
 
 **Interfaces:**
+
 - Produces `EventoAuditoriaMeet` with original `conference_id`, `endpoint_id`, `meeting_code`, `identifier`, `identifier_type`, display name, event timestamp, duration, and original parameters.
 - Produces `obtenerEventosAuditoriaMeet(input): Promise<readonly EventoAuditoriaMeet[]>`; retain existing retry semantics and paginate every Reports response.
 - Consumes Task 1 `normalizarCodigoMeet` and `resumirIntervalosAsistencia`.
@@ -68,6 +72,7 @@
 ### Task 3: Three-tab sheet, safe updates, and durable recovery
 
 **Files:**
+
 - Modify: `src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client.ts`
 - Modify: `src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts`
 - Modify: `src/modules/operaciones/google-operaciones-externas.service.ts` only if the existing operation contract needs a recovery hook
@@ -75,6 +80,7 @@
 - Test: `test/google-durable-operations-postgres.test.ts`
 
 **Interfaces:**
+
 - Produces `crearOActualizarPlanillaAsistenciaGoogle(auth: JWT, input: MeetSheetInput, spreadsheetId?: string): Promise<MovedDriveFile>`.
 - For a new file, use the existing durable one-shot operation and a deterministic Drive reconciliation marker. For an existing file, write to its current ID and clear cells beyond the new row count.
 - The summary uses Task 1 results; raw rows retain original Meet and Reports identifiers. Text cells beginning with spreadsheet formula characters remain escaped.
@@ -88,6 +94,7 @@
 ### Task 4: Synchronization, historical regeneration, and Workspace documentation
 
 **Files:**
+
 - Modify: `src/modules/archivos/application/sincronizar-artefactos.use-case.ts`
 - Modify: `src/modules/archivos/ports/artifact-provider.port.ts`
 - Modify: `src/modules/archivos/ports/archivos-repository.port.ts`
@@ -98,6 +105,7 @@
 - Test: `test/regenerar-asistencia-route.test.ts`
 
 **Interfaces:**
+
 - Add an explicit `regenerarAsistencia?: boolean` option to the internal synchronization input; keep normal scheduled synchronization behavior unchanged.
 - Include the registered attendance `driveFileId` in `EventoParaSincronizarArchivos` so the application can update the existing spreadsheet.
 - The regeneration route accepts an instance ID, requires an active `ADMINISTRACION` actor, finds that instance's Meet event, and invokes synchronization with `regenerarAsistencia: true`.
@@ -111,6 +119,7 @@
 ### Task 5: Baseline repairs and attendance regression suite
 
 **Files:**
+
 - Modify: `test/archivos-infrastructure.test.ts`
 - Modify: `test/sincronizar-artefactos-service.test.ts`
 - Modify only if required to fix a proven false positive: `test/functional-architecture.test.ts` or the implicated use-case source files.
@@ -120,4 +129,3 @@
 - [ ] **Step 3: Investigate** each functional-architecture failure. Change its test or source only after demonstrating whether it is a false positive or a real layering/purity violation; do not suppress unrelated checks.
 - [ ] **Step 4: Run** all attendance, archive-infrastructure, and functional-architecture tests; then run `npm run check`, `npm test -- --reporter=dot`, and `npm run build`.
 - [ ] **Step 5: Commit** as `test: cover Meet attendance production regressions`.
-

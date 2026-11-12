@@ -51,35 +51,36 @@ describe("POST incidencia operativa", () => {
   });
 
   it("registra usando el actor resuelto y la instancia de la ruta", async () => {
-    const response = await POST(
+    const response = (await POST(
       request({
         tipo: "AUDIO_VIDEO",
         severidad: "MEDIA",
         descripcion: "Audio entrecortado"
       }),
       { params: Promise.resolve({ instanciaId: "meeting-1" }) }
-    ) as any;
+    )) as any;
 
     expect(response.status).toBe(201);
     expect(response.body.incidencia.id).toBe("inc-1");
-    expect(state.calls).toEqual([[
-      { id: "at-1", rol: "ASISTENTE_TECNICO" },
-      "meeting-1",
-      {
-        tipo: "AUDIO_VIDEO",
-        severidad: "MEDIA",
-        descripcion: "Audio entrecortado"
-      }
-    ]]);
+    expect(state.calls).toEqual([
+      [
+        { id: "at-1", rol: "ASISTENTE_TECNICO" },
+        "meeting-1",
+        {
+          tipo: "AUDIO_VIDEO",
+          severidad: "MEDIA",
+          descripcion: "Audio entrecortado"
+        }
+      ]
+    ]);
   });
 
   it("rechaza una sesión ausente antes de llamar al servicio", async () => {
     state.session = null;
 
-    const response = await POST(
-      request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }),
-      { params: Promise.resolve({ instanciaId: "meeting-1" }) }
-    ) as any;
+    const response = (await POST(request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }), {
+      params: Promise.resolve({ instanciaId: "meeting-1" })
+    })) as any;
 
     expect(response.status).toBe(401);
     expect(state.calls).toEqual([]);
@@ -88,10 +89,9 @@ describe("POST incidencia operativa", () => {
   it("rechaza un actor inactivo antes de llamar al servicio", async () => {
     state.actor.activo = false;
 
-    const response = await POST(
-      request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }),
-      { params: Promise.resolve({ instanciaId: "meeting-1" }) }
-    ) as any;
+    const response = (await POST(request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }), {
+      params: Promise.resolve({ instanciaId: "meeting-1" })
+    })) as any;
 
     expect(response.status).toBe(401);
     expect(state.calls).toEqual([]);

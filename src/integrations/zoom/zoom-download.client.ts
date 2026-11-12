@@ -91,7 +91,9 @@ function medir(cuerpo: ReadableStream<Uint8Array>, omitir: bigint, esperado: big
         porOmitir -= BigInt(descartar);
         parte = parte.subarray(descartar);
       }
-      if (parte.byteLength === 0) return;
+      if (parte.byteLength === 0) {
+        return;
+      }
       entregados += BigInt(parte.byteLength);
       if (esperado !== null && entregados > esperado) {
         throw new ZoomApiError("TAMANO_INCONSISTENTE", "descarga");
@@ -116,11 +118,19 @@ function contenidoDe(
   total: bigint | null,
   contentType: string | null
 ): DescargaZoomHttp {
-  if (!response.body) throw new ZoomApiError("CONTENIDO_NO_ES_ARCHIVO", "descarga", { status: response.status });
+  if (!response.body) {
+    throw new ZoomApiError("CONTENIDO_NO_ES_ARCHIVO", "descarga", { status: response.status });
+  }
   const { flujo, recibidos } = medir(response.body, omitir, esperado);
   return {
-    tipo: "CONTENIDO", modo, etiquetas, contenido: flujo, totalBytes: total,
-    bytesEsperados: esperado, contentType, bytesRecibidos: recibidos
+    tipo: "CONTENIDO",
+    modo,
+    etiquetas,
+    contenido: flujo,
+    totalBytes: total,
+    bytesEsperados: esperado,
+    contentType,
+    bytesRecibidos: recibidos
   };
 }
 
@@ -141,7 +151,9 @@ async function resolverRespuestaFinal(
   const longitud = comprimido ? null : bigintONulo(response.headers.get("content-length"));
 
   if (response.status === 206) {
-    const coincide = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec((response.headers.get("content-range") ?? "").trim());
+    const coincide = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec(
+      (response.headers.get("content-range") ?? "").trim()
+    );
     const inicio = coincide ? BigInt(coincide[1]) : null;
     const fin = coincide ? BigInt(coincide[2]) : null;
     if (inicio === null || fin === null || inicio !== offset || fin < inicio) {
@@ -187,7 +199,9 @@ export async function abrirDescargaZoomHttp(
   opciones: OpcionesDescargaZoom = {}
 ): Promise<DescargaZoomHttp> {
   const desde = BigInt(offset);
-  if (desde < 0n) throw new RangeError("offset negativo");
+  if (desde < 0n) {
+    throw new RangeError("offset negativo");
+  }
   const hostsZoom = listaDeEntorno("ZOOM_ARCHIVOS_HOSTS_ZOOM", HOSTS_ZOOM_POR_DEFECTO);
   const hostsDestino = [...hostsZoom, ...listaDeEntorno("ZOOM_ARCHIVOS_HOSTS_CDN", "")];
   const rango: Record<string, string> = desde > 0n ? { Range: `bytes=${desde}-` } : {};
@@ -198,23 +212,34 @@ export async function abrirDescargaZoomHttp(
   }
 
   let actual = inicial;
-  let response = await pedirZoom(auth, "descarga", (token) =>
-    fetch(actual.href, { redirect: "manual", headers: { Authorization: `Bearer ${token}`, ...rango }, signal }),
+  let response = await pedirZoom(
+    auth,
+    "descarga",
+    (token) =>
+      fetch(actual.href, {
+        redirect: "manual",
+        headers: { Authorization: `Bearer ${token}`, ...rango },
+        signal
+      }),
     signal
   );
 
   for (let saltos = 0; esRedireccion(response.status); saltos += 1) {
     const ubicacion = response.headers.get("location");
     await response.body?.cancel().catch(() => undefined);
-    if (saltos >= MAX_REDIRECCIONES) throw new ZoomApiError("REDIRECCIONES_EXCESIVAS", "descarga");
+    if (saltos >= MAX_REDIRECCIONES) {
+      throw new ZoomApiError("REDIRECCIONES_EXCESIVAS", "descarga");
+    }
     const destino = ubicacion ? urlHttpsONula(ubicacion, actual.href) : null;
     if (!destino || !hostCoincide(destino.hostname, hostsDestino)) {
       throw new ZoomApiError("DESTINO_NO_PERMITIDO", "descarga");
     }
     actual = destino;
     // El destino viene firmado: no se le reenvía Authorization.
-    response = await pedirZoom(SIN_TOKEN, "descarga", () =>
-      fetch(actual.href, { redirect: "manual", headers: { ...rango }, signal }),
+    response = await pedirZoom(
+      SIN_TOKEN,
+      "descarga",
+      () => fetch(actual.href, { redirect: "manual", headers: { ...rango }, signal }),
       signal
     );
   }

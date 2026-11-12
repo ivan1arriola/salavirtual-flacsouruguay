@@ -39,10 +39,16 @@ export function TeacherUpcomingList({
               <article className="teacher-upcoming-card" key={meeting.id}>
                 <div className="teacher-upcoming-card-when">
                   <span className="teacher-upcoming-card-date">{formatDate(inicio)}</span>
-                  <MeetingScheduleTimes startsAt={inicio} endsAt={fin} requiresAssistance={meeting.requiereAsistencia} modality={meeting.modalidad} assistanceStartsAt={meeting.inicioAsistenciaAt} assistanceEndsAt={meeting.finAsistenciaAt} compact />
-                  <span className="badge-tag">
-                    {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
-                  </span>
+                  <MeetingScheduleTimes
+                    startsAt={inicio}
+                    endsAt={fin}
+                    requiresAssistance={meeting.requiereAsistencia}
+                    modality={meeting.modalidad}
+                    assistanceStartsAt={meeting.inicioAsistenciaAt}
+                    assistanceEndsAt={meeting.finAsistenciaAt}
+                    compact
+                  />
+                  <span className="badge-tag">{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
                 </div>
 
                 <div className="teacher-upcoming-card-content">
@@ -52,7 +58,9 @@ export function TeacherUpcomingList({
                   </h3>
                   <p className="teacher-upcoming-card-assistant">
                     {meeting.asistenteNombre ? (
-                      <span>Asistente de monitoreo: <strong>{meeting.asistenteNombre}</strong></span>
+                      <span>
+                        Asistente de monitoreo: <strong>{meeting.asistenteNombre}</strong>
+                      </span>
                     ) : meeting.requiereAsistencia ? (
                       <span className="text-warning">Asistencia pendiente</span>
                     ) : (
@@ -89,4 +97,3 @@ export function TeacherUpcomingList({
     </section>
   );
 }
-

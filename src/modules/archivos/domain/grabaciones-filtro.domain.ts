@@ -1,17 +1,9 @@
 import type { TipoArtefactoMeet } from "./meet-artifacts.domain";
 
-export type TipoFiltroArtefacto =
-  | "TODOS"
-  | "GRABACIONES"
-  | "ASISTENCIAS"
-  | "NOTAS_Y_TRANSCRIPCIONES";
+export type TipoFiltroArtefacto = "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
 
 export type EstadoVisualGrabacion =
-  | "DISPONIBLE"
-  | "EN_CURSO"
-  | "PROCESANDO"
-  | "NO_REGISTRADA"
-  | "NO_REQUERIDA";
+  "DISPONIBLE" | "EN_CURSO" | "PROCESANDO" | "NO_REGISTRADA" | "NO_REQUERIDA";
 
 export type EstadoGrabacionDetectada = "AUSENTE" | "EN_CURSO" | "PROCESANDO" | "DISPONIBLE";
 export const VIGENCIA_ESTADO_GRABACION_MS = 30 * 60 * 1000;
@@ -55,14 +47,24 @@ export function resolverEstadoVisualGrabacion(datos: {
   estadoDetectado?: EstadoGrabacionDetectada | null;
   observadoAt?: Date | null;
 }): EstadoVisualGrabacion {
-  if (datos.tieneArchivoGrabacion) return "DISPONIBLE";
-  if (datos.observadoAt &&
-      datos.ahora.getTime() - datos.observadoAt.getTime() >= 0 &&
-      datos.ahora.getTime() - datos.observadoAt.getTime() < VIGENCIA_ESTADO_GRABACION_MS) {
-    if (datos.estadoDetectado === "EN_CURSO") return "EN_CURSO";
-    if (datos.estadoDetectado === "PROCESANDO") return "PROCESANDO";
+  if (datos.tieneArchivoGrabacion) {
+    return "DISPONIBLE";
   }
-  if (!datos.requiereGrabacion) return "NO_REQUERIDA";
+  if (
+    datos.observadoAt &&
+    datos.ahora.getTime() - datos.observadoAt.getTime() >= 0 &&
+    datos.ahora.getTime() - datos.observadoAt.getTime() < VIGENCIA_ESTADO_GRABACION_MS
+  ) {
+    if (datos.estadoDetectado === "EN_CURSO") {
+      return "EN_CURSO";
+    }
+    if (datos.estadoDetectado === "PROCESANDO") {
+      return "PROCESANDO";
+    }
+  }
+  if (!datos.requiereGrabacion) {
+    return "NO_REQUERIDA";
+  }
   return "NO_REGISTRADA";
 }
 
@@ -74,9 +76,12 @@ export function filtrarEncuentrosConArchivos(
   const query = busqueda.trim().toLowerCase();
 
   return grupos.filter((grupo) => {
-    if (filtro === "GRABACIONES" &&
-        !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
-        grupo.estadoGrabacion !== "EN_CURSO" && grupo.estadoGrabacion !== "PROCESANDO") {
+    if (
+      filtro === "GRABACIONES" &&
+      !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
+      grupo.estadoGrabacion !== "EN_CURSO" &&
+      grupo.estadoGrabacion !== "PROCESANDO"
+    ) {
       return false;
     }
     if (filtro === "ASISTENCIAS" && !grupo.archivos.some((a) => a.tipo === "LISTA_ASISTENCIA")) {
@@ -89,7 +94,9 @@ export function filtrarEncuentrosConArchivos(
       return false;
     }
 
-    if (!query) return true;
+    if (!query) {
+      return true;
+    }
     const matchTitulo = grupo.titulo.toLowerCase().includes(query);
     const matchPrograma = grupo.programa.toLowerCase().includes(query);
     const matchDocente = grupo.docente.toLowerCase().includes(query);
@@ -97,4 +104,3 @@ export function filtrarEncuentrosConArchivos(
     return matchTitulo || matchPrograma || matchDocente;
   });
 }
-

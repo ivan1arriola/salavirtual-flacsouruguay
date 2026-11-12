@@ -53,10 +53,12 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 ### Task 1: Detección de series con enlaces distintos (solo lectura)
 
 **Files:**
+
 - Create: `src/modules/reuniones/series-enlaces-distintos.service.ts`
 - Test: `test/series-enlaces-distintos.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type SerieConEnlacesDistintos = Readonly<{ serieClave: string; titulo: string; programa: string; docente: string; encuentros: readonly Readonly<{ instanciaId: string; inicio: Date; joinUrl: string | null; externalEventId: string | null; cuentaProveedorId: string | null }>[]; enlacesDistintos: number }>`
   - `detectarSeriesConEnlacesDistintos(db: PrismaClient, actor: Readonly<{ id: string; rol: string }>, ahora?: Date): Promise<readonly SerieConEnlacesDistintos[]>` — solo Administración; considera encuentros futuros `PROGRAMADA` cuyo proveedor activo es Zoom, agrupa por `claveSerieReunion` y devuelve las series con más de un `joinUrl` Zoom distinto. Excluye series ya compartidas (todos con el mismo `reunionProveedorId`).
@@ -69,10 +71,12 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 ### Task 2: Plan de corrección por serie (dominio puro)
 
 **Files:**
+
 - Create: `src/modules/reuniones/corregir-serie-enlaces.domain.ts`
 - Test: `test/corregir-serie-enlaces-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type EncuentroSerieParaCorregir = Readonly<{ instanciaId: string; inicio: Date; fin: Date; joinUrl: string | null; externalEventId: string | null; cuentaProveedorId: string | null; calendarId: string | null; calendarEventId: string | null }>`
   - `type PlanCorreccionSerie = Readonly<{ estado: "CORREGIBLE" | "SIN_SALA" | "CERCANO" | "REVISAR"; hostId: string | null; encuentroIds: readonly string[]; reunionesARetirar: readonly string[]; encuentrosSinCalendar: readonly string[] }>`
@@ -84,11 +88,13 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 ### Task 3: Aplicar la corrección por serie
 
 **Files:**
+
 - Create: `src/modules/reuniones/corregir-serie-enlaces.service.ts`
 - Modify: `src/modules/reuniones/migracion-zoom-calendar.domain.ts` (reemplazo de un enlace Zoom por otro en la cita)
 - Test: `test/corregir-serie-enlaces.test.ts`, `test/migracion-zoom-calendar.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1–2; plan de enlace único Tasks 1–4.
 - Produces:
   - `prepararCambioEnlaceZoomACalendar(actual: EventoCalendarMigracion, enlaceAnterior: string | null, enlaceNuevo: string): Readonly<Record<string, unknown>>` — misma forma que `prepararCambioEnlaceCalendarZoom`; quita cualquier enlace de Zoom previo en descripción y ubicación, agrega el nuevo sin dejar dos enlaces y no toca otros campos.
@@ -102,11 +108,13 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 ### Task 4: Ruta y pantalla de administración
 
 **Files:**
+
 - Create: `app/api/v1/reuniones/migracion-zoom/series-enlaces/route.ts`
 - Modify: `src/components/migracion-zoom-aplicar-control.tsx` (o una sección nueva en la pantalla `/reuniones/migracion-zoom`)
 - Test: `test/series-enlaces-route.test.ts`
 
 **Interfaces:**
+
 - `GET` devuelve `{ series: SerieConEnlacesDistintos[]; planes: Record<serieClave, PlanCorreccionSerie> }` (vista previa, sin escrituras). `POST` con `{ modo: "PILOTO" | "LOTE", serieClaves }` aplica `corregirSerieEnlaces` a cada una; el piloto corrige exactamente una serie y un lote admite hasta 5. También acepta `{ accion: "LIMPIAR" }` sin `serieClaves` e invoca `limpiarReunionesAntiguas`. Ambos modos exigen Administración.
 - La pantalla lista las series afectadas con sus enlaces, el plan (host, estado) y un botón por serie para el piloto y por lote; muestra resultados y errores por serie, y suma el botón “Limpiar reuniones antiguas” con el conteo de pendientes.
 
@@ -120,7 +128,6 @@ Una reunión Zoom programada (tipo 2) no se puede convertir en recurrente (tipo 
 - [ ] **Step 3:** Piloto con **una** serie de bajo impacto: comprobar en Zoom que existe una sola reunión recurrente, el enlace antiguo sigue vivo durante los 7 días y desaparece tras ejecutar la limpieza; en Google Calendar que todas las citas tienen el enlace nuevo; y que los avisos llegaron una sola vez.
 - [ ] **Step 4:** Lotes pequeños, revisando errores por serie antes de la siguiente tanda.
 - [ ] **Step 5:** Si no se ejecutaron los pasos manuales, dejarlo anotado: no declarar la corrección verificada.
-
 
 ## Decisiones pendientes
 

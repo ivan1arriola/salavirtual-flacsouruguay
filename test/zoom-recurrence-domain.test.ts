@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_ZOOM_OCCURRENCES,
   calcularRecurrenciaZoom,
   calcularSlotsZoom,
   detectarOcurrenciasSobrantes,
@@ -81,8 +80,14 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     });
 
     it("ordena cronológicamente si las instancias no vienen en orden", () => {
-      const i1 = { inicio: new Date("2026-11-10T19:00:00-03:00"), fin: new Date("2026-11-10T21:00:00-03:00") };
-      const i2 = { inicio: new Date("2026-11-17T19:00:00-03:00"), fin: new Date("2026-11-17T21:00:00-03:00") };
+      const i1 = {
+        inicio: new Date("2026-11-10T19:00:00-03:00"),
+        fin: new Date("2026-11-10T21:00:00-03:00")
+      };
+      const i2 = {
+        inicio: new Date("2026-11-17T19:00:00-03:00"),
+        fin: new Date("2026-11-17T21:00:00-03:00")
+      };
 
       const res = calcularRecurrenciaZoom([i2, i1], tz);
       expect(res.startTime).toEqual(i1.inicio);

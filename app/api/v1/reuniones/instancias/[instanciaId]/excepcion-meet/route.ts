@@ -12,19 +12,27 @@ type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
 
 const bodySchema = z.object({
   conservar: z.boolean(),
-  motivo: z.string().max(500).nullish(),
+  motivo: z.string().max(500).nullish()
 });
 
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-    if (!actor?.activo) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!actor?.activo) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { instanciaId } = await context.params;
     const input = bodySchema.parse(await request.json());
-    const instancia = await actualizarExcepcionGoogleMeet(db, { id: actor.id, rol: actor.rol }, { instanciaId, ...input });
+    const instancia = await actualizarExcepcionGoogleMeet(
+      db,
+      { id: actor.id, rol: actor.rol },
+      { instanciaId, ...input }
+    );
     return NextResponse.json({ instancia });
   } catch (error) {
     const mapped = toHttpError(error);

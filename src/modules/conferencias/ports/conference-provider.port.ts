@@ -1,24 +1,15 @@
-import type {
-  ConferenceProvisionRequest,
-  ConferenceProvisionResult,
-} from "../domain/conferencias.types";
+import type { ConferenceProvisionRequest, ConferenceProvisionResult } from "../domain/conferencias.types";
 
 export type ConferenceProvider = Readonly<{
   crearEventoCalendar: (
     request: ConferenceProvisionRequest
   ) => Promise<Readonly<{ externalEventId: string; payload: unknown }>>;
-  obtenerEvento: (
-    calendarId: string,
-    externalEventId: string
-  ) => Promise<ConferenceProvisionResult | null>;
+  obtenerEvento: (calendarId: string, externalEventId: string) => Promise<ConferenceProvisionResult | null>;
   configurarEventoMeet: (
     request: ConferenceProvisionRequest,
     evento: ConferenceProvisionResult
   ) => Promise<void>;
-  cancelarEvento: (
-    calendarId: string,
-    externalEventId: string
-  ) => Promise<void>;
+  cancelarEvento: (calendarId: string, externalEventId: string) => Promise<void>;
   actualizarEvento: (
     calendarId: string,
     externalEventId: string,
@@ -47,4 +38,3 @@ export type ConferenceProvider = Readonly<{
 export type ConferenceProviderFactory = (
   credentials: Readonly<{ serviceAccountEmail: string; privateKey: string; subject: string }>
 ) => ConferenceProvider;
-

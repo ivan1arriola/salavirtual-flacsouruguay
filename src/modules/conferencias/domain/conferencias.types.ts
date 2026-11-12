@@ -21,17 +21,9 @@ export type ConferenceProvisionResult = Readonly<{
   warning?: string;
 }>;
 
-export type EstadoIntegracionConferencia =
-  | "PENDIENTE"
-  | "SINCRONIZADA"
-  | "ERROR"
-  | "HISTORICA";
+export type EstadoIntegracionConferencia = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
 
-export type OperacionPendienteConferencia =
-  | "PROVISIONAR"
-  | "REPROGRAMAR"
-  | "CONFIGURAR_MEET"
-  | "CANCELAR";
+export type OperacionPendienteConferencia = "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
 
 export type IntegracionConferenciaHealth = Readonly<{
   estadoIntegracion: EstadoIntegracionConferencia;
@@ -47,11 +39,7 @@ export type DetalleCohostsVerificados = Readonly<{
 }>;
 
 export type ProvisionResultStatus =
-  | "SINCRONIZADA"
-  | "ERROR"
-  | "PENDIENTE_CONFIGURACION"
-  | "EN_PROCESO"
-  | "REQUIERE_REVISION";
+  "SINCRONIZADA" | "ERROR" | "PENDIENTE_CONFIGURACION" | "EN_PROCESO" | "REQUIERE_REVISION";
 
 export type ProvisionConferenciaResult = Readonly<{
   eventoProveedorId: string;
@@ -73,4 +61,3 @@ export type DescartarLoteResult = Readonly<{
 export type ReclasificarLoteResult = Readonly<{
   totalReclasificadas: number;
 }>;
-

@@ -10,7 +10,7 @@ Actualización 2026-11-05: los PR #166 y #195 ya están mergeados. La lista cons
   - Meetings: `meeting:write:meeting:admin`, `meeting:read:meeting:admin`, `meeting:update:meeting:admin`, `meeting:delete:meeting:admin`, `meeting:read:list_meetings:admin`.
   - Grupos: `group:read:list_groups:admin`, `group_member:read:list_members:admin`.
   - `report:read:admin` no existe con ese nombre en Zoom (solo versiones específicas como `report:read:list_history_meetings:admin`). No hace falta para esta función.
-- [ ] **Revisar el grupo en Zoom.** Debe contener las salas como usuarios *licenciados* (tipo 2) y con los mismos correos que las cuentas actuales (`emailOrganizador`), para que se adopten y no se dupliquen ni queden fuera del grupo.
+- [ ] **Revisar el grupo en Zoom.** Debe contener las salas como usuarios _licenciados_ (tipo 2) y con los mismos correos que las cuentas actuales (`emailOrganizador`), para que se adopten y no se dupliquen ni queden fuera del grupo.
 - [ ] **Foto previa.** Anotar las cuentas Zoom actuales (id, correo, activa, tieneLicencia, prioridad) y sus reuniones futuras `PROGRAMADA`, como referencia para volver atrás.
 - [ ] **Primera sincronización a mano**, de un administrador, en un horario tranquilo. Revisar la vista previa. Comprobar que cada sala figura «Disponible». Crear una reunión de Zoom de prueba.
 - [ ] **Mirar la interfaz en un navegador.** Solo se verificó con renderizado estático.
@@ -42,6 +42,7 @@ Informes de Codex en solo lectura, guardados en `.superpowers/sdd/2026-11-05-cue
 ## 4. Webhooks, asistencia, grabaciones y transcripciones de Zoom
 
 Informe de Codex en `codex-webhooks.md` (misma carpeta). Resumen:
+
 - No existe receptor de webhooks ni cliente de reportes/grabaciones. El spec está solo en la rama local `docs/spec-webhooks-zoom` (commit `b754f94`) y cubre solo los eventos de estado de la reunión.
 - Correcciones al spec y plan: atribuir por UUID de ejecución (no por ventana horaria); participantes por UUID, no por id numérico; no agrupar alumnos por nombre; responder en menos de 3 s (guardar el evento y devolver 200); clave de idempotencia que incluya participante o archivo; no guardar `download_token` ni URLs de descarga; no podar todo a 90 días.
 - Permisos granulares probables: `meeting:read:participant:admin`, `meeting:read:list_past_instances:admin`, `meeting:read:list_past_participants:admin`, `cloud_recording:read:recording:admin`, `cloud_recording:read:list_recording_files:admin`, `cloud_recording:read:meeting_transcript:admin`; probar en el Marketplace los de los eventos.

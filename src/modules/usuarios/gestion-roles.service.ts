@@ -31,9 +31,18 @@ export async function cambiarRolUsuario(
 
     const usuario = await tx.usuario.findUnique({
       where: { id: usuarioId },
-      select: { id: true, nombres: true, apellidos: true, rol: true, docente: { select: { id: true } }, asistenteTecnico: { select: { id: true } } }
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        rol: true,
+        docente: { select: { id: true } },
+        asistenteTecnico: { select: { id: true } }
+      }
     });
-    if (!usuario) throw new Error("Usuario no encontrado.");
+    if (!usuario) {
+      throw new Error("Usuario no encontrado.");
+    }
     if (usuario.id === actorActual.id && rol !== "ADMINISTRACION") {
       throw new Error("No podes quitar tu propio rol de Administracion.");
     }

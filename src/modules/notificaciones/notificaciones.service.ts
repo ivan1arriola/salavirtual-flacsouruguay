@@ -5,18 +5,15 @@ import {
   reunionEmailText,
   type NotificationMessage,
   type NotificationRecipient,
-  type ReunionEmailInput,
+  type ReunionEmailInput
 } from "./domain";
-import {
-  notificarUsuariosUseCase,
-  notificarUsuarioUseCase,
-} from "./application";
+import { notificarUsuariosUseCase, notificarUsuarioUseCase } from "./application";
 import {
   crearCompositeEmailTransport,
   crearGmailEmailTransport,
   crearPrismaNotificacionesRepository,
   crearSmtpEmailTransport,
-  crearSesV2EmailTransport,
+  crearSesV2EmailTransport
 } from "./infrastructure";
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -27,7 +24,7 @@ export { reunionEmailText };
 function buildScope(db: Db) {
   const repository = crearPrismaNotificacionesRepository({
     db,
-    descifrar: descifrarConfiguracion,
+    descifrar: descifrarConfiguracion
   });
   const transport = crearCompositeEmailTransport(
     crearGmailEmailTransport(() => repository.obtenerCredencialesGmail()),
@@ -66,4 +63,3 @@ export async function notificarUsuarios(
     process.env.APP_BASE_URL ?? "https://salavirtual.flacso.edu.uy"
   );
 }
-

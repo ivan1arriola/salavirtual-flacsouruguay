@@ -7,11 +7,7 @@ import {
 } from "@/src/modules/conferencias/api";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal, esMismoDiaMontevideo } from "./dashboard.domain";
-import type {
-  HeroMeetingDTO,
-  RecentRecordingDTO,
-  UpcomingMeetingSummaryDTO
-} from "./types";
+import type { HeroMeetingDTO, RecentRecordingDTO, UpcomingMeetingSummaryDTO } from "./types";
 
 export interface TeacherDashboardData {
   readonly heroMeeting: HeroMeetingDTO | null;
@@ -128,9 +124,7 @@ export async function obtenerDashboardDocente(
 
   const mappedMeetings = instances.map((instance) => {
     // Cohosts se verifican solo contra Google Meet; enlace y sala siguen al proveedor activo.
-    const meetCohosts = instance.eventosProveedor.find(
-      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
-    );
+    const meetCohosts = instance.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     const meet = seleccionarEventoProveedorActivo(instance);
     const cohostEmails = extraerCohostEmailsDeInstancia(instance);
     const cohostsList = extraerCohostsUnificadosDeInstancia(instance).map((c) => ({
@@ -139,13 +133,13 @@ export async function obtenerDashboardDocente(
     }));
     const isVerified = Boolean(
       !meetCohosts?.errorIntegracion &&
-        !meetCohosts?.operacionPendiente &&
-        cohostsConfirmados(
-          meetCohosts?.payloadUltimo,
-          meetCohosts?.codigoReunion,
-          meetCohosts?.cuentaProveedor?.emailOrganizador,
-          cohostEmails
-        )
+      !meetCohosts?.operacionPendiente &&
+      cohostsConfirmados(
+        meetCohosts?.payloadUltimo,
+        meetCohosts?.codigoReunion,
+        meetCohosts?.cuentaProveedor?.emailOrganizador,
+        cohostEmails
+      )
     );
     const assignment = instance.asignaciones[0];
     const assistantUser = assignment?.asistenteTecnico?.usuario;
@@ -188,11 +182,19 @@ export async function obtenerDashboardDocente(
         solicitudId: firstMeeting.instance.solicitud.id,
         titulo: firstMeeting.instance.solicitud.titulo,
         programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
-        modalidad: (firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad),
+        modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
         inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
         finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
-        inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica ? (firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt).toISOString() : null,
-        finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica ? (firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt).toISOString() : null,
+        inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+          ? (
+              firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
+            ).toISOString()
+          : null,
+        finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+          ? (
+              firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt
+            ).toISOString()
+          : null,
         joinUrl: firstMeeting.meet?.joinUrl ?? null,
         providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
         cohostConfirmado: firstMeeting.isVerified,
@@ -212,11 +214,15 @@ export async function obtenerDashboardDocente(
       solicitudId: instance.solicitud.id,
       titulo: instance.solicitud.titulo,
       programa: instance.solicitud.docentePrograma.programa.nombre,
-      modalidad: (instance.modalidadOverride ?? instance.solicitud.modalidad),
+      modalidad: instance.modalidadOverride ?? instance.solicitud.modalidad,
       inicioProgramadoAt: instance.inicioProgramadoAt.toISOString(),
       finProgramadoAt: instance.finProgramadoAt.toISOString(),
-      inicioAsistenciaAt: instance.requiereAsistenciaTecnica ? (instance.inicioAsistenciaTecnicaAt ?? instance.inicioProgramadoAt).toISOString() : null,
-      finAsistenciaAt: instance.requiereAsistenciaTecnica ? (instance.finAsistenciaTecnicaAt ?? instance.finProgramadoAt).toISOString() : null,
+      inicioAsistenciaAt: instance.requiereAsistenciaTecnica
+        ? (instance.inicioAsistenciaTecnicaAt ?? instance.inicioProgramadoAt).toISOString()
+        : null,
+      finAsistenciaAt: instance.requiereAsistenciaTecnica
+        ? (instance.finAsistenciaTecnicaAt ?? instance.finProgramadoAt).toISOString()
+        : null,
       joinUrl: meet?.joinUrl ?? null,
       providerType: meet?.proveedor.tipo ?? instance.proveedorActivoTipo ?? null,
       estadoTemporal,
@@ -230,10 +236,7 @@ export async function obtenerDashboardDocente(
     const instancia = rec.eventoProveedor.instancia;
     const duracionMin =
       instancia.inicioProgramadoAt && instancia.finProgramadoAt
-        ? Math.round(
-            (instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) /
-              60000
-          )
+        ? Math.round((instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) / 60000)
         : null;
 
     return {

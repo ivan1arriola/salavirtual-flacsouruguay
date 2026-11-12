@@ -17,11 +17,14 @@ const timeFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: timezone
 });
 
-export type CuentaSala = Readonly<{
-  nombre: string;
-  emailOrganizador: string | null;
-  secretRef: string | null;
-}> | null | undefined;
+export type CuentaSala =
+  | Readonly<{
+      nombre: string;
+      emailOrganizador: string | null;
+      secretRef: string | null;
+    }>
+  | null
+  | undefined;
 
 export type EmailMessage = Readonly<{
   text: string;
@@ -46,9 +49,7 @@ export function formatRange(inicio: Date, fin: Date): string {
   return `${capitalize(dateFormatter.format(inicio))}, ${timeFormatter.format(inicio)} a ${timeFormatter.format(fin)} h`;
 }
 
-export function fullName(
-  persona: Readonly<{ nombres: string; apellidos?: string | null }>
-): string {
+export function fullName(persona: Readonly<{ nombres: string; apellidos?: string | null }>): string {
   return [persona.nombres, persona.apellidos].filter(Boolean).join(" ");
 }
 
@@ -56,11 +57,10 @@ export function firstName(persona: Readonly<{ nombres: string }>): string {
   return persona.nombres.replace(/,+$/, "");
 }
 
-export function passwordSala(
-  cuenta: CuentaSala,
-  descifrar: (value: string) => string
-): string | null {
-  if (!cuenta?.secretRef) return null;
+export function passwordSala(cuenta: CuentaSala, descifrar: (value: string) => string): string | null {
+  if (!cuenta?.secretRef) {
+    return null;
+  }
   try {
     return descifrar(cuenta.secretRef);
   } catch {
@@ -68,12 +68,14 @@ export function passwordSala(
   }
 }
 
-export function buildMeetingDigestEmail(input: Readonly<{
-  greetingName: string;
-  intro: string;
-  cards: readonly MeetingEmailCard[];
-  footer?: string;
-}>): EmailMessage {
+export function buildMeetingDigestEmail(
+  input: Readonly<{
+    greetingName: string;
+    intro: string;
+    cards: readonly MeetingEmailCard[];
+    footer?: string;
+  }>
+): EmailMessage {
   const footer = input.footer ?? "Equipo FLACSO Uruguay";
   const textCards = input.cards.map((card, index) => {
     const dateDetails =
@@ -107,22 +109,62 @@ export function buildMeetingDigestEmail(input: Readonly<{
     footer
   ].join("\n");
 
-  const htmlCards = input.cards.map((card, index) => panelCorreo(
-    '<p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22618e;letter-spacing:.04em">REUNIÓN ' + (index + 1) + '</p>' +
-    '<h2 style="margin:0 0 8px;font-size:18px;line-height:25px;color:#192b44">' + escapeHtml(card.titulo) + '</h2>' +
-    '<p style="margin:0 0 12px;color:#526277;font-size:13px;line-height:20px">' + escapeHtml(card.programa) + ' · ' + escapeHtml(card.modalidad) + '</p>' +
-    (card.docente ? '<p style="margin:0 0 7px;color:#33465c;font-size:13px;line-height:20px"><strong>Docente:</strong> ' + escapeHtml(card.docente) + '</p>' : '') +
-    (card.estadoAsignacion ? '<p style="margin:0 0 7px;color:#33465c;font-size:13px;line-height:20px"><strong>Estado:</strong> ' + escapeHtml(card.estadoAsignacion) + '</p>' : '') +
-    '<p style="margin:12px 0 5px;color:#183b70;font-weight:700;font-size:12px">' + (card.fechas.length === 1 ? 'Fecha y horario' : 'Fechas y horarios') + '</p>' +
-    card.fechas.map((fecha) => '<p style="margin:0 0 5px;color:#33465c;font-size:13px;line-height:20px">' + escapeHtml(fecha) + '</p>').join('') +
-    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin-top:12px;font-size:13px">' +
-      detailRow("Acceso", card.joinUrl ? '<a href="' + escapeAttribute(card.joinUrl) + '" style="color:#087f9e;text-decoration:underline">Abrir Google Meet</a>' : "Pendiente de provisión") +
-      (card.codigoReunion ? detailRow("Código Meet", escapeHtml(card.codigoReunion)) : '') +
-      (card.usuarioSala ? detailRow("Usuario sala", escapeHtml(card.usuarioSala)) : '') +
-      (card.passwordSala ? detailRow("Contraseña sala", escapeHtml(card.passwordSala)) : '') +
-    '</table>' +
-    (card.observaciones.length ? '<p style="margin:12px 0 0;color:#526277;font-size:12px;line-height:19px">' + escapeHtml(card.observaciones.join("; ")) + '</p>' : '')
-  )).join("");
+  const htmlCards = input.cards
+    .map((card, index) =>
+      panelCorreo(
+        '<p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22618e;letter-spacing:.04em">REUNIÓN ' +
+          (index + 1) +
+          "</p>" +
+          '<h2 style="margin:0 0 8px;font-size:18px;line-height:25px;color:#192b44">' +
+          escapeHtml(card.titulo) +
+          "</h2>" +
+          '<p style="margin:0 0 12px;color:#526277;font-size:13px;line-height:20px">' +
+          escapeHtml(card.programa) +
+          " · " +
+          escapeHtml(card.modalidad) +
+          "</p>" +
+          (card.docente
+            ? '<p style="margin:0 0 7px;color:#33465c;font-size:13px;line-height:20px"><strong>Docente:</strong> ' +
+              escapeHtml(card.docente) +
+              "</p>"
+            : "") +
+          (card.estadoAsignacion
+            ? '<p style="margin:0 0 7px;color:#33465c;font-size:13px;line-height:20px"><strong>Estado:</strong> ' +
+              escapeHtml(card.estadoAsignacion) +
+              "</p>"
+            : "") +
+          '<p style="margin:12px 0 5px;color:#183b70;font-weight:700;font-size:12px">' +
+          (card.fechas.length === 1 ? "Fecha y horario" : "Fechas y horarios") +
+          "</p>" +
+          card.fechas
+            .map(
+              (fecha) =>
+                '<p style="margin:0 0 5px;color:#33465c;font-size:13px;line-height:20px">' +
+                escapeHtml(fecha) +
+                "</p>"
+            )
+            .join("") +
+          '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin-top:12px;font-size:13px">' +
+          detailRow(
+            "Acceso",
+            card.joinUrl
+              ? '<a href="' +
+                  escapeAttribute(card.joinUrl) +
+                  '" style="color:#087f9e;text-decoration:underline">Abrir Google Meet</a>'
+              : "Pendiente de provisión"
+          ) +
+          (card.codigoReunion ? detailRow("Código Meet", escapeHtml(card.codigoReunion)) : "") +
+          (card.usuarioSala ? detailRow("Usuario sala", escapeHtml(card.usuarioSala)) : "") +
+          (card.passwordSala ? detailRow("Contraseña sala", escapeHtml(card.passwordSala)) : "") +
+          "</table>" +
+          (card.observaciones.length
+            ? '<p style="margin:12px 0 0;color:#526277;font-size:12px;line-height:19px">' +
+              escapeHtml(card.observaciones.join("; ")) +
+              "</p>"
+            : "")
+      )
+    )
+    .join("");
 
   const html = envolverCorreo({
     categoria: "Cronograma de reuniones",
@@ -131,9 +173,12 @@ export function buildMeetingDigestEmail(input: Readonly<{
     variante: "informativo",
     contenidoHtml:
       '<p style="margin:0 0 16px;color:#33465c;font-size:14px;line-height:22px">Hola, ' +
-      escapeHtml(input.greetingName) + '.</p>' +
+      escapeHtml(input.greetingName) +
+      ".</p>" +
       htmlCards +
-      '<p style="margin:16px 0 0;font-size:13px;color:#526277;line-height:20px">' + escapeHtml(footer) + '</p>'
+      '<p style="margin:16px 0 0;font-size:13px;color:#526277;line-height:20px">' +
+      escapeHtml(footer) +
+      "</p>"
   });
 
   return { text, html };

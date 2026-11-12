@@ -20,9 +20,7 @@ const meeting = (id: string, start: string, end: string, applicants: string[] = 
 describe("buildAssignmentSuggestions", () => {
   it("excluye asistentes cesados hasta su próximo inicio de sesión", () => {
     const result = buildAssignmentSuggestions({
-      meetings: [
-        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["cesado"])
-      ],
+      meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["cesado"])],
       assistants: [
         { id: "cesado", name: "Cesado", cesadoHastaProximoInicioSesion: true },
         { id: "disponible", name: "Disponible" }
@@ -35,9 +33,7 @@ describe("buildAssignmentSuggestions", () => {
 
   it("prioriza postulantes disponibles sobre otros asistentes", () => {
     const result = buildAssignmentSuggestions({
-      meetings: [
-        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-2"])
-      ],
+      meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-2"])],
       assistants: [
         { id: "assistant-1", name: "Ana" },
         { id: "assistant-2", name: "Bruno" }
@@ -51,9 +47,7 @@ describe("buildAssignmentSuggestions", () => {
 
   it("usa un asistente activo cuando todos los postulantes tienen conflicto", () => {
     const result = buildAssignmentSuggestions({
-      meetings: [
-        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-1"])
-      ],
+      meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-1"])],
       assistants: [
         { id: "assistant-1", name: "Ana" },
         { id: "assistant-2", name: "Bruno" }
@@ -108,11 +102,7 @@ describe("buildAssignmentSuggestions", () => {
   });
 
   it("usa el horario completo de monitoreo para detectar conflictos", () => {
-    const pending = meeting(
-      "meeting-1",
-      "2026-08-10T15:00:00Z",
-      "2026-08-10T16:00:00Z"
-    );
+    const pending = meeting("meeting-1", "2026-08-10T15:00:00Z", "2026-08-10T16:00:00Z");
     pending.meeting.inicioAsistenciaTecnicaAt = new Date("2026-08-10T14:00:00Z");
     pending.meeting.finAsistenciaTecnicaAt = new Date("2026-08-10T16:30:00Z");
 
@@ -122,27 +112,31 @@ describe("buildAssignmentSuggestions", () => {
         { id: "assistant-1", name: "Ana" },
         { id: "assistant-2", name: "Bruno" }
       ],
-      assignments: [{
-        assistantId: "assistant-1",
-        meetingId: "existing",
-        startsAt: new Date("2026-08-10T13:00:00Z"),
-        endsAt: new Date("2026-08-10T13:45:00Z"),
-        timezone: "America/Montevideo"
-      }]
+      assignments: [
+        {
+          assistantId: "assistant-1",
+          meetingId: "existing",
+          startsAt: new Date("2026-08-10T13:00:00Z"),
+          endsAt: new Date("2026-08-10T13:45:00Z"),
+          timezone: "America/Montevideo"
+        }
+      ]
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-2");
   });
 
   it("prioriza disponibilidad preferente y excluye una excepción no disponible", () => {
-    const recurrent = [{
-      diaSemana: 1,
-      fecha: null,
-      horaDesde: "09:00",
-      horaHasta: "18:00",
-      timezone: "America/Montevideo",
-      tipo: "PREFERENTE" as const
-    }];
+    const recurrent = [
+      {
+        diaSemana: 1,
+        fecha: null,
+        horaDesde: "09:00",
+        horaHasta: "18:00",
+        timezone: "America/Montevideo",
+        tipo: "PREFERENTE" as const
+      }
+    ];
     const result = buildAssignmentSuggestions({
       meetings: [meeting("meeting-1", "2026-08-10T16:00:00Z", "2026-08-10T17:00:00Z")],
       assistants: [
@@ -156,10 +150,10 @@ describe("buildAssignmentSuggestions", () => {
       reason: expect.stringContaining("preferente")
     });
 
-    expect(evaluarDisponibilidad(
-      new Date("2026-08-10T16:00:00Z"),
-      new Date("2026-08-10T17:00:00Z"),
-      [{ ...recurrent[0], fecha: new Date("2026-08-10T00:00:00Z"), diaSemana: null, tipo: "NO_DISPONIBLE" }]
-    ).tipo).toBe("NO_DISPONIBLE");
+    expect(
+      evaluarDisponibilidad(new Date("2026-08-10T16:00:00Z"), new Date("2026-08-10T17:00:00Z"), [
+        { ...recurrent[0], fecha: new Date("2026-08-10T00:00:00Z"), diaSemana: null, tipo: "NO_DISPONIBLE" }
+      ]).tipo
+    ).toBe("NO_DISPONIBLE");
   });
 });

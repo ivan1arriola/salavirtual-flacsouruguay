@@ -19,7 +19,12 @@ describe("usos activos de una reunión compartida", () => {
   });
 
   it("no cuenta los cancelados ni los ya terminados", () => {
-    expect(usosActivos([uso("a"), uso("b", "CANCELADA"), uso("c", "PROGRAMADA", -2), uso("d", "REALIZADA", -5)], ahora)).toBe(1);
+    expect(
+      usosActivos(
+        [uso("a"), uso("b", "CANCELADA"), uso("c", "PROGRAMADA", -2), uso("d", "REALIZADA", -5)],
+        ahora
+      )
+    ).toBe(1);
   });
 
   it("descuenta el evento excluido", () => {

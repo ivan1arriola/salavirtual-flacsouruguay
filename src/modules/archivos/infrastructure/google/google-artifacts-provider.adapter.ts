@@ -1,6 +1,15 @@
 import type { JWT } from "google-auth-library";
-import { agruparCorreosAuditoriaMeet, filtrarEventosAuditoriaConferencia, obtenerEventosAuditoriaMeet, type EventoAuditoriaMeet } from "./google-meet-audit-emails.client";
-import { buscarPlanillaAsistenciaDrive, crearPlanillaAsistenciaGoogle, planillaAsistenciaGoogleVacia } from "./google-meet-attendance-sheets.client";
+import {
+  agruparCorreosAuditoriaMeet,
+  filtrarEventosAuditoriaConferencia,
+  obtenerEventosAuditoriaMeet,
+  type EventoAuditoriaMeet
+} from "./google-meet-audit-emails.client";
+import {
+  buscarPlanillaAsistenciaDrive,
+  crearPlanillaAsistenciaGoogle,
+  planillaAsistenciaGoogleVacia
+} from "./google-meet-attendance-sheets.client";
 import { asegurarLecturaPorEnlacePlanilla } from "./google-meet-attendance-sharing.client";
 import { createHash } from "node:crypto";
 import { db } from "@/src/lib/db";
@@ -75,9 +84,8 @@ export function crearGoogleArtifactsProviderAdapter(
       fin: Date,
       conferenceRecord?: RegistroConferenciaMeet | null
     ): Promise<MeetActiveParticipantsScan> {
-      const record = conferenceRecord !== undefined
-        ? conferenceRecord
-        : await this.buscarConferencia(codigo, inicio, fin);
+      const record =
+        conferenceRecord !== undefined ? conferenceRecord : await this.buscarConferencia(codigo, inicio, fin);
       if (!record) {
         return {
           conferenciaExiste: false,
@@ -108,7 +116,9 @@ export function crearGoogleArtifactsProviderAdapter(
 
       participants.forEach((participant, index) => {
         const sessions = sessionsByParticipant[index] ?? [];
-        if (sessions.length === 0) return;
+        if (sessions.length === 0) {
+          return;
+        }
 
         const sortedSessions = [...sessions].sort(
           (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)
@@ -147,10 +157,7 @@ export function crearGoogleArtifactsProviderAdapter(
           }
         }
 
-        const totalMs = mergedIntervals.reduce(
-          (acc, interval) => acc + (interval.hasta - interval.desde),
-          0
-        );
+        const totalMs = mergedIntervals.reduce((acc, interval) => acc + (interval.hasta - interval.desde), 0);
         const minutosConectado = totalMs > 0 ? Math.max(1, Math.round(totalMs / 60_000)) : 0;
 
         const entry: ParticipanteActivoMeet = {
@@ -196,32 +203,60 @@ export function crearGoogleArtifactsProviderAdapter(
     async obtenerArtefactos(conferenceName: string): Promise<MeetArtifactsScan> {
       const [recordings, transcripts, notes] = await Promise.all([
         listarPaginas<Recording>(auth, `${MEET_API}/${conferenceName}/recordings?pageSize=100`, "recordings"),
-        listarPaginas<Transcript>(auth, `${MEET_API}/${conferenceName}/transcripts?pageSize=100`, "transcripts"),
-        listarPaginas<SmartNote>(auth, `${MEET_API}/${conferenceName}/smartNotes?pageSize=100`, "smartNotes")
-          .catch(() => [] as SmartNote[])
+        listarPaginas<Transcript>(
+          auth,
+          `${MEET_API}/${conferenceName}/transcripts?pageSize=100`,
+          "transcripts"
+        ),
+        listarPaginas<SmartNote>(
+          auth,
+          `${MEET_API}/${conferenceName}/smartNotes?pageSize=100`,
+          "smartNotes"
+        ).catch(() => [] as SmartNote[])
       ]);
       const sortByStartTime = <T extends { startTime?: string }>(items: T[]): T[] =>
-        [...items].sort((a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0));
+        [...items].sort(
+          (a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0)
+        );
 
       const generatedRecordings = sortByStartTime(recordings).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.driveDestination?.file
-          ? [{ resourceName: item.name, driveFileId: item.driveDestination.file, startTime: item.startTime, extension: "mp4" }]
-          : []);
+          ? [
+              {
+                resourceName: item.name,
+                driveFileId: item.driveDestination.file,
+                startTime: item.startTime,
+                extension: "mp4"
+              }
+            ]
+          : []
+      );
       const generatedTranscripts = sortByStartTime(transcripts).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.docsDestination?.document
-          ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
-          : []);
+          ? [
+              {
+                resourceName: item.name,
+                driveFileId: item.docsDestination.document,
+                startTime: item.startTime
+              }
+            ]
+          : []
+      );
       const generatedNotes = sortByStartTime(notes).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.docsDestination?.document
-          ? [{ resourceName: item.name, driveFileId: item.docsDestination.document, startTime: item.startTime }]
-          : []);
+          ? [
+              {
+                resourceName: item.name,
+                driveFileId: item.docsDestination.document,
+                startTime: item.startTime
+              }
+            ]
+          : []
+      );
       const grabandoEnVivo = recordings.some((item) => item.state === "STARTED");
       const transcribiendoEnVivo = transcripts.some((item) => item.state === "STARTED");
-      const estadoGrabacion: EstadoGrabacionMeet = generatedRecordings.length > 0
-        ? "GENERADA"
-        : recordings.length > 0
-          ? "PROCESANDO"
-          : "AUSENTE";
+      const estadoGrabacion: EstadoGrabacionMeet =
+        generatedRecordings.length > 0 ? "GENERADA" : recordings.length > 0 ? "PROCESANDO" : "AUSENTE";
       const estadoTranscripcion = transcribiendoEnVivo
         ? "TRANSCRIBIENDO"
         : generatedTranscripts.length > 0
@@ -239,13 +274,19 @@ export function crearGoogleArtifactsProviderAdapter(
         transcribiendoEnVivo,
         estadoTranscripcion,
         pendientes:
-          recordings.length - generatedRecordings.length +
-          transcripts.length - generatedTranscripts.length +
-          notes.length - generatedNotes.length
+          recordings.length -
+          generatedRecordings.length +
+          transcripts.length -
+          generatedTranscripts.length +
+          notes.length -
+          generatedNotes.length
       };
     },
 
-    async obtenerDocumentoAsistencia(conferenceName: string, meetingCode?: string): Promise<MeetAttendanceDocument> {
+    async obtenerDocumentoAsistencia(
+      conferenceName: string,
+      meetingCode?: string
+    ): Promise<MeetAttendanceDocument> {
       const actual = await this.obtenerConferencia(conferenceName);
       const participants = await listarPaginas<Participant>(
         auth,
@@ -265,15 +306,19 @@ export function crearGoogleArtifactsProviderAdapter(
           // conferencia. Las sesiones abiertas se acotan al momento de lectura
           // para poder mostrarlas como asistencia preliminar.
           const finSesion = session.endTime || actual.endTime || new Date().toISOString();
-          return finSesion ? [{
-            nombre: nombreParticipante(participant),
-            tipo: tipoParticipante(participant),
-            inicio: session.startTime,
-            fin: finSesion,
-            conferencia: conferenceName,
-            participanteId: participant.name,
-            sesionId: session.name
-          }] : [];
+          return finSesion
+            ? [
+                {
+                  nombre: nombreParticipante(participant),
+                  tipo: tipoParticipante(participant),
+                  inicio: session.startTime,
+                  fin: finSesion,
+                  conferencia: conferenceName,
+                  participanteId: participant.name,
+                  sesionId: session.name
+                }
+              ]
+            : [];
         })
       );
       let emailAppendix = "";
@@ -284,24 +329,32 @@ export function crearGoogleArtifactsProviderAdapter(
         try {
           // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
           // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
-          const diaInicio = fechaLocalISO(new Date(Math.min(...rows.map(row => Date.parse(row.inicio)))));
-          const diaFin = fechaLocalISO(new Date(Math.max(...rows.map(row => Date.parse(row.fin)))));
+          const diaInicio = fechaLocalISO(new Date(Math.min(...rows.map((row) => Date.parse(row.inicio)))));
+          const diaFin = fechaLocalISO(new Date(Math.max(...rows.map((row) => Date.parse(row.fin)))));
           const inicioDia = new Date(`${diaInicio}T00:00:00-03:00`);
           const finDia = new Date(`${diaFin}T00:00:00-03:00`);
           finDia.setUTCDate(finDia.getUTCDate() + 1);
           const eventos = await obtenerEventosAuditoriaMeet({
             serviceAccountEmail: credentials.serviceAccountEmail,
-            privateKey: credentials.privateKey, adminEmail, meetingCode,
+            privateKey: credentials.privateKey,
+            adminEmail,
+            meetingCode,
             startTime: inicioDia.toISOString(),
             endTime: finDia.toISOString()
           });
           const conferenceStart = Date.parse(actual.startTime);
-          const conferenceEnd = actual.endTime ? Date.parse(actual.endTime) : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
+          const conferenceEnd = actual.endTime
+            ? Date.parse(actual.endTime)
+            : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
           // Un mismo link de Meet puede tener varias conferencias en el mismo día.
           // Filtrar las conexiones de auditoría por el intervalo real de esta conferencia.
           // Reports and Meet expose independent conference IDs. If multiple audit IDs overlap
           // this Meet record, preserve raw records but do not attribute emails to attendance.
-          const clasificacion = filtrarEventosAuditoriaConferencia(eventos, actual.startTime, actual.endTime ?? new Date(conferenceEnd).toISOString());
+          const clasificacion = filtrarEventosAuditoriaConferencia(
+            eventos,
+            actual.startTime,
+            actual.endTime ?? new Date(conferenceEnd).toISOString()
+          );
           eventosAuditoria = clasificacion.eventosSolapados;
           correosAuditados = agruparCorreosAuditoriaMeet(clasificacion.eventosAtribuibles);
           // Meet no expone correos y Reports no expone el ID de participante: la única clave común
@@ -309,17 +362,31 @@ export function crearGoogleArtifactsProviderAdapter(
           // los eventos solo son atribuibles cuando hay una única conferencia de auditoría.
           const atribucion = atribuirCorreosPorHorario(
             rows,
-            clasificacion.eventosAtribuibles.map(e => ({
-              identificador: e.identifier, tipoIdentificador: e.identifierType,
-              inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(), fin: e.timestamp
+            clasificacion.eventosAtribuibles.map((e) => ({
+              identificador: e.identifier,
+              tipoIdentificador: e.identifierType,
+              inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(),
+              fin: e.timestamp
             }))
           );
-          rows = rows.map(row => {
-            const correo = row.participanteId ? atribucion.correoPorParticipante.get(row.participanteId) : undefined;
+          rows = rows.map((row) => {
+            const correo = row.participanteId
+              ? atribucion.correoPorParticipante.get(row.participanteId)
+              : undefined;
             return correo ? { ...row, correoVerificado: correo } : row;
           });
-          const escapeHtml = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-          const tableRows = correosAuditados.map(e => `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`).join("");
+          const escapeHtml = (s: string) =>
+            s
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;");
+          const tableRows = correosAuditados
+            .map(
+              (e) =>
+                `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`
+            )
+            .join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
         } catch {
           // Reports puede tardar en publicar sus eventos o estar temporalmente
@@ -338,14 +405,34 @@ export function crearGoogleArtifactsProviderAdapter(
       };
     },
 
-    async subirPlanillaAsistencia(folderId, name, data, inicio, fin, organizador, cohosts = [], spreadsheetId) {
+    async subirPlanillaAsistencia(
+      folderId,
+      name,
+      data,
+      inicio,
+      fin,
+      organizador,
+      cohosts = [],
+      spreadsheetId
+    ) {
       const sheetsAuth = crearGoogleAuthJwt(credentials, [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
       ]);
-      const operationMarker = createHash("sha256").update(`${credentials.serviceAccountEmail}|${folderId}|${name}`).digest("hex");
-      const input = { folderId, titulo: name, inicio, fin, organizador, cohosts, operationMarker,
-        sesionesMeet: data.sesionesMeet, correosAuditados: data.correosAuditados, eventosAuditoria: data.eventosAuditoria
+      const operationMarker = createHash("sha256")
+        .update(`${credentials.serviceAccountEmail}|${folderId}|${name}`)
+        .digest("hex");
+      const input = {
+        folderId,
+        titulo: name,
+        inicio,
+        fin,
+        organizador,
+        cohosts,
+        operationMarker,
+        sesionesMeet: data.sesionesMeet,
+        correosAuditados: data.correosAuditados,
+        eventosAuditoria: data.eventosAuditoria
       };
       // El acceso por enlace se configura únicamente en la planilla, nunca
       // en la carpeta de la reunión (que también puede contener grabaciones).
@@ -353,28 +440,59 @@ export function crearGoogleArtifactsProviderAdapter(
         await asegurarLecturaPorEnlacePlanilla(sheetsAuth, sheet.id);
         return sheet;
       };
-      if (spreadsheetId) return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId));
+      if (spreadsheetId) {
+        return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, spreadsheetId));
+      }
       const existente = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker);
-      if (existente) return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id));
-      const clave = claveOperacionGoogle("SHEETS_CREAR_ASISTENCIA", credentials.serviceAccountEmail, folderId, name);
+      if (existente) {
+        return compartir(await crearPlanillaAsistenciaGoogle(sheetsAuth, input, existente.id));
+      }
+      const clave = claveOperacionGoogle(
+        "SHEETS_CREAR_ASISTENCIA",
+        credentials.serviceAccountEmail,
+        folderId,
+        name
+      );
       try {
         const result = await ejecutarGooglePostUnaVez(
           db,
-          { clave, proveedor: "DRIVE", tipo: "SHEETS_CREAR_ASISTENCIA", cuenta: credentials.serviceAccountEmail, referencia: folderId },
+          {
+            clave,
+            proveedor: "DRIVE",
+            tipo: "SHEETS_CREAR_ASISTENCIA",
+            cuenta: credentials.serviceAccountEmail,
+            referencia: folderId
+          },
           () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
-          sheet => ({ id: sheet.id, name: sheet.name, mimeType: sheet.mimeType, webViewLink: sheet.webViewLink }),
-          saved => ({ id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink })
+          (sheet) => ({
+            id: sheet.id,
+            name: sheet.name,
+            mimeType: sheet.mimeType,
+            webViewLink: sheet.webViewLink
+          }),
+          (saved) => ({
+            id: saved.id,
+            name: saved.name,
+            mimeType: saved.mimeType,
+            webViewLink: saved.webViewLink
+          })
         );
         return compartir(result);
       } catch (error) {
-        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        if (!(error instanceof GoogleOperacionInciertaError)) {
+          throw error;
+        }
         const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker).catch(() => null);
-        if (!recovered) throw error;
+        if (!recovered) {
+          throw error;
+        }
         // Un archivo recuperado tampoco se publica como accesible sin validar
         // el permiso del dominio institucional.
         await asegurarLecturaPorEnlacePlanilla(sheetsAuth, recovered.id);
         const confirmed = await confirmarGoogleOperacionVerificada(db, clave, recovered);
-        if (confirmed) return recovered;
+        if (confirmed) {
+          return recovered;
+        }
         throw error;
       }
     },
@@ -385,38 +503,67 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async obtenerOCrearCarpeta(parentId: string, name: string): Promise<string> {
-      const clave = claveOperacionGoogle("DRIVE_CREAR_CARPETA", credentials.serviceAccountEmail, parentId, name);
+      const clave = claveOperacionGoogle(
+        "DRIVE_CREAR_CARPETA",
+        credentials.serviceAccountEmail,
+        parentId,
+        name
+      );
       try {
         return await ejecutarGooglePostUnaVez(
           db,
-          { clave, proveedor: "DRIVE", tipo: "DRIVE_CREAR_CARPETA", cuenta: credentials.serviceAccountEmail, referencia: parentId },
+          {
+            clave,
+            proveedor: "DRIVE",
+            tipo: "DRIVE_CREAR_CARPETA",
+            cuenta: credentials.serviceAccountEmail,
+            referencia: parentId
+          },
           () => obtenerOCrearCarpetaDrive(auth, parentId, name, clave.slice(4)),
           (id) => ({ id }),
           (saved) => {
-            if (!saved.id) throw new Error("La operación de carpeta Drive no contiene ID.");
+            if (!saved.id) {
+              throw new Error("La operación de carpeta Drive no contiene ID.");
+            }
             return saved.id;
           }
         );
       } catch (error) {
-        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        if (!(error instanceof GoogleOperacionInciertaError)) {
+          throw error;
+        }
         // Only a unique exact remote match is sufficient evidence to recover.
         // Failure or no match must NOT cause a second POST.
         const match = await buscarRecursoDrivePorOperacion(
-          auth, parentId, name, DRIVE_FOLDER_MIME, clave.slice(4)
+          auth,
+          parentId,
+          name,
+          DRIVE_FOLDER_MIME,
+          clave.slice(4)
         ).catch(() => null);
-        if (!match) throw error;
+        if (!match) {
+          throw error;
+        }
         const verifiedId = match.id;
         const confirmed = await confirmarOperacionDriveMarcada(db, clave, { id: verifiedId });
-        if (confirmed) return verifiedId;
+        if (confirmed) {
+          return verifiedId;
+        }
         // Another worker can resolve it concurrently. Never infer a result
         // from a stale ENVIANDO lease or a different remote ID.
         const latest = await db.googleOperacionExterna.findUnique({
-          where: { clave }, select: { estado: true, resultado: true }
+          where: { clave },
+          select: { estado: true, resultado: true }
         });
-        if (latest?.estado === "CONFIRMADA" &&
-            latest.resultado && typeof latest.resultado === "object" &&
-            !Array.isArray(latest.resultado) &&
-            latest.resultado.id === verifiedId) return verifiedId;
+        if (
+          latest?.estado === "CONFIRMADA" &&
+          latest.resultado &&
+          typeof latest.resultado === "object" &&
+          !Array.isArray(latest.resultado) &&
+          latest.resultado.id === verifiedId
+        ) {
+          return verifiedId;
+        }
         throw error;
       }
     },
@@ -430,54 +577,118 @@ export function crearGoogleArtifactsProviderAdapter(
       // as a distinct version, but never replay a single ambiguous upload.
       const digest = createHash("sha256").update(html).digest("hex");
       const clave = claveOperacionGoogle(
-        "DRIVE_SUBIR_DOCUMENTO", credentials.serviceAccountEmail, folderId, name, digest
+        "DRIVE_SUBIR_DOCUMENTO",
+        credentials.serviceAccountEmail,
+        folderId,
+        name,
+        digest
       );
       try {
         return await ejecutarGooglePostUnaVez(
           db,
-          { clave, proveedor: "DRIVE", tipo: "DRIVE_SUBIR_DOCUMENTO", cuenta: credentials.serviceAccountEmail, referencia: folderId },
+          {
+            clave,
+            proveedor: "DRIVE",
+            tipo: "DRIVE_SUBIR_DOCUMENTO",
+            cuenta: credentials.serviceAccountEmail,
+            referencia: folderId
+          },
           () => subirDocumentoGoogleDrive(auth, folderId, name, html, clave.slice(4)),
           (result) => {
-            if (!result.id) throw new Error("La respuesta de Drive no incluyó ID.");
-            return { id: result.id, name: result.name, mimeType: result.mimeType ?? "", webViewLink: result.webViewLink ?? "" };
+            if (!result.id) {
+              throw new Error("La respuesta de Drive no incluyó ID.");
+            }
+            return {
+              id: result.id,
+              name: result.name,
+              mimeType: result.mimeType ?? "",
+              webViewLink: result.webViewLink ?? ""
+            };
           },
           (saved) => {
-            if (!saved.id) throw new Error("La operación de documento Drive no contiene ID.");
-            return { id: saved.id, name: saved.name, mimeType: saved.mimeType, webViewLink: saved.webViewLink };
+            if (!saved.id) {
+              throw new Error("La operación de documento Drive no contiene ID.");
+            }
+            return {
+              id: saved.id,
+              name: saved.name,
+              mimeType: saved.mimeType,
+              webViewLink: saved.webViewLink
+            };
           }
         );
       } catch (error) {
-        if (!(error instanceof GoogleOperacionInciertaError)) throw error;
+        if (!(error instanceof GoogleOperacionInciertaError)) {
+          throw error;
+        }
         const match = await buscarRecursoDrivePorOperacion(
-          auth, folderId, name, DRIVE_GOOGLE_DOC_MIME, clave.slice(4)
+          auth,
+          folderId,
+          name,
+          DRIVE_GOOGLE_DOC_MIME,
+          clave.slice(4)
         ).catch(() => null);
-        if (!match) throw error;
-        const result = { id: match.id, name: match.name, mimeType: match.mimeType ?? "", webViewLink: match.webViewLink ?? "" };
+        if (!match) {
+          throw error;
+        }
+        const result = {
+          id: match.id,
+          name: match.name,
+          mimeType: match.mimeType ?? "",
+          webViewLink: match.webViewLink ?? ""
+        };
         const confirmed = await confirmarOperacionDriveMarcada(db, clave, result);
-        if (confirmed) return result;
+        if (confirmed) {
+          return result;
+        }
         const latest = await db.googleOperacionExterna.findUnique({
-          where: { clave }, select: { estado: true, resultado: true }
+          where: { clave },
+          select: { estado: true, resultado: true }
         });
-        if (latest?.estado === "CONFIRMADA" && latest.resultado &&
-            typeof latest.resultado === "object" && !Array.isArray(latest.resultado) &&
-            latest.resultado.id === match.id) return result;
+        if (
+          latest?.estado === "CONFIRMADA" &&
+          latest.resultado &&
+          typeof latest.resultado === "object" &&
+          !Array.isArray(latest.resultado) &&
+          latest.resultado.id === match.id
+        ) {
+          return result;
+        }
         throw error;
       }
     }
   };
 }
 
-type Recording = Readonly<{ name: string; state: string; startTime?: string; driveDestination?: { file?: string } }>;
-type Transcript = Readonly<{ name: string; state: string; startTime?: string; docsDestination?: { document?: string } }>;
+type Recording = Readonly<{
+  name: string;
+  state: string;
+  startTime?: string;
+  driveDestination?: { file?: string };
+}>;
+type Transcript = Readonly<{
+  name: string;
+  state: string;
+  startTime?: string;
+  docsDestination?: { document?: string };
+}>;
 type SmartNote = Transcript;
-type Participant = Readonly<{ name: string; signedinUser?: { displayName?: string; user?: string }; anonymousUser?: { displayName?: string }; phoneUser?: { displayName?: string } }>;
+type Participant = Readonly<{
+  name: string;
+  signedinUser?: { displayName?: string; user?: string };
+  anonymousUser?: { displayName?: string };
+  phoneUser?: { displayName?: string };
+}>;
 type ParticipantSession = Readonly<{ name: string; startTime: string; endTime?: string }>;
 
 function fechaLocalISO(date: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Montevideo", year: "numeric", month: "2-digit", day: "2-digit"
+    timeZone: "America/Montevideo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
   }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") => parts.find(part => part.type === type)?.value ?? "00";
+  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value ?? "00";
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
@@ -489,8 +700,11 @@ type GoogleRequestOptions = Readonly<{
 }>;
 
 async function requestGoogle<T>(auth: JWT, options: GoogleRequestOptions) {
-  const send = () => auth.request<T>({ ...options, timeout: options.method === "GET"
-    ? GOOGLE_HTTP_READ_TIMEOUT_MS : GOOGLE_HTTP_TIMEOUT_MS });
+  const send = () =>
+    auth.request<T>({
+      ...options,
+      timeout: options.method === "GET" ? GOOGLE_HTTP_READ_TIMEOUT_MS : GOOGLE_HTTP_TIMEOUT_MS
+    });
   // Writes are NOT retried: Google might have committed before returning a timeout.
   return options.method === "GET" ? conReintentosGoogleLectura(send) : send();
 }
@@ -515,7 +729,9 @@ async function mapConLimite<T, R>(
   limite: number,
   operation: (item: T) => Promise<R>
 ): Promise<R[]> {
-  if (items.length === 0) return [];
+  if (items.length === 0) {
+    return [];
+  }
   const results = new Array<R>(items.length);
   let nextIndex = 0;
   const workers = Array.from({ length: Math.min(limite, items.length) }, async () => {
@@ -541,5 +757,3 @@ function nombreParticipante(participant: Participant): string {
 function tipoParticipante(participant: Participant): FilaAsistenciaMeet["tipo"] {
   return participant.signedinUser ? "CUENTA_GOOGLE" : participant.phoneUser ? "TELEFONO" : "ANONIMO";
 }
-
-

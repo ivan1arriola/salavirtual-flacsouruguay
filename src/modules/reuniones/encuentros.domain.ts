@@ -6,39 +6,46 @@ const periodoFields = {
   fin: z.coerce.date()
 } as const;
 
-export const agregarEncuentroSchema = z.object({
-  ...periodoFields,
-  descripcion: z.string().trim().max(4000).optional(),
-  inicioAsistenciaTecnica: z.coerce.date().optional(),
-  finAsistenciaTecnica: z.coerce.date().optional(),
-  requiereAsistenciaTecnica: z.boolean().default(false),
-  requiereGrabacion: z.boolean().default(false)
-}).superRefine(({ inicio, fin, inicioAsistenciaTecnica, finAsistenciaTecnica }, context) => {
-  if (fin.getTime() <= inicio.getTime()) {
-    context.addIssue({ code: "custom", message: "La hora de fin debe ser posterior al inicio.", path: ["fin"] });
-  }
-  if (Boolean(inicioAsistenciaTecnica) !== Boolean(finAsistenciaTecnica)) {
-    context.addIssue({
-      code: "custom",
-      message: "La hora de llegada y salida del asistente deben definirse juntas.",
-      path: [inicioAsistenciaTecnica ? "finAsistenciaTecnica" : "inicioAsistenciaTecnica"]
-    });
-  }
-  if (inicioAsistenciaTecnica && finAsistenciaTecnica && finAsistenciaTecnica <= inicioAsistenciaTecnica) {
-    context.addIssue({
-      code: "custom",
-      message: "La hora de salida del asistente debe ser posterior a la de llegada.",
-      path: ["finAsistenciaTecnica"]
-    });
-  }
-});
+export const agregarEncuentroSchema = z
+  .object({
+    ...periodoFields,
+    descripcion: z.string().trim().max(4000).optional(),
+    inicioAsistenciaTecnica: z.coerce.date().optional(),
+    finAsistenciaTecnica: z.coerce.date().optional(),
+    requiereAsistenciaTecnica: z.boolean().default(false),
+    requiereGrabacion: z.boolean().default(false)
+  })
+  .superRefine(({ inicio, fin, inicioAsistenciaTecnica, finAsistenciaTecnica }, context) => {
+    if (fin.getTime() <= inicio.getTime()) {
+      context.addIssue({
+        code: "custom",
+        message: "La hora de fin debe ser posterior al inicio.",
+        path: ["fin"]
+      });
+    }
+    if (Boolean(inicioAsistenciaTecnica) !== Boolean(finAsistenciaTecnica)) {
+      context.addIssue({
+        code: "custom",
+        message: "La hora de llegada y salida del asistente deben definirse juntas.",
+        path: [inicioAsistenciaTecnica ? "finAsistenciaTecnica" : "inicioAsistenciaTecnica"]
+      });
+    }
+    if (inicioAsistenciaTecnica && finAsistenciaTecnica && finAsistenciaTecnica <= inicioAsistenciaTecnica) {
+      context.addIssue({
+        code: "custom",
+        message: "La hora de salida del asistente debe ser posterior a la de llegada.",
+        path: ["finAsistenciaTecnica"]
+      });
+    }
+  });
 
 export const actualizarEncuentroSchema = z.union([
-  z.object({
-    ...periodoFields,
-    accion: z.enum(["EDITAR_FECHA", "EDITAR_ENCUENTRO"]),
-    descripcion: z.string().trim().max(4000).optional()
-  })
+  z
+    .object({
+      ...periodoFields,
+      accion: z.enum(["EDITAR_FECHA", "EDITAR_ENCUENTRO"]),
+      descripcion: z.string().trim().max(4000).optional()
+    })
     .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
       message: "La hora de fin debe ser posterior al inicio."
     }),
@@ -47,14 +54,18 @@ export const actualizarEncuentroSchema = z.union([
     accion: z.literal("CAMBIAR_MODALIDAD"),
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]).nullable()
   }),
-  z.object({
-    accion: z.literal("EDITAR_HORARIO_ASISTENCIA"),
-    inicioAsistenciaTecnica: z.coerce.date(),
-    finAsistenciaTecnica: z.coerce.date()
-  }).refine(({ inicioAsistenciaTecnica, finAsistenciaTecnica }) =>
-    finAsistenciaTecnica > inicioAsistenciaTecnica, {
-      message: "La hora de salida del asistente debe ser posterior a la de llegada."
-    }),
+  z
+    .object({
+      accion: z.literal("EDITAR_HORARIO_ASISTENCIA"),
+      inicioAsistenciaTecnica: z.coerce.date(),
+      finAsistenciaTecnica: z.coerce.date()
+    })
+    .refine(
+      ({ inicioAsistenciaTecnica, finAsistenciaTecnica }) => finAsistenciaTecnica > inicioAsistenciaTecnica,
+      {
+        message: "La hora de salida del asistente debe ser posterior a la de llegada."
+      }
+    ),
   z.object({ accion: z.literal("RESTABLECER_HORARIO_ASISTENCIA") })
 ]);
 
@@ -63,22 +74,14 @@ export function puedeGestionarEncuentros(
   actorUsuarioId: string,
   docenteUsuarioId: string
 ): boolean {
-  return rol === "ADMINISTRACION" ||
-    (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
+  return rol === "ADMINISTRACION" || (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
 
-export function puedeCorregirModalidadHistorica(
-  rol: RolUsuario,
-  estado: string,
-): boolean {
+export function puedeCorregirModalidadHistorica(rol: RolUsuario, estado: string): boolean {
   return rol === "ADMINISTRACION" && estado !== "CANCELADA";
 }
 
-export function puedeCambiarAsistenciaEncuentro(
-  estado: string,
-  finProgramadoAt: Date,
-  ahora: Date
-): boolean {
+export function puedeCambiarAsistenciaEncuentro(estado: string, finProgramadoAt: Date, ahora: Date): boolean {
   return estado === "PROGRAMADA" && finProgramadoAt > ahora;
 }
 
@@ -88,9 +91,15 @@ type EstadoSolicitudReunion = "REGISTRADA" | "PROVISIONANDO" | "PROVISIONADA" | 
 export function resolverEstadoSolicitudPorIntegraciones(
   estados: readonly EstadoIntegracionReunion[]
 ): EstadoSolicitudReunion {
-  if (estados.length === 0) return "REGISTRADA";
-  if (estados.includes("ERROR")) return "REQUIERE_REVISION";
-  if (estados.includes("PENDIENTE")) return "PROVISIONANDO";
+  if (estados.length === 0) {
+    return "REGISTRADA";
+  }
+  if (estados.includes("ERROR")) {
+    return "REQUIERE_REVISION";
+  }
+  if (estados.includes("PENDIENTE")) {
+    return "PROVISIONANDO";
+  }
   return "PROVISIONADA";
 }
 
@@ -124,19 +133,17 @@ export function elegirCuentaHostParaPeriodos(
 ): string | null {
   const disponibles = cuentas
     .filter((cuenta) => {
-      const reservasCuenta = reservas.filter((reserva) =>
-        reserva.cuentaProveedorId === cuenta.id && periodos.some((periodo) => seSolapan(reserva, periodo))
+      const reservasCuenta = reservas.filter(
+        (reserva) =>
+          reserva.cuentaProveedorId === cuenta.id && periodos.some((periodo) => seSolapan(reserva, periodo))
       );
-      return respetaCapacidadConcurrente(
-        reservasCuenta,
-        periodos,
-        cuenta.limiteConcurrente ?? 1
-      );
+      return respetaCapacidadConcurrente(reservasCuenta, periodos, cuenta.limiteConcurrente ?? 1);
     })
     .reduce<typeof cuentas>((ordered, cuenta) => {
-      const position = ordered.findIndex((item) =>
-        cuenta.prioridad < item.prioridad ||
-        (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0)
+      const position = ordered.findIndex(
+        (item) =>
+          cuenta.prioridad < item.prioridad ||
+          (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0)
       );
       return position < 0
         ? [...ordered, cuenta]
@@ -148,7 +155,6 @@ export function elegirCuentaHostParaPeriodos(
 function seSolapan(left: Periodo, right: Periodo): boolean {
   return left.inicio < right.fin && left.fin > right.inicio;
 }
-
 
 export type ModalidadEncuentro = "HIBRIDA" | "VIRTUAL";
 
@@ -167,9 +173,7 @@ export function periodoAsistenciaTecnica(
     finAsistenciaTecnicaAt?: Date | null;
   }>
 ): Readonly<{ inicio: Date; fin: Date; personalizado: boolean }> {
-  const personalizado = Boolean(
-    encuentro.inicioAsistenciaTecnicaAt && encuentro.finAsistenciaTecnicaAt
-  );
+  const personalizado = Boolean(encuentro.inicioAsistenciaTecnicaAt && encuentro.finAsistenciaTecnicaAt);
   return {
     inicio: encuentro.inicioAsistenciaTecnicaAt ?? encuentro.inicioProgramadoAt,
     fin: encuentro.finAsistenciaTecnicaAt ?? encuentro.finProgramadoAt,
@@ -191,9 +195,7 @@ export function idsCancelacionesPendientes(
   }>[]
 ): readonly string[] {
   return instancias.flatMap(({ eventosProveedor }) =>
-    eventosProveedor
-      .filter(({ operacionPendiente }) => operacionPendiente === "CANCELAR")
-      .map(({ id }) => id)
+    eventosProveedor.filter(({ operacionPendiente }) => operacionPendiente === "CANCELAR").map(({ id }) => id)
   );
 }
 
@@ -208,8 +210,9 @@ export function idsCancelacionesGooglePendientes(
 ): readonly string[] {
   return instancias.flatMap(({ eventosProveedor }) =>
     eventosProveedor
-      .filter(({ proveedor, operacionPendiente }) =>
-        (proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM") && operacionPendiente === "CANCELAR"
+      .filter(
+        ({ proveedor, operacionPendiente }) =>
+          (proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM") && operacionPendiente === "CANCELAR"
       )
       .map(({ id }) => id)
   );
@@ -225,26 +228,36 @@ function respetaCapacidadConcurrente(
   nuevos: readonly Periodo[],
   limite: number
 ): boolean {
-  if (!Number.isInteger(limite) || limite < 1) return false;
+  if (!Number.isInteger(limite) || limite < 1) {
+    return false;
+  }
   const intervalos = [...existentes, ...nuevos];
-  if (intervalos.some(({ inicio, fin }) =>
-    !Number.isFinite(inicio.getTime()) ||
-    !Number.isFinite(fin.getTime()) ||
-    inicio.getTime() >= fin.getTime()
-  )) return false;
+  if (
+    intervalos.some(
+      ({ inicio, fin }) =>
+        !Number.isFinite(inicio.getTime()) ||
+        !Number.isFinite(fin.getTime()) ||
+        inicio.getTime() >= fin.getTime()
+    )
+  ) {
+    return false;
+  }
 
-  const cambios = intervalos.flatMap(({ inicio, fin }) => [
-    { instante: inicio.getTime(), delta: 1 },
-    { instante: fin.getTime(), delta: -1 }
-  ]).reduce<readonly Readonly<{ instante: number; delta: number }>[]>((ordenados, cambio) => {
-    const posicion = ordenados.findIndex((existente) =>
-      existente.instante > cambio.instante ||
-      (existente.instante === cambio.instante && existente.delta > cambio.delta)
-    );
-    return posicion < 0
-      ? [...ordenados, cambio]
-      : [...ordenados.slice(0, posicion), cambio, ...ordenados.slice(posicion)];
-  }, []);
+  const cambios = intervalos
+    .flatMap(({ inicio, fin }) => [
+      { instante: inicio.getTime(), delta: 1 },
+      { instante: fin.getTime(), delta: -1 }
+    ])
+    .reduce<readonly Readonly<{ instante: number; delta: number }>[]>((ordenados, cambio) => {
+      const posicion = ordenados.findIndex(
+        (existente) =>
+          existente.instante > cambio.instante ||
+          (existente.instante === cambio.instante && existente.delta > cambio.delta)
+      );
+      return posicion < 0
+        ? [...ordenados, cambio]
+        : [...ordenados.slice(0, posicion), cambio, ...ordenados.slice(posicion)];
+    }, []);
 
   const ocupacion = cambios.reduce(
     (estado, cambio) => {

@@ -29,11 +29,13 @@
 ### Task 1: Prioritize assigned monitoring on the assistant dashboard
 
 **Files:**
+
 - Modify: `src/modules/asistencia/presentation/components/assistant-dashboard.tsx`
 - Test: `test/assistant-dashboard-priorities.test.ts`
 - Document: `docs/ui/monitoreo.md`
 
 **Interfaces:**
+
 - Consumes and produces: existing `AssistantDashboardData`, `LiveMeetingHero`, `AssistantOpenOpportunities`, and `AssistantHoursSummary`; no interface changes.
 
 - [x] Add a failing source contract test asserting the section order: live/next assigned monitoring, upcoming assigned coverages, open opportunities, hour summary.

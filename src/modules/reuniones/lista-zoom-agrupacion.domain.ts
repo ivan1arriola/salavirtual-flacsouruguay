@@ -11,7 +11,7 @@ export const PALETA_CUENTAS_ZOOM: readonly Readonly<{ fuerte: string; palido: st
   { fuerte: "#ea580c", palido: "#fff2ea" },
   { fuerte: "#0f766e", palido: "#ebf8f6" },
   { fuerte: "#475569", palido: "#f1f5f9" },
-  { fuerte: "#92400e", palido: "#fbf3ec" },
+  { fuerte: "#92400e", palido: "#fbf3ec" }
 ];
 
 export const TAMANO_PALETA_CUENTAS = PALETA_CUENTAS_ZOOM.length;
@@ -49,10 +49,7 @@ export type CuentaPresenteZoom = Readonly<{
 }>;
 
 function hashEstable(texto: string): number {
-  return [...texto].reduce(
-    (acumulado, caracter) => ((acumulado * 31 + caracter.charCodeAt(0)) >>> 0),
-    7
-  );
+  return [...texto].reduce((acumulado, caracter) => (acumulado * 31 + caracter.charCodeAt(0)) >>> 0, 7);
 }
 
 /** Nombre corto de una cuenta anfitriona (parte local del correo, p. ej. `sala02`). */
@@ -65,7 +62,9 @@ export function nombreCuentaZoom(correo: string): string {
 /** Índice de paleta estable (0 a TAMANO_PALETA_CUENTAS - 1) para una cuenta de Zoom, o null si no hay cuenta. */
 export function colorCuentaZoom(correo: string | null | undefined): number | null {
   const normalizado = correo?.trim().toLowerCase() ?? "";
-  if (!normalizado) return null;
+  if (!normalizado) {
+    return null;
+  }
 
   const coincidenciaSala = PATRON_SALA.exec(normalizado);
   if (coincidenciaSala) {
@@ -121,8 +120,7 @@ export function agruparPorDia<T>(
       return [...grupos.slice(0, -1), { ...ultimo, items: [...ultimo.items, item] }];
     }
 
-    const relativo: RelativoDiaZoom =
-      clave === hoy.clave ? "HOY" : clave === claveManana ? "MANANA" : null;
+    const relativo: RelativoDiaZoom = clave === hoy.clave ? "HOY" : clave === claveManana ? "MANANA" : null;
 
     return [
       ...grupos,
@@ -160,7 +158,9 @@ export function cuentasPresentes(
 ): readonly CuentaPresenteZoom[] {
   const unicas = correos.reduce<readonly CuentaPresenteZoom[]>((acumulado, valor) => {
     const limpio = valor?.trim() ?? "";
-    if (!limpio) return acumulado;
+    if (!limpio) {
+      return acumulado;
+    }
 
     const claveUnica = limpio.toLowerCase();
     if (acumulado.some((existente) => existente.correo.toLowerCase() === claveUnica)) {
@@ -169,7 +169,9 @@ export function cuentasPresentes(
 
     const correo = limpio.includes("@") ? claveUnica : limpio;
     const color = colorCuentaZoom(correo);
-    if (color === null) return acumulado;
+    if (color === null) {
+      return acumulado;
+    }
 
     return [
       ...acumulado,
@@ -184,13 +186,21 @@ export function cuentasPresentes(
   return unicas.reduce<readonly CuentaPresenteZoom[]>(insertarOrdenada, []);
 }
 
-export type ResumenCuentasAnfitrionas = Readonly<{ tipo: "NINGUNA" | "UNA" | "VARIAS"; correos: readonly string[] }>;
+export type ResumenCuentasAnfitrionas = Readonly<{
+  tipo: "NINGUNA" | "UNA" | "VARIAS";
+  correos: readonly string[];
+}>;
 
 /** Cuentas anfitrionas distintas de una serie, en orden de aparición. */
-export function resumenCuentasAnfitrionas(correos: readonly (string | null | undefined)[]): ResumenCuentasAnfitrionas {
+export function resumenCuentasAnfitrionas(
+  correos: readonly (string | null | undefined)[]
+): ResumenCuentasAnfitrionas {
   const distintas = correos.reduce<readonly string[]>((acumulado, valor) => {
     const limpio = valor?.trim() ?? "";
     return limpio && !acumulado.includes(limpio) ? [...acumulado, limpio] : acumulado;
   }, []);
-  return { tipo: distintas.length === 0 ? "NINGUNA" : distintas.length === 1 ? "UNA" : "VARIAS", correos: distintas };
+  return {
+    tipo: distintas.length === 0 ? "NINGUNA" : distintas.length === 1 ? "UNA" : "VARIAS",
+    correos: distintas
+  };
 }

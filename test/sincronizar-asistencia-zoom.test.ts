@@ -4,35 +4,74 @@ import { sincronizarAsistenciaZoomUseCase } from "../src/modules/archivos/applic
 import type { SesionObservadaZoom } from "../src/modules/archivos/domain";
 
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
-const OCURRENCIA = { ocurrenciaId: "o1", uuid: "u1", anfitrionZoomId: "host-1", eventoProveedorId: "e1", inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") };
+const OCURRENCIA = {
+  ocurrenciaId: "o1",
+  uuid: "u1",
+  anfitrionZoomId: "host-1",
+  eventoProveedorId: "e1",
+  inicioProgramadoAt: t("10:00"),
+  finProgramadoAt: t("11:00")
+};
 const ses = (clave: string, entra: string, sale: string, participanteId = "p1"): SesionObservadaZoom => ({
-  claveSesion: clave, participanteId, userId: "u", nombre: "Ana", email: null,
-  entradaAt: t(entra), salidaAt: t(sale), status: "in_meeting", rol: null
+  claveSesion: clave,
+  participanteId,
+  userId: "u",
+  nombre: "Ana",
+  email: null,
+  entradaAt: t(entra),
+  salidaAt: t(sale),
+  status: "in_meeting",
+  rol: null
 });
 
-function crear(opciones: { ocurrencia?: any; reporte?: any; error?: Error; guardado?: any; persistidas?: any[] } = {}) {
+function crear(
+  opciones: { ocurrencia?: any; reporte?: any; error?: Error; guardado?: any; persistidas?: any[] } = {}
+) {
   const ocurrencia = opciones.ocurrencia === undefined ? OCURRENCIA : opciones.ocurrencia;
   const sync = {
     cargarOcurrencia: vi.fn(async () => ocurrencia),
-    listarSesionesDelAmbito: vi.fn(async () => opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]),
+    listarSesionesDelAmbito: vi.fn(
+      async () => opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]
+    ),
     marcarEstadoReporte: vi.fn(async () => undefined)
   };
   // El repositorio real calcula el resumen DENTRO de su transacción, con las sesiones del ámbito ya bloqueadas.
   const capturado: { resumen: any[] | null } = { resumen: null };
   const repo = {
-    guardarSesionesYConsolidar: vi.fn(async (_id: string, _v: unknown, _s: unknown, consolidar: (a: any[]) => any[] | null) => {
-      capturado.resumen = consolidar(opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]);
-      if (capturado.resumen === null) return { tipo: "SIN_VENTANA" };
-      return opciones.guardado ?? { tipo: "GUARDADO", sesionesNuevas: 1, registrosCreados: 1, registrosActualizados: 0 };
-    })
+    guardarSesionesYConsolidar: vi.fn(
+      async (_id: string, _v: unknown, _s: unknown, consolidar: (a: any[]) => any[] | null) => {
+        capturado.resumen = consolidar(
+          opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]
+        );
+        if (capturado.resumen === null) {
+          return { tipo: "SIN_VENTANA" };
+        }
+        return (
+          opciones.guardado ?? {
+            tipo: "GUARDADO",
+            sesionesNuevas: 1,
+            registrosCreados: 1,
+            registrosActualizados: 0
+          }
+        );
+      }
+    )
   };
   const provider = {
     obtenerSesiones: vi.fn(async () => {
-      if (opciones.error) throw opciones.error;
+      if (opciones.error) {
+        throw opciones.error;
+      }
       return opciones.reporte ?? { estado: "DISPONIBLE", sesiones: [ses("c1", "10:00", "10:30")] };
     })
   };
-  return { sync, repo, provider, capturado, ejecutar: () => sincronizarAsistenciaZoomUseCase({ sync, repo, provider } as any, "o1") };
+  return {
+    sync,
+    repo,
+    provider,
+    capturado,
+    ejecutar: () => sincronizarAsistenciaZoomUseCase({ sync, repo, provider } as any, "o1")
+  };
 }
 
 describe("sincronizarAsistenciaZoomUseCase", () => {
@@ -41,10 +80,15 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     const r = await ejecutar();
     expect(r).toMatchObject({ tipo: "OK", estadoReporte: "DISPONIBLE" });
     expect(repo.guardarSesionesYConsolidar).toHaveBeenCalledTimes(1);
-    const [id, version, sesiones] = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[]);
+    const [id, version, sesiones] = repo.guardarSesionesYConsolidar.mock.calls[0] as any[];
     const resumen = capturado.resumen!;
     expect(id).toBe("o1");
-    expect(version).toEqual({ uuid: "u1", eventoProveedorId: "e1", inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") });
+    expect(version).toEqual({
+      uuid: "u1",
+      eventoProveedorId: "e1",
+      inicioProgramadoAt: t("10:00"),
+      finProgramadoAt: t("11:00")
+    });
     expect(sesiones).toHaveLength(1);
     expect(resumen[0]).toMatchObject({ claveParticipante: "id:p1", minutos: 30, porcentaje: 50 });
     expect(sync.marcarEstadoReporte).toHaveBeenCalledWith("o1", "DISPONIBLE", null);
@@ -82,7 +126,9 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
   it("ocurrencia sin encuentro vinculado: calcula sobre el horario real observado, sin ventana programada", async () => {
     const { capturado, ejecutar } = crear({
       ocurrencia: { ...OCURRENCIA, eventoProveedorId: null, inicioProgramadoAt: null, finProgramadoAt: null },
-      persistidas: [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30"), ses("c2", "10:20", "11:00")] }]
+      persistidas: [
+        { ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30"), ses("c2", "10:20", "11:00")] }
+      ]
     });
     await ejecutar();
     const resumen = capturado.resumen!;
@@ -130,10 +176,16 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     const delAnfitrion = { ...ses("c1", "10:00", "10:30", "p1"), userId: "host-1" };
     const otra = { ...ses("c2", "10:05", "10:25", "p2"), userId: "otro-usuario" };
     const anonima = { ...ses("c3", "10:10", "10:20", "p3"), userId: null };
-    const { repo, ejecutar } = crear({ reporte: { estado: "DISPONIBLE", sesiones: [delAnfitrion, otra, anonima] } });
+    const { repo, ejecutar } = crear({
+      reporte: { estado: "DISPONIBLE", sesiones: [delAnfitrion, otra, anonima] }
+    });
     await ejecutar();
     const guardadas = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[])[2] as SesionObservadaZoom[];
-    expect(guardadas.map((x) => [x.claveSesion, x.rol])).toEqual([["c1", "HOST"], ["c2", null], ["c3", null]]);
+    expect(guardadas.map((x) => [x.claveSesion, x.rol])).toEqual([
+      ["c1", "HOST"],
+      ["c2", null],
+      ["c3", null]
+    ]);
   });
 
   it("ocurrencia inexistente: ERROR sin llamar a Zoom", async () => {

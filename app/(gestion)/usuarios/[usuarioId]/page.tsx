@@ -24,7 +24,9 @@ export default async function UsuarioPage({
   searchParams: Promise<{ estado?: string; error?: string }>;
 }>) {
   const session = await auth();
-  if (session?.user.role !== "ADMINISTRACION") redirect("/");
+  if (session?.user.role !== "ADMINISTRACION") {
+    redirect("/");
+  }
   const { usuarioId } = await params;
   const [user, programs] = await Promise.all([
     db.usuario.findUnique({
@@ -32,7 +34,9 @@ export default async function UsuarioPage({
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
         docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } },
-        asistenteTecnico: { select: { slug: true, disponibleGeneral: true, cesadoHastaProximoInicioSesion: true } }
+        asistenteTecnico: {
+          select: { slug: true, disponibleGeneral: true, cesadoHastaProximoInicioSesion: true }
+        }
       }
     }),
     db.programa.findMany({
@@ -41,7 +45,9 @@ export default async function UsuarioPage({
       select: { id: true, nombre: true }
     })
   ]);
-  if (!user) notFound();
+  if (!user) {
+    notFound();
+  }
   const { estado, error } = await searchParams;
   const isSelf = session.user.id === user.id;
   const googleEmails = user.cuentasGoogle.map(({ email }) => email);
@@ -54,9 +60,18 @@ export default async function UsuarioPage({
 
   return (
     <>
-      <Link className="back-link" href="/usuarios"><ArrowLeft size={16} />Usuarios</Link>
+      <Link className="back-link" href="/usuarios">
+        <ArrowLeft size={16} />
+        Usuarios
+      </Link>
       <header className="page-header">
-        <div><p className="page-eyebrow">{user.rol.toLowerCase()}</p><h1>{user.nombres} {user.apellidos}</h1><p>Usuario local: {user.id}</p></div>
+        <div>
+          <p className="page-eyebrow">{user.rol.toLowerCase()}</p>
+          <h1>
+            {user.nombres} {user.apellidos}
+          </h1>
+          <p>Usuario local: {user.id}</p>
+        </div>
       </header>
       {estado && messages[estado] ? (
         <p className={`form-notice ${estado === "error-eliminar" ? "form-notice-error" : ""}`} role="status">
@@ -76,14 +91,23 @@ export default async function UsuarioPage({
             <div className="section-heading compact-heading">
               <div>
                 <h2>Disponibilidad operativa</h2>
-                <p>El cese temporal excluye a la persona de notificaciones, postulaciones y algoritmos de asignación hasta que vuelva a iniciar sesión.</p>
+                <p>
+                  El cese temporal excluye a la persona de notificaciones, postulaciones y algoritmos de
+                  asignación hasta que vuelva a iniciar sesión.
+                </p>
               </div>
             </div>
             <div className="assistant-user-statuses">
-              <span className={`status ${user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "status-warning" : "status-ok"}`}>
-                {user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "Cesado hasta próximo inicio" : "Sin cese temporal"}
+              <span
+                className={`status ${user.asistenteTecnico.cesadoHastaProximoInicioSesion ? "status-warning" : "status-ok"}`}
+              >
+                {user.asistenteTecnico.cesadoHastaProximoInicioSesion
+                  ? "Cesado hasta próximo inicio"
+                  : "Sin cese temporal"}
               </span>
-              <span className={`status ${user.asistenteTecnico.disponibleGeneral ? "status-ok" : "status-warning"}`}>
+              <span
+                className={`status ${user.asistenteTecnico.disponibleGeneral ? "status-ok" : "status-warning"}`}
+              >
                 {user.asistenteTecnico.disponibleGeneral ? "Recibe asignaciones" : "Asignaciones pausadas"}
               </span>
             </div>
@@ -94,14 +118,16 @@ export default async function UsuarioPage({
                   className="secondary-action"
                   href={`/asistentes/${encodeURIComponent(user.asistenteTecnico.slug)}`}
                 >
-                  <SlidersHorizontal size={17} />Control operativo
+                  <SlidersHorizontal size={17} />
+                  Control operativo
                 </Link>
                 <button
                   className="secondary-action"
                   disabled={user.asistenteTecnico.cesadoHastaProximoInicioSesion}
                   type="submit"
                 >
-                  <UserRoundX size={17} />Cesar hasta próximo inicio de sesión
+                  <UserRoundX size={17} />
+                  Cesar hasta próximo inicio de sesión
                 </button>
               </footer>
             </form>
@@ -125,14 +151,16 @@ export default async function UsuarioPage({
             <div>
               <h2 style={{ color: "#9f2f2f" }}>Zona de peligro</h2>
               <p>
-                Elimina permanentemente la identidad y sus datos asociados: cuentas Google, sesiones, programas,
-                solicitudes y reuniones propias, asignaciones o liquidaciones de monitoreo y demás relaciones.
-                Esta operación no se puede deshacer.
+                Elimina permanentemente la identidad y sus datos asociados: cuentas Google, sesiones,
+                programas, solicitudes y reuniones propias, asignaciones o liquidaciones de monitoreo y demás
+                relaciones. Esta operación no se puede deshacer.
               </p>
             </div>
           </div>
           {isSelf ? (
-            <p className="form-notice form-notice-error">No podés eliminar la cuenta con la que estás administrando el sistema.</p>
+            <p className="form-notice form-notice-error">
+              No podés eliminar la cuenta con la que estás administrando el sistema.
+            </p>
           ) : (
             <form action={eliminarUsuario}>
               <input name="usuarioId" type="hidden" value={user.id} />
@@ -148,14 +176,16 @@ export default async function UsuarioPage({
               </label>
               <footer className="form-actions">
                 <span className="muted-text">
-                  Se conservará únicamente una entrada técnica de auditoría sin nombre ni correo de la persona eliminada.
+                  Se conservará únicamente una entrada técnica de auditoría sin nombre ni correo de la persona
+                  eliminada.
                 </span>
                 <button
                   className="secondary-action"
                   style={{ borderColor: "#b42318", background: "#b42318", color: "#ffffff" }}
                   type="submit"
                 >
-                  <Trash2 size={17} />Eliminar usuario y sus datos
+                  <Trash2 size={17} />
+                  Eliminar usuario y sus datos
                 </button>
               </footer>
             </form>

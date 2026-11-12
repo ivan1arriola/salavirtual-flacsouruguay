@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  auth: vi.fn(), resolveSessionActor: vi.fn(), solicitar: vi.fn(), consultar: vi.fn(), vincular: vi.fn()
+  auth: vi.fn(),
+  resolveSessionActor: vi.fn(),
+  solicitar: vi.fn(),
+  consultar: vi.fn(),
+  vincular: vi.fn()
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
@@ -17,7 +21,8 @@ import { POST as crear } from "../app/api/v1/archivos/zoom/recuperaciones/route"
 import { GET as progreso } from "../app/api/v1/archivos/zoom/recuperaciones/[barridoId]/route";
 import { POST as vincular } from "../app/api/v1/archivos/zoom/ocurrencias/[ocurrenciaId]/vincular/route";
 
-const post = (cuerpo: unknown) => new Request("http://x/api", { method: "POST", body: JSON.stringify(cuerpo) });
+const post = (cuerpo: unknown) =>
+  new Request("http://x/api", { method: "POST", body: JSON.stringify(cuerpo) });
 const valido = { desde: "2026-01-01", hasta: "2026-02-01" };
 
 function conRol(rol: string, activo = true) {
@@ -43,7 +48,14 @@ describe("POST recuperaciones", () => {
   });
 
   it("cuerpo inválido: 400 sin llegar al caso de uso", async () => {
-    for (const c of [null, {}, { desde: 1, hasta: "x" }, { ...valido, anfitrionIds: "h1" }, { ...valido, anfitrionIds: [3] }, { ...valido, dryRun: "no" }]) {
+    for (const c of [
+      null,
+      {},
+      { desde: 1, hasta: "x" },
+      { ...valido, anfitrionIds: "h1" },
+      { ...valido, anfitrionIds: [3] },
+      { ...valido, dryRun: "no" }
+    ]) {
       expect((await crear(post(c))).status).toBe(400);
     }
     expect(mocks.solicitar).not.toHaveBeenCalled();
@@ -52,7 +64,10 @@ describe("POST recuperaciones", () => {
   it("sin dryRun explícito es una simulación (nunca encola por omisión)", async () => {
     const r = await crear(post(valido));
     expect(r.status).toBe(200);
-    expect(mocks.solicitar).toHaveBeenCalledWith({ id: "u", rol: "ADMINISTRACION" }, { anfitrionIds: [], ...valido, dryRun: true });
+    expect(mocks.solicitar).toHaveBeenCalledWith(
+      { id: "u", rol: "ADMINISTRACION" },
+      { anfitrionIds: [], ...valido, dryRun: true }
+    );
   });
 
   it("dryRun:false encola con 202", async () => {
@@ -101,7 +116,9 @@ describe("POST ocurrencias/[ocurrenciaId]/vincular", () => {
   });
 
   it("eventoId ausente o inválido: 400", async () => {
-    for (const c of [null, {}, { eventoId: 5 }, { eventoId: "" }]) expect((await vincular(post(c), ctx)).status).toBe(400);
+    for (const c of [null, {}, { eventoId: 5 }, { eventoId: "" }]) {
+      expect((await vincular(post(c), ctx)).status).toBe(400);
+    }
     expect(mocks.vincular).not.toHaveBeenCalled();
   });
 
@@ -113,9 +130,12 @@ describe("POST ocurrencias/[ocurrenciaId]/vincular", () => {
 
   it("mapea los resultados: vinculada 200, otro encuentro 409, conflicto Drive 409, no zoom 422, no encontrada 404", async () => {
     const casos: Array<[object, number]> = [
-      [{ tipo: "VINCULADA", referenciasCreadas: 2 }, 200], [{ tipo: "YA_VINCULADA" }, 200],
-      [{ tipo: "VINCULADA_A_OTRO", eventoProveedorId: "e9" }, 409], [{ tipo: "CONFLICTO_DRIVE" }, 409],
-      [{ tipo: "EVENTO_NO_ZOOM" }, 422], [{ tipo: "NO_ENCONTRADA", recurso: "OCURRENCIA" }, 404]
+      [{ tipo: "VINCULADA", referenciasCreadas: 2 }, 200],
+      [{ tipo: "YA_VINCULADA" }, 200],
+      [{ tipo: "VINCULADA_A_OTRO", eventoProveedorId: "e9" }, 409],
+      [{ tipo: "CONFLICTO_DRIVE" }, 409],
+      [{ tipo: "EVENTO_NO_ZOOM" }, 422],
+      [{ tipo: "NO_ENCONTRADA", recurso: "OCURRENCIA" }, 404]
     ];
     for (const [resultado, status] of casos) {
       mocks.vincular.mockResolvedValueOnce(resultado);

@@ -52,10 +52,8 @@ export function LiveMeetingHero({
           ? "Revisá las salas abiertas que necesitan soporte para postularte."
           : "Todas las salas están al día en la planificación institucional.";
 
-    const defaultHref =
-      role === "ASISTENTE_TECNICO" ? "/agenda-abierta" : "/reuniones";
-    const defaultLabel =
-      role === "ASISTENTE_TECNICO" ? "Ver agenda abierta" : "Ver mi agenda";
+    const defaultHref = role === "ASISTENTE_TECNICO" ? "/agenda-abierta" : "/reuniones";
+    const defaultLabel = role === "ASISTENTE_TECNICO" ? "Ver agenda abierta" : "Ver mi agenda";
 
     return (
       <section className="dashboard-hero-card is-empty" aria-label="Estado de actividad inmediata">
@@ -69,10 +67,7 @@ export function LiveMeetingHero({
           </div>
         </div>
         <div className="dashboard-hero-empty-action">
-          <Link
-            className="secondary-action"
-            href={emptyStateActionHref ?? defaultHref}
-          >
+          <Link className="secondary-action" href={emptyStateActionHref ?? defaultHref}>
             {emptyStateActionLabel ?? defaultLabel}
           </Link>
         </div>
@@ -90,14 +85,24 @@ export function LiveMeetingHero({
       ? new Date(inicio.getTime() - 15 * 60 * 1000)
       : inicio;
   const finAsistencia = new Date(meeting.finAsistenciaAt ?? meeting.finProgramadoAt);
-  const coberturaDiferente = meeting.requiereAsistencia && (inicioAsistencia.getTime() !== inicio.getTime() || finAsistencia.getTime() !== fin.getTime());
+  const coberturaDiferente =
+    meeting.requiereAsistencia &&
+    (inicioAsistencia.getTime() !== inicio.getTime() || finAsistencia.getTime() !== fin.getTime());
   const paraAsistente = role === "ASISTENTE_TECNICO" && meeting.requiereAsistencia;
-  const coberturaSinHorario = paraAsistente && meeting.modalidad === "HIBRIDA" && (!meeting.inicioAsistenciaAt || !meeting.finAsistenciaAt);
-  const tiempoEtiqueta = coberturaSinHorario ? "Falta confirmar tu hora de llegada" : paraAsistente
-    ? inicioAsistencia > ahora
-      ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(/^Empieza en/, "Tu asistencia comienza en")
-      : "Tu monitoreo ya comenzó"
-    : formatearTiempoHastaReunion(inicio, ahora);
+  const coberturaSinHorario =
+    paraAsistente &&
+    meeting.modalidad === "HIBRIDA" &&
+    (!meeting.inicioAsistenciaAt || !meeting.finAsistenciaAt);
+  const tiempoEtiqueta = coberturaSinHorario
+    ? "Falta confirmar tu hora de llegada"
+    : paraAsistente
+      ? inicioAsistencia > ahora
+        ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(
+            /^Empieza en/,
+            "Tu asistencia comienza en"
+          )
+        : "Tu monitoreo ya comenzó"
+      : formatearTiempoHastaReunion(inicio, ahora);
 
   return (
     <section
@@ -117,9 +122,7 @@ export function LiveMeetingHero({
               <span>{tiempoEtiqueta}</span>
             </span>
           )}
-          <span className="dashboard-hero-date">
-            {formatDate(inicio)}
-          </span>
+          <span className="dashboard-hero-date">{formatDate(inicio)}</span>
         </div>
 
         <span className="dashboard-hero-modality-badge">
@@ -131,7 +134,15 @@ export function LiveMeetingHero({
         <div className="dashboard-hero-main-info">
           <p className="dashboard-hero-program">{meeting.programa}</p>
           <h2 className="dashboard-hero-title">
-            <Link href={role === "ASISTENTE_TECNICO" ? `/operacion/${meeting.id}` : `/reuniones/${meeting.solicitudId}`}>{meeting.titulo}</Link>
+            <Link
+              href={
+                role === "ASISTENTE_TECNICO"
+                  ? `/operacion/${meeting.id}`
+                  : `/reuniones/${meeting.solicitudId}`
+              }
+            >
+              {meeting.titulo}
+            </Link>
           </h2>
           {meeting.salaNombre ? (
             <p className="dashboard-hero-room">
@@ -150,7 +161,11 @@ export function LiveMeetingHero({
           viewerIsAssistant={paraAsistente}
           compact
         />
-        {coberturaDiferente && role !== "ASISTENTE_TECNICO" ? <p className="dashboard-hero-schedule-notice">El horario de llegada del asistente es distinto al inicio del encuentro.</p> : null}
+        {coberturaDiferente && role !== "ASISTENTE_TECNICO" ? (
+          <p className="dashboard-hero-schedule-notice">
+            El horario de llegada del asistente es distinto al inicio del encuentro.
+          </p>
+        ) : null}
 
         <div className="dashboard-hero-actions">
           {meeting.joinUrl ? (
@@ -167,9 +182,7 @@ export function LiveMeetingHero({
               <CopyMeetLinkButton url={meeting.joinUrl} />
             </>
           ) : (
-            <span className="status status-warning hero-pending-meet">
-              {provider.pendingLinkLabel}
-            </span>
+            <span className="status status-warning hero-pending-meet">{provider.pendingLinkLabel}</span>
           )}
 
           {role === "ASISTENTE_TECNICO" ? (
@@ -209,23 +222,22 @@ export function LiveMeetingHero({
 
         {provider.supportsCohosts ? (
           <div className="dashboard-hero-metadata-item">
-          {meeting.cohostConfirmado ? (
-            <span className="status-ok-text">
-              <CheckCircle2 size={16} /> Permisos de cohost confirmados en Meet
-            </span>
-          ) : meeting.cohosts.length > 0 ? (
-            <span className="status-warning-text">
-              <AlertTriangle size={15} /> Permisos de cohost en proceso de confirmación
-            </span>
-          ) : (
-            <span className="muted-text">
-              <Sparkles size={15} /> Sin cohosts adicionales configurados
-            </span>
-          )}
+            {meeting.cohostConfirmado ? (
+              <span className="status-ok-text">
+                <CheckCircle2 size={16} /> Permisos de cohost confirmados en Meet
+              </span>
+            ) : meeting.cohosts.length > 0 ? (
+              <span className="status-warning-text">
+                <AlertTriangle size={15} /> Permisos de cohost en proceso de confirmación
+              </span>
+            ) : (
+              <span className="muted-text">
+                <Sparkles size={15} /> Sin cohosts adicionales configurados
+              </span>
+            )}
           </div>
         ) : null}
       </footer>
     </section>
   );
 }
-

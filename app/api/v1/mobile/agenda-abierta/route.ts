@@ -2,7 +2,10 @@ import { toHttpError } from "@/src/lib/http/api-error";
 import { NextResponse } from "next/server";
 import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-actor.adapter";
 import { db } from "@/src/lib/db";
-import { evaluarConflictoAsistencia, type AsignacionExistente } from "@/src/modules/asistencia/agenda-abierta.domain";
+import {
+  evaluarConflictoAsistencia,
+  type AsignacionExistente
+} from "@/src/modules/asistencia/agenda-abierta.domain";
 import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asistencia.service";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 
@@ -15,7 +18,9 @@ async function resolveMobileAssistant(request: Request) {
     where: { usuarioId: actor.id },
     select: { id: true, cesadoHastaProximoInicioSesion: true }
   });
-  if (!assistant || assistant.cesadoHastaProximoInicioSesion) return null;
+  if (!assistant || assistant.cesadoHastaProximoInicioSesion) {
+    return null;
+  }
 
   return { actor, assistant };
 }
@@ -31,7 +36,10 @@ export async function GET(request: Request) {
     throw error;
   }
   if (!resolved) {
-    return NextResponse.json({ error: "La cuenta ya no tiene acceso como asistente técnico." }, { status: 403 });
+    return NextResponse.json(
+      { error: "La cuenta ya no tiene acceso como asistente técnico." },
+      { status: 403 }
+    );
   }
 
   const { assistant } = resolved;
@@ -108,12 +116,12 @@ export async function GET(request: Request) {
     const meet = seleccionarEventoProveedorActivo(meeting);
     const interest = interests.find((item) => item.instanciaSalaId === meeting.id);
     const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
-    const inicioAsistenciaConfigurada = modality === "VIRTUAL"
-      ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
-      : meeting.inicioAsistenciaTecnicaAt;
-    const finAsistenciaConfigurada = modality === "VIRTUAL"
-      ? meeting.finProgramadoAt
-      : meeting.finAsistenciaTecnicaAt;
+    const inicioAsistenciaConfigurada =
+      modality === "VIRTUAL"
+        ? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000)
+        : meeting.inicioAsistenciaTecnicaAt;
+    const finAsistenciaConfigurada =
+      modality === "VIRTUAL" ? meeting.finProgramadoAt : meeting.finAsistenciaTecnicaAt;
     const inicioAsistencia = inicioAsistenciaConfigurada ?? meeting.inicioProgramadoAt;
     const finAsistencia = finAsistenciaConfigurada ?? meeting.finProgramadoAt;
     const conflict = evaluarConflictoAsistencia(
@@ -166,7 +174,10 @@ export async function PUT(request: Request) {
     throw error;
   }
   if (!resolved) {
-    return NextResponse.json({ error: "La cuenta ya no tiene acceso como asistente técnico." }, { status: 403 });
+    return NextResponse.json(
+      { error: "La cuenta ya no tiene acceso como asistente técnico." },
+      { status: 403 }
+    );
   }
 
   try {

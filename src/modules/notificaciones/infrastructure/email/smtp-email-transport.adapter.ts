@@ -16,14 +16,16 @@ export function obtenerConfiguracionSmtp(): SmtpConfig | null {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM ?? user;
-  if (!host || !from) return null;
+  if (!host || !from) {
+    return null;
+  }
 
   return {
     host,
     port,
     secure: process.env.SMTP_SECURE === "true" || port === 465,
     auth: user && pass ? { user, pass } : undefined,
-    from,
+    from
   };
 }
 
@@ -41,7 +43,7 @@ export function crearSmtpEmailTransport(
         host: config.host,
         port: config.port,
         secure: config.secure,
-        auth: config.auth,
+        auth: config.auth
       });
 
       const fromHeader = `"Sala Virtual FLACSO" <${config.from}>`;
@@ -52,11 +54,10 @@ export function crearSmtpEmailTransport(
         cc: input.cc?.length ? input.cc.join(", ") : undefined,
         subject: input.subject,
         text: input.text,
-        html: input.html,
+        html: input.html
       });
 
       return { sent: true, transport: "SMTP" };
-    },
+    }
   };
 }
-

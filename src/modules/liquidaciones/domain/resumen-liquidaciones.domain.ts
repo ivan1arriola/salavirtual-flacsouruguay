@@ -44,27 +44,18 @@ export function resumirMontos(
   const monedas = [...new Set(items.map(({ moneda }) => moneda))];
   return monedas.map((moneda) => ({
     moneda,
-    monto: items.reduce(
-      (total, item) => total + (item.moneda === moneda ? item.monto ?? 0 : 0),
-      0
-    )
+    monto: items.reduce((total, item) => total + (item.moneda === moneda ? (item.monto ?? 0) : 0), 0)
   }));
 }
 
-export function resumirAsistencias(
-  registros: readonly RegistroAsistenciaLiquidacion[]
-): ResumenAsistencia {
+export function resumirAsistencias(registros: readonly RegistroAsistenciaLiquidacion[]): ResumenAsistencia {
   return registros.reduce<ResumenAsistencia>(
     (resumen, registro) => ({
       reuniones: resumen.reuniones + 1,
-      minutosVirtuales:
-        resumen.minutosVirtuales + (registro.modalidad === "VIRTUAL" ? registro.minutos : 0),
-      minutosHibridos:
-        resumen.minutosHibridos + (registro.modalidad === "HIBRIDA" ? registro.minutos : 0),
-      montoVirtual:
-        resumen.montoVirtual + (registro.modalidad === "VIRTUAL" ? registro.monto ?? 0 : 0),
-      montoHibrido:
-        resumen.montoHibrido + (registro.modalidad === "HIBRIDA" ? registro.monto ?? 0 : 0),
+      minutosVirtuales: resumen.minutosVirtuales + (registro.modalidad === "VIRTUAL" ? registro.minutos : 0),
+      minutosHibridos: resumen.minutosHibridos + (registro.modalidad === "HIBRIDA" ? registro.minutos : 0),
+      montoVirtual: resumen.montoVirtual + (registro.modalidad === "VIRTUAL" ? (registro.monto ?? 0) : 0),
+      montoHibrido: resumen.montoHibrido + (registro.modalidad === "HIBRIDA" ? (registro.monto ?? 0) : 0),
       monto: resumen.monto + (registro.monto ?? 0)
     }),
     {

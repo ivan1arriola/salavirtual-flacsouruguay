@@ -45,11 +45,13 @@
 ### Task 1: Esquema y migración
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (`ConfiguracionZoom` ~línea 103, `CuentaProveedor` ~línea 239)
 - Create: `prisma/migrations/20261105120000_cuentas_zoom_por_grupo/migration.sql`
 - Test: `test/cuentas-zoom-grupo-schema.test.ts`
 
 **Interfaces:**
+
 - Produces: campos `ConfiguracionZoom.grupoId: string | null`, `grupoNombre: string | null`, `ultimaSincronizacionAt: Date | null`, `ultimaSincronizacionResultado: string | null`, `sincronizandoDesdeAt: Date | null` (candado); `CuentaProveedor.origenGrupoZoom: boolean`, `fueraDelGrupoAt: Date | null`.
 
 - [ ] **Step 1: Write the failing test** `test/cuentas-zoom-grupo-schema.test.ts` que lee `prisma/schema.prisma` y espera que el modelo `ConfiguracionZoom` contenga `grupoId`, `grupoNombre`, `ultimaSincronizacionAt`, `ultimaSincronizacionResultado`, `sincronizandoDesdeAt` y que `CuentaProveedor` contenga `origenGrupoZoom Boolean @default(false)` y `fueraDelGrupoAt DateTime?`.
@@ -61,18 +63,26 @@
 ### Task 2: Planificador puro de la sincronización
 
 **Files:**
+
 - Create: `src/modules/configuracion/zoom-grupo-sincronizacion.domain.ts`
 - Test: `test/zoom-grupo-sincronizacion-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   ```ts
   export type MiembroGrupoZoom = Readonly<{ id: string; email: string; nombre: string; licenciado: boolean }>;
-  export type CuentaZoomActual = Readonly<{ id: string; emailOrganizador: string | null; activa: boolean; fueraDelGrupoAt: Date | null; prioridad: number }>;
+  export type CuentaZoomActual = Readonly<{
+    id: string;
+    emailOrganizador: string | null;
+    activa: boolean;
+    fueraDelGrupoAt: Date | null;
+    prioridad: number;
+  }>;
   export type PlanSincronizacionZoom = Readonly<{
     crear: readonly Readonly<{ miembro: MiembroGrupoZoom; prioridad: number }>[];
     actualizar: readonly Readonly<{ cuentaId: string; miembro: MiembroGrupoZoom; reactivar: boolean }>[]; // incluye adopción
-    desactivar: readonly string[];        // salió, sin reuniones futuras
+    desactivar: readonly string[]; // salió, sin reuniones futuras
     marcarFuera: readonly Readonly<{ cuentaId: string; reunionesFuturas: number }>[]; // salió, con reuniones futuras
     resumen: string;
   }>;
@@ -94,17 +104,22 @@
 ### Task 3: Cliente de grupos de Zoom
 
 **Files:**
+
 - Create: `src/integrations/zoom/zoom-grupos-client.ts`
 - Test: `test/zoom-grupos-client.test.ts`
 
 **Interfaces:**
+
 - Consumes: `obtenerZoomAccessToken(creds: ZoomCredentials): Promise<string>` de `src/integrations/zoom/zoom-client.ts`.
 - Produces:
   ```ts
   export type GrupoZoom = Readonly<{ id: string; nombre: string; totalMiembros: number }>;
   export class ZoomPermisosError extends Error {}
-  export async function listarGruposZoomHttp(token: string): Promise<readonly GrupoZoom[]>;           // GET https://api.zoom.us/v2/groups
-  export async function listarMiembrosGrupoZoomHttp(token: string, grupoId: string): Promise<readonly MiembroGrupoZoom[]>; // GET /v2/groups/{id}/members?page_size=300, sigue next_page_token
+  export async function listarGruposZoomHttp(token: string): Promise<readonly GrupoZoom[]>; // GET https://api.zoom.us/v2/groups
+  export async function listarMiembrosGrupoZoomHttp(
+    token: string,
+    grupoId: string
+  ): Promise<readonly MiembroGrupoZoom[]>; // GET /v2/groups/{id}/members?page_size=300, sigue next_page_token
   ```
 - `MiembroGrupoZoom.licenciado = (type === 2)`; `nombre` = `first_name last_name` recortado o el correo. 401/403 → `ZoomPermisosError` con el mensaje «Falta permiso en la app de Zoom: group:read:list_groups:admin y group_member:read:list_members:admin.»; 404 → `Error("El grupo de Zoom ya no existe.")`.
 
@@ -117,17 +132,29 @@
 ### Task 4: Servicio de sincronización
 
 **Files:**
+
 - Create: `src/modules/configuracion/zoom-grupo-sincronizacion.service.ts`
 - Modify: `src/modules/configuracion/api.ts` (reexportar)
 - Test: `test/zoom-grupo-sincronizacion-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 (`planificarSincronizacionGrupoZoom`, `GrupoZoomVacioError`), Task 3 (`listarGruposZoomHttp`, `listarMiembrosGrupoZoomHttp`, `ZoomPermisosError`), `obtenerCredencialesZoom(db, descifrar)` de `zoom-config.service.ts`, `obtenerZoomAccessToken`.
 - Produces:
   ```ts
-  export async function listarGruposZoom(db: PrismaClient, descifrar: (c: string) => string): Promise<readonly GrupoZoom[]>;
-  export async function elegirGrupoZoom(db: PrismaClient, input: { grupoId: string; grupoNombre: string; actorId: string }): Promise<void>; // guarda en ConfiguracionZoom id "principal"
-  export async function sincronizarCuentasZoomConGrupo(db: PrismaClient, descifrar: (c: string) => string, ahora: Date): Promise<{ ok: boolean; resumen: string }>;
+  export async function listarGruposZoom(
+    db: PrismaClient,
+    descifrar: (c: string) => string
+  ): Promise<readonly GrupoZoom[]>;
+  export async function elegirGrupoZoom(
+    db: PrismaClient,
+    input: { grupoId: string; grupoNombre: string; actorId: string }
+  ): Promise<void>; // guarda en ConfiguracionZoom id "principal"
+  export async function sincronizarCuentasZoomConGrupo(
+    db: PrismaClient,
+    descifrar: (c: string) => string,
+    ahora: Date
+  ): Promise<{ ok: boolean; resumen: string }>;
   ```
 - Behavior: sin grupo elegido → `{ ok:false, resumen:"Elegí un grupo de Zoom para obtener las cuentas anfitrionas." }`; candado con `sincronizandoDesdeAt` (se toma con `updateMany` condicionado a `null` o más viejo que 10 minutos; si no se toma → `{ ok:false, resumen:"Ya hay una sincronización en curso." }`); «reuniones futuras» = `instanciaReunion` con `estado: "PROGRAMADA"`, `finProgramadoAt > ahora`, cuyo evento Zoom activo tiene esa `cuentaProveedorId`; aplica el plan en `db.$transaction` (solo cuentas del proveedor `ZOOM`; crea con `origenGrupoZoom: true`, `limiteConcurrente: 1`, `externalAccountId` = id de usuario de Zoom, `tieneLicencia` = `licenciado`; actualiza/adopta marcando `origenGrupoZoom: true`, `fueraDelGrupoAt: null`; desactiva con `activa:false, fueraDelGrupoAt: ahora`; marca fuera con `fueraDelGrupoAt: ahora`); en cualquier error guarda `ultimaSincronizacionResultado` con el mensaje, libera el candado y no cambia cuentas; escribe un registro en `auditoria` con acción `CUENTAS_ZOOM_SINCRONIZADAS`.
 
@@ -140,11 +167,13 @@
 ### Task 5: Las cuentas fuera del grupo no reciben reuniones nuevas
 
 **Files:**
+
 - Create: `src/modules/reuniones/cuenta-asignable.domain.ts` con `export const CUENTA_ZOOM_ASIGNABLE = { activa: true, tieneLicencia: true, fueraDelGrupoAt: null } as const;`
 - Modify (reemplazar `activa: true, tieneLicencia: true` por `...CUENTA_ZOOM_ASIGNABLE` en el `where` de `cuentaProveedor.findMany`): `src/modules/reuniones/crear-reuniones.service.ts:153`, `src/modules/reuniones/gestionar-encuentros.service.ts:98`, `src/modules/reuniones/corregir-serie-enlaces.service.ts:230`, `src/modules/reuniones/migracion-zoom-aplicar.service.ts:184`, `src/modules/reuniones/migracion-zoom-serie-aplicar.service.ts:156`, `src/modules/reuniones/migracion-zoom.service.ts:167`, `app/api/v1/reuniones/migracion-zoom/series-enlaces/route.ts:73`
 - Test: `test/cuenta-asignable-zoom.test.ts`
 
 **Interfaces:**
+
 - Produces: `CUENTA_ZOOM_ASIGNABLE`, usado por los siete sitios.
 
 - [ ] **Step 1: Write the failing test** que lee cada uno de los siete archivos y espera que contengan `CUENTA_ZOOM_ASIGNABLE` y que ninguno conserve el literal `activa: true, tieneLicencia: true` en una consulta de `cuentaProveedor`.
@@ -156,12 +185,14 @@
 ### Task 6: Rutas de grupo y sincronización
 
 **Files:**
+
 - Create: `app/api/v1/configuracion/zoom/grupo/route.ts` (GET lista grupos, PUT elige grupo con `{ grupoId, grupoNombre }`, POST sincroniza; los tres solo administración, mismo `requireAdmin` que `salas-meet/route.ts`)
 - Create: `app/api/v1/configuracion/zoom/grupo/sincronizar/route.ts` (GET con `Authorization: Bearer ${CRON_SECRET}`, responde 200 con `{ resumen }` o 502 si `ok:false`)
 - Modify: `app/api/v1/configuracion/salas-meet/route.ts` — en `POST` y `DELETE`, si el proveedor de la cuenta es Zoom responder 409 con «Las cuentas de Zoom vienen del grupo elegido en Configuración.»; `PUT` de una cuenta Zoom solo cambia `prioridad` y `activa`; `nombre`, `email` y `tieneLicencia` los fija la sincronización, y `limiteConcurrente` sigue en 1.
 - Test: `test/zoom-grupo-routes.test.ts`, ampliar `test/salas-meet-route.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 4 (`listarGruposZoom`, `elegirGrupoZoom`, `sincronizarCuentasZoomConGrupo`), `descifrarConfiguracion` de `@/src/lib/config/encryption`.
 
 - [ ] **Step 1: Write the failing tests** (mismo estilo de mocks que `test/salas-meet-route.test.ts`): `no administradores reciben 403`, `PUT guarda el grupo elegido`, `POST devuelve el resumen`, `el GET periódico sin secreto devuelve 401`, `el GET periódico con secreto sincroniza`, `crear una cuenta Zoom responde 409`, `borrar una cuenta Zoom responde 409`, `crear y borrar cuentas Meet sigue funcionando`.
@@ -173,11 +204,13 @@
 ### Task 7: Interfaz de Configuración › Salas
 
 **Files:**
+
 - Create: `src/components/zoom-grupo-config.tsx` (selector de grupo cargado desde `GET .../zoom/grupo`, botón «Sincronizar con el grupo», fecha y resultado de la última sincronización; aviso «Elegí un grupo de Zoom para obtener las cuentas anfitrionas» si no hay grupo)
 - Modify: `src/components/meet-hosts-config.tsx` (la plataforma del formulario «Agregar sala» ofrece solo Google Meet; las filas Zoom no muestran borrar y muestran «Fuera del grupo (N reuniones futuras)» cuando `fueraDelGrupoAt` no es nulo), `src/modules/configuracion/configuracion-page.service.ts:39` (seleccionar `fueraDelGrupoAt`, `origenGrupoZoom`, conteo de reuniones futuras por cuenta, y los campos de grupo de `ConfiguracionZoom`), `app/(gestion)/configuracion/page.tsx:208` (renderizar `ZoomGrupoConfig` en la sección `salas`), `src/components/zoom-config-form.tsx:231` (la ayuda de scopes lista los permisos granulares: meeting:write:meeting:admin, meeting:read:meeting:admin, meeting:update:meeting:admin, meeting:delete:meeting:admin, meeting:read:list_meetings:admin, group:read:list_groups:admin, group_member:read:list_members:admin)
 - Test: `test/meet-hosts-config-domain.test.ts` (ampliar), `test/zoom-grupo-config-ui.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 6 (rutas), Task 1 (campos). Produces: `MeetHostVisible` con `fueraDelGrupoAt?: string | null` y `reunionesFuturas?: number`.
 
 - [ ] **Step 1: Write the failing tests**: `el formulario Agregar sala solo ofrece Google Meet`, `una fila Zoom no ofrece borrar`, `una cuenta fuera del grupo muestra el aviso con la cantidad de reuniones futuras`, `sin grupo elegido se muestra el aviso para elegirlo` (renderizado a HTML estático, como `test/zoom-copy-id-button.test.ts`).
@@ -189,6 +222,7 @@
 ### Task 8: Puesta en producción
 
 **Files:**
+
 - Modify: `docs/configuracion-zoom.md` si existe (si no, crear `docs/configuracion-zoom-grupo.md`): permisos de la app de Zoom, URL del endpoint periódico y el secreto, y el paso de revisar el grupo antes de sincronizar.
 
 - [ ] **Step 1:** Abrir el PR desde la rama de trabajo; esperar CI en verde (`gh pr checks`).

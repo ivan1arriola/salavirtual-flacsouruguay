@@ -22,14 +22,18 @@ export async function procesarMantenimientoZoomUseCase(
 ): Promise<void> {
   while (!opciones.signal.aborted) {
     for (const tarea of deps.tareas) {
-      if (opciones.signal.aborted) return;
+      if (opciones.signal.aborted) {
+        return;
+      }
       try {
         await tarea.ejecutar(opciones.signal);
       } catch (error) {
         deps.alFallar?.(tarea.nombre, error);
       }
     }
-    if (opciones.signal.aborted) return;
+    if (opciones.signal.aborted) {
+      return;
+    }
     await deps.esperar(deps.intervaloMs, opciones.signal);
   }
 }

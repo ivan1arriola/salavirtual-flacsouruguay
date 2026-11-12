@@ -14,9 +14,13 @@ vi.mock("next/server", () => ({
 vi.mock("@/src/lib/auth/config", () => ({ authConfig: { secret: "s".repeat(32) } }));
 vi.mock("@/src/lib/auth/local-login.adapter", () => ({ dependenciasLoginLocal: {} }));
 vi.mock("@/src/lib/db", () => ({
-  db: { tokenVerificacion: { create: async ({ data }: { data: unknown }) => {
-    state.storedSessions.push(data);
-  } } }
+  db: {
+    tokenVerificacion: {
+      create: async ({ data }: { data: unknown }) => {
+        state.storedSessions.push(data);
+      }
+    }
+  }
 }));
 vi.mock("@/src/modules/usuarios/credentials.service", () => ({
   autenticarConCredenciales: async () => state.user
@@ -47,18 +51,21 @@ beforeEach(() => {
 
 describe("mobile login", () => {
   it("rechaza credenciales inválidas", async () => {
-    const response = await POST(request()) as any;
+    const response = (await POST(request())) as any;
 
     expect(response.status).toBe(401);
   });
 
   it("exige cambiar la contraseña antes de emitir un token", async () => {
     state.user = {
-      id: "assistant", rol: "ASISTENTE_TECNICO", nombre: "Asistente", email: "a@example.test",
+      id: "assistant",
+      rol: "ASISTENTE_TECNICO",
+      nombre: "Asistente",
+      email: "a@example.test",
       debeCambiarPassword: true
     };
 
-    const response = await POST(request()) as any;
+    const response = (await POST(request())) as any;
 
     expect(response.status).toBe(403);
     expect(response.body.code).toBe("PASSWORD_CHANGE_REQUIRED");
@@ -67,11 +74,14 @@ describe("mobile login", () => {
 
   it("rechaza docentes", async () => {
     state.user = {
-      id: "teacher", rol: "DOCENTE", nombre: "Docente", email: "d@example.test",
+      id: "teacher",
+      rol: "DOCENTE",
+      nombre: "Docente",
+      email: "d@example.test",
       debeCambiarPassword: false
     };
 
-    const response = await POST(request()) as any;
+    const response = (await POST(request())) as any;
 
     expect(response.status).toBe(403);
     expect(state.tokenRoles).toEqual([]);
@@ -79,17 +89,23 @@ describe("mobile login", () => {
 
   it("emite un token de administración con el rol en la respuesta", async () => {
     state.user = {
-      id: "admin", rol: "ADMINISTRACION", nombre: "Admin", email: "admin@example.test",
+      id: "admin",
+      rol: "ADMINISTRACION",
+      nombre: "Admin",
+      email: "admin@example.test",
       debeCambiarPassword: false
     };
 
-    const response = await POST(request()) as any;
+    const response = (await POST(request())) as any;
 
     expect(response.status).toBe(200);
     expect(response.body.user.role).toBe("ADMINISTRACION");
     expect(state.tokenRoles).toEqual(["ADMINISTRACION"]);
     expect(state.storedSessions).toHaveLength(1);
-    expect(state.storedSessions[0]).toMatchObject({ identifier: "mobile-session:admin", token: "hashed-session-random" });
+    expect(state.storedSessions[0]).toMatchObject({
+      identifier: "mobile-session:admin",
+      token: "hashed-session-random"
+    });
     expect(response.body).not.toHaveProperty("sessionId");
   });
 });

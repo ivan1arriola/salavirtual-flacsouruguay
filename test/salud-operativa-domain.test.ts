@@ -10,11 +10,15 @@ describe("alertas operativas", () => {
 
   it("marca retrasos y fallos de Google como degradación", () => {
     expect(evaluarSaludOperativa({ ...base, googleErrors: 1 }).status).toBe("degradado");
-    expect(evaluarSaludOperativa({ ...base, pendingGoogle: 1, oldestPendingMinutes: 31 }).status).toBe("degradado");
+    expect(evaluarSaludOperativa({ ...base, pendingGoogle: 1, oldestPendingMinutes: 31 }).status).toBe(
+      "degradado"
+    );
   });
 
   it("alerta ante claims huérfanos o más de dos horas de retraso", () => {
     expect(evaluarSaludOperativa({ ...base, staleClaims: 1 }).status).toBe("critico");
-    expect(evaluarSaludOperativa({ ...base, pendingGoogle: 1, oldestPendingMinutes: 121 }).status).toBe("critico");
+    expect(evaluarSaludOperativa({ ...base, pendingGoogle: 1, oldestPendingMinutes: 121 }).status).toBe(
+      "critico"
+    );
   });
 });

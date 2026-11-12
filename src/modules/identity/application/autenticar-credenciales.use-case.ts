@@ -1,8 +1,4 @@
-import {
-  credencialesLoginSchema,
-  evaluarAccesoLocal,
-  type UsuarioAutenticado
-} from "../domain";
+import { credencialesLoginSchema, evaluarAccesoLocal, type UsuarioAutenticado } from "../domain";
 import type { IdentityRepository } from "../ports";
 
 export type PasswordVerifier = (password: string, hash: string) => Promise<boolean>;
@@ -11,9 +7,7 @@ export function crearAutenticarCredencialesUseCase(
   repository: IdentityRepository,
   verificarPassword: PasswordVerifier
 ) {
-  return async function autenticarCredenciales(
-    input: unknown
-  ): Promise<UsuarioAutenticado | null> {
+  return async function autenticarCredenciales(input: unknown): Promise<UsuarioAutenticado | null> {
     const parsed = credencialesLoginSchema.safeParse(input);
     if (!parsed.success) {
       return null;
@@ -37,4 +31,3 @@ export function crearAutenticarCredencialesUseCase(
     return autenticado;
   };
 }
-

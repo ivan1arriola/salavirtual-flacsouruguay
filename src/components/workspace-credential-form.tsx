@@ -13,17 +13,14 @@ import {
   ShieldCheck,
   TestTube2,
   UploadCloud,
-  X,
+  X
 } from "lucide-react";
 import { useRef, useState } from "react";
 import {
   GoogleServiceAccountKey,
-  parseServiceAccountKeyJson,
+  parseServiceAccountKeyJson
 } from "@/src/modules/configuracion/google-workspace.domain";
-import {
-  saveWorkspaceSection,
-  testWorkspaceCredential,
-} from "./workspace-config.client";
+import { saveWorkspaceSection, testWorkspaceCredential } from "./workspace-config.client";
 import styles from "./workspace-credential-form.module.css";
 
 type BusyAction = "save" | "test" | null;
@@ -34,7 +31,7 @@ export function WorkspaceCredentialForm({
   credentialId = "principal",
   title = "Cuenta de servicio principal",
   description = "Credencial usada para crear reuniones nuevas.",
-  onSaved,
+  onSaved
 }: Readonly<{
   email: string;
   privateKeyConfigured: boolean;
@@ -69,7 +66,9 @@ export function WorkspaceCredentialForm({
       const parsed = parseServiceAccountKeyJson(content);
       setParsedKey(parsed);
       setParseError(null);
-      if (sourceName) setFileName(sourceName);
+      if (sourceName) {
+        setFileName(sourceName);
+      }
     } catch (error) {
       setParsedKey(null);
       setParseError(
@@ -82,7 +81,9 @@ export function WorkspaceCredentialForm({
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     readFile(file);
     // Reset file input value so re-selecting same file triggers onChange
     event.target.value = "";
@@ -151,7 +152,9 @@ export function WorkspaceCredentialForm({
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!parsedKey) return;
+    if (!parsedKey) {
+      return;
+    }
 
     setBusy("save");
     setSuccess(false);
@@ -160,14 +163,16 @@ export function WorkspaceCredentialForm({
     const result = await saveWorkspaceSection({
       seccion: "CREDENCIAL",
       credentialId,
-      serviceAccountJson: parsedKey,
+      serviceAccountJson: parsedKey
     });
 
     setSuccess(result.ok);
     setMessage(result.message);
     setBusy(null);
 
-    if (!result.ok) return;
+    if (!result.ok) {
+      return;
+    }
 
     setCurrentEmail(parsedKey.client_email);
     setKeyConfigured(true);
@@ -223,7 +228,11 @@ export function WorkspaceCredentialForm({
           }`}
         >
           {keyConfigured && !editing ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
-          {keyConfigured && !editing ? "Configurada" : editing && keyConfigured ? "Reemplazando" : "Incompleta"}
+          {keyConfigured && !editing
+            ? "Configurada"
+            : editing && keyConfigured
+              ? "Reemplazando"
+              : "Incompleta"}
         </span>
       </header>
 
@@ -275,7 +284,12 @@ export function WorkspaceCredentialForm({
               <p>
                 <strong>Solo se aceptan archivos JSON oficiales de Google Cloud.</strong>
                 <br />
-                En Google Cloud Console andá a <em>IAM y administración → Cuentas de servicio → Claves → Agregar clave → Crear clave nueva → Tipo JSON</em>.
+                En Google Cloud Console andá a{" "}
+                <em>
+                  IAM y administración → Cuentas de servicio → Claves → Agregar clave → Crear clave nueva →
+                  Tipo JSON
+                </em>
+                .
               </p>
             </div>
 
@@ -329,7 +343,9 @@ export function WorkspaceCredentialForm({
                 onClick={() => setShowPasteArea(!showPasteArea)}
               >
                 <FileCode size={14} />
-                {showPasteArea ? "Ocultar editor de texto JSON" : "O pegar contenido JSON directamente como texto"}
+                {showPasteArea
+                  ? "Ocultar editor de texto JSON"
+                  : "O pegar contenido JSON directamente como texto"}
               </button>
             </div>
 
@@ -384,7 +400,11 @@ export function WorkspaceCredentialForm({
                           onClick={() => copyToClipboard(parsedKey.client_id!, "clientId")}
                           title="Copiar ID numérico para Google Admin"
                         >
-                          {copiedField === "clientId" ? <Check size={12} color="var(--brand)" /> : <Copy size={12} />}
+                          {copiedField === "clientId" ? (
+                            <Check size={12} color="var(--brand)" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
                         </button>
                       </div>
                       <code className={styles.previewValue}>{parsedKey.client_id}</code>
@@ -424,7 +444,9 @@ export function WorkspaceCredentialForm({
           {message ? (
             <span className={success ? styles.feedbackSuccess : styles.feedbackError}>{message}</span>
           ) : editing ? (
-            <span>{parsedKey ? "JSON listo para guardar." : "Esperando archivo JSON de cuenta de servicio."}</span>
+            <span>
+              {parsedKey ? "JSON listo para guardar." : "Esperando archivo JSON de cuenta de servicio."}
+            </span>
           ) : (
             <span>Credencial guardada y activa.</span>
           )}
@@ -443,11 +465,7 @@ export function WorkspaceCredentialForm({
           ) : null}
 
           {editing ? (
-            <button
-              className="primary-action"
-              type="submit"
-              disabled={busy !== null || !parsedKey}
-            >
+            <button className="primary-action" type="submit" disabled={busy !== null || !parsedKey}>
               <Save size={17} />
               {busy === "save" ? "Guardando…" : "Guardar credencial JSON"}
             </button>

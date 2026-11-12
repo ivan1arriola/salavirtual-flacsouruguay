@@ -1,6 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import { ConflictApiError } from "@/src/lib/http/api-error";
-import { cumpleSeparacionMinimaAsistencias, SEPARACION_MINIMA_ASISTENCIAS_MINUTOS } from "./asistencia.domain";
+import {
+  cumpleSeparacionMinimaAsistencias,
+  SEPARACION_MINIMA_ASISTENCIAS_MINUTOS
+} from "./asistencia.domain";
 import { bloquearAgendaAsistente } from "./reserva-asistentes.adapter";
 import { obtenerTarifaVigente } from "./tarifas.adapter";
 
@@ -25,7 +28,11 @@ export async function reservarAsistenteDisponible(
       usuario: { select: { activo: true, rol: true, emailPrincipal: true } }
     }
   });
-  if (!assistant?.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO" || assistant.cesadoHastaProximoInicioSesion) {
+  if (
+    !assistant?.usuario.activo ||
+    assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
+    assistant.cesadoHastaProximoInicioSesion
+  ) {
     throw new ConflictApiError("El asistente de monitoreo seleccionado no está disponible.");
   }
   const existing = await tx.asignacionAsistenciaTecnica.findMany({

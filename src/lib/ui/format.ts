@@ -58,11 +58,16 @@ export function formatTime(date: Date): string {
 
 export function formatDuration(start: Date, end: Date): string {
   const diffMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
-  if (diffMinutes <= 0) return "0 min";
+  if (diffMinutes <= 0) {
+    return "0 min";
+  }
   const hours = Math.floor(diffMinutes / 60);
   const minutes = diffMinutes % 60;
-  if (hours === 0) return `${minutes} min`;
-  if (minutes === 0) return `${hours} h`;
+  if (hours === 0) {
+    return `${minutes} min`;
+  }
+  if (minutes === 0) {
+    return `${hours} h`;
+  }
   return `${hours} h ${minutes} min`;
 }
-

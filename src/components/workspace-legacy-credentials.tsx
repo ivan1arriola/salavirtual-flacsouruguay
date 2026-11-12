@@ -23,7 +23,9 @@ export function WorkspaceLegacyCredentials() {
     try {
       const response = await fetch("/api/v1/configuracion/google-workspace", { cache: "no-store" });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "No se pudieron cargar las credenciales Legacy.");
+      if (!response.ok) {
+        throw new Error(body.error ?? "No se pudieron cargar las credenciales Legacy.");
+      }
       setCredentials(Array.isArray(body.legacyCredentials) ? body.legacyCredentials : []);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron cargar las credenciales Legacy.");
@@ -32,7 +34,9 @@ export function WorkspaceLegacyCredentials() {
     }
   }
 
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => {
+    void reload();
+  }, []);
 
   async function deactivate(id: string) {
     setMessage("Desactivando credencial…");
@@ -40,8 +44,12 @@ export function WorkspaceLegacyCredentials() {
       method: "DELETE"
     });
     const body = await response.json().catch(() => ({}));
-    setMessage(response.ok ? body.message ?? "Credencial desactivada." : body.error ?? "No se pudo desactivar.");
-    if (response.ok) await reload();
+    setMessage(
+      response.ok ? (body.message ?? "Credencial desactivada.") : (body.error ?? "No se pudo desactivar.")
+    );
+    if (response.ok) {
+      await reload();
+    }
   }
 
   function addCredential() {
@@ -53,7 +61,10 @@ export function WorkspaceLegacyCredentials() {
       <div className="section-heading">
         <div>
           <h2>Compatibilidad histórica</h2>
-          <p>Estas cuentas nunca crean reuniones nuevas. Solo se prueban cuando la Principal no puede administrar un Meet existente.</p>
+          <p>
+            Estas cuentas nunca crean reuniones nuevas. Solo se prueban cuando la Principal no puede
+            administrar un Meet existente.
+          </p>
         </div>
         <Archive size={20} aria-hidden="true" />
       </div>
@@ -72,8 +83,13 @@ export function WorkspaceLegacyCredentials() {
               onSaved={reload}
             />
             {credential.activa ? (
-              <button className="secondary-action" type="button" onClick={() => void deactivate(credential.id)}>
-                <Archive size={16} />Desactivar
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={() => void deactivate(credential.id)}
+              >
+                <Archive size={16} />
+                Desactivar
               </button>
             ) : null}
           </div>
@@ -94,16 +110,20 @@ export function WorkspaceLegacyCredentials() {
             }}
           />
           <button className="secondary-action" type="button" onClick={() => setNewId(null)}>
-            <RotateCcw size={16} />Cancelar
+            <RotateCcw size={16} />
+            Cancelar
           </button>
         </div>
       ) : (
         <button className="secondary-action" type="button" onClick={addCredential}>
-          <Plus size={16} />Agregar credencial histórica
+          <Plus size={16} />
+          Agregar credencial histórica
         </button>
       )}
 
-      <p className="form-message" role="status">{message}</p>
+      <p className="form-message" role="status">
+        {message}
+      </p>
     </section>
   );
 }

@@ -20,7 +20,6 @@ import type {
   ResultadoSincronizacionCalendarioAsistente
 } from "./domain";
 import { crearGoogleAssistantCalendarProvider } from "./infrastructure/google/google-assistant-calendar-provider.adapter";
-import { crearPrismaAsistenciaRepositoryAdapter } from "./infrastructure/prisma/prisma-asistencia-repository.adapter";
 import type {
   AsistenciaRepositoryPort,
   AssistantCalendarProvider,
@@ -57,9 +56,7 @@ export type ServicioCalendarioAsistente = Readonly<{
     now?: Date
   ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
-  reconciliarFuturas: (
-    now?: Date
-  ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
+  reconciliarFuturas: (now?: Date) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
   intentarSincronizacion: (
     operation: () => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>
@@ -72,30 +69,15 @@ export function crearServicioCalendarioAsistente(
 ): ServicioCalendarioAsistente {
   return {
     sincronizarInstancia(instanciaSalaId, now) {
-      return sincronizarCalendarioAsistenteInstanciaUseCase(
-        repository,
-        provider,
-        instanciaSalaId,
-        now
-      );
+      return sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, instanciaSalaId, now);
     },
 
     sincronizarSolicitud(solicitudSalaId, now) {
-      return sincronizarCalendariosAsistenteSolicitudUseCase(
-        repository,
-        provider,
-        solicitudSalaId,
-        now
-      );
+      return sincronizarCalendariosAsistenteSolicitudUseCase(repository, provider, solicitudSalaId, now);
     },
 
     sincronizarUsuario(usuarioId, now) {
-      return sincronizarCalendariosAsistenteUsuarioUseCase(
-        repository,
-        provider,
-        usuarioId,
-        now
-      );
+      return sincronizarCalendariosAsistenteUsuarioUseCase(repository, provider, usuarioId, now);
     },
 
     reconciliarFuturas(now) {
@@ -110,11 +92,13 @@ export function crearServicioCalendarioAsistente(
 
 export type ServicioAsistenciaDeps = Readonly<{
   repo: AsistenciaRepositoryPort;
-  notificarUsuarios?: (input: Readonly<{
-    usuarioIds: readonly string[];
-    asunto: string;
-    mensaje: string;
-  }>) => Promise<unknown>;
+  notificarUsuarios?: (
+    input: Readonly<{
+      usuarioIds: readonly string[];
+      asunto: string;
+      mensaje: string;
+    }>
+  ) => Promise<unknown>;
 }>;
 
 export function crearServicioAsistencia(deps: ServicioAsistenciaDeps) {
@@ -144,11 +128,7 @@ export function crearServicioAsistencia(deps: ServicioAsistenciaDeps) {
         rawInput
       );
     },
-    consultarAsistenciasPersonales(
-      usuarioId: string,
-      periodo: "MES_ACTUAL" | "HISTORICO",
-      ahora?: Date
-    ) {
+    consultarAsistenciasPersonales(usuarioId: string, periodo: "MES_ACTUAL" | "HISTORICO", ahora?: Date) {
       return consultarAsistenciasPersonalesUseCase({ repo: deps.repo }, usuarioId, periodo, ahora);
     },
     consultarHistorialAsistente(usuarioId: string, desde: Date, hasta: Date, limite?: number) {

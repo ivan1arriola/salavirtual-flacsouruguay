@@ -31,6 +31,7 @@
 ### Task 1: Structure the meeting detail work sections
 
 **Files:**
+
 - Modify: `src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx`
 - Modify: `src/modules/reuniones/presentation/components/meeting-detail-manager.tsx`
 - Modify: `app/(gestion)/meeting-detail-v2.css`
@@ -38,6 +39,7 @@
 - Document: `docs/ui/reuniones.md`
 
 **Interfaces:**
+
 - Consumes: existing `meetingViews`, `SeriesManagement`, `MeetingIntegrationProblems`, and `MeetAttendanceEmails` props.
 - Produces: unique section landmarks `general`, `encuentros`, `personas`, `archivos`, and `actividad`; no new API or data interfaces.
 

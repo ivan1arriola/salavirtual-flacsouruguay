@@ -14,18 +14,22 @@ export async function GET(request: Request) {
     where: {
       operacionPendiente: { not: null },
       AND: [
-        { OR: [
-          { proveedor: { tipo: "ZOOM" } },
-          {
-            proveedor: { tipo: "GOOGLE_MEET" },
-            externalEventId: { not: null },
-            instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
-          },
-        ] },
-        { OR: [
-          { reclamoIntegracionAt: null },
-          { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } },
-        ] },
+        {
+          OR: [
+            { proveedor: { tipo: "ZOOM" } },
+            {
+              proveedor: { tipo: "GOOGLE_MEET" },
+              externalEventId: { not: null },
+              instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true }
+            }
+          ]
+        },
+        {
+          OR: [
+            { reclamoIntegracionAt: null },
+            { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } }
+          ]
+        }
       ]
     },
     orderBy: { updatedAt: "asc" },
@@ -36,10 +40,13 @@ export async function GET(request: Request) {
     pendientes.map(({ id }) => id)
   );
   const errores = resultados.filter((result) => result.estado === "ERROR");
-  return NextResponse.json({
-    procesados: resultados.length,
-    sincronizados: resultados.filter((result) => result.estado === "SINCRONIZADA").length,
-    pendientes: resultados.filter((result) => result.estado !== "SINCRONIZADA").length,
-    errores: errores.length
-  }, { status: errores.length ? 502 : 200 });
+  return NextResponse.json(
+    {
+      procesados: resultados.length,
+      sincronizados: resultados.filter((result) => result.estado === "SINCRONIZADA").length,
+      pendientes: resultados.filter((result) => result.estado !== "SINCRONIZADA").length,
+      errores: errores.length
+    },
+    { status: errores.length ? 502 : 200 }
+  );
 }

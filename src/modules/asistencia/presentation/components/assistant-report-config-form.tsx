@@ -14,7 +14,9 @@ export function AssistantReportConfigForm({
       <div className="section-heading">
         <div>
           <h2>Destinatarios adicionales</h2>
-          <p>El sistema envía el reporte el 1.º de cada mes con las horas registradas durante el mes anterior.</p>
+          <p>
+            El sistema envía el reporte el 1.º de cada mes con las horas registradas durante el mes anterior.
+          </p>
         </div>
         <Clock3 size={22} color="var(--brand)" aria-hidden="true" />
       </div>
@@ -28,9 +30,14 @@ export function AssistantReportConfigForm({
             placeholder="administracion@flacso.edu.uy"
             rows={5}
           />
-          <small>Ingresá un correo por línea o separalos con comas. Los administradores aparecen debajo y no hace falta repetirlos.</small>
+          <small>
+            Ingresá un correo por línea o separalos con comas. Los administradores aparecen debajo y no hace
+            falta repetirlos.
+          </small>
         </label>
-        <button className="primary-action" type="submit">Guardar destinatarios</button>
+        <button className="primary-action" type="submit">
+          Guardar destinatarios
+        </button>
       </form>
 
       <div className="assistant-report-admins">
@@ -43,7 +50,9 @@ export function AssistantReportConfigForm({
         </div>
         {adminEmails.length > 0 ? (
           <ul>
-            {adminEmails.map((email) => <li key={email}>{email}</li>)}
+            {adminEmails.map((email) => (
+              <li key={email}>{email}</li>
+            ))}
           </ul>
         ) : (
           <p>No hay administradores activos con correo electrónico.</p>

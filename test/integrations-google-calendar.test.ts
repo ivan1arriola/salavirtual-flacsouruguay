@@ -10,7 +10,7 @@ import {
   isCalendarNotFoundError,
   obtenerEventoCalendar,
   obtenerEventoCalendarSiExiste,
-  type GoogleCalendarEvent,
+  type GoogleCalendarEvent
 } from "../src/integrations/google/calendar";
 
 describe("integrations/google/calendar", () => {
@@ -29,7 +29,7 @@ describe("integrations/google/calendar", () => {
   it("obtenerEventoCalendar realiza GET con conferenceDataVersion cuando se especifica", async () => {
     const mockData: GoogleCalendarEvent = { id: eventId, summary: "Clase Magistral" };
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: mockData }),
+      request: vi.fn().mockResolvedValue({ data: mockData })
     } as unknown as JWT;
 
     const result = await obtenerEventoCalendar(auth, calendarId, eventId, { conferenceDataVersion: 1 });
@@ -37,7 +37,7 @@ describe("integrations/google/calendar", () => {
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: expect.stringContaining("conferenceDataVersion=1"),
-        method: "GET",
+        method: "GET"
       })
     );
   });
@@ -47,7 +47,7 @@ describe("integrations/google/calendar", () => {
     (notFoundError as { code?: number }).code = 404;
 
     const auth = {
-      request: vi.fn().mockRejectedValue(notFoundError),
+      request: vi.fn().mockRejectedValue(notFoundError)
     } as unknown as JWT;
 
     const result = await obtenerEventoCalendarSiExiste(auth, calendarId, eventId);
@@ -59,21 +59,23 @@ describe("integrations/google/calendar", () => {
     (serverError as { code?: number }).code = 500;
 
     const auth = {
-      request: vi.fn().mockRejectedValue(serverError),
+      request: vi.fn().mockRejectedValue(serverError)
     } as unknown as JWT;
 
-    await expect(obtenerEventoCalendarSiExiste(auth, calendarId, eventId)).rejects.toThrow("Internal Server Error");
+    await expect(obtenerEventoCalendarSiExiste(auth, calendarId, eventId)).rejects.toThrow(
+      "Internal Server Error"
+    );
   });
 
   it("crearEventoCalendarHttp realiza POST con sendUpdates y datos del evento", async () => {
     const newEvent: GoogleCalendarEvent = { id: eventId, summary: "Nueva Reunión" };
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: newEvent }),
+      request: vi.fn().mockResolvedValue({ data: newEvent })
     } as unknown as JWT;
 
     const result = await crearEventoCalendarHttp(auth, calendarId, newEvent, {
       conferenceDataVersion: 1,
-      sendUpdates: "all",
+      sendUpdates: "all"
     });
 
     expect(result).toEqual(newEvent);
@@ -81,7 +83,7 @@ describe("integrations/google/calendar", () => {
       expect.objectContaining({
         method: "POST",
         url: expect.stringContaining("sendUpdates=all"),
-        data: newEvent,
+        data: newEvent
       })
     );
   });
@@ -89,7 +91,7 @@ describe("integrations/google/calendar", () => {
   it("actualizarEventoCalendarHttp realiza PATCH con patchData", async () => {
     const patched: GoogleCalendarEvent = { id: eventId, summary: "Reunión Actualizada" };
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: patched }),
+      request: vi.fn().mockResolvedValue({ data: patched })
     } as unknown as JWT;
 
     const result = await actualizarEventoCalendarHttp(
@@ -105,14 +107,14 @@ describe("integrations/google/calendar", () => {
       expect.objectContaining({
         method: "PATCH",
         url: expect.stringContaining("sendUpdates=none"),
-        data: { summary: "Reunión Actualizada" },
+        data: { summary: "Reunión Actualizada" }
       })
     );
   });
 
   it("eliminarEventoCalendarHttp realiza DELETE con sendUpdates", async () => {
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: {} }),
+      request: vi.fn().mockResolvedValue({ data: {} })
     } as unknown as JWT;
 
     await eliminarEventoCalendarHttp(auth, calendarId, eventId, { sendUpdates: "none" });
@@ -120,7 +122,7 @@ describe("integrations/google/calendar", () => {
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "DELETE",
-        url: expect.stringContaining("sendUpdates=none"),
+        url: expect.stringContaining("sendUpdates=none")
       })
     );
   });
@@ -142,4 +144,3 @@ describe("integrations/google/calendar", () => {
     });
   });
 });
-

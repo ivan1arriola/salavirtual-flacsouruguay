@@ -38,11 +38,13 @@
 ### Task 1: Cliente Zoom para reuniones recurrentes con horario fijo (`type: 8`) y gestión de ocurrencias
 
 **Files:**
+
 - Modify: `src/integrations/zoom/zoom-client.ts`
 - Test: `test/integrations-zoom-recurrente.test.ts`
 - Test: `test/integrations-zoom-client.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type ZoomOccurrenceResult = Readonly<{ occurrenceId: string; startTime: string; duration: number; status?: string }>`
   - `type ZoomMeetingWithOccurrencesResult = ZoomMeetingResult & Readonly<{ occurrences?: readonly ZoomOccurrenceResult[] }>`
@@ -79,10 +81,12 @@
 ### Task 2: Dominio puro de cálculo de recurrencia Zoom y reconciliación de ocurrencias
 
 **Files:**
+
 - Create: `src/modules/conferencias/domain/zoom-recurrence.domain.ts`
 - Test: `test/zoom-recurrence-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `MAX_ZOOM_OCCURRENCES = 50`
   - `calcularRecurrenciaZoom(instancias: readonly Readonly<{ inicio: Date; fin: Date }>[], timezone: string): Readonly<{ startTime: Date; durationMinutes: number; recurrence: ZoomRecurrenceInput }>`
@@ -113,11 +117,13 @@
 ### Task 3: Soporte de horarios de serie y ocurrencias en el repositorio de conferencias
 
 **Files:**
+
 - Modify: `src/modules/conferencias/ports/conferencias-repository.port.ts`
 - Modify: `src/modules/conferencias/infrastructure/prisma/prisma-conferencias-repository.adapter.ts`
 - Test: `test/conferencias-reunion-compartida-adapter.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `ReclamoReunionCompartida` incluye `instanciasHorarios: readonly Readonly<{ id: string; inicio: Date; fin: Date }>[];`
   - Método `guardarOcurrenciaZoomEvento(eventoId: string, occurrenceId: string): Promise<void>` (guarda en `payloadUltimo.zoom.occurrenceId` de `EventoProveedor`).
@@ -145,12 +151,14 @@
 ### Task 4: Creación condicional en servicio y aprovisionamiento con `type: 8` y `type: 2`
 
 **Files:**
+
 - Modify: `src/modules/reuniones/crear-reuniones.service.ts`
 - Modify: `src/modules/conferencias/application/provisionar-conferencias.use-case.ts`
 - Test: `test/crear-reuniones-service.test.ts`
 - Test: `test/conferencias-reunion-compartida.test.ts`
 
 **Interfaces:**
+
 - Comportamiento:
   1. Si `input.instancias.length === 1`: no se crea `ReunionProveedor`. El evento nace con `reunionProveedorId: null` y se aprovisiona como `type: 2` (reunión puntual con fecha y duración).
   2. Si `input.instancias.length > 1`: se crea `ReunionProveedor`. Se aprovisiona con `type: 8` pasando `recurrence`.
@@ -183,12 +191,14 @@
 ### Task 5: Soporte de reprogramación y cancelación de ocurrencias en gestión de encuentros
 
 **Files:**
+
 - Modify: `src/modules/conferencias/application/provisionar-conferencias.use-case.ts`
 - Modify: `src/modules/reuniones/gestionar-encuentros.service.ts`
 - Test: `test/gestionar-encuentros-reunion-compartida.test.ts`
 - Test: `test/cancelar-solicitudes-zoom.test.ts`
 
 **Interfaces:**
+
 - Comportamiento:
   - Al reprogramar la fecha/hora de un encuentro de una serie Zoom (`EDITAR_FECHA`), si el evento tiene reunión compartida, se marca operación pendiente `REPROGRAMAR` para actualizar la ocurrencia en Zoom con `actualizarOcurrenciaZoomHttp`.
   - Al cancelar un encuentro puntual de la serie, se elimina su ocurrencia en Zoom con `eliminarOcurrenciaZoomHttp` (siempre que queden otros encuentros activos en la serie; si es el último activo, se elimina la reunión completa).
@@ -217,6 +227,7 @@
 ### Task 6: Verificación de unificación de series y suite completa
 
 **Files:**
+
 - Modify: `src/modules/reuniones/corregir-serie-enlaces.service.ts`
 - Test: `test/corregir-serie-enlaces.test.ts`
 - Test: toda la suite (`npm test`, `npm run check`)

@@ -1,7 +1,4 @@
-import {
-  TIPOS_NOTIFICACION,
-  type TipoNotificacion,
-} from "./notificaciones.types";
+import { TIPOS_NOTIFICACION, type TipoNotificacion } from "./notificaciones.types";
 
 export function esTipoNotificacion(value: string): value is TipoNotificacion {
   return TIPOS_NOTIFICACION.includes(value as TipoNotificacion);
@@ -27,4 +24,3 @@ export function etiquetaTipoNotificacion(tipo: TipoNotificacion): string {
       return "Host no conectado a reunión próxima";
   }
 }
-

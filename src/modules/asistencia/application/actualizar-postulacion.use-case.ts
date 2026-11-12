@@ -1,9 +1,5 @@
 import { ForbiddenApiError } from "@/src/lib/http/api-error";
-import {
-  estadoInteresParaAccion,
-  postulacionAsistenciaSchema,
-  puedeGestionarPostulacion
-} from "../domain";
+import { estadoInteresParaAccion, postulacionAsistenciaSchema, puedeGestionarPostulacion } from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 
 export type SessionActor = Readonly<{
@@ -28,10 +24,7 @@ export async function actualizarPostulacionUseCase(
   const input = postulacionAsistenciaSchema.parse(rawInput);
 
   const assistant = await deps.repo.obtenerPerfilAsistentePorUsuarioId(actor.id);
-  if (
-    !assistant?.activo ||
-    assistant.cesadoHastaProximoInicioSesion
-  ) {
+  if (!assistant?.activo || assistant.cesadoHastaProximoInicioSesion) {
     throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo activo para esta sesión.");
   }
 

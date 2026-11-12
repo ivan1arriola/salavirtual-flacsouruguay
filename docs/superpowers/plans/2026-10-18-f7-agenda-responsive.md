@@ -28,11 +28,13 @@
 ### Task 1: Stack the agenda toolbar at the shell-aware breakpoint
 
 **Files:**
+
 - Modify: `app/(gestion)/agenda-v2.css`
 - Test: `test/agenda-responsive-layout.test.ts`
 - Document: `docs/ui/validacion-responsive.md`
 
 **Interfaces:**
+
 - Consumes and produces: existing `.agenda-toolbar` and `.agenda-filter-panel` CSS; no runtime or API interfaces.
 
 - [x] Write a failing stylesheet contract test for a 1400px toolbar stacking breakpoint.

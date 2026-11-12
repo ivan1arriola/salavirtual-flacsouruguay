@@ -21,9 +21,7 @@ export function buildRawGmailMessage(input: GoogleMailInput, from: string): stri
     ...(input.cc?.length ? [`Cc: ${input.cc.join(", ")}`] : []),
     `Subject: ${encodeMimeHeader(input.subject)}`,
     "MIME-Version: 1.0",
-    input.html
-      ? 'Content-Type: text/html; charset="UTF-8"'
-      : 'Content-Type: text/plain; charset="UTF-8"',
+    input.html ? 'Content-Type: text/html; charset="UTF-8"' : 'Content-Type: text/plain; charset="UTF-8"'
   ];
   const body = input.html ?? input.text;
   return Buffer.from(`${headers.join("\r\n")}\r\n\r\n${body}`, "utf8")
@@ -33,19 +31,16 @@ export function buildRawGmailMessage(input: GoogleMailInput, from: string): stri
     .replace(/=+$/g, "");
 }
 
-export async function enviarMensajeGmailHttp(
-  auth: JWT,
-  rawBase64Message: string
-): Promise<void> {
+export async function enviarMensajeGmailHttp(auth: JWT, rawBase64Message: string): Promise<void> {
   const client = await auth.getRequestHeaders();
   const response = await fetch(GMAIL_API_BASE_URL, {
     method: "POST",
     headers: {
       ...Object.fromEntries(client.entries()),
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({ raw: rawBase64Message }),
-    signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS),
+    signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS)
   });
 
   if (!response.ok) {
@@ -63,4 +58,3 @@ function fromHeader(address?: string): string {
   const from = address?.trim() || "noreply@flacso.edu.uy";
   return `"Sala Virtual FLACSO" <${from}>`;
 }
-

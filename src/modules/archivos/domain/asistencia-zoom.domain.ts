@@ -49,7 +49,9 @@ function esFecha(valor: Date): boolean {
 
 function validarVentana(v: VentanaAsistenciaZoom): void {
   if (!esFecha(v.inicioAt) || !esFecha(v.finAt) || v.finAt.getTime() <= v.inicioAt.getTime()) {
-    throw new RangeError("La ventana de asistencia debe tener inicio y fin válidos, con fin posterior al inicio.");
+    throw new RangeError(
+      "La ventana de asistencia debe tener inicio y fin válidos, con fin posterior al inicio."
+    );
   }
 }
 
@@ -68,13 +70,15 @@ function ordenar<T>(items: readonly T[], comparar: (a: T, b: T) => number): read
 }
 
 function unirIntervalos(intervalos: readonly Intervalo[]): readonly Intervalo[] {
-  return ordenar(intervalos, (a, b) => a[0] - b[0] || a[1] - b[1])
-    .reduce<readonly Intervalo[]>((acc, [ini, fin]) => {
+  return ordenar(intervalos, (a, b) => a[0] - b[0] || a[1] - b[1]).reduce<readonly Intervalo[]>(
+    (acc, [ini, fin]) => {
       const ultimo = acc[acc.length - 1];
       return ultimo && ini <= ultimo[1]
         ? [...acc.slice(0, -1), [ultimo[0], Math.max(ultimo[1], fin)] as Intervalo]
         : [...acc, [ini, fin] as Intervalo];
-    }, []);
+    },
+    []
+  );
 }
 
 const duracion = (intervalos: readonly Intervalo[]) => intervalos.reduce((suma, [a, b]) => suma + (b - a), 0);
@@ -87,7 +91,9 @@ function clavePersona(s: SesionObservadaZoom): string {
 }
 
 function consolidar(
-  grupos: ReadonlyArray<Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>>
+  grupos: ReadonlyArray<
+    Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>
+  >
 ): readonly AsistenciaZoomConsolidada[] {
   const ventanas = grupos.map((g): Intervalo => {
     validarVentana(g.ventana);
@@ -99,16 +105,13 @@ function consolidar(
     sesiones.filter(sesionValida).map((sesion): Observacion => ({ sesion, ventana }))
   );
   // Agrupa conservando el orden de aparición: Object conserva el orden de inserción de claves de texto.
-  const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>(
-    (acc, o) => {
-      const clave = clavePersona(o.sesion);
-      return { ...acc, [clave]: [...(acc[clave] ?? []), o] };
-    },
-    {}
-  );
+  const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>((acc, o) => {
+    const clave = clavePersona(o.sesion);
+    return { ...acc, [clave]: [...(acc[clave] ?? []), o] };
+  }, {});
 
-  const consolidadas = Object.entries(porPersona)
-    .map(([claveParticipante, items]): AsistenciaZoomConsolidada => {
+  const consolidadas = Object.entries(porPersona).map(
+    ([claveParticipante, items]): AsistenciaZoomConsolidada => {
       // Sala de espera: solo traza. No cuenta minutos ni la primera entrada.
       const enReunion = items.filter(({ sesion }) => sesion.status !== "in_waiting_room");
       const intervalos = enReunion.flatMap(({ sesion, ventana }): readonly Intervalo[] => {
@@ -132,7 +135,8 @@ function consolidar(
         claveSesiones: items.map(({ sesion }) => sesion.claveSesion),
         estadoConciliacion: "SIN_CONCILIAR"
       };
-    });
+    }
+  );
   return ordenar(
     consolidadas,
     (a, b) =>
@@ -152,15 +156,23 @@ export function consolidarAsistenciaZoom(
 
 /** Une las ocurrencias vinculadas a un encuentro, cada una recortada a su propio horario programado. */
 export function consolidarAsistenciaOcurrenciasZoom(
-  ocurrencias: ReadonlyArray<Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>>
+  ocurrencias: ReadonlyArray<
+    Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>
+  >
 ): readonly AsistenciaZoomConsolidada[] {
   return consolidar(ocurrencias);
 }
 
-export type ResumenAsistenciaZoom = Readonly<{ participantes: number; estudiantes: number; anfitriones: number }>;
+export type ResumenAsistenciaZoom = Readonly<{
+  participantes: number;
+  estudiantes: number;
+  anfitriones: number;
+}>;
 
 /** Conteo sin veredicto: los hosts/cohosts con rol comprobado no cuentan como estudiantes. */
-export function resumirAsistenciaZoom(asistencia: readonly AsistenciaZoomConsolidada[]): ResumenAsistenciaZoom {
+export function resumirAsistenciaZoom(
+  asistencia: readonly AsistenciaZoomConsolidada[]
+): ResumenAsistenciaZoom {
   const anfitriones = asistencia.filter((a) => a.esHostOCohost).length;
   return { participantes: asistencia.length, estudiantes: asistencia.length - anfitriones, anfitriones };
 }
@@ -173,7 +185,11 @@ export function claveSesionZoom(
 ): string {
   return hash(
     [
-      "zoom-sesion", ocurrenciaUuid, sesion.participanteId ?? "", sesion.userId ?? "", sesion.nombre,
+      "zoom-sesion",
+      ocurrenciaUuid,
+      sesion.participanteId ?? "",
+      sesion.userId ?? "",
+      sesion.nombre,
       esFecha(sesion.entradaAt) ? sesion.entradaAt.toISOString() : "?",
       esFecha(sesion.salidaAt) ? sesion.salidaAt.toISOString() : "?"
     ].join("|")

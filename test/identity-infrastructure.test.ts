@@ -94,4 +94,3 @@ describe("identity infrastructure adapters", () => {
     });
   });
 });
-

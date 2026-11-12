@@ -24,16 +24,22 @@ export default async function ReunionDetallePage({
   searchParams: Promise<{ proveedor?: string }>;
 }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor?.activo) redirect("/acceso");
+  if (!actor?.activo) {
+    redirect("/acceso");
+  }
 
   const { solicitudId } = await params;
   const solicitud = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
     include: { docentePrograma: { select: { programaId: true } } }
   });
-  if (!solicitud || !await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId)) notFound();
+  if (!solicitud || !(await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId))) {
+    notFound();
+  }
 
   const serie = await db.solicitudSala.findMany({
     where: construirFiltroSerieSolicitud(solicitud),
@@ -52,12 +58,14 @@ export default async function ReunionDetallePage({
 
   const { proveedor } = await searchParams;
   const { proveedor: elegido, otro } = elegirProveedorDetalle(
-    serie.flatMap(({ instancias }) => instancias.map((instancia) => ({
-      estado: instancia.estado,
-      inicioProgramadoAt: instancia.inicioProgramadoAt,
-      finProgramadoAt: instancia.finProgramadoAt,
-      proveedor: proveedorActivoDeInstancia(instancia)
-    }))),
+    serie.flatMap(({ instancias }) =>
+      instancias.map((instancia) => ({
+        estado: instancia.estado,
+        inicioProgramadoAt: instancia.inicioProgramadoAt,
+        finProgramadoAt: instancia.finProgramadoAt,
+        proveedor: proveedorActivoDeInstancia(instancia)
+      }))
+    ),
     new Date(),
     resolverProveedorReunion(proveedor)
   );
@@ -65,7 +73,9 @@ export default async function ReunionDetallePage({
     ? { ...otro, href: `/reuniones/${solicitudId}?proveedor=${otro.proveedor === "ZOOM" ? "zoom" : "meet"}` }
     : null;
 
-  return elegido === "ZOOM"
-    ? <ReunionZoomDetailPage params={params} otroProveedor={otroProveedor} />
-    : <ReunionDetailPage params={params} otroProveedor={otroProveedor} />;
+  return elegido === "ZOOM" ? (
+    <ReunionZoomDetailPage params={params} otroProveedor={otroProveedor} />
+  ) : (
+    <ReunionDetailPage params={params} otroProveedor={otroProveedor} />
+  );
 }

@@ -37,16 +37,6 @@ export interface UpcomingMeetingSummaryDTO {
   readonly cohostsVerificados: boolean;
 }
 
-export interface TriageAttentionItemDTO {
-  readonly key: string;
-  readonly tone: "danger" | "warning" | "neutral";
-  readonly count: number;
-  readonly title: string;
-  readonly details: readonly string[];
-  readonly href: string;
-  readonly actionLabel: string;
-}
-
 export interface RecentRecordingDTO {
   readonly id: string;
   readonly titulo: string;

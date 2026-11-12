@@ -46,6 +46,7 @@ Pruebas: `test/diagnostico-serie-zoom.test.ts`, `test/diagnostico-serie-zoom-ser
 **Archivos:** Crear `diagnostico-serie-zoom.domain.ts`; Prueba `test/diagnostico-serie-zoom.test.ts`.
 
 **Interfaces:**
+
 - Consume `EncuentroEnlaceSerie` y `evaluarEnlacesDeSerie(encuentros, ahora)` de `series-enlaces-distintos.domain.ts`.
 - Produce:
   - `type ClasificacionSerieZoom = "SANA" | "MIGRABLE" | "MEZCLADA" | "ENLACES_DISTINTOS" | "RETOMABLE" | "HUERFANA" | "SIN_FUTUROS"`
@@ -57,6 +58,7 @@ Pruebas: `test/diagnostico-serie-zoom.test.ts`, `test/diagnostico-serie-zoom-ser
   - `diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): DiagnosticoSerieZoom`
 
 Regla de clasificación, en este orden, sobre los encuentros futuros y programados (`estado === "PROGRAMADA"` e `inicio > ahora`) y las reuniones con `estadoCreacion !== "ELIMINADA"`:
+
 1. Sin futuros: `HUERFANA` si hay reuniones activas, si no `SIN_FUTUROS`.
 2. Hay encuentros en Zoom y en Meet: `MEZCLADA`.
 3. Alguna reunión `PENDIENTE` o `CREANDO`, o reunión activa con todos los futuros en Meet: `RETOMABLE`.
@@ -76,6 +78,7 @@ Acciones: `MIGRABLE` → `[MIGRAR]`; `MEZCLADA` → `[MIGRAR, VER_DETALLE]`; `EN
 **Archivos:** Crear `diagnostico-serie-zoom.service.ts`; Prueba `test/diagnostico-serie-zoom-service.test.ts`.
 
 **Interfaces:**
+
 - Consume `diagnosticarSerieZoom`, `exigirAdministracion` (`migracion-zoom.service.ts`), `claveSerieReunion`, `proveedorActivoDeInstancia`.
 - Produce `obtenerDiagnosticosSeriesZoom(db: PrismaClient, actor: Readonly<{ id: string; rol: string }>, ahora?: Date): Promise<ReadonlyMap<string, DiagnosticoSerieZoom>>`, con la clave de serie como llave.
 
@@ -90,6 +93,7 @@ Acciones: `MIGRABLE` → `[MIGRAR]`; `MEZCLADA` → `[MIGRAR, VER_DETALLE]`; `EN
 **Archivos:** Crear `mensajes-serie-zoom.domain.ts`; Prueba `test/mensajes-serie-zoom.test.ts`.
 
 **Interfaces:**
+
 - Consume `ResultadoMigracionSerie` (de `migracion-zoom-serie-aplicar.service.ts`) y `ResultadoCorreccionSerie` (de `corregir-serie-enlaces.service.ts`).
 - Produce `describirResultadoSerie(resultado: Readonly<{ resultado: string; etapa?: string; mensaje?: string; reintentable?: boolean }>): MensajeResultadoSerie` con `MensajeResultadoSerie = Readonly<{ titulo: string; detalle: string; accionSugerida: string; reintentable: boolean; detalleTecnico?: string }>`.
 
@@ -106,6 +110,7 @@ Reglas: `MIGRADA`, `CORREGIDA`, `YA_ZOOM`, `YA_UNIFICADA` y `OMITIDA` tienen men
 **Archivos:** Modificar `migracion-zoom-serie.service.ts` (agrega `diagnostico: DiagnosticoSerieZoom` a cada fila de la vista previa, solo agregando el campo), `migracion-zoom-serie-control.tsx`, `app/(gestion)/reuniones/migracion-zoom/page.tsx`; Prueba `test/panel-series-zoom.test.ts`.
 
 **Interfaces:**
+
 - Consume `DiagnosticoSerieZoom`, `AccionSerieZoom`.
 - Produce en el control: etiqueta de estado por clasificación (texto: «Sana», «Para convertir», «Mezclada Meet/Zoom», «Enlaces distintos», «A medias», «Reunión sin encuentros», «Sin encuentros futuros»), conteos («5 de 8 en Zoom · 2 enlaces distintos») y un botón principal por `acciones[0]` con el verbo de la acción («Convertir a Zoom», «Unificar enlace», «Retomar»); «Ver detalle» enlaza al detalle de la reunión.
 
@@ -120,6 +125,7 @@ Reglas: `MIGRADA`, `CORREGIDA`, `YA_ZOOM`, `YA_UNIFICADA` y `OMITIDA` tienen men
 **Archivos:** Crear `src/components/confirmar-accion-serie-zoom.tsx`; Modificar `migracion-zoom-serie-control.tsx` y `corregir-serie-zoom-boton.tsx`; Prueba `test/panel-series-zoom.test.ts`.
 
 **Interfaces:**
+
 - Produce `ConfirmarAccionSerieZoom({ accion: AccionSerieZoom; titulo: string; encuentros: number; diagnostico: DiagnosticoSerieZoom; onConfirmar: () => void; onCancelar: () => void })`, un diálogo con trampa de foco, Escape para cerrar y foco devuelto al disparador (mismo patrón que el diálogo actual de la migración). El texto dice cuántos encuentros cambian, si se crea o se reutiliza la reunión, quién recibe aviso y que el enlace anterior sigue activo 7 días cuando corresponde.
 - Consume `describirResultadoSerie` para el panel de resultado: título, detalle, acción sugerida, «Reintentar» solo si `reintentable`, y el detalle técnico en un `<details>`.
 

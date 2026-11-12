@@ -13,7 +13,8 @@ describe("estado temporal del asistente de monitoreo", () => {
     const createAudit = vi.fn().mockResolvedValue({});
     const tx = {
       usuario: {
-        findUnique: vi.fn()
+        findUnique: vi
+          .fn()
           .mockResolvedValueOnce({ id: "admin", activo: true, rol: "ADMINISTRACION" })
           .mockResolvedValueOnce({
             id: "assistant-user",
@@ -45,7 +46,8 @@ describe("estado temporal del asistente de monitoreo", () => {
     const update = vi.fn().mockResolvedValue({});
     const tx = {
       usuario: {
-        findUnique: vi.fn()
+        findUnique: vi
+          .fn()
           .mockResolvedValueOnce({ id: "admin", activo: true, rol: "ADMINISTRACION" })
           .mockResolvedValueOnce({
             id: "assistant-user",
@@ -82,7 +84,8 @@ describe("estado temporal del asistente de monitoreo", () => {
     const update = vi.fn().mockResolvedValue({});
     const tx = {
       usuario: {
-        findUnique: vi.fn()
+        findUnique: vi
+          .fn()
           .mockResolvedValueOnce({ id: "admin", activo: true, rol: "ADMINISTRACION" })
           .mockResolvedValueOnce({
             id: "assistant-user",

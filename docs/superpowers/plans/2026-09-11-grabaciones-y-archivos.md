@@ -4,7 +4,8 @@
 
 **Goal:** Transform `/grabaciones` into an intuitive, modern media and artifacts library with universal recording capture, 100% background cron synchronization, zero alarming incident screens, and direct artifact access from `/reuniones/[solicitudId]`.
 
-**Architecture:** 
+**Architecture:**
+
 - Sincronización desatendida mediante systemd timer en EC2 (`salavirtual-artifacts-sync.timer` cada 10 min) llamando a `/api/v1/reuniones/sincronizar-archivos` con `Bearer $CRON_SECRET`.
 - Desacoplar la captura de grabaciones de la marca `requiereGrabacion: true`: cualquier video producido en Google Meet se mueve al Drive institucional y se indexa.
 - Tratar los estados en procesamiento de Google sin emitir excepciones ni alarmas de error.
@@ -29,11 +30,13 @@
 ### Task 1: Systemd Cron Infrastructure for Artifact Synchronization
 
 **Files:**
+
 - Create: `infra/ec2/salavirtual-artifacts-sync.service`
 - Create: `infra/ec2/salavirtual-artifacts-sync.timer`
 - Modify: `docs/despliegue-ec2.md`
 
 **Interfaces:**
+
 - Produces: Systemd timer configurado para ejecutarse cada 10 minutos contra `http://127.0.0.1:3101/api/v1/reuniones/sincronizar-archivos` con `Authorization: Bearer $CRON_SECRET`.
 - Consumes: `CRON_SECRET` de `/srv/apps/salavirtual-flacso/shared/.env.production`.
 
@@ -82,10 +85,12 @@ Actualizar `docs/despliegue-ec2.md` para incluir la habilitación de `salavirtua
 ### Task 2: Pure Domain Logic for Recording Filtering & Status Normalization
 
 **Files:**
+
 - Create: `src/modules/meet/grabaciones-filtro.domain.ts`
 - Create: `test/grabaciones-filtro-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `TipoFiltroArtefacto`: `"TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES"`.
   - `EstadoVisualGrabacion`: `"DISPONIBLE" | "PROCESANDO" | "NO_REGISTRADA" | "NO_REQUERIDA"`.
@@ -175,17 +180,9 @@ Crear `src/modules/meet/grabaciones-filtro.domain.ts`:
 ```ts
 import type { TipoArtefactoMeet } from "./meet-artifacts.domain";
 
-export type TipoFiltroArtefacto =
-  | "TODOS"
-  | "GRABACIONES"
-  | "ASISTENCIAS"
-  | "NOTAS_Y_TRANSCRIPCIONES";
+export type TipoFiltroArtefacto = "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
 
-export type EstadoVisualGrabacion =
-  | "DISPONIBLE"
-  | "PROCESANDO"
-  | "NO_REGISTRADA"
-  | "NO_REQUERIDA";
+export type EstadoVisualGrabacion = "DISPONIBLE" | "PROCESANDO" | "NO_REGISTRADA" | "NO_REQUERIDA";
 
 export type GrupoEncuentroConArchivos = Readonly<{
   instanciaId: string;
@@ -272,10 +269,12 @@ Expected: PASS (4 tests passing).
 ### Task 3: Refactor Synchronization Service for Universal Capture and Gentle Error Handling
 
 **Files:**
+
 - Modify: `src/modules/meet/sincronizar-artefactos.service.ts`
 - Modify: `test/sincronizar-artefactos-service.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `sincronizarArtefactosMeet`: sincroniza cualquier reunión terminada sin condicionarla a `requiereGrabacion: true`.
   - Cierra limpiamente el ciclo a las 48h sin escribir mensajes de error en `errorArchivos` si no hubo grabación.
@@ -284,6 +283,7 @@ Expected: PASS (4 tests passing).
 - [x] **Step 1: Update unit tests in `test/sincronizar-artefactos-service.test.ts`**
 
 Agregar prueba que valide:
+
 1. Una reunión con `requiereGrabacion: false` donde alguien inició grabación (`estadoGrabacion === "GENERADA"`) sincroniza el archivo MP4 en Drive y lo guarda en base de datos.
 2. Una reunión terminada hace más de 48 horas sin grabación se marca con `archivosSincronizadosAt = new Date()` y `errorArchivos = null` (no se trata como falla técnica).
 
@@ -294,6 +294,7 @@ Run: `npx vitest run test/sincronizar-artefactos-service.test.ts`
 - [x] **Step 3: Modify `src/modules/meet/sincronizar-artefactos.service.ts`**
 
 Ajustar la lógica para:
+
 - Tratar `requiereGrabacion` solo como indicador de intención, no como filtro de exclusión.
 - Si han transcurrido más de 48 horas desde `finProgramadoAt`, registrar `archivosSincronizadosAt = new Date()` y `errorArchivos = null` para finalizar el ciclo de sincronización sin generar alertas falsas.
 
@@ -307,13 +308,15 @@ Expected: PASS.
 ### Task 4: API Route & Cron 3-Window Scanning Strategy
 
 **Files:**
+
 - Modify: `app/api/v1/reuniones/sincronizar-archivos/route.ts`
 
 **Interfaces:**
+
 - Produces: `executeSynchronization()` optimizado con 3 ventanas de escaneo:
-  1. *Ventana Caliente (0 a 4 horas)*: `archivosSincronizadosAt: null`. Prioridad alta.
-  2. *Ventana Intermedia (4 a 48 horas)*: reuniones con artefactos pendientes.
-  3. *Cierre (> 48 horas)*: finalización elegante.
+  1. _Ventana Caliente (0 a 4 horas)_: `archivosSincronizadosAt: null`. Prioridad alta.
+  2. _Ventana Intermedia (4 a 48 horas)_: reuniones con artefactos pendientes.
+  3. _Cierre (> 48 horas)_: finalización elegante.
 
 - [x] **Step 1: Update `app/api/v1/reuniones/sincronizar-archivos/route.ts`**
 
@@ -329,16 +332,19 @@ Expected: PASS.
 ### Task 5: Interactive Client Library Component (`RecordingsLibrary`)
 
 **Files:**
+
 - Create: `src/components/recordings-library.tsx`
 - Modify: `app/(gestion)/grabaciones/grabaciones.css`
 
 **Interfaces:**
+
 - Produces: Componente de React con búsqueda reactiva en cliente, pestañas de filtro, badges de estado no alarmantes y enlaces limpios a Google Drive y documentos.
 - Consumes: `GrupoEncuentroConArchivos[]` desde el Server Component.
 
 - [x] **Step 1: Create `src/components/recordings-library.tsx`**
 
 Implementar:
+
 - Barra de búsqueda con ícono de lupa y botón para limpiar.
 - Pestañas de filtrado (`Todos`, `Grabaciones`, `Asistencias`, `Transcripciones y notas`).
 - Tarjetas de encuentro ordenadas cronológicamente con:
@@ -362,9 +368,11 @@ Implementar:
 ### Task 6: Overhaul of `/grabaciones/page.tsx`
 
 **Files:**
+
 - Modify: `app/(gestion)/grabaciones/page.tsx`
 
 **Interfaces:**
+
 - Produces: Server Component limpio que obtiene los artefactos visibles según el rol del usuario, calcula contadores métricos y delega la interactividad a `RecordingsLibrary`.
 - Consumes: `db`, `resolveSessionActor`, `listarArchivosMeetVisibles`.
 
@@ -385,10 +393,12 @@ Expected: 0 TypeScript errors, 100% tests passing.
 ### Task 7: Meeting Detail Integration (`/reuniones/[solicitudId]`)
 
 **Files:**
+
 - Modify: `app/(gestion)/reuniones/[solicitudId]/page.tsx`
 - Modify: `src/components/meeting-detail-manager.tsx`
 
 **Interfaces:**
+
 - Produces: Visibilidad directa de la grabación y lista de asistencia dentro de cada encuentro pasado en la ficha de la reunión.
 
 - [x] **Step 1: Include `archivos` in `solicitudId/page.tsx`**
@@ -398,6 +408,7 @@ En la consulta de Prisma de `seriesRequests`, incluir `archivos: true` en los `e
 - [x] **Step 2: Render artifact links in `MeetingDetailManager`**
 
 Para cada encuentro con `temporalidad === "PASADO"`, mostrar los botones:
+
 - `🎥 Ver grabación` (si existe `webViewUrl`).
 - `👥 Asistencia` (si existe lista generada).
 - `📁 Carpeta Drive`.
@@ -412,6 +423,7 @@ Expected: 0 errors.
 ### Task 8: End-to-End Validation and Production Build
 
 **Files:**
+
 - Verification only
 
 - [x] **Step 1: Run full test suite**
@@ -432,6 +444,6 @@ Expected: Successful Next.js build.
 - [ ] **Step 4: Manual validation on browser**
 
 Visitar:
+
 1. `http://localhost:8000/grabaciones`: comprobar que no existen banners rojos de error, probar el buscador en vivo y los filtros por pestaña.
 2. `http://localhost:8000/reuniones/[solicitudId]`: verificar que los encuentros pasados muestren sus enlaces directos a grabación y asistencia.
-

@@ -11,7 +11,9 @@ import styles from "@/app/(gestion)/reuniones/nueva/nueva-reunion.module.css";
 
 export default async function NuevaReunionPage() {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
@@ -25,9 +27,7 @@ export default async function NuevaReunionPage() {
       where: {
         activo: true,
         programa: { activo: true },
-        ...(actor.rol === "DOCENTE"
-          ? { docente: { usuarioId: actor.id } }
-          : {})
+        ...(actor.rol === "DOCENTE" ? { docente: { usuarioId: actor.id } } : {})
       },
       orderBy: { programa: { nombre: "asc" } },
       include: {
@@ -58,10 +58,12 @@ export default async function NuevaReunionPage() {
       : Promise.resolve([])
   ]);
 
-  if (requiereCompletarRegistro({
-    rol: actor.rol,
-    programasActivos: associations.length
-  })) {
+  if (
+    requiereCompletarRegistro({
+      rol: actor.rol,
+      programasActivos: associations.length
+    })
+  ) {
     redirect("/completar-registro");
   }
 

@@ -45,17 +45,34 @@ Crear `src/modules/archivos/domain/zoom-archivos.types.ts` y exportarlo por los 
 
 ```ts
 type ReferenciaOcurrenciaZoom = Readonly<{
-  cuentaZoomId: string; uuid: string; meetingId: string;
-  anfitrionZoomId: string; inicioRealAt: Date; titulo: string;
+  cuentaZoomId: string;
+  uuid: string;
+  meetingId: string;
+  anfitrionZoomId: string;
+  inicioRealAt: Date;
+  titulo: string;
 }>;
 type ArchivoOrigenZoom = Readonly<{
-  claveOrigen: string; archivoZoomId: string | null; coleccion: string;
-  tipoOriginal: string; variante: string | null; extension: string | null;
-  inicioAt: Date | null; finAt: Date | null; tamanoBytes: bigint | null;
-  estadoOrigen: string | null; descargable: boolean;
+  claveOrigen: string;
+  archivoZoomId: string | null;
+  coleccion: string;
+  tipoOriginal: string;
+  variante: string | null;
+  extension: string | null;
+  inicioAt: Date | null;
+  finAt: Date | null;
+  tamanoBytes: bigint | null;
+  estadoOrigen: string | null;
+  descargable: boolean;
 }>;
-type EstadoArchivoZoom = 'DESCUBIERTO' | 'PROCESANDO_ORIGEN' | 'PENDIENTE'
-  | 'COPIANDO' | 'CONSERVADO' | 'ERROR_REINTENTABLE' | 'REQUIERE_REVISION';
+type EstadoArchivoZoom =
+  | "DESCUBIERTO"
+  | "PROCESANDO_ORIGEN"
+  | "PENDIENTE"
+  | "COPIANDO"
+  | "CONSERVADO"
+  | "ERROR_REINTENTABLE"
+  | "REQUIERE_REVISION";
 type ResultadoPagina<T> = Readonly<{ elementos: readonly T[]; siguiente: string | null }>;
 type LeaseArchivoZoom = Readonly<{ archivoId: string; version: number; venceAt: Date }>;
 ```
@@ -99,12 +116,12 @@ Las URLs autorizadas existen únicamente en el adaptador durante la transferenci
 
 **Datos exactos propuestos:**
 
-| Modelo | Campos y restricciones principales |
-| --- | --- |
-| `OcurrenciaArchivoZoom` | id; cuentaZoomId; uuid; meetingId; anfitrionZoomId; cuentaProveedorId opcional; eventoProveedorId opcional (índice no único: varias ocurrencias por encuentro; cada ocurrencia pertenece a un solo encuentro); inicioRealAt; titulo; driveFolderId; inventariadoAt; proximoInventarioAt; estado/error de asistencia; timestamps. Unique(cuentaZoomId, uuid). |
-| `ArchivoOrigenZoom` | id; ocurrenciaId; claveOrigen; archivoZoomId opcional; colección/tipo/variante/extensión; tiempos y tamaño opcionales; estado; error saneado; intentos; proximoIntentoAt; leaseVersion; leaseHasta; driveFileId único opcional; archivoReunionId único opcional; uploadSessionCifrada; bytesConfirmados; nombreDestino; timestamps. Unique(ocurrenciaId, claveOrigen). |
-| `BarridoArchivoZoom` | id; cuentaZoomId; anfitrionesSnapshot JSON validado; desde/hasta; anfitrionIndice; ventanaDesde/hasta; nextPageToken cifrado opcional; estado; contadores; leaseVersion/leaseHasta; solicitanteId; timestamps. |
-| `ReservaTransferenciaZoom` | id; archivoOrigenId; bytesReservados (BigInt); prioridad (`RECIENTE` o `HISTORICO`); reservadoAt (marca exacta); ajustadoBytes opcional; liberadoAt opcional. Índice por reservadoAt. Sirve al tope de ventana móvil de 24 h de la Task 5. |
+| Modelo                     | Campos y restricciones principales                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OcurrenciaArchivoZoom`    | id; cuentaZoomId; uuid; meetingId; anfitrionZoomId; cuentaProveedorId opcional; eventoProveedorId opcional (índice no único: varias ocurrencias por encuentro; cada ocurrencia pertenece a un solo encuentro); inicioRealAt; titulo; driveFolderId; inventariadoAt; proximoInventarioAt; estado/error de asistencia; timestamps. Unique(cuentaZoomId, uuid).           |
+| `ArchivoOrigenZoom`        | id; ocurrenciaId; claveOrigen; archivoZoomId opcional; colección/tipo/variante/extensión; tiempos y tamaño opcionales; estado; error saneado; intentos; proximoIntentoAt; leaseVersion; leaseHasta; driveFileId único opcional; archivoReunionId único opcional; uploadSessionCifrada; bytesConfirmados; nombreDestino; timestamps. Unique(ocurrenciaId, claveOrigen). |
+| `BarridoArchivoZoom`       | id; cuentaZoomId; anfitrionesSnapshot JSON validado; desde/hasta; anfitrionIndice; ventanaDesde/hasta; nextPageToken cifrado opcional; estado; contadores; leaseVersion/leaseHasta; solicitanteId; timestamps.                                                                                                                                                         |
+| `ReservaTransferenciaZoom` | id; archivoOrigenId; bytesReservados (BigInt); prioridad (`RECIENTE` o `HISTORICO`); reservadoAt (marca exacta); ajustadoBytes opcional; liberadoAt opcional. Índice por reservadoAt. Sirve al tope de ventana móvil de 24 h de la Task 5.                                                                                                                             |
 
 Índices por estado/proximoIntentoAt/leaseHasta y proximoInventarioAt. FK opcionales con `SET NULL`; impedir borrados en cascada de archivos de origen por borrar/desvincular un encuentro. Metadatos suficientes para reconstruir el archivo sin dependencia del título actual.
 

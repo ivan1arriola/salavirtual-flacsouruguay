@@ -38,37 +38,50 @@ export function atribuirCorreosPorHorario(
   eventos: readonly EventoParaCorreo[],
   toleranciaMs: number = TOLERANCIA_CORREO_MS
 ): AtribucionCorreos {
-  const candidatos = eventos.flatMap(evento => {
+  const candidatos = eventos.flatMap((evento) => {
     const correo = evento.tipoIdentificador === "email_address" ? correoValido(evento.identificador) : null;
-    const inicio = Date.parse(evento.inicio), fin = Date.parse(evento.fin);
+    const inicio = Date.parse(evento.inicio),
+      fin = Date.parse(evento.fin);
     return correo && Number.isFinite(inicio) && Number.isFinite(fin) ? [{ correo, inicio, fin }] : [];
   });
 
   // Correos candidatos de cada sesión con pareja en Reports.
-  const porSesion = sesiones.flatMap(sesion => {
+  const porSesion = sesiones.flatMap((sesion) => {
     const id = sesion.participanteId?.trim();
-    const inicio = Date.parse(sesion.inicio), fin = Date.parse(sesion.fin);
-    if (!id || !Number.isFinite(inicio) || !Number.isFinite(fin)) return [];
-    const correos = [...new Set(candidatos
-      .filter(c => Math.abs(c.inicio - inicio) <= toleranciaMs && Math.abs(c.fin - fin) <= toleranciaMs)
-      .map(c => c.correo))];
+    const inicio = Date.parse(sesion.inicio),
+      fin = Date.parse(sesion.fin);
+    if (!id || !Number.isFinite(inicio) || !Number.isFinite(fin)) {
+      return [];
+    }
+    const correos = [
+      ...new Set(
+        candidatos
+          .filter((c) => Math.abs(c.inicio - inicio) <= toleranciaMs && Math.abs(c.fin - fin) <= toleranciaMs)
+          .map((c) => c.correo)
+      )
+    ];
     return correos.length ? [{ id, correos }] : [];
   });
 
-  const empatados = porSesion.filter(s => s.correos.length > 1).map(s => s.id);
+  const empatados = porSesion.filter((s) => s.correos.length > 1).map((s) => s.id);
   const votos = porSesion
-    .filter(s => s.correos.length === 1)
-    .reduce<Readonly<Record<string, readonly string[]>>>((acc, s) => ({
-      ...acc,
-      [s.id]: [...new Set([...(acc[s.id] ?? []), s.correos[0]!])]
-    }), {});
+    .filter((s) => s.correos.length === 1)
+    .reduce<Readonly<Record<string, readonly string[]>>>(
+      (acc, s) => ({
+        ...acc,
+        [s.id]: [...new Set([...(acc[s.id] ?? []), s.correos[0]!])]
+      }),
+      {}
+    );
   const entradas = Object.entries(votos);
   const conflictivos = entradas.filter(([, correos]) => correos.length > 1).map(([id]) => id);
   const ambiguos = [...new Set([...empatados, ...conflictivos])];
 
   return {
     correoPorParticipante: new Map(
-      entradas.flatMap(([id, correos]) => correos.length === 1 && !ambiguos.includes(id) ? [[id, correos[0]!] as const] : [])
+      entradas.flatMap(([id, correos]) =>
+        correos.length === 1 && !ambiguos.includes(id) ? [[id, correos[0]!] as const] : []
+      )
     ),
     participantesAmbiguos: ambiguos
   };

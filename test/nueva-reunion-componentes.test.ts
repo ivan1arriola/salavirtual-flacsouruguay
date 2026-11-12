@@ -9,12 +9,42 @@ import { MeetingScheduleEditor } from "../src/modules/reuniones/presentation/com
 import { MeetingOptions } from "../src/modules/reuniones/presentation/components/nueva-reunion/meeting-options";
 
 const sinCambios = () => {};
-const fecha = { id: 1, fecha: "2026-11-10", horaInicio: "10:00", horaFin: "17:00", horaAsistenciaInicio: "09:30", horaAsistenciaFin: "17:30", descripcion: "" };
-const resumen: Parameters<typeof MeetingSummary>[0] = { dates: [fecha], dateMode: "SINGLE", selectedProgram: { id: "uno", label: "Programa uno", teacher: "Ana" }, isReady: false, academicReady: true, requiresAssistance: false, requiresRecording: false, meetingMode: "VIRTUAL", canAssignAssistant: false, assistanceMode: "OPEN" };
+const fecha = {
+  id: 1,
+  fecha: "2026-11-10",
+  horaInicio: "10:00",
+  horaFin: "17:00",
+  horaAsistenciaInicio: "09:30",
+  horaAsistenciaFin: "17:30",
+  descripcion: ""
+};
+const resumen: Parameters<typeof MeetingSummary>[0] = {
+  dates: [fecha],
+  dateMode: "SINGLE",
+  selectedProgram: { id: "uno", label: "Programa uno", teacher: "Ana" },
+  isReady: false,
+  academicReady: true,
+  requiresAssistance: false,
+  requiresRecording: false,
+  meetingMode: "VIRTUAL",
+  canAssignAssistant: false,
+  assistanceMode: "OPEN"
+};
 
 describe("datos académicos y resumen", () => {
   it("conserva campos, restricciones y etiquetas de cada programa y docente", () => {
-    const html = renderToStaticMarkup(createElement(AcademicDetails, { programs: [{ id: "uno", label: "Programa uno", teacher: "Ana" }, { id: "dos", label: "Programa dos", teacher: "Luis" }], selectedProgramId: "uno", title: "Seminario", onTitleChange: sinCambios, onProgramChange: sinCambios }));
+    const html = renderToStaticMarkup(
+      createElement(AcademicDetails, {
+        programs: [
+          { id: "uno", label: "Programa uno", teacher: "Ana" },
+          { id: "dos", label: "Programa dos", teacher: "Luis" }
+        ],
+        selectedProgramId: "uno",
+        title: "Seminario",
+        onTitleChange: sinCambios,
+        onProgramChange: sinCambios
+      })
+    );
     expect(html).toMatch(/<input(?=[^>]*name="titulo")(?=[^>]*minLength="3")[^>]*>/);
     expect(html).toContain('name="docenteProgramaId"');
     expect(html).toContain('<option value="uno" selected="">Programa uno — Ana</option>');
@@ -35,7 +65,14 @@ describe("datos académicos y resumen", () => {
   });
   it("conserva singular, plural y las opciones del resumen", () => {
     const uno = renderToStaticMarkup(createElement(MeetingSummary, resumen));
-    const dos = renderToStaticMarkup(createElement(MeetingSummary, { ...resumen, dates: [fecha, { ...fecha, id: 2 }], requiresAssistance: true, requiresRecording: true }));
+    const dos = renderToStaticMarkup(
+      createElement(MeetingSummary, {
+        ...resumen,
+        dates: [fecha, { ...fecha, id: 2 }],
+        requiresAssistance: true,
+        requiresRecording: true
+      })
+    );
     expect(uno).toContain("1 encuentro");
     expect(uno).toContain("Sin monitoreo · Sin grabación");
     expect(dos).toContain("2 encuentros");
@@ -43,14 +80,39 @@ describe("datos académicos y resumen", () => {
   });
 });
 
-const recurrencia = { desde: "2026-11-10", hasta: "2026-11-20", diasSemana: [2], horaInicio: "10:00", horaFin: "17:00", horaAsistenciaInicio: "09:45", horaAsistenciaFin: "17:00" };
+const recurrencia = {
+  desde: "2026-11-10",
+  hasta: "2026-11-20",
+  diasSemana: [2],
+  horaInicio: "10:00",
+  horaFin: "17:00",
+  horaAsistenciaInicio: "09:45",
+  horaAsistenciaFin: "17:00"
+};
 
 function renderizarFechas(cambios: Partial<Parameters<typeof MeetingScheduleEditor>[0]> = {}) {
-  return renderToStaticMarkup(createElement(MeetingScheduleEditor, {
-    dates: [fecha], dateMode: "SINGLE", requiresAssistance: false, meetingMode: "VIRTUAL", recurrence: recurrencia, message: "", recurrenceGenerated: false, recurrenceReviewRef: { current: null },
-    onChange: sinCambios, onRecurrenceTimeChange: sinCambios, onGenerate: sinCambios, onFieldChange: sinCambios, onTimeChange: sinCambios, onRemove: sinCambios, onAdd: sinCambios, onDuplicate: sinCambios, onModeChange: sinCambios,
-    ...cambios
-  }));
+  return renderToStaticMarkup(
+    createElement(MeetingScheduleEditor, {
+      dates: [fecha],
+      dateMode: "SINGLE",
+      requiresAssistance: false,
+      meetingMode: "VIRTUAL",
+      recurrence: recurrencia,
+      message: "",
+      recurrenceGenerated: false,
+      recurrenceReviewRef: { current: null },
+      onChange: sinCambios,
+      onRecurrenceTimeChange: sinCambios,
+      onGenerate: sinCambios,
+      onFieldChange: sinCambios,
+      onTimeChange: sinCambios,
+      onRemove: sinCambios,
+      onAdd: sinCambios,
+      onDuplicate: sinCambios,
+      onModeChange: sinCambios,
+      ...cambios
+    })
+  );
 }
 
 describe("editores de fechas", () => {
@@ -72,7 +134,9 @@ describe("editores de fechas", () => {
   });
   it("muestra los siete días de la recurrencia sin filas hasta generar", () => {
     const html = renderizarFechas({ dateMode: "RECURRENT" });
-    for (const dia of ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]) expect(html).toContain(`<span>${dia}</span>`);
+    for (const dia of ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]) {
+      expect(html).toContain(`<span>${dia}</span>`);
+    }
     expect(html.match(/type="checkbox"/g)).toHaveLength(7);
     expect(html).toContain("Generar vista previa");
     expect(html).not.toContain('class="date-row"');
@@ -90,19 +154,41 @@ describe("editores de fechas", () => {
     expect(hibrida).toMatch(/Salida del asistente<\/span><input type="time" required="" value="17:30"/);
     const virtual = renderizarFechas({ requiresAssistance: true });
     expect(virtual).toContain('class="meeting-assistance-fields is-virtual"');
-    expect(virtual).toContain('Llegada del asistente</span><strong>09:45</strong>');
-    expect(virtual).toContain('Salida del asistente</span><strong>17:00</strong>');
+    expect(virtual).toContain("Llegada del asistente</span><strong>09:45</strong>");
+    expect(virtual).toContain("Salida del asistente</span><strong>17:00</strong>");
   });
   it("advierte la cobertura híbrida insuficiente en filas y en la regla", () => {
-    const html = renderizarFechas({ requiresAssistance: true, meetingMode: "HIBRIDA", dates: [{ ...fecha, horaAsistenciaInicio: "09:45" }] });
+    const html = renderizarFechas({
+      requiresAssistance: true,
+      meetingMode: "HIBRIDA",
+      dates: [{ ...fecha, horaAsistenciaInicio: "09:45" }]
+    });
     expect(html).toContain('role="alert">El asistente debe llegar al menos 30 minutos antes');
-    const regla = renderizarFechas({ requiresAssistance: true, meetingMode: "HIBRIDA", dateMode: "RECURRENT" });
+    const regla = renderizarFechas({
+      requiresAssistance: true,
+      meetingMode: "HIBRIDA",
+      dateMode: "RECURRENT"
+    });
     expect(regla).toContain('role="alert">La llegada debe ser al menos 30 min antes');
   });
 });
 
 function renderizarOpciones(cambios: Partial<Parameters<typeof MeetingOptions>[0]> = {}) {
-  return renderToStaticMarkup(createElement(MeetingOptions, { requiresAssistance: false, requiresRecording: false, meetingMode: "VIRTUAL", assistanceMode: "OPEN", canAssignAssistant: false, assistants: [], onRequiresAssistanceChange: sinCambios, onRequiresRecordingChange: sinCambios, onModeChange: sinCambios, onAssistanceModeChange: sinCambios, ...cambios }));
+  return renderToStaticMarkup(
+    createElement(MeetingOptions, {
+      requiresAssistance: false,
+      requiresRecording: false,
+      meetingMode: "VIRTUAL",
+      assistanceMode: "OPEN",
+      canAssignAssistant: false,
+      assistants: [],
+      onRequiresAssistanceChange: sinCambios,
+      onRequiresRecordingChange: sinCambios,
+      onModeChange: sinCambios,
+      onAssistanceModeChange: sinCambios,
+      ...cambios
+    })
+  );
 }
 
 describe("opciones de monitoreo y grabación", () => {
@@ -113,14 +199,26 @@ describe("opciones de monitoreo y grabación", () => {
     expect(html).not.toContain('name="asistenteTecnicoId"');
   });
   it("sin permiso ofrece postulaciones y oculta asignación directa", () => {
-    const html = renderizarOpciones({ requiresAssistance: true, assistanceMode: "ASSIGN", assistants: [{ id: "uno", label: "Ana" }] });
+    const html = renderizarOpciones({
+      requiresAssistance: true,
+      assistanceMode: "ASSIGN",
+      assistants: [{ id: "uno", label: "Ana" }]
+    });
     expect(html).toContain("Abierta a postulaciones");
     expect(html).toContain('name="modalidad"');
     expect(html).not.toContain('name="asistenteTecnicoId"');
     expect(html).not.toContain("Asignar ahora");
   });
   it("permite seleccionar entre los asistentes disponibles con permiso", () => {
-    const html = renderizarOpciones({ requiresAssistance: true, canAssignAssistant: true, assistanceMode: "ASSIGN", assistants: [{ id: "uno", label: "Ana" }, { id: "dos", label: "Luis" }] });
+    const html = renderizarOpciones({
+      requiresAssistance: true,
+      canAssignAssistant: true,
+      assistanceMode: "ASSIGN",
+      assistants: [
+        { id: "uno", label: "Ana" },
+        { id: "dos", label: "Luis" }
+      ]
+    });
     expect(html).toMatch(/<select[^>]*name="asistenteTecnicoId"/);
     expect(html).toContain('<option value="uno">Ana</option>');
     expect(html).toContain('<option value="dos">Luis</option>');

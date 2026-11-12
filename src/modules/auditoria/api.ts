@@ -11,4 +11,3 @@ export {
   type ResultadoAuditoria
 } from "./application/registrar-auditoria.use-case";
 export { crearPrismaAuditoriaAdapter } from "./infrastructure/prisma-auditoria.adapter";
-

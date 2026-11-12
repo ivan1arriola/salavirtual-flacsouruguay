@@ -1,9 +1,4 @@
-import {
-  CalendarDays,
-  Clock3,
-  Hourglass,
-  UserCheck
-} from "lucide-react";
+import { CalendarDays, Clock3, Hourglass, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
 
@@ -43,9 +38,7 @@ export function AssistantHoursSummary({
             </span>
             <small>Horas este mes</small>
           </div>
-          <strong className="assistant-stat-value">
-            {formatMinutes(stats.currentMonthMinutes)} h
-          </strong>
+          <strong className="assistant-stat-value">{formatMinutes(stats.currentMonthMinutes)} h</strong>
           <p className="assistant-stat-breakdown">
             Virtual {formatMinutes(stats.currentMonthVirtualMinutes)} h · Híbrida{" "}
             {formatMinutes(stats.currentMonthHybridMinutes)} h
@@ -59,9 +52,7 @@ export function AssistantHoursSummary({
             </span>
             <small>Mes anterior</small>
           </div>
-          <strong className="assistant-stat-value">
-            {formatMinutes(stats.previousMonthMinutes)} h
-          </strong>
+          <strong className="assistant-stat-value">{formatMinutes(stats.previousMonthMinutes)} h</strong>
           <p className="assistant-stat-breakdown">
             Virtual {formatMinutes(stats.previousMonthVirtualMinutes)} h · Híbrida{" "}
             {formatMinutes(stats.previousMonthHybridMinutes)} h
@@ -95,4 +86,3 @@ export function AssistantHoursSummary({
     </section>
   );
 }
-

@@ -26,25 +26,29 @@ function homeSteps(): DriveStep[] {
   return [
     step('[data-tour="assistant-dashboard"]', {
       title: "Bienvenido a Sala Virtual",
-      description: "Este resumen muestra tu próxima cobertura, requerimientos de atención y siguientes coberturas asignadas.",
+      description:
+        "Este resumen muestra tu próxima cobertura, requerimientos de atención y siguientes coberturas asignadas.",
       side: "bottom",
       align: "start"
     }),
     step('[data-tour="assistant-my-agenda"]', {
       title: "Mi agenda",
-      description: "Acá aparecen tus reuniones asignadas, el desglose del mes en curso y tu histórico personal.",
+      description:
+        "Acá aparecen tus reuniones asignadas, el desglose del mes en curso y tu histórico personal.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="assistant-open-agenda"]', {
       title: "Agenda abierta",
-      description: "Consultá las reuniones que necesitan monitoreo, revisá disponibilidad o posibles conflictos y postuláte.",
+      description:
+        "Consultá las reuniones que necesitan monitoreo, revisá disponibilidad o posibles conflictos y postuláte.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="assistant-month"]', {
       title: "Reuniones del mes",
-      description: "Revisá tus horas e importes estimados y, después de una cobertura, confirmá el horario real e incidencias si corresponde.",
+      description:
+        "Revisá tus horas e importes estimados y, después de una cobertura, confirmá el horario real e incidencias si corresponde.",
       side: "right",
       align: "start"
     }),
@@ -56,19 +60,22 @@ function homeSteps(): DriveStep[] {
     }),
     step('[data-tour="assistant-history"], [data-tour="assistant-more"]', {
       title: "Mi histórico",
-      description: "Consultá tus reuniones, horas e importes de meses anteriores. En celular, esta opción se encuentra dentro de Más.",
+      description:
+        "Consultá tus reuniones, horas e importes de meses anteriores. En celular, esta opción se encuentra dentro de Más.",
       side: "right",
       align: "start"
     }),
     step('[data-tour="assistant-notifications"]', {
       title: "Notificaciones",
-      description: "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
+      description:
+        "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
       side: "bottom",
       align: "end"
     }),
     step('[data-tour="assistant-profile"]', {
       title: "Tu cuenta",
-      description: "Desde este menú podés abrir Notificaciones y Mi perfil, cambiar de cuenta, repetir el tutorial o cerrar sesión.",
+      description:
+        "Desde este menú podés abrir Notificaciones y Mi perfil, cambiar de cuenta, repetir el tutorial o cerrar sesión.",
       side: "top",
       align: "start"
     })
@@ -79,13 +86,15 @@ function openAgendaSteps(): DriveStep[] {
   return [
     step('[data-tour="assistant-open-list"]', {
       title: "Reuniones disponibles",
-      description: "Esta lista contiene únicamente reuniones futuras que requieren monitoreo y todavía no tienen un asistente asignado.",
+      description:
+        "Esta lista contiene únicamente reuniones futuras que requieren monitoreo y todavía no tienen un asistente asignado.",
       side: "top",
       align: "start"
     }),
     step('[data-tour="assistant-interest"]', {
       title: "Postularme",
-      description: "Usá Postularme para marcar tu interés. Una postulación no es una asignación: cuando la cobertura quede confirmada aparecerá en Mi agenda. Si cambiás de idea, podés usar Retirar mientras siga disponible.",
+      description:
+        "Usá Postularme para marcar tu interés. Una postulación no es una asignación: cuando la cobertura quede confirmada aparecerá en Mi agenda. Si cambiás de idea, podés usar Retirar mientras siga disponible.",
       side: "left",
       align: "center"
     })
@@ -96,7 +105,8 @@ function monthSteps(): DriveStep[] {
   return [
     step('[data-tour="assistant-month-summary"]', {
       title: "Resumen del mes",
-      description: "Acá se muestran por separado las horas virtuales e híbridas y la cotización total estimada del mes en curso.",
+      description:
+        "Acá se muestran por separado las horas virtuales e híbridas y la cotización total estimada del mes en curso.",
       side: "bottom",
       align: "start"
     }),
@@ -108,7 +118,8 @@ function monthSteps(): DriveStep[] {
     }),
     step('[data-tour="assistant-close-assistance"]', {
       title: "Finalizar monitoreo",
-      description: "Cuando una reunión haya terminado, confirmá el inicio y fin efectivos. También podés agregar observaciones y registrar una incidencia con su tipo, severidad y descripción.",
+      description:
+        "Cuando una reunión haya terminado, confirmá el inicio y fin efectivos. También podés agregar observaciones y registrar una incidencia con su tipo, severidad y descripción.",
       side: "left",
       align: "center"
     })
@@ -116,23 +127,30 @@ function monthSteps(): DriveStep[] {
 }
 
 function tourSteps(pathname: string): DriveStep[] {
-  if (pathname === "/agenda-abierta") return openAgendaSteps();
-  if (pathname === "/reuniones-del-mes") return monthSteps();
+  if (pathname === "/agenda-abierta") {
+    return openAgendaSteps();
+  }
+  if (pathname === "/reuniones-del-mes") {
+    return monthSteps();
+  }
   return homeSteps();
 }
 
 function storageKey(userId: string, pathname: string): string {
-  const section = pathname === "/agenda-abierta"
-    ? "agenda-abierta"
-    : pathname === "/reuniones-del-mes"
-      ? "reuniones-del-mes"
-      : "inicio";
+  const section =
+    pathname === "/agenda-abierta"
+      ? "agenda-abierta"
+      : pathname === "/reuniones-del-mes"
+        ? "reuniones-del-mes"
+        : "inicio";
   return `salavirtual:tour:asistente:${userId}:${section}:${TOUR_VERSION}`;
 }
 
 function consumeForceTutorialParameter(): boolean {
   const url = new URL(window.location.href);
-  if (url.searchParams.get("tutorial") !== "1") return false;
+  if (url.searchParams.get("tutorial") !== "1") {
+    return false;
+  }
   url.searchParams.delete("tutorial");
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
   return true;
@@ -143,39 +161,50 @@ export function AssistantOnboardingTour({ userId }: Readonly<{ userId: string }>
   const runningRef = useRef(false);
   const currentStorageKey = useMemo(() => storageKey(userId, pathname), [pathname, userId]);
 
-  const startTour = useCallback((force = false) => {
-    if (runningRef.current) return;
-    if (!TOUR_PATHS.includes(pathname as (typeof TOUR_PATHS)[number])) return;
-    if (!force && localStorage.getItem(currentStorageKey) === "done") return;
-
-    const steps = tourSteps(pathname);
-    if (steps.length === 0) return;
-
-    runningRef.current = true;
-    const tour = driver({
-      animate: true,
-      smoothScroll: true,
-      allowClose: true,
-      disableActiveInteraction: true,
-      overlayClickBehavior: "close",
-      overlayOpacity: 0.55,
-      stagePadding: 8,
-      stageRadius: 12,
-      showProgress: true,
-      progressText: "{{current}} de {{total}}",
-      nextBtnText: "Siguiente",
-      prevBtnText: "Anterior",
-      doneBtnText: "Finalizar",
-      popoverClass: "flacso-tour",
-      steps,
-      onDestroyed: () => {
-        localStorage.setItem(currentStorageKey, "done");
-        runningRef.current = false;
+  const startTour = useCallback(
+    (force = false) => {
+      if (runningRef.current) {
+        return;
       }
-    });
+      if (!TOUR_PATHS.includes(pathname as (typeof TOUR_PATHS)[number])) {
+        return;
+      }
+      if (!force && localStorage.getItem(currentStorageKey) === "done") {
+        return;
+      }
 
-    tour.drive();
-  }, [currentStorageKey, pathname]);
+      const steps = tourSteps(pathname);
+      if (steps.length === 0) {
+        return;
+      }
+
+      runningRef.current = true;
+      const tour = driver({
+        animate: true,
+        smoothScroll: true,
+        allowClose: true,
+        disableActiveInteraction: true,
+        overlayClickBehavior: "close",
+        overlayOpacity: 0.55,
+        stagePadding: 8,
+        stageRadius: 12,
+        showProgress: true,
+        progressText: "{{current}} de {{total}}",
+        nextBtnText: "Siguiente",
+        prevBtnText: "Anterior",
+        doneBtnText: "Finalizar",
+        popoverClass: "flacso-tour",
+        steps,
+        onDestroyed: () => {
+          localStorage.setItem(currentStorageKey, "done");
+          runningRef.current = false;
+        }
+      });
+
+      tour.drive();
+    },
+    [currentStorageKey, pathname]
+  );
 
   useEffect(() => {
     const force = consumeForceTutorialParameter();

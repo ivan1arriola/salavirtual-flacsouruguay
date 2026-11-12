@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -16,9 +15,15 @@ vi.mock("@/src/lib/db", () => ({ db: { instanciaSala: { findUnique: mocks.instan
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolveSessionActor }));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: (v: string) => v }));
 vi.mock("@/src/integrations/google", () => ({ crearGoogleAuthJwt: mocks.crearJwt }));
-vi.mock("@/src/bootstrap/archivos.server", () => ({ crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: vi.fn() }) }));
-vi.mock("@/src/modules/reuniones/permisos-programa.service", () => ({ puedeGestionarPrograma: mocks.puedeGestionarPrograma }));
-vi.mock("@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client", () => ({ leerPlanillaAsistenciaGoogle: mocks.leerPlanilla }));
+vi.mock("@/src/bootstrap/archivos.server", () => ({
+  crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: vi.fn() })
+}));
+vi.mock("@/src/modules/reuniones/permisos-programa.service", () => ({
+  puedeGestionarPrograma: mocks.puedeGestionarPrograma
+}));
+vi.mock("@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client", () => ({
+  leerPlanillaAsistenciaGoogle: mocks.leerPlanilla
+}));
 vi.mock("@/src/modules/archivos/infrastructure/prisma/prisma-lectura-planilla-zoom.adapter", () => ({
   crearPrismaLecturaPlanillaZoomAdapter: () => ({ cargarAsistenciaInstancia: mocks.cargar })
 }));
@@ -28,8 +33,18 @@ import { GET } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia
 const pedir = (fuente: string, query = "") =>
   GET(new Request(`http://x/api${query}`), { params: Promise.resolve({ instanciaId: "i1", fuente }) });
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
-const registro = { nombre: "=Ana", emailObservado: "ana@gmail.com", emailConfirmado: null, primeraEntradaAt: t("13:00"), ultimaSalidaAt: t("13:30"),
-  minutos: 30, porcentaje: 50, sesiones: 1, estadoConciliacion: "SIN_CONCILIAR", rolComprobado: null };
+const registro = {
+  nombre: "=Ana",
+  emailObservado: "ana@gmail.com",
+  emailConfirmado: null,
+  primeraEntradaAt: t("13:00"),
+  ultimaSalidaAt: t("13:30"),
+  minutos: 30,
+  porcentaje: 50,
+  sesiones: 1,
+  estadoConciliacion: "SIN_CONCILIAR",
+  rolComprobado: null
+};
 
 describe("exportación de asistencia Zoom", () => {
   beforeEach(() => {
@@ -38,8 +53,10 @@ describe("exportación de asistencia Zoom", () => {
     mocks.resolveSessionActor.mockResolvedValue({ id: "u", rol: "DOCENTE", activo: true });
     mocks.puedeGestionarPrograma.mockResolvedValue(true);
     mocks.instancia.mockResolvedValue({
-      inicioProgramadoAt: t("13:00"), finProgramadoAt: t("14:00"),
-      solicitud: { docentePrograma: { programaId: "p1" } }, eventosProveedor: []
+      inicioProgramadoAt: t("13:00"),
+      finProgramadoAt: t("14:00"),
+      solicitud: { docentePrograma: { programaId: "p1" } },
+      eventosProveedor: []
     });
     mocks.cargar.mockResolvedValue({ registros: [registro], sesiones: [] });
   });
@@ -56,7 +73,19 @@ describe("exportación de asistencia Zoom", () => {
   });
 
   it("separa sesiones originales de resumen consolidado con el parámetro conjunto", async () => {
-    mocks.cargar.mockResolvedValue({ registros: [registro], sesiones: [{ nombre: "Ana", email: null, entradaAt: t("13:00"), salidaAt: t("13:10"), status: "in_meeting", participanteId: "p" }] });
+    mocks.cargar.mockResolvedValue({
+      registros: [registro],
+      sesiones: [
+        {
+          nombre: "Ana",
+          email: null,
+          entradaAt: t("13:00"),
+          salidaAt: t("13:10"),
+          status: "in_meeting",
+          participanteId: "p"
+        }
+      ]
+    });
     const r = await pedir("zoom", "?conjunto=sesiones&formato=json");
     expect(r.status).toBe(200);
     const json = await r.json();

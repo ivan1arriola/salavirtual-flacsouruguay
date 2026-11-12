@@ -4,8 +4,20 @@ import type { ArchivoOrigenZoom, ReferenciaOcurrenciaZoom } from "./zoom-archivo
 export type HashZoom = (texto: string) => string;
 
 export const TIPOS_ARCHIVO_ZOOM_CONOCIDOS = Object.freeze([
-  "MP4", "M4A", "TIMELINE", "TRANSCRIPT", "CHAT", "CC", "CSV", "SUMMARY",
-  "POLL", "QA", "THUMBNAIL", "MP3", "AUDIO_TRANSCRIPT", "TB"
+  "MP4",
+  "M4A",
+  "TIMELINE",
+  "TRANSCRIPT",
+  "CHAT",
+  "CC",
+  "CSV",
+  "SUMMARY",
+  "POLL",
+  "QA",
+  "THUMBNAIL",
+  "MP3",
+  "AUDIO_TRANSCRIPT",
+  "TB"
 ] as const);
 
 export type TipoArchivoZoom = (typeof TIPOS_ARCHIVO_ZOOM_CONOCIDOS)[number] | "OTRO";
@@ -42,22 +54,32 @@ function esRegistro(valor: unknown): valor is Registro {
 }
 
 function textoONulo(valor: unknown): string | null {
-  if (typeof valor === "number" && Number.isFinite(valor)) return String(valor);
-  if (typeof valor !== "string") return null;
+  if (typeof valor === "number" && Number.isFinite(valor)) {
+    return String(valor);
+  }
+  if (typeof valor !== "string") {
+    return null;
+  }
   const limpio = valor.trim();
   return limpio === "" ? null : limpio;
 }
 
 function fechaONula(valor: unknown): Date | null {
   const texto = textoONulo(valor);
-  if (!texto) return null;
+  if (!texto) {
+    return null;
+  }
   const fecha = new Date(texto);
   return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
 function bytesONulo(valor: unknown): bigint | null {
-  if (typeof valor === "number" && Number.isSafeInteger(valor) && valor >= 0) return BigInt(valor);
-  if (typeof valor === "string" && /^\d+$/.test(valor.trim())) return BigInt(valor.trim());
+  if (typeof valor === "number" && Number.isSafeInteger(valor) && valor >= 0) {
+    return BigInt(valor);
+  }
+  if (typeof valor === "string" && /^\d+$/.test(valor.trim())) {
+    return BigInt(valor.trim());
+  }
   return null;
 }
 
@@ -86,15 +108,27 @@ function construirCandidato(
   ]
     .filter(([, convertido, original]) => convertido === null && textoONulo(original) !== null)
     .map(([campo]): ObservacionInventarioZoom => ({
-      tipo: "METADATO_INVALIDO", coleccion, indice, campo: String(campo)
+      tipo: "METADATO_INVALIDO",
+      coleccion,
+      indice,
+      campo: String(campo)
     }));
 
   const alcance = `${ocurrencia.cuentaZoomId}|${ocurrencia.uuid}`;
   // Sin ID: coleccion, tipo, variante, inicio y extension. Nunca download_url ni
   // recording_end (llega vacio mientras Zoom procesa), ni parametros de autorizacion.
-  const identidad = archivoZoomId !== null
-    ? JSON.stringify([alcance, "id", archivoZoomId])
-    : JSON.stringify([alcance, "meta", coleccion, tipoOriginal.toUpperCase(), variante, inicioAt?.toISOString() ?? null, extension]);
+  const identidad =
+    archivoZoomId !== null
+      ? JSON.stringify([alcance, "id", archivoZoomId])
+      : JSON.stringify([
+          alcance,
+          "meta",
+          coleccion,
+          tipoOriginal.toUpperCase(),
+          variante,
+          inicioAt?.toISOString() ?? null,
+          extension
+        ]);
 
   const procesando = estadoOrigen === "processing";
   const urlDisponible = textoONulo(elemento.download_url) !== null;
@@ -138,7 +172,11 @@ export function normalizarInventarioZoom(
 
   const invalidos = entradas
     .filter(({ elemento }) => !esRegistro(elemento))
-    .map(({ coleccion, indice }): ObservacionInventarioZoom => ({ tipo: "ELEMENTO_INVALIDO", coleccion, indice }));
+    .map(({ coleccion, indice }): ObservacionInventarioZoom => ({
+      tipo: "ELEMENTO_INVALIDO",
+      coleccion,
+      indice
+    }));
 
   const candidatos = entradas.flatMap(({ coleccion, indice, elemento }) =>
     esRegistro(elemento) ? [construirCandidato(ocurrencia, coleccion, indice, elemento, hash)] : []
@@ -149,7 +187,10 @@ export function normalizarInventarioZoom(
 
   const porClave = inventariables.reduce<ReadonlyMap<string, readonly Candidato[]>>(
     (acumulado, candidato) =>
-      new Map([...acumulado, [candidato.recurso.claveOrigen, [...(acumulado.get(candidato.recurso.claveOrigen) ?? []), candidato]]]),
+      new Map([
+        ...acumulado,
+        [candidato.recurso.claveOrigen, [...(acumulado.get(candidato.recurso.claveOrigen) ?? []), candidato]]
+      ]),
     new Map()
   );
 
@@ -165,11 +206,7 @@ export function normalizarInventarioZoom(
 
   return {
     recursos: grupos.map((grupo) => grupo[0].recurso),
-    observaciones: [
-      ...invalidos,
-      ...candidatos.flatMap((c) => c.observaciones),
-      ...ambiguos
-    ],
+    observaciones: [...invalidos, ...candidatos.flatMap((c) => c.observaciones), ...ambiguos],
     procesamientoPendiente: pendientes.length > 0
   };
 }
@@ -177,7 +214,7 @@ export function normalizarInventarioZoom(
 function sanearSegmento(valor: string, largoMaximo: number): string {
   return valor
     .normalize("NFC")
-    // eslint-disable-next-line no-control-regex
+
     .replace(/[\u0000-\u001f\u007f\\/:*?"<>|]+/g, "-")
     .replace(/\s+/g, " ")
     .replace(/\.{2,}/g, ".")
@@ -191,13 +228,19 @@ function sanearSegmento(valor: string, largoMaximo: number): string {
  * fecha_TIPO_variante_idEstable[_sufijo].extension. No contiene separadores de ruta.
  * El sufijo opcional (saneado) desambigua nombres que colisionan tras sanear o truncar.
  */
-export function nombreArchivoZoom(ocurrencia: ReferenciaOcurrenciaZoom, archivo: ArchivoOrigenZoom, sufijo?: string): string {
+export function nombreArchivoZoom(
+  ocurrencia: ReferenciaOcurrenciaZoom,
+  archivo: ArchivoOrigenZoom,
+  sufijo?: string
+): string {
   const fecha = ocurrencia.inicioRealAt.toISOString().slice(0, 10);
   const tipo = sanearSegmento(archivo.tipoOriginal, 30) || "OTRO";
   const variante = archivo.variante ? sanearSegmento(archivo.variante, 60) : "";
   const identificador = sanearSegmento(archivo.archivoZoomId ?? archivo.claveOrigen, 60) || "sin-id";
   const extension = archivo.extension ? sanearSegmento(archivo.extension.replace(/^\./, ""), 10) : "";
   const desambiguador = sufijo ? sanearSegmento(sufijo, 80) : "";
-  const cuerpo = [fecha, tipo, variante, identificador, desambiguador].filter((parte) => parte !== "").join("_");
+  const cuerpo = [fecha, tipo, variante, identificador, desambiguador]
+    .filter((parte) => parte !== "")
+    .join("_");
   return extension ? `${cuerpo}.${extension}` : cuerpo;
 }

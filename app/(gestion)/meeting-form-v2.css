@@ -430,7 +430,6 @@
   }
 }
 
-
 /* Mobile-first form UX: disclosure and summary */
 .meeting-form-v2 .organization-email-editor {
   padding: 0;
@@ -474,7 +473,7 @@
 .meeting-form-v2 .organization-disclosure-chevron {
   flex: 0 0 auto;
   color: #2c4777;
-  transition: transform .18s ease;
+  transition: transform 0.18s ease;
 }
 
 .meeting-form-v2 .organization-email-editor[open] .organization-disclosure-chevron {
@@ -513,7 +512,7 @@
   gap: 7px;
   cursor: pointer;
   color: #2c4777;
-  font-size: .82rem;
+  font-size: 0.82rem;
   font-weight: 750;
   list-style: none;
   padding: 7px 4px;
@@ -544,7 +543,7 @@
   background: #fff0d7;
   color: #825000;
   padding: 9px 12px;
-  font-size: .79rem;
+  font-size: 0.79rem;
 }
 
 .meeting-form-v2 .meeting-form-summary-v2 {
@@ -554,21 +553,20 @@
 }
 
 .meeting-form-v2 .meeting-form-summary-v2 > strong {
-  font-size: .9rem;
+  font-size: 0.9rem;
   color: #203b68;
 }
 
 .meeting-form-v2 .meeting-form-summary-v2 > span {
   color: #526986;
-  font-size: .77rem;
+  font-size: 0.77rem;
   line-height: 1.3;
 }
 
 .meeting-form-v2 .meeting-form-summary-v2 > small {
   color: #637994;
-  font-size: .7rem;
+  font-size: 0.7rem;
 }
-
 
 /* Asistencia presencial: campos automáticos y margen mínimo obligatorio. */
 .meeting-form-v2 .meeting-assistance-hint {
@@ -595,11 +593,11 @@
 }
 
 .meeting-form-v2 .meeting-assistance-hint strong {
-  font-size: .85rem;
+  font-size: 0.85rem;
 }
 
 .meeting-form-v2 .meeting-assistance-hint span {
-  font-size: .78rem;
+  font-size: 0.78rem;
   line-height: 1.45;
 }
 
@@ -616,12 +614,12 @@
 
 .meeting-form-v2 .meeting-assistance-fields > strong {
   color: #223e69;
-  font-size: .82rem;
+  font-size: 0.82rem;
 }
 
 .meeting-form-v2 .meeting-assistance-fields > strong small {
   color: #506986;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
@@ -674,7 +672,6 @@
   }
 }
 
-
 .meeting-form-v2 .meeting-assistance-return {
   display: flex;
   gap: 11px;
@@ -698,11 +695,11 @@
 }
 
 .meeting-form-v2 .meeting-assistance-return strong {
-  font-size: .85rem;
+  font-size: 0.85rem;
 }
 
 .meeting-form-v2 .meeting-assistance-return span {
-  font-size: .78rem;
+  font-size: 0.78rem;
   line-height: 1.4;
 }
 
@@ -712,12 +709,11 @@
   align-items: center;
   width: fit-content;
   color: #1f447e;
-  font-size: .83rem;
+  font-size: 0.83rem;
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-
 
 /* La asistencia virtual se calcula automáticamente; no son campos editables. */
 .meeting-form-v2 .meeting-assistance-hint.is-virtual {
@@ -744,7 +740,7 @@
 
 .meeting-form-v2 .meeting-assistance-readonly > span {
   color: #425d82;
-  font-size: .76rem;
+  font-size: 0.76rem;
   font-weight: 650;
 }
 

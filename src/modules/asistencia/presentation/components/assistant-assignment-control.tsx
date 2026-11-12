@@ -52,7 +52,11 @@ export function AssistantAssignmentControl({
           </button>
         </div>
       ))}
-      {message ? <small className="inline-error" role="alert">{message}</small> : null}
+      {message ? (
+        <small className="inline-error" role="alert">
+          {message}
+        </small>
+      ) : null}
     </div>
   );
 }

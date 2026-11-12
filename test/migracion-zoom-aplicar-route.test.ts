@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  session: null as null | { user: { id: string; email: string; role: string } },
+  session: null as null | { user: { id: string; email: string; role: string } }
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
-    constructor(public body: unknown, public status = 200) {}
+    constructor(
+      public body: unknown,
+      public status = 200
+    ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  },
+  }
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
 

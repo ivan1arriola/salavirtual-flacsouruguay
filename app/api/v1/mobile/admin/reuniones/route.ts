@@ -24,7 +24,9 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(page);
   } catch (error) {
-    if (error instanceof MobileActorError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof MobileActorError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof Error && /^(from|to|limit|state|coverage|cursor)\b/.test(error.message)) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

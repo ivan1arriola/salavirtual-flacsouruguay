@@ -21,13 +21,8 @@ export function AdminTriageSection({
 }: Readonly<{
   attentionData: AdminDashboardData["attentionData"];
 }>) {
-  const {
-    pendingCoverage,
-    integrationErrors,
-    pendingRecordings,
-    openIncidents,
-    duplicateRisks
-  } = attentionData;
+  const { pendingCoverage, integrationErrors, pendingRecordings, openIncidents, duplicateRisks } =
+    attentionData;
 
   const totalUrgent =
     pendingCoverage.count +
@@ -36,13 +31,17 @@ export function AdminTriageSection({
     openIncidents.count +
     duplicateRisks.count;
 
-  if (totalUrgent === 0) return null;
+  if (totalUrgent === 0) {
+    return null;
+  }
 
   return (
     <section className="dashboard-content-section admin-triage-section" aria-labelledby="admin-triage-title">
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
-          <span className="admin-section-icon is-attention"><Siren aria-hidden="true" size={20} /></span>
+          <span className="admin-section-icon is-attention">
+            <Siren aria-hidden="true" size={20} />
+          </span>
           <div>
             <h2 id="admin-triage-title">Alertas y pendientes</h2>
             <p>Casos operativos que requieren intervención.</p>
@@ -77,7 +76,9 @@ export function AdminTriageSection({
                 </span>
                 <div>
                   <strong>Incidencias abiertas</strong>
-                  <small>{openIncidents.count} {openIncidents.count === 1 ? "caso" : "casos"}</small>
+                  <small>
+                    {openIncidents.count} {openIncidents.count === 1 ? "caso" : "casos"}
+                  </small>
                 </div>
               </div>
               <ul>
@@ -108,7 +109,9 @@ export function AdminTriageSection({
                 </span>
                 <div>
                   <strong>Reuniones sin monitoreo</strong>
-                  <small>{pendingCoverage.count} {pendingCoverage.count === 1 ? "caso" : "casos"}</small>
+                  <small>
+                    {pendingCoverage.count} {pendingCoverage.count === 1 ? "caso" : "casos"}
+                  </small>
                 </div>
               </div>
               <ul>
@@ -139,7 +142,9 @@ export function AdminTriageSection({
                 </span>
                 <div>
                   <strong>Errores de Google Meet</strong>
-                  <small>{integrationErrors.count} {integrationErrors.count === 1 ? "caso" : "casos"}</small>
+                  <small>
+                    {integrationErrors.count} {integrationErrors.count === 1 ? "caso" : "casos"}
+                  </small>
                 </div>
               </div>
               <ul>
@@ -164,7 +169,9 @@ export function AdminTriageSection({
                 </span>
                 <div>
                   <strong>Grabaciones pendientes de sincronización</strong>
-                  <small>{pendingRecordings.count} {pendingRecordings.count === 1 ? "caso" : "casos"}</small>
+                  <small>
+                    {pendingRecordings.count} {pendingRecordings.count === 1 ? "caso" : "casos"}
+                  </small>
                 </div>
               </div>
               <ul>
@@ -189,7 +196,9 @@ export function AdminTriageSection({
                 </span>
                 <div>
                   <strong>Posibles reuniones duplicadas</strong>
-                  <small>{duplicateRisks.count} {duplicateRisks.count === 1 ? "caso" : "casos"}</small>
+                  <small>
+                    {duplicateRisks.count} {duplicateRisks.count === 1 ? "caso" : "casos"}
+                  </small>
                 </div>
               </div>
               <ul>
@@ -209,4 +218,3 @@ export function AdminTriageSection({
     </section>
   );
 }
-

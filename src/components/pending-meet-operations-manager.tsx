@@ -71,9 +71,14 @@ function humanizeError(rawError: string | null): {
     };
   }
   const norm = rawError.toLowerCase();
-  if (norm.includes("insufficient authentication scopes") || norm.includes("insufficient_scope") || norm.includes("access_token_scope_insufficient")) {
+  if (
+    norm.includes("insufficient authentication scopes") ||
+    norm.includes("insufficient_scope") ||
+    norm.includes("access_token_scope_insufficient")
+  ) {
     return {
-      friendly: "Faltan permisos (scopes) de la API de Google Meet en Google Workspace. El Meet funciona normalmente pero no se pueden sincronizar co-anfitriones por API.",
+      friendly:
+        "Faltan permisos (scopes) de la API de Google Meet en Google Workspace. El Meet funciona normalmente pero no se pueden sincronizar co-anfitriones por API.",
       isScopeError: true,
       isMemberPermissionError: false
     };
@@ -85,16 +90,25 @@ function humanizeError(rawError: string | null): {
     ((norm.includes("no tenés permisos") || norm.includes("no tienes permisos")) && norm.includes("miembro"))
   ) {
     return {
-      friendly: "Google Meet rechazó modificar el rol de co-anfitrión de un miembro (espacio histórico o miembro creado por Calendar). El enlace Meet funciona con normalidad; podés reintentar la promoción automática o descartar este pendiente.",
+      friendly:
+        "Google Meet rechazó modificar el rol de co-anfitrión de un miembro (espacio histórico o miembro creado por Calendar). El enlace Meet funciona con normalidad; podés reintentar la promoción automática o descartar este pendiente.",
       isScopeError: false,
       isMemberPermissionError: true
     };
   }
   if (norm.includes("todavía no terminó de generar el enlace meet")) {
-    return { friendly: "Google Calendar demoró en generar el enlace Meet.", isScopeError: false, isMemberPermissionError: false };
+    return {
+      friendly: "Google Calendar demoró en generar el enlace Meet.",
+      isScopeError: false,
+      isMemberPermissionError: false
+    };
   }
   if (norm.includes("la cuenta host no tiene email")) {
-    return { friendly: "Falta configurar la cuenta organizadora de la sala.", isScopeError: false, isMemberPermissionError: false };
+    return {
+      friendly: "Falta configurar la cuenta organizadora de la sala.",
+      isScopeError: false,
+      isMemberPermissionError: false
+    };
   }
   return { friendly: rawError, isScopeError: false, isMemberPermissionError: false };
 }
@@ -166,10 +180,16 @@ export function PendingMeetOperationsManager({
 
   const filteredItems = useMemo(() => {
     return pendingItems.filter((it) => {
-      if (filterType === "ready" && !it.joinUrl && !it.codigoReunion) return false;
-      if (filterType === "missing_meet" && (it.joinUrl || it.codigoReunion)) return false;
+      if (filterType === "ready" && !it.joinUrl && !it.codigoReunion) {
+        return false;
+      }
+      if (filterType === "missing_meet" && (it.joinUrl || it.codigoReunion)) {
+        return false;
+      }
 
-      if (!searchTerm) return true;
+      if (!searchTerm) {
+        return true;
+      }
       const q = searchTerm.toLowerCase();
       return (
         it.solicitudTitulo.toLowerCase().includes(q) ||
@@ -184,8 +204,11 @@ export function PendingMeetOperationsManager({
   function toggleErrorDetails(id: string) {
     setExpandedErrorIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -217,7 +240,11 @@ export function PendingMeetOperationsManager({
   }
 
   async function dismissAllNonBlocking() {
-    if (!confirm(`¿Descartar las ${countWithMeet} tareas de ajustes para reuniones que ya tienen enlace Meet funcionando?`)) {
+    if (
+      !confirm(
+        `¿Descartar las ${countWithMeet} tareas de ajustes para reuniones que ya tienen enlace Meet funcionando?`
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -234,7 +261,10 @@ export function PendingMeetOperationsManager({
           text: `Se descartaron ${result.resultado?.totalDescartadas ?? countWithMeet} operaciones. Las reuniones siguen operativas con sus enlaces Meet.`
         });
       } else {
-        setGlobalMessage({ text: result.error ?? "No se pudieron descartar las operaciones.", isError: true });
+        setGlobalMessage({
+          text: result.error ?? "No se pudieron descartar las operaciones.",
+          isError: true
+        });
       }
     } catch {
       setGlobalMessage({ text: "Error de conexión al descartar operaciones.", isError: true });
@@ -311,7 +341,9 @@ export function PendingMeetOperationsManager({
       });
       const result = await response.json().catch(() => ({}));
       if (response.ok) {
-        setGlobalMessage({ text: `Operación descartada para: ${item.solicitudTitulo}. El Meet sigue activo.` });
+        setGlobalMessage({
+          text: `Operación descartada para: ${item.solicitudTitulo}. El Meet sigue activo.`
+        });
       } else {
         setGlobalMessage({ text: result.error ?? "No se pudo descartar.", isError: true });
       }
@@ -344,7 +376,9 @@ export function PendingMeetOperationsManager({
       <div className="pending-provision">
         <div className="pending-provision-summary">
           <div className="pending-provision-header">
-            <strong>{countTotal} {countTotal === 1 ? "operación pendiente" : "operaciones pendientes"} con Google</strong>
+            <strong>
+              {countTotal} {countTotal === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
+            </strong>
             {allReady ? (
               <span className="status status-success">
                 <CheckCircle2 size={13} /> {countWithMeet} reuniones con Meet funcionando
@@ -357,13 +391,17 @@ export function PendingMeetOperationsManager({
           </div>
 
           <small className={globalMessage?.isError ? "text-error" : ""}>
-            {globalMessage?.text || (allReady
-              ? "Las reuniones ya cuentan con su enlace Google Meet generado y están listas para usarse. Los pendientes corresponden a la configuración avanzada de cohosts y moderación."
-              : "Existen tareas técnicas pendientes con los servicios de Google.")}
+            {globalMessage?.text ||
+              (allReady
+                ? "Las reuniones ya cuentan con su enlace Google Meet generado y están listas para usarse. Los pendientes corresponden a la configuración avanzada de cohosts y moderación."
+                : "Existen tareas técnicas pendientes con los servicios de Google.")}
           </small>
 
           {breakdown.length ? (
-            <ul className="settings-list pending-breakdown-list" aria-label="Detalle de operaciones pendientes">
+            <ul
+              className="settings-list pending-breakdown-list"
+              aria-label="Detalle de operaciones pendientes"
+            >
               {breakdown.map(({ operation, count: opCount, label, description }) => (
                 <li key={operation}>
                   <span>
@@ -420,7 +458,10 @@ export function PendingMeetOperationsManager({
           <div className="diagnostic-banner-content">
             <strong>Diagnóstico del error: Falta de permisos (scopes) en Google Workspace</strong>
             <p>
-              Google devuelve <code>Request had insufficient authentication scopes.</code> Esto ocurre porque la cuenta de servicio institucional aún no tiene autorizados los scopes de Google Meet (<code>meetings.space.settings</code> y <code>meetings.space.created</code>) bajo <em>Delegación en todo el dominio</em> en la Consola de Administración de Google Workspace.
+              Google devuelve <code>Request had insufficient authentication scopes.</code> Esto ocurre porque
+              la cuenta de servicio institucional aún no tiene autorizados los scopes de Google Meet (
+              <code>meetings.space.settings</code> y <code>meetings.space.created</code>) bajo{" "}
+              <em>Delegación en todo el dominio</em> en la Consola de Administración de Google Workspace.
             </p>
             <div className="diagnostic-banner-footer">
               <span className="diagnostic-pill pill-ok">
@@ -438,9 +479,17 @@ export function PendingMeetOperationsManager({
         <div className="integration-diagnostic-banner">
           <Info size={20} className="diagnostic-banner-icon" />
           <div className="diagnostic-banner-content">
-            <strong>Diagnóstico: Restricción de rol de miembro en Google Meet (<code>spaces.members</code>)</strong>
+            <strong>
+              Diagnóstico: Restricción de rol de miembro en Google Meet (<code>spaces.members</code>)
+            </strong>
             <p>
-              Google Meet devolvió <code>No tenés permisos para modificar el rol de este miembro</code> al intentar promover un participante invitado por Calendar o en un espacio creado antes de la rotación de credenciales. Al pulsar <strong>Sincronizar con Google</strong> o <strong>Reintentar</strong>, el sistema recrea la membresía con rol <code>COHOST</code> y prueba automáticamente las credenciales históricas (Legacy). Si el encuentro ya tiene su enlace Meet operativo y algún correo externo no admite promoción por API, podés usar <strong>Descartar</strong> sin afectar la reunión.
+              Google Meet devolvió <code>No tenés permisos para modificar el rol de este miembro</code> al
+              intentar promover un participante invitado por Calendar o en un espacio creado antes de la
+              rotación de credenciales. Al pulsar <strong>Sincronizar con Google</strong> o{" "}
+              <strong>Reintentar</strong>, el sistema recrea la membresía con rol <code>COHOST</code> y prueba
+              automáticamente las credenciales históricas (Legacy). Si el encuentro ya tiene su enlace Meet
+              operativo y algún correo externo no admite promoción por API, podés usar{" "}
+              <strong>Descartar</strong> sin afectar la reunión.
             </p>
             <div className="diagnostic-banner-footer">
               <span className="diagnostic-pill pill-ok">
@@ -462,7 +511,11 @@ export function PendingMeetOperationsManager({
           aria-expanded={expanded}
         >
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          <span>{expanded ? "Ocultar detalle de encuentros afectados" : `Ver detalle y gestionar encuentros (${countTotal})`}</span>
+          <span>
+            {expanded
+              ? "Ocultar detalle de encuentros afectados"
+              : `Ver detalle y gestionar encuentros (${countTotal})`}
+          </span>
         </button>
       </div>
 
@@ -530,7 +583,10 @@ export function PendingMeetOperationsManager({
 
                         <div className="pending-card-badges">
                           {hasMeet ? (
-                            <span className="status status-success" title="El enlace Meet fue creado y funciona">
+                            <span
+                              className="status status-success"
+                              title="El enlace Meet fue creado y funciona"
+                            >
                               <CheckCircle2 size={12} /> Meet operativo
                             </span>
                           ) : (
@@ -540,13 +596,16 @@ export function PendingMeetOperationsManager({
                           )}
 
                           <span className="status status-warning">
-                            {OPERATION_LABELS[item.operacionPendiente ?? ""]?.label ?? (item.operacionPendiente || "Error")}
+                            {OPERATION_LABELS[item.operacionPendiente ?? ""]?.label ??
+                              (item.operacionPendiente || "Error")}
                           </span>
                         </div>
                       </div>
 
                       <div className="pending-card-meta">
-                        <span>Encuentro {item.ordinal} · {formatDate(item.inicioProgramadoAt)}</span>
+                        <span>
+                          Encuentro {item.ordinal} · {formatDate(item.inicioProgramadoAt)}
+                        </span>
                         {item.programaNombre ? <span>· {item.programaNombre}</span> : null}
                         {item.docenteNombre ? <span>· Docente: {item.docenteNombre}</span> : null}
                         {item.hostEmail ? <span>· Sala: {item.hostEmail}</span> : null}
@@ -555,12 +614,7 @@ export function PendingMeetOperationsManager({
                       {item.joinUrl ? (
                         <div className="pending-card-meet-link">
                           <span>Enlace Meet:</span>
-                          <a
-                            className="meet-url-badge"
-                            href={item.joinUrl}
-                            rel="noreferrer"
-                            target="_blank"
-                          >
+                          <a className="meet-url-badge" href={item.joinUrl} rel="noreferrer" target="_blank">
                             {item.joinUrl}
                             <ExternalLink size={12} />
                           </a>
@@ -598,7 +652,11 @@ export function PendingMeetOperationsManager({
                         title="Reintentar sincronización de este encuentro con Google"
                         type="button"
                       >
-                        {isBusyItem ? <LoaderCircle className="button-spinner" size={15} /> : <RefreshCw size={15} />}
+                        {isBusyItem ? (
+                          <LoaderCircle className="button-spinner" size={15} />
+                        ) : (
+                          <RefreshCw size={15} />
+                        )}
                         {isBusyItem ? "Reintentando…" : "Reintentar"}
                       </button>
 
@@ -606,7 +664,11 @@ export function PendingMeetOperationsManager({
                         className="ghost-action text-danger"
                         disabled={isBusyItem || busy}
                         onClick={() => dismissSingle(item)}
-                        title={hasMeet ? "Quitar tarea pendiente (el enlace Meet se conserva)" : "Descartar operación"}
+                        title={
+                          hasMeet
+                            ? "Quitar tarea pendiente (el enlace Meet se conserva)"
+                            : "Descartar operación"
+                        }
                         type="button"
                       >
                         <Trash2 size={14} /> Descartar

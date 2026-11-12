@@ -5,7 +5,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import {
   actualizarSeccionGoogleWorkspace,
-  desactivarCredencialLegacyWorkspace,
+  desactivarCredencialLegacyWorkspace
 } from "@/src/modules/configuracion/google-workspace.service";
 
 export const runtime = "nodejs";
@@ -47,7 +47,7 @@ export async function GET() {
         privateKeyCifrada: true,
         activa: true,
         version: true,
-        updatedAt: true,
+        updatedAt: true
       }
     })
   ]);
@@ -70,7 +70,7 @@ export async function GET() {
       activa: credential.activa,
       version: credential.version,
       updatedAt: credential.updatedAt,
-      privateKeyConfigurada: Boolean(credential.privateKeyCifrada),
+      privateKeyConfigurada: Boolean(credential.privateKeyCifrada)
     }))
   });
 }

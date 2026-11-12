@@ -1,17 +1,15 @@
 export function assistantSlug(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "asistente";
+  return (
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "asistente"
+  );
 }
 
-export function assistantPathSegment(
-  name: string,
-  userId: string,
-  needsDisambiguation = false
-): string {
+export function assistantPathSegment(name: string, userId: string, needsDisambiguation = false): string {
   const slug = assistantSlug(name);
   return needsDisambiguation ? `${slug}--${userId}` : slug;
 }

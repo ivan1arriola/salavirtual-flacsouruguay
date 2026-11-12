@@ -9,19 +9,15 @@ import { RememberedAccounts } from "@/src/components/remembered-accounts";
 import { PasswordInput } from "./password-input";
 import { GoogleLoginButton } from "./google-login-button";
 
-import {
-  iniciarSesionLocal
-} from "./actions";
+import { iniciarSesionLocal } from "./actions";
 
 import "./acceso.css";
 
 const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
   CredentialsSignin: "El usuario o la contraseña no son correctos.",
   AccessDenied: "Esta cuenta no tiene acceso autorizado.",
-  Configuration:
-    "Tu solicitud de acceso fue registrada y deberá ser autorizada.",
-  OAuthCallbackError:
-    "Tu solicitud de acceso fue registrada y deberá ser autorizada."
+  Configuration: "Tu solicitud de acceso fue registrada y deberá ser autorizada.",
+  OAuthCallbackError: "Tu solicitud de acceso fue registrada y deberá ser autorizada."
 });
 
 type AccesoPageProps = Readonly<{
@@ -33,9 +29,7 @@ type AccesoPageProps = Readonly<{
   }>;
 }>;
 
-export default async function AccesoPage({
-  searchParams
-}: AccesoPageProps) {
+export default async function AccesoPage({ searchParams }: AccesoPageProps) {
   const session = await auth();
 
   // Una cookie JWT puede seguir siendo válida aunque la cuenta ya no exista
@@ -48,25 +42,17 @@ export default async function AccesoPage({
     console.warn("[Auth] La pantalla de acceso recibió un JWT sin usuario activo.");
   }
 
-  const {
-    error,
-    usuario,
-    cambiar,
-    restablecida
-  } = await searchParams;
+  const { error, usuario, cambiar, restablecida } = await searchParams;
 
   const mensaje = error
-    ? MENSAJES_ERROR[error] ?? "No se pudo iniciar sesión."
+    ? (MENSAJES_ERROR[error] ?? "No se pudo iniciar sesión.")
     : session?.user
       ? "Tu sesión anterior ya no está vigente. Iniciá sesión nuevamente."
       : null;
 
   return (
     <main className="login-shell">
-      <section
-        className="login-card"
-        aria-labelledby="login-title"
-      >
+      <section className="login-card" aria-labelledby="login-title">
         <header className="login-header">
           <a
             className="login-logo-link"
@@ -96,9 +82,7 @@ export default async function AccesoPage({
           </div>
         </header>
 
-        {cambiar === "1" ? (
-          <RememberedAccounts />
-        ) : null}
+        {cambiar === "1" ? <RememberedAccounts /> : null}
 
         {mensaje ? (
           <p className="login-error" role="alert">
@@ -122,14 +106,9 @@ export default async function AccesoPage({
           </>
         ) : null}
 
-        <form
-          className="login-form"
-          action={iniciarSesionLocal}
-        >
+        <form className="login-form" action={iniciarSesionLocal}>
           <div className="login-field">
-            <label htmlFor="usuario">
-              Usuario o correo
-            </label>
+            <label htmlFor="usuario">Usuario o correo</label>
 
             <input
               id="usuario"
@@ -144,14 +123,9 @@ export default async function AccesoPage({
 
           <div className="login-field">
             <div className="login-password-heading">
-              <label htmlFor="password">
-                Contraseña
-              </label>
+              <label htmlFor="password">Contraseña</label>
 
-              <a
-                className="login-inline-link"
-                href="/recuperar-contrasena"
-              >
+              <a className="login-inline-link" href="/recuperar-contrasena">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -159,10 +133,7 @@ export default async function AccesoPage({
             <PasswordInput />
           </div>
 
-          <button
-            className="login-submit-button"
-            type="submit"
-          >
+          <button className="login-submit-button" type="submit">
             Ingresar
           </button>
         </form>
@@ -170,4 +141,3 @@ export default async function AccesoPage({
     </main>
   );
 }
-

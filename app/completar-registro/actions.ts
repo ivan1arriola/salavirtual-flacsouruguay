@@ -8,9 +8,13 @@ import { completarRegistroInstitucional } from "@/src/modules/usuarios/registro-
 
 export async function guardarRegistroInstitucional(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
   const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
-  if (!actor) redirect("/acceso");
+  if (!actor) {
+    redirect("/acceso");
+  }
   try {
     await completarRegistroInstitucional(db, actor, {
       programaId: formData.get("programaId"),

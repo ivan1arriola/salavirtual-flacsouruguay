@@ -1,4 +1,14 @@
-import { AlertTriangle, CalendarDays, Clock3, ExternalLink, FileText, History, Radio, Users, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  FileText,
+  History,
+  Radio,
+  Users,
+  Video
+} from "lucide-react";
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
@@ -8,69 +18,197 @@ import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-opera
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export function ReunionZoomHistorica({ reunion, rol, asistencia }: Readonly<{
+export function ReunionZoomHistorica({
+  reunion,
+  rol,
+  asistencia
+}: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   asistencia: AsistenciaZoomFicha;
 }>) {
   const registros = asistencia.registros;
   const hayDatos = asistencia.estadoReporte === "DISPONIBLE" || registros.length > 0;
-  const incidenciasAbiertas = reunion.incidencias.filter(i => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS");
+  const incidenciasAbiertas = reunion.incidencias.filter(
+    (i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS"
+  );
   const esAsistente = rol === "ASISTENTE_TECNICO";
-  const estado = reunion.estado === "FINALIZADA" ? "Finalizada" : reunion.estado === "NO_INICIADA" ? "Realización sin verificar" : reunion.estado.replaceAll("_", " ");
+  const estado =
+    reunion.estado === "FINALIZADA"
+      ? "Finalizada"
+      : reunion.estado === "NO_INICIADA"
+        ? "Realización sin verificar"
+        : reunion.estado.replaceAll("_", " ");
   return (
     <main className={styles.page}>
       <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica />
       <header className={styles.hero}>
-        <div className={styles.eyebrow}><span>{reunion.programa}</span><span className={styles.provider}><Video size={15} /> Zoom</span><span className={styles.historyTag}>{estado}</span></div>
+        <div className={styles.eyebrow}>
+          <span>{reunion.programa}</span>
+          <span className={styles.provider}>
+            <Video size={15} /> Zoom
+          </span>
+          <span className={styles.historyTag}>{estado}</span>
+        </div>
         <h1>{reunion.titulo}</h1>
-        <p className={styles.subtitle}>{reunion.docente}{reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}</p>
+        <p className={styles.subtitle}>
+          {reunion.docente}
+          {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
+        </p>
         <div className={styles.chips}>
-          <span><CalendarDays size={15} /> {formatDate(reunion.inicioProgramadoAt)}</span>
-          <span><Clock3 size={15} /> {formatTime(reunion.inicioProgramadoAt)} – {formatTime(reunion.finProgramadoAt)} (programado)</span>
+          <span>
+            <CalendarDays size={15} /> {formatDate(reunion.inicioProgramadoAt)}
+          </span>
+          <span>
+            <Clock3 size={15} /> {formatTime(reunion.inicioProgramadoAt)} –{" "}
+            {formatTime(reunion.finProgramadoAt)} (programado)
+          </span>
           <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
         </div>
-        <p className={styles.note}>Esta ficha conserva la programación y los registros institucionales. No implica que Zoom haya confirmado la realización ni la duración efectiva de la reunión.</p>
+        <p className={styles.note}>
+          Esta ficha conserva la programación y los registros institucionales. No implica que Zoom haya
+          confirmado la realización ni la duración efectiva de la reunión.
+        </p>
       </header>
       <section className={styles.card} aria-labelledby="historical-summary">
-        <div className={styles.heading}><History size={19} /><h2 id="historical-summary">Resumen histórico</h2></div>
+        <div className={styles.heading}>
+          <History size={19} />
+          <h2 id="historical-summary">Resumen histórico</h2>
+        </div>
         <div className={styles.historyGrid}>
-          <div><Clock3 size={19}/><span>Horario real</span><strong>No disponible</strong><small>Se muestra únicamente el horario programado arriba.</small></div>
-          <div><Users size={19}/><span>Participantes reales</span><strong>{!hayDatos ? "Sin reporte verificable" : `${registros.length} participantes`}</strong><small>{!hayDatos ? "No se interpreta como cero asistentes." : "Consolidados por participante; sin conciliar no son personas confirmadas."}</small></div>
-          <div><Radio size={19}/><span>Grabación</span><strong>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</strong><small>La solicitud no confirma que exista un archivo.</small></div>
-          <div><AlertTriangle size={19}/><span>Incidencias abiertas</span><strong>{incidenciasAbiertas.length}</strong><small>{reunion.incidencias.length} registradas en total.</small></div>
+          <div>
+            <Clock3 size={19} />
+            <span>Horario real</span>
+            <strong>No disponible</strong>
+            <small>Se muestra únicamente el horario programado arriba.</small>
+          </div>
+          <div>
+            <Users size={19} />
+            <span>Participantes reales</span>
+            <strong>{!hayDatos ? "Sin reporte verificable" : `${registros.length} participantes`}</strong>
+            <small>
+              {!hayDatos
+                ? "No se interpreta como cero asistentes."
+                : "Consolidados por participante; sin conciliar no son personas confirmadas."}
+            </small>
+          </div>
+          <div>
+            <Radio size={19} />
+            <span>Grabación</span>
+            <strong>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</strong>
+            <small>La solicitud no confirma que exista un archivo.</small>
+          </div>
+          <div>
+            <AlertTriangle size={19} />
+            <span>Incidencias abiertas</span>
+            <strong>{incidenciasAbiertas.length}</strong>
+            <small>{reunion.incidencias.length} registradas en total.</small>
+          </div>
         </div>
       </section>
       <section className={styles.card} aria-label="Asistencia histórica de Zoom">
-        <div className={styles.heading}><Users size={19} /><h2>Asistencia Zoom</h2></div>
-        {asistencia.estadoReporte === "ERROR" ? <p className={styles.note}>La última sincronización con Zoom falló. Se conserva lo ya guardado.</p> : null}
-        {!hayDatos ? <p className={styles.note}>{asistencia.estadoReporte === "VACIO" ? "El reporte de Zoom no contiene conexiones." : "Zoom todavía no entregó un reporte para este encuentro. No se muestran asistentes de otras fechas."}</p> :
+        <div className={styles.heading}>
+          <Users size={19} />
+          <h2>Asistencia Zoom</h2>
+        </div>
+        {asistencia.estadoReporte === "ERROR" ? (
+          <p className={styles.note}>La última sincronización con Zoom falló. Se conserva lo ya guardado.</p>
+        ) : null}
+        {!hayDatos ? (
+          <p className={styles.note}>
+            {asistencia.estadoReporte === "VACIO"
+              ? "El reporte de Zoom no contiene conexiones."
+              : "Zoom todavía no entregó un reporte para este encuentro. No se muestran asistentes de otras fechas."}
+          </p>
+        ) : (
           <>
-            <p className={styles.note}>Minutos y porcentaje sobre el horario programado, sin duplicar reingresos. Los correos son los informados por Zoom, no identidad confirmada.</p>
-            <ZoomAsistenciaConciliacion instanciaId={reunion.id} registros={registros} invitados={asistencia.invitados} puedeConciliar={asistencia.puedeConciliar} />
-          </>}
+            <p className={styles.note}>
+              Minutos y porcentaje sobre el horario programado, sin duplicar reingresos. Los correos son los
+              informados por Zoom, no identidad confirmada.
+            </p>
+            <ZoomAsistenciaConciliacion
+              instanciaId={reunion.id}
+              registros={registros}
+              invitados={asistencia.invitados}
+              puedeConciliar={asistencia.puedeConciliar}
+            />
+          </>
+        )}
       </section>
       <section className={styles.card} aria-label="Registros de la reunión">
-        <div className={styles.heading}><FileText size={19}/><h2>Registros y seguimiento</h2></div>
+        <div className={styles.heading}>
+          <FileText size={19} />
+          <h2>Registros y seguimiento</h2>
+        </div>
         <details className={styles.incidents}>
           <summary>Incidencias ({reunion.incidencias.length})</summary>
-          {reunion.incidencias.length ? <ul>{reunion.incidencias.map(i => <li key={i.id}><strong>{i.tipo.replaceAll("_"," ")} · {i.estado}</strong><p>{i.descripcion}</p></li>)}</ul> : <p>No hay incidencias registradas.</p>}
+          {reunion.incidencias.length ? (
+            <ul>
+              {reunion.incidencias.map((i) => (
+                <li key={i.id}>
+                  <strong>
+                    {i.tipo.replaceAll("_", " ")} · {i.estado}
+                  </strong>
+                  <p>{i.descripcion}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay incidencias registradas.</p>
+          )}
         </details>
         <div className={styles.quickActions}>
-          {!esAsistente ? <Link href={`/reuniones/${reunion.solicitudId}`}><FileText size={18}/> Ficha completa</Link> : null}
-          <Link href="/grabaciones"><Video size={18}/> Consultar grabaciones</Link>
+          {!esAsistente ? (
+            <Link href={`/reuniones/${reunion.solicitudId}`}>
+              <FileText size={18} /> Ficha completa
+            </Link>
+          ) : null}
+          <Link href="/grabaciones">
+            <Video size={18} /> Consultar grabaciones
+          </Link>
         </div>
       </section>
-      {esAsistente && reunion.asistencia.asignacionId ? <section className={styles.card} aria-label="Cierre de asistencia técnica"><div className={styles.heading}><FileText size={19}/><h2>Cierre de asistencia técnica</h2></div><OperationalAssistanceClosureForm asignacionId={reunion.asistencia.asignacionId} inicioProgramado={reunion.asistencia.inicioAt.toISOString()} finProgramado={reunion.asistencia.finAt.toISOString()} cierreConfirmado={reunion.asistencia.cierreConfirmado} /></section> : null}
+      {esAsistente && reunion.asistencia.asignacionId ? (
+        <section className={styles.card} aria-label="Cierre de asistencia técnica">
+          <div className={styles.heading}>
+            <FileText size={19} />
+            <h2>Cierre de asistencia técnica</h2>
+          </div>
+          <OperationalAssistanceClosureForm
+            asignacionId={reunion.asistencia.asignacionId}
+            inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
+            finProgramado={reunion.asistencia.finAt.toISOString()}
+            cierreConfirmado={reunion.asistencia.cierreConfirmado}
+          />
+        </section>
+      ) : null}
       <details className={styles.advanced}>
-        <summary><Video size={18}/> Identificación y datos técnicos</summary>
+        <summary>
+          <Video size={18} /> Identificación y datos técnicos
+        </summary>
         <dl className={styles.facts}>
-          <div><dt>ID Zoom</dt><dd className={styles.mono}>{reunion.zoom.id ?? "No disponible"}</dd></div>
-          <div><dt>Cuenta anfitriona</dt><dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd></div>
-          <div><dt>Integración</dt><dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd></div>
-          <div><dt>Asistente técnico</dt><dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd></div>
+          <div>
+            <dt>ID Zoom</dt>
+            <dd className={styles.mono}>{reunion.zoom.id ?? "No disponible"}</dd>
+          </div>
+          <div>
+            <dt>Cuenta anfitriona</dt>
+            <dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd>
+          </div>
+          <div>
+            <dt>Integración</dt>
+            <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
+          </div>
+          <div>
+            <dt>Asistente técnico</dt>
+            <dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd>
+          </div>
         </dl>
-        {reunion.zoom.joinUrl ? <a className={styles.back} href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer"><ExternalLink size={15}/> Enlace original de Zoom</a> : null}
+        {reunion.zoom.joinUrl ? (
+          <a className={styles.back} href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={15} /> Enlace original de Zoom
+          </a>
+        ) : null}
       </details>
     </main>
   );

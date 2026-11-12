@@ -6,7 +6,7 @@ import {
   normalizarEmailAviso,
   type EnviarCorreoMigracion,
   type EstadoAvisoDestinatario,
-  type ResumenAvisosMigracion,
+  type ResumenAvisosMigracion
 } from "./migracion-zoom-avisos.service";
 
 export type { TipoAvisoEnlaceSerie };
@@ -24,33 +24,42 @@ const seleccion = {
   inicioProgramadoAt: true,
   finProgramadoAt: true,
   proveedorActivoTipo: true,
-  eventosProveedor: { select: {
-    joinUrl: true,
-    externalEventId: true,
-    cuentaProveedor: { select: { emailOrganizador: true } },
-    proveedor: { select: { tipo: true } },
-  } },
+  eventosProveedor: {
+    select: {
+      joinUrl: true,
+      externalEventId: true,
+      cuentaProveedor: { select: { emailOrganizador: true } },
+      proveedor: { select: { tipo: true } }
+    }
+  },
   solicitud: {
     select: {
       titulo: true,
       estado: true,
       creadaPorUsuarioId: true,
       docentePrograma: {
-        select: { docente: { select: { usuarioId: true } }, programa: { select: { nombre: true } } },
-      },
-    },
+        select: { docente: { select: { usuarioId: true } }, programa: { select: { nombre: true } } }
+      }
+    }
   },
   asignaciones: {
     where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-    select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } },
+    select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } }
   },
   cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
   cohostEmails: { select: { email: true } },
-  invitados: { select: { email: true, nombre: true } },
+  invitados: { select: { email: true, nombre: true } }
 } satisfies Prisma.InstanciaSalaSelect;
 
 const vacio = (motivo: string): ResumenAvisosMigracion => ({
-  estado: "NO_APLICA", motivo, destinatarios: 0, enviados: 0, yaEnviados: 0, enCurso: 0, errores: 0, detalle: [],
+  estado: "NO_APLICA",
+  motivo,
+  destinatarios: 0,
+  enviados: 0,
+  yaEnviados: 0,
+  enCurso: 0,
+  errores: 0,
+  detalle: []
 });
 
 function esDuplicado(error: unknown): boolean {
@@ -63,13 +72,20 @@ function codigoError(error: unknown): string {
 
 /** Encuentro que todavía corresponde avisar: programado a futuro, en Zoom y de una solicitud vigente. */
 function esVigente(
-  instancia: Readonly<{ estado: string; inicioProgramadoAt: Date; proveedorActivoTipo: string | null; solicitud: Readonly<{ estado: string }> }>,
-  ahora: Date,
+  instancia: Readonly<{
+    estado: string;
+    inicioProgramadoAt: Date;
+    proveedorActivoTipo: string | null;
+    solicitud: Readonly<{ estado: string }>;
+  }>,
+  ahora: Date
 ): boolean {
-  return instancia.estado === "PROGRAMADA"
-    && instancia.inicioProgramadoAt > ahora
-    && instancia.proveedorActivoTipo === "ZOOM"
-    && instancia.solicitud.estado !== "CANCELADA";
+  return (
+    instancia.estado === "PROGRAMADA" &&
+    instancia.inicioProgramadoAt > ahora &&
+    instancia.proveedorActivoTipo === "ZOOM" &&
+    instancia.solicitud.estado !== "CANCELADA"
+  );
 }
 
 /**
@@ -80,49 +96,81 @@ function esVigente(
  */
 export async function notificarCambioEnlaceSerie(
   deps: DependenciasAvisoEnlaceSerie,
-  input: Readonly<{ serieClave: string; instanciaIds: readonly string[]; tipo: TipoAvisoEnlaceSerie; joinUrl: string }>,
+  input: Readonly<{
+    serieClave: string;
+    instanciaIds: readonly string[];
+    tipo: TipoAvisoEnlaceSerie;
+    joinUrl: string;
+  }>
 ): Promise<ResumenAvisosMigracion> {
   const { db } = deps;
   const ahora = (deps.ahora ?? (() => new Date()))();
-  if (!esUrlZoom(input.joinUrl)) return vacio("El enlace no es una URL de Zoom válida.");
+  if (!esUrlZoom(input.joinUrl)) {
+    return vacio("El enlace no es una URL de Zoom válida.");
+  }
 
-  const instancias = await db.instanciaSala.findMany({ where: { id: { in: [...input.instanciaIds] } }, select: seleccion });
+  const instancias = await db.instanciaSala.findMany({
+    where: { id: { in: [...input.instanciaIds] } },
+    select: seleccion
+  });
   const vigentes = instancias
     .filter((instancia) => esVigente(instancia, ahora))
     .sort((a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime());
-  if (vigentes.length === 0) return vacio("La serie no tiene encuentros programados a futuro en Zoom.");
+  if (vigentes.length === 0) {
+    return vacio("La serie no tiene encuentros programados a futuro en Zoom.");
+  }
 
   // Destinatarios de todos los encuentros, deduplicados por correo normalizado.
   const nombres = new Map<string, string | null>();
   const agregar = (email: string | null | undefined, nombre: string | null = null) => {
     const normalizado = normalizarEmailAviso(email);
-    if (normalizado && (!nombres.has(normalizado) || (nombre && !nombres.get(normalizado)))) nombres.set(normalizado, nombre);
+    if (normalizado && (!nombres.has(normalizado) || (nombre && !nombres.get(normalizado)))) {
+      nombres.set(normalizado, nombre);
+    }
   };
-  const usuarioIds = [...new Set(vigentes.flatMap((instancia) => [
-    instancia.solicitud.creadaPorUsuarioId,
-    instancia.solicitud.docentePrograma.docente.usuarioId,
-    ...instancia.asignaciones
-      .filter(({ asistenteTecnico }) => !asistenteTecnico.cesadoHastaProximoInicioSesion)
-      .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId),
-  ]))];
+  const usuarioIds = [
+    ...new Set(
+      vigentes.flatMap((instancia) => [
+        instancia.solicitud.creadaPorUsuarioId,
+        instancia.solicitud.docentePrograma.docente.usuarioId,
+        ...instancia.asignaciones
+          .filter(({ asistenteTecnico }) => !asistenteTecnico.cesadoHastaProximoInicioSesion)
+          .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
+      ])
+    )
+  ];
   const usuarios = await db.usuario.findMany({
     where: { id: { in: usuarioIds }, activo: true, fusionadoEnId: null },
-    select: { nombres: true, emailPrincipal: true },
+    select: { nombres: true, emailPrincipal: true }
   });
-  for (const usuario of usuarios) agregar(usuario.emailPrincipal, usuario.nombres);
+  for (const usuario of usuarios) {
+    agregar(usuario.emailPrincipal, usuario.nombres);
+  }
 
   let errorCalendar: string | null = null;
   for (const instancia of vigentes) {
-    for (const cohost of instancia.cohosts) agregar(cohost.cuentaGoogle.email);
-    for (const cohost of instancia.cohostEmails) agregar(cohost.email);
-    for (const invitado of instancia.invitados) agregar(invitado.email, invitado.nombre);
+    for (const cohost of instancia.cohosts) {
+      agregar(cohost.cuentaGoogle.email);
+    }
+    for (const cohost of instancia.cohostEmails) {
+      agregar(cohost.email);
+    }
+    for (const invitado of instancia.invitados) {
+      agregar(invitado.email, invitado.nombre);
+    }
     // Calendar puede tener invitados añadidos a mano que no figuran en Sala Virtual.
     const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
     if (deps.leerInvitadosCalendar && meet?.externalEventId && meet.cuentaProveedor?.emailOrganizador) {
       try {
-        for (const email of await deps.leerInvitadosCalendar(meet.cuentaProveedor.emailOrganizador, meet.externalEventId)) agregar(email);
+        for (const email of await deps.leerInvitadosCalendar(
+          meet.cuentaProveedor.emailOrganizador,
+          meet.externalEventId
+        )) {
+          agregar(email);
+        }
       } catch (error) {
-        errorCalendar = error instanceof Error ? error.message : "No se pudieron leer los invitados de Calendar.";
+        errorCalendar =
+          error instanceof Error ? error.message : "No se pudieron leer los invitados de Calendar.";
       }
     }
   }
@@ -130,7 +178,7 @@ export async function notificarCambioEnlaceSerie(
   const primera = vigentes[0];
   const encuentros = vigentes.map((instancia) => ({
     fecha: formatLongDate(instancia.inicioProgramadoAt),
-    horario: `${formatTime(instancia.inicioProgramadoAt)}–${formatTime(instancia.finProgramadoAt)} h`,
+    horario: `${formatTime(instancia.inicioProgramadoAt)}–${formatTime(instancia.finProgramadoAt)} h`
   }));
   const detalle: { email: string; estado: EstadoAvisoDestinatario; error?: string }[] = [];
 
@@ -138,24 +186,43 @@ export async function notificarCambioEnlaceSerie(
     // 1. Reserva atómica. Un ERROR previo se re-reclama; ACEPTADO/RESERVADO/OBSOLETO no.
     let reservaId: string;
     try {
-      reservaId = (await db.avisoEnlaceSerie.create({
-        data: { serieClave: input.serieClave, email, tipo: input.tipo, estado: "RESERVADO" },
-        select: { id: true },
-      })).id;
+      reservaId = (
+        await db.avisoEnlaceSerie.create({
+          data: { serieClave: input.serieClave, email, tipo: input.tipo, estado: "RESERVADO" },
+          select: { id: true }
+        })
+      ).id;
     } catch (error) {
-      if (!esDuplicado(error)) throw error;
+      if (!esDuplicado(error)) {
+        throw error;
+      }
       const previo = await db.avisoEnlaceSerie.findUnique({
         where: { serieClave_email_tipo: { serieClave: input.serieClave, email, tipo: input.tipo } },
-        select: { id: true, estado: true },
+        select: { id: true, estado: true }
       });
-      if (!previo || (previo.estado !== "ACEPTADO" && previo.estado !== "OBSOLETO" && previo.estado !== "ERROR")) {
+      if (
+        !previo ||
+        (previo.estado !== "ACEPTADO" && previo.estado !== "OBSOLETO" && previo.estado !== "ERROR")
+      ) {
         detalle.push({ email, estado: "EN_CURSO" });
         continue;
       }
-      if (previo.estado === "ACEPTADO") { detalle.push({ email, estado: "YA_ENVIADO" }); continue; }
-      if (previo.estado === "OBSOLETO") { detalle.push({ email, estado: "OBSOLETO" }); continue; }
-      const reclamo = await db.avisoEnlaceSerie.updateMany({ where: { id: previo.id, estado: "ERROR" }, data: { estado: "RESERVADO" } });
-      if (reclamo.count !== 1) { detalle.push({ email, estado: "EN_CURSO" }); continue; }
+      if (previo.estado === "ACEPTADO") {
+        detalle.push({ email, estado: "YA_ENVIADO" });
+        continue;
+      }
+      if (previo.estado === "OBSOLETO") {
+        detalle.push({ email, estado: "OBSOLETO" });
+        continue;
+      }
+      const reclamo = await db.avisoEnlaceSerie.updateMany({
+        where: { id: previo.id, estado: "ERROR" },
+        data: { estado: "RESERVADO" }
+      });
+      if (reclamo.count !== 1) {
+        detalle.push({ email, estado: "EN_CURSO" });
+        continue;
+      }
       reservaId = previo.id;
     }
 
@@ -163,7 +230,12 @@ export async function notificarCambioEnlaceSerie(
     try {
       const actuales = await db.instanciaSala.findMany({
         where: { id: { in: [...input.instanciaIds] } },
-        select: { estado: true, proveedorActivoTipo: true, inicioProgramadoAt: true, solicitud: { select: { estado: true } } },
+        select: {
+          estado: true,
+          proveedorActivoTipo: true,
+          inicioProgramadoAt: true,
+          solicitud: { select: { estado: true } }
+        }
       });
       if (!actuales.some((instancia) => esVigente(instancia, ahora))) {
         await db.avisoEnlaceSerie.update({ where: { id: reservaId }, data: { estado: "OBSOLETO" } });
@@ -176,7 +248,7 @@ export async function notificarCambioEnlaceSerie(
         programa: primera.solicitud.docentePrograma.programa.nombre,
         encuentros,
         urlZoom: input.joinUrl,
-        tipo: input.tipo,
+        tipo: input.tipo
       });
       const resultado = await deps.enviarCorreo({ to: [email], ...correo });
       if (!resultado.sent) {
@@ -185,7 +257,10 @@ export async function notificarCambioEnlaceSerie(
         detalle.push({ email, estado: "ERROR", error: codigo });
         continue;
       }
-      await db.avisoEnlaceSerie.update({ where: { id: reservaId }, data: { estado: "ACEPTADO", enviadoAt: new Date() } });
+      await db.avisoEnlaceSerie.update({
+        where: { id: reservaId },
+        data: { estado: "ACEPTADO", enviadoAt: new Date() }
+      });
       detalle.push({ email, estado: "ENVIADO" });
     } catch (error) {
       // Una excepción del transporte o al confirmar en la base deja incierto si el mensaje salió:
@@ -199,12 +274,14 @@ export async function notificarCambioEnlaceSerie(
   const enCurso = cuenta("EN_CURSO");
   return {
     estado: errores || enCurso || errorCalendar ? "PARCIAL" : "COMPLETO",
-    ...(errorCalendar ? { motivo: `No se pudieron leer todos los invitados de Calendar: ${errorCalendar}` } : {}),
+    ...(errorCalendar
+      ? { motivo: `No se pudieron leer todos los invitados de Calendar: ${errorCalendar}` }
+      : {}),
     destinatarios: detalle.length,
     enviados: cuenta("ENVIADO"),
     yaEnviados: cuenta("YA_ENVIADO"),
     enCurso,
     errores,
-    detalle,
+    detalle
   };
 }

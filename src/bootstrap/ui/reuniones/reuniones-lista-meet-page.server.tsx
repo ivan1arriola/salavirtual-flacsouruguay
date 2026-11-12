@@ -53,13 +53,17 @@ export default async function ReunionesPage({
   }>;
 }>) {
   const session = await auth();
-  if (!session?.user) redirect("/acceso");
+  if (!session?.user) {
+    redirect("/acceso");
+  }
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
     email: session.user.email
   });
-  if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) redirect("/mi-agenda");
+  if (!actor?.activo || !puedeVerAgendaCompleta(actor.rol)) {
+    redirect("/mi-agenda");
+  }
 
   const params = await searchParams;
   const now = new Date();
@@ -89,7 +93,9 @@ export default async function ReunionesPage({
   } = await obtenerDatosPaginaReuniones(db, actor, { ...params, proveedor: "meet" });
 
   return (
-    <div className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}>
+    <div
+      className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}
+    >
       <ProveedorTabs activo="GOOGLE_MEET" />
 
       <header className="meetings-agenda-hero">
@@ -144,10 +150,7 @@ export default async function ReunionesPage({
         </nav>
       ) : null}
 
-      <section
-        className="agenda-summary-grid admin-agenda-summary"
-        aria-label="Resumen de agenda"
-      >
+      <section className="agenda-summary-grid admin-agenda-summary" aria-label="Resumen de agenda">
         <article>
           <CalendarDays size={19} />
           <span>
@@ -215,9 +218,7 @@ export default async function ReunionesPage({
         <form className="agenda-filter-panel" method="get">
           <input name="vista" type="hidden" value={vista} />
           <input name="proveedor" type="hidden" value="meet" />
-          {actor.rol === "ADMINISTRACION" ? (
-            <input name="periodo" type="hidden" value={periodo} />
-          ) : null}
+          {actor.rol === "ADMINISTRACION" ? <input name="periodo" type="hidden" value={periodo} /> : null}
 
           <input
             className="agenda-advanced-checkbox"
@@ -246,51 +247,41 @@ export default async function ReunionesPage({
             <ChevronRight size={16} aria-hidden="true" />
           </label>
           <div className="agenda-advanced-fields">
-          {actor.rol === "ADMINISTRACION" ? (
-            <label className="agenda-program-filter">
-              <span>Programa</span>
-              <select aria-label="Filtrar por programa" defaultValue={programaId} name="programa">
-                <option value="">Todos los programas</option>
-                {programs.map((program) => (
-                  <option key={program.id} value={program.id}>
-                    {program.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          <div className="agenda-date-inputs">
-            <label className="agenda-date-label">
-              <span>Desde</span>
-              <input
-                aria-label="Fecha desde"
-                defaultValue={desdeParam}
-                name="desde"
-                type="date"
-              />
-            </label>
-            <label className="agenda-date-label">
-              <span>Hasta</span>
-              <input
-                aria-label="Fecha hasta"
-                defaultValue={hastaParam}
-                name="hasta"
-                type="date"
-              />
-            </label>
-          </div>
-
-          <div className="agenda-filter-actions">
-            <button className="secondary-action" type="submit">
-              Aplicar
-            </button>
-            {q || programaId || desdeParam || hastaParam ? (
-              <Link className="agenda-clear-filters" href={agendaHref(vista, "", "", periodo)}>
-                Limpiar
-              </Link>
+            {actor.rol === "ADMINISTRACION" ? (
+              <label className="agenda-program-filter">
+                <span>Programa</span>
+                <select aria-label="Filtrar por programa" defaultValue={programaId} name="programa">
+                  <option value="">Todos los programas</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
             ) : null}
-          </div>
+
+            <div className="agenda-date-inputs">
+              <label className="agenda-date-label">
+                <span>Desde</span>
+                <input aria-label="Fecha desde" defaultValue={desdeParam} name="desde" type="date" />
+              </label>
+              <label className="agenda-date-label">
+                <span>Hasta</span>
+                <input aria-label="Fecha hasta" defaultValue={hastaParam} name="hasta" type="date" />
+              </label>
+            </div>
+
+            <div className="agenda-filter-actions">
+              <button className="secondary-action" type="submit">
+                Aplicar
+              </button>
+              {q || programaId || desdeParam || hastaParam ? (
+                <Link className="agenda-clear-filters" href={agendaHref(vista, "", "", periodo)}>
+                  Limpiar
+                </Link>
+              ) : null}
+            </div>
           </div>
         </form>
       </section>
@@ -334,8 +325,7 @@ export default async function ReunionesPage({
               });
               const organizers = unique(
                 events.flatMap(({ cuentaProveedor }) => {
-                  const account =
-                    cuentaProveedor?.emailOrganizador ?? cuentaProveedor?.nombre;
+                  const account = cuentaProveedor?.emailOrganizador ?? cuentaProveedor?.nombre;
                   return account ? [account] : [];
                 })
               );
@@ -344,12 +334,8 @@ export default async function ReunionesPage({
                   proveedor.tipo === "GOOGLE_MEET" && codigoReunion ? [codigoReunion] : []
                 )
               );
-              const links = unique(
-                events.flatMap(({ joinUrl }) => (joinUrl ? [joinUrl] : []))
-              );
-              const cohostLabels = unique(
-                seriesMeetings.flatMap((meeting) => cohostsForMeeting(meeting))
-              );
+              const links = unique(events.flatMap(({ joinUrl }) => (joinUrl ? [joinUrl] : [])));
+              const cohostLabels = unique(seriesMeetings.flatMap((meeting) => cohostsForMeeting(meeting)));
               const seriesCohostEmails = unique(
                 seriesMeetings.flatMap((meeting) => extraerCohostEmailsDeInstancia(meeting))
               );
@@ -357,7 +343,9 @@ export default async function ReunionesPage({
                 seriesCohostEmails.length > 0 &&
                 seriesMeetings.every((meeting) => {
                   const meetingCohostEmails = extraerCohostEmailsDeInstancia(meeting);
-                  if (meetingCohostEmails.length === 0) return true;
+                  if (meetingCohostEmails.length === 0) {
+                    return true;
+                  }
                   const meetingEvent = meeting.eventosProveedor.find(
                     ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
                   );
@@ -397,24 +385,29 @@ export default async function ReunionesPage({
                       </strong>
                     </div>
                     <span className="status status-ok">
-                      {seriesMeetings.length}{" "}
-                      {seriesMeetings.length === 1 ? "encuentro" : "encuentros"}
+                      {seriesMeetings.length} {seriesMeetings.length === 1 ? "encuentro" : "encuentros"}
                     </span>
                   </header>
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={first.inicioProgramadoAt} endsAt={first.finProgramadoAt} requiresAssistance={first.requiereAsistenciaTecnica} modality={first.modalidadOverride ?? first.solicitud.modalidad} assistanceStartsAt={first.inicioAsistenciaTecnicaAt} assistanceEndsAt={first.finAsistenciaTecnicaAt} compact />
+                      <p className="agenda-program-label">{association.programa.nombre}</p>
+                      <MeetingScheduleTimes
+                        startsAt={first.inicioProgramadoAt}
+                        endsAt={first.finProgramadoAt}
+                        requiresAssistance={first.requiereAsistenciaTecnica}
+                        modality={first.modalidadOverride ?? first.solicitud.modalidad}
+                        assistanceStartsAt={first.inicioAsistenciaTecnicaAt}
+                        assistanceEndsAt={first.finAsistenciaTecnicaAt}
+                        compact
+                      />
                       <Link className="agenda-meeting-title" href={`/reuniones/${request.id}`}>
                         {request.titulo}
                       </Link>
                       <div className="agenda-teacher-line">
                         <span>Docente</span>
                         {actor.rol === "ADMINISTRACION" ? (
-                          <Link
-                            className="teacher-meetings-link"
-                            href={`/docentes/${teacher.id}/reuniones`}
-                          >
+                          <Link className="teacher-meetings-link" href={`/docentes/${teacher.id}/reuniones`}>
                             {personName(teacher)}
                           </Link>
                         ) : (
@@ -425,19 +418,46 @@ export default async function ReunionesPage({
                         {request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                       </span>
                       <div className="agenda-mobile-glance" aria-label="Estado operativo de la serie">
-                        <span className={cohostLabels.length === 0 ? "is-neutral" : seriesCohostsConfirmados ? "is-ok" : "is-warning"}>
-                          {cohostLabels.length && seriesCohostsConfirmados ? <CheckCircle2 size={14} aria-hidden="true" /> :
-                            cohostLabels.length ? <AlertTriangle size={14} aria-hidden="true" /> : <UserRoundMinus size={14} aria-hidden="true" />}
-                          {cohostLabels.length === 0 ? "Sin cohosts" : seriesCohostsConfirmados ? "Cohosts confirmados" : "Cohosts por verificar"}
+                        <span
+                          className={
+                            cohostLabels.length === 0
+                              ? "is-neutral"
+                              : seriesCohostsConfirmados
+                                ? "is-ok"
+                                : "is-warning"
+                          }
+                        >
+                          {cohostLabels.length && seriesCohostsConfirmados ? (
+                            <CheckCircle2 size={14} aria-hidden="true" />
+                          ) : cohostLabels.length ? (
+                            <AlertTriangle size={14} aria-hidden="true" />
+                          ) : (
+                            <UserRoundMinus size={14} aria-hidden="true" />
+                          )}
+                          {cohostLabels.length === 0
+                            ? "Sin cohosts"
+                            : seriesCohostsConfirmados
+                              ? "Cohosts confirmados"
+                              : "Cohosts por verificar"}
                         </span>
                         <span className={pendingSeriesAssistance ? "is-warning" : "is-neutral"}>
                           <UserRoundCheck size={14} aria-hidden="true" />
-                          {pendingSeriesAssistance ? `${pendingSeriesAssistance} asistencias sin asignar`
-                            : requiredAssistance.length ? "Monitoreo asignado" : "No requiere monitoreo"}
+                          {pendingSeriesAssistance
+                            ? `${pendingSeriesAssistance} asistencias sin asignar`
+                            : requiredAssistance.length
+                              ? "Monitoreo asignado"
+                              : "No requiere monitoreo"}
                         </span>
                       </div>
-                      <input className="agenda-mobile-details-input" id={`agenda-details-${request.id}`} type="checkbox" />
-                      <label className="agenda-mobile-details-control" htmlFor={`agenda-details-${request.id}`}>
+                      <input
+                        className="agenda-mobile-details-input"
+                        id={`agenda-details-${request.id}`}
+                        type="checkbox"
+                      />
+                      <label
+                        className="agenda-mobile-details-control"
+                        htmlFor={`agenda-details-${request.id}`}
+                      >
                         Detalles técnicos <ChevronRight size={16} aria-hidden="true" />
                       </label>
                     </div>
@@ -459,10 +479,7 @@ export default async function ReunionesPage({
                           </span>
                           {cohostLabels.length ? (
                             seriesCohostsConfirmados ? (
-                              <span
-                                className="status-badge status-ok"
-                                title="Verificado en Google Meet"
-                              >
+                              <span className="status-badge status-ok" title="Verificado en Google Meet">
                                 <CheckCircle2 size={12} aria-hidden="true" /> Verificado en Meet
                               </span>
                             ) : (
@@ -544,15 +561,10 @@ export default async function ReunionesPage({
                       Ver serie <ArrowRight size={15} />
                     </Link>
                     {links.length === 1 ? (
-                      <MeetLinkActions
-                        openClassName="secondary-action agenda-meet-action"
-                        url={links[0]}
-                      />
+                      <MeetLinkActions openClassName="secondary-action agenda-meet-action" url={links[0]} />
                     ) : (
                       <span className="muted-text">
-                        {links.length > 1
-                          ? "Los enlaces están en cada encuentro"
-                          : "Enlace Meet pendiente"}
+                        {links.length > 1 ? "Los enlaces están en cada encuentro" : "Enlace Meet pendiente"}
                       </span>
                     )}
                   </footer>
@@ -577,8 +589,7 @@ export default async function ReunionesPage({
               const teacher = association.docente.usuario;
               // El enlace y la cuenta visibles siguen al proveedor activo; los
               // cohosts se verifican solo contra el evento de Google Meet.
-              const activeEvent =
-                seleccionarEventoProveedorActivo(meeting) ?? meeting.eventosProveedor[0];
+              const activeEvent = seleccionarEventoProveedorActivo(meeting) ?? meeting.eventosProveedor[0];
               const event = meeting.eventosProveedor.find(
                 ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
               );
@@ -604,7 +615,10 @@ export default async function ReunionesPage({
                   <header className="agenda-meeting-card-header">
                     <div className="agenda-meeting-date">
                       <span>{formatDate(meeting.inicioProgramadoAt)}</span>
-                      <strong>Encuentro: {formatTime(meeting.inicioProgramadoAt)}–{formatTime(meeting.finProgramadoAt)}</strong>
+                      <strong>
+                        Encuentro: {formatTime(meeting.inicioProgramadoAt)}–
+                        {formatTime(meeting.finProgramadoAt)}
+                      </strong>
                     </div>
                     <span className={`status status-${statusTone(meeting.estado)}`}>
                       {statusLabel(meeting.estado)}
@@ -613,20 +627,23 @@ export default async function ReunionesPage({
 
                   <div className="agenda-meeting-card-body">
                     <div className="agenda-meeting-primary">
-                      <p className="agenda-program-label">{association.programa.nombre}</p><MeetingScheduleTimes startsAt={meeting.inicioProgramadoAt} endsAt={meeting.finProgramadoAt} requiresAssistance={meeting.requiereAsistenciaTecnica} modality={meeting.modalidadOverride ?? meeting.solicitud.modalidad} assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt} assistanceEndsAt={meeting.finAsistenciaTecnicaAt} compact />
-                      <Link
-                        className="agenda-meeting-title"
-                        href={`/reuniones/${meeting.solicitud.id}`}
-                      >
+                      <p className="agenda-program-label">{association.programa.nombre}</p>
+                      <MeetingScheduleTimes
+                        startsAt={meeting.inicioProgramadoAt}
+                        endsAt={meeting.finProgramadoAt}
+                        requiresAssistance={meeting.requiereAsistenciaTecnica}
+                        modality={meeting.modalidadOverride ?? meeting.solicitud.modalidad}
+                        assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt}
+                        assistanceEndsAt={meeting.finAsistenciaTecnicaAt}
+                        compact
+                      />
+                      <Link className="agenda-meeting-title" href={`/reuniones/${meeting.solicitud.id}`}>
                         {meeting.solicitud.titulo}
                       </Link>
                       <div className="agenda-teacher-line">
                         <span>Docente</span>
                         {actor.rol === "ADMINISTRACION" ? (
-                          <Link
-                            className="teacher-meetings-link"
-                            href={`/docentes/${teacher.id}/reuniones`}
-                          >
+                          <Link className="teacher-meetings-link" href={`/docentes/${teacher.id}/reuniones`}>
                             {personName(teacher)}
                           </Link>
                         ) : (
@@ -634,21 +651,55 @@ export default async function ReunionesPage({
                         )}
                       </div>
                       <span className="agenda-modality-chip">
-                        {(meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                        {(meeting.modalidadOverride ?? meeting.solicitud.modalidad) === "HIBRIDA"
+                          ? "Híbrida"
+                          : "Virtual"}
                       </span>
                       <div className="agenda-mobile-glance" aria-label="Estado operativo del encuentro">
-                        <span className={cohostLabels.length === 0 ? "is-neutral" : cohostsConfirmadosEnMeet ? "is-ok" : "is-warning"}>
-                          {cohostLabels.length && cohostsConfirmadosEnMeet ? <CheckCircle2 size={14} aria-hidden="true" /> :
-                            cohostLabels.length ? <AlertTriangle size={14} aria-hidden="true" /> : <UserRoundMinus size={14} aria-hidden="true" />}
-                          {cohostLabels.length === 0 ? "Sin cohosts" : cohostsConfirmadosEnMeet ? "Cohosts confirmados" : "Cohosts por verificar"}
+                        <span
+                          className={
+                            cohostLabels.length === 0
+                              ? "is-neutral"
+                              : cohostsConfirmadosEnMeet
+                                ? "is-ok"
+                                : "is-warning"
+                          }
+                        >
+                          {cohostLabels.length && cohostsConfirmadosEnMeet ? (
+                            <CheckCircle2 size={14} aria-hidden="true" />
+                          ) : cohostLabels.length ? (
+                            <AlertTriangle size={14} aria-hidden="true" />
+                          ) : (
+                            <UserRoundMinus size={14} aria-hidden="true" />
+                          )}
+                          {cohostLabels.length === 0
+                            ? "Sin cohosts"
+                            : cohostsConfirmadosEnMeet
+                              ? "Cohosts confirmados"
+                              : "Cohosts por verificar"}
                         </span>
-                        <span className={meeting.requiereAsistenciaTecnica && !assistantName ? "is-warning" : "is-neutral"}>
+                        <span
+                          className={
+                            meeting.requiereAsistenciaTecnica && !assistantName ? "is-warning" : "is-neutral"
+                          }
+                        >
                           <UserRoundCheck size={14} aria-hidden="true" />
-                          {assistantName ? assistantName : meeting.requiereAsistenciaTecnica ? "Monitoreo sin asignar" : "No requiere monitoreo"}
+                          {assistantName
+                            ? assistantName
+                            : meeting.requiereAsistenciaTecnica
+                              ? "Monitoreo sin asignar"
+                              : "No requiere monitoreo"}
                         </span>
                       </div>
-                      <input className="agenda-mobile-details-input" id={`agenda-details-${meeting.id}`} type="checkbox" />
-                      <label className="agenda-mobile-details-control" htmlFor={`agenda-details-${meeting.id}`}>
+                      <input
+                        className="agenda-mobile-details-input"
+                        id={`agenda-details-${meeting.id}`}
+                        type="checkbox"
+                      />
+                      <label
+                        className="agenda-mobile-details-control"
+                        htmlFor={`agenda-details-${meeting.id}`}
+                      >
                         Detalles técnicos <ChevronRight size={16} aria-hidden="true" />
                       </label>
                     </div>
@@ -670,10 +721,7 @@ export default async function ReunionesPage({
                           </span>
                           {cohostLabels.length ? (
                             cohostsConfirmadosEnMeet ? (
-                              <span
-                                className="status-badge status-ok"
-                                title="Verificado en Google Meet"
-                              >
+                              <span className="status-badge status-ok" title="Verificado en Google Meet">
                                 <CheckCircle2 size={12} aria-hidden="true" /> Verificado en Meet
                               </span>
                             ) : (
@@ -687,9 +735,7 @@ export default async function ReunionesPage({
                           ) : null}
                         </div>
                         <strong>{cohostPrimaryText(cohostLabels)}</strong>
-                        {cohostLabels.length > 2 ? (
-                          <small>+{cohostLabels.length - 2} más</small>
-                        ) : null}
+                        {cohostLabels.length > 2 ? <small>+{cohostLabels.length - 2} más</small> : null}
                       </div>
                       <div className="agenda-access-block agenda-host-reference">
                         <span>Cuenta organizadora</span>
@@ -708,7 +754,9 @@ export default async function ReunionesPage({
                       <div className="agenda-access-block">
                         <span>Código Meet</span>
                         <strong>
-                          {(activeEvent?.proveedor.tipo === "GOOGLE_MEET" ? activeEvent.codigoReunion : null) ?? "Pendiente"}
+                          {(activeEvent?.proveedor.tipo === "GOOGLE_MEET"
+                            ? activeEvent.codigoReunion
+                            : null) ?? "Pendiente"}
                         </strong>
                       </div>
                     </div>
@@ -730,14 +778,14 @@ export default async function ReunionesPage({
                       <span>
                         <small>
                           {assistantName
-                            ? (cohostsConfirmadosEnMeet ? "Cohost técnico verificado" : "Asistente (permisos Meet pendientes)")
+                            ? cohostsConfirmadosEnMeet
+                              ? "Cohost técnico verificado"
+                              : "Asistente (permisos Meet pendientes)"
                             : "Monitoreo"}
                         </small>
                         <strong>
                           {assistantName ??
-                            (meeting.requiereAsistenciaTecnica
-                              ? "Pendiente de asignación"
-                              : "No requiere")}
+                            (meeting.requiereAsistenciaTecnica ? "Pendiente de asignación" : "No requiere")}
                         </strong>
                         {assistantName ? (
                           <em>
@@ -785,8 +833,11 @@ export default async function ReunionesPage({
       {pagination.totalPaginas > 1 ? (
         <nav className="agenda-pagination" aria-label="Paginación de reuniones">
           <div className="pagination-info">
-            Mostrando <strong>{pagination.desdeElemento}–{pagination.hastaElemento}</strong> de{" "}
-            <strong>{pagination.totalElementos}</strong>{" "}
+            Mostrando{" "}
+            <strong>
+              {pagination.desdeElemento}–{pagination.hastaElemento}
+            </strong>{" "}
+            de <strong>{pagination.totalElementos}</strong>{" "}
             {vista === "series"
               ? pagination.totalElementos === 1
                 ? "serie"
@@ -817,8 +868,7 @@ export default async function ReunionesPage({
               </span>
             )}
             <span className="pagination-current">
-              Página <strong>{pagination.paginaActual}</strong> de{" "}
-              <strong>{pagination.totalPaginas}</strong>
+              Página <strong>{pagination.paginaActual}</strong> de <strong>{pagination.totalPaginas}</strong>
             </span>
             {pagination.tieneSiguiente ? (
               <Link
@@ -872,21 +922,27 @@ function cohostsForMeeting(meeting: {
   cohostEmails: readonly { email: string }[];
 }): readonly string[] {
   return unique(
-    extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
-      c.name ? `${c.name} · ${c.email}` : c.email
-    )
+    extraerCohostsUnificadosDeInstancia(meeting).map((c) => (c.name ? `${c.name} · ${c.email}` : c.email))
   );
 }
 
 function cohostPrimaryText(labels: readonly string[]): string {
-  if (labels.length === 0) return "Sin cohost configurado";
-  if (labels.length === 1) return labels[0];
+  if (labels.length === 0) {
+    return "Sin cohost configurado";
+  }
+  if (labels.length === 1) {
+    return labels[0];
+  }
   return labels.slice(0, 2).join(" · ");
 }
 
 function statusTone(status: string): string {
-  if (status === "CANCELADA" || status === "NO_REALIZADA") return "error";
-  if (status === "FINALIZADA") return "neutral";
+  if (status === "CANCELADA" || status === "NO_REALIZADA") {
+    return "error";
+  }
+  if (status === "FINALIZADA") {
+    return "neutral";
+  }
   return "ok";
 }
 
@@ -934,12 +990,24 @@ function pageHref(params: {
 }): string {
   const search = new URLSearchParams({ vista: params.vista });
   search.set("proveedor", "meet");
-  if (params.q) search.set("q", params.q);
-  if (params.programa) search.set("programa", params.programa);
-  if (params.periodo === "anteriores") search.set("periodo", params.periodo);
-  if (params.desde) search.set("desde", params.desde);
-  if (params.hasta) search.set("hasta", params.hasta);
-  if (params.page && params.page > 1) search.set("page", String(params.page));
+  if (params.q) {
+    search.set("q", params.q);
+  }
+  if (params.programa) {
+    search.set("programa", params.programa);
+  }
+  if (params.periodo === "anteriores") {
+    search.set("periodo", params.periodo);
+  }
+  if (params.desde) {
+    search.set("desde", params.desde);
+  }
+  if (params.hasta) {
+    search.set("hasta", params.hasta);
+  }
+  if (params.page && params.page > 1) {
+    search.set("page", String(params.page));
+  }
   return `/reuniones?${search.toString()}`;
 }
 

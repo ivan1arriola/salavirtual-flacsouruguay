@@ -6,7 +6,7 @@ import { claveBloqueoSerieMigracion, claveSerieReunion } from "./serie-reunion.d
 import {
   meetPreparadoParaMigracion,
   planificarMigracionZoom,
-  type EstadoVistaPreviaZoom,
+  type EstadoVistaPreviaZoom
 } from "./migracion-zoom-preview.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -51,7 +51,7 @@ export async function actualizarExcepcionGoogleMeet(
   db: PrismaClient,
   actor: Actor,
   input: Readonly<{ instanciaId: string; conservar: boolean; motivo?: string | null }>,
-  ahora: Date = new Date(),
+  ahora: Date = new Date()
 ) {
   exigirAdministracion(actor);
   const motivo = input.conservar ? (input.motivo ?? "").trim() : null;
@@ -66,7 +66,11 @@ export async function actualizarExcepcionGoogleMeet(
     // Misma clave que la migración por serie: una excepción no cambia mientras se convierte su serie.
     const base = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaId },
-      select: { solicitud: { select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true } } },
+      select: {
+        solicitud: {
+          select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true }
+        }
+      }
     });
     if (base?.solicitud) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${claveBloqueoSerieMigracion(claveSerieReunion(base.solicitud))}))`;
@@ -81,10 +85,12 @@ export async function actualizarExcepcionGoogleMeet(
         proveedorActivoTipo: true,
         conservarGoogleMeet: true,
         motivoConservarGoogleMeet: true,
-        eventosProveedor: { select: { proveedor: { select: { tipo: true } } } },
-      },
+        eventosProveedor: { select: { proveedor: { select: { tipo: true } } } }
+      }
     });
-    if (!instancia) throw new NotFoundApiError("El encuentro no existe.");
+    if (!instancia) {
+      throw new NotFoundApiError("El encuentro no existe.");
+    }
     if (instancia.estado !== "PROGRAMADA" || instancia.inicioProgramadoAt <= ahora) {
       throw new ValidationApiError("Solo se puede marcar un encuentro programado que todavía no comenzó.");
     }
@@ -92,13 +98,15 @@ export async function actualizarExcepcionGoogleMeet(
       throw new ValidationApiError("El encuentro no tiene Google Meet como enlace vigente.");
     }
     if (input.conservar && instancia.eventosProveedor.some(({ proveedor }) => proveedor.tipo === "ZOOM")) {
-      throw new ValidationApiError("Ya se inició una conversión a Zoom para este encuentro. Revisá su estado antes de marcar una excepción.");
+      throw new ValidationApiError(
+        "Ya se inició una conversión a Zoom para este encuentro. Revisá su estado antes de marcar una excepción."
+      );
     }
 
     const actualizada = await tx.instanciaSala.update({
       where: { id: instancia.id },
       data: { conservarGoogleMeet: input.conservar, motivoConservarGoogleMeet: motivo },
-      select: { id: true, conservarGoogleMeet: true, motivoConservarGoogleMeet: true },
+      select: { id: true, conservarGoogleMeet: true, motivoConservarGoogleMeet: true }
     });
     await tx.auditoria.create({
       data: {
@@ -108,10 +116,10 @@ export async function actualizarExcepcionGoogleMeet(
         entidadId: instancia.id,
         valorAnterior: {
           conservarGoogleMeet: instancia.conservarGoogleMeet,
-          motivo: instancia.motivoConservarGoogleMeet,
+          motivo: instancia.motivoConservarGoogleMeet
         },
-        valorNuevo: { conservarGoogleMeet: actualizada.conservarGoogleMeet, motivo },
-      },
+        valorNuevo: { conservarGoogleMeet: actualizada.conservarGoogleMeet, motivo }
+      }
     });
     return actualizada;
   });
@@ -138,15 +146,17 @@ export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
             docenteProgramaId: true,
             createdAt: true,
             creadaPor: { select: { emailPrincipal: true } },
-            docentePrograma: { select: {
-              programa: { select: { nombre: true } },
-              docente: { select: { usuario: { select: { emailPrincipal: true } } } },
-            } },
-          },
+            docentePrograma: {
+              select: {
+                programa: { select: { nombre: true } },
+                docente: { select: { usuario: { select: { emailPrincipal: true } } } }
+              }
+            }
+          }
         },
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-          select: { asistenteTecnico: { select: { usuario: { select: { emailPrincipal: true } } } } },
+          select: { asistenteTecnico: { select: { usuario: { select: { emailPrincipal: true } } } } }
         },
         cohostEmails: { select: { email: true } },
         invitados: { select: { email: true } },
@@ -159,28 +169,28 @@ export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
             reunionProveedorId: true,
             cuentaProveedorId: true,
             cuentaProveedor: { select: { emailOrganizador: true } },
-            proveedor: { select: { tipo: true } },
-          },
-        },
-      },
+            proveedor: { select: { tipo: true } }
+          }
+        }
+      }
     }),
     db.cuentaProveedor.findMany({
       where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, nombre: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
+      select: { id: true, nombre: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true }
     }),
     db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "ZOOM" },
         cuentaProveedorId: { not: null },
-        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } },
+        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } }
       },
       select: {
         cuentaProveedorId: true,
         instanciaSalaId: true,
-        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
-      },
-    }),
+        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+      }
+    })
   ]);
   return { instancias, hosts, reservas };
 }
@@ -189,7 +199,7 @@ export async function cargarDatosMigracionZoom(db: PrismaClient, ahora: Date) {
 export async function obtenerVistaPreviaMigracionZoom(
   db: PrismaClient,
   actor: Actor,
-  ahora: Date = new Date(),
+  ahora: Date = new Date()
 ): Promise<VistaPreviaMigracionZoom> {
   exigirAdministracion(actor);
 
@@ -211,7 +221,7 @@ export async function obtenerVistaPreviaMigracionZoom(
     reservasZoom: reservas.flatMap(({ cuentaProveedorId, instancia }) =>
       cuentaProveedorId
         ? [{ cuentaProveedorId, inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt }]
-        : [],
+        : []
     ),
     candidatos: instancias.map((instancia) => {
       const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
@@ -219,7 +229,7 @@ export async function obtenerVistaPreviaMigracionZoom(
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
       const emailMeet = meet?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase();
       const cuentaZoomPreferidaId = emailMeet
-        ? hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null
+        ? (hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null)
         : null;
       return {
         id: instancia.id,
@@ -228,20 +238,31 @@ export async function obtenerVistaPreviaMigracionZoom(
         estado: instancia.estado,
         proveedorActivo: activo === "GOOGLE_MEET" || activo === "ZOOM" ? activo : null,
         conservarGoogleMeet: instancia.conservarGoogleMeet,
-        meetPreparado: meetPreparadoParaMigracion(meet ? {
-          ...meet,
-          emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
-        } : null),
+        meetPreparado: meetPreparadoParaMigracion(
+          meet
+            ? {
+                ...meet,
+                emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null
+              }
+            : null
+        ),
         meetJoinUrl: meet?.joinUrl ?? null,
         cuentaZoomPreferidaId,
         zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
-        encuentrosSerie: encuentrosPorSerie.get(claveSerieReunion(instancia.solicitud)) ?? 1,
+        encuentrosSerie: encuentrosPorSerie.get(claveSerieReunion(instancia.solicitud)) ?? 1
       };
-    }),
+    })
   });
 
   const conteos: Record<EstadoVistaPreviaZoom, number> = {
-    MIGRABLE: 0, EXCEPCION: 0, SERIE: 0, YA_ZOOM: 0, SIN_SALA: 0, CERCANO: 0, NO_FUTURO: 0, REVISAR: 0,
+    MIGRABLE: 0,
+    EXCEPCION: 0,
+    SERIE: 0,
+    YA_ZOOM: 0,
+    SIN_SALA: 0,
+    CERCANO: 0,
+    NO_FUTURO: 0,
+    REVISAR: 0
   };
   const filas = plan.map((fila): FilaVistaPreviaMigracion => {
     conteos[fila.estado] += 1;
@@ -255,9 +276,11 @@ export async function obtenerVistaPreviaMigracionZoom(
       instancia.solicitud.creadaPor.emailPrincipal,
       ...instancia.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.emailPrincipal),
       ...instancia.cohostEmails.map(({ email }) => email),
-      ...instancia.invitados.map(({ email }) => email),
+      ...instancia.invitados.map(({ email }) => email)
     ]) {
-      if (email) correos.add(email.toLowerCase());
+      if (email) {
+        correos.add(email.toLowerCase());
+      }
     }
     return {
       id: instancia.id,
@@ -271,7 +294,7 @@ export async function obtenerVistaPreviaMigracionZoom(
       tieneMeetHistorico: Boolean(meet),
       cambioEnlace: fila.estado === "MIGRABLE",
       destinatarios: fila.estado === "MIGRABLE" ? [...correos].sort() : [],
-      motivoExcepcion: instancia.conservarGoogleMeet ? instancia.motivoConservarGoogleMeet : null,
+      motivoExcepcion: instancia.conservarGoogleMeet ? instancia.motivoConservarGoogleMeet : null
     };
   });
 

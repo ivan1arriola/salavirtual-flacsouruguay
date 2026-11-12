@@ -7,12 +7,12 @@ import {
   ForbiddenApiError,
   IntegrationApiError,
   NotFoundApiError,
-  ValidationApiError,
+  ValidationApiError
 } from "@/src/lib/http/api-error";
 import {
   normalizeCohostEmails,
   type ConferenceProvider as MeetProvider,
-  type GoogleCalendarCredentials,
+  type GoogleCalendarCredentials
 } from "@/src/modules/conferencias/api";
 import {
   actualizarEncuentroSchema,
@@ -21,7 +21,7 @@ import {
   modalidadEfectivaEncuentro,
   periodoAsistenciaTecnica,
   puedeCorregirModalidadHistorica,
-  puedeGestionarEncuentros,
+  puedeGestionarEncuentros
 } from "./encuentros.domain";
 import { bloquearReservaSalas, bloquearSolicitudSala } from "./reserva-salas.adapter";
 import { pertenecenAlMismoDia } from "./periodos.domain";
@@ -37,7 +37,7 @@ export type GestionEncuentrosDependencies = Readonly<{
   configurarEspacio?: (
     credentials: GoogleCalendarCredentials,
     codigoReunion: string,
-    settings: Readonly<{ requiereAsistenciaTecnica?: boolean }>,
+    settings: Readonly<{ requiereAsistenciaTecnica?: boolean }>
   ) => Promise<void>;
 }>;
 
@@ -47,10 +47,9 @@ export async function agregarEncuentro(
   dependencies: GestionEncuentrosDependencies,
   actor: SessionActor,
   solicitudId: string,
-  rawInput: unknown,
+  rawInput: unknown
 ) {
   const input = agregarEncuentroSchema.parse(rawInput);
-
 
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
@@ -62,19 +61,25 @@ export async function agregarEncuentro(
           include: {
             eventosProveedor: { include: { proveedor: true } },
             cohosts: { select: { cuentaGoogleId: true } },
-            cohostEmails: { select: { email: true } },
+            cohostEmails: { select: { email: true } }
           },
-          orderBy: { ordinal: "asc" },
-        },
-      },
+          orderBy: { ordinal: "asc" }
+        }
+      }
     });
-    if (!serie) throw new NotFoundApiError("La reunión no existe.");
+    if (!serie) {
+      throw new NotFoundApiError("La reunión no existe.");
+    }
     await validarGestion(tx, actor, serie.docentePrograma);
     // Nunca se crean nuevas reuniones Meet: todo encuentro agregado usa Zoom,
     // incluso en series legadas de Meet.
     const provider = await tx.proveedorReunion.findUnique({ where: { tipo: "ZOOM" } });
-    if (!provider) throw new IntegrationApiError("Zoom no está configurado como proveedor.", 503);
-    if (input.inicio <= new Date()) throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
+    if (!provider) {
+      throw new IntegrationApiError("Zoom no está configurado como proveedor.", 503);
+    }
+    if (input.inicio <= new Date()) {
+      throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
+    }
     if (!pertenecenAlMismoDia(input.inicio, input.fin, serie.timezone)) {
       throw new ValidationApiError("El encuentro debe finalizar el mismo día de la serie.");
     }
@@ -85,11 +90,16 @@ export async function agregarEncuentro(
       finAsistencia: input.finAsistenciaTecnica ?? null,
       modalidad: serie.modalidad,
       requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
-      timezone: serie.timezone,
+      timezone: serie.timezone
     });
-    if (serie.instancias.some((item) =>
-      ESTADOS_OCUPAN_CAPACIDAD.some((estado) => estado === item.estado) && input.inicio < item.finProgramadoAt && input.fin > item.inicioProgramadoAt
-    )) {
+    if (
+      serie.instancias.some(
+        (item) =>
+          ESTADOS_OCUPAN_CAPACIDAD.some((estado) => estado === item.estado) &&
+          input.inicio < item.finProgramadoAt &&
+          input.fin > item.inicioProgramadoAt
+      )
+    ) {
       throw new ConflictApiError("El nuevo encuentro se superpone con otro de la misma serie.");
     }
 
@@ -98,7 +108,7 @@ export async function agregarEncuentro(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: provider.id, ...CUENTA_ZOOM_ASIGNABLE },
         orderBy: { prioridad: "asc" },
-        select: { id: true, prioridad: true },
+        select: { id: true, prioridad: true }
       }),
       tx.eventoProveedor.findMany({
         where: {
@@ -107,25 +117,28 @@ export async function agregarEncuentro(
           instancia: {
             estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
             inicioProgramadoAt: { lt: input.fin },
-            finProgramadoAt: { gt: input.inicio },
-          },
+            finProgramadoAt: { gt: input.inicio }
+          }
         },
         select: {
           cuentaProveedorId: true,
-          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
-        },
-      }),
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+        }
+      })
     ]);
     // Preferencia: host Zoom ya usado por la serie (los hosts Meet no aplican).
-    const seriePreferredHost = serie.instancias.flatMap(({ eventosProveedor }) =>
-      eventosProveedor.flatMap(({ cuentaProveedorId, proveedor }) =>
-        cuentaProveedorId && proveedor.tipo === "ZOOM" ? [cuentaProveedorId] : []
-      )
-    )[0] ?? null;
+    const seriePreferredHost =
+      serie.instancias.flatMap(({ eventosProveedor }) =>
+        eventosProveedor.flatMap(({ cuentaProveedorId, proveedor }) =>
+          cuentaProveedorId && proveedor.tipo === "ZOOM" ? [cuentaProveedorId] : []
+        )
+      )[0] ?? null;
     // Una serie con reunión compartida usa siempre la misma sala: no se elige otra.
     const eventoCompartido = serie.instancias
       .flatMap(({ eventosProveedor }) => eventosProveedor)
-      .find((evento) => evento.proveedor.tipo === "ZOOM" && evento.reunionProveedorId && evento.cuentaProveedorId);
+      .find(
+        (evento) => evento.proveedor.tipo === "ZOOM" && evento.reunionProveedorId && evento.cuentaProveedorId
+      );
     const hostsElegibles = eventoCompartido
       ? hosts.filter(({ id }) => id === eventoCompartido.cuentaProveedorId)
       : hosts;
@@ -133,7 +146,7 @@ export async function agregarEncuentro(
     if (eventoCompartido?.cuentaProveedorId && hostsElegibles.length === 0) {
       const sala = await tx.cuentaProveedor.findUnique({
         where: { id: eventoCompartido.cuentaProveedorId },
-        select: { fueraDelGrupoAt: true },
+        select: { fueraDelGrupoAt: true }
       });
       throw new ConflictApiError(
         sala?.fueraDelGrupoAt
@@ -145,12 +158,18 @@ export async function agregarEncuentro(
       eventoCompartido?.cuentaProveedorId ?? seriePreferredHost,
       // Zoom opera con capacidad 1 por host.
       hostsElegibles.map((host) => ({ ...host, limiteConcurrente: 1 })),
-      conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
-        cuentaProveedorId,
-        inicio: instancia.inicioProgramadoAt,
-        fin: instancia.finProgramadoAt,
-      }] : []),
-      [input],
+      conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
+        cuentaProveedorId
+          ? [
+              {
+                cuentaProveedorId,
+                inicio: instancia.inicioProgramadoAt,
+                fin: instancia.finProgramadoAt
+              }
+            ]
+          : []
+      ),
+      [input]
     );
     if (!hostId) {
       throw new ConflictApiError(
@@ -173,8 +192,8 @@ export async function agregarEncuentro(
         finAsistenciaTecnicaAt: input.finAsistenciaTecnica ?? null,
         timezone: serie.timezone,
         requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
-        requiereGrabacion: input.requiereGrabacion,
-      },
+        requiereGrabacion: input.requiereGrabacion
+      }
     });
     // Política explícita: una instancia agregada no hereda asignaciones de
     // asistencia de otras fechas. Queda abierta para una asignación propia,
@@ -185,25 +204,25 @@ export async function agregarEncuentro(
         proveedorId: provider.id,
         cuentaProveedorId: hostId,
         ...(eventoCompartido ? { reunionProveedorId: eventoCompartido.reunionProveedorId } : {}),
-        operacionPendiente: "PROVISIONAR",
-      },
+        operacionPendiente: "PROVISIONAR"
+      }
     });
 
     if (!input.requiereAsistenciaTecnica) {
       const cohostIds = cohostsComunes(
-        serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
+        serie.instancias.map(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId))
       );
       if (cohostIds.length) {
         await tx.cohostReunion.createMany({
-          data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId })),
+          data: cohostIds.map((cuentaGoogleId) => ({ instanciaSalaId: meeting.id, cuentaGoogleId }))
         });
       }
       const cohostEmails = normalizeCohostEmails(
-        cohostsComunes(serie.instancias.map(({ cohostEmails }) => cohostEmails.map(({ email }) => email))),
+        cohostsComunes(serie.instancias.map(({ cohostEmails }) => cohostEmails.map(({ email }) => email)))
       );
       if (cohostEmails.length) {
         await tx.cohostEmailReunion.createMany({
-          data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
+          data: cohostEmails.map((email) => ({ instanciaSalaId: meeting.id, email }))
         });
       }
     }
@@ -214,7 +233,7 @@ export async function agregarEncuentro(
       fin: input.fin.toISOString(),
       requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
       requiereGrabacion: input.requiereGrabacion,
-      descripcion: meeting.descripcion,
+      descripcion: meeting.descripcion
     });
     return { instanciaId: meeting.id, eventoProveedorId: event.id };
   });
@@ -225,17 +244,19 @@ export async function actualizarEncuentro(
   actor: SessionActor,
   solicitudId: string,
   instanciaId: string,
-  rawInput: unknown,
+  rawInput: unknown
 ): Promise<Readonly<{ eventoProveedorIds: readonly string[] }>> {
   const input = actualizarEncuentroSchema.parse(rawInput);
 
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
     const actual = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
-    if (!actual) throw new NotFoundApiError("El encuentro no existe.");
+    if (!actual) {
+      throw new NotFoundApiError("El encuentro no existe.");
+    }
     await validarGestion(tx, actor, actual.solicitud.docentePrograma);
-    const puedeCorregirModalidad = input.accion === "CAMBIAR_MODALIDAD" &&
-      puedeCorregirModalidadHistorica(actor.rol, actual.estado);
+    const puedeCorregirModalidad =
+      input.accion === "CAMBIAR_MODALIDAD" && puedeCorregirModalidadHistorica(actor.rol, actual.estado);
     if (actual.estado !== "PROGRAMADA" && !puedeCorregirModalidad) {
       throw new ConflictApiError("El encuentro no se puede modificar.");
     }
@@ -247,7 +268,9 @@ export async function actualizarEncuentro(
       if (actual.inicioProgramadoAt <= new Date()) {
         throw new ConflictApiError("No se puede reprogramar un encuentro que ya comenzó.");
       }
-      if (input.inicio <= new Date()) throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
+      if (input.inicio <= new Date()) {
+        throw new ValidationApiError("El encuentro debe comenzar en el futuro.");
+      }
       if (!pertenecenAlMismoDia(input.inicio, input.fin, actual.timezone)) {
         throw new ValidationApiError("El encuentro debe finalizar el mismo día de la serie.");
       }
@@ -257,17 +280,19 @@ export async function actualizarEncuentro(
           id: { not: instanciaId },
           estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
           inicioProgramadoAt: { lt: input.fin },
-          finProgramadoAt: { gt: input.inicio },
-        },
+          finProgramadoAt: { gt: input.inicio }
+        }
       });
-      if (overlaps > 0) throw new ConflictApiError("La serie no puede tener encuentros superpuestos.");
+      if (overlaps > 0) {
+        throw new ConflictApiError("La serie no puede tener encuentros superpuestos.");
+      }
 
       if (event?.cuentaProveedorId) {
         await bloquearReservaSalas(tx, event.proveedorId);
         const [host, conflicts] = await Promise.all([
           tx.cuentaProveedor.findUnique({
             where: { id: event.cuentaProveedorId },
-            select: { id: true, prioridad: true, limiteConcurrente: true },
+            select: { id: true, prioridad: true, limiteConcurrente: true }
           }),
           tx.eventoProveedor.findMany({
             where: {
@@ -276,26 +301,36 @@ export async function actualizarEncuentro(
               instancia: {
                 estado: { in: [...ESTADOS_OCUPAN_CAPACIDAD] },
                 inicioProgramadoAt: { lt: input.fin },
-                finProgramadoAt: { gt: input.inicio },
-              },
+                finProgramadoAt: { gt: input.inicio }
+              }
             },
             select: {
               cuentaProveedorId: true,
-              instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
-            },
-          }),
+              instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
+            }
+          })
         ]);
-        const available = host && elegirCuentaHostParaPeriodos(
-          host.id,
-          [event.proveedor.tipo === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host],
-          conflicts.flatMap(({ cuentaProveedorId, instancia }) => cuentaProveedorId ? [{
-            cuentaProveedorId,
-            inicio: instancia.inicioProgramadoAt,
-            fin: instancia.finProgramadoAt,
-          }] : []),
-          [input],
-        );
-        if (!available) throw new ConflictApiError("La sala ya alcanzó su límite en ese horario.");
+        const available =
+          host &&
+          elegirCuentaHostParaPeriodos(
+            host.id,
+            [event.proveedor.tipo === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host],
+            conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
+              cuentaProveedorId
+                ? [
+                    {
+                      cuentaProveedorId,
+                      inicio: instancia.inicioProgramadoAt,
+                      fin: instancia.finProgramadoAt
+                    }
+                  ]
+                : []
+            ),
+            [input]
+          );
+        if (!available) {
+          throw new ConflictApiError("La sala ya alcanzó su límite en ese horario.");
+        }
       }
 
       const deltaInicioMs = input.inicio.getTime() - actual.inicioProgramadoAt.getTime();
@@ -312,24 +347,24 @@ export async function actualizarEncuentro(
         finAsistencia: finAsistenciaDesplazado,
         modalidad: modalidadEfectivaEncuentro(actual.solicitud.modalidad, actual.modalidadOverride),
         requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica,
-        timezone: actual.timezone,
+        timezone: actual.timezone
       });
 
       const asignacionActiva = await tx.asignacionAsistenciaTecnica.findFirst({
         where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        select: { asistenteTecnicoId: true },
+        select: { asistenteTecnicoId: true }
       });
       if (asignacionActiva) {
         const periodo = {
           inicio: inicioAsistenciaDesplazado ?? input.inicio,
-          fin: finAsistenciaDesplazado ?? input.fin,
+          fin: finAsistenciaDesplazado ?? input.fin
         };
         await reservarAsistenteDisponible(
           tx,
           asignacionActiva.asistenteTecnicoId,
           modalidadEfectivaEncuentro(actual.solicitud.modalidad, actual.modalidadOverride),
           [periodo],
-          actual.id,
+          actual.id
         );
       }
 
@@ -340,8 +375,8 @@ export async function actualizarEncuentro(
           finProgramadoAt: input.fin,
           inicioAsistenciaTecnicaAt: inicioAsistenciaDesplazado,
           finAsistenciaTecnicaAt: finAsistenciaDesplazado,
-          ...(input.descripcion !== undefined ? { descripcion: input.descripcion || null } : {}),
-        },
+          ...(input.descripcion !== undefined ? { descripcion: input.descripcion || null } : {})
+        }
       });
       // Con una reunión compartida ya creada en Zoom, el horario de este encuentro vive en
       // Sala Virtual y en Calendar: no hay nada que reprogramar en Zoom.
@@ -349,37 +384,39 @@ export async function actualizarEncuentro(
         event && event.proveedor.tipo === "ZOOM" && event.reunionProveedorId && event.externalEventId
       );
       if (event && !reunionCompartidaCreada) {
-        await marcarOperacionPendiente(
-          tx,
-          event.id,
-          event.externalEventId ? "REPROGRAMAR" : "PROVISIONAR",
-        );
+        await marcarOperacionPendiente(tx, event.id, event.externalEventId ? "REPROGRAMAR" : "PROVISIONAR");
       }
       await recalcularSolicitud(tx, solicitudId);
-      await auditar(tx, actor.id, "ENCUENTRO_REPROGRAMADO", actual.id, {
-        inicio: actual.inicioProgramadoAt.toISOString(),
-        fin: actual.finProgramadoAt.toISOString(),
-        descripcion: actual.descripcion,
-      }, {
-        inicio: input.inicio.toISOString(),
-        fin: input.fin.toISOString(),
-        descripcion: input.descripcion === undefined ? actual.descripcion : input.descripcion || null,
-      });
+      await auditar(
+        tx,
+        actor.id,
+        "ENCUENTRO_REPROGRAMADO",
+        actual.id,
+        {
+          inicio: actual.inicioProgramadoAt.toISOString(),
+          fin: actual.finProgramadoAt.toISOString(),
+          descripcion: actual.descripcion
+        },
+        {
+          inicio: input.inicio.toISOString(),
+          fin: input.fin.toISOString(),
+          descripcion: input.descripcion === undefined ? actual.descripcion : input.descripcion || null
+        }
+      );
       return { eventoProveedorIds: event && !reunionCompartidaCreada ? [event.id] : [] };
     }
 
     if (input.accion === "CAMBIAR_MODALIDAD") {
       if (actor.rol !== "ADMINISTRACION") {
-        throw new ForbiddenApiError("Solo Administración puede cambiar la modalidad de un encuentro puntual.");
+        throw new ForbiddenApiError(
+          "Solo Administración puede cambiar la modalidad de un encuentro puntual."
+        );
       }
       const modalidadAnterior = modalidadEfectivaEncuentro(
         actual.solicitud.modalidad,
-        actual.modalidadOverride,
+        actual.modalidadOverride
       );
-      const modalidadNueva = modalidadEfectivaEncuentro(
-        actual.solicitud.modalidad,
-        input.modalidad,
-      );
+      const modalidadNueva = modalidadEfectivaEncuentro(actual.solicitud.modalidad, input.modalidad);
       validarHorarioAsistenciaTecnica({
         inicioEncuentro: actual.inicioProgramadoAt,
         finEncuentro: actual.finProgramadoAt,
@@ -387,12 +424,12 @@ export async function actualizarEncuentro(
         finAsistencia: actual.finAsistenciaTecnicaAt,
         modalidad: modalidadNueva,
         requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica,
-        timezone: actual.timezone,
+        timezone: actual.timezone
       });
 
       const asignacion = await tx.asignacionAsistenciaTecnica.findFirst({
         where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        select: { id: true, asistenteTecnicoId: true },
+        select: { id: true, asistenteTecnicoId: true }
       });
       if (asignacion) {
         const periodo = periodoAsistenciaTecnica(actual);
@@ -401,29 +438,36 @@ export async function actualizarEncuentro(
           asignacion.asistenteTecnicoId,
           modalidadNueva,
           [periodo],
-          actual.id,
+          actual.id
         );
         await tx.asignacionAsistenciaTecnica.update({
           where: { id: asignacion.id },
           data: {
             tarifaAsistenciaTecnicaId: tarifa.id,
             tarifaHoraAplicada: tarifa.valorHora,
-            moneda: tarifa.moneda,
-          },
+            moneda: tarifa.moneda
+          }
         });
       }
 
       await tx.instanciaSala.update({
         where: { id: actual.id },
-        data: { modalidadOverride: input.modalidad },
+        data: { modalidadOverride: input.modalidad }
       });
-      await auditar(tx, actor.id, "MODALIDAD_ENCUENTRO_CAMBIADA", actual.id, {
-        modalidad: modalidadAnterior,
-        modalidadOverride: actual.modalidadOverride,
-      }, {
-        modalidad: modalidadNueva,
-        modalidadOverride: input.modalidad,
-      });
+      await auditar(
+        tx,
+        actor.id,
+        "MODALIDAD_ENCUENTRO_CAMBIADA",
+        actual.id,
+        {
+          modalidad: modalidadAnterior,
+          modalidadOverride: actual.modalidadOverride
+        },
+        {
+          modalidad: modalidadNueva,
+          modalidadOverride: input.modalidad
+        }
+      );
       return { eventoProveedorIds: [] };
     }
 
@@ -431,10 +475,7 @@ export async function actualizarEncuentro(
       if (actor.rol !== "ADMINISTRACION") {
         throw new ForbiddenApiError("Solo Administración puede modificar el horario de monitoreo.");
       }
-      const modalidad = modalidadEfectivaEncuentro(
-        actual.solicitud.modalidad,
-        actual.modalidadOverride,
-      );
+      const modalidad = modalidadEfectivaEncuentro(actual.solicitud.modalidad, actual.modalidadOverride);
       validarHorarioAsistenciaTecnica({
         inicioEncuentro: actual.inicioProgramadoAt,
         finEncuentro: actual.finProgramadoAt,
@@ -442,23 +483,25 @@ export async function actualizarEncuentro(
         finAsistencia: input.finAsistenciaTecnica,
         modalidad,
         requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica,
-        timezone: actual.timezone,
+        timezone: actual.timezone
       });
 
       const asignacion = await tx.asignacionAsistenciaTecnica.findFirst({
         where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        select: { asistenteTecnicoId: true },
+        select: { asistenteTecnicoId: true }
       });
       if (asignacion) {
         await reservarAsistenteDisponible(
           tx,
           asignacion.asistenteTecnicoId,
           modalidad,
-          [{
-            inicio: input.inicioAsistenciaTecnica,
-            fin: input.finAsistenciaTecnica,
-          }],
-          actual.id,
+          [
+            {
+              inicio: input.inicioAsistenciaTecnica,
+              fin: input.finAsistenciaTecnica
+            }
+          ],
+          actual.id
         );
       }
 
@@ -466,16 +509,23 @@ export async function actualizarEncuentro(
         where: { id: actual.id },
         data: {
           inicioAsistenciaTecnicaAt: input.inicioAsistenciaTecnica,
-          finAsistenciaTecnicaAt: input.finAsistenciaTecnica,
+          finAsistenciaTecnicaAt: input.finAsistenciaTecnica
+        }
+      });
+      await auditar(
+        tx,
+        actor.id,
+        "HORARIO_ASISTENCIA_TECNICA_CAMBIADO",
+        actual.id,
+        {
+          inicio: actual.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
+          fin: actual.finAsistenciaTecnicaAt?.toISOString() ?? null
         },
-      });
-      await auditar(tx, actor.id, "HORARIO_ASISTENCIA_TECNICA_CAMBIADO", actual.id, {
-        inicio: actual.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
-        fin: actual.finAsistenciaTecnicaAt?.toISOString() ?? null,
-      }, {
-        inicio: input.inicioAsistenciaTecnica.toISOString(),
-        fin: input.finAsistenciaTecnica.toISOString(),
-      });
+        {
+          inicio: input.inicioAsistenciaTecnica.toISOString(),
+          fin: input.finAsistenciaTecnica.toISOString()
+        }
+      );
       return { eventoProveedorIds: [] };
     }
 
@@ -488,10 +538,7 @@ export async function actualizarEncuentro(
       if (!inicioAsistenciaTecnica || !finAsistenciaTecnica) {
         throw new ConflictApiError("Esta serie no tiene un horario base de monitoreo para restablecer.");
       }
-      const modalidad = modalidadEfectivaEncuentro(
-        actual.solicitud.modalidad,
-        actual.modalidadOverride,
-      );
+      const modalidad = modalidadEfectivaEncuentro(actual.solicitud.modalidad, actual.modalidadOverride);
       validarHorarioAsistenciaTecnica({
         inicioEncuentro: actual.inicioProgramadoAt,
         finEncuentro: actual.finProgramadoAt,
@@ -499,12 +546,12 @@ export async function actualizarEncuentro(
         finAsistencia: finAsistenciaTecnica,
         modalidad,
         requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica,
-        timezone: actual.timezone,
+        timezone: actual.timezone
       });
 
       const asignacion = await tx.asignacionAsistenciaTecnica.findFirst({
         where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        select: { asistenteTecnicoId: true },
+        select: { asistenteTecnicoId: true }
       });
       if (asignacion) {
         await reservarAsistenteDisponible(
@@ -512,7 +559,7 @@ export async function actualizarEncuentro(
           asignacion.asistenteTecnicoId,
           modalidad,
           [{ inicio: inicioAsistenciaTecnica, fin: finAsistenciaTecnica }],
-          actual.id,
+          actual.id
         );
       }
 
@@ -520,16 +567,23 @@ export async function actualizarEncuentro(
         where: { id: actual.id },
         data: {
           inicioAsistenciaTecnicaAt: inicioAsistenciaTecnica,
-          finAsistenciaTecnicaAt: finAsistenciaTecnica,
+          finAsistenciaTecnicaAt: finAsistenciaTecnica
+        }
+      });
+      await auditar(
+        tx,
+        actor.id,
+        "HORARIO_ASISTENCIA_TECNICA_RESTABLECIDO",
+        actual.id,
+        {
+          inicio: actual.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
+          fin: actual.finAsistenciaTecnicaAt?.toISOString() ?? null
         },
-      });
-      await auditar(tx, actor.id, "HORARIO_ASISTENCIA_TECNICA_RESTABLECIDO", actual.id, {
-        inicio: actual.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
-        fin: actual.finAsistenciaTecnicaAt?.toISOString() ?? null,
-      }, {
-        inicio: inicioAsistenciaTecnica.toISOString(),
-        fin: finAsistenciaTecnica.toISOString(),
-      });
+        {
+          inicio: inicioAsistenciaTecnica.toISOString(),
+          fin: finAsistenciaTecnica.toISOString()
+        }
+      );
       return { eventoProveedorIds: [] };
     }
 
@@ -544,31 +598,31 @@ export async function actualizarEncuentro(
         finAsistencia: actual.finAsistenciaTecnicaAt,
         modalidad: modalidadEfectivaEncuentro(actual.solicitud.modalidad, actual.modalidadOverride),
         requiereAsistenciaTecnica: true,
-        timezone: actual.timezone,
+        timezone: actual.timezone
       });
     }
 
     await tx.instanciaSala.update({
       where: { id: actual.id },
-      data: { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica },
+      data: { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica }
     });
     if (!input.requiereAsistenciaTecnica) {
       await Promise.all([
         tx.asignacionAsistenciaTecnica.updateMany({
           where: { instanciaSalaId: actual.id, estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-          data: { estado: "CANCELADO" },
+          data: { estado: "CANCELADO" }
         }),
         tx.postulacionAsistenciaTecnica.updateMany({
           where: { instanciaSalaId: actual.id, estado: "ME_INTERESA" },
-          data: { estado: "RETIRADO" },
-        }),
+          data: { estado: "RETIRADO" }
+        })
       ]);
     }
     if (event) {
       await marcarOperacionPendiente(
         tx,
         event.id,
-        event.externalEventId && event.codigoReunion ? "CONFIGURAR_MEET" : "PROVISIONAR",
+        event.externalEventId && event.codigoReunion ? "CONFIGURAR_MEET" : "PROVISIONAR"
       );
     }
     await recalcularSolicitud(tx, solicitudId);
@@ -578,7 +632,7 @@ export async function actualizarEncuentro(
       input.requiereAsistenciaTecnica ? "ASISTENCIA_SOLICITADA" : "ASISTENCIA_CANCELADA",
       actual.id,
       { requiereAsistenciaTecnica: actual.requiereAsistenciaTecnica },
-      { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica },
+      { requiereAsistenciaTecnica: input.requiereAsistenciaTecnica }
     );
     return { eventoProveedorIds: event ? [event.id] : [] };
   });
@@ -588,26 +642,37 @@ export async function eliminarEncuentro(
   dependencies: GestionEncuentrosDependencies,
   actor: SessionActor,
   solicitudId: string,
-  instanciaId: string,
+  instanciaId: string
 ): Promise<Readonly<{ eventoProveedorIds: readonly string[] }>> {
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
     const meeting = await cargarEncuentroBloqueado(tx, solicitudId, instanciaId);
-    if (!meeting) throw new NotFoundApiError("El encuentro no existe.");
+    if (!meeting) {
+      throw new NotFoundApiError("El encuentro no existe.");
+    }
     await validarGestion(tx, actor, meeting.solicitud.docentePrograma);
     if (meeting.estado !== "PROGRAMADA" || meeting.inicioProgramadoAt <= new Date()) {
       throw new ConflictApiError("Solo se pueden eliminar encuentros futuros y programados.");
     }
 
     const count = await tx.instanciaSala.count({
-      where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } },
+      where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } }
     });
-    if (count <= 1) throw new ConflictApiError("Una reunión debe conservar al menos un encuentro.");
+    if (count <= 1) {
+      throw new ConflictApiError("Una reunión debe conservar al menos un encuentro.");
+    }
 
-    await auditar(tx, actor.id, "ENCUENTRO_ELIMINADO", meeting.id, {
-      inicio: meeting.inicioProgramadoAt.toISOString(),
-      fin: meeting.finProgramadoAt.toISOString(),
-    }, null);
+    await auditar(
+      tx,
+      actor.id,
+      "ENCUENTRO_ELIMINADO",
+      meeting.id,
+      {
+        inicio: meeting.inicioProgramadoAt.toISOString(),
+        fin: meeting.finProgramadoAt.toISOString()
+      },
+      null
+    );
     await tx.instanciaSala.update({ where: { id: meeting.id }, data: { estado: "CANCELADA" } });
 
     // Solo se cancela el evento activo; el Meet histórico se preserva.
@@ -621,8 +686,8 @@ export async function eliminarEncuentro(
           operacionPendiente: "CANCELAR",
           reclamoIntegracionAt: null,
           reclamoIntegracionToken: null,
-          errorIntegracion: null,
-        },
+          errorIntegracion: null
+        }
       });
     }
     await recalcularSolicitud(tx, solicitudId);
@@ -633,7 +698,7 @@ export async function eliminarEncuentro(
 export async function eliminarReunionCompleta(
   dependencies: GestionEncuentrosDependencies,
   actor: SessionActor,
-  solicitudId: string,
+  solicitudId: string
 ): Promise<Readonly<{ eventoProveedorIds: readonly string[] }>> {
   return dependencies.db.$transaction(async (tx) => {
     await bloquearSolicitudSala(tx, solicitudId);
@@ -644,12 +709,14 @@ export async function eliminarReunionCompleta(
         instancias: {
           include: {
             eventosProveedor: { include: { proveedor: true } },
-            detallesLiquidacion: { select: { id: true } },
-          },
-        },
-      },
+            detallesLiquidacion: { select: { id: true } }
+          }
+        }
+      }
     });
-    if (!request) throw new NotFoundApiError("La reunión no existe.");
+    if (!request) {
+      throw new NotFoundApiError("La reunión no existe.");
+    }
     await validarGestion(tx, actor, request.docentePrograma);
     // A repeated DELETE must not requeue already synchronized Google deletions
     // or create duplicate audit records.
@@ -670,18 +737,20 @@ export async function eliminarReunionCompleta(
         entidadId: request.id,
         valorAnterior: {
           titulo: request.titulo,
-          encuentros: request.instancias.length,
+          encuentros: request.instancias.length
         },
-        valorNuevo: Prisma.JsonNull,
-      },
+        valorNuevo: Prisma.JsonNull
+      }
     });
 
     const eventIds = request.instancias.flatMap(({ eventosProveedor }) =>
-      eventosProveedor.filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM").map(({ id }) => id)
+      eventosProveedor
+        .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM")
+        .map(({ id }) => id)
     );
     await tx.instanciaSala.updateMany({
       where: { solicitudSalaId: request.id },
-      data: { estado: "CANCELADA" },
+      data: { estado: "CANCELADA" }
     });
     if (eventIds.length > 0) {
       await tx.eventoProveedor.updateMany({
@@ -691,8 +760,8 @@ export async function eliminarReunionCompleta(
           operacionPendiente: "CANCELAR",
           reclamoIntegracionAt: null,
           reclamoIntegracionToken: null,
-          errorIntegracion: null,
-        },
+          errorIntegracion: null
+        }
       });
     }
     await tx.solicitudSala.update({
@@ -700,8 +769,8 @@ export async function eliminarReunionCompleta(
       data: {
         estado: "CANCELADA",
         canceladaAt: new Date(),
-        canceladaMotivo: "Eliminación solicitada; cancelaciones Google pendientes.",
-      },
+        canceladaMotivo: "Eliminación solicitada; cancelaciones Google pendientes."
+      }
     });
     return { eventoProveedorIds: eventIds };
   });
@@ -710,21 +779,21 @@ export async function eliminarReunionCompleta(
 async function cargarEncuentroBloqueado(
   tx: Prisma.TransactionClient,
   solicitudId: string,
-  instanciaId: string,
+  instanciaId: string
 ) {
   return tx.instanciaSala.findFirst({
     where: { id: instanciaId, solicitudSalaId: solicitudId },
     include: {
       solicitud: { include: { docentePrograma: { include: { docente: true } } } },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
-    },
+      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
+    }
   });
 }
 
 async function marcarOperacionPendiente(
   tx: Prisma.TransactionClient,
   eventoProveedorId: string,
-  operacionPendiente: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR",
+  operacionPendiente: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR"
 ): Promise<void> {
   await tx.eventoProveedor.update({
     where: { id: eventoProveedorId },
@@ -733,8 +802,8 @@ async function marcarOperacionPendiente(
       operacionPendiente,
       reclamoIntegracionAt: null,
       reclamoIntegracionToken: null,
-      errorIntegracion: null,
-    },
+      errorIntegracion: null
+    }
   });
 }
 
@@ -746,22 +815,24 @@ async function validarGestion(
 ): Promise<void> {
   if (
     !docentePrograma?.programaId ||
-    !await puedeGestionarPrograma(tx, actor, docentePrograma.programaId) ||
+    !(await puedeGestionarPrograma(tx, actor, docentePrograma.programaId)) ||
     !puedeGestionarEncuentros(actor.rol, actor.id, docentePrograma.docente?.usuarioId ?? "")
   ) {
     throw new ForbiddenApiError("No tiene permisos para gestionar estos encuentros.");
   }
 }
 
-function validarHorarioAsistenciaTecnica(input: Readonly<{
-  inicioEncuentro: Date;
-  finEncuentro: Date;
-  inicioAsistencia: Date | null;
-  finAsistencia: Date | null;
-  modalidad: "HIBRIDA" | "VIRTUAL";
-  requiereAsistenciaTecnica: boolean;
-  timezone: string;
-}>): void {
+function validarHorarioAsistenciaTecnica(
+  input: Readonly<{
+    inicioEncuentro: Date;
+    finEncuentro: Date;
+    inicioAsistencia: Date | null;
+    finAsistencia: Date | null;
+    modalidad: "HIBRIDA" | "VIRTUAL";
+    requiereAsistenciaTecnica: boolean;
+    timezone: string;
+  }>
+): void {
   const {
     inicioEncuentro,
     finEncuentro,
@@ -769,7 +840,7 @@ function validarHorarioAsistenciaTecnica(input: Readonly<{
     finAsistencia,
     modalidad,
     requiereAsistenciaTecnica,
-    timezone,
+    timezone
   } = input;
 
   if (Boolean(inicioAsistencia) !== Boolean(finAsistencia)) {
@@ -778,7 +849,7 @@ function validarHorarioAsistenciaTecnica(input: Readonly<{
   if (!inicioAsistencia || !finAsistencia) {
     if (requiereAsistenciaTecnica && modalidad === "HIBRIDA") {
       throw new ValidationApiError(
-        "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida.",
+        "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida."
       );
     }
     return;
@@ -801,12 +872,14 @@ function validarHorarioAsistenciaTecnica(input: Readonly<{
     (inicioAsistencia >= inicioEncuentro || finAsistencia <= finEncuentro)
   ) {
     throw new ValidationApiError(
-      "En una reunión híbrida el asistente debe llegar antes del inicio y retirarse después del fin.",
+      "En una reunión híbrida el asistente debe llegar antes del inicio y retirarse después del fin."
     );
   }
 }
 
 function cohostsComunes(values: readonly (readonly string[])[]): readonly string[] {
-  if (values.length === 0) return [];
+  if (values.length === 0) {
+    return [];
+  }
   return values[0].filter((value) => values.every((current) => current.includes(value)));
 }

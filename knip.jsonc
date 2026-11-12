@@ -1,7 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["app/**/*.{ts,tsx}", "auth.ts", "scripts/*.{ts,mjs}"],
+  "entry": [
+    "scripts/*.{ts,mjs}",
+    // Las pruebas arquitectónicas leen estas fachadas y sus componentes desde el sistema de archivos.
+    "src/modules/asistencia/presentation.ts",
+    "src/modules/reuniones/presentation.ts"
+  ],
   "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "test/**/*.{ts,tsx}"],
-  "ignore": ["prisma/**", "scripts/legacy-meetings/**", ".next/**"],
-  "ignoreDependencies": ["@types/node", "@types/react", "@types/react-dom"]
+  "ignoreExportsUsedInFile": true,
+  "ignore": ["scripts/legacy-meetings/**"]
 }

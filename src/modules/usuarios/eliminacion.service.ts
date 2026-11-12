@@ -13,10 +13,18 @@ export async function eliminarUsuarioCompleto(
   confirmacion: string
 ): Promise<void> {
   const id = usuarioId.trim();
-  if (!id) throw new Error("El usuario es obligatorio.");
-  if (confirmacion.trim() !== "ELIMINAR") throw new Error("La confirmación de eliminación no es válida.");
-  if (!actor.activo || actor.rol !== "ADMINISTRACION") throw new Error("No tenés permisos para eliminar usuarios.");
-  if (actor.id === id) throw new Error("No podés eliminar tu propia cuenta.");
+  if (!id) {
+    throw new Error("El usuario es obligatorio.");
+  }
+  if (confirmacion.trim() !== "ELIMINAR") {
+    throw new Error("La confirmación de eliminación no es válida.");
+  }
+  if (!actor.activo || actor.rol !== "ADMINISTRACION") {
+    throw new Error("No tenés permisos para eliminar usuarios.");
+  }
+  if (actor.id === id) {
+    throw new Error("No podés eliminar tu propia cuenta.");
+  }
 
   await db.$transaction(async (tx) => {
     const [actorActual, usuario] = await Promise.all([
@@ -40,13 +48,16 @@ export async function eliminarUsuarioCompleto(
     if (!actorActual?.activo || actorActual.rol !== "ADMINISTRACION") {
       throw new Error("No tenés permisos para eliminar usuarios.");
     }
-    if (!usuario) throw new Error("El usuario ya no existe.");
+    if (!usuario) {
+      throw new Error("El usuario ya no existe.");
+    }
 
     const cuentaGoogleIds = usuario.cuentasGoogle.map(({ id: cuentaId }) => cuentaId);
     const emails = Array.from(
       new Set(
-        [usuario.emailPrincipal, ...usuario.cuentasGoogle.map(({ email }) => email)]
-          .filter((email): email is string => Boolean(email))
+        [usuario.emailPrincipal, ...usuario.cuentasGoogle.map(({ email }) => email)].filter(
+          (email): email is string => Boolean(email)
+        )
       )
     );
 

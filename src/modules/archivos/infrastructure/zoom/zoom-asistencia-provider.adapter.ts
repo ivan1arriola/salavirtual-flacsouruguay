@@ -17,12 +17,19 @@ export function crearZoomAsistenciaProviderAdapter(deps: ZoomAsistenciaProviderD
     async obtenerSesiones(uuid) {
       const token = typeof deps.auth === "string" ? deps.auth : await deps.auth.obtener();
       const filas = await listarParticipantesReunionPasadaZoomHttp(token, uuid);
-      if (filas === null) return { estado: "NO_DISPONIBLE" };
-      if (filas.length === 0) return { estado: "VACIO" };
+      if (filas === null) {
+        return { estado: "NO_DISPONIBLE" };
+      }
+      if (filas.length === 0) {
+        return { estado: "VACIO" };
+      }
       const sesiones = filas.map((fila): SesionObservadaZoom => ({
         claveSesion: claveSesionZoom(deps.hash, uuid, {
-          participanteId: fila.participantId, userId: fila.userId, nombre: fila.nombre,
-          entradaAt: fila.joinTime, salidaAt: fila.leaveTime
+          participanteId: fila.participantId,
+          userId: fila.userId,
+          nombre: fila.nombre,
+          entradaAt: fila.joinTime,
+          salidaAt: fila.leaveTime
         }),
         participanteId: fila.participantId,
         userId: fila.userId,

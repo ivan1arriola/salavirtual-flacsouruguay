@@ -1,14 +1,21 @@
 export type EstadoConciliacionZoom = "SIN_CONCILIAR" | "SUGERIDO" | "CONCILIADO" | "EXTERNO";
 
-export type ActorConciliacionZoom = Readonly<{ id: string; rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO" }>;
+export type ActorConciliacionZoom = Readonly<{
+  id: string;
+  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+}>;
 
 /** Concilian solo administración y el docente titular de la serie; el resto (asistentes, otros docentes) solo lee. */
 export function puedeConciliarAsistenciaZoom(
   actor: ActorConciliacionZoom,
   contexto: Readonly<{ titularUsuarioId: string | null }>
 ): boolean {
-  if (actor.rol === "ADMINISTRACION") return true;
-  return actor.rol === "DOCENTE" && contexto.titularUsuarioId !== null && contexto.titularUsuarioId === actor.id;
+  if (actor.rol === "ADMINISTRACION") {
+    return true;
+  }
+  return (
+    actor.rol === "DOCENTE" && contexto.titularUsuarioId !== null && contexto.titularUsuarioId === actor.id
+  );
 }
 
 export type SolicitudConciliacionZoom = Readonly<{ invitadoReunionId: string | null; externo: boolean }>;
@@ -19,11 +26,19 @@ export function calcularCambioConciliacionZoom(solicitud: SolicitudConciliacionZ
   invitadoReunionId: string | null;
   esExterno: boolean | null;
 }> | null {
-  if (solicitud.invitadoReunionId && solicitud.externo) return null;
-  if (solicitud.invitadoReunionId) {
-    return { estadoConciliacion: "CONCILIADO", invitadoReunionId: solicitud.invitadoReunionId, esExterno: false };
+  if (solicitud.invitadoReunionId && solicitud.externo) {
+    return null;
   }
-  if (solicitud.externo) return { estadoConciliacion: "EXTERNO", invitadoReunionId: null, esExterno: true };
+  if (solicitud.invitadoReunionId) {
+    return {
+      estadoConciliacion: "CONCILIADO",
+      invitadoReunionId: solicitud.invitadoReunionId,
+      esExterno: false
+    };
+  }
+  if (solicitud.externo) {
+    return { estadoConciliacion: "EXTERNO", invitadoReunionId: null, esExterno: true };
+  }
   return { estadoConciliacion: "SIN_CONCILIAR", invitadoReunionId: null, esExterno: null };
 }
 
@@ -40,11 +55,19 @@ export function proponerSugerenciasConciliacionZoom(
   invitados: ReadonlyArray<Readonly<{ id: string; email: string }>>
 ): ReadonlyArray<Readonly<{ registroId: string; invitadoReunionId: string }>> {
   const candidatas = pendientes.flatMap(({ registroId, claveParticipante }) => {
-    if (!claveParticipante.startsWith("id:")) return [];
+    if (!claveParticipante.startsWith("id:")) {
+      return [];
+    }
     const correos = [
-      ...new Set(vinculosPrevios.filter((v) => v.claveParticipante === claveParticipante).map((v) => normalizarCorreo(v.email)))
+      ...new Set(
+        vinculosPrevios
+          .filter((v) => v.claveParticipante === claveParticipante)
+          .map((v) => normalizarCorreo(v.email))
+      )
     ];
-    if (correos.length !== 1) return [];
+    if (correos.length !== 1) {
+      return [];
+    }
     const coincidentes = invitados.filter((i) => normalizarCorreo(i.email) === correos[0]);
     return coincidentes.length === 1 ? [{ registroId, invitadoReunionId: coincidentes[0]!.id }] : [];
   });

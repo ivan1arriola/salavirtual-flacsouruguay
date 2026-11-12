@@ -20,8 +20,12 @@ export class GoogleCuentaOcupadaError extends Error {
   }
 }
 
-export type GoogleOperationKind = "MEET_CREAR_ESPACIO" | "DRIVE_CREAR_CARPETA" |
-  "DRIVE_SUBIR_DOCUMENTO" | "SHEETS_CREAR_ASISTENCIA" | "GMAIL_ENVIAR";
+export type GoogleOperationKind =
+  | "MEET_CREAR_ESPACIO"
+  | "DRIVE_CREAR_CARPETA"
+  | "DRIVE_SUBIR_DOCUMENTO"
+  | "SHEETS_CREAR_ASISTENCIA"
+  | "GMAIL_ENVIAR";
 
 export type GoogleOperationSpec = Readonly<{
   clave: string;
@@ -44,31 +48,45 @@ export async function ejecutarGooglePostUnaVez<T>(
   spec: GoogleOperationSpec,
   send: () => Promise<T>,
   serialize: (result: T) => Record<string, string>,
-  restore: (data: Record<string, string>) => T,
+  restore: (data: Record<string, string>) => T
 ): Promise<T> {
   const registered = await db.googleOperacionExterna.upsert({
     where: { clave: spec.clave },
     create: {
-      clave: spec.clave, proveedor: spec.proveedor,
-      tipo: spec.tipo, cuenta: spec.cuenta, referencia: spec.referencia ?? null, estado: "RESERVADA"
+      clave: spec.clave,
+      proveedor: spec.proveedor,
+      tipo: spec.tipo,
+      cuenta: spec.cuenta,
+      referencia: spec.referencia ?? null,
+      estado: "RESERVADA"
     },
     update: {}
   });
   // Fail closed if the same key is accidentally reused for another operation.
-  if (registered.proveedor !== spec.proveedor || registered.tipo !== spec.tipo ||
-      registered.cuenta !== spec.cuenta) {
+  if (
+    registered.proveedor !== spec.proveedor ||
+    registered.tipo !== spec.tipo ||
+    registered.cuenta !== spec.cuenta
+  ) {
     throw new GoogleOperacionInciertaError(spec.clave);
   }
   if (registered.estado === "CONFIRMADA") {
-    if (!registered.resultado || typeof registered.resultado !== "object" ||
-        Array.isArray(registered.resultado)) throw new GoogleOperacionInciertaError(spec.clave);
+    if (
+      !registered.resultado ||
+      typeof registered.resultado !== "object" ||
+      Array.isArray(registered.resultado)
+    ) {
+      throw new GoogleOperacionInciertaError(spec.clave);
+    }
     const record = registered.resultado as Record<string, unknown>;
     if (!Object.values(record).every((value) => typeof value === "string")) {
       throw new GoogleOperacionInciertaError(spec.clave);
     }
     return restore(record as Record<string, string>);
   }
-  if (registered.estado !== "RESERVADA") throw new GoogleOperacionInciertaError(spec.clave);
+  if (registered.estado !== "RESERVADA") {
+    throw new GoogleOperacionInciertaError(spec.clave);
+  }
 
   const leaseKey = `${spec.proveedor}:${spec.cuenta}`;
   const now = new Date();
@@ -82,7 +100,9 @@ export async function ejecutarGooglePostUnaVez<T>(
     where: { clave: leaseKey, venceAt: { lte: now } },
     data: { token, venceAt: new Date(now.getTime() + ACCOUNT_LEASE_MS) }
   });
-  if (lease.count !== 1) throw new GoogleCuentaOcupadaError();
+  if (lease.count !== 1) {
+    throw new GoogleCuentaOcupadaError();
+  }
 
   try {
     const claimed = await db.googleOperacionExterna.updateMany({
@@ -106,21 +126,25 @@ export async function ejecutarGooglePostUnaVez<T>(
       return result;
     } catch (error) {
       // Do not expose remote response bodies, addresses or credentials.
-      await db.googleOperacionExterna.updateMany({
-        where: { clave: spec.clave, estado: "ENVIANDO" },
-        data: { estado: "INCIERTA", errorCodigo: "RESULTADO_REMOTO_NO_CONFIRMADO" }
-      }).catch(() => {
-        // If the DB itself failed, ENVIANDO still prevents a replay.
-      });
+      await db.googleOperacionExterna
+        .updateMany({
+          where: { clave: spec.clave, estado: "ENVIANDO" },
+          data: { estado: "INCIERTA", errorCodigo: "RESULTADO_REMOTO_NO_CONFIRMADO" }
+        })
+        .catch(() => {
+          // If the DB itself failed, ENVIANDO still prevents a replay.
+        });
       throw new GoogleOperacionInciertaError(spec.clave);
     }
   } finally {
-    await db.googleCuentaLease.updateMany({
-      where: { clave: leaseKey, token },
-      data: { token: null, venceAt: new Date(0) }
-    }).catch(() => {
-      // Lease will expire; an ENVIANDO operation remains permanently non-replayable.
-    });
+    await db.googleCuentaLease
+      .updateMany({
+        where: { clave: leaseKey, token },
+        data: { token: null, venceAt: new Date(0) }
+      })
+      .catch(() => {
+        // Lease will expire; an ENVIANDO operation remains permanently non-replayable.
+      });
   }
 }
 
@@ -140,7 +164,10 @@ export async function confirmarGoogleOperacionVerificada(
   const updated = await db.googleOperacionExterna.updateMany({
     where: { clave, estado: "INCIERTA" },
     data: {
-      estado: "CONFIRMADA", resultado, errorCodigo: null, terminadaAt: new Date()
+      estado: "CONFIRMADA",
+      resultado,
+      errorCodigo: null,
+      terminadaAt: new Date()
     }
   });
   return updated.count === 1;
@@ -158,8 +185,11 @@ export async function confirmarOperacionDriveMarcada(
   resultado: Record<string, string>,
   now = new Date()
 ): Promise<boolean> {
-  if (!/^(gop:)[a-f0-9]{64}$/.test(clave) ||
-      !resultado.id || Object.values(resultado).some((v) => typeof v !== "string")) {
+  if (
+    !/^(gop:)[a-f0-9]{64}$/.test(clave) ||
+    !resultado.id ||
+    Object.values(resultado).some((v) => typeof v !== "string")
+  ) {
     throw new Error("La conciliación Drive requiere clave e ID remoto válidos.");
   }
   const stale = new Date(now.getTime() - 5 * 60_000);
@@ -168,10 +198,7 @@ export async function confirmarOperacionDriveMarcada(
       clave,
       proveedor: "DRIVE",
       tipo: { in: ["DRIVE_CREAR_CARPETA", "DRIVE_SUBIR_DOCUMENTO"] },
-      OR: [
-        { estado: "INCIERTA" },
-        { estado: "ENVIANDO", iniciadaAt: { lt: stale } }
-      ]
+      OR: [{ estado: "INCIERTA" }, { estado: "ENVIANDO", iniciadaAt: { lt: stale } }]
     },
     data: {
       estado: "CONFIRMADA",

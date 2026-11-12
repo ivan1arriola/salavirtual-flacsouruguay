@@ -6,7 +6,7 @@ import type {
   EstadoIntegracionConferencia,
   OperacionPendienteConferencia,
   ProvisionConferenciaResult,
-  ReclasificarLoteResult,
+  ReclasificarLoteResult
 } from "../domain/conferencias.types";
 
 export type EventoProveedorSnapshot = Readonly<{
@@ -78,16 +78,12 @@ export type WorkspaceCredentialsResult = Readonly<{
 }>;
 
 export type ConferenciasRepositoryPort = Readonly<{
-  obtenerSnapshotsEventos: (
-    ids: readonly string[]
-  ) => Promise<readonly EventoProveedorSnapshot[]>;
+  obtenerSnapshotsEventos: (ids: readonly string[]) => Promise<readonly EventoProveedorSnapshot[]>;
 
   obtenerCredencialesWorkspace: () => Promise<WorkspaceCredentialsResult>;
   obtenerCredencialesZoom: () => Promise<ZoomCredentialsResult>;
 
-  reclamarEvento: (
-    id: string
-  ) => Promise<ClaimInfo | null>;
+  reclamarEvento: (id: string) => Promise<ClaimInfo | null>;
 
   buscarConferenceDataCompartida: (
     solicitudSalaId: string,
@@ -100,10 +96,7 @@ export type ConferenciasRepositoryPort = Readonly<{
     payload: unknown
   ) => Promise<void>;
 
-  persistirMeetDetectado: (
-    claim: ClaimInfo,
-    result: ConferenceProvisionResult
-  ) => Promise<void>;
+  persistirMeetDetectado: (claim: ClaimInfo, result: ConferenceProvisionResult) => Promise<void>;
 
   finalizarOperacion: (
     claim: ClaimInfo,
@@ -117,18 +110,11 @@ export type ConferenciasRepositoryPort = Readonly<{
     scopeConfiguracionMeet?: boolean
   ) => Promise<ProvisionConferenciaResult>;
 
-  registrarErrorSinClaim: (
-    id: string,
-    error: string
-  ) => Promise<ProvisionConferenciaResult>;
+  registrarErrorSinClaim: (id: string, error: string) => Promise<ProvisionConferenciaResult>;
 
-  obtenerEstadoActual: (
-    id: string
-  ) => Promise<ProvisionConferenciaResult>;
+  obtenerEstadoActual: (id: string) => Promise<ProvisionConferenciaResult>;
 
-  descartarOperacionPendiente: (
-    id: string
-  ) => Promise<DescartarOperacionResult>;
+  descartarOperacionPendiente: (id: string) => Promise<DescartarOperacionResult>;
 
   descartarOperacionesNoBloqueantesLote: () => Promise<DescartarLoteResult>;
 
@@ -144,11 +130,7 @@ export type ConferenciasRepositoryPort = Readonly<{
   ) => Promise<ReclamoReunionCompartida | null>;
 
   /** Guarda el ID de Zoom apenas se recibe; solo si el token sigue siendo el del reclamo. */
-  registrarExternalIdTemprano?: (
-    reunionId: string,
-    token: string,
-    externalId: string
-  ) => Promise<void>;
+  registrarExternalIdTemprano?: (reunionId: string, token: string, externalId: string) => Promise<void>;
 
   /** Pasa la reunión a CREADA y copia `externalEventId`/`joinUrl` a sus eventos. */
   guardarReunionCompartida?: (
@@ -174,4 +156,3 @@ export type ConferenciasRepositoryPort = Readonly<{
   /** Limpia el reclamo del evento sin tocar su operación pendiente, para reintentar enseguida. */
   liberarReclamoEvento?: (claim: ClaimInfo) => Promise<void>;
 }>;
-

@@ -229,8 +229,8 @@ En ambos casos, `XX` debe reemplazarse por el número de la cuenta utilizando si
 
 Ejemplos:
 
-| Cuenta | Contraseña |
-| --- | --- |
+| Cuenta                 | Contraseña      |
+| ---------------------- | --------------- |
 | `sala01@flacso.edu.uy` | `Sala01FLACSO+` |
 | `sala02@flacso.edu.uy` | `Sala02FLACSO+` |
 | `sala05@flacso.edu.uy` | `Sala05FLACSO+` |

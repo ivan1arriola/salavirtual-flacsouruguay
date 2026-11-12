@@ -8,7 +8,9 @@ function declarationsFor(selector: string): Map<string, string> {
   const rule = stylesheet.nodes.find(
     (node): node is Rule => node.type === "rule" && node.selector === selector
   );
-  if (!rule) return new Map();
+  if (!rule) {
+    return new Map();
+  }
 
   return new Map(
     rule.nodes
@@ -20,7 +22,9 @@ function declarationsFor(selector: string): Map<string, string> {
 const rootDeclarations = declarationsFor(":root");
 
 function resolveToken(name: string, visited = new Set<string>()): string | undefined {
-  if (visited.has(name)) return undefined;
+  if (visited.has(name)) {
+    return undefined;
+  }
   visited.add(name);
 
   const value = rootDeclarations.get(name);
@@ -87,8 +91,10 @@ describe("design token stylesheet contract", () => {
           .filter((node): node is Declaration => node.type === "decl")
           .map(({ prop, value }) => [prop, value])
       );
-      return declarations.get("outline") === "3px solid var(--focus-ring-color)"
-        && declarations.get("outline-offset") === "2px";
+      return (
+        declarations.get("outline") === "3px solid var(--focus-ring-color)" &&
+        declarations.get("outline-offset") === "2px"
+      );
     });
 
     expect(hasTokenizedFocusOutline).toBe(true);

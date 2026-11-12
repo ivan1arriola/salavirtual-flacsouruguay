@@ -9,7 +9,9 @@ afterEach(() => vi.unstubAllGlobals());
 
 function oauthMock(tokens: string[]) {
   let i = 0;
-  return vi.fn(async () => new Response(JSON.stringify({ access_token: tokens[i++], expires_in: 3600 }), { status: 200 }));
+  return vi.fn(
+    async () => new Response(JSON.stringify({ access_token: tokens[i++], expires_in: 3600 }), { status: 200 })
+  );
 }
 
 describe("renovación forzada del token Zoom", () => {

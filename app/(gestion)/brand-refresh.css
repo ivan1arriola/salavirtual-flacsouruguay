@@ -1,7 +1,5 @@
 .app-frame {
-  background:
-    radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.06), transparent 30rem),
-    var(--bg);
+  background: radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.06), transparent 30rem), var(--bg);
 }
 
 /* Navegación lateral: base clara, identidad azul y CTA amarillo */
@@ -65,7 +63,7 @@
 
 .side-nav a.is-active::before {
   background: var(--brand);
-  box-shadow: 0 0 0 3px rgba(44, 71, 119, 0.10);
+  box-shadow: 0 0 0 3px rgba(44, 71, 119, 0.1);
 }
 
 .sidebar-create-action {
@@ -264,8 +262,7 @@
   border: 0;
   border-radius: 18px;
   background:
-    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem),
-    var(--hero-gradient);
+    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem), var(--hero-gradient);
   color: #ffffff;
   box-shadow: 0 16px 42px rgba(21, 42, 80, 0.18);
 }
@@ -300,8 +297,7 @@
 
 .teacher-dashboard .role-dashboard-hero {
   background:
-    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem),
-    var(--hero-gradient);
+    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem), var(--hero-gradient);
 }
 
 .role-dashboard-hero h1,
@@ -511,7 +507,6 @@
   }
 }
 
-
 /* Shared schedule vocabulary across assistant, teacher and administration views. */
 .meeting-schedule-times {
   display: grid;
@@ -545,10 +540,10 @@
 }
 
 .meeting-schedule-line span {
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 850;
   text-transform: uppercase;
-  letter-spacing: .025em;
+  letter-spacing: 0.025em;
   color: #3d5a81;
 }
 
@@ -561,7 +556,7 @@
 
 .meeting-schedule-line small {
   color: #4b6280;
-  font-size: .75rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -592,11 +587,11 @@
 }
 
 .meeting-schedule-times.is-compact .meeting-schedule-line strong {
-  font-size: .88rem;
+  font-size: 0.88rem;
 }
 
 .meeting-schedule-times.is-compact .meeting-schedule-line small {
-  font-size: .7rem;
+  font-size: 0.7rem;
 }
 
 @media (max-width: 560px) {
@@ -604,7 +599,6 @@
     padding: 11px;
   }
 }
-
 
 .meeting-schedule-line.is-coverage.is-pending {
   border-color: #d8a84b;
@@ -653,7 +647,6 @@
     width: 100%;
   }
 }
-
 
 /* Countdown labels must wrap instead of competing with the meeting time on mobile. */
 .dashboard-hero-timing {

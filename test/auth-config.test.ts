@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseAuthConfig,
-  resolverRedireccionAutorizada
-} from "../src/modules/usuarios/auth-config.domain";
+import { parseAuthConfig, resolverRedireccionAutorizada } from "../src/modules/usuarios/auth-config.domain";
 
 const validEnvironment = Object.freeze({
   AUTH_SECRET: "a".repeat(64),
@@ -68,10 +65,7 @@ describe("redirecciones de autenticacion", () => {
 
   it("rechaza redirecciones a origenes externos", () => {
     expect(
-      resolverRedireccionAutorizada(
-        "https://sitio-externo.example/phishing",
-        validEnvironment.APP_BASE_URL
-      )
+      resolverRedireccionAutorizada("https://sitio-externo.example/phishing", validEnvironment.APP_BASE_URL)
     ).toBe("http://localhost:3000/");
   });
 });

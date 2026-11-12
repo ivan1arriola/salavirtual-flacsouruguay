@@ -27,8 +27,10 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
   }
   const configuracion = await repositorio.obtenerConfiguracionWorkspacePrincipal();
   if (
-    !configuracion?.activa || !configuracion.serviceAccountEmail ||
-    !configuracion.privateKeyCifrada || !configuracion.driveDestinationId
+    !configuracion?.activa ||
+    !configuracion.serviceAccountEmail ||
+    !configuracion.privateKeyCifrada ||
+    !configuracion.driveDestinationId
   ) {
     throw new Error("Faltan credenciales o carpeta destino de Google Workspace.");
   }
@@ -68,16 +70,11 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
   let reparadas = 0;
   for (const item of vacias) {
     try {
-      const [resultado] = await sincronizarArtefactosUseCase(
-        repositorio,
-        providerFactory,
-        descifrar,
-        {
-          eventoProveedorIds: [item.candidata.eventoProveedorId],
-          regenerarAsistencia: true,
-          asistenciaDriveFileIds: { [item.candidata.eventoProveedorId]: item.candidata.spreadsheetId }
-        }
-      );
+      const [resultado] = await sincronizarArtefactosUseCase(repositorio, providerFactory, descifrar, {
+        eventoProveedorIds: [item.candidata.eventoProveedorId],
+        regenerarAsistencia: true,
+        asistenciaDriveFileIds: { [item.candidata.eventoProveedorId]: item.candidata.spreadsheetId }
+      });
       if (resultado && resultado.estado !== "ERROR" && resultado.archivos > 0) {
         reparadas += 1;
       } else {
@@ -111,11 +108,13 @@ async function mapConLimit<T, R>(
 ): Promise<R[]> {
   const results = new Array<R>(items.length);
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await operation(items[index]!);
-    }
-  }));
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const index = next++;
+        results[index] = await operation(items[index]!);
+      }
+    })
+  );
   return results;
 }

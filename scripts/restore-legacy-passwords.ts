@@ -45,24 +45,23 @@ async function main(): Promise<void> {
         fusionadoEnId: true
       }
     });
-    const targetsByLegacyId = new Map(
-      targetUsers.map((user) => [user.legacyZoomUserId, user] as const)
-    );
+    const targetsByLegacyId = new Map(targetUsers.map((user) => [user.legacyZoomUserId, user] as const));
     const candidates = legacyUsers.flatMap<RestorePlan>((legacy) => {
       const current = targetsByLegacyId.get(legacy.id);
       return current && legacy.passwordHash && !current.fusionadoEnId
-        ? [{
-            usuarioId: current.id,
-            legacyZoomUserId: legacy.id,
-            legacyPasswordHash: legacy.passwordHash
-          }]
+        ? [
+            {
+              usuarioId: current.id,
+              legacyZoomUserId: legacy.id,
+              legacyPasswordHash: legacy.passwordHash
+            }
+          ]
         : [];
     });
     const decisions = await Promise.all(
       candidates.map(async (candidate) => {
         const current = targetUsers.find(({ id }) => id === candidate.usuarioId);
-        const alreadyRestored =
-          current?.passwordHash === candidate.legacyPasswordHash;
+        const alreadyRestored = current?.passwordHash === candidate.legacyPasswordHash;
         const hasTemporaryPassword = current?.passwordHash
           ? await passwordMatchesDefault(current.passwordHash)
           : true;
@@ -75,19 +74,27 @@ async function main(): Promise<void> {
     );
     const plans = decisions.filter(({ restore }) => restore).map(({ candidate }) => candidate);
 
-    console.log(JSON.stringify({
-      mode: applyChanges ? "apply" : "dry-run",
-      legacyUsersWithPassword: legacyUsers.length,
-      matchedUsers: candidates.length,
-      passwordsToRestore: plans.length,
-      alreadyRestored: decisions.filter(({ alreadyRestored }) => alreadyRestored).length,
-      currentPasswordsPreserved: decisions.filter(
-        ({ restore, alreadyRestored }) => !restore && !alreadyRestored
-      ).length,
-      missingOrMergedUsers: legacyUsers.length - candidates.length
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          mode: applyChanges ? "apply" : "dry-run",
+          legacyUsersWithPassword: legacyUsers.length,
+          matchedUsers: candidates.length,
+          passwordsToRestore: plans.length,
+          alreadyRestored: decisions.filter(({ alreadyRestored }) => alreadyRestored).length,
+          currentPasswordsPreserved: decisions.filter(
+            ({ restore, alreadyRestored }) => !restore && !alreadyRestored
+          ).length,
+          missingOrMergedUsers: legacyUsers.length - candidates.length
+        },
+        null,
+        2
+      )
+    );
 
-    if (!applyChanges || plans.length === 0) return;
+    if (!applyChanges || plans.length === 0) {
+      return;
+    }
     await target.$transaction(
       plans.flatMap((plan) => [
         target.usuario.update({

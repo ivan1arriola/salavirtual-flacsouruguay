@@ -21,25 +21,35 @@ type Plan = Readonly<{
 
 async function main(): Promise<void> {
   const plans = buildPlans(await loadMeetings());
-  console.log(JSON.stringify({
-    mode: applyChanges ? "apply" : "dry-run",
-    cutoff: now.toISOString(),
-    seriesToFix: plans.length,
-    eventsToUpdate: plans.reduce((total, plan) => total + plan.meetings.length - 1, 0),
-    series: plans.map((plan) => ({
-      programa: plan.meetings[0].solicitud.docentePrograma.programa.nombre,
-      titulo: plan.meetings[0].solicitud.titulo,
-      meetings: plan.meetings.length,
-      currentCodes: plan.codes,
-      sharedCode: onlyEvent(plan.anchor).codigoReunion
-    }))
-  }, null, 2));
-  if (!applyChanges || plans.length === 0) return;
+  console.log(
+    JSON.stringify(
+      {
+        mode: applyChanges ? "apply" : "dry-run",
+        cutoff: now.toISOString(),
+        seriesToFix: plans.length,
+        eventsToUpdate: plans.reduce((total, plan) => total + plan.meetings.length - 1, 0),
+        series: plans.map((plan) => ({
+          programa: plan.meetings[0].solicitud.docentePrograma.programa.nombre,
+          titulo: plan.meetings[0].solicitud.titulo,
+          meetings: plan.meetings.length,
+          currentCodes: plan.codes,
+          sharedCode: onlyEvent(plan.anchor).codigoReunion
+        }))
+      },
+      null,
+      2
+    )
+  );
+  if (!applyChanges || plans.length === 0) {
+    return;
+  }
 
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
   const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
-  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true });
+  const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+    requireActiva: true
+  });
   if (!config) {
     throw new Error("Google Workspace no está configurado para unificar enlaces de series.");
   }
@@ -86,9 +96,13 @@ function buildPlans(meetings: readonly Meeting[]): readonly Plan[] {
   }
   return [...groups.entries()].flatMap(([key, values]) => {
     const codes = unique(values.map((meeting) => onlyEvent(meeting).codigoReunion).filter(isString));
-    if (codes.length <= 1) return [];
+    if (codes.length <= 1) {
+      return [];
+    }
     const anchor = values.find((meeting) => extraerConferenceData(onlyEvent(meeting).payloadUltimo));
-    if (!anchor) throw new Error(`La serie ${values[0].solicitud.titulo} no tiene conferenceData reutilizable.`);
+    if (!anchor) {
+      throw new Error(`La serie ${values[0].solicitud.titulo} no tiene conferenceData reutilizable.`);
+    }
     return [{ key, meetings: values, anchor, codes }];
   });
 }
@@ -101,7 +115,9 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
   }
 
   for (const meeting of plan.meetings) {
-    if (meeting.id === plan.anchor.id) continue;
+    if (meeting.id === plan.anchor.id) {
+      continue;
+    }
     const event = onlyEvent(meeting);
     const calendarId = event.cuentaProveedor?.emailOrganizador;
     if (!calendarId || !event.externalEventId) {
@@ -112,12 +128,9 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
       privateKey,
       subject: calendarId
     };
-    const result = await withRateLimitRetries(() => compartirConferenciaGoogleCalendar(
-      credentials,
-      calendarId,
-      event.externalEventId!,
-      conferenceData
-    ));
+    const result = await withRateLimitRetries(() =>
+      compartirConferenciaGoogleCalendar(credentials, calendarId, event.externalEventId!, conferenceData)
+    );
     await db.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'unificar-links-series-futuras', true), set_config('flacso.meet_change_reason', 'Unificación de enlaces de la serie', true)`;
       await tx.eventoProveedor.update({
@@ -150,7 +163,9 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
 
 function onlyEvent(meeting: Meeting) {
   const event = meeting.eventosProveedor[0];
-  if (!event) throw new Error(`El encuentro ${meeting.id} no tiene evento Google Meet.`);
+  if (!event) {
+    throw new Error(`El encuentro ${meeting.id} no tiene evento Google Meet.`);
+  }
   return event;
 }
 
@@ -165,19 +180,25 @@ function isString(value: string | null): value is string {
 async function withRateLimitRetries<T>(operation: () => Promise<T>): Promise<T> {
   let lastError: unknown;
   for (const delay of [0, 1000, 2000, 4000, 8000]) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    if (delay) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      if (!isRateLimit(error)) throw error;
+      if (!isRateLimit(error)) {
+        throw error;
+      }
     }
   }
   throw lastError;
 }
 
 function isRateLimit(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
   const candidate = error as { code?: unknown; response?: { status?: unknown } };
   return candidate.code === 429 || candidate.response?.status === 429;
 }

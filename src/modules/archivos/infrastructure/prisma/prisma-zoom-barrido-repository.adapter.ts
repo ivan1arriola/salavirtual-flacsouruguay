@@ -19,16 +19,25 @@ const deFecha = (d: Date): string => d.toISOString().slice(0, 10);
 type Fila = Prisma.BarridoArchivoZoomGetPayload<Record<string, never>>;
 
 function anfitrionesDe(json: Prisma.JsonValue): readonly AnfitrionBarridoZoom[] {
-  if (!Array.isArray(json)) return [];
+  if (!Array.isArray(json)) {
+    return [];
+  }
   return json.flatMap((x) => {
     const o = x as { anfitrionZoomId?: unknown; cuentaProveedorId?: unknown } | null;
     return o && typeof o.anfitrionZoomId === "string"
-      ? [{ anfitrionZoomId: o.anfitrionZoomId, cuentaProveedorId: typeof o.cuentaProveedorId === "string" ? o.cuentaProveedorId : null }]
+      ? [
+          {
+            anfitrionZoomId: o.anfitrionZoomId,
+            cuentaProveedorId: typeof o.cuentaProveedorId === "string" ? o.cuentaProveedorId : null
+          }
+        ]
       : [];
   });
 }
 
-export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoRepositoryDeps): BarridoZoomRepositoryPort {
+export function crearPrismaZoomBarridoRepositoryAdapter(
+  deps: PrismaZoomBarridoRepositoryDeps
+): BarridoZoomRepositoryPort {
   const { db } = deps;
   const aBarrido = (f: Fila): BarridoZoom => ({
     id: f.id,
@@ -59,7 +68,10 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
       const fila = await db.barridoArchivoZoom.create({
         data: {
           cuentaZoomId: n.cuentaZoomId,
-          anfitrionesSnapshot: n.anfitriones.map((a) => ({ anfitrionZoomId: a.anfitrionZoomId, cuentaProveedorId: a.cuentaProveedorId })),
+          anfitrionesSnapshot: n.anfitriones.map((a) => ({
+            anfitrionZoomId: a.anfitrionZoomId,
+            cuentaProveedorId: a.cuentaProveedorId
+          })),
           desde: aFecha(n.desde),
           hasta: aFecha(n.hasta),
           solicitanteId: n.solicitanteId
@@ -68,8 +80,10 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
       });
       await db.auditoria.create({
         data: {
-          actorUsuarioId: n.solicitanteId, accion: "ZOOM_RECUPERACION_CREADA",
-          entidadTipo: "BarridoArchivoZoom", entidadId: fila.id,
+          actorUsuarioId: n.solicitanteId,
+          accion: "ZOOM_RECUPERACION_CREADA",
+          entidadTipo: "BarridoArchivoZoom",
+          entidadId: fila.id,
           valorNuevo: { desde: n.desde, hasta: n.hasta, anfitriones: n.anfitriones.length }
         }
       });
@@ -92,9 +106,15 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
               { OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] }
             ]
           },
-          data: { estado: "EN_CURSO", leaseVersion: { increment: 1 }, leaseHasta: new Date(ahora.getTime() + duracionMs) }
+          data: {
+            estado: "EN_CURSO",
+            leaseVersion: { increment: 1 },
+            leaseHasta: new Date(ahora.getTime() + duracionMs)
+          }
         });
-        if (count === 0) return null;
+        if (count === 0) {
+          return null;
+        }
         const fila = await tx.barridoArchivoZoom.findUniqueOrThrow({ where: { id: barridoId } });
         return {
           lease: { barridoId, version: fila.leaseVersion, venceAt: fila.leaseHasta! },
@@ -106,40 +126,42 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
     async avanzar(lease, avance, ahora) {
       const termina = avance.siguiente === null;
       return db.$transaction(async (tx) => {
-      const actual = await tx.barridoArchivoZoom.findFirst({
-        where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
-        select: { errorDetalle: true }
-      });
-      if (!actual) return false;
-      // Las omisiones se acumulan (anfitrión:código, sin mensajes ni URLs) y acotan el detalle persistido.
-      const omisiones = [
-        ...(actual.errorDetalle ? actual.errorDetalle.split("\n").filter(Boolean) : []),
-        ...(avance.omision ? [`${avance.omision.anfitrionZoomId}:${avance.omision.codigo}`] : [])
-      ].slice(0, 50);
-      const { count } = await tx.barridoArchivoZoom.updateMany({
-        where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
-        data: {
-          ...(avance.siguiente
-            ? {
-                anfitrionIndice: avance.siguiente.anfitrionIndice,
-                fuenteListado: avance.siguiente.fuente,
-                ventanaDesde: avance.siguiente.ventanaDesde ? aFecha(avance.siguiente.ventanaDesde) : null,
-                nextPageTokenCifrado: avance.siguiente.cursor ? deps.cifrar(avance.siguiente.cursor) : null
-              }
-            : { nextPageTokenCifrado: null }),
-          paginasProcesadas: { increment: 1 },
-          ocurrenciasEncontradas: { increment: avance.ocurrencias },
-          ...(avance.conservarIntentos ? {} : { intentos: 0 }),
-          proximoIntentoAt: null,
-          leaseHasta: null,
-          // Con anfitriones omitidos el barrido no se declara completo: exige revisión de la administración.
-          estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
-          completadoAt: termina ? ahora : null,
-          errorDetalle: omisiones.length > 0 ? omisiones.join("\n") : null,
-          ...(avance.omision ? { errorCodigo: avance.omision.codigo.slice(0, 120) } : {})
+        const actual = await tx.barridoArchivoZoom.findFirst({
+          where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
+          select: { errorDetalle: true }
+        });
+        if (!actual) {
+          return false;
         }
-      });
-      return count === 1;
+        // Las omisiones se acumulan (anfitrión:código, sin mensajes ni URLs) y acotan el detalle persistido.
+        const omisiones = [
+          ...(actual.errorDetalle ? actual.errorDetalle.split("\n").filter(Boolean) : []),
+          ...(avance.omision ? [`${avance.omision.anfitrionZoomId}:${avance.omision.codigo}`] : [])
+        ].slice(0, 50);
+        const { count } = await tx.barridoArchivoZoom.updateMany({
+          where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
+          data: {
+            ...(avance.siguiente
+              ? {
+                  anfitrionIndice: avance.siguiente.anfitrionIndice,
+                  fuenteListado: avance.siguiente.fuente,
+                  ventanaDesde: avance.siguiente.ventanaDesde ? aFecha(avance.siguiente.ventanaDesde) : null,
+                  nextPageTokenCifrado: avance.siguiente.cursor ? deps.cifrar(avance.siguiente.cursor) : null
+                }
+              : { nextPageTokenCifrado: null }),
+            paginasProcesadas: { increment: 1 },
+            ocurrenciasEncontradas: { increment: avance.ocurrencias },
+            ...(avance.conservarIntentos ? {} : { intentos: 0 }),
+            proximoIntentoAt: null,
+            leaseHasta: null,
+            // Con anfitriones omitidos el barrido no se declara completo: exige revisión de la administración.
+            estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
+            completadoAt: termina ? ahora : null,
+            errorDetalle: omisiones.length > 0 ? omisiones.join("\n") : null,
+            ...(avance.omision ? { errorCodigo: avance.omision.codigo.slice(0, 120) } : {})
+          }
+        });
+        return count === 1;
       });
     },
 
@@ -149,9 +171,12 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
           select: { intentos: true }
         });
-        if (!fila) return false;
+        if (!fila) {
+          return false;
+        }
         const intentos = fila.intentos + 1;
-        const revision = fallo.tipo === "REVISION" || (fallo.limiteIntentos != null && intentos >= fallo.limiteIntentos);
+        const revision =
+          fallo.tipo === "REVISION" || (fallo.limiteIntentos != null && intentos >= fallo.limiteIntentos);
         const { count } = await tx.barridoArchivoZoom.updateMany({
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
           data: {
@@ -172,7 +197,10 @@ export function crearPrismaZoomBarridoRepositoryAdapter(deps: PrismaZoomBarridoR
         where: {
           OR: [
             { estado: "PENDIENTE" },
-            { estado: "ERROR_REINTENTABLE", OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }] },
+            {
+              estado: "ERROR_REINTENTABLE",
+              OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }]
+            },
             { estado: "EN_CURSO", OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] }
           ]
         },

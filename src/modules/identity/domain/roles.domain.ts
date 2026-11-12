@@ -1,7 +1,4 @@
-import {
-  ROLES_USUARIO,
-  type RolUsuario
-} from "./identity.types";
+import { ROLES_USUARIO, type RolUsuario } from "./identity.types";
 
 const MAPEO_ROLES_ANTERIORES: Readonly<Record<string, RolUsuario>> = Object.freeze({
   ADMINISTRADOR: "ADMINISTRACION",
@@ -30,4 +27,3 @@ export function puedeAdministrar(rol: RolUsuario): boolean {
 export function esRolUsuario(valor: unknown): valor is RolUsuario {
   return typeof valor === "string" && ROLES_USUARIO.some((rol) => rol === valor);
 }
-
