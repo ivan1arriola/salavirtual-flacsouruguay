@@ -45,7 +45,7 @@ const LOTE_ASISTENCIA = 20;
 const PAGINAS_RECUPERACION_POR_CICLO = 20;
 const DIAS_BARRIDO_RECIENTE = 3;
 /** El barrido histórico cubre fechas anteriores a la existencia del servicio; Zoom aplica su propia retención. */
-const INICIO_HISTORICO_ZOOM = "2010-01-01";
+const INICIO_HISTORICO_ZOOM = "2026-01-01";
 
 /** SHA-256 completo: las marcas de origen en Drive exigen 64 caracteres hexadecimales. */
 const hash = (texto: string): string => createHash("sha256").update(texto).digest("hex");
