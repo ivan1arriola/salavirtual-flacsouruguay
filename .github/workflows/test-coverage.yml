@@ -17,35 +17,35 @@ concurrency:
 
 jobs:
   schema-types:
-    name: "Esquema + TypeScript"
+    name: "Validación de código"
     uses: ./.github/workflows/check-schema-types.yml
 
   eslint:
-    name: "ESLint · Sintaxis y buenas prácticas"
+    name: "ESLint"
     uses: ./.github/workflows/check-quality.yml
     with:
       command: eslint
 
   prettier:
-    name: "Prettier · Estilo"
+    name: "Prettier"
     uses: ./.github/workflows/check-quality.yml
     with:
       command: prettier
 
   knip:
-    name: "Knip · Código sin utilizar"
+    name: "Knip"
     uses: ./.github/workflows/check-quality.yml
     with:
       command: knip
 
   architecture:
-    name: "Dependency Cruiser · Arquitectura"
+    name: "Dependency Cruiser"
     uses: ./.github/workflows/check-quality.yml
     with:
       command: architecture
 
   tests:
-    name: "Tests + cobertura"
+    name: "Pruebas"
     uses: ./.github/workflows/check-tests.yml
 
   security:
