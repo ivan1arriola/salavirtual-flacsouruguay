@@ -14,6 +14,7 @@ import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/set
 import { SettingsOverview } from "@/src/components/settings-overview";
 import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { ZoomConfigForm } from "@/src/components/zoom-config-form";
+import { ZoomWebhookConfig } from "@/src/components/zoom-webhook-config";
 import { ZoomGrupoConfig } from "@/src/components/zoom-grupo-config";
 import { db } from "@/src/lib/db";
 import { formatDateTime } from "@/src/lib/ui/format";
@@ -231,18 +232,21 @@ export default async function ConfiguracionPage({
       ) : null}
 
       {section === "zoom" ? (
-        <ZoomConfigForm
-          initial={
-            zoomConfig
-              ? {
-                  accountId: zoomConfig.accountId,
-                  clientId: zoomConfig.clientId,
-                  clientSecretConfigurado: Boolean(zoomConfig.clientSecretCifrado),
-                  activa: zoomConfig.activa
-                }
-              : null
-          }
-        />
+        <div className="settings-workspace-flow">
+          <ZoomConfigForm
+            initial={
+              zoomConfig
+                ? {
+                    accountId: zoomConfig.accountId,
+                    clientId: zoomConfig.clientId,
+                    clientSecretConfigurado: Boolean(zoomConfig.clientSecretCifrado),
+                    activa: zoomConfig.activa
+                  }
+                : null
+            }
+          />
+          <ZoomWebhookConfig initialConfigured={Boolean(zoomConfig?.webhookSecretCifrado)} />
+        </div>
       ) : null}
 
       {section === "salas" ? (
