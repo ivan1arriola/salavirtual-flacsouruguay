@@ -1,0 +1,257 @@
+.page {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 24px 28px 48px;
+  color: var(--text);
+}
+.header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.header h1,
+.header p {
+  margin: 0;
+}
+.header h1 {
+  font-size: var(--text-3xl);
+}
+.header > p:last-child,
+.scope {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.metrics > div {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 3px 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.metrics svg {
+  color: var(--brand);
+}
+.metrics strong {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+.metrics span {
+  grid-column: 2;
+  color: var(--text-secondary);
+}
+.scope {
+  font-size: var(--text-sm);
+  margin: 16px 0;
+}
+.notice {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-warning, #fff7e8);
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+}
+.tabs a[aria-current="page"] {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.tabs span {
+  font-size: var(--text-sm);
+  opacity: 0.8;
+}
+.list {
+  display: grid;
+  gap: 14px;
+  padding-top: 20px;
+}
+.list > p {
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+}
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--brand);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.card[data-cuenta="0"] {
+  border-left-color: #2563eb;
+}
+.card[data-cuenta="1"] {
+  border-left-color: #dc2626;
+}
+.card[data-cuenta="2"] {
+  border-left-color: #16a34a;
+}
+.card[data-cuenta="3"] {
+  border-left-color: #d97706;
+}
+.card[data-cuenta="4"] {
+  border-left-color: #7c3aed;
+}
+.card[data-cuenta="5"] {
+  border-left-color: #0891b2;
+}
+.card[data-cuenta="6"] {
+  border-left-color: #db2777;
+}
+.card[data-cuenta="7"] {
+  border-left-color: #4d7c0f;
+}
+.card[data-cuenta="8"] {
+  border-left-color: #ea580c;
+}
+.card[data-cuenta="9"] {
+  border-left-color: #0f766e;
+}
+.card[data-cuenta="10"] {
+  border-left-color: #475569;
+}
+.card[data-cuenta="11"] {
+  border-left-color: #92400e;
+}
+.cardHead {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cardHead small {
+  color: var(--text-secondary);
+}
+.cardHead h2 {
+  font-size: var(--text-lg);
+  margin: 4px 0;
+}
+.cardHead p,
+.card > p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.card a,
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.actions {
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.ok,
+.warning {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 999px;
+}
+.ok {
+  color: #166534;
+  background: #dcfce7;
+}
+.warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+.warnings {
+  display: grid;
+  gap: 6px;
+  color: #991b1b;
+  padding-left: 16px;
+}
+.warnings li {
+  padding-left: 2px;
+}
+.warnings svg {
+  vertical-align: middle;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tags span {
+  color: #92400e;
+  background: #fef3c7;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: var(--text-sm);
+}
+.result {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-brand);
+}
+.result p {
+  margin: 8px 0;
+}
+.result strong,
+.result p svg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+}
+.result small {
+  color: var(--text-secondary);
+}
+.empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #166534;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 16px 32px;
+  }
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+  .cardHead {
+    flex-direction: column;
+  }
+  .header h1 {
+    font-size: var(--text-2xl);
+  }
+}

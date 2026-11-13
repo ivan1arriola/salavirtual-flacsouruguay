@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, CloudCog, Search, UsersRound } from "lucide-react";
+import { Activity, ArrowRight, CloudCog, Search, UsersRound, Video } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -22,6 +22,12 @@ const operationalLinks = [
     title: "Revisar reuniones duplicadas",
     description: "Verificá coincidencias entre reuniones antes de actuar.",
     icon: Activity
+  },
+  {
+    href: "/centro-operaciones/zoom",
+    title: "Diagnóstico de Zoom",
+    description: "Revisá cuentas anfitrionas, consistencia de series y reuniones pasadas.",
+    icon: Video
   },
   {
     href: "/configuracion?seccion=workspace",
