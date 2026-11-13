@@ -63,6 +63,11 @@ async function main(): Promise<number> {
           ejecutar: async () => log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() })
         },
         {
+          nombre: "avisos-grabaciones",
+          ejecutar: async () =>
+            log("info", "avisos-grabaciones", { resumen: await worker.notificarGrabaciones() })
+        },
+        {
           nombre: "asistencia-pendiente",
           ejecutar: async () =>
             log("info", "asistencia", { resumen: await worker.sincronizarAsistenciaPendiente() })
