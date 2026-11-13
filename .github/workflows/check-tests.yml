@@ -5,7 +5,20 @@ permissions:
   contents: read
 jobs:
   tests:
+    name: "Tests unitarios"
     # Activar solo después de registrar y verificar un runner aislado con etiqueta salavirtual-ci.
+    runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - name: Ejecutar pruebas
+        run: npm test
+
+  coverage:
+    name: "Cobertura"
     runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
     timeout-minutes: 25
     steps:

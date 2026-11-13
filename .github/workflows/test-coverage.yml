@@ -17,35 +17,55 @@ concurrency:
 
 jobs:
   schema-types:
-    name: "Esquema + TypeScript"
+    name: "Validación de código"
     uses: ./.github/workflows/check-schema-types.yml
 
   eslint:
-    name: "ESLint · Sintaxis y buenas prácticas"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: eslint
+    name: "ESLint"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run lint
 
   prettier:
-    name: "Prettier · Estilo"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: prettier
+    name: "Prettier"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run format:check
 
   knip:
-    name: "Knip · Código sin utilizar"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: knip
+    name: "Knip"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run deadcode
 
   architecture:
-    name: "Dependency Cruiser · Arquitectura"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: architecture
+    name: "Dependency Cruiser"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run architecture
 
   tests:
-    name: "Tests + cobertura"
+    name: "Pruebas"
     uses: ./.github/workflows/check-tests.yml
 
   security:
