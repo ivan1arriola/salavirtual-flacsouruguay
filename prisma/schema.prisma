@@ -1068,6 +1068,7 @@ model OcurrenciaArchivoZoom {
   vinculadaAt             DateTime?
   /// La carpeta de Drive de la ocurrencia ya está verificada bajo la raíz de grabaciones vinculadas.
   carpetaVinculadaAt      DateTime?
+  notificacionGrabacionPreparadaAt DateTime?
   vinculadaPorId          String?
   /// Estado de asistencia de la ocurrencia; los valores los define la entrega C.
   estadoAsistencia        String             @default("PENDIENTE")
@@ -1078,6 +1079,7 @@ model OcurrenciaArchivoZoom {
   eventoProveedor         EventoProveedor?   @relation(fields: [eventoProveedorId], references: [id], onDelete: SetNull)
   vinculadaPor            Usuario?           @relation("OcurrenciaArchivoZoomVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
   archivos                ArchivoOrigenZoom[]
+  avisosGrabacion         AvisoGrabacionZoom[]
 
   @@unique([cuentaZoomId, uuid])
   @@index([eventoProveedorId])
@@ -1086,6 +1088,23 @@ model OcurrenciaArchivoZoom {
   @@index([carpetaVinculadaAt])
   sesionesAsistencia      SesionAsistenciaZoom[]
   registrosAsistencia     RegistroAsistenciaZoom[]
+}
+
+/// Un correo por destinatario y ocurrencia. RESERVADO es incierto tras una caída:
+/// no se reintenta automáticamente para evitar enviar el mismo correo dos veces.
+model AvisoGrabacionZoom {
+  id              String                @id @default(cuid())
+  ocurrenciaId    String
+  email           String
+  estado          String                @default("PENDIENTE")
+  enviadoAt       DateTime?
+  errorCodigo     String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  ocurrencia      OcurrenciaArchivoZoom @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
+
+  @@unique([ocurrenciaId, email])
+  @@index([estado, updatedAt])
 }
 
 /// Bandeja durable de avisos Zoom. Solo metadatos mínimos: nunca tokens, URLs ni participantes.

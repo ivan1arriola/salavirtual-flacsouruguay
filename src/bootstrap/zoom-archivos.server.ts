@@ -6,6 +6,9 @@ import { crearProveedorTokenZoom } from "../integrations/zoom/zoom-client";
 import { descifrarConfiguracion, cifrarConfiguracion } from "../lib/config/encryption";
 import { db } from "../lib/db";
 import { procesarWebhooksZoom } from "./zoom-webhook-worker";
+import { notificarGrabacionesZoom } from "./zoom-grabaciones-correo.server";
+import { enviarCorreoConfigurado } from "../modules/configuracion/correo.service";
+import { crearCompartirArchivoZoom } from "../modules/archivos/infrastructure/google/google-zoom-archivo-sharing.adapter";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configuracion/google-workspace.service";
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
@@ -65,6 +68,7 @@ export type WorkerZoomArchivos = Readonly<{
   /** Sincroniza la asistencia (reporte de participantes) de las ocurrencias que aún no la tienen. */
   sincronizarAsistenciaPendiente: () => Promise<unknown>;
   procesarWebhooks: () => Promise<unknown>;
+  notificarGrabaciones: () => Promise<unknown>;
 }>;
 
 /** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
@@ -118,7 +122,8 @@ export async function crearWorkerZoomArchivos(
       procesarRecuperaciones: async () => undefined,
       moverCarpetasVinculadas: async () => undefined,
       sincronizarAsistenciaPendiente: async () => undefined,
-      procesarWebhooks: async () => undefined
+      procesarWebhooks: async () => undefined,
+      notificarGrabaciones: async () => undefined
     };
   }
 
@@ -173,6 +178,15 @@ export async function crearWorkerZoomArchivos(
     config,
     salud,
     procesarWebhooks: () => procesarWebhooksZoom(cuentaZoomId),
+    notificarGrabaciones: () =>
+      notificarGrabacionesZoom(
+        {
+          db,
+          compartirArchivo: crearCompartirArchivoZoom(driveAuth),
+          enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
+        },
+        cuentaZoomId
+      ),
     reclamarArchivo: (ahora, duracionMs) => repo.reclamarArchivo(ahora, duracionMs),
     transferir: (lease, signal) =>
       transferirArchivoZoomUseCase(repo, origen, storage, lease, signal, {
