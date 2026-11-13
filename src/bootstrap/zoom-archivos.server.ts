@@ -5,6 +5,7 @@ import { verificarEscrituraCarpetaDrive } from "../integrations/google/drive";
 import { crearProveedorTokenZoom } from "../integrations/zoom/zoom-client";
 import { descifrarConfiguracion, cifrarConfiguracion } from "../lib/config/encryption";
 import { db } from "../lib/db";
+import { procesarWebhooksZoom } from "./zoom-webhook-worker";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configuracion/google-workspace.service";
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
@@ -63,6 +64,7 @@ export type WorkerZoomArchivos = Readonly<{
   moverCarpetasVinculadas: () => Promise<unknown>;
   /** Sincroniza la asistencia (reporte de participantes) de las ocurrencias que aún no la tienen. */
   sincronizarAsistenciaPendiente: () => Promise<unknown>;
+  procesarWebhooks: () => Promise<unknown>;
 }>;
 
 /** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
@@ -115,7 +117,8 @@ export async function crearWorkerZoomArchivos(
       barrerRecientes: async () => undefined,
       procesarRecuperaciones: async () => undefined,
       moverCarpetasVinculadas: async () => undefined,
-      sincronizarAsistenciaPendiente: async () => undefined
+      sincronizarAsistenciaPendiente: async () => undefined,
+      procesarWebhooks: async () => undefined
     };
   }
 
@@ -169,6 +172,7 @@ export async function crearWorkerZoomArchivos(
   return {
     config,
     salud,
+    procesarWebhooks: () => procesarWebhooksZoom(cuentaZoomId),
     reclamarArchivo: (ahora, duracionMs) => repo.reclamarArchivo(ahora, duracionMs),
     transferir: (lease, signal) =>
       transferirArchivoZoomUseCase(repo, origen, storage, lease, signal, {
