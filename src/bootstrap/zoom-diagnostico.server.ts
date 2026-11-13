@@ -85,7 +85,7 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
         inicioRealAt: true,
         meetingId: true,
         estadoAsistencia: true,
-        registrosAsistencia: { select: { id: true } },
+        sesionesAsistencia: { select: { id: true } },
         eventoProveedor: {
           select: {
             instanciaSalaId: true,
