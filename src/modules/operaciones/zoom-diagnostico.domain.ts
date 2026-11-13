@@ -20,26 +20,26 @@ export type IncidenciaSerieZoom = Readonly<{
 export function auditarSeriesZoom(
   reuniones: readonly ReunionZoomAuditable[]
 ): readonly IncidenciaSerieZoom[] {
-  const series = reuniones.reduce((grupos, reunion) => {
-    grupos.set(reunion.solicitudId, [...(grupos.get(reunion.solicitudId) ?? []), reunion]);
-    return grupos;
-  }, new Map<string, ReunionZoomAuditable[]>());
-  return [...series.entries()].flatMap(([solicitudId, encuentros]) => {
+  const series = reuniones.reduce<Record<string, ReunionZoomAuditable[]>>(
+    (grupos, reunion) => ({
+      ...grupos,
+      [reunion.solicitudId]: [...(grupos[reunion.solicitudId] ?? []), reunion]
+    }),
+    {}
+  );
+  return Object.entries(series).flatMap(([solicitudId, encuentros]) => {
     if (encuentros.length < 2) {
       return [];
     }
     const ids = new Set(encuentros.map(({ meetingId }) => meetingId).filter(Boolean));
     const cuentas = new Set(encuentros.map(({ cuentaId }) => cuentaId).filter(Boolean));
-    const motivos: IncidenciaSerieZoom["motivos"][number][] = [];
-    if (encuentros.some(({ meetingId, cuentaId }) => !meetingId || !cuentaId)) {
-      motivos.push("SIN_REUNION");
-    }
-    if (ids.size > 1) {
-      motivos.push("IDS_DISTINTOS");
-    }
-    if (cuentas.size > 1) {
-      motivos.push("CUENTAS_DISTINTAS");
-    }
+    const motivos: IncidenciaSerieZoom["motivos"] = [
+      ...(encuentros.some(({ meetingId, cuentaId }) => !meetingId || !cuentaId)
+        ? ["SIN_REUNION" as const]
+        : []),
+      ...(ids.size > 1 ? ["IDS_DISTINTOS" as const] : []),
+      ...(cuentas.size > 1 ? ["CUENTAS_DISTINTAS" as const] : [])
+    ];
     return motivos.length
       ? [
           {
@@ -64,22 +64,24 @@ export type SolapeCuentaZoom = Readonly<{
 export function detectarSolapesCuentasZoom(
   reuniones: readonly ReunionZoomAuditable[]
 ): readonly SolapeCuentaZoom[] {
-  const ordenadas = [...reuniones].sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
-  const solapes: SolapeCuentaZoom[] = [];
-  for (const [indice, primera] of ordenadas.entries()) {
-    if (!primera.cuentaId) {
-      continue;
-    }
-    for (const segunda of ordenadas.slice(indice + 1)) {
-      if (segunda.inicio >= primera.fin) {
-        break;
-      }
-      if (segunda.cuentaId === primera.cuentaId && primera.inicio < segunda.fin) {
-        solapes.push({ cuentaId: primera.cuentaId, primera, segunda });
-      }
-    }
-  }
-  return solapes;
+  const ordenadas = reuniones.reduce<ReunionZoomAuditable[]>((acumuladas, reunion) => {
+    const indice = acumuladas.findIndex(({ inicio }) => inicio > reunion.inicio);
+    return indice < 0
+      ? [...acumuladas, reunion]
+      : [...acumuladas.slice(0, indice), reunion, ...acumuladas.slice(indice)];
+  }, []);
+  return ordenadas.flatMap((primera, indice): SolapeCuentaZoom[] => {
+    const cuentaId = primera.cuentaId;
+    return cuentaId
+      ? ordenadas
+          .slice(indice + 1)
+          .filter(
+            (segunda) =>
+              segunda.inicio < primera.fin && segunda.cuentaId === cuentaId && primera.inicio < segunda.fin
+          )
+          .map((segunda) => ({ cuentaId, primera, segunda }))
+      : [];
+  });
 }
 
 export type ReunionZoomRemota = Readonly<{ meetingId: string; inicio: Date | null }>;
