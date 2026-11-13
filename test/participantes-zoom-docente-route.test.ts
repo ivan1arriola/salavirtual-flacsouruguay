@@ -40,6 +40,7 @@ describe("participantes Zoom en vivo para docentes", () => {
       eventosProveedor: [{ proveedor: { tipo: "ZOOM" }, codigoReunion: "123456" }]
     });
     mocks.credenciales.mockResolvedValue({ disponible: false });
+    mocks.token.mockReturnValue("token");
   });
 
   it("rechaza sesiones ajenas antes de consultar la clase", async () => {
@@ -72,5 +73,57 @@ describe("participantes Zoom en vivo para docentes", () => {
     const response = await pedir();
     expect((await response.json()).estado).toBe("NO_DISPONIBLE");
     expect(mocks.credenciales).not.toHaveBeenCalled();
+  });
+
+  it("devuelve los participantes conectados sin caché", async () => {
+    mocks.credenciales.mockResolvedValue({
+      disponible: true,
+      accountId: "a",
+      clientId: "c",
+      clientSecret: "s"
+    });
+    const fetchZoom = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ participants: [{ id: "p1", user_name: "Ana", email: "ana@example.org" }] }),
+          { status: 200 }
+        )
+      );
+    try {
+      const response = await pedir();
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toContain("no-store");
+      expect(await response.json()).toMatchObject({
+        estado: "DISPONIBLE",
+        participantes: [{ nombre: "Ana" }]
+      });
+      expect(fetchZoom.mock.calls[0][0].toString()).toContain("type=live");
+    } finally {
+      fetchZoom.mockRestore();
+    }
+  });
+
+  it("explica la falta del permiso de Dashboard sin exponer errores de Zoom", async () => {
+    mocks.credenciales.mockResolvedValue({
+      disponible: true,
+      accountId: "a",
+      clientId: "c",
+      clientSecret: "s"
+    });
+    const fetchZoom = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "private credentials", code: 200 }), { status: 403 })
+      );
+    try {
+      const response = await pedir();
+      const result = await response.json();
+      expect(result.estado).toBe("NO_DISPONIBLE");
+      expect(result.motivo).toContain("Dashboard");
+      expect(JSON.stringify(result)).not.toContain("private credentials");
+    } finally {
+      fetchZoom.mockRestore();
+    }
   });
 });
