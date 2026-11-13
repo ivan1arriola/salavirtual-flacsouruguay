@@ -385,6 +385,44 @@
   max-width: 960px;
 }
 
+.zoom-webhook-events {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.zoom-webhook-events h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.zoom-webhook-events p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.zoom-webhook-events ul {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.zoom-webhook-events li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.zoom-webhook-events code {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
 .settings-workspace-health,
 .settings-workspace-groups > .form-section,
 .settings-workspace-groups > .content-section,
