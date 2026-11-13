@@ -63,7 +63,7 @@ describe("sincronizarAsistenciaPendienteZoomUseCase", () => {
 });
 
 describe("crearPrismaAsistenciaPendienteAdapter", () => {
-  it("elige PENDIENTE de hasta 30 días (ya terminadas) y NO_DISPONIBLE/ERROR de hasta 3 días con espera de 15 min, lo más reciente primero", async () => {
+  it("recupera hasta un año, reintenta los reportes antiguos a diario y atiende primero los menos recientes", async () => {
     const findMany = vi.fn().mockResolvedValue([{ id: "o1" }, { id: "o2" }]);
     const adapter = crearPrismaAsistenciaPendienteAdapter({
       db: { ocurrenciaArchivoZoom: { findMany } } as unknown as PrismaClient
@@ -71,16 +71,27 @@ describe("crearPrismaAsistenciaPendienteAdapter", () => {
     expect(await adapter.listarOcurrenciasPorSincronizarAsistencia(AHORA, 20)).toEqual(["o1", "o2"]);
     const arg = findMany.mock.calls[0]![0];
     expect(arg.take).toBe(20);
-    expect(arg.orderBy).toEqual([{ inicioRealAt: "desc" }, { id: "desc" }]);
+    expect(arg.orderBy).toEqual([{ updatedAt: "asc" }, { id: "asc" }]);
     expect(arg.where.OR).toEqual([
       {
         estadoAsistencia: "PENDIENTE",
-        inicioRealAt: { gte: new Date(AHORA.getTime() - 30 * DIA), lte: new Date(AHORA.getTime() - 15 * MIN) }
+        inicioRealAt: {
+          gte: new Date(AHORA.getTime() - 365 * DIA),
+          lte: new Date(AHORA.getTime() - 15 * MIN)
+        }
       },
       {
         estadoAsistencia: { in: ["NO_DISPONIBLE", "ERROR"] },
         inicioRealAt: { gte: new Date(AHORA.getTime() - 3 * DIA) },
         updatedAt: { lte: new Date(AHORA.getTime() - 15 * MIN) }
+      },
+      {
+        estadoAsistencia: { in: ["NO_DISPONIBLE", "ERROR"] },
+        inicioRealAt: {
+          gte: new Date(AHORA.getTime() - 365 * DIA),
+          lt: new Date(AHORA.getTime() - 3 * DIA)
+        },
+        updatedAt: { lte: new Date(AHORA.getTime() - DIA) }
       }
     ]);
   });
