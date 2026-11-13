@@ -51,6 +51,10 @@ async function main(): Promise<number> {
     {
       tareas: [
         {
+          nombre: "webhooks",
+          ejecutar: async () => log("info", "webhooks", { resumen: await worker.procesarWebhooks() })
+        },
+        {
           nombre: "inventario-vencidas",
           ejecutar: async () => log("info", "inventario", { resumen: await worker.inventariarVencidas() })
         },
