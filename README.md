@@ -1,167 +1,89 @@
 # Sala Virtual FLACSO
 
-**Sala Virtual FLACSO** es la plataforma operativa de FLACSO Uruguay para gestionar reuniones académicas realizadas mediante Google Meet.
+Plataforma interna de FLACSO Uruguay para organizar clases y reuniones virtuales o híbridas, coordinar su monitoreo y consultar asistencia, grabaciones y archivos. La aplicación está disponible en [salavirtual.flacso.edu.uy](https://salavirtual.flacso.edu.uy).
 
-Centraliza el ciclo completo de las reuniones: solicitudes, agenda, monitoreo, grabaciones, historial y liquidaciones.
+## Qué permite hacer
 
-## Estado del proyecto
+- Crear una reunión o serie de encuentros para un programa académico, con fechas, invitados, cuenta anfitriona y necesidades de grabación o asistencia técnica.
+- Gestionar reuniones de **Zoom y Google Meet**. Cada encuentro conserva el proveedor y enlace activos; Zoom también tiene cuentas anfitrionas y grupos configurables.
+- Consultar agenda, monitoreo e incidencias.
+- Ver grabaciones, transcripciones y otros archivos. Un worker independiente inventaría los archivos de Zoom y puede conservarlos en Google Drive.
+- Consultar asistencia posterior a la clase y conciliar la identidad de los participantes de Zoom.
+- Administrar personas, programas, notificaciones y liquidaciones según el rol.
 
-Este repositorio contiene la **aplicación vigente** para la gestión de reuniones de FLACSO Uruguay.
+### Acceso por rol
 
-Todo cambio relacionado con el producto, la interfaz, el modelo de datos o los flujos actuales de reuniones debe implementarse en este proyecto.
+| Rol               | Recorrido principal                                                                                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docente           | **Mis clases** (próximas, en curso y anteriores), nueva reunión, programas, grabaciones y asistencia de sus programas. La lista de conectados en Zoom depende del acceso de la cuenta al Dashboard de Zoom. |
+| Asistente técnico | Mi agenda, agenda abierta, monitoreos asignados, consola operativa e historial.                                                                                                                             |
+| Administración    | Agenda y series, monitoreo, grabaciones, personas y programas, centro de operaciones y configuración.                                                                                                       |
 
-La plataforma reemplaza a los proyectos anteriores:
+La navegación se adapta al rol y a pantallas móviles. Los permisos también se comprueban en el servidor.
 
-- `../flacso-zoom-plataforma-web`
-- `../flacso-zoom-sincronizador-desktop`
+## Tecnologías y estructura
 
-Google Meet es el proveedor operativo principal.
+- Node.js **24.x**, Next.js **16** con App Router, React **19** y TypeScript.
+- PostgreSQL con Prisma **6**; autenticación con Auth.js.
+- Zoom Server-to-Server OAuth, Google Workspace (Calendar, Meet, Drive y Gmail) y Amazon SES.
+- `app/`: páginas y rutas API; `src/modules/`: reglas y casos de uso; `src/integrations/`: clientes externos; `src/bootstrap/`: composición; `prisma/`: esquema y migraciones; `infra/ec2/`: servicios y despliegue.
 
-Zoom permanece integrado únicamente como **proveedor histórico**, para conservar y consultar reuniones, grabaciones, costos y otros registros generados por los sistemas anteriores.
+El modelo separa solicitudes (`SolicitudSala`), encuentros (`InstanciaSala`) y eventos del proveedor (`EventoProveedor`). Los invitados programados y la asistencia registrada son datos distintos.
 
-El dominio de la aplicación está diseñado para no depender directamente de un proveedor concreto de videoconferencia.
+## Desarrollo local
 
-La sincronización recupera grabaciones y planillas de asistencia desde Google Meet. Los informes parciales se generan luego de 24 horas cuando hubo sesiones de participantes; si no hay datos de asistencia, se evita crear una planilla vacía. Al actualizar cohosts, Sala Virtual retira solo los que gestionaba y conserva miembros añadidos directamente en Google Meet.
-
-## Objetivos de arquitectura
-
-La plataforma busca mantener una arquitectura simple, mantenible y preparada para evolucionar.
-
-Sus principales objetivos son:
-
-- Mantener un modelo de datos normalizado en **3NF**.
-- Separar claramente entidades institucionales, solicitudes, eventos, proveedores, grabaciones y liquidaciones.
-- Mantener el núcleo de negocio independiente de Google Meet y Zoom.
-- Utilizar Google Meet como proveedor operativo principal.
-- Conservar Zoom para consulta, trazabilidad e importación de información histórica.
-- Permitir migraciones incrementales desde los sistemas anteriores sin interrumpir la operación.
-- Centralizar la configuración de integraciones institucionales desde la propia aplicación.
-
-## Stack
-
-La aplicación utiliza:
-
-- **Next.js App Router**
-- **TypeScript**
-- **Prisma**
-- **PostgreSQL**
-- **Auth.js**
-- **Google Workspace APIs**
-
-## Estilos de interfaz
-
-Los tokens compartidos de interfaz se definen en `app/brand.css`. Incluyen colores institucionales, tipografía, espaciado, bordes, radios, foco y estados semánticos (`success`, `warning`, `danger` y `neutral`). Los componentes deben consumir estos tokens para conservar contraste y consistencia.
-
-La consolidación de estilos es incremental: antes de retirar reglas existentes hay que comprobar sus usos en las pantallas actuales. Los nuevos cambios deben evitar añadir hojas globales correctivas que dupliquen reglas de componentes.
-
-## Navegación
-
-La navegación autenticada muestra opciones según el rol y conserva una barra inferior móvil con cuatro accesos principales y un menú **Más**. En Administración, el menú lateral agrupa trabajo diario, equipo de monitoreo, recursos y sistema; los recursos contienen grabaciones y Personas y programas. Docentes y asistentes de monitoreo mantienen sus recorridos específicos. La interfaz solo controla visibilidad: las páginas y acciones conservan sus políticas de autorización del servidor.
-
-## Google Workspace
-
-La administración centralizada de **Personas y programas** vive en `/usuarios`, con vistas separadas para cada tarea. `/configuracion?seccion=programas` se conserva como enlace de compatibilidad y redirige a la vista de Programas. Los programas representan las unidades académicas en la interfaz; los campos históricos de unidad académica se conservan en los datos y una edición desde la nueva pantalla no los modifica.
-
-La integración con Google Workspace se configura desde:
-
-**Configuración > Google Workspace**
-
-Las cuentas de servicio y sus credenciales se administran desde la interfaz de la aplicación.
-
-Las claves privadas se almacenan cifradas en PostgreSQL mediante:
-
-```env
-CONFIG_ENCRYPTION_KEY
-```
-
-Por lo tanto, las credenciales de Google Workspace no se configuran mediante variables de entorno `GOOGLE_*`.
-
-### Credencial Principal
-
-La credencial marcada como **Principal** es la única autorizada para crear nuevas reuniones de Google Meet.
-
-Es la integración utilizada por los flujos operativos actuales de Sala Virtual.
-
-### Credenciales Legacy
-
-También pueden registrarse credenciales **Legacy**.
-
-Estas credenciales existen exclusivamente para administrar reuniones históricas creadas por proyectos o cuentas de servicio anteriores.
-
-La aplicación intenta utilizar una credencial Legacy únicamente cuando la credencial Principal recibe el error específico de permisos relacionado con `Member` al operar sobre un espacio de Meet existente.
-
-No se utilizan credenciales Legacy para crear reuniones nuevas.
-
-## Correo transaccional
-
-Amazon SES puede configurarse como proveedor principal desde:
-
-**Configuración > Correo**
-
-La interfaz guarda la región de AWS, el correo remitente verificado, Reply-To opcional y el estado de activación. En EC2, el AWS SDK obtiene credenciales temporales del rol IAM asociado a la instancia; no se guardan access keys de AWS en la aplicación ni en PostgreSQL.
-
-Cuando Amazon SES está activo, se usa para notificaciones, invitaciones y pruebas de correo. Si está desactivado o no configurado, se mantiene el flujo anterior: Gmail API mediante la credencial Principal de Google Workspace y luego SMTP como respaldo cuando Gmail no está configurado. Si SES falla después de intentar el envío, no se cambia a otro proveedor para evitar correos duplicados.
-
-Para habilitar SES se requiere un rol IAM en EC2 con permiso `ses:SendEmail` limitado a la identidad verificada. El remitente debe estar verificado en la misma región configurada en Sala Virtual. En sandbox, los destinatarios también deben estar verificados. La prueba de la aplicación confirma que el proveedor aceptó el mensaje, no su entrega final al buzón.
-
-Si ningún proveedor está configurado:
-
-- las notificaciones internas continúan funcionando;
-- el envío de correo electrónico se omite;
-- el flujo principal de la aplicación no falla.
-
-### Configuración SMTP de respaldo
-
-```env
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
-```
-
-`SMTP_SECURE=true` debe utilizarse normalmente cuando SMTP funciona mediante el puerto `465`.
-
-## Configuración inicial
-
-Se recomienda utilizar Node.js 24.
+Necesitás Node.js 24, npm y una base PostgreSQL de desarrollo. Usá una base descartable: la inicialización del esquema no está destinada a producción.
 
 ```bash
-nvm install 24
-nvm use 24
-
-npm install
-
+npm ci
 cp .env.example .env
-
+# Completar DATABASE_URL, AUTH_SECRET, CONFIG_ENCRYPTION_KEY y APP_BASE_URL.
 npm run db:generate
 npm run db:push
-
-npm run dev
+npm run dev:next
 ```
 
-Después del primer acceso a la aplicación, completar la configuración institucional desde:
+Abrí [localhost:3000](http://localhost:3000). `npm run dev` utiliza el script de desarrollo con túnel; `dev:next` inicia Next.js directamente. `CONFIG_ENCRYPTION_KEY` debe contener 64 caracteres hexadecimales. No agregues secretos al repositorio.
 
-**Configuración > Google Workspace**
+Google Workspace, Zoom y Amazon SES se administran desde **Configuración**. Zoom también admite `ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID` y `ZOOM_CLIENT_SECRET` como respaldo cuando aún no hay configuración guardada. Las claves privadas institucionales se almacenan cifradas en PostgreSQL. [`.env.example`](.env.example) enumera las variables disponibles, incluidas algunas opcionales o de migración.
 
-## Verificaciones de calidad
+### Comandos frecuentes
 
-Ejecutá `npm ci` y luego `npm run lint`, `npm run format:check`, `npm run deadcode` y `npm run architecture`.
-`npm run format` aplica el formato de Prettier.
+| Comando                   | Uso                                       |
+| ------------------------- | ----------------------------------------- |
+| `npm run check`           | Tipos de TypeScript.                      |
+| `npm test`                | Pruebas con Vitest.                       |
+| `npm run lint`            | ESLint sin advertencias.                  |
+| `npm run format:check`    | Formato con Prettier.                     |
+| `npm run deadcode`        | Knip: código y dependencias sin uso.      |
+| `npm run architecture`    | Dependency Cruiser: fronteras de módulos. |
+| `npm run validate:schema` | Reglas adicionales del esquema.           |
+| `npm run build`           | Genera Prisma y compila para producción.  |
 
-`eslint-suppressions.json` registra infracciones previas por archivo y regla. Cuando corrijas una infracción
-registrada, actualizá el archivo con `npm run lint -- --prune-suppressions`.
+`npm run format` aplica el formato. `eslint-suppressions.json` conserva excepciones anteriores; al resolver una, ejecutá `npm run lint -- --prune-suppressions`.
+
+## CI y despliegue
+
+**CI · Sala Virtual** se ejecuta en los PR y pushes a `main`. Comprueba scripts Bash, esquema Prisma, TypeScript, ESLint, Prettier, Knip, Dependency Cruiser, pruebas, cobertura, auditoría de dependencias, build y PostgreSQL integrado. El gate final requiere que todas las verificaciones aprueben.
+
+Un CI exitoso de un **push a `main`** habilita **Deploy · EC2**. El despliegue usa OIDC para credenciales temporales de AWS y SSM para ejecutar el release en EC2. Un CI de PR no despliega. La aplicación y el worker de archivos Zoom son servicios separados; el worker solo se reinicia si su unidad fue habilitada.
+
+Para recuperar grabaciones históricas de Zoom, comenzá con un dry run de un período explícito:
+
+```bash
+npm run zoom:archivos:historico:dry -- --desde 2026-11-01 --hasta 2026-11-30
+```
+
+Los archivos disponibles dependen de la retención y permisos de Zoom. El procedimiento y los límites de transferencia se describen en [Archivos y asistencia de Zoom](docs/zoom-archivos-asistencia.md).
 
 ## Documentación
 
-La documentación técnica y funcional se encuentra en `docs/`.
-
-- [Arquitectura](docs/arquitectura.md)
-- [Modelo de datos 3NF](docs/modelo-3nf.md)
-- [Migración desde FLACSO Zoom](docs/migracion-desde-flacso-zoom.md)
-- [Despliegue en EC2](docs/despliegue-ec2.md)
-- [Configuración de Google Workspace](docs/configuracion-google-workspace.md)
-- [Configuración de Amazon SES](docs/configuracion-amazon-ses.md)
-- [Reportes mensuales de asistencia técnica](docs/reportes-mensuales-asistencia.md)
-- [UI ligera](docs/ui-ligera.md)
+- [Arquitectura y módulos](docs/arquitectura.md)
+- [Modelo de datos](docs/modelo-3nf.md)
+- [Google Workspace](docs/configuracion-google-workspace.md)
+- [Cuentas Zoom por grupo](docs/configuracion-zoom-grupo.md)
+- [Archivos y asistencia de Zoom](docs/zoom-archivos-asistencia.md)
+- [Correo con Amazon SES](docs/configuracion-amazon-ses.md)
+- [Instructivo para docentes](docs/instructivo-docentes.md)
+- [Instructivo para asistentes](docs/instructivo-asistentes.md)
+- [Infraestructura EC2](infra/ec2/)
