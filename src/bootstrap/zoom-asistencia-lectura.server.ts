@@ -1,6 +1,11 @@
 import "server-only";
 import { db } from "../lib/db";
-import { puedeConciliarAsistenciaZoom, type ActorConciliacionZoom } from "../modules/archivos/domain";
+import {
+  consolidarAsistenciaZoom,
+  puedeConciliarAsistenciaZoom,
+  type ActorConciliacionZoom,
+  type SesionObservadaZoom
+} from "../modules/archivos/domain";
 
 export type RegistroAsistenciaZoomFicha = Readonly<{
   id: string;
@@ -19,9 +24,73 @@ export type AsistenciaZoomFicha = Readonly<{
   /** Estado del reporte de Zoom (no de ninguna planilla). */
   estadoReporte: "SIN_OCURRENCIAS" | "PENDIENTE" | "NO_DISPONIBLE" | "VACIO" | "DISPONIBLE" | "ERROR";
   registros: readonly RegistroAsistenciaZoomFicha[];
+  ocurrencias: readonly OcurrenciaAsistenciaZoomFicha[];
   invitados: ReadonlyArray<Readonly<{ id: string; email: string; nombre: string | null }>>;
   puedeConciliar: boolean;
 }>;
+
+export type OcurrenciaAsistenciaZoomFicha = Readonly<{
+  id: string;
+  inicioRealAt: Date;
+  estadoReporte: string;
+  registros: ReadonlyArray<
+    Readonly<{
+      clave: string;
+      nombre: string;
+      email: string | null;
+      minutos: number;
+      conexiones: number;
+      primeraEntradaAt: Date | null;
+      ultimaSalidaAt: Date | null;
+    }>
+  >;
+}>;
+
+function asistenciaPorOcurrencia(ocurrencia: {
+  id: string;
+  inicioRealAt: Date;
+  estadoAsistencia: string;
+  sesionesAsistencia: Array<{
+    claveSesion: string;
+    participanteId: string | null;
+    userId: string | null;
+    nombre: string;
+    email: string | null;
+    entradaAt: Date;
+    salidaAt: Date;
+    status: string | null;
+    rol: string | null;
+  }>;
+}): OcurrenciaAsistenciaZoomFicha {
+  const sesiones: SesionObservadaZoom[] = ocurrencia.sesionesAsistencia.map((s) => ({
+    ...s,
+    status: s.status === "in_waiting_room" || s.status === "in_meeting" ? s.status : null,
+    rol: s.rol === "HOST" || s.rol === "COHOST" ? s.rol : null
+  }));
+  const validas = sesiones.filter((s) => s.salidaAt.getTime() > s.entradaAt.getTime());
+  const inicio = validas.length ? Math.min(...validas.map((s) => s.entradaAt.getTime())) : null;
+  const fin = validas.length ? Math.max(...validas.map((s) => s.salidaAt.getTime())) : null;
+  const registros =
+    inicio !== null && fin !== null && fin > inicio
+      ? consolidarAsistenciaZoom(sesiones, { inicioAt: new Date(inicio), finAt: new Date(fin) })
+          .filter((r) => r.minutos > 0)
+          .map((r) => ({
+            clave: r.claveParticipante,
+            nombre: r.nombre,
+            email: r.emailObservado,
+            minutos: r.minutos,
+            conexiones: r.sesiones,
+            primeraEntradaAt: r.primeraEntradaAt,
+            ultimaSalidaAt: r.ultimaSalidaAt
+          }))
+      : [];
+  return {
+    id: ocurrencia.id,
+    inicioRealAt: ocurrencia.inicioRealAt,
+    estadoReporte: ocurrencia.estadoAsistencia,
+    registros
+  };
+}
 
 const PRIORIDAD = ["ERROR", "PENDIENTE", "NO_DISPONIBLE", "VACIO", "DISPONIBLE"] as const;
 
@@ -42,11 +111,37 @@ export async function leerAsistenciaZoomFicha(
           solicitud: { select: { docentePrograma: { select: { docente: { select: { usuarioId: true } } } } } }
         }
       },
-      ocurrenciasArchivoZoom: { select: { estadoAsistencia: true } }
+      ocurrenciasArchivoZoom: {
+        orderBy: { inicioRealAt: "asc" },
+        select: {
+          id: true,
+          inicioRealAt: true,
+          estadoAsistencia: true,
+          sesionesAsistencia: {
+            select: {
+              claveSesion: true,
+              participanteId: true,
+              userId: true,
+              nombre: true,
+              email: true,
+              entradaAt: true,
+              salidaAt: true,
+              status: true,
+              rol: true
+            }
+          }
+        }
+      }
     }
   });
   if (!evento) {
-    return { estadoReporte: "SIN_OCURRENCIAS", registros: [], invitados: [], puedeConciliar: false };
+    return {
+      estadoReporte: "SIN_OCURRENCIAS",
+      registros: [],
+      ocurrencias: [],
+      invitados: [],
+      puedeConciliar: false
+    };
   }
 
   const [registros, invitados] = await Promise.all([
@@ -68,6 +163,7 @@ export async function leerAsistenciaZoomFicha(
 
   return {
     estadoReporte,
+    ocurrencias: evento.ocurrenciasArchivoZoom.map(asistenciaPorOcurrencia),
     registros: registros.map((r) => ({
       id: r.id,
       version: r.version,
