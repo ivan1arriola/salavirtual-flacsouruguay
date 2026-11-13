@@ -92,7 +92,7 @@ const teacherGroups: readonly NavigationGroup[] = [
     label: "Trabajo diario",
     items: [
       { href: "/", label: "Inicio", icon: LayoutDashboard },
-      { href: "/reuniones", label: "Mi agenda", icon: CalendarDays },
+      { href: "/mis-clases", label: "Mis clases", icon: CalendarDays },
       createMeeting,
       { href: "/mis-programas", label: "Mis programas", icon: BookOpen }
     ]

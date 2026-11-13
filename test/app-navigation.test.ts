@@ -46,7 +46,7 @@ describe("role based application navigation", () => {
 
     expect(labels).toEqual([
       "Inicio",
-      "Mi agenda",
+      "Mis clases",
       "Nueva reunión",
       "Mis programas",
       "Grabaciones",
@@ -54,6 +54,7 @@ describe("role based application navigation", () => {
       "Mi perfil"
     ]);
     expect(navigation.mobilePrimary).toHaveLength(4);
+    expect(navigation.mobilePrimary[1].href).toBe("/mis-clases");
   });
 
   it("exposes the complete monitoring assistant workflow with distinct agenda and assigned work", () => {
