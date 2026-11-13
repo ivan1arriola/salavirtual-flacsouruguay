@@ -7,10 +7,11 @@ y la sincronización de asistencia ya existentes. La URL no requiere sesión de 
 ## Activación
 
 1. Aplicar la migración `20261113000000_zoom_webhooks` y desplegar la ruta y el worker.
-2. Configurar `ZOOM_WEBHOOK_SECRET_TOKEN` en el servidor, con el **Secret Token** de la app Zoom que
-   enviará los eventos. No usar el Client Secret ni guardar el token en Git. Reiniciar aplicación y worker.
-3. En la app Server-to-Server OAuth de Zoom, activar Event Subscriptions y usar
-   `https://<dominio-de-sala-virtual>/api/v1/webhooks/zoom` como Event Notification Endpoint URL.
+2. Ir a **Configuración → Zoom → Notificaciones de Zoom** en Sala Virtual. Pegar el **Secret Token**
+   de Event Subscriptions de la app Zoom y guardarlo. Se cifra en la base de datos; no se guarda
+   en archivos `.env` ni se muestra de nuevo. El Client Secret de OAuth es diferente.
+3. En la app Server-to-Server OAuth de Zoom, activar Event Subscriptions y copiar la
+   **Event Notification Endpoint URL** que aparece en esa misma sección de configuración.
    Pulsar **Validate** una vez que el endpoint esté desplegado. Zoom volverá a validarlo periódicamente.
 4. Suscribir `meeting.started`, `meeting.ended`, `recording.completed` y, si la licencia permite
    transcripciones de grabación, `recording.transcript_completed`. Zoom exige los scopes de lectura de
@@ -30,4 +31,5 @@ fallos con espera creciente y conserva el código de error sin mensajes sensible
 10 intentos requiere investigación; la bandeja no se elimina automáticamente.
 
 La disponibilidad de los webhooks depende de que el worker de archivos Zoom esté ejecutándose y sano.
-La URL y el secreto se configuran en la misma app Zoom; no se activa por el mero despliegue del código.
+El Secret Token se administra en Sala Virtual y se obtiene de la misma app Zoom; el despliegue por sí
+solo no activa la suscripción.

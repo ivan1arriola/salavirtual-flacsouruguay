@@ -107,6 +107,7 @@ model ConfiguracionZoom {
   accountId           String?
   clientId            String?
   clientSecretCifrado String?  @db.Text
+  webhookSecretCifrado String? @db.Text
   activa              Boolean  @default(true)
   grupoId             String?
   grupoNombre         String?

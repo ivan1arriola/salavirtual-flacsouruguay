@@ -1,4 +1,5 @@
 import { db } from "@/src/lib/db";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   EVENTOS_ZOOM,
   interpretarAvisoZoom,
@@ -46,7 +47,18 @@ async function leerCuerpo(request: Request): Promise<string | null> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const secreto = process.env.ZOOM_WEBHOOK_SECRET_TOKEN?.trim();
+  let secreto: string | undefined;
+  try {
+    const config = await db.configuracionZoom.findUnique({
+      where: { id: "principal" },
+      select: { webhookSecretCifrado: true }
+    });
+    secreto = config?.webhookSecretCifrado
+      ? descifrarConfiguracion(config.webhookSecretCifrado).trim()
+      : undefined;
+  } catch {
+    return new Response(null, { status: 503, headers: HEADERS });
+  }
   if (!secreto) {
     return new Response(null, { status: 503, headers: HEADERS });
   }

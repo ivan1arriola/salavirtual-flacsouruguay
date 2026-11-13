@@ -56,7 +56,14 @@ describe("webhook firmado de Zoom", () => {
 });
 
 const crear = vi.hoisted(() => vi.fn());
-vi.mock("../src/lib/db", () => ({ db: { eventoWebhookZoom: { createMany: crear } } }));
+const buscarConfiguracion = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/db", () => ({
+  db: {
+    eventoWebhookZoom: { createMany: crear },
+    configuracionZoom: { findUnique: buscarConfiguracion }
+  }
+}));
+vi.mock("../src/lib/config/encryption", () => ({ descifrarConfiguracion: () => secreto }));
 import { POST } from "../app/api/v1/webhooks/zoom/route";
 
 function peticion(body: string, signed = true) {
@@ -71,13 +78,13 @@ function peticion(body: string, signed = true) {
 }
 
 afterEach(() => {
-  vi.unstubAllEnvs();
   crear.mockReset();
+  buscarConfiguracion.mockReset();
 });
 
 describe("recepción durable", () => {
   it("valida el desafío, rechaza firmas falsas y persiste avisos sin procesarlos en la ruta", async () => {
-    vi.stubEnv("ZOOM_WEBHOOK_SECRET_TOKEN", secreto);
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
     const desafio = JSON.stringify({ event: "endpoint.url_validation", payload: { plainToken: "abc" } });
     expect(await (await POST(peticion(desafio))).json()).toEqual(respuestaValidacionZoom(secreto, "abc"));
     expect((await POST(peticion(cuerpo, false))).status).toBe(401);
@@ -88,10 +95,18 @@ describe("recepción durable", () => {
   });
 
   it("pide a Zoom reintentar si la base no confirmó el aviso", async () => {
-    vi.stubEnv("ZOOM_WEBHOOK_SECRET_TOKEN", secreto);
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
     crear.mockRejectedValue(new Error("DB caída"));
     expect((await POST(peticion(cuerpo))).status).toBe(503);
     const incompleto = JSON.stringify({ event: "meeting.ended", payload: { object: {} } });
     expect((await POST(peticion(incompleto))).status).toBe(503);
+  });
+
+  it("rechaza eventos sin un secreto guardado y no confirma si falla la lectura", async () => {
+    buscarConfiguracion.mockResolvedValue(null);
+    expect((await POST(peticion(cuerpo))).status).toBe(503);
+    buscarConfiguracion.mockRejectedValue(new Error("DB caída"));
+    expect((await POST(peticion(cuerpo))).status).toBe(503);
+    expect(crear).not.toHaveBeenCalled();
   });
 });
