@@ -1087,6 +1087,32 @@ model OcurrenciaArchivoZoom {
   registrosAsistencia     RegistroAsistenciaZoom[]
 }
 
+/// Bandeja durable de avisos Zoom. Solo metadatos mínimos: nunca tokens, URLs ni participantes.
+model EventoWebhookZoom {
+  id                 String    @id @default(cuid())
+  huella             String    @unique
+  tipo               String
+  cuentaZoomId       String
+  meetingId          String
+  uuid               String
+  anfitrionZoomId    String
+  inicioRealAt       DateTime
+  finRealAt          DateTime?
+  titulo             String
+  ocurridoAt         DateTime
+  estado             String    @default("RECIBIDO")
+  intentos           Int       @default(0)
+  proximoIntentoAt   DateTime  @default(now())
+  claimHasta         DateTime?
+  procesadoAt        DateTime?
+  errorCodigo        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([estado, proximoIntentoAt])
+  @@index([cuentaZoomId, uuid])
+}
+
 /// Recurso de origen descubierto en una ocurrencia Zoom y su transferencia reanudable a Drive.
 /// Las mutaciones del worker comparan leaseVersion; un CONSERVADO nunca se resetea por reinventario.
 model ArchivoOrigenZoom {
