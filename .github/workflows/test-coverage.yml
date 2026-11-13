@@ -22,27 +22,47 @@ jobs:
 
   eslint:
     name: "ESLint"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: eslint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run lint
 
   prettier:
     name: "Prettier"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: prettier
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run format:check
 
   knip:
     name: "Knip"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: knip
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run deadcode
 
   architecture:
     name: "Dependency Cruiser"
-    uses: ./.github/workflows/check-quality.yml
-    with:
-      command: architecture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - run: npm run architecture
 
   tests:
     name: "Pruebas"
