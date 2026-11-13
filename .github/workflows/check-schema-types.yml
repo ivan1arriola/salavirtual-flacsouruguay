@@ -4,7 +4,8 @@ on:
 permissions:
   contents: read
 jobs:
-  schema-types:
+  bash:
+    name: "Scripts Bash"
     # Activar solo después de registrar y verificar un runner aislado con etiqueta salavirtual-ci.
     runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
     timeout-minutes: 20
@@ -12,7 +13,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/preparar-entorno
       - name: Validar sintaxis de scripts Bash de infraestructura
         shell: bash
         run: |
@@ -26,9 +26,29 @@ jobs:
             echo "Verificando: $script"
             bash -n "$script"
           done
+
+  schema:
+    name: "Esquema Prisma"
+    runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
       - name: Validar esquema
         run: |
           npm run validate:schema
           npx prisma validate
+
+  typescript:
+    name: "TypeScript"
+    runs-on: ${{ fromJSON(vars.SALAVIRTUAL_CI_RUNNER == 'self-hosted' && '["self-hosted","linux","x64","salavirtual-ci"]' || '"ubuntu-24.04"') }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
       - name: Comprobar TypeScript
         run: npm run check
