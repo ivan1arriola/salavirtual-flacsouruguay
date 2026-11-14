@@ -185,33 +185,10 @@ export async function obtenerDatosPaginaConfiguracion(
         })
       : [];
 
-  const historicalMeetings =
-    section === "historico"
-      ? await db.eventoProveedor.findMany({
-          where: { proveedor: { tipo: "ZOOM_HISTORICO" } },
-          orderBy: { instancia: { inicioProgramadoAt: "desc" } },
-          take: 100,
-          include: {
-            cuentaProveedor: true,
-            instancia: {
-              include: {
-                solicitud: {
-                  include: {
-                    docentePrograma: {
-                      include: {
-                        programa: true,
-                        docente: { include: { usuario: true } }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        })
-      : [];
-
   const availableHosts = hosts.filter(esCuentaAsignable).length;
+  const zoomAvailableHosts = hosts.filter(
+    (host) => host.proveedor?.tipo === "ZOOM" && esCuentaAsignable(host)
+  ).length;
 
   const pendingOperationItems: OperacionPendienteItem[] = pendingMeetOperations.map((ep) => ({
     id: ep.id,
@@ -248,8 +225,8 @@ export async function obtenerDatosPaginaConfiguracion(
     teachers,
     academicUnits,
     adminReportRecipients,
-    historicalMeetings,
     availableHosts,
+    zoomAvailableHosts,
     pendingOperationItems,
     zoomGrupo
   };

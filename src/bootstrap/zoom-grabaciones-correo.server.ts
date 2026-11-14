@@ -228,6 +228,40 @@ async function entregarAvisos(
       for (const archivo of ocurrencia.archivos) {
         await deps.compartirArchivo(archivo.driveFileId!, aviso.email);
       }
+      const tituloEncuentro = ocurrencia.eventoProveedor.instancia.solicitud.titulo;
+      // La notificación interna es un extra: si falla no puede impedir el correo, que es el canal principal.
+      const notificar = async () => {
+        const usuario = await deps.db.usuario.findFirst({
+          where: {
+            activo: true,
+            fusionadoEnId: null,
+            emailPrincipal: { equals: aviso.email, mode: "insensitive" }
+          },
+          select: { id: true }
+        });
+        if (usuario) {
+          const id = `zoom-grabacion-${aviso.id}`;
+          await deps.db.notificacion.upsert({
+            where: { id },
+            create: {
+              id,
+              usuarioId: usuario.id,
+              tipo: "GRABACION_ZOOM_DISPONIBLE",
+              titulo: "Grabación de Zoom disponible",
+              cuerpo: `Ya está disponible la grabación de ${tituloEncuentro}.`,
+              href: "/grabaciones",
+              metadata: { ocurrenciaId: aviso.ocurrenciaId }
+            },
+            update: {}
+          });
+        }
+      };
+      let notificada = true;
+      try {
+        await notificar();
+      } catch {
+        notificada = false;
+      }
       compartidos = true;
       const correo = correoGrabacion({
         titulo: ocurrencia.eventoProveedor.instancia.solicitud.titulo,
@@ -257,12 +291,19 @@ async function entregarAvisos(
         data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
       });
       enviados++;
+      if (!notificada) {
+        // Segundo intento tras el correo; la notificación usa un ID estable, así que no se duplica.
+        await notificar().catch(() => undefined);
+      }
     } catch {
       // Una caída después de intentar enviar puede ser ambigua: RESERVADO no se reenvía solo.
       if (!compartidos) {
         await deps.db.avisoGrabacionZoom.update({
           where: { id: aviso.id },
-          data: { estado: "ERROR", errorCodigo: "PERMISO_DRIVE" }
+          data: {
+            estado: "ERROR",
+            errorCodigo: "PERMISO_DRIVE"
+          }
         });
       }
       errores++;

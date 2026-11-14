@@ -17,6 +17,9 @@ import { ZoomConfigForm } from "@/src/components/zoom-config-form";
 import { ZoomWebhookConfig } from "@/src/components/zoom-webhook-config";
 import { ZoomGrupoConfig } from "@/src/components/zoom-grupo-config";
 import { db } from "@/src/lib/db";
+import { descifrarConfiguracion } from "@/src/lib/config/encryption";
+import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
+import { consultarRegistrosZoomImportados } from "@/src/modules/configuracion/registros-zoom-consulta.service";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   obtenerDatosPaginaConfiguracion,
@@ -27,7 +30,7 @@ import { actualizarReportesAsistenciaAdmin } from "./actions";
 
 export default async function ConfiguracionPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ seccion?: string; estado?: string; error?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ seccion?: string; estado?: string; error?: string; busqueda?: string | string[]; pagina?: string | string[] }> }>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") {
     redirect("/");
@@ -46,16 +49,26 @@ export default async function ConfiguracionPage({
     activeProgramCount,
     pendingMeetOperations,
     adminReportRecipients,
-    historicalMeetings,
     availableHosts,
+    zoomAvailableHosts,
     pendingOperationItems,
     zoomGrupo
   } = await obtenerDatosPaginaConfiguracion(db, section);
 
+  const registrosZoom = section === "historico"
+    ? await consultarRegistrosZoomImportados(db, { busqueda: query.busqueda, pagina: query.pagina })
+    : null;
+
   const zoomConfig =
-    section === "zoom" || section === "resumen"
-      ? await db.configuracionZoom.findUnique({ where: { id: "principal" } })
+    section === "zoom" ? await db.configuracionZoom.findUnique({ where: { id: "principal" } }) : null;
+  const zoomCredentials =
+    section === "resumen" || section === "zoom"
+      ? await obtenerCredencialesZoom(db, descifrarConfiguracion)
       : null;
+  const zoomCredentialsAvailable = zoomCredentials?.disponible ?? null;
+  const zoomCredentialsDiagnostic = zoomCredentials && !zoomCredentials.disponible
+    ? zoomCredentials.diagnostico
+    : undefined;
 
   const sesConfig =
     section === "correo" ? await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } }) : null;
@@ -91,13 +104,18 @@ export default async function ConfiguracionPage({
     <SettingsCenterShell
       activeSection={section}
       navigationDetails={{
-        salas: `${availableHosts} de ${hosts.length} disponibles`,
+        salas: `${availableHosts} de ${hosts.length} cuentas habilitadas`,
         programas: `${activeProgramCount} de ${programCount} activos`,
         workspace:
           pendingMeetOperations.length > 0
             ? `${pendingMeetOperations.length} pendientes`
             : "Integración y permisos",
-        zoom: zoomConfig?.accountId ? "OAuth activo" : "Pendiente"
+        zoom:
+          zoomCredentialsAvailable === null
+            ? undefined
+            : zoomCredentialsAvailable
+              ? "Configuración disponible"
+              : zoomCredentialsDiagnostic === "AUSENTES" ? "Sin credenciales activas y completas" : "No se pudo comprobar"
       }}
     >
       {section === "resumen" ? (
@@ -116,7 +134,9 @@ export default async function ConfiguracionPage({
                 configuration.driveDestinationId
               ),
               integrationActive: configuration?.activa ?? false,
-              availableHosts,
+              zoomAvailableHosts,
+              zoomCredentialsAvailable: zoomCredentialsAvailable === true,
+              zoomCredentialsDiagnostic,
               totalHosts: hosts.length,
               activePrograms: activeProgramCount,
               totalPrograms: programCount,
@@ -148,15 +168,13 @@ export default async function ConfiguracionPage({
           description="Administrá las credenciales Server-to-Server OAuth institucionales."
           status={
             <span
-              className={`settings-section-status ${
-                zoomConfig?.accountId && zoomConfig?.clientId && zoomConfig?.clientSecretCifrado
-                  ? "is-ok"
-                  : "is-warning"
-              }`}
+              className={`settings-section-status ${zoomCredentialsAvailable ? "is-neutral" : "is-warning"}`}
             >
-              {zoomConfig?.accountId && zoomConfig?.clientId && zoomConfig?.clientSecretCifrado
-                ? "Configurado"
-                : "Pendiente"}
+              {zoomCredentialsAvailable
+                ? "Credenciales disponibles · conexión sin verificar"
+                : zoomCredentialsDiagnostic === "AUSENTES"
+                  ? "Sin credenciales activas y completas"
+                  : "No se pudieron comprobar las credenciales"}
             </span>
           }
         />
@@ -168,7 +186,7 @@ export default async function ConfiguracionPage({
           description="Administrá las cuentas institucionales que alojan las reuniones."
           status={
             <span className="settings-section-status is-neutral">
-              {availableHosts} de {hosts.length} disponibles
+              {availableHosts} de {hosts.length} cuentas habilitadas
             </span>
           }
         />
@@ -191,9 +209,9 @@ export default async function ConfiguracionPage({
       {section === "historico" ? (
         <SettingsSectionHeader
           eyebrow="Solo consulta"
-          title="Histórico Zoom"
+          title="Registros Zoom importados"
           description="Consultá reuniones migradas de la plataforma anterior."
-          status={<span className="settings-section-status is-neutral">Últimos 100 registros</span>}
+          status={<span className="settings-section-status is-neutral">Consulta de Zoom</span>}
         />
       ) : null}
 
@@ -301,9 +319,13 @@ export default async function ConfiguracionPage({
         </>
       ) : null}
 
-      {section === "historico" ? (
+      {registrosZoom ? (
         <HistoricalMeetingsTable
-          meetings={historicalMeetings.map((event) => ({
+          busqueda={registrosZoom.busqueda}
+          pagina={registrosZoom.pagina}
+          totalPaginas={registrosZoom.totalPaginas}
+          total={registrosZoom.total}
+          meetings={registrosZoom.registros.map((event) => ({
             id: event.id,
             date: formatDateTime(event.instancia.inicioProgramadoAt),
             title: event.instancia.solicitud.titulo,

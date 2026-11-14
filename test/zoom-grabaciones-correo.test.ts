@@ -82,6 +82,9 @@ describe("correo de grabación Zoom completa", () => {
       },
       $transaction: (run: (tx: unknown) => Promise<unknown>) => run(db)
     };
+    const crearNotificacion = vi.fn().mockResolvedValue({});
+    Object.assign(db, { notificacion: { upsert: crearNotificacion } });
+    Object.assign(db.usuario, { findFirst: vi.fn().mockResolvedValue({ id: "docente-1" }) });
     const compartirArchivo = vi.fn().mockResolvedValue(undefined);
     const enviarCorreo = vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" });
     const result = await notificarGrabacionesZoom(
@@ -95,6 +98,12 @@ describe("correo de grabación Zoom completa", () => {
         { ocurrenciaId: "ocurrencia-1", email: "admin@flacso.edu.uy" }
       ],
       skipDuplicates: true
+    });
+    expect(crearNotificacion).toHaveBeenCalledTimes(2);
+    expect(crearNotificacion.mock.calls[0][0].create).toMatchObject({
+      usuarioId: "docente-1",
+      tipo: "GRABACION_ZOOM_DISPONIBLE",
+      href: "/grabaciones"
     });
     expect(compartirArchivo).toHaveBeenCalledTimes(2);
     expect(enviarCorreo).toHaveBeenCalledTimes(2);
@@ -121,6 +130,7 @@ describe("correo de grabación Zoom completa", () => {
           }
         })
       },
+      usuario: { findFirst: vi.fn().mockResolvedValue(null) },
       avisoGrabacionZoom: {
         findMany: vi
           .fn()
@@ -139,6 +149,48 @@ describe("correo de grabación Zoom completa", () => {
     );
     expect(result).toEqual({ preparados: 0, enviados: 0, errores: 1 });
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("una falla de la notificación interna no impide el correo", async () => {
+    const update = vi.fn();
+    const db = {
+      ocurrenciaArchivoZoom: {
+        findMany: vi.fn().mockResolvedValue([]),
+        findUnique: vi.fn().mockResolvedValue({
+          ...enlace,
+          driveFolderId: "carpeta",
+          inicioRealAt: new Date(),
+          eventoProveedor: {
+            instancia: {
+              solicitud: { titulo: "Clase", docentePrograma: { programa: { nombre: "Programa" } } }
+            }
+          }
+        })
+      },
+      usuario: { findFirst: vi.fn().mockResolvedValue({ id: "docente-1" }) },
+      notificacion: { upsert: vi.fn().mockRejectedValue(new Error("base caída")) },
+      avisoGrabacionZoom: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "aviso", ocurrenciaId: "ocurrencia", email: "docente@flacso.edu.uy" }]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update
+      }
+    };
+    const enviarCorreo = vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" });
+    const result = await notificarGrabacionesZoom(
+      {
+        db: db as unknown as PrismaClient,
+        compartirArchivo: vi.fn().mockResolvedValue(undefined),
+        enviarCorreo
+      },
+      "cuenta"
+    );
+    expect(enviarCorreo).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ preparados: 0, enviados: 1, errores: 0 });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ estado: "ACEPTADO" }) })
+    );
   });
 });
 

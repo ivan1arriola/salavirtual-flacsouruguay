@@ -15,7 +15,9 @@ import { settingsNeedsAttention } from "@/src/modules/configuracion/settings-nav
 export type SettingsOverviewData = Readonly<{
   workspaceReady: boolean;
   integrationActive: boolean;
-  availableHosts: number;
+  zoomAvailableHosts: number;
+  zoomCredentialsAvailable: boolean;
+  zoomCredentialsDiagnostic?: "AUSENTES" | "ERROR_COMPROBACION";
   totalHosts: number;
   activePrograms: number;
   totalPrograms: number;
@@ -28,8 +30,25 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
   return (
     <div className="settings-overview">
       <SettingsAttentionBanner data={data} needsAttention={needsAttention} />
+      <GoogleAttention data={data} />
 
       <div className="settings-overview-grid">
+        <OverviewCard
+          description="La conexión con Zoom no se verificó aquí"
+          href="/configuracion?seccion=zoom"
+          icon={<Video size={22} />}
+          label="Zoom"
+          state={data.zoomCredentialsAvailable ? "neutral" : "warning"}
+          value={
+            data.zoomCredentialsAvailable
+              ? "Credenciales disponibles"
+              : data.zoomCredentialsDiagnostic === "AUSENTES"
+                ? "Sin credenciales activas y completas"
+                : data.zoomCredentialsDiagnostic === "ERROR_COMPROBACION"
+                  ? "No se pudieron comprobar las credenciales"
+                  : "Disponibilidad sin confirmar"
+          }
+        />
         <OverviewCard
           description={
             data.workspaceReady
@@ -43,12 +62,12 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
           value={data.integrationActive ? "Integración activa" : "Integración pausada"}
         />
         <OverviewCard
-          description={`${data.availableHosts} de ${data.totalHosts} disponibles para nuevas reuniones`}
+          description={`${data.zoomAvailableHosts} cuentas Zoom habilitadas; la disponibilidad depende del horario`}
           href="/configuracion?seccion=salas"
           icon={<Video size={22} />}
           label="Salas"
-          state={data.availableHosts > 0 ? "ok" : "warning"}
-          value={`${data.totalHosts} ${data.totalHosts === 1 ? "cuenta" : "cuentas"}`}
+          state={data.zoomAvailableHosts > 0 ? "ok" : "warning"}
+          value={`${data.totalHosts} ${data.totalHosts === 1 ? "cuenta" : "cuentas"} Meet y Zoom en total`}
         />
         <OverviewCard
           description={`${data.activePrograms} activos · ${data.totalPrograms - data.activePrograms} inactivos`}
@@ -78,9 +97,9 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
           description="Registros migrados disponibles para consulta"
           href="/configuracion?seccion=historico"
           icon={<History size={22} />}
-          label="Histórico Zoom"
+          label="Registros Zoom importados"
           state="quiet"
-          value="Abrir histórico"
+          value="Consultar registros"
         />
       </div>
     </div>
@@ -98,8 +117,8 @@ function SettingsAttentionBanner({
           <CheckCircle2 size={24} />
         </span>
         <div>
-          <strong>Todo está listo para operar</strong>
-          <p>La integración está activa, hay salas disponibles y no quedan operaciones pendientes.</p>
+          <strong>Configuración local de Zoom disponible</strong>
+          <p>Hay credenciales y cuentas Zoom habilitadas. La conexión con Zoom no se verificó aquí.</p>
         </div>
       </section>
     );
@@ -112,6 +131,38 @@ function SettingsAttentionBanner({
       </span>
       <div>
         <strong>Hay aspectos que requieren revisión</strong>
+        <ul>
+          {!data.zoomCredentialsAvailable ? (
+            <li>
+              {data.zoomCredentialsDiagnostic === "AUSENTES"
+                ? "No hay credenciales Zoom activas y completas disponibles."
+                : data.zoomCredentialsDiagnostic === "ERROR_COMPROBACION"
+                  ? "No se pudieron comprobar las credenciales."
+                  : "No se pudo confirmar la disponibilidad de credenciales."}{" "}
+              <Link href="/configuracion?seccion=zoom">Revisar credenciales de Zoom</Link>
+            </li>
+          ) : null}
+          {data.zoomAvailableHosts === 0 ? (
+            <li>
+              <Link href="/configuracion?seccion=salas">Revisar las cuentas Zoom habilitadas</Link>
+            </li>
+          ) : null}
+        </ul>
+        <p>La conexión con Zoom no se verificó aquí.</p>
+      </div>
+    </section>
+  );
+}
+
+function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
+  if (!data.pendingOperations && data.workspaceReady && data.integrationActive) return null;
+  return (
+    <section
+      className="settings-attention settings-attention--warning"
+      aria-label="Estado de Google Workspace"
+    >
+      <div>
+        <strong>Google Workspace requiere revisión</strong>
         <ul>
           {data.pendingOperations > 0 ? (
             <li>
@@ -129,11 +180,6 @@ function SettingsAttentionBanner({
           {!data.integrationActive ? (
             <li>
               <Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link>
-            </li>
-          ) : null}
-          {data.availableHosts === 0 ? (
-            <li>
-              <Link href="/configuracion?seccion=salas">Revisar las salas disponibles</Link>
             </li>
           ) : null}
         </ul>

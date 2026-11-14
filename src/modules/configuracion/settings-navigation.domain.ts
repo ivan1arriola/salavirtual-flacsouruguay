@@ -57,8 +57,8 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
   },
   {
     id: "historico",
-    label: "Histórico Zoom",
-    description: "Registros anteriores de consulta",
+    label: "Registros Zoom importados",
+    description: "Reuniones importadas disponibles para consulta",
     icon: "history"
   }
 ];
@@ -79,19 +79,12 @@ export function legacySettingsRedirect(section?: string): string | null {
 }
 
 export type SettingsAttentionInput = Readonly<{
-  availableHosts: number;
-  integrationActive: boolean;
-  pendingOperations: number;
-  workspaceReady: boolean;
+  zoomAvailableHosts: number;
+  zoomCredentialsAvailable: boolean;
 }>;
 
 export function settingsNeedsAttention(input: SettingsAttentionInput) {
-  return (
-    input.pendingOperations > 0 ||
-    !input.workspaceReady ||
-    !input.integrationActive ||
-    input.availableHosts === 0
-  );
+  return !input.zoomCredentialsAvailable || input.zoomAvailableHosts === 0;
 }
 
 export type WorkspaceReadinessInput = Readonly<{

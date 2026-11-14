@@ -22,7 +22,7 @@ export function TeacherRecentRecordings({
         </div>
         <div className="empty-state">
           <FolderCheck size={24} />
-          <p>Tus grabaciones de Google Meet se sincronizarán aquí automáticamente al concluir cada clase.</p>
+          <p>Las grabaciones disponibles de tus clases aparecerán aquí.</p>
         </div>
       </section>
     );

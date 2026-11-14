@@ -1457,3 +1457,11 @@
     padding-top: 8px;
   }
 }
+.settings-history__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}

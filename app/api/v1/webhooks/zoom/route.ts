@@ -3,6 +3,7 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   EVENTOS_ZOOM,
   interpretarAvisoZoom,
+  interpretarAvisoAdicionalZoom,
   respuestaValidacionZoom,
   verificarFirmaWebhookZoom
 } from "@/src/integrations/zoom/zoom-webhook";
@@ -101,11 +102,21 @@ export async function POST(request: Request): Promise<Response> {
   }
   const evento = interpretarAvisoZoom(cuerpo);
   if (!evento) {
-    // Un evento conocido con forma inesperada no debe confirmarse como si hubiera sido guardado.
-    return new Response(null, {
-      status: EVENTOS_ZOOM.some((tipo) => tipo === aviso?.event) ? 503 : 204,
-      headers: HEADERS
-    });
+    // Los cuatro eventos existentes conservan su validación y procesamiento especializado.
+    if (EVENTOS_ZOOM.some((tipo) => tipo === aviso?.event)) {
+      return new Response(null, { status: 503, headers: HEADERS });
+    }
+    const adicional = interpretarAvisoAdicionalZoom(cuerpo);
+    if (!adicional) {
+      const familia = typeof aviso?.event === "string" && /^(meeting|recording|group)\./.test(aviso.event);
+      return new Response(null, { status: familia ? 503 : 204, headers: HEADERS });
+    }
+    try {
+      await db.eventoWebhookZoomAdicional.createMany({ data: [adicional], skipDuplicates: true });
+      return new Response(null, { status: 204, headers: HEADERS });
+    } catch {
+      return new Response(null, { status: 503, headers: HEADERS });
+    }
   }
   try {
     await db.eventoWebhookZoom.createMany({

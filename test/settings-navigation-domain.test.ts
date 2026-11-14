@@ -21,6 +21,7 @@ describe("navegación de configuración", () => {
     expect(settingsHref("programas")).toBe("/usuarios?vista=programas");
     expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
     expect(legacySettingsRedirect("correo")).toBeNull();
+    expect(SETTINGS_SECTIONS.find(({ id }) => id === "historico")?.label).toBe("Registros Zoom importados");
   });
 
   it("expone todas las secciones en el orden de trabajo", () => {
@@ -57,14 +58,14 @@ describe("navegación de configuración", () => {
     ).toEqual({ readyCount: 0, totalCount: 4, ready: false });
   });
 
-  it("marca para revisión una integración pausada aunque sus datos estén completos", () => {
+  it("evalúa Zoom separadamente de Google Workspace", () => {
     expect(
       settingsNeedsAttention({
-        availableHosts: 2,
-        integrationActive: false,
-        pendingOperations: 0,
-        workspaceReady: true
+        zoomAvailableHosts: 1,
+        zoomCredentialsAvailable: true
       })
-    ).toBe(true);
+    ).toBe(false);
+    expect(settingsNeedsAttention({ zoomAvailableHosts: 0, zoomCredentialsAvailable: true })).toBe(true);
+    expect(settingsNeedsAttention({ zoomAvailableHosts: 1, zoomCredentialsAvailable: false })).toBe(true);
   });
 });

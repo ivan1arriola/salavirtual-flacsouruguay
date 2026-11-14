@@ -656,6 +656,12 @@
   animation: pulse-live 1.6s infinite ease-in-out;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .live-indicator-dot {
+    animation: none;
+  }
+}
+
 @keyframes pulse-live {
   0% {
     transform: scale(0.9);

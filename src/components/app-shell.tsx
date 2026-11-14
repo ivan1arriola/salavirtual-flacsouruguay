@@ -31,6 +31,9 @@ export async function AppShell({
 
   return (
     <div className="app-frame">
+      <a className="skip-to-content" href="#contenido-principal">
+        Saltar al contenido principal
+      </a>
       {user.role === "DOCENTE" ? <TeacherOnboardingTour userId={user.id} /> : null}
       {user.role === "ASISTENTE_TECNICO" ? <AssistantOnboardingTour userId={user.id} /> : null}
 
@@ -69,7 +72,9 @@ export async function AppShell({
             />
           </span>
         </header>
-        <main className="workspace">{children}</main>
+        <main className="workspace" id="contenido-principal" tabIndex={-1}>
+          {children}
+        </main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {navigation.mobilePrimary.map(({ href, label, shortLabel, icon: Icon, search }) => (
             <SidebarLink
