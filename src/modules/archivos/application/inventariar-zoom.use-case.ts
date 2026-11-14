@@ -126,12 +126,30 @@ function fechaMontevideo(fecha: Date): string {
   }).format(fecha);
 }
 
+/** Zoom responde 404 con código 1001 cuando el usuario anfitrión ya no existe en la cuenta. */
+export function esAnfitrionInexistenteZoom(error: unknown): boolean {
+  const e = error as { code?: unknown; status?: unknown; codigoZoom?: unknown } | null;
+  return (
+    (e?.code === "NO_ENCONTRADO" || e?.code === "SOLICITUD_RECHAZADA") &&
+    e.status === 404 &&
+    e.codigoZoom === 1001
+  );
+}
+
+/** Días a barrer: todo lo que Zoom pueda devolver desde `inicioIso` (AAAA-MM-DD), con un mínimo. */
+export function diasDeBarridoZoom(ahora: Date, inicioIso: string, minimo: number): number {
+  const inicio = Date.parse(`${inicioIso}T00:00:00.000Z`);
+  return Math.max(minimo, Math.ceil((ahora.getTime() - inicio) / DIA));
+}
+
 export type ErrorBarridoZoom = Readonly<{ anfitrionZoomId: string; codigo: string }>;
 export type ResumenBarridoZoom = Readonly<{
   ocurrencias: number;
   /** De `ocurrencias`, las halladas en la papelera de Zoom. */
   ocurrenciasPapelera: number;
   anfitrionesConError: number;
+  /** Anfitriones dados de baja en Zoom (404:z1001): se omiten sin ensuciar los logs con un error por ciclo. */
+  anfitrionesInexistentes: number;
   ocurrenciasConError: number;
   /** Código del error por anfitrión (nunca el mensaje: puede traer URLs); acotado a 25. */
   errores: readonly ErrorBarridoZoom[];
@@ -168,6 +186,7 @@ export async function barrerAnfitrionesZoomUseCase(
   let ocurrencias = 0;
   let ocurrenciasPapelera = 0;
   let anfitrionesConError = 0;
+  let anfitrionesInexistentes = 0;
   let ocurrenciasConError = 0;
   const errores: ErrorBarridoZoom[] = [];
 
@@ -212,11 +231,22 @@ export async function barrerAnfitrionesZoomUseCase(
         }
       }
     } catch (error) {
+      if (esAnfitrionInexistenteZoom(error)) {
+        anfitrionesInexistentes++;
+        continue;
+      }
       anfitrionesConError++;
       if (errores.length < 25) {
         errores.push({ anfitrionZoomId: anfitrion.anfitrionZoomId, codigo: codigoDeError(error) });
       }
     }
   }
-  return { ocurrencias, ocurrenciasPapelera, anfitrionesConError, ocurrenciasConError, errores };
+  return {
+    ocurrencias,
+    ocurrenciasPapelera,
+    anfitrionesConError,
+    anfitrionesInexistentes,
+    ocurrenciasConError,
+    errores
+  };
 }

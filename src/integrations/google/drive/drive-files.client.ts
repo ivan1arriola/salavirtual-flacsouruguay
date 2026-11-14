@@ -225,3 +225,43 @@ export async function moverElementoDriveACarpeta(
   }
   return "MOVIDA";
 }
+
+export type ResultadoRenombrarDrive = "RENOMBRADA" | "YA_NOMBRADA" | "NO_ENCONTRADO";
+
+/** Cambia el nombre de un archivo o carpeta sin cambiar su ID. Idempotente: si ya tiene ese nombre no escribe. */
+export async function renombrarElementoDrive(
+  auth: JWT,
+  elementoId: string,
+  nombre: string,
+  opciones: Readonly<{ signal?: AbortSignal }> = {}
+): Promise<ResultadoRenombrarDrive> {
+  const url = `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(elementoId)}?fields=id,name&supportsAllDrives=true`;
+  const actual = await auth.request<{ id?: string; name?: string }>({
+    url,
+    method: "GET",
+    timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+    validateStatus: () => true,
+    signal: opciones.signal
+  });
+  if (actual.status === 404) {
+    return "NO_ENCONTRADO";
+  }
+  if (actual.status < 200 || actual.status >= 300) {
+    throw new Error(`Drive rechazó consultar el elemento (HTTP ${actual.status}).`);
+  }
+  if (actual.data?.name === nombre) {
+    return "YA_NOMBRADA";
+  }
+  const respuesta = await auth.request({
+    url,
+    method: "PATCH",
+    data: { name: nombre },
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
+    validateStatus: () => true,
+    signal: opciones.signal
+  });
+  if (respuesta.status < 200 || respuesta.status >= 300) {
+    throw new Error(`Drive rechazó renombrar el elemento (HTTP ${respuesta.status}).`);
+  }
+  return "RENOMBRADA";
+}
