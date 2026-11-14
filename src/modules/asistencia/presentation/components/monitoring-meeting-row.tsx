@@ -22,9 +22,16 @@ export type MonitoringMeetingRowData = {
   cuenta: string;
 };
 
+function etiquetaPlataforma(plataforma: MonitoringMeetingRowData["plataforma"]): string {
+  if (plataforma === "ZOOM") {
+    return "Zoom";
+  }
+  return plataforma ? "Google Meet" : "Sin plataforma";
+}
+
 export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetingRowData }>) {
   const isZoom = data.plataforma === "ZOOM";
-  const platformLabel = isZoom ? "Zoom" : data.plataforma ? "Google Meet" : "Sin plataforma";
+  const platformLabel = etiquetaPlataforma(data.plataforma);
   const hostTitle = isZoom ? "Host de Zoom" : "Cuenta de Meet";
 
   return (

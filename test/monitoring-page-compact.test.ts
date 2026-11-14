@@ -15,7 +15,13 @@ describe("página de monitoreo compacta", () => {
   });
 
   it("define los estilos nuevos", () => {
-    for (const selector of [".monitoring-row", ".monitoring-row.is-pending", ".coverage-notify-menu", ".monitoring-summary", ".coverage-toolbar"]) {
+    for (const selector of [
+      ".monitoring-row",
+      ".monitoring-row.is-pending",
+      ".coverage-notify-menu",
+      ".monitoring-summary",
+      ".coverage-toolbar"
+    ]) {
       expect(css).toContain(selector);
     }
   });

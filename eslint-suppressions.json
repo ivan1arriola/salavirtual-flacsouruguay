@@ -205,9 +205,6 @@
     }
   },
   "src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
     "sonarjs/no-nested-conditional": {
       "count": 5
     },

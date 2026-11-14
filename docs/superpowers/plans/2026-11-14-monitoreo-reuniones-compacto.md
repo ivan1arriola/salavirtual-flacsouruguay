@@ -34,10 +34,12 @@
 ### Task 1: Resumen en una línea
 
 **Files:**
+
 - Create: `src/modules/asistencia/presentation/components/monitoring-summary.tsx`
 - Test: `test/monitoring-summary.test.tsx`
 
 **Interfaces:**
+
 - Produces: `MonitoringSummary(props: Readonly<{ total: number; covered: number; pending: number; q?: string }>): JSX.Element` (server-safe, sin hooks).
 
 - [ ] **Step 1: Escribir el test que falla** (`renderToStaticMarkup`, mismo estilo que `test/zoom-eventos-panel.test.tsx`):
@@ -54,30 +56,32 @@
 ### Task 2: Fila compacta de reunión
 
 **Files:**
+
 - Create: `src/modules/asistencia/presentation/components/monitoring-meeting-row.tsx`
 - Test: `test/monitoring-meeting-row.test.tsx`
 
 **Interfaces:**
+
 - Produces:
   ```ts
   export type MonitoringMeetingRowData = {
-    id: string;                 // instancia
-    detalleHref: string;        // /reuniones/{solicitudId}
-    gestionarHref: string;      // /monitoreo/gestionar/{id}
+    id: string; // instancia
+    detalleHref: string; // /reuniones/{solicitudId}
+    gestionarHref: string; // /monitoreo/gestionar/{id}
     titulo: string;
     programa: string;
     docente: string;
-    horaAsistencia: string;     // "08:30–11:30 h"
+    horaAsistencia: string; // "08:30–11:30 h"
     covered: boolean;
     assistantName: string | null;
     plataforma: "ZOOM" | "GOOGLE_MEET" | null;
     joinUrl: string | null;
-    hostLabel: string | null;       // ya formateado; null = sin cuenta host
-    codigoReunion: string | null;   // solo Zoom
+    hostLabel: string | null; // ya formateado; null = sin cuenta host
+    codigoReunion: string | null; // solo Zoom
     modalidad: "HIBRIDA" | "VIRTUAL";
-    horarioReunion: string | null;  // solo si HIBRIDA
+    horarioReunion: string | null; // solo si HIBRIDA
     applicantsCount: number;
-    cuenta: string;                 // valor de data-cuenta ("sin" si no hay)
+    cuenta: string; // valor de data-cuenta ("sin" si no hay)
   };
   export function MonitoringMeetingRow(props: Readonly<{ data: MonitoringMeetingRowData }>): JSX.Element;
   ```
@@ -99,10 +103,12 @@
 ### Task 3: Menú "Notificar ▾"
 
 **Files:**
+
 - Modify: `src/modules/asistencia/presentation/components/bulk-monitoring-notification-actions.tsx:97-129`
 - Test: `test/monitoring-notify-menu.test.ts`
 
 **Interfaces:**
+
 - Consumes/Produces: firma sin cambios `BulkMonitoringNotificationActions({ pendingCount, coveredCount })`; la lógica de `notifyUnassigned`/`notifyAssigned` no se toca.
 
 - [ ] **Step 1: Escribir test que falla** leyendo el source con `readFileSync` (el componente usa `useRouter`, no se puede renderizar fuera del app router): contiene `<details className="coverage-notify-menu"`, `<summary`, `Notificar`, `Renotificar sin asignar (${pendingCount})` y `Notificar reuniones asignadas (${coveredCount})`, y sigue conteniendo `"/api/v1/asistencia/notificaciones"`.
@@ -114,11 +120,13 @@
 ### Task 4: Integrar en la página y estilos
 
 **Files:**
+
 - Modify: `src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx:121-308` (cabecera de resumen, barra de acciones, lista)
 - Modify: `app/(gestion)/operations.css` (agregar al final)
 - Test: `test/asistencia-desvinculacion-ui.test.ts` (ajustar solo si falla) y `test/monitoring-page-compact.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MonitoringSummary`, `MonitoringMeetingRow`, `MonitoringMeetingRowData`, `BulkMonitoringNotificationActions`.
 
 - [ ] **Step 1: Escribir test que falla** (`readFileSync` del source de la página): contiene `MonitoringSummary` y `MonitoringMeetingRow`; ya no contiene `coverage-card monitoring-account-card`, `metric-grid coverage-stats` ni `coverage-card-footer`; sigue conteniendo `/monitoreo/gestionar/${meeting.id}`; el CSS contiene `.monitoring-row`, `.monitoring-row.is-pending`, `.coverage-notify-menu`, `.monitoring-summary`.
