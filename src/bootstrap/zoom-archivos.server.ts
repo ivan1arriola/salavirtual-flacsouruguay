@@ -14,7 +14,7 @@ import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.se
 import {
   barrerAnfitrionesZoomUseCase,
   diasDeBarridoZoom,
-  moverCarpetasVinculadasZoomUseCase,
+  ordenarCarpetasVinculadasZoomUseCase,
   sincronizarAsistenciaPendienteZoomUseCase,
   sincronizarAsistenciaZoomUseCase,
   procesarPaginaRecuperacionZoom,
@@ -230,7 +230,7 @@ export async function crearWorkerZoomArchivos(
       );
     },
     moverCarpetasVinculadas: () =>
-      moverCarpetasVinculadasZoomUseCase(
+      ordenarCarpetasVinculadasZoomUseCase(
         {
           repo: crearPrismaZoomCarpetasRepositoryAdapter({ db }),
           storage,

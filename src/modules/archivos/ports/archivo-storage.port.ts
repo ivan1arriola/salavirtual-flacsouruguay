@@ -52,4 +52,10 @@ export interface ArchivoStoragePort {
     nuevoPadreId: string,
     signal?: AbortSignal
   ): Promise<"MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO">;
+  /** Cambia el nombre de una carpeta conservando su ID; idempotente. */
+  renombrarCarpeta(
+    carpetaId: string,
+    nombre: string,
+    signal?: AbortSignal
+  ): Promise<"RENOMBRADA" | "YA_NOMBRADA" | "NO_ENCONTRADO">;
 }

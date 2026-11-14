@@ -37,16 +37,17 @@ describe("resolverCarpetaDestinoZoom", () => {
     return { asegurarCarpeta } as never;
   };
 
-  it("encuentro vinculado: bajo la raíz de grabaciones, organizado AAAA/MM/ocurrencia en hora de Montevideo", async () => {
+  it("encuentro vinculado: carpeta de la ocurrencia directamente bajo la raíz de grabaciones, sin AAAA/MM", async () => {
     const s = storage();
     const id = await resolverCarpetaDestinoZoom(s, hash, archivo(true), {
       raizVinculados: "RAIZ",
       raizHistorico: "ADMIN"
     });
-    expect(id!.startsWith("RAIZ>2026>11>")).toBe(true);
+    expect(id!.startsWith("RAIZ>")).toBe(true);
+    expect(id).not.toContain("RAIZ>2026");
     expect(
       (s as never as { asegurarCarpeta: ReturnType<typeof vi.fn> }).asegurarCarpeta
-    ).toHaveBeenCalledTimes(3);
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("histórico sin vincular: solo bajo la carpeta de administración, nunca bajo la raíz legible por docentes", async () => {
@@ -80,7 +81,7 @@ describe("resolverCarpetaDestinoZoom", () => {
     ).toBeNull();
   });
 
-  it("las claves de identidad de cada nivel son estables y distintas por ocurrencia", async () => {
+  it("la clave de identidad de la carpeta es propia de cada ocurrencia", async () => {
     const claves: string[] = [];
     const s = {
       asegurarCarpeta: vi.fn(async (c: string, _n: string, p: string) => {
@@ -101,7 +102,7 @@ describe("resolverCarpetaDestinoZoom", () => {
       })
     } as never;
     await resolverCarpetaDestinoZoom(s2, hash, otra, { raizVinculados: "RAIZ", raizHistorico: null });
-    expect(claves[0]).toBe(claves2[0]); // año y mes compartidos
-    expect(claves[2]).not.toBe(claves2[2]); // la carpeta de la ocurrencia es propia
+    expect(claves).toHaveLength(1);
+    expect(claves[0]).not.toBe(claves2[0]); // la carpeta de la ocurrencia es propia
   });
 });

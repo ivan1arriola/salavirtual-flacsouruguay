@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   inventariarZoomUseCase,
-  moverCarpetasVinculadasZoomUseCase,
+  ordenarCarpetasVinculadasZoomUseCase,
   resolverCarpetaDestinoZoom,
   transferirArchivoZoomUseCase,
   vincularOcurrenciaZoom
@@ -115,6 +115,17 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
   return {
     archivos,
     carpetas,
+    renombrarCarpeta: vi.fn(async (id: string, nombre: string) => {
+      const c = carpetas.get(id);
+      if (!c) {
+        return "NO_ENCONTRADO" as const;
+      }
+      if (c.nombre === nombre) {
+        return "YA_NOMBRADA" as const;
+      }
+      c.nombre = nombre;
+      return "RENOMBRADA" as const;
+    }),
     moverCarpeta: vi.fn(async (id: string, nuevoPadre: string) => {
       const c = carpetas.get(id);
       if (!c) {
@@ -382,14 +393,25 @@ function repoEnMemoria() {
       };
     },
     // Para el movimiento de carpetas (puerto propio del caso de uso).
-    async listarCarpetasPorMover(limite: number) {
+    async listarPendientes(limite: number) {
       return [...ocurrencias.values()]
         .filter((o) => o.eventoId && o.carpeta && !o.carpetaVinculadaAt)
         .slice(0, limite)
         .map((o) => ({
           ocurrenciaId: o.id,
           driveFolderId: o.carpeta!,
-          referencia: { inicioRealAt: o.ref.inicioRealAt }
+          inicioRealAt: o.ref.inicioRealAt,
+          titulo: o.ref.titulo
+        }));
+    },
+    async listarVinculadasCercanas() {
+      return [...ocurrencias.values()]
+        .filter((o) => o.eventoId && o.carpeta)
+        .map((o) => ({
+          ocurrenciaId: o.id,
+          driveFolderId: o.carpeta!,
+          inicioRealAt: o.ref.inicioRealAt,
+          titulo: o.ref.titulo
         }));
     },
     async marcarCarpetaVinculada(id: string, ahora: Date) {
@@ -504,8 +526,8 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     expect(await r.repo.reclamarArchivo(MAS_TARDE)).toBeNull();
     expect(origen.abrirDescarga.mock.calls.length).toBe(descargasAntes);
 
-    // El worker mueve la carpeta (no copia): mismos IDs de archivo, nuevo padre bajo VINCULADOS/2026/03.
-    const resumen = await moverCarpetasVinculadasZoomUseCase(
+    // El worker mueve la carpeta (no copia): mismos IDs de archivo, nuevo padre directamente bajo VINCULADOS.
+    const resumen = await ordenarCarpetasVinculadasZoomUseCase(
       {
         repo: r.repo,
         storage: drive as never,
@@ -515,11 +537,13 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
       },
       { limite: 10 }
     );
-    expect(resumen).toMatchObject({ movidas: 1, fallidas: 0 });
+    expect(resumen).toMatchObject({ ordenadas: 1, fallidas: 0 });
+    // Formato como Meet: directamente bajo la raíz, 'AAAAMMDD - Tema'.
+    expect(subir(oc.carpeta!)).toEqual([expect.stringMatching(/^\d{8} - /), "VINCULADOS"]);
     expect(subir(oc.carpeta!).at(-1)).toBe("VINCULADOS");
     expect([...r.archivos.values()].map((a) => a.driveFileId).sort()).toEqual(idsAntes);
     // Idempotente: otro ciclo no vuelve a mover nada.
-    const otra = await moverCarpetasVinculadasZoomUseCase(
+    const otra = await ordenarCarpetasVinculadasZoomUseCase(
       {
         repo: r.repo,
         storage: drive as never,
@@ -529,7 +553,7 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
       },
       { limite: 10 }
     );
-    expect(otra).toMatchObject({ movidas: 0, yaEnDestino: 0 });
+    expect(otra).toMatchObject({ ordenadas: 0, fallidas: 0 });
   });
 
   it("reinventariar una ocurrencia ya conservada no reinicia sus archivos ni encola nada", async () => {
