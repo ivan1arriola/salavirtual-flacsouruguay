@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   barrerAnfitrionesZoomUseCase,
+  diasDeBarridoZoom,
   inventariarOcurrenciasVencidasZoomUseCase,
   inventariarZoomUseCase,
   proximoInventarioZoom
@@ -163,6 +164,34 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     expect(repo.guardarInventario).toHaveBeenCalledTimes(2);
     // Una sola ventana de 3 días en hora de Montevideo.
     expect(origen.listarOcurrencias.mock.calls[0][1]).toEqual({ desde: "2026-11-06", hasta: "2026-11-09" });
+  });
+
+  it("un anfitrión que ya no existe en Zoom (404:z1001) se omite sin contarlo como error y los demás se procesan", async () => {
+    const inexistente = Object.assign(new Error("no existe"), {
+      name: "ZoomApiError",
+      code: "NO_ENCONTRADO",
+      status: 404,
+      codigoZoom: 1001
+    });
+    const origen: any = {
+      listarOcurrencias: vi.fn(async (a: any, v: any) => {
+        if (a.anfitrionZoomId === "h1") {
+          throw inexistente;
+        }
+        return { elementos: v.papelera ? [] : [ref(hace(HORA), "x")], siguiente: null };
+      }),
+      obtenerInventario: vi.fn(async () => VACIO)
+    };
+    const repo: any = {
+      guardarInventario: vi.fn(async () => ({ ocurrenciaId: "o", nuevos: 0, actualizados: 0, requierenRevision: 0 }))
+    };
+    const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
+      anfitriones,
+      ahora: AHORA,
+      diasAtras: 3,
+      corteDias: 90
+    });
+    expect(r).toMatchObject({ ocurrencias: 1, anfitrionesConError: 0, anfitrionesInexistentes: 1, errores: [] });
   });
 
   it("el barrido reciente también consulta la papelera de cada ventana e inventaría lo hallado", async () => {
@@ -363,5 +392,15 @@ describe("procesarMantenimientoZoomUseCase (equidad)", () => {
     );
     expect(hechas).toEqual(["b"]);
     expect(errores).toEqual(["mala"]);
+  });
+});
+
+describe("diasDeBarridoZoom", () => {
+  it("cubre desde el inicio del histórico hasta hoy, no solo los últimos días", () => {
+    expect(diasDeBarridoZoom(AHORA, "2026-11-01", 3)).toBe(9);
+  });
+  it("nunca baja del mínimo (inicio muy reciente o fecha futura)", () => {
+    expect(diasDeBarridoZoom(AHORA, "2026-11-08", 3)).toBe(3);
+    expect(diasDeBarridoZoom(AHORA, "2027-01-01", 3)).toBe(3);
   });
 });

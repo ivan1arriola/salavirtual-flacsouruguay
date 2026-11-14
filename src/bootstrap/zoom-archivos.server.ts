@@ -13,6 +13,7 @@ import { obtenerCredencialPrincipalGoogleWorkspace } from "../modules/configurac
 import { obtenerCredencialesZoom } from "../modules/configuracion/zoom-config.service";
 import {
   barrerAnfitrionesZoomUseCase,
+  diasDeBarridoZoom,
   moverCarpetasVinculadasZoomUseCase,
   sincronizarAsistenciaPendienteZoomUseCase,
   sincronizarAsistenciaZoomUseCase,
@@ -47,6 +48,7 @@ const LOTE_CARPETAS = 25;
 const LOTE_ASISTENCIA = 20;
 /** Páginas de recuperación histórica por ciclo de mantenimiento: acota el tiempo sin frenar el resto. */
 const PAGINAS_RECUPERACION_POR_CICLO = 20;
+/** Mínimo de días del barrido periódico; en la práctica cubre todo desde INICIO_HISTORICO_ZOOM. */
 const DIAS_BARRIDO_RECIENTE = 3;
 /** El barrido histórico cubre fechas anteriores a la existencia del servicio; Zoom aplica su propia retención. */
 const INICIO_HISTORICO_ZOOM = "2026-11-01";
@@ -146,7 +148,7 @@ export async function crearWorkerZoomArchivos(
   });
   const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
 
-  // El barrido periódico solo cubre los últimos tres días. Encolar una importación durable única
+  // El barrido periódico cubre todo lo que Zoom devuelva desde INICIO_HISTORICO_ZOOM. Encolar una importación durable única
   // permite recuperar el historial por páginas y ventanas sin repetirlo en cada ciclo.
   const anfitrionesIniciales = await listarAnfitriones(cuentaZoomId);
   if (anfitrionesIniciales.length > 0) {
@@ -209,7 +211,7 @@ export async function crearWorkerZoomArchivos(
       barrerAnfitrionesZoomUseCase(repo, origen, {
         anfitriones: await listarAnfitriones(cuentaZoomId),
         ahora: new Date(),
-        diasAtras: DIAS_BARRIDO_RECIENTE,
+        diasAtras: diasDeBarridoZoom(new Date(), INICIO_HISTORICO_ZOOM, DIAS_BARRIDO_RECIENTE),
         corteDias: config.corteDias
       }),
     sincronizarAsistenciaPendiente: () => {
