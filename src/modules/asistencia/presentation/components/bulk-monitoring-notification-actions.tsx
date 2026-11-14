@@ -96,37 +96,40 @@ export function BulkMonitoringNotificationActions({
 
   return (
     <div className="coverage-bulk-actions">
-      <div className="coverage-bulk-buttons">
-        <button
-          type="button"
-          className="secondary-action coverage-bulk-btn"
-          disabled={isPending}
-          onClick={notifyUnassigned}
-          title="Renotificar a todas las asistentes las reuniones que aún no tienen asignación"
-        >
-          {activeAction === "sin_asignar" ? (
-            <LoaderCircle size={16} className="spin" aria-hidden="true" />
-          ) : (
-            <BellRing size={16} aria-hidden="true" />
-          )}
-          <span>Renotificar sin asignar ({pendingCount})</span>
-        </button>
+      <details className="coverage-notify-menu">
+        <summary className="secondary-action">Notificar ▾</summary>
+        <div className="coverage-bulk-buttons coverage-notify-menu-items">
+          <button
+            type="button"
+            className="secondary-action coverage-bulk-btn"
+            disabled={isPending}
+            onClick={notifyUnassigned}
+            title="Renotificar a todas las asistentes las reuniones que aún no tienen asignación"
+          >
+            {activeAction === "sin_asignar" ? (
+              <LoaderCircle size={16} className="spin" aria-hidden="true" />
+            ) : (
+              <BellRing size={16} aria-hidden="true" />
+            )}
+            <span>Renotificar sin asignar ({pendingCount})</span>
+          </button>
 
-        <button
-          type="button"
-          className="secondary-action coverage-bulk-btn"
-          disabled={isPending}
-          onClick={notifyAssigned}
-          title="Enviar a cada asistente su cronograma de reuniones asignadas"
-        >
-          {activeAction === "asignadas" ? (
-            <LoaderCircle size={16} className="spin" aria-hidden="true" />
-          ) : (
-            <CalendarCheck2 size={16} aria-hidden="true" />
-          )}
-          <span>Notificar reuniones asignadas ({coveredCount})</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            className="secondary-action coverage-bulk-btn"
+            disabled={isPending}
+            onClick={notifyAssigned}
+            title="Enviar a cada asistente su cronograma de reuniones asignadas"
+          >
+            {activeAction === "asignadas" ? (
+              <LoaderCircle size={16} className="spin" aria-hidden="true" />
+            ) : (
+              <CalendarCheck2 size={16} aria-hidden="true" />
+            )}
+            <span>Notificar reuniones asignadas ({coveredCount})</span>
+          </button>
+        </div>
+      </details>
 
       {feedback ? (
         <div

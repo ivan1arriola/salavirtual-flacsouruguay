@@ -1,9 +1,10 @@
-import { ArrowRight, CalendarClock, Search, UserRoundCheck, UsersRound } from "lucide-react";
+import { Search, UserRoundCheck } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { BulkMonitoringNotificationActions } from "@/src/modules/asistencia/presentation/components/bulk-monitoring-notification-actions";
-import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
+import { MonitoringMeetingRow } from "@/src/modules/asistencia/presentation/components/monitoring-meeting-row";
+import { MonitoringSummary } from "@/src/modules/asistencia/presentation/components/monitoring-summary";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
@@ -12,7 +13,7 @@ import {
   colorCuentaZoom,
   nombreCuentaZoom
 } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { formatTime } from "@/src/lib/ui/format";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
@@ -124,41 +125,29 @@ export default async function AsistenciaTecnicaPage({
         </Link>
         <Link href="/monitoreo/gestion">Gestión</Link>
       </nav>
-      <section className="metric-grid coverage-stats" aria-label="Resumen de cobertura">
-        <div className="stat">
-          <span>Total futuro</span>
-          <strong>{total}</strong>
-        </div>
-        <div className="stat">
-          <span>Cubiertas</span>
-          <strong>{covered}</strong>
-        </div>
-        <div className="stat">
-          <span>Pendientes</span>
-          <strong>{pending}</strong>
-        </div>
-      </section>
+      <MonitoringSummary total={total} covered={covered} pending={pending} q={q} />
 
-      <BulkMonitoringNotificationActions pendingCount={pending} coveredCount={covered} />
-
-      <form className="filter-bar coverage-filter" method="get">
-        <Search size={18} aria-hidden="true" />
-        <input
-          aria-label="Buscar instancias"
-          defaultValue={q}
-          name="q"
-          placeholder="Buscar por reunión, programa o docente"
-          type="search"
-        />
-        <select aria-label="Filtrar estado" name="estado" defaultValue={estado}>
-          <option value="todas">Todas</option>
-          <option value="pendientes">Pendientes</option>
-          <option value="cubiertas">Cubiertas</option>
-        </select>
-        <button className="secondary-action" type="submit">
-          Filtrar
-        </button>
-      </form>
+      <div className="coverage-toolbar">
+        <form className="filter-bar coverage-filter" method="get">
+          <Search size={18} aria-hidden="true" />
+          <input
+            aria-label="Buscar instancias"
+            defaultValue={q}
+            name="q"
+            placeholder="Buscar por reunión, programa o docente"
+            type="search"
+          />
+          <select aria-label="Filtrar estado" name="estado" defaultValue={estado}>
+            <option value="todas">Todas</option>
+            <option value="pendientes">Pendientes</option>
+            <option value="cubiertas">Cubiertas</option>
+          </select>
+          <button className="secondary-action" type="submit">
+            Filtrar
+          </button>
+        </form>
+        <BulkMonitoringNotificationActions pendingCount={pending} coveredCount={covered} />
+      </div>
 
       <section className="coverage-results" aria-label="Reuniones que requieren monitoreo">
         {rows.length === 0 ? (
@@ -204,100 +193,37 @@ export default async function AsistenciaTecnicaPage({
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
                     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-                    const applicantsCount = meeting.postulaciones.length;
+                    const cuenta = event?.cuentaProveedor;
+                    const hostLabel = cuenta
+                      ? `${isZoom && hostEmail ? nombreCuentaZoom(hostEmail) : cuenta.nombre}${cuenta.emailOrganizador ? ` · ${cuenta.emailOrganizador}` : ""}`
+                      : null;
                     return (
-                      <article
-                        className={`coverage-card monitoring-account-card ${covered ? "is-covered" : "is-pending"}`}
-                        data-cuenta={hostColor ?? "sin"}
+                      <MonitoringMeetingRow
                         key={meeting.id}
-                      >
-                        <header className="coverage-card-header">
-                          <div className="coverage-date">
-                            <CalendarClock size={18} />
-                            <span>
-                              <strong>{formatDate(inicioAsistencia)}</strong>
-                              <small>
-                                {formatTime(inicioAsistencia)}–{formatTime(finAsistencia)} h
-                              </small>
-                            </span>
-                          </div>
-                          <span className={`status ${covered ? "status-ok" : "status-warning"}`}>
-                            {covered ? "Cobertura asignada" : "Cobertura pendiente"}
-                          </span>
-                        </header>
-
-                        <div className="coverage-card-body">
-                          <div className="coverage-meeting-copy">
-                            <span className={`monitoring-platform ${isZoom ? "is-zoom" : "is-meet"}`}>
-                              {isZoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}
-                            </span>
-                            <p className="coverage-card-eyebrow">{association.programa.nombre}</p>
-                            <Link className="coverage-title-link" href={`/reuniones/${meeting.solicitud.id}`}>
-                              {meeting.solicitud.titulo}
-                            </Link>
-                            <div className="coverage-meeting-meta">
-                              <span>
-                                <strong>Docente</strong>
-                                {association.docente.usuario.nombres} {association.docente.usuario.apellidos}
-                              </span>
-                              <span>
-                                <strong>Modalidad</strong>
-                                {modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
-                              </span>
-                              {modalidad === "HIBRIDA" ? (
-                                <span>
-                                  <strong>Horario de reunión</strong>
-                                  {formatTime(meeting.inicioProgramadoAt)}–
-                                  {formatTime(meeting.finProgramadoAt)}
-                                </span>
-                              ) : null}
-                              <span>
-                                <strong>{isZoom ? "Host de Zoom" : "Cuenta de Meet"}</strong>
-                                {event?.cuentaProveedor
-                                  ? `${isZoom && hostEmail ? nombreCuentaZoom(hostEmail) : event.cuentaProveedor.nombre}${event.cuentaProveedor.emailOrganizador ? ` · ${event.cuentaProveedor.emailOrganizador}` : ""}`
-                                  : "Sin cuenta host asignada"}
-                              </span>
-                            </div>
-                            {isZoom && event ? (
-                              <div className="monitoring-zoom-identifiers">
-                                <span>
-                                  <strong>N.º de reunión</strong>{" "}
-                                  {event.codigoReunion ?? event.externalEventId ?? "No disponible"}
-                                </span>
-                              </div>
-                            ) : null}
-                            <div className="coverage-interest-summary">
-                              <UsersRound size={17} />
-                              <strong>{applicantsCount}</strong>{" "}
-                              {applicantsCount === 1 ? "persona postulada" : "personas postuladas"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <footer className="coverage-card-footer">
-                          <div className="coverage-quick-links">
-                            {event?.joinUrl ? (
-                              <MeetLinkActions
-                                url={event.joinUrl}
-                                provider={isZoom ? "ZOOM" : "GOOGLE_MEET"}
-                              />
-                            ) : (
-                              <span className="muted-text">Enlace pendiente</span>
-                            )}
-                            <Link className="text-link" href={`/reuniones/${meeting.solicitud.id}`}>
-                              Ver detalle <ArrowRight size={15} />
-                            </Link>
-                          </div>
-                          <div className="coverage-management-link">
-                            <span>
-                              {assistantName ? `Asignada a ${assistantName}` : "Sin persona asignada"}
-                            </span>
-                            <Link className="secondary-action" href={`/monitoreo/gestionar/${meeting.id}`}>
-                              Gestionar monitoreo <ArrowRight size={16} aria-hidden="true" />
-                            </Link>
-                          </div>
-                        </footer>
-                      </article>
+                        data={{
+                          id: meeting.id,
+                          detalleHref: `/reuniones/${meeting.solicitud.id}`,
+                          gestionarHref: `/monitoreo/gestionar/${meeting.id}`,
+                          titulo: meeting.solicitud.titulo,
+                          programa: association.programa.nombre,
+                          docente: `${association.docente.usuario.nombres} ${association.docente.usuario.apellidos}`,
+                          horaAsistencia: `${formatTime(inicioAsistencia)}–${formatTime(finAsistencia)} h`,
+                          covered,
+                          assistantName,
+                          plataforma: isZoom ? "ZOOM" : event ? "GOOGLE_MEET" : null,
+                          joinUrl: event?.joinUrl ?? null,
+                          hostLabel,
+                          codigoReunion:
+                            isZoom && event ? (event.codigoReunion ?? event.externalEventId ?? null) : null,
+                          modalidad: modalidad === "HIBRIDA" ? "HIBRIDA" : "VIRTUAL",
+                          horarioReunion:
+                            modalidad === "HIBRIDA"
+                              ? `${formatTime(meeting.inicioProgramadoAt)}–${formatTime(meeting.finProgramadoAt)} h`
+                              : null,
+                          applicantsCount: meeting.postulaciones.length,
+                          cuenta: String(hostColor ?? "sin")
+                        }}
+                      />
                     );
                   })}
                 </div>
