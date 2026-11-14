@@ -26,6 +26,7 @@ import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentati
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
+import { ZoomIntegrationWarning } from "./zoom-integration-warning";
 
 /** La consola Zoom no debe presentar datos o controles de Google Meet como propios.
  * Los datos de participantes se muestran solo si Zoom Dashboard los facilita.
@@ -179,9 +180,7 @@ export function ReunionZoomOperativa({
           disponibilidad de Zoom Dashboard.
         </p>
         {reunion.zoom.errorIntegracion ? (
-          <p role="alert" className={styles.warning}>
-            {reunion.zoom.errorIntegracion}
-          </p>
+          <ZoomIntegrationWarning error={reunion.zoom.errorIntegracion} rol={rol} />
         ) : null}
       </section>
 

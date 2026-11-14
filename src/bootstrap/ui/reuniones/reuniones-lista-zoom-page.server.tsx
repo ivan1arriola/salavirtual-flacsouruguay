@@ -15,6 +15,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProveedorTabs } from "@/src/components/proveedor-tabs";
+import { AccesoRegistrosZoom } from "@/src/components/acceso-registros-zoom";
 import { CorregirSerieZoomBoton } from "@/src/components/corregir-serie-zoom-boton";
 import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
@@ -260,6 +261,7 @@ export default async function ReunionesZoomPage({
           <p>{isHistory ? "Historial de reuniones por Zoom." : "Próximas reuniones por Zoom."}</p>
         </div>
         <div className={styles.headerActions}>
+          <AccesoRegistrosZoom rol={actor.rol} />
           <Link className="primary-action" href="/reuniones/nueva">
             <CalendarPlus size={18} aria-hidden="true" /> Nueva reunión
           </Link>

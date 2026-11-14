@@ -1,3 +1,4 @@
+import { ZoomEventosPanel } from "@/src/modules/reuniones/presentation/components/zoom-eventos-panel";
 import { ArrowLeft, CalendarDays, Clock3, History, Repeat2, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -21,6 +22,12 @@ import {
   construirFiltroSerieSolicitud
 } from "@/src/modules/reuniones/serie-reunion.domain";
 import { ReunionZoomEncuentros } from "@/src/modules/reuniones/presentation/components/reunion-zoom-encuentros";
+import {
+  agruparActividadPorEncuentro,
+  agruparAvisosPorReunionYHorario
+} from "@/src/modules/reuniones/uuids-ocurrencias-zoom.domain";
+
+const TOPE_AVISOS_SERIE = 2000;
 
 export default async function ReunionZoomDetailPage({
   params,
@@ -147,6 +154,80 @@ export default async function ReunionZoomDetailPage({
     encuentros.filter(({ estado }) => estado !== "CANCELADA").map(({ cuentaAnfitrion }) => cuentaAnfitrion)
   );
 
+  const idsEventos = encuentros.flatMap(({ eventoProveedorId }) =>
+    eventoProveedorId ? [eventoProveedorId] : []
+  );
+  const ocurrencias = idsEventos.length
+    ? await db.ocurrenciaArchivoZoom.findMany({
+        where: { eventoProveedorId: { in: idsEventos } },
+        select: { eventoProveedorId: true, cuentaZoomId: true, uuid: true }
+      })
+    : [];
+  // Una sola consulta para toda la serie; el reparto y el límite por encuentro se hacen en memoria.
+  const avisos = ocurrencias.length
+    ? await db.eventoWebhookZoomAdicional.findMany({
+        where: {
+          OR: ocurrencias.flatMap(({ cuentaZoomId, uuid }) => [
+            { cuentaZoomId, uuid },
+            { cuentaZoomId, uuids: { has: uuid } }
+          ])
+        },
+        orderBy: { ocurridoAt: "desc" },
+        take: TOPE_AVISOS_SERIE,
+        select: { cuentaZoomId: true, uuid: true, uuids: true, tipo: true, ocurridoAt: true }
+      })
+    : [];
+  const actividadPorEvento = agruparActividadPorEncuentro(ocurrencias, avisos, 10);
+
+  // Encuentros sin ejecución (UUID) vinculada: se asocian por número de reunión y horario.
+  const sinEjecucion = encuentros.flatMap((encuentro) =>
+    encuentro.eventoProveedorId &&
+    encuentro.zoomMeetingId &&
+    encuentro.estado !== "CANCELADA" &&
+    !ocurrencias.some(({ eventoProveedorId }) => eventoProveedorId === encuentro.eventoProveedorId)
+      ? [
+          {
+            eventoProveedorId: encuentro.eventoProveedorId,
+            meetingId: encuentro.zoomMeetingId,
+            inicio: new Date(encuentro.inicioIso),
+            fin: new Date(encuentro.finIso)
+          }
+        ]
+      : []
+  );
+  const avisosPorHorario = sinEjecucion.length
+    ? await db.eventoWebhookZoomAdicional.findMany({
+        where: {
+          recursoId: { in: [...new Set(sinEjecucion.map(({ meetingId }) => meetingId))] },
+          ocurridoAt: {
+            gte: new Date(Math.min(...sinEjecucion.map(({ inicio }) => inicio.getTime())) - 3_600_000),
+            lte: new Date(Math.max(...sinEjecucion.map(({ fin }) => fin.getTime())) + 7 * 3_600_000)
+          }
+        },
+        orderBy: { ocurridoAt: "desc" },
+        take: TOPE_AVISOS_SERIE,
+        select: { recursoId: true, tipo: true, ocurridoAt: true }
+      })
+    : [];
+  const actividadPorHorario = agruparAvisosPorReunionYHorario(sinEjecucion, avisosPorHorario, 10);
+
+  const actividadEncuentros = encuentros.map((encuentro) => {
+    const clave = encuentro.eventoProveedorId ?? "";
+    const propias = ocurrencias.some(
+      ({ eventoProveedorId }) => eventoProveedorId === encuentro.eventoProveedorId
+    );
+    const porHorario = actividadPorHorario.get(clave) ?? [];
+    const lista = propias ? (actividadPorEvento.get(clave) ?? []) : porHorario;
+    return {
+      id: encuentro.id,
+      fecha: encuentro.inicioIso,
+      // Sin ejecución vinculada ni número de reunión no hay forma de asociar avisos: no se afirma que no haya actividad.
+      sinAsociar: !propias && !sinEjecucion.some(({ eventoProveedorId }) => eventoProveedorId === clave),
+      porHorario: !propias && porHorario.length > 0,
+      eventos: lista.map(({ tipo, ocurridoAt }) => ({ tipo, ocurridoAt: ocurridoAt.toISOString() }))
+    };
+  });
+
   return (
     <div className="meeting-detail-v2 zoom-series-page">
       <Link className="meeting-detail-back" href="/reuniones?proveedor=zoom">
@@ -271,6 +352,7 @@ export default async function ReunionZoomDetailPage({
           ) : null}
         </section>
       ) : null}
+      <ZoomEventosPanel encuentros={actividadEncuentros} />
       <ReunionZoomEncuentros
         encuentros={encuentros}
         esAdmin={esAdmin}

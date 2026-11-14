@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConfirmacionCobertura, type ConfirmacionCoberturaDetalle } from "./confirmacion-cobertura";
 
 type Assistant = Readonly<{ id: string; name: string; eligible: boolean }>;
 type Meeting = Readonly<{
@@ -80,6 +81,7 @@ export function GestionCoberturaPanel({
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [confirmacion, setConfirmacion] = useState<ConfirmacionCoberturaDetalle | null>(null);
   const currentPending = historical.find((record) => record.estado === "PENDIENTE");
   const alreadyApproved = historical.find((record) => record.estado === "APROBADO");
 
@@ -109,10 +111,7 @@ export function GestionCoberturaPanel({
   function submitFuture(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (mode === "ABIERTA") {
-      if (!window.confirm("Se notificará a todos los asistentes disponibles. ¿Abrir la convocatoria?")) {
-        return;
-      }
-      void send({ accion: "CONVOCAR", instanciaSalaId: meeting.id }, "La convocatoria quedó registrada.");
+      setConfirmacion({ tipo: "convocatoria" });
       return;
     }
     if (!assistantId) {
@@ -212,18 +211,19 @@ export function GestionCoberturaPanel({
                     className="primary-action"
                     type="button"
                     disabled={pending || meeting.cancelled}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "¿Aprobar el registro e incluir sus horas e importe en las liquidaciones del período?"
-                        )
-                      ) {
-                        void send(
-                          { accion: "APROBAR_RETROACTIVO", registroId: currentPending.id },
-                          "Registro aprobado y habilitado para liquidaciones."
-                        );
-                      }
-                    }}
+                    onClick={() =>
+                      setConfirmacion({
+                        tipo: "aprobacion",
+                        registroId: currentPending.id,
+                        nombre: currentPending.name,
+                        minutos: currentPending.minutos,
+                        moneda: currentPending.moneda,
+                        importe: currentPending.monto.toLocaleString("es-UY", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })
+                      })
+                    }
                   >
                     <CheckCircle2 size={16} /> Aprobar registro
                   </button>
@@ -447,6 +447,26 @@ export function GestionCoberturaPanel({
         <p className="monitoring-workflow-error" role="alert">
           {error}
         </p>
+      ) : null}
+      {confirmacion ? (
+        <ConfirmacionCobertura
+          detalle={confirmacion}
+          onCerrar={() => setConfirmacion(null)}
+          onConfirmar={() => {
+            setConfirmacion(null);
+            if (confirmacion.tipo === "convocatoria") {
+              void send(
+                { accion: "CONVOCAR", instanciaSalaId: meeting.id },
+                "La convocatoria quedó registrada."
+              );
+            } else {
+              void send(
+                { accion: "APROBAR_RETROACTIVO", registroId: confirmacion.registroId },
+                "Registro aprobado y habilitado para liquidaciones."
+              );
+            }
+          }}
+        />
       ) : null}
     </div>
   );

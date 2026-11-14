@@ -13,6 +13,9 @@ describe("pestañas Meet y Zoom", () => {
     expect(html).toContain("Zoom");
     expect(html).toContain('href="/reuniones?proveedor=meet"');
     expect(html).toContain('href="/reuniones?proveedor=zoom"');
+    expect(html.indexOf('href="/reuniones?proveedor=zoom"')).toBeLessThan(
+      html.indexOf('href="/reuniones?proveedor=meet"')
+    );
     const activa = html.match(/aria-current="page"[^>]*>[\s\S]*?<\/a>/)?.[0] ?? "";
     expect(activa).toContain("Zoom");
     expect(activa).not.toContain("Meet");

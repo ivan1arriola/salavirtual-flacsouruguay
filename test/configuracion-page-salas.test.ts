@@ -89,6 +89,7 @@ describe("datos de Configuración › Salas", () => {
     const { db } = crearDb();
     const datos = await obtenerDatosPaginaConfiguracion(db, "salas", AHORA);
     expect(datos.availableHosts).toBe(2);
+    expect(datos.zoomAvailableHosts).toBe(1);
   });
 
   it("fuera de la sección Salas no consulta reuniones futuras ni el grupo de Zoom", async () => {

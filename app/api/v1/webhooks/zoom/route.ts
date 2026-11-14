@@ -3,6 +3,7 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   EVENTOS_ZOOM,
   interpretarAvisoZoom,
+  interpretarAvisoAdicionalZoom,
   respuestaValidacionZoom,
   verificarFirmaWebhookZoom
 } from "@/src/integrations/zoom/zoom-webhook";
@@ -46,19 +47,42 @@ async function leerCuerpo(request: Request): Promise<string | null> {
   return new TextDecoder("utf-8", { fatal: true }).decode(cuerpo);
 }
 
-export async function POST(request: Request): Promise<Response> {
-  let secreto: string | undefined;
+/** Secreto de firma descifrado, o null si no está configurado o no se pudo leer (en ambos casos: 503). */
+async function leerSecretoWebhook(): Promise<string | null> {
   try {
     const config = await db.configuracionZoom.findUnique({
       where: { id: "principal" },
       select: { webhookSecretCifrado: true }
     });
-    secreto = config?.webhookSecretCifrado
-      ? descifrarConfiguracion(config.webhookSecretCifrado).trim()
-      : undefined;
+    return config?.webhookSecretCifrado
+      ? descifrarConfiguracion(config.webhookSecretCifrado).trim() || null
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Avisos sin procesador específico: se guardan solo sus metadatos; ante la duda Zoom debe reintentar. */
+async function guardarAvisoAdicional(cuerpo: string, evento: unknown): Promise<Response> {
+  if (EVENTOS_ZOOM.some((tipo) => tipo === evento)) {
+    // Los cuatro eventos existentes conservan su validación y procesamiento especializado.
+    return new Response(null, { status: 503, headers: HEADERS });
+  }
+  const adicional = interpretarAvisoAdicionalZoom(cuerpo);
+  if (!adicional) {
+    const familia = typeof evento === "string" && /^(meeting|recording|group)\./.test(evento);
+    return new Response(null, { status: familia ? 503 : 204, headers: HEADERS });
+  }
+  try {
+    await db.eventoWebhookZoomAdicional.createMany({ data: [adicional], skipDuplicates: true });
+    return new Response(null, { status: 204, headers: HEADERS });
   } catch {
     return new Response(null, { status: 503, headers: HEADERS });
   }
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const secreto = await leerSecretoWebhook();
   if (!secreto) {
     return new Response(null, { status: 503, headers: HEADERS });
   }
@@ -101,11 +125,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   const evento = interpretarAvisoZoom(cuerpo);
   if (!evento) {
-    // Un evento conocido con forma inesperada no debe confirmarse como si hubiera sido guardado.
-    return new Response(null, {
-      status: EVENTOS_ZOOM.some((tipo) => tipo === aviso?.event) ? 503 : 204,
-      headers: HEADERS
-    });
+    return guardarAvisoAdicional(cuerpo, aviso?.event);
   }
   try {
     await db.eventoWebhookZoom.createMany({

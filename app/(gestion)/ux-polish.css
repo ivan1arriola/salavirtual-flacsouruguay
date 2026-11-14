@@ -9,6 +9,23 @@ body {
     sans-serif;
 }
 
+.skip-to-content {
+  position: fixed;
+  z-index: 9999;
+  top: 8px;
+  left: 8px;
+  transform: translateY(-150%);
+  padding: 10px 14px;
+  background: #fff;
+  color: #172a4a;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+}
+
+.skip-to-content:focus {
+  transform: translateY(0);
+}
+
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 3px solid color-mix(in srgb, var(--brand) 28%, transparent);
   outline-offset: 2px;

@@ -303,3 +303,30 @@
     width: 100%;
   }
 }
+.monitoring-confirm-dialog {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgb(15 23 42 / 25%);
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 24px;
+}
+
+.monitoring-confirm-dialog::backdrop {
+  background: rgb(15 23 42 / 60%);
+}
+.monitoring-confirm-dialog h2 {
+  margin: 0 0 12px;
+}
+.monitoring-confirm-dialog p {
+  line-height: 1.5;
+}
+.monitoring-confirm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.monitoring-confirm-dialog__actions button {
+  min-height: 44px;
+}

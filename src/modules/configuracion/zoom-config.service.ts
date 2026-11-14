@@ -19,12 +19,14 @@ export type ZoomCredentialsResolved =
   | Readonly<{
       disponible: false;
       error: string;
+      diagnostico: "AUSENTES" | "ERROR_COMPROBACION";
     }>;
 
 export async function obtenerCredencialesZoom(
   db: PrismaClient,
   descifrar: (cifrado: string) => string
 ): Promise<ZoomCredentialsResolved> {
+  let errorComprobacion = false;
   try {
     const config = await db.configuracionZoom.findUnique({
       where: { id: "principal" }
@@ -41,10 +43,12 @@ export async function obtenerCredencialesZoom(
           origen: "DATABASE"
         };
       } catch {
+        errorComprobacion = true;
         // Fallback a env si falla descifrado
       }
     }
   } catch {
+    errorComprobacion = true;
     // Si la tabla no existe en algún test unitario
   }
 
@@ -64,7 +68,10 @@ export async function obtenerCredencialesZoom(
 
   return {
     disponible: false,
-    error: "Las credenciales de Zoom Server-to-Server OAuth no están configuradas."
+    error: errorComprobacion
+      ? "No se pudieron comprobar las credenciales Zoom."
+      : "No hay credenciales Zoom activas y completas disponibles.",
+    diagnostico: errorComprobacion ? "ERROR_COMPROBACION" : "AUSENTES"
   };
 }
 

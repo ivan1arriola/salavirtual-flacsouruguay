@@ -98,3 +98,45 @@ export function interpretarAvisoZoom(cuerpo: string): AvisoZoom | null {
     ocurridoAt
   };
 }
+
+/** Conserva únicamente identificadores y fechas; nunca el contenido del webhook. */
+export function interpretarAvisoAdicionalZoom(cuerpo: string) {
+  const raiz = objeto(JSON.parse(cuerpo) as unknown);
+  const tipo = texto(raiz?.event);
+  if (!tipo || !/^(meeting|recording|group)\.[a-z0-9_]{1,100}$/.test(tipo)) {
+    return null;
+  }
+  const payload = objeto(raiz?.payload);
+  const recurso = objeto(payload?.object);
+  const cuentaZoomId = texto(payload?.account_id);
+  const valorId = recurso?.id ?? recurso?.meeting_number ?? recurso?.meeting_id;
+  const recursoId =
+    typeof valorId === "number" && Number.isSafeInteger(valorId) ? String(valorId) : texto(valorId);
+  const ocurridoAt = typeof raiz?.event_ts === "number" ? new Date(raiz.event_ts) : null;
+  const uuid = texto(recurso?.uuid) ?? texto(recurso?.meeting_uuid);
+  const idsLote = [
+    ...(Array.isArray(recurso?.meeting_uuids) ? recurso.meeting_uuids : []),
+    ...(Array.isArray(recurso?.meetings) ? recurso.meetings.map((valor) => objeto(valor)?.meeting_uuid) : [])
+  ];
+  const uuids = [...new Set(idsLote.map(texto).filter((valor): valor is string => valor !== null))];
+  if (
+    !cuentaZoomId ||
+    cuentaZoomId.length > 255 ||
+    (recursoId && recursoId.length > 255) ||
+    (uuid && uuid.length > 255) ||
+    uuids.some((valor) => valor.length > 255) ||
+    !ocurridoAt ||
+    !Number.isFinite(ocurridoAt.getTime())
+  ) {
+    return null;
+  }
+  return {
+    huella: createHash("sha256").update(cuerpo).digest("hex"),
+    tipo,
+    cuentaZoomId,
+    recursoId,
+    uuid,
+    uuids,
+    ocurridoAt
+  };
+}

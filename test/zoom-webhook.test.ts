@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   interpretarAvisoZoom,
+  interpretarAvisoAdicionalZoom,
   respuestaValidacionZoom,
   verificarFirmaWebhookZoom
 } from "../src/integrations/zoom/zoom-webhook";
@@ -42,6 +43,50 @@ describe("webhook firmado de Zoom", () => {
     expect(verificarFirmaWebhookZoom(secreto, cuerpo, futuro, firma(cuerpo, futuro), ahora)).toBe(false);
   });
 
+  it("interpreta los identificadores de AI Companion y grabaciones en lote documentados por Zoom", () => {
+    const base = { event_ts: ahora.getTime() };
+    const ai = JSON.stringify({
+      ...base,
+      event: "meeting.ai_companion_started",
+      payload: {
+        account_id: "cuenta",
+        object: { meeting_number: 123, meeting_uuid: "uuid-1", ai_companion: { summary: true } }
+      }
+    });
+    expect(interpretarAvisoAdicionalZoom(ai)).toMatchObject({ recursoId: "123", uuid: "uuid-1" });
+    const resumen = JSON.stringify({
+      ...base,
+      event: "meeting.summary_completed",
+      payload: {
+        account_id: "cuenta",
+        object: { meeting_id: 456, meeting_uuid: "uuid-2" }
+      }
+    });
+    expect(interpretarAvisoAdicionalZoom(resumen)).toMatchObject({ recursoId: "456", uuid: "uuid-2" });
+    const lote = JSON.stringify({
+      ...base,
+      event: "recording.batch_deleted",
+      payload: {
+        account_id: "cuenta",
+        object: {
+          meetings: [{ meeting_uuid: "uuid-1", recording_file_ids: ["secreto"] }, { meeting_uuid: "uuid-2" }]
+        }
+      }
+    });
+    const resultado = interpretarAvisoAdicionalZoom(lote);
+    expect(resultado).toMatchObject({ uuids: ["uuid-1", "uuid-2"] });
+    expect(JSON.stringify(resultado)).not.toContain("secreto");
+    const papelera = JSON.stringify({
+      ...base,
+      event: "recording.batch_trashed",
+      payload: {
+        account_id: "cuenta",
+        object: { meeting_uuids: ["uuid-1", "uuid-2"] }
+      }
+    });
+    expect(interpretarAvisoAdicionalZoom(papelera)).toMatchObject({ uuids: ["uuid-1", "uuid-2"] });
+  });
+
   it("responde al desafío y conserva solo metadatos mínimos del aviso", () => {
     expect(respuestaValidacionZoom(secreto, "desafio").encryptedToken).toBe(
       createHmac("sha256", secreto).update("desafio").digest("hex")
@@ -56,10 +101,12 @@ describe("webhook firmado de Zoom", () => {
 });
 
 const crear = vi.hoisted(() => vi.fn());
+const crearAdicional = vi.hoisted(() => vi.fn());
 const buscarConfiguracion = vi.hoisted(() => vi.fn());
 vi.mock("../src/lib/db", () => ({
   db: {
     eventoWebhookZoom: { createMany: crear },
+    eventoWebhookZoomAdicional: { createMany: crearAdicional },
     configuracionZoom: { findUnique: buscarConfiguracion }
   }
 }));
@@ -79,6 +126,7 @@ function peticion(body: string, signed = true) {
 
 afterEach(() => {
   crear.mockReset();
+  crearAdicional.mockReset();
   buscarConfiguracion.mockReset();
 });
 
@@ -92,6 +140,43 @@ describe("recepción durable", () => {
     expect((await POST(peticion(cuerpo))).status).toBe(204);
     expect(crear).toHaveBeenCalledWith(expect.objectContaining({ skipDuplicates: true }));
     expect(JSON.stringify(crear.mock.calls[0])).not.toContain("secret.example");
+  });
+
+  it("guarda metadatos de un evento de grupo sin almacenar información sensible", async () => {
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
+    crearAdicional.mockResolvedValue({ count: 1 });
+    const grupo = JSON.stringify({
+      event: "group.created",
+      event_ts: Date.now(),
+      payload: { account_id: "cuenta-zoom", object: { id: "grupo-1", name: "privado" }, token: "secreto" }
+    });
+    expect((await POST(peticion(grupo))).status).toBe(204);
+    expect(crearAdicional).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            tipo: "group.created",
+            cuentaZoomId: "cuenta-zoom",
+            recursoId: "grupo-1"
+          })
+        ],
+        skipDuplicates: true
+      })
+    );
+    expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("secreto");
+    expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("privado");
+  });
+
+  it("pide reintentar eventos adicionales si no se guardan o faltan datos esenciales", async () => {
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
+    crearAdicional.mockRejectedValue(new Error("DB caída"));
+    const evento = {
+      event: "meeting.participant_joined",
+      event_ts: Date.now(),
+      payload: { account_id: "cuenta", object: { id: 123 } }
+    };
+    expect((await POST(peticion(JSON.stringify(evento)))).status).toBe(503);
+    expect((await POST(peticion(JSON.stringify({ ...evento, payload: {} })))).status).toBe(503);
   });
 
   it("pide a Zoom reintentar si la base no confirmó el aviso", async () => {

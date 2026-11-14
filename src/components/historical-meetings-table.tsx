@@ -1,8 +1,5 @@
-"use client";
-
 import { History, Search } from "lucide-react";
-import { useState } from "react";
-import { filterHistoricalMeetings } from "./historical-meetings.domain";
+import Link from "next/link";
 
 export type HistoricalMeetingVisible = Readonly<{
   id: string;
@@ -15,34 +12,57 @@ export type HistoricalMeetingVisible = Readonly<{
 }>;
 
 export function HistoricalMeetingsTable({
-  meetings
-}: Readonly<{ meetings: readonly HistoricalMeetingVisible[] }>) {
-  const [query, setQuery] = useState("");
-  const filteredMeetings = filterHistoricalMeetings(meetings, query);
+  meetings,
+  busqueda,
+  pagina,
+  totalPaginas,
+  total
+}: Readonly<{
+  meetings: readonly HistoricalMeetingVisible[];
+  busqueda: string;
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}>) {
+  function enlacePagina(destino: number) {
+    const params = new URLSearchParams({ seccion: "historico", pagina: String(destino) });
+    if (busqueda) {
+      params.set("busqueda", busqueda);
+    }
+    return `/configuracion?${params.toString()}`;
+  }
 
   return (
     <section className="content-section settings-history">
-      <div className="settings-history__toolbar">
+      <form action="/configuracion" className="settings-history__toolbar" method="get">
+        <input type="hidden" name="seccion" value="historico" />
         <label className="settings-search">
           <Search size={18} aria-hidden="true" />
-          <span className="sr-only">Buscar reuniones históricas</span>
+          <span className="sr-only">Buscar reuniones Zoom importadas</span>
           <input
             type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            name="busqueda"
+            defaultValue={busqueda}
+            maxLength={120}
             placeholder="Buscar por reunión, programa o cuenta"
           />
         </label>
+        <button type="submit" className="secondary-action">
+          Buscar
+        </button>
+        {busqueda ? <Link href="/configuracion?seccion=historico">Limpiar búsqueda</Link> : null}
         <span>
-          {filteredMeetings.length} de {meetings.length} registros
+          {total} {total === 1 ? "registro" : "registros"}
         </span>
-      </div>
+      </form>
 
-      {filteredMeetings.length === 0 ? (
+      {meetings.length === 0 ? (
         <div className="settings-empty-search">
           <Search size={22} />
-          <strong>No encontramos reuniones</strong>
-          <span>Probá con otro título, programa o cuenta.</span>
+          <strong>
+            {busqueda ? "No encontramos reuniones" : "Todavía no hay registros Zoom importados."}
+          </strong>
+          {busqueda ? <span>Probá con otro título, programa o cuenta.</span> : null}
         </div>
       ) : (
         <div className="table-wrap">
@@ -57,7 +77,7 @@ export function HistoricalMeetingsTable({
               </tr>
             </thead>
             <tbody>
-              {filteredMeetings.map((meeting) => (
+              {meetings.map((meeting) => (
                 <tr key={meeting.id}>
                   <td className="date-cell" data-label="Fecha">
                     {meeting.date}
@@ -75,6 +95,19 @@ export function HistoricalMeetingsTable({
           </table>
         </div>
       )}
+      {totalPaginas > 1 ? (
+        <nav className="settings-history__pagination" aria-label="Páginas de registros Zoom">
+          {pagina > 1 ? <Link href={enlacePagina(pagina - 1)}>Anterior</Link> : <span>Anterior</span>}
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          {pagina < totalPaginas ? (
+            <Link href={enlacePagina(pagina + 1)}>Siguiente</Link>
+          ) : (
+            <span>Siguiente</span>
+          )}
+        </nav>
+      ) : null}
       <footer className="settings-history__note">
         <History size={16} />
         Esta sección es de consulta. No modifica reuniones ni cuentas.

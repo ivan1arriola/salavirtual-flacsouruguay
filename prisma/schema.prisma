@@ -1133,6 +1133,23 @@ model EventoWebhookZoom {
   @@index([cuentaZoomId, uuid])
 }
 
+/// Metadatos mínimos de avisos que aún no tienen un procesador específico.
+model EventoWebhookZoomAdicional {
+  id           String   @id @default(cuid())
+  huella       String   @unique
+  tipo         String
+  cuentaZoomId String
+  recursoId    String?
+  uuid         String?
+  uuids        String[] @default([])
+  ocurridoAt   DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([cuentaZoomId, tipo, ocurridoAt])
+  @@index([cuentaZoomId, uuid])
+  @@index([uuids], type: Gin)
+}
+
 /// Recurso de origen descubierto en una ocurrencia Zoom y su transferencia reanudable a Drive.
 /// Las mutaciones del worker comparan leaseVersion; un CONSERVADO nunca se resetea por reinventario.
 model ArchivoOrigenZoom {

@@ -18,7 +18,8 @@ import {
   X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { CohostSuggestions } from "./cohost-suggestions";
 
 type CohostOption = Readonly<{
   id: string;
@@ -57,6 +58,7 @@ export function SeriesManagement({
   );
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const cohostSearchRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<"notify" | "cohosts" | "guests" | "link" | null>(null);
   const [guestEmails, setGuestEmails] = useState<readonly string[]>(initialGuestEmails);
   const [guestInput, setGuestInput] = useState("");
@@ -401,6 +403,8 @@ export function SeriesManagement({
                   <Search size={18} aria-hidden="true" />
                   <input
                     id="series-cohost-search"
+                    ref={cohostSearchRef}
+                    aria-describedby="series-cohost-search-help"
                     type="email"
                     value={query}
                     autoComplete="off"
@@ -438,27 +442,17 @@ export function SeriesManagement({
                 </button>
               </div>
               {showSuggestions && options.length > 0 && (
-                <div role="listbox" aria-label="Sugerencias de cohosts" className="series-cohost-suggestions">
-                  {options.map((option) => (
-                    <button
-                      key={option.email}
-                      role="option"
-                      aria-selected={false}
-                      type="button"
-                      onClick={() => addCohost(option.email)}
-                      className="series-cohost-suggestion"
-                    >
-                      <span>
-                        <strong>{option.name}</strong>
-                        <br />
-                        <small>{option.email}</small>
-                      </span>
-                      <small>{option.source}</small>
-                    </button>
-                  ))}
-                </div>
+                <CohostSuggestions
+                  options={options}
+                  onSelect={(email) => {
+                    addCohost(email);
+                    cohostSearchRef.current?.focus();
+                  }}
+                />
               )}
-              <small>Seleccioná una sugerencia o ingresá un correo nuevo. Máximo 50 cohosts.</small>
+              <small id="series-cohost-search-help">
+                Seleccioná una sugerencia con Tab y Enter o ingresá un correo nuevo. Máximo 50 cohosts.
+              </small>
             </div>
             <div className="field">
               <div className="series-cohost-toolbar">

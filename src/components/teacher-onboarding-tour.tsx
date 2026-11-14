@@ -26,14 +26,14 @@ function homeSteps(): DriveStep[] {
     step('[data-tour="teacher-dashboard"]', {
       title: "Bienvenido a Sala Virtual",
       description:
-        "Este resumen concentra tus próximas actividades. Desde acá podés revisar qué reuniones vienen, detectar enlaces de Meet todavía pendientes y entrar rápidamente a la agenda o crear una nueva reunión.",
+        "Este resumen concentra tus próximas actividades. Desde acá podés revisar qué reuniones vienen, detectar enlaces de Zoom todavía pendientes y entrar rápidamente a la agenda o crear una nueva reunión.",
       side: "bottom",
       align: "start"
     }),
     step('[data-tour="teacher-agenda"]', {
       title: "Agenda",
       description:
-        "Acá consultás todas las reuniones asociadas a tus programas. Podés revisar fecha y horario, cuenta Google asignada, enlace de Meet, monitoreo y entrar al detalle para modificar encuentros futuros.",
+        "Acá consultás todas las reuniones asociadas a tus programas. Podés revisar fecha y horario, cuenta asignada, enlace de acceso, monitoreo y entrar al detalle para modificar encuentros futuros.",
       side: "right",
       align: "start"
     }),
@@ -87,7 +87,7 @@ function meetingSteps(): DriveStep[] {
     step('#datos-academicos input[name="titulo"]', {
       title: "Título de la reunión",
       description:
-        "Escribí un nombre que permita reconocer la actividad fácilmente en la Agenda y en Google Calendar. Por ejemplo: “Clase 4 – Políticas sociales” o “Seminario de metodología”.",
+        "Escribí un nombre que permita reconocer la actividad fácilmente en la agenda. Por ejemplo: “Clase 4 – Políticas sociales” o “Seminario de metodología”.",
       side: "bottom",
       align: "start"
     }),
@@ -101,7 +101,7 @@ function meetingSteps(): DriveStep[] {
     step("#datos-academicos .modality-choice", {
       title: "Modalidad",
       description:
-        "Elegí Virtual cuando todas las personas participen por Google Meet. Elegí Híbrida cuando la actividad combine participantes presenciales y remotos.",
+        "Elegí Virtual cuando todas las personas participen por Zoom. Elegí Híbrida cuando la actividad combine participantes presenciales y remotos.",
       side: "bottom",
       align: "start"
     }),
@@ -157,12 +157,12 @@ function meetingSteps(): DriveStep[] {
     step("#organizacion", {
       title: "3. Organización",
       description:
-        "En esta sección indicás qué apoyos necesita la actividad. La cuenta que organizará Google Meet se administra automáticamente, así que no tenés que seleccionar una sala manualmente.",
+        "En esta sección indicás qué apoyos necesita la actividad. La cuenta que organizará Zoom se administra automáticamente, así que no tenés que seleccionar una sala manualmente.",
       side: "top",
       align: "start"
     }),
     step("#organizacion .auto-room-note", {
-      title: "Sala Meet automática",
+      title: "Sala Zoom automática",
       description:
         "Al crear una serie, Sala Virtual busca una misma cuenta institucional que esté libre en todas las fechas y horarios solicitados. Esa cuenta se asigna a todos los encuentros creados en la serie.",
       side: "top",
@@ -178,7 +178,7 @@ function meetingSteps(): DriveStep[] {
     step('#organizacion label:has(input[name="requiereGrabacion"])', {
       title: "Grabación",
       description:
-        "Marcala cuando el encuentro deba grabarse. Esta opción registra el requerimiento en Sala Virtual. Al comenzar la actividad, verificá en Google Meet que la grabación haya sido iniciada correctamente.",
+        "Marcala cuando el encuentro deba grabarse. Esta opción registra el requerimiento en Sala Virtual. Al comenzar la actividad, verificá en Zoom que la grabación haya sido iniciada correctamente.",
       side: "top",
       align: "start"
     }),

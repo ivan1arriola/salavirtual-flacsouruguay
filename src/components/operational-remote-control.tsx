@@ -597,9 +597,10 @@ export function OperationalAttendeeDatabaseManager({
       </div>
 
       <div className="operational-attendee-controls">
-        <div className="operational-attendee-tabs" role="tablist" aria-label="Filtrar asistentes">
+        <div className="operational-attendee-tabs" role="group" aria-label="Filtrar asistentes">
           <button
             type="button"
+            aria-pressed={filtro === "CONECTADOS"}
             className={`operational-tab-btn ${filtro === "CONECTADOS" ? "is-active" : ""}`}
             onClick={() => setFiltro("CONECTADOS")}
           >
@@ -608,6 +609,7 @@ export function OperationalAttendeeDatabaseManager({
           </button>
           <button
             type="button"
+            aria-pressed={filtro === "SALIERON"}
             className={`operational-tab-btn ${filtro === "SALIERON" ? "is-active" : ""}`}
             onClick={() => setFiltro("SALIERON")}
           >
@@ -616,6 +618,7 @@ export function OperationalAttendeeDatabaseManager({
           </button>
           <button
             type="button"
+            aria-pressed={filtro === "TODOS"}
             className={`operational-tab-btn ${filtro === "TODOS" ? "is-active" : ""}`}
             onClick={() => setFiltro("TODOS")}
           >
@@ -625,6 +628,7 @@ export function OperationalAttendeeDatabaseManager({
           {sinCorreo.length > 0 ? (
             <button
               type="button"
+              aria-pressed={filtro === "SIN_CORREO"}
               className={`operational-tab-btn ${filtro === "SIN_CORREO" ? "is-active" : ""}`}
               onClick={() => setFiltro("SIN_CORREO")}
             >

@@ -10,6 +10,7 @@ import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { enviarAccionEncuentro } from "@/src/modules/reuniones/reunion-zoom-acciones";
+import { ConfirmacionCancelacionZoom } from "./confirmacion-cancelacion-zoom";
 
 export type EncuentroZoomView = Readonly<{
   id: string;
@@ -108,6 +109,11 @@ export function ReunionZoomEncuentros({
   const [editando, setEditando] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
   const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
+  const [cancelacion, setCancelacion] = useState<
+    | { tipo: "encuentro"; encuentro: EncuentroZoomView; fecha: string }
+    | { tipo: "serie"; cantidad: number }
+    | null
+  >(null);
   const fechaInputRef = useRef<HTMLInputElement>(null);
   const botonEditarRef = useRef<HTMLButtonElement>(null);
   const devolverFocoRef = useRef(false);
@@ -190,27 +196,36 @@ export function ReunionZoomEncuentros({
 
   function cancelarEncuentro(encuentro: EncuentroZoomView) {
     const fechaLarga = `${contextoFechaFmt.format(new Date(encuentro.inicioIso))}, ${horaFmt.format(new Date(encuentro.inicioIso))}`;
-    if (!window.confirm(`¿Cancelar el encuentro del ${fechaLarga}?`)) {
-      return;
-    }
-    ejecutar(() =>
-      enviarAccionEncuentro(fetch, `/api/v1/reuniones/${encuentro.solicitudId}/encuentros/${encuentro.id}`, {
-        method: "DELETE"
-      })
-    );
+    setCancelacion({ tipo: "encuentro", encuentro, fecha: fechaLarga });
   }
 
   function cancelarSerie() {
     const cantidad = encuentros.filter(({ editable }) => editable).length;
-    if (!window.confirm(`¿Cancelar toda la serie? Se cancelarán ${cantidad} encuentros.`)) {
+    setCancelacion({ tipo: "serie", cantidad });
+  }
+
+  function confirmarCancelacion() {
+    const actual = cancelacion;
+    setCancelacion(null);
+    if (!actual) {
       return;
     }
-    ejecutar(() =>
-      enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", {
-        method: "POST",
-        body: { solicitudIds }
-      })
-    );
+    if (actual.tipo === "encuentro") {
+      ejecutar(() =>
+        enviarAccionEncuentro(
+          fetch,
+          `/api/v1/reuniones/${actual.encuentro.solicitudId}/encuentros/${actual.encuentro.id}`,
+          { method: "DELETE" }
+        )
+      );
+    } else {
+      ejecutar(() =>
+        enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", {
+          method: "POST",
+          body: { solicitudIds }
+        })
+      );
+    }
   }
 
   return (
@@ -455,6 +470,13 @@ export function ReunionZoomEncuentros({
         </div>
       ) : null}
       {mensaje ? <p role={mensaje.error ? "alert" : "status"}>{mensaje.texto}</p> : null}
+      {cancelacion ? (
+        <ConfirmacionCancelacionZoom
+          detalle={cancelacion}
+          onCerrar={() => setCancelacion(null)}
+          onConfirmar={confirmarCancelacion}
+        />
+      ) : null}
     </section>
   );
 }

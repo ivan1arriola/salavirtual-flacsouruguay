@@ -168,6 +168,114 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
   return preparados;
 }
 
+/** Notificación interna (campanita) para quien tiene cuenta activa; usa un ID estable, así que es idempotente. */
+async function crearNotificacionInterna(
+  db: PrismaClient,
+  aviso: Readonly<{ id: string; email: string; ocurrenciaId: string }>,
+  tituloEncuentro: string
+): Promise<void> {
+  const usuario = await db.usuario.findFirst({
+    where: {
+      activo: true,
+      fusionadoEnId: null,
+      emailPrincipal: { equals: aviso.email, mode: "insensitive" }
+    },
+    select: { id: true }
+  });
+  if (!usuario) {
+    return;
+  }
+  const id = `zoom-grabacion-${aviso.id}`;
+  await db.notificacion.upsert({
+    where: { id },
+    create: {
+      id,
+      usuarioId: usuario.id,
+      tipo: "GRABACION_ZOOM_DISPONIBLE",
+      titulo: "Grabación de Zoom disponible",
+      cuerpo: `Ya está disponible la grabación de ${tituloEncuentro}.`,
+      href: "/grabaciones",
+      metadata: { ocurrenciaId: aviso.ocurrenciaId }
+    },
+    update: {}
+  });
+}
+
+/** Ocurrencia con todo lo necesario para avisar, o null si todavía no corresponde (sin MP4, sin carpeta, etc.). */
+async function ocurrenciaEntregable(db: PrismaClient, ocurrenciaId: string) {
+  const ocurrencia = await db.ocurrenciaArchivoZoom.findUnique({
+    where: { id: ocurrenciaId },
+    select: {
+      eventoProveedorId: true,
+      carpetaVinculadaAt: true,
+      procesamientoPendiente: true,
+      observacionesInventario: true,
+      driveFolderId: true,
+      inicioRealAt: true,
+      archivos: { select: { estado: true, tipoOriginal: true, driveFileId: true, nombreDestino: true } },
+      eventoProveedor: {
+        select: {
+          instancia: {
+            select: {
+              solicitud: {
+                select: {
+                  titulo: true,
+                  docentePrograma: { select: { programa: { select: { nombre: true } } } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+  if (
+    !ocurrencia ||
+    !grabacionZoomListaParaAvisar(ocurrencia) ||
+    !ocurrencia.archivos.some((archivo) => archivo.tipoOriginal === "MP4") ||
+    !ocurrencia.driveFolderId ||
+    !ocurrencia.eventoProveedor
+  ) {
+    return null;
+  }
+  return { ...ocurrencia, eventoProveedor: ocurrencia.eventoProveedor };
+}
+
+async function notificarSinFallar(
+  db: PrismaClient,
+  aviso: Readonly<{ id: string; email: string; ocurrenciaId: string }>,
+  tituloEncuentro: string
+): Promise<boolean> {
+  try {
+    await crearNotificacionInterna(db, aviso, tituloEncuentro);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Anota el resultado del correo. Si el proveedor no confirmó, el aviso queda RESERVADO para no duplicar el envío. */
+async function registrarResultadoCorreo(
+  db: PrismaClient,
+  avisoId: string,
+  resultado: MailSendResult
+): Promise<"ENVIADO" | "ERROR"> {
+  if (resultado.sent) {
+    await db.avisoGrabacionZoom.update({
+      where: { id: avisoId },
+      data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
+    });
+    return "ENVIADO";
+  }
+  if (resultado.skipped) {
+    await db.avisoGrabacionZoom.update({
+      where: { id: avisoId },
+      data: { estado: "ERROR", errorCodigo: resultado.skipped }
+    });
+  }
+  return "ERROR";
+}
+
 async function entregarAvisos(
   deps: Dependencias,
   cuentaZoomId: string
@@ -181,39 +289,8 @@ async function entregarAvisos(
   let enviados = 0;
   let errores = 0;
   for (const aviso of avisos) {
-    const ocurrencia = await deps.db.ocurrenciaArchivoZoom.findUnique({
-      where: { id: aviso.ocurrenciaId },
-      select: {
-        eventoProveedorId: true,
-        carpetaVinculadaAt: true,
-        procesamientoPendiente: true,
-        observacionesInventario: true,
-        driveFolderId: true,
-        inicioRealAt: true,
-        archivos: { select: { estado: true, tipoOriginal: true, driveFileId: true, nombreDestino: true } },
-        eventoProveedor: {
-          select: {
-            instancia: {
-              select: {
-                solicitud: {
-                  select: {
-                    titulo: true,
-                    docentePrograma: { select: { programa: { select: { nombre: true } } } }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-    if (
-      !ocurrencia ||
-      !grabacionZoomListaParaAvisar(ocurrencia) ||
-      !ocurrencia.archivos.some((archivo) => archivo.tipoOriginal === "MP4") ||
-      !ocurrencia.driveFolderId ||
-      !ocurrencia.eventoProveedor
-    ) {
+    const ocurrencia = await ocurrenciaEntregable(deps.db, aviso.ocurrenciaId);
+    if (!ocurrencia) {
       continue;
     }
     const claim = await deps.db.avisoGrabacionZoom.updateMany({
@@ -228,6 +305,9 @@ async function entregarAvisos(
       for (const archivo of ocurrencia.archivos) {
         await deps.compartirArchivo(archivo.driveFileId!, aviso.email);
       }
+      const tituloEncuentro = ocurrencia.eventoProveedor.instancia.solicitud.titulo;
+      // La notificación interna es un extra: si falla no puede impedir el correo, que es el canal principal.
+      const notificada = await notificarSinFallar(deps.db, aviso, tituloEncuentro);
       compartidos = true;
       const correo = correoGrabacion({
         titulo: ocurrencia.eventoProveedor.instancia.solicitud.titulo,
@@ -239,30 +319,25 @@ async function entregarAvisos(
         }))
       });
       const resultado = await deps.enviarCorreo({ ...correo, to: [aviso.email], idempotencyKey: aviso.id });
-      if (!resultado.sent && resultado.skipped) {
-        await deps.db.avisoGrabacionZoom.update({
-          where: { id: aviso.id },
-          data: { estado: "ERROR", errorCodigo: resultado.skipped }
-        });
+      const registro = await registrarResultadoCorreo(deps.db, aviso.id, resultado);
+      if (registro === "ENVIADO") {
+        enviados++;
+        if (!notificada) {
+          // Segundo intento tras el correo; la notificación usa un ID estable, así que no se duplica.
+          await notificarSinFallar(deps.db, aviso, tituloEncuentro);
+        }
+      } else {
         errores++;
-        continue;
       }
-      if (!resultado.sent) {
-        // El proveedor no confirmó si aceptó el mensaje: dejar RESERVADO.
-        errores++;
-        continue;
-      }
-      await deps.db.avisoGrabacionZoom.update({
-        where: { id: aviso.id },
-        data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
-      });
-      enviados++;
     } catch {
       // Una caída después de intentar enviar puede ser ambigua: RESERVADO no se reenvía solo.
       if (!compartidos) {
         await deps.db.avisoGrabacionZoom.update({
           where: { id: aviso.id },
-          data: { estado: "ERROR", errorCodigo: "PERMISO_DRIVE" }
+          data: {
+            estado: "ERROR",
+            errorCodigo: "PERMISO_DRIVE"
+          }
         });
       }
       errores++;

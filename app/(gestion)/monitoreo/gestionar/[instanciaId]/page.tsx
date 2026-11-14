@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
+import { uuidsDeOcurrenciasZoom } from "@/src/modules/reuniones/uuids-ocurrencias-zoom.domain";
 import { GestionCoberturaPanel } from "@/src/modules/asistencia/presentation/components/gestion-cobertura-panel";
 
 export default async function GestionCoberturaPage({
@@ -24,7 +25,16 @@ export default async function GestionCoberturaPage({
     db.instanciaSala.findUnique({
       where: { id: instanciaId },
       include: {
-        eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+        eventosProveedor: {
+          include: {
+            proveedor: true,
+            cuentaProveedor: true,
+            ocurrenciasArchivoZoom: {
+              orderBy: { inicioRealAt: "asc" },
+              select: { uuid: true }
+            }
+          }
+        },
         solicitud: { select: { id: true, titulo: true, modalidad: true } },
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -50,6 +60,7 @@ export default async function GestionCoberturaPage({
   const current = meeting.asignaciones[0] ?? null;
   const event = seleccionarEventoProveedorActivo(meeting);
   const zoom = event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
+  const uuids = uuidsDeOcurrenciasZoom(event?.ocurrenciasArchivoZoom ?? [], event?.zoomMeetingUuid ?? null);
 
   return (
     <div className="monitoring-workflow-page">
@@ -109,9 +120,18 @@ export default async function GestionCoberturaPage({
                 <strong>N.º de reunión:</strong>{" "}
                 {event?.codigoReunion ?? event?.externalEventId ?? "No disponible"}
               </p>
-              <p>
-                <strong>UUID:</strong> {event?.zoomMeetingUuid ?? "No disponible"}
-              </p>
+              <div>
+                <strong>UUID de ejecuciones:</strong>{" "}
+                {uuids.length ? (
+                  <ul>
+                    {uuids.map((uuid) => (
+                      <li key={uuid}>{uuid}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  "Sin ocurrencias vinculadas"
+                )}
+              </div>
             </>
           ) : (
             <p>

@@ -6,8 +6,8 @@ const NOMBRES: Record<ProveedorReunion, string> = { GOOGLE_MEET: "Meet", ZOOM: "
 /** Separa las reuniones por proveedor: las que siguen en Meet y las de Zoom (nuevas y migradas). */
 export function ProveedorTabs({ activo }: Readonly<{ activo: ProveedorReunion }>) {
   const tabs = [
-    { proveedor: "GOOGLE_MEET", href: "/reuniones?proveedor=meet" },
-    { proveedor: "ZOOM", href: "/reuniones?proveedor=zoom" }
+    { proveedor: "ZOOM", href: "/reuniones?proveedor=zoom" },
+    { proveedor: "GOOGLE_MEET", href: "/reuniones?proveedor=meet" }
   ] as const;
   return (
     <nav className="proveedor-tabs" aria-label="Proveedor de reuniones">
