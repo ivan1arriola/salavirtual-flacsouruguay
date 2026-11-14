@@ -8,7 +8,8 @@ export function ZoomIntegrationWarning({
   return (
     <div className={styles.warning}>
       <p role="alert">
-        No se pudo completar la sincronización con Zoom. Esto no confirma que el enlace haya dejado de funcionar.
+        No se pudo completar la sincronización con Zoom. Esto no confirma que el enlace haya dejado de
+        funcionar.
       </p>
       <p>
         {rol === "ADMINISTRACION" ? (

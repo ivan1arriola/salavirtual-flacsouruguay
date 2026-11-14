@@ -28,11 +28,15 @@ export function ConfirmacionCobertura({
 
   useEffect(() => {
     const elemento = dialogo.current;
-    if (!elemento) return;
+    if (!elemento) {
+      return;
+    }
     elemento.showModal();
     volver.current?.focus();
     return () => {
-      if (elemento.open) elemento.close();
+      if (elemento.open) {
+        elemento.close();
+      }
     };
   }, []);
 

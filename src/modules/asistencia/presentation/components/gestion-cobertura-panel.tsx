@@ -211,17 +211,19 @@ export function GestionCoberturaPanel({
                     className="primary-action"
                     type="button"
                     disabled={pending || meeting.cancelled}
-                    onClick={() => setConfirmacion({
-                      tipo: "aprobacion",
-                      registroId: currentPending.id,
-                      nombre: currentPending.name,
-                      minutos: currentPending.minutos,
-                      moneda: currentPending.moneda,
-                      importe: currentPending.monto.toLocaleString("es-UY", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                    onClick={() =>
+                      setConfirmacion({
+                        tipo: "aprobacion",
+                        registroId: currentPending.id,
+                        nombre: currentPending.name,
+                        minutos: currentPending.minutos,
+                        moneda: currentPending.moneda,
+                        importe: currentPending.monto.toLocaleString("es-UY", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })
                       })
-                    })}
+                    }
                   >
                     <CheckCircle2 size={16} /> Aprobar registro
                   </button>
@@ -453,7 +455,10 @@ export function GestionCoberturaPanel({
           onConfirmar={() => {
             setConfirmacion(null);
             if (confirmacion.tipo === "convocatoria") {
-              void send({ accion: "CONVOCAR", instanciaSalaId: meeting.id }, "La convocatoria quedó registrada.");
+              void send(
+                { accion: "CONVOCAR", instanciaSalaId: meeting.id },
+                "La convocatoria quedó registrada."
+              );
             } else {
               void send(
                 { accion: "APROBAR_RETROACTIVO", registroId: confirmacion.registroId },

@@ -2,9 +2,12 @@
 
 import { useEffect, useId, useRef } from "react";
 
+function etiquetaEncuentrosEditables(cantidad: number): string {
+  return `${cantidad} ${cantidad === 1 ? "encuentro editable" : "encuentros editables"}`;
+}
+
 export type CancelacionZoom =
-  | Readonly<{ tipo: "encuentro"; fecha: string }>
-  | Readonly<{ tipo: "serie"; cantidad: number }>;
+  Readonly<{ tipo: "encuentro"; fecha: string }> | Readonly<{ tipo: "serie"; cantidad: number }>;
 
 export function ConfirmacionCancelacionZoom({
   detalle,
@@ -17,11 +20,15 @@ export function ConfirmacionCancelacionZoom({
 
   useEffect(() => {
     const elemento = dialogo.current;
-    if (!elemento) return;
+    if (!elemento) {
+      return;
+    }
     elemento.showModal();
     volver.current?.focus();
     return () => {
-      if (elemento.open) elemento.close();
+      if (elemento.open) {
+        elemento.close();
+      }
     };
   }, []);
 
@@ -40,7 +47,7 @@ export function ConfirmacionCancelacionZoom({
       <h2 id={`${id}-titulo`}>{esSerie ? "Cancelar serie" : "Cancelar encuentro"}</h2>
       <p id={`${id}-descripcion`}>
         {detalle.tipo === "serie"
-          ? `Se cancelará toda la serie. Tiene ${detalle.cantidad} ${detalle.cantidad === 1 ? "encuentro editable" : "encuentros editables"}; la cancelación también afecta los demás encuentros de la serie.`
+          ? `Se cancelará toda la serie. Tiene ${etiquetaEncuentrosEditables(detalle.cantidad)}; la cancelación también afecta los demás encuentros de la serie.`
           : `Se cancelará el encuentro del ${detalle.fecha}.`}{" "}
         La cancelación se registrará y se intentará aplicar en Zoom.
       </p>

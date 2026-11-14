@@ -26,7 +26,9 @@ export function HistoricalMeetingsTable({
 }>) {
   function enlacePagina(destino: number) {
     const params = new URLSearchParams({ seccion: "historico", pagina: String(destino) });
-    if (busqueda) params.set("busqueda", busqueda);
+    if (busqueda) {
+      params.set("busqueda", busqueda);
+    }
     return `/configuracion?${params.toString()}`;
   }
 
@@ -45,15 +47,21 @@ export function HistoricalMeetingsTable({
             placeholder="Buscar por reunión, programa o cuenta"
           />
         </label>
-        <button type="submit" className="secondary-action">Buscar</button>
+        <button type="submit" className="secondary-action">
+          Buscar
+        </button>
         {busqueda ? <Link href="/configuracion?seccion=historico">Limpiar búsqueda</Link> : null}
-        <span>{total} {total === 1 ? "registro" : "registros"}</span>
+        <span>
+          {total} {total === 1 ? "registro" : "registros"}
+        </span>
       </form>
 
       {meetings.length === 0 ? (
         <div className="settings-empty-search">
           <Search size={22} />
-          <strong>{busqueda ? "No encontramos reuniones" : "Todavía no hay registros Zoom importados."}</strong>
+          <strong>
+            {busqueda ? "No encontramos reuniones" : "Todavía no hay registros Zoom importados."}
+          </strong>
           {busqueda ? <span>Probá con otro título, programa o cuenta.</span> : null}
         </div>
       ) : (
@@ -90,8 +98,14 @@ export function HistoricalMeetingsTable({
       {totalPaginas > 1 ? (
         <nav className="settings-history__pagination" aria-label="Páginas de registros Zoom">
           {pagina > 1 ? <Link href={enlacePagina(pagina - 1)}>Anterior</Link> : <span>Anterior</span>}
-          <span>Página {pagina} de {totalPaginas}</span>
-          {pagina < totalPaginas ? <Link href={enlacePagina(pagina + 1)}>Siguiente</Link> : <span>Siguiente</span>}
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          {pagina < totalPaginas ? (
+            <Link href={enlacePagina(pagina + 1)}>Siguiente</Link>
+          ) : (
+            <span>Siguiente</span>
+          )}
         </nav>
       ) : null}
       <footer className="settings-history__note">

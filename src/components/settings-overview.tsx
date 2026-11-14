@@ -12,6 +12,16 @@ import {
 import Link from "next/link";
 import { settingsNeedsAttention } from "@/src/modules/configuracion/settings-navigation.domain";
 
+const TEXTO_VALOR_CREDENCIALES: Readonly<Record<string, string>> = {
+  AUSENTES: "Sin credenciales activas y completas",
+  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales"
+};
+
+const TEXTO_AVISO_CREDENCIALES: Readonly<Record<string, string>> = {
+  AUSENTES: "No hay credenciales Zoom activas y completas disponibles.",
+  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales."
+};
+
 export type SettingsOverviewData = Readonly<{
   workspaceReady: boolean;
   integrationActive: boolean;
@@ -42,11 +52,8 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
           value={
             data.zoomCredentialsAvailable
               ? "Credenciales disponibles"
-              : data.zoomCredentialsDiagnostic === "AUSENTES"
-                ? "Sin credenciales activas y completas"
-                : data.zoomCredentialsDiagnostic === "ERROR_COMPROBACION"
-                  ? "No se pudieron comprobar las credenciales"
-                  : "Disponibilidad sin confirmar"
+              : (TEXTO_VALOR_CREDENCIALES[data.zoomCredentialsDiagnostic ?? ""] ??
+                "Disponibilidad sin confirmar")
           }
         />
         <OverviewCard
@@ -134,11 +141,8 @@ function SettingsAttentionBanner({
         <ul>
           {!data.zoomCredentialsAvailable ? (
             <li>
-              {data.zoomCredentialsDiagnostic === "AUSENTES"
-                ? "No hay credenciales Zoom activas y completas disponibles."
-                : data.zoomCredentialsDiagnostic === "ERROR_COMPROBACION"
-                  ? "No se pudieron comprobar las credenciales."
-                  : "No se pudo confirmar la disponibilidad de credenciales."}{" "}
+              {TEXTO_AVISO_CREDENCIALES[data.zoomCredentialsDiagnostic ?? ""] ??
+                "No se pudo confirmar la disponibilidad de credenciales."}{" "}
               <Link href="/configuracion?seccion=zoom">Revisar credenciales de Zoom</Link>
             </li>
           ) : null}
@@ -155,7 +159,9 @@ function SettingsAttentionBanner({
 }
 
 function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
-  if (!data.pendingOperations && data.workspaceReady && data.integrationActive) return null;
+  if (!data.pendingOperations && data.workspaceReady && data.integrationActive) {
+    return null;
+  }
   return (
     <section
       className="settings-attention settings-attention--warning"

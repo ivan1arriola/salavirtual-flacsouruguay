@@ -103,7 +103,9 @@ export function interpretarAvisoZoom(cuerpo: string): AvisoZoom | null {
 export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   const raiz = objeto(JSON.parse(cuerpo) as unknown);
   const tipo = texto(raiz?.event);
-  if (!tipo || !/^(meeting|recording|group)\.[a-z0-9_]{1,100}$/.test(tipo)) return null;
+  if (!tipo || !/^(meeting|recording|group)\.[a-z0-9_]{1,100}$/.test(tipo)) {
+    return null;
+  }
   const payload = objeto(raiz?.payload);
   const recurso = objeto(payload?.object);
   const cuentaZoomId = texto(payload?.account_id);
@@ -125,8 +127,9 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
     uuids.some((valor) => valor.length > 255) ||
     !ocurridoAt ||
     !Number.isFinite(ocurridoAt.getTime())
-  )
+  ) {
     return null;
+  }
   return {
     huella: createHash("sha256").update(cuerpo).digest("hex"),
     tipo,

@@ -8,9 +8,19 @@ describe("resumen de configuración", () => {
     ["ERROR_COMPROBACION", "No se pudieron comprobar las credenciales"]
   ] as const)("distingue el estado %s", (diagnostico, mensaje) => {
     const html = renderToStaticMarkup(
-      <SettingsOverview data={{ zoomAvailableHosts: 1, zoomCredentialsAvailable: false,
-        zoomCredentialsDiagnostic: diagnostico, workspaceReady: true, integrationActive: true,
-        pendingOperations: 0, totalHosts: 1, activePrograms: 0, totalPrograms: 0 }} />
+      <SettingsOverview
+        data={{
+          zoomAvailableHosts: 1,
+          zoomCredentialsAvailable: false,
+          zoomCredentialsDiagnostic: diagnostico,
+          workspaceReady: true,
+          integrationActive: true,
+          pendingOperations: 0,
+          totalHosts: 1,
+          activePrograms: 0,
+          totalPrograms: 0
+        }}
+      />
     );
     expect(html).toContain(mensaje);
   });

@@ -79,7 +79,11 @@ describe("avisos por número de reunión y horario (encuentros sin UUID)", () =>
   });
 
   it("asocia avisos del mismo número de reunión dentro del horario del encuentro", () => {
-    const r = agruparAvisosPorReunionYHorario([enc("e1", "123", 0)], [av("a", "123", 0.5), av("b", "999", 0.5)], 10);
+    const r = agruparAvisosPorReunionYHorario(
+      [enc("e1", "123", 0)],
+      [av("a", "123", 0.5), av("b", "999", 0.5)],
+      10
+    );
     expect(r.get("e1")?.map((x) => x.tipo)).toEqual(["a"]);
   });
 

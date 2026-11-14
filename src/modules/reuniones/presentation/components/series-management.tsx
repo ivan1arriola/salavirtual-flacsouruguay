@@ -442,12 +442,17 @@ export function SeriesManagement({
                 </button>
               </div>
               {showSuggestions && options.length > 0 && (
-                <CohostSuggestions options={options} onSelect={(email) => {
-                  addCohost(email);
-                  cohostSearchRef.current?.focus();
-                }} />
+                <CohostSuggestions
+                  options={options}
+                  onSelect={(email) => {
+                    addCohost(email);
+                    cohostSearchRef.current?.focus();
+                  }}
+                />
               )}
-              <small id="series-cohost-search-help">Seleccioná una sugerencia con Tab y Enter o ingresá un correo nuevo. Máximo 50 cohosts.</small>
+              <small id="series-cohost-search-help">
+                Seleccioná una sugerencia con Tab y Enter o ingresá un correo nuevo. Máximo 50 cohosts.
+              </small>
             </div>
             <div className="field">
               <div className="series-cohost-toolbar">

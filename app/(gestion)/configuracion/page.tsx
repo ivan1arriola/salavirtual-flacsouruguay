@@ -28,9 +28,34 @@ import {
 } from "@/src/modules/configuracion/api";
 import { actualizarReportesAsistenciaAdmin } from "./actions";
 
+const ESTADO_CREDENCIALES_ZOOM: Readonly<Record<string, string>> = {
+  AUSENTES: "Sin credenciales activas y completas"
+};
+
+function resumenCredencialesZoom(
+  disponible: boolean | null,
+  diagnostico: string | null | undefined
+): string | undefined {
+  if (disponible === null) {
+    return undefined;
+  }
+  if (disponible) {
+    return "Configuración disponible";
+  }
+  return diagnostico === "AUSENTES" ? "Sin credenciales activas y completas" : "No se pudo comprobar";
+}
+
 export default async function ConfiguracionPage({
   searchParams
-}: Readonly<{ searchParams: Promise<{ seccion?: string; estado?: string; error?: string; busqueda?: string | string[]; pagina?: string | string[] }> }>) {
+}: Readonly<{
+  searchParams: Promise<{
+    seccion?: string;
+    estado?: string;
+    error?: string;
+    busqueda?: string | string[];
+    pagina?: string | string[];
+  }>;
+}>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") {
     redirect("/");
@@ -55,9 +80,10 @@ export default async function ConfiguracionPage({
     zoomGrupo
   } = await obtenerDatosPaginaConfiguracion(db, section);
 
-  const registrosZoom = section === "historico"
-    ? await consultarRegistrosZoomImportados(db, { busqueda: query.busqueda, pagina: query.pagina })
-    : null;
+  const registrosZoom =
+    section === "historico"
+      ? await consultarRegistrosZoomImportados(db, { busqueda: query.busqueda, pagina: query.pagina })
+      : null;
 
   const zoomConfig =
     section === "zoom" ? await db.configuracionZoom.findUnique({ where: { id: "principal" } }) : null;
@@ -66,9 +92,8 @@ export default async function ConfiguracionPage({
       ? await obtenerCredencialesZoom(db, descifrarConfiguracion)
       : null;
   const zoomCredentialsAvailable = zoomCredentials?.disponible ?? null;
-  const zoomCredentialsDiagnostic = zoomCredentials && !zoomCredentials.disponible
-    ? zoomCredentials.diagnostico
-    : undefined;
+  const zoomCredentialsDiagnostic =
+    zoomCredentials && !zoomCredentials.disponible ? zoomCredentials.diagnostico : undefined;
 
   const sesConfig =
     section === "correo" ? await db.configuracionCorreoSes.findUnique({ where: { id: "principal" } }) : null;
@@ -110,12 +135,7 @@ export default async function ConfiguracionPage({
           pendingMeetOperations.length > 0
             ? `${pendingMeetOperations.length} pendientes`
             : "Integración y permisos",
-        zoom:
-          zoomCredentialsAvailable === null
-            ? undefined
-            : zoomCredentialsAvailable
-              ? "Configuración disponible"
-              : zoomCredentialsDiagnostic === "AUSENTES" ? "Sin credenciales activas y completas" : "No se pudo comprobar"
+        zoom: resumenCredencialesZoom(zoomCredentialsAvailable, zoomCredentialsDiagnostic)
       }}
     >
       {section === "resumen" ? (
@@ -172,9 +192,8 @@ export default async function ConfiguracionPage({
             >
               {zoomCredentialsAvailable
                 ? "Credenciales disponibles · conexión sin verificar"
-                : zoomCredentialsDiagnostic === "AUSENTES"
-                  ? "Sin credenciales activas y completas"
-                  : "No se pudieron comprobar las credenciales"}
+                : (ESTADO_CREDENCIALES_ZOOM[zoomCredentialsDiagnostic ?? ""] ??
+                  "No se pudieron comprobar las credenciales")}
             </span>
           }
         />

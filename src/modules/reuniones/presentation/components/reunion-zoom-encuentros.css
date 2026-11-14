@@ -620,8 +620,22 @@
   padding: 24px;
   color: #172b45;
 }
-.zoom-cancel-dialog::backdrop { background: rgb(15 23 42 / 60%); }
-.zoom-cancel-dialog h2 { margin: 0 0 12px; }
-.zoom-cancel-dialog p { line-height: 1.5; }
-.zoom-cancel-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-.zoom-cancel-dialog__actions button { min-height: 44px; }
+.zoom-cancel-dialog::backdrop {
+  background: rgb(15 23 42 / 60%);
+}
+.zoom-cancel-dialog h2 {
+  margin: 0 0 12px;
+}
+.zoom-cancel-dialog p {
+  line-height: 1.5;
+}
+.zoom-cancel-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.zoom-cancel-dialog__actions button {
+  min-height: 44px;
+}

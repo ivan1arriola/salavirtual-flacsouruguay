@@ -207,16 +207,24 @@ export function ReunionZoomEncuentros({
   function confirmarCancelacion() {
     const actual = cancelacion;
     setCancelacion(null);
-    if (!actual) return;
+    if (!actual) {
+      return;
+    }
     if (actual.tipo === "encuentro") {
-      ejecutar(() => enviarAccionEncuentro(
-        fetch, `/api/v1/reuniones/${actual.encuentro.solicitudId}/encuentros/${actual.encuentro.id}`,
-        { method: "DELETE" }
-      ));
+      ejecutar(() =>
+        enviarAccionEncuentro(
+          fetch,
+          `/api/v1/reuniones/${actual.encuentro.solicitudId}/encuentros/${actual.encuentro.id}`,
+          { method: "DELETE" }
+        )
+      );
     } else {
-      ejecutar(() => enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", {
-        method: "POST", body: { solicitudIds }
-      }));
+      ejecutar(() =>
+        enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", {
+          method: "POST",
+          body: { solicitudIds }
+        })
+      );
     }
   }
 
