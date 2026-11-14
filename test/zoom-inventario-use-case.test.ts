@@ -183,7 +183,12 @@ describe("barrerAnfitrionesZoomUseCase", () => {
       obtenerInventario: vi.fn(async () => VACIO)
     };
     const repo: any = {
-      guardarInventario: vi.fn(async () => ({ ocurrenciaId: "o", nuevos: 0, actualizados: 0, requierenRevision: 0 }))
+      guardarInventario: vi.fn(async () => ({
+        ocurrenciaId: "o",
+        nuevos: 0,
+        actualizados: 0,
+        requierenRevision: 0
+      }))
     };
     const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
       anfitriones,
@@ -191,7 +196,12 @@ describe("barrerAnfitrionesZoomUseCase", () => {
       diasAtras: 3,
       corteDias: 90
     });
-    expect(r).toMatchObject({ ocurrencias: 1, anfitrionesConError: 0, anfitrionesInexistentes: 1, errores: [] });
+    expect(r).toMatchObject({
+      ocurrencias: 1,
+      anfitrionesConError: 0,
+      anfitrionesInexistentes: 1,
+      errores: []
+    });
   });
 
   it("el barrido reciente también consulta la papelera de cada ventana e inventaría lo hallado", async () => {

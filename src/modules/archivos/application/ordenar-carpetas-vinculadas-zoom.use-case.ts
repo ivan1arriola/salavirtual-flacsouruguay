@@ -32,6 +32,71 @@ function nombreEncuentro(o: Pick<OcurrenciaCarpetaZoom, "titulo" | "inicioRealAt
   return nombreCarpetaReunion({ titulo: o.titulo, inicio: o.inicioRealAt, timezone: ZONA_NEGOCIO });
 }
 
+type Dependencias = Readonly<{
+  repo: RepoOrdenarCarpetasZoom;
+  storage: Pick<ArchivoStoragePort, "asegurarCarpeta" | "moverCarpeta" | "renombrarCarpeta">;
+  hash: HashZoom;
+  raizVinculados: string | null;
+  ahora: () => Date;
+}>;
+
+/** Ocurrencias del mismo encuentro (misma fecha local y tema) en orden cronológico, incluida la pendiente. */
+async function miembrosDelEncuentro(
+  repo: RepoOrdenarCarpetasZoom,
+  pendiente: OcurrenciaCarpetaZoom,
+  nombre: string
+): Promise<OcurrenciaCarpetaZoom[]> {
+  const miembros = (await repo.listarVinculadasCercanas(pendiente.inicioRealAt))
+    .filter((o) => nombreEncuentro(o) === nombre)
+    .sort(
+      (a, b) =>
+        a.inicioRealAt.getTime() - b.inicioRealAt.getTime() || a.ocurrenciaId.localeCompare(b.ocurrenciaId)
+    );
+  return miembros.some((m) => m.ocurrenciaId === pendiente.ocurrenciaId)
+    ? miembros
+    : [...miembros, pendiente];
+}
+
+/** Renombra, agrupa y mueve las carpetas de un encuentro; devuelve cuántas quedaron ordenadas y cuántas no existen. */
+async function ordenarEncuentro(
+  deps: Dependencias,
+  raiz: string,
+  miembros: readonly OcurrenciaCarpetaZoom[],
+  nombre: string,
+  signal: AbortSignal | undefined
+): Promise<Readonly<{ ordenadas: number; noEncontradas: number }>> {
+  // Primero se renombra todo: así ninguna carpeta de ocurrencia comparte nombre con la del encuentro
+  // y `asegurarCarpeta` (que busca por nombre) no puede devolver una de ellas por error.
+  const renombradas: string[] = [];
+  for (const [i, m] of miembros.entries()) {
+    const nuevo = miembros.length === 1 ? nombre : `Grabación ${i + 1}`;
+    renombradas.push(await deps.storage.renombrarCarpeta(m.driveFolderId, nuevo, signal));
+  }
+  const destino =
+    miembros.length === 1
+      ? raiz
+      : await deps.storage.asegurarCarpeta(
+          deps.hash(`zoom-carpeta|encuentro|${raiz}|${nombre}`),
+          nombre,
+          raiz
+        );
+
+  let ordenadas = 0;
+  let noEncontradas = 0;
+  for (const [i, m] of miembros.entries()) {
+    const existe =
+      renombradas[i] !== "NO_ENCONTRADO" &&
+      (await deps.storage.moverCarpeta(m.driveFolderId, destino, signal)) !== "NO_ENCONTRADO";
+    if (!existe) {
+      noEncontradas++;
+      continue;
+    }
+    await deps.repo.marcarCarpetaVinculada(m.ocurrenciaId, deps.ahora());
+    ordenadas++;
+  }
+  return { ordenadas, noEncontradas };
+}
+
 /**
  * Deja las carpetas de grabaciones de encuentros vinculados como en Google Meet: directamente bajo la raíz,
  * con el nombre `AAAAMMDD - Tema`. Si un mismo encuentro (misma fecha local y tema) tiene varias grabaciones,
@@ -40,20 +105,12 @@ function nombreEncuentro(o: Pick<OcurrenciaCarpetaZoom, "titulo" | "inicioRealAt
  * valiendo. Es idempotente; un fallo en un encuentro no impide los demás y se reintenta en el próximo ciclo.
  */
 export async function ordenarCarpetasVinculadasZoomUseCase(
-  deps: Readonly<{
-    repo: RepoOrdenarCarpetasZoom;
-    storage: Pick<ArchivoStoragePort, "asegurarCarpeta" | "moverCarpeta" | "renombrarCarpeta">;
-    hash: HashZoom;
-    raizVinculados: string | null;
-    ahora: () => Date;
-  }>,
+  deps: Dependencias,
   opciones: Readonly<{ limite: number; signal?: AbortSignal }>
 ): Promise<ResumenOrdenarCarpetasZoom> {
   if (!deps.raizVinculados) {
     return { ordenadas: 0, noEncontradas: 0, fallidas: 0, sinRaiz: true };
   }
-  const raiz = deps.raizVinculados;
-  const { signal } = opciones;
   let ordenadas = 0;
   let noEncontradas = 0;
   let fallidas = 0;
@@ -65,48 +122,11 @@ export async function ordenarCarpetasVinculadasZoomUseCase(
     }
     try {
       const nombre = nombreEncuentro(pendiente);
-      const miembros = (await deps.repo.listarVinculadasCercanas(pendiente.inicioRealAt))
-        .filter((o) => nombreEncuentro(o) === nombre)
-        .sort(
-          (a, b) =>
-            a.inicioRealAt.getTime() - b.inicioRealAt.getTime() ||
-            a.ocurrenciaId.localeCompare(b.ocurrenciaId)
-        );
-      if (!miembros.some((m) => m.ocurrenciaId === pendiente.ocurrenciaId)) {
-        miembros.push(pendiente);
-      }
-      for (const m of miembros) {
-        resueltas.add(m.ocurrenciaId);
-      }
-
-      // Primero se renombra todo: así ninguna carpeta de ocurrencia comparte nombre con la del encuentro
-      // y `asegurarCarpeta` (que busca por nombre) no puede devolver una de ellas por error.
-      const renombradas: string[] = [];
-      for (const [i, m] of miembros.entries()) {
-        const nuevo = miembros.length === 1 ? nombre : `Grabación ${i + 1}`;
-        renombradas.push(await deps.storage.renombrarCarpeta(m.driveFolderId, nuevo, signal));
-      }
-      const destino =
-        miembros.length === 1
-          ? raiz
-          : await deps.storage.asegurarCarpeta(
-              deps.hash(`zoom-carpeta|encuentro|${raiz}|${nombre}`),
-              nombre,
-              raiz
-            );
-
-      for (const [i, m] of miembros.entries()) {
-        const movida =
-          renombradas[i] === "NO_ENCONTRADO"
-            ? "NO_ENCONTRADO"
-            : await deps.storage.moverCarpeta(m.driveFolderId, destino, signal);
-        if (movida === "NO_ENCONTRADO") {
-          noEncontradas++;
-          continue;
-        }
-        await deps.repo.marcarCarpetaVinculada(m.ocurrenciaId, deps.ahora());
-        ordenadas++;
-      }
+      const miembros = await miembrosDelEncuentro(deps.repo, pendiente, nombre);
+      miembros.forEach((m) => resueltas.add(m.ocurrenciaId));
+      const r = await ordenarEncuentro(deps, deps.raizVinculados, miembros, nombre, opciones.signal);
+      ordenadas += r.ordenadas;
+      noEncontradas += r.noEncontradas;
     } catch {
       // Sin detalle: el mensaje podría traer URLs. Quedan sin marcar y se reintentan en el próximo ciclo.
       fallidas++;

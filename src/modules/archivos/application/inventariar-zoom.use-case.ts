@@ -130,7 +130,9 @@ function fechaMontevideo(fecha: Date): string {
 export function esAnfitrionInexistenteZoom(error: unknown): boolean {
   const e = error as { code?: unknown; status?: unknown; codigoZoom?: unknown } | null;
   return (
-    (e?.code === "NO_ENCONTRADO" || e?.code === "SOLICITUD_RECHAZADA") && e.status === 404 && e.codigoZoom === 1001
+    (e?.code === "NO_ENCONTRADO" || e?.code === "SOLICITUD_RECHAZADA") &&
+    e.status === 404 &&
+    e.codigoZoom === 1001
   );
 }
 
@@ -239,5 +241,12 @@ export async function barrerAnfitrionesZoomUseCase(
       }
     }
   }
-  return { ocurrencias, ocurrenciasPapelera, anfitrionesConError, anfitrionesInexistentes, ocurrenciasConError, errores };
+  return {
+    ocurrencias,
+    ocurrenciasPapelera,
+    anfitrionesConError,
+    anfitrionesInexistentes,
+    ocurrenciasConError,
+    errores
+  };
 }
