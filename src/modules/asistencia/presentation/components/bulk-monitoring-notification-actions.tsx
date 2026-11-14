@@ -96,7 +96,9 @@ export function BulkMonitoringNotificationActions({
 
   return (
     <div className="coverage-bulk-actions">
-      <div className="coverage-bulk-buttons">
+      <details className="coverage-notify-menu">
+        <summary className="secondary-action">Notificar ▾</summary>
+        <div className="coverage-bulk-buttons coverage-notify-menu-items">
         <button
           type="button"
           className="secondary-action coverage-bulk-btn"
@@ -126,7 +128,8 @@ export function BulkMonitoringNotificationActions({
           )}
           <span>Notificar reuniones asignadas ({coveredCount})</span>
         </button>
-      </div>
+        </div>
+      </details>
 
       {feedback ? (
         <div
