@@ -32,12 +32,14 @@
 ### Task 1: Menú agrupado
 
 **Files:**
+
 - Modify: `src/modules/configuracion/settings-navigation.domain.ts`
 - Modify: `src/components/settings-center-shell.tsx`
 - Modify: `app/(gestion)/configuration-center.css`
 - Test: `test/settings-navigation-domain.test.ts`, `test/settings-center-shell.test.tsx`
 
 **Interfaces:**
+
 - Produces: `SettingsSectionMetadata` con campo opcional `group?: "Integraciones" | "Operación" | "Comunicación" | "Datos"`.
 
 - [ ] **Step 1: Escribir tests que fallan**
@@ -52,12 +54,14 @@
 ### Task 2: Todo Zoom en la sección Zoom
 
 **Files:**
+
 - Modify: `src/modules/configuracion/configuracion-page.service.ts` (condición de `zoomGrupo`)
 - Modify: `app/(gestion)/configuracion/page.tsx`
 - Modify: `src/modules/configuracion/settings-navigation.domain.ts` (descripción de salas)
 - Test: `test/configuracion-page-salas.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 (metadatos).
 - Produces: `obtenerDatosPaginaConfiguracion(db, "zoom")` devuelve `zoomGrupo` poblado; con `"salas"` devuelve `zoomGrupo: null`.
 
@@ -71,11 +75,13 @@
 ### Task 3: Operaciones pendientes en el Resumen
 
 **Files:**
+
 - Modify: `app/(gestion)/configuracion/page.tsx`
 - Modify: `src/components/settings-overview.tsx` (enlace del aviso)
 - Test: `test/settings-center-shell.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `workspaceReadiness` de `settings-navigation.domain.ts`.
 
 - [ ] **Step 1: Test que falla**: en el test del aviso, el enlace de operaciones pendientes tiene `href="#operaciones-pendientes"` y ya no `?seccion=workspace` para ese texto.
@@ -92,6 +98,7 @@
 ### Task 4: Correo — ajustes separados de pruebas
 
 **Files:**
+
 - Modify: `app/(gestion)/configuracion/page.tsx` (bloque `correo`)
 - Modify: `app/(gestion)/configuration-center.css` (si el subtítulo necesita estilo)
 
