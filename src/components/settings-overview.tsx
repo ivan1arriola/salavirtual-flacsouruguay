@@ -44,7 +44,7 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
 
       <div className="settings-overview-grid">
         <OverviewCard
-          description="La conexión con Zoom no se verificó aquí"
+          description="Credenciales Server-to-Server OAuth"
           href="/configuracion?seccion=zoom"
           icon={<Video size={22} />}
           label="Zoom"
@@ -167,6 +167,9 @@ function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
       className="settings-attention settings-attention--warning"
       aria-label="Estado de Google Workspace"
     >
+      <span className="settings-attention__icon">
+        <CircleAlert size={24} />
+      </span>
       <div>
         <strong>Google Workspace requiere revisión</strong>
         <ul>
