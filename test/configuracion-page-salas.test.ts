@@ -77,6 +77,13 @@ describe("datos de Configuración › Salas", () => {
       ["zoom-fuera", 2],
       ["zoom-inactiva", 0]
     ]);
+    expect(datos.zoomGrupo).toBeNull();
+  });
+
+  it("el grupo de Zoom se lee en la sección Zoom, sin consultar reuniones futuras", async () => {
+    const { mock, db } = crearDb();
+    const datos = await obtenerDatosPaginaConfiguracion(db, "zoom", AHORA);
+    expect(mock.eventoProveedor.groupBy).not.toHaveBeenCalled();
     expect(datos.zoomGrupo).toEqual({
       grupoId: "g-1",
       grupoNombre: "Salas FLACSO",

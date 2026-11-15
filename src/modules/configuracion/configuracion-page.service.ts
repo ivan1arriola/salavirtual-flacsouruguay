@@ -108,7 +108,7 @@ export async function obtenerDatosPaginaConfiguracion(
       }
     }),
     section === "salas" ? contarReunionesFuturasZoom(db, ahora) : Promise.resolve<Record<string, number>>({}),
-    section === "salas"
+    section === "zoom"
       ? db.configuracionZoom.findUnique({
           where: { id: "principal" },
           select: {

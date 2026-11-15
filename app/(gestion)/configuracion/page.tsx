@@ -185,7 +185,7 @@ export default async function ConfiguracionPage({
       {section === "zoom" ? (
         <SettingsSectionHeader
           title="Zoom"
-          description="Administrá las credenciales Server-to-Server OAuth institucionales."
+          description="Credenciales, webhook y grupo de cuentas de Zoom."
           status={
             <span
               className={`settings-section-status ${zoomCredentialsAvailable ? "is-neutral" : "is-warning"}`}
@@ -202,7 +202,7 @@ export default async function ConfiguracionPage({
       {section === "salas" ? (
         <SettingsSectionHeader
           title="Salas"
-          description="Administrá las cuentas institucionales que alojan las reuniones."
+          description="Cuentas de Zoom y Meet que alojan reuniones."
           status={
             <span className="settings-section-status is-neutral">
               {availableHosts} de {hosts.length} cuentas habilitadas
@@ -283,11 +283,6 @@ export default async function ConfiguracionPage({
             }
           />
           <ZoomWebhookConfig initialConfigured={Boolean(zoomConfig?.webhookSecretCifrado)} />
-        </div>
-      ) : null}
-
-      {section === "salas" ? (
-        <div className="settings-workspace-flow">
           <ZoomGrupoConfig
             grupoId={zoomGrupo?.grupoId ?? null}
             grupoNombre={zoomGrupo?.grupoNombre ?? null}
@@ -296,6 +291,11 @@ export default async function ConfiguracionPage({
             }
             ultimaSincronizacionResultado={zoomGrupo?.ultimaSincronizacionResultado ?? null}
           />
+        </div>
+      ) : null}
+
+      {section === "salas" ? (
+        <div className="settings-workspace-flow">
           <MeetHostsConfig
             hosts={hosts.map((host) => ({
               id: host.id,
