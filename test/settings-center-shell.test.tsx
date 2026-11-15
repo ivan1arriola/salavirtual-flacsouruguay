@@ -21,6 +21,15 @@ describe("centro de configuración", () => {
     expect(html).not.toContain("settings-center__layout--solo");
   });
 
+  it("titula los grupos del menú en el lateral y en el móvil", () => {
+    const html = renderToStaticMarkup(
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+    );
+    for (const grupo of ["Integraciones", "Operación", "Comunicación", "Datos"]) {
+      expect(html.match(new RegExp(`settings-nav-group">${grupo}<`, "g"))).toHaveLength(2);
+    }
+  });
+
   it("todo aviso del Resumen lleva su ícono: el CSS lo reparte en ícono + texto", () => {
     const html = renderToStaticMarkup(
       <SettingsOverview

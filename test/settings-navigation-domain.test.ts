@@ -36,6 +36,18 @@ describe("navegación de configuración", () => {
     ]);
   });
 
+  it("agrupa las secciones por tipo de tarea y deja el resumen sin grupo", () => {
+    expect(SETTINGS_SECTIONS.map(({ id, group }) => [id, group])).toEqual([
+      ["resumen", undefined],
+      ["workspace", "Integraciones"],
+      ["zoom", "Integraciones"],
+      ["salas", "Operación"],
+      ["asistencia", "Operación"],
+      ["correo", "Comunicación"],
+      ["historico", "Datos"]
+    ]);
+  });
+
   it("resume los cuatro requisitos visibles de Google Workspace", () => {
     expect(
       workspaceReadiness({

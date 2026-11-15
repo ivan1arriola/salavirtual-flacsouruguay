@@ -15,6 +15,7 @@ export type SettingsSectionMetadata = Readonly<{
   id: SettingsSection;
   label: string;
   description: string;
+  group?: "Integraciones" | "Operación" | "Comunicación" | "Datos";
   icon: "overview" | "workspace" | "zoom" | "rooms" | "programs" | "assistance" | "email" | "history";
 }>;
 
@@ -29,36 +30,42 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
     id: "workspace",
     label: "Google Workspace",
     description: "Integración, permisos y archivos",
+    group: "Integraciones",
     icon: "workspace"
   },
   {
     id: "zoom",
     label: "Zoom",
     description: "Credenciales OAuth y configuración",
+    group: "Integraciones",
     icon: "zoom"
   },
   {
     id: "salas",
     label: "Salas",
-    description: "Cuentas que alojan reuniones",
+    description: "Cuentas de Zoom y Meet que alojan reuniones",
+    group: "Operación",
     icon: "rooms"
   },
   {
     id: "asistencia",
     label: "Monitoreo",
     description: "Reportes mensuales y destinatarios",
+    group: "Operación",
     icon: "assistance"
   },
   {
     id: "correo",
     label: "Correo",
     description: "Prueba de invitaciones y avisos",
+    group: "Comunicación",
     icon: "email"
   },
   {
     id: "historico",
     label: "Registros Zoom importados",
     description: "Reuniones importadas disponibles para consulta",
+    group: "Datos",
     icon: "history"
   }
 ];

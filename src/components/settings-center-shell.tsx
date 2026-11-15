@@ -1,5 +1,6 @@
 import { BookOpen, Clock3, History, KeyRound, LayoutDashboard, MailCheck, Video } from "lucide-react";
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   SETTINGS_SECTIONS,
   settingsHref,
@@ -51,16 +52,7 @@ export function SettingsCenterShell({
             </span>
             <span className="settings-mobile-nav__action">Cambiar sección</span>
           </summary>
-          <nav aria-label="Secciones de configuración">
-            {SETTINGS_SECTIONS.map((item) => (
-              <SettingsNavLink
-                active={item.id === activeSection}
-                detail={navigationDetails?.[item.id]}
-                item={item}
-                key={item.id}
-              />
-            ))}
-          </nav>
+          <SettingsNavList activeSection={activeSection} navigationDetails={navigationDetails} />
         </details>
       )}
 
@@ -68,16 +60,7 @@ export function SettingsCenterShell({
         {overview ? null : (
           <aside className="settings-center__rail">
             <p className="settings-center__rail-label">Configuración</p>
-            <nav aria-label="Secciones de configuración">
-              {SETTINGS_SECTIONS.map((item) => (
-                <SettingsNavLink
-                  active={item.id === activeSection}
-                  detail={navigationDetails?.[item.id]}
-                  item={item}
-                  key={item.id}
-                />
-              ))}
-            </nav>
+            <SettingsNavList activeSection={activeSection} navigationDetails={navigationDetails} />
           </aside>
         )}
         <div className="settings-center__content">{children}</div>
@@ -106,6 +89,31 @@ export function SettingsSectionHeader({
       </div>
       {status ? <div className="settings-section-hero__status">{status}</div> : null}
     </header>
+  );
+}
+
+function SettingsNavList({
+  activeSection,
+  navigationDetails
+}: Readonly<{
+  activeSection: SettingsSection;
+  navigationDetails?: Partial<Record<SettingsSection, string>>;
+}>) {
+  return (
+    <nav aria-label="Secciones de configuración">
+      {SETTINGS_SECTIONS.map((item, index) => (
+        <Fragment key={item.id}>
+          {item.group && item.group !== SETTINGS_SECTIONS[index - 1]?.group ? (
+            <p className="settings-nav-group">{item.group}</p>
+          ) : null}
+          <SettingsNavLink
+            active={item.id === activeSection}
+            detail={navigationDetails?.[item.id]}
+            item={item}
+          />
+        </Fragment>
+      ))}
+    </nav>
   );
 }
 

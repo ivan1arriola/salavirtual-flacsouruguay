@@ -70,6 +70,16 @@
   text-transform: uppercase;
 }
 
+.settings-nav-group {
+  margin: 8px 0 0;
+  padding: 0 8px;
+  color: #7b8798;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .settings-center__rail nav,
 .settings-mobile-nav nav {
   display: grid;
