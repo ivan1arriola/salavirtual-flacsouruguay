@@ -201,7 +201,7 @@
   --tone: #8093ae;
   --tone-pale: #edf1f6;
   display: grid;
-  grid-template-columns: minmax(120px, 150px) minmax(220px, 1fr) minmax(280px, auto);
+  grid-template-columns: minmax(96px, 120px) minmax(220px, 1fr) minmax(280px, auto);
   align-items: center;
   gap: 16px;
   min-width: 0;
@@ -209,7 +209,7 @@
   border: 1px solid #dbe4ef;
   border-left: 4px solid var(--tone);
   border-radius: 11px;
-  background: linear-gradient(90deg, var(--tone-pale), #fff 23%, #fff);
+  background: #fff;
   box-shadow: 0 4px 14px rgba(26, 46, 78, 0.04);
 }
 /* Un color por cuenta anfitriona (paleta fija de 12; la cuenta sala NN usa el color NN, sin asignar y varias cuentas quedan neutros). */
@@ -308,7 +308,10 @@
   border-bottom: 1px solid #dbe4ef;
   color: #1e3554;
   font-size: 1rem;
-  text-transform: capitalize;
+}
+/* Sólo la primera letra: capitalize ponía en mayúscula «De» en «16 de noviembre». */
+.diaEtiqueta::first-letter {
+  text-transform: uppercase;
 }
 .diaRelativo {
   padding: 2px 9px;

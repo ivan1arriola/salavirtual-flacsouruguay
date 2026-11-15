@@ -241,7 +241,7 @@ export default async function ReunionesZoomPage({
   ) => (
     <h2 className={styles.diaTitulo} id={`dia-${dia.clave}`}>
       {dia.relativo ? <span className={styles.diaRelativo}>{RELATIVO[dia.relativo]}</span> : null}
-      {dia.etiqueta}
+      <span className={styles.diaEtiqueta}>{dia.etiqueta}</span>
       <span className={styles.diaCantidad}>
         {cantidad}{" "}
         {porSerie ? (cantidad === 1 ? "serie" : "series") : cantidad === 1 ? "reunión" : "reuniones"}
@@ -513,13 +513,9 @@ export default async function ReunionesZoomPage({
                     >
                       <div className={styles.when}>
                         <strong>
-                          <CalendarDays size={15} aria-hidden="true" />{" "}
-                          {formatShortDate(encuentro.inicioProgramadoAt)}
-                        </strong>
-                        <span>
                           <Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} –{" "}
                           {formatTime(encuentro.finProgramadoAt)}
-                        </span>
+                        </strong>
                         <span className={styles.durationChip}>
                           {formatDuration(encuentro.inicioProgramadoAt, encuentro.finProgramadoAt)}
                         </span>
@@ -534,9 +530,6 @@ export default async function ReunionesZoomPage({
                         <span className={styles.cuentas}>
                           Anfitrión: <ChipCuenta correo={enlace.cuentaAnfitrion} />
                         </span>
-                        <Link className={styles.seriesBadge} href={`/reuniones/${encuentro.solicitudSalaId}`}>
-                          Ver serie
-                        </Link>
                       </div>
                       <div className={styles.link}>
                         <span className={styles.zoomId}>
@@ -544,13 +537,15 @@ export default async function ReunionesZoomPage({
                           <strong>{zoomId ?? "Pendiente"}</strong>
                         </span>
                         {zoomId ? <ZoomCopyIdButton meetingId={zoomId} contexto={contexto} /> : null}
-                        <ZoomLinkStatus
-                          estado={enlace.estado}
-                          esAdmin={esAdmin}
-                          eventoProveedorId={enlace.eventoProveedorId}
-                          operacion={enlace.operacion}
-                          contexto={contexto}
-                        />
+                        {enlace.estado !== "LISTO" ? (
+                          <ZoomLinkStatus
+                            estado={enlace.estado}
+                            esAdmin={esAdmin}
+                            eventoProveedorId={enlace.eventoProveedorId}
+                            operacion={enlace.operacion}
+                            contexto={contexto}
+                          />
+                        ) : null}
                         {enlace.joinUrl && !isHistory ? (
                           <ZoomJoinActions url={enlace.joinUrl} contexto={contexto} />
                         ) : null}
