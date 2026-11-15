@@ -336,6 +336,7 @@ export default async function ConfiguracionPage({
               La configuración de Amazon SES fue actualizada.
             </p>
           ) : null}
+          <h3 className="settings-subsection-title">Pruebas y diagnóstico</h3>
           <EmailTestForm defaultRecipient={session.user.email ?? ""} />
           <MailDeliveryDiagnostics attempts={mailAttempts} sesEnabled={sesConfig?.activa ?? false} />
         </>
