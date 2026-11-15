@@ -113,48 +113,55 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
   );
 }
 
+/** Caja de aviso: el ícono va siempre, porque el CSS la reparte en ícono + texto. */
+function Attention({
+  tone,
+  label,
+  children
+}: Readonly<{ tone: "ok" | "warning"; label: string; children: React.ReactNode }>) {
+  const Icon = tone === "ok" ? CheckCircle2 : CircleAlert;
+  return (
+    <section className={`settings-attention settings-attention--${tone}`} aria-label={label}>
+      <span className="settings-attention__icon">
+        <Icon size={24} />
+      </span>
+      <div>{children}</div>
+    </section>
+  );
+}
+
 function SettingsAttentionBanner({
   data,
   needsAttention
 }: Readonly<{ data: SettingsOverviewData; needsAttention: boolean }>) {
   if (!needsAttention) {
     return (
-      <section className="settings-attention settings-attention--ok" aria-label="Estado general">
-        <span className="settings-attention__icon">
-          <CheckCircle2 size={24} />
-        </span>
-        <div>
-          <strong>Configuración local de Zoom disponible</strong>
-          <p>Hay credenciales y cuentas Zoom habilitadas. La conexión con Zoom no se verificó aquí.</p>
-        </div>
-      </section>
+      <Attention tone="ok" label="Estado general">
+        <strong>Configuración local de Zoom disponible</strong>
+        <p>Hay credenciales y cuentas Zoom habilitadas. La conexión con Zoom no se verificó aquí.</p>
+      </Attention>
     );
   }
 
   return (
-    <section className="settings-attention settings-attention--warning" aria-label="Estado general">
-      <span className="settings-attention__icon">
-        <CircleAlert size={24} />
-      </span>
-      <div>
-        <strong>Hay aspectos que requieren revisión</strong>
-        <ul>
-          {!data.zoomCredentialsAvailable ? (
-            <li>
-              {TEXTO_AVISO_CREDENCIALES[data.zoomCredentialsDiagnostic ?? ""] ??
-                "No se pudo confirmar la disponibilidad de credenciales."}{" "}
-              <Link href="/configuracion?seccion=zoom">Revisar credenciales de Zoom</Link>
-            </li>
-          ) : null}
-          {data.zoomAvailableHosts === 0 ? (
-            <li>
-              <Link href="/configuracion?seccion=salas">Revisar las cuentas Zoom habilitadas</Link>
-            </li>
-          ) : null}
-        </ul>
-        <p>La conexión con Zoom no se verificó aquí.</p>
-      </div>
-    </section>
+    <Attention tone="warning" label="Estado general">
+      <strong>Hay aspectos que requieren revisión</strong>
+      <ul>
+        {!data.zoomCredentialsAvailable ? (
+          <li>
+            {TEXTO_AVISO_CREDENCIALES[data.zoomCredentialsDiagnostic ?? ""] ??
+              "No se pudo confirmar la disponibilidad de credenciales."}{" "}
+            <Link href="/configuracion?seccion=zoom">Revisar credenciales de Zoom</Link>
+          </li>
+        ) : null}
+        {data.zoomAvailableHosts === 0 ? (
+          <li>
+            <Link href="/configuracion?seccion=salas">Revisar las cuentas Zoom habilitadas</Link>
+          </li>
+        ) : null}
+      </ul>
+      <p>La conexión con Zoom no se verificó aquí.</p>
+    </Attention>
   );
 }
 
@@ -163,37 +170,29 @@ function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
     return null;
   }
   return (
-    <section
-      className="settings-attention settings-attention--warning"
-      aria-label="Estado de Google Workspace"
-    >
-      <span className="settings-attention__icon">
-        <CircleAlert size={24} />
-      </span>
-      <div>
-        <strong>Google Workspace requiere revisión</strong>
-        <ul>
-          {data.pendingOperations > 0 ? (
-            <li>
-              <Link href="/configuracion?seccion=workspace">
-                {data.pendingOperations}{" "}
-                {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
-              </Link>
-            </li>
-          ) : null}
-          {!data.workspaceReady ? (
-            <li>
-              <Link href="/configuracion?seccion=workspace">Completar Google Workspace</Link>
-            </li>
-          ) : null}
-          {!data.integrationActive ? (
-            <li>
-              <Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link>
-            </li>
-          ) : null}
-        </ul>
-      </div>
-    </section>
+    <Attention tone="warning" label="Estado de Google Workspace">
+      <strong>Google Workspace requiere revisión</strong>
+      <ul>
+        {data.pendingOperations > 0 ? (
+          <li>
+            <Link href="/configuracion?seccion=workspace">
+              {data.pendingOperations}{" "}
+              {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
+            </Link>
+          </li>
+        ) : null}
+        {!data.workspaceReady ? (
+          <li>
+            <Link href="/configuracion?seccion=workspace">Completar Google Workspace</Link>
+          </li>
+        ) : null}
+        {!data.integrationActive ? (
+          <li>
+            <Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link>
+          </li>
+        ) : null}
+      </ul>
+    </Attention>
   );
 }
 
