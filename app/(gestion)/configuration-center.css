@@ -33,23 +33,19 @@
   font-size: 0.94rem;
 }
 
-.settings-center__masthead-icon {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid #cfe1e7;
-  border-radius: 13px;
-  background: #edf6f8;
-  color: var(--brand);
-}
-
 .settings-center__layout {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
   align-items: start;
   gap: 28px;
+}
+
+.settings-center__layout--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-center__layout--solo .settings-center__content {
+  max-width: none;
 }
 
 .settings-center__rail {
@@ -285,13 +281,12 @@
 
 .settings-overview-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 12px;
 }
 
 .settings-overview-card {
   min-width: 0;
-  min-height: 132px;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 20px;
   align-items: start;
@@ -925,10 +920,6 @@
 @media (max-width: 640px) {
   .settings-center__masthead {
     margin-bottom: 16px;
-  }
-
-  .settings-center__masthead-icon {
-    display: none;
   }
 
   .settings-center__masthead h1 {

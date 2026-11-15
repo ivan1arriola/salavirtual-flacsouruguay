@@ -1,13 +1,4 @@
-import {
-  BookOpen,
-  Clock3,
-  History,
-  KeyRound,
-  LayoutDashboard,
-  MailCheck,
-  Settings,
-  Video
-} from "lucide-react";
+import { BookOpen, Clock3, History, KeyRound, LayoutDashboard, MailCheck, Video } from "lucide-react";
 import Link from "next/link";
 import {
   SETTINGS_SECTIONS,
@@ -37,6 +28,8 @@ export function SettingsCenterShell({
   navigationDetails?: Partial<Record<SettingsSection, string>>;
 }>) {
   const activeMetadata = SETTINGS_SECTIONS.find(({ id }) => id === activeSection) ?? SETTINGS_SECTIONS[0];
+  // En el Resumen las tarjetas ya son la navegación: mostrar además el menú de áreas la duplicaba.
+  const overview = activeSection === "resumen";
 
   return (
     <div className="settings-center">
@@ -46,35 +39,18 @@ export function SettingsCenterShell({
           <h1>Centro de configuración</h1>
           <p>Revisá el estado general y administrá cada área desde un solo lugar.</p>
         </div>
-        <span className="settings-center__masthead-icon" aria-hidden="true">
-          <Settings size={24} />
-        </span>
       </header>
 
-      <details className="settings-mobile-nav">
-        <summary>
-          <SectionIcon section={activeMetadata} />
-          <span>
-            <small>Sección actual</small>
-            <strong>{activeMetadata.label}</strong>
-          </span>
-          <span className="settings-mobile-nav__action">Cambiar sección</span>
-        </summary>
-        <nav aria-label="Secciones de configuración">
-          {SETTINGS_SECTIONS.map((item) => (
-            <SettingsNavLink
-              active={item.id === activeSection}
-              detail={navigationDetails?.[item.id]}
-              item={item}
-              key={item.id}
-            />
-          ))}
-        </nav>
-      </details>
-
-      <div className="settings-center__layout">
-        <aside className="settings-center__rail">
-          <p className="settings-center__rail-label">Configuración</p>
+      {overview ? null : (
+        <details className="settings-mobile-nav">
+          <summary>
+            <SectionIcon section={activeMetadata} />
+            <span>
+              <small>Sección actual</small>
+              <strong>{activeMetadata.label}</strong>
+            </span>
+            <span className="settings-mobile-nav__action">Cambiar sección</span>
+          </summary>
           <nav aria-label="Secciones de configuración">
             {SETTINGS_SECTIONS.map((item) => (
               <SettingsNavLink
@@ -85,7 +61,25 @@ export function SettingsCenterShell({
               />
             ))}
           </nav>
-        </aside>
+        </details>
+      )}
+
+      <div className={`settings-center__layout${overview ? " settings-center__layout--solo" : ""}`}>
+        {overview ? null : (
+          <aside className="settings-center__rail">
+            <p className="settings-center__rail-label">Configuración</p>
+            <nav aria-label="Secciones de configuración">
+              {SETTINGS_SECTIONS.map((item) => (
+                <SettingsNavLink
+                  active={item.id === activeSection}
+                  detail={navigationDetails?.[item.id]}
+                  item={item}
+                  key={item.id}
+                />
+              ))}
+            </nav>
+          </aside>
+        )}
         <div className="settings-center__content">{children}</div>
       </div>
     </div>
