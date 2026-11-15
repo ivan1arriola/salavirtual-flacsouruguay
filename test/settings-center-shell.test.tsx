@@ -30,6 +30,25 @@ describe("centro de configuración", () => {
     }
   });
 
+  it("el aviso de operaciones pendientes enlaza al bloque del propio Resumen", () => {
+    const html = renderToStaticMarkup(
+      <SettingsOverview
+        data={{
+          zoomAvailableHosts: 1,
+          zoomCredentialsAvailable: true,
+          workspaceReady: true,
+          integrationActive: true,
+          pendingOperations: 2,
+          totalHosts: 2,
+          activePrograms: 0,
+          totalPrograms: 0
+        }}
+      />
+    );
+    expect(html).toContain('href="#operaciones-pendientes"');
+    expect(html).toContain("2 operaciones pendientes con Google");
+  });
+
   it("todo aviso del Resumen lleva su ícono: el CSS lo reparte en ícono + texto", () => {
     const html = renderToStaticMarkup(
       <SettingsOverview
