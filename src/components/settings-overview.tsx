@@ -175,7 +175,7 @@ function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
       <ul>
         {data.pendingOperations > 0 ? (
           <li>
-            <Link href="/configuracion?seccion=workspace">
+            <Link href="#operaciones-pendientes">
               {data.pendingOperations}{" "}
               {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
             </Link>

@@ -21,6 +21,34 @@ describe("centro de configuración", () => {
     expect(html).not.toContain("settings-center__layout--solo");
   });
 
+  it("titula los grupos del menú en el lateral y en el móvil", () => {
+    const html = renderToStaticMarkup(
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+    );
+    for (const grupo of ["Integraciones", "Operación", "Comunicación", "Datos"]) {
+      expect(html.match(new RegExp(`settings-nav-group">${grupo}<`, "g"))).toHaveLength(2);
+    }
+  });
+
+  it("el aviso de operaciones pendientes enlaza al bloque del propio Resumen", () => {
+    const html = renderToStaticMarkup(
+      <SettingsOverview
+        data={{
+          zoomAvailableHosts: 1,
+          zoomCredentialsAvailable: true,
+          workspaceReady: true,
+          integrationActive: true,
+          pendingOperations: 2,
+          totalHosts: 2,
+          activePrograms: 0,
+          totalPrograms: 0
+        }}
+      />
+    );
+    expect(html).toContain('href="#operaciones-pendientes"');
+    expect(html).toContain("2 operaciones pendientes con Google");
+  });
+
   it("todo aviso del Resumen lleva su ícono: el CSS lo reparte en ícono + texto", () => {
     const html = renderToStaticMarkup(
       <SettingsOverview

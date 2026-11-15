@@ -24,7 +24,8 @@ import { formatDateTime } from "@/src/lib/ui/format";
 import {
   obtenerDatosPaginaConfiguracion,
   legacySettingsRedirect,
-  resolveSettingsSection
+  resolveSettingsSection,
+  workspaceReadiness
 } from "@/src/modules/configuracion/api";
 import { actualizarReportesAsistenciaAdmin } from "./actions";
 
@@ -125,16 +126,20 @@ export default async function ConfiguracionPage({
     };
   });
 
+  const readiness = workspaceReadiness({
+    serviceAccountEmail: configuration?.serviceAccountEmail ?? null,
+    privateKeyConfigurada: Boolean(configuration?.privateKeyCifrada || configuration?.privateKey),
+    serviceAccountSubject: configuration?.serviceAccountSubject ?? null,
+    driveDestinationId: configuration?.driveDestinationId ?? null,
+    activa: configuration?.activa ?? false
+  });
+
   return (
     <SettingsCenterShell
       activeSection={section}
       navigationDetails={{
         salas: `${availableHosts} de ${hosts.length} cuentas habilitadas`,
         programas: `${activeProgramCount} de ${programCount} activos`,
-        workspace:
-          pendingMeetOperations.length > 0
-            ? `${pendingMeetOperations.length} pendientes`
-            : "Integración y permisos",
         zoom: resumenCredencialesZoom(zoomCredentialsAvailable, zoomCredentialsDiagnostic)
       }}
     >
@@ -163,6 +168,11 @@ export default async function ConfiguracionPage({
               pendingOperations: pendingMeetOperations.length
             }}
           />
+          {pendingOperationItems.length > 0 ? (
+            <section id="operaciones-pendientes" className="content-section settings-workspace-health">
+              <PendingMeetOperationsManager items={pendingOperationItems} />
+            </section>
+          ) : null}
         </>
       ) : null}
 
@@ -171,12 +181,8 @@ export default async function ConfiguracionPage({
           title="Google Workspace"
           description="Revisá la salud de la integración, sus credenciales, permisos y archivos."
           status={
-            <span
-              className={`settings-section-status ${pendingMeetOperations.length > 0 ? "is-warning" : "is-ok"}`}
-            >
-              {pendingMeetOperations.length > 0
-                ? `${pendingMeetOperations.length} pendientes`
-                : "Sin pendientes"}
+            <span className={`settings-section-status ${readiness.ready ? "is-ok" : "is-warning"}`}>
+              {readiness.readyCount} de {readiness.totalCount} requisitos
             </span>
           }
         />
@@ -185,7 +191,7 @@ export default async function ConfiguracionPage({
       {section === "zoom" ? (
         <SettingsSectionHeader
           title="Zoom"
-          description="Administrá las credenciales Server-to-Server OAuth institucionales."
+          description="Credenciales, webhook y grupo de cuentas de Zoom."
           status={
             <span
               className={`settings-section-status ${zoomCredentialsAvailable ? "is-neutral" : "is-warning"}`}
@@ -202,7 +208,7 @@ export default async function ConfiguracionPage({
       {section === "salas" ? (
         <SettingsSectionHeader
           title="Salas"
-          description="Administrá las cuentas institucionales que alojan las reuniones."
+          description="Cuentas de Zoom y Meet que alojan reuniones."
           status={
             <span className="settings-section-status is-neutral">
               {availableHosts} de {hosts.length} cuentas habilitadas
@@ -247,9 +253,6 @@ export default async function ConfiguracionPage({
 
       {section === "workspace" ? (
         <div className="settings-workspace-flow">
-          <section className="content-section settings-workspace-health">
-            <PendingMeetOperationsManager items={pendingOperationItems} />
-          </section>
           <WorkspaceConfigForm
             initial={
               configuration
@@ -283,11 +286,6 @@ export default async function ConfiguracionPage({
             }
           />
           <ZoomWebhookConfig initialConfigured={Boolean(zoomConfig?.webhookSecretCifrado)} />
-        </div>
-      ) : null}
-
-      {section === "salas" ? (
-        <div className="settings-workspace-flow">
           <ZoomGrupoConfig
             grupoId={zoomGrupo?.grupoId ?? null}
             grupoNombre={zoomGrupo?.grupoNombre ?? null}
@@ -296,6 +294,11 @@ export default async function ConfiguracionPage({
             }
             ultimaSincronizacionResultado={zoomGrupo?.ultimaSincronizacionResultado ?? null}
           />
+        </div>
+      ) : null}
+
+      {section === "salas" ? (
+        <div className="settings-workspace-flow">
           <MeetHostsConfig
             hosts={hosts.map((host) => ({
               id: host.id,
@@ -333,6 +336,7 @@ export default async function ConfiguracionPage({
               La configuración de Amazon SES fue actualizada.
             </p>
           ) : null}
+          <h3 className="settings-subsection-title">Pruebas y diagnóstico</h3>
           <EmailTestForm defaultRecipient={session.user.email ?? ""} />
           <MailDeliveryDiagnostics attempts={mailAttempts} sesEnabled={sesConfig?.activa ?? false} />
         </>
