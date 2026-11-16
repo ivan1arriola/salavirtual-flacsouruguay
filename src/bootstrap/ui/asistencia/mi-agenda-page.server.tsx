@@ -1,4 +1,5 @@
 import { Activity, CalendarCheck2, CalendarRange, Clock3, History } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -14,13 +15,258 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-format";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import {
+  agruparPorDia,
+  colorCuentaZoom,
+  PALETA_CUENTAS_ZOOM
+} from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-personal.adapter";
 import {
   agruparPorMes,
   claveMesUtc3,
-  resumirAsistencias
+  resumirAsistencias,
+  type RegistroAsistenciaPersonal
 } from "@/src/modules/asistencia/resumen-personal.domain";
+
+const upcomingInclude = {
+  instancia: {
+    include: {
+      solicitud: {
+        include: {
+          docentePrograma: {
+            include: { programa: true, docente: { include: { usuario: true } } }
+          }
+        }
+      },
+      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
+    }
+  }
+} satisfies Prisma.AsignacionAsistenciaTecnicaInclude;
+
+type UpcomingAssignment = Prisma.AsignacionAsistenciaTecnicaGetPayload<{ include: typeof upcomingInclude }>;
+
+function UpcomingMeeting({
+  assignment,
+  ahora,
+  isNext
+}: Readonly<{
+  assignment: UpcomingAssignment;
+  ahora: Date;
+  isNext: boolean;
+}>) {
+  const meeting = assignment.instancia;
+  const association = meeting.solicitud.docentePrograma;
+  const teacher = association.docente.usuario;
+  const teacherName = [teacher.nombres, teacher.apellidos].filter(Boolean).join(" ");
+  const event = seleccionarEventoProveedorActivo(meeting);
+  const provider = event?.proveedor.tipo ?? meeting.proveedorActivoTipo;
+  const isZoom = provider === "ZOOM" || provider === "ZOOM_HISTORICO";
+  const platform = isZoom ? "Zoom" : "Google Meet";
+  const host = event?.cuentaProveedor;
+  const hostName = host?.emailOrganizador ?? host?.nombre ?? "Sin cuenta asignada";
+  const hostColor = colorCuentaZoom(isZoom ? host?.emailOrganizador : null);
+  const palette = hostColor === null ? undefined : PALETA_CUENTAS_ZOOM[hostColor];
+  const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+  const modalityLabel = modalidad === "HIBRIDA" ? "Híbrida" : "Virtual";
+  const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+
+  return (
+    <article className={`assistant-agenda-item${isNext ? " is-next" : ""}`}>
+      <div className="assistant-agenda-main">
+        <div className="assistant-agenda-main-meta">
+          <span>{association.programa.nombre}</span>
+          {isNext ? <span className="assistant-agenda-next-label">Próxima</span> : null}
+        </div>
+        <h4>{meeting.solicitud.titulo}</h4>
+        <p>
+          {teacherName} · {modalityLabel}
+        </p>
+      </div>
+
+      <div className="assistant-agenda-schedule">
+        <MeetingScheduleTimes
+          startsAt={meeting.inicioProgramadoAt}
+          endsAt={meeting.finProgramadoAt}
+          requiresAssistance
+          modality={modalidad}
+          assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt}
+          assistanceEndsAt={meeting.finAsistenciaTecnicaAt}
+          viewerIsAssistant
+          compact
+          showDetails={false}
+        />
+      </div>
+
+      <div className="assistant-agenda-room">
+        <span>
+          {palette ? <i aria-hidden="true" style={{ backgroundColor: palette.fuerte }} /> : null}
+          {provider ? `Host de ${platform}` : "Plataforma por confirmar"}
+        </span>
+        {provider ? <strong>{hostName}</strong> : null}
+        {event?.codigoReunion ? (
+          <small>
+            {isZoom ? "N.º de reunión" : "Código"} {event.codigoReunion}
+          </small>
+        ) : null}
+      </div>
+
+      <div className="assistant-agenda-action">
+        <div className="assistant-agenda-primary-actions">
+          <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+            <Activity size={15} aria-hidden="true" />
+            Operar
+          </Link>
+          {event?.joinUrl ? (
+            <MeetLinkActions
+              className="assistant-agenda-link-actions"
+              openClassName="assistant-agenda-open-meeting"
+              provider={event.proveedor.tipo}
+              url={event.joinUrl}
+            />
+          ) : (
+            <span className="status status-warning">Enlace pendiente</span>
+          )}
+        </div>
+        {inicioAsistencia.getTime() > ahora.getTime() ? (
+          <details className="assistant-agenda-more">
+            <summary>Más acciones</summary>
+            <AssistantSelfUnassignButton assignmentId={assignment.id} title={meeting.solicitud.titulo} />
+          </details>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function UpcomingMeetings({
+  assignments,
+  ahora
+}: Readonly<{ assignments: readonly UpcomingAssignment[]; ahora: Date }>) {
+  if (assignments.length === 0) {
+    return (
+      <section className="content-section">
+        <div className="empty-state">
+          <CalendarCheck2 size={24} aria-hidden="true" />
+          <p>No tenés reuniones asignadas próximamente.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const months = new Set(assignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt)));
+  const upcomingPeriods = [...months].map((clave) => {
+    const monthAssignments = assignments.filter(
+      ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
+    );
+    return {
+      clave,
+      fecha: monthAssignments[0].instancia.inicioProgramadoAt,
+      cantidad: monthAssignments.length,
+      dias: agruparPorDia(monthAssignments, ({ instancia }) => instancia.inicioProgramadoAt, ahora)
+    };
+  });
+  const nextAssignmentId = assignments[0]?.id;
+
+  return (
+    <div className="period-list assistant-agenda-periods">
+      {upcomingPeriods.map((period) => (
+        <section className="content-section assistant-agenda-month" key={period.clave}>
+          <div className="section-heading assistant-agenda-month-heading">
+            <h2>{formatMonth(period.fecha)}</h2>
+            <span className="assistant-agenda-count">
+              {period.cantidad} {period.cantidad === 1 ? "reunión" : "reuniones"}
+            </span>
+          </div>
+
+          {period.dias.map((dia) => (
+            <section className="assistant-agenda-day" aria-label={dia.etiqueta} key={dia.clave}>
+              <h3>{dia.etiqueta}</h3>
+              {dia.items.map((assignment) => (
+                <UpcomingMeeting
+                  key={assignment.id}
+                  assignment={assignment}
+                  ahora={ahora}
+                  isNext={assignment.id === nextAssignmentId}
+                />
+              ))}
+            </section>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function AgendaHistory({ meetings }: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
+  const historyPeriods = agruparPorMes(meetings);
+  if (historyPeriods.length === 0) {
+    return (
+      <section className="content-section">
+        <div className="empty-state">
+          <History size={24} />
+          <p>Todavía no tenés reuniones en meses anteriores.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div className="period-list">
+      {historyPeriods.map((period) => {
+        const summary = resumirAsistencias(period.registros);
+        const hours = formatMinutes(summary.minutosVirtuales + summary.minutosHibridos);
+        return (
+          <section className="content-section" key={period.clave}>
+            <div className="section-heading">
+              <div>
+                <h2>{formatMonth(period.registros[0].inicioAt)}</h2>
+                <p>
+                  {summary.reuniones} reuniones · {hours} horas · {formatMoney(summary.monto)}
+                </p>
+              </div>
+            </div>
+            <AssistantMeetingsTable meetings={period.registros} />
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function AgendaTabs({
+  activeTab,
+  upcomingCount
+}: Readonly<{ activeTab: "proximas" | "mes" | "historico"; upcomingCount: number }>) {
+  return (
+    <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
+      <Link
+        aria-current={activeTab === "proximas" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`}
+        href="/mi-agenda"
+      >
+        <CalendarCheck2 size={16} aria-hidden="true" />
+        <span>Próximas</span>
+        {upcomingCount > 0 ? <span className="tab-pill">{upcomingCount}</span> : null}
+      </Link>
+      <Link
+        aria-current={activeTab === "mes" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`}
+        href="/mi-agenda?tab=mes"
+      >
+        <CalendarRange size={16} aria-hidden="true" />
+        <span>Mes</span>
+      </Link>
+      <Link
+        aria-current={activeTab === "historico" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "historico" ? " is-active" : ""}`}
+        href="/mi-agenda?tab=historico"
+      >
+        <History size={16} aria-hidden="true" />
+        <span>Histórico</span>
+      </Link>
+    </nav>
+  );
+}
 
 export default async function MiAgendaPage({
   searchParams
@@ -70,23 +316,7 @@ export default async function MiAgendaPage({
             }
           },
           orderBy: { instancia: { inicioProgramadoAt: "asc" } },
-          include: {
-            instancia: {
-              include: {
-                solicitud: {
-                  include: {
-                    docentePrograma: {
-                      include: {
-                        programa: true,
-                        docente: { include: { usuario: true } }
-                      }
-                    }
-                  }
-                },
-                eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-              }
-            }
-          }
+          include: upcomingInclude
         })
       : Promise.resolve([]),
     activeTab === "mes"
@@ -110,18 +340,7 @@ export default async function MiAgendaPage({
     })
   ]);
 
-  const upcomingPeriods = [
-    ...new Set(upcomingAssignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt)))
-  ].map((clave) => ({
-    clave,
-    assignments: upcomingAssignments.filter(
-      ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
-    )
-  }));
-  const nextAssignment = upcomingAssignments[0];
-
   const monthSummary = resumirAsistencias(monthMeetings);
-  const historyPeriods = agruparPorMes(historyMeetings);
 
   return (
     <div className="assistant-agenda-page">
@@ -129,177 +348,19 @@ export default async function MiAgendaPage({
         <div>
           <p className="page-eyebrow">Monitoreo</p>
           <h1>Mi agenda</h1>
-          <p>
-            {activeTab === "proximas" &&
-              (upcomingCount === 1
-                ? "1 reunión próxima asignada."
-                : `${upcomingCount} reuniones próximas asignadas.`)}
-            {activeTab === "mes" && `Reuniones, horas e importes estimados de ${formatMonth(ahora)}.`}
-            {activeTab === "historico" && "Horas e importes personales de meses anteriores."}
-          </p>
+          {activeTab === "mes" && <p>Reuniones, horas e importes estimados de {formatMonth(ahora)}.</p>}
+          {activeTab === "historico" ? <p>Horas e importes personales de meses anteriores.</p> : null}
         </div>
-        {activeTab === "proximas" && nextAssignment ? (
-          <div className="assistant-agenda-next-summary">
-            <CalendarCheck2 size={19} aria-hidden="true" />
-            <span>
-              <small>Próxima llegada para monitoreo</small>
-              <strong>
-                {(nextAssignment.instancia.modalidadOverride ??
-                  nextAssignment.instancia.solicitud.modalidad) === "HIBRIDA" &&
-                !nextAssignment.instancia.inicioAsistenciaTecnicaAt
-                  ? "Horario por confirmar"
-                  : formatDate(
-                      nextAssignment.instancia.inicioAsistenciaTecnicaAt ??
-                        nextAssignment.instancia.inicioProgramadoAt
-                    )}
-                {(nextAssignment.instancia.modalidadOverride ??
-                  nextAssignment.instancia.solicitud.modalidad) !== "HIBRIDA" ||
-                nextAssignment.instancia.inicioAsistenciaTecnicaAt
-                  ? ` · ${formatTime(nextAssignment.instancia.inicioAsistenciaTecnicaAt ?? nextAssignment.instancia.inicioProgramadoAt)}`
-                  : ""}
-              </strong>
-              <small>
-                La reunión empieza a las {formatTime(nextAssignment.instancia.inicioProgramadoAt)}
-              </small>
-            </span>
-          </div>
-        ) : activeTab === "mes" ? (
-          <RefreshButton />
-        ) : (
-          <CalendarCheck2 size={28} color="var(--brand)" aria-hidden="true" />
-        )}
+        {activeTab === "mes" ? <RefreshButton /> : null}
       </header>
 
-      <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
-        <Link className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`} href="/mi-agenda">
-          <CalendarCheck2 size={16} aria-hidden="true" />
-          <span>Próximas</span>
-          {upcomingCount > 0 ? <span className="tab-pill">{upcomingCount}</span> : null}
-        </Link>
-        <Link className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`} href="/mi-agenda?tab=mes">
-          <CalendarRange size={16} aria-hidden="true" />
-          <span>Mes</span>
-        </Link>
-        <Link
-          className={`assistant-tab${activeTab === "historico" ? " is-active" : ""}`}
-          href="/mi-agenda?tab=historico"
-        >
-          <History size={16} aria-hidden="true" />
-          <span>Histórico</span>
-        </Link>
-      </nav>
+      <AgendaTabs activeTab={activeTab} upcomingCount={upcomingCount} />
+
+      {activeTab === "proximas" ? <UpcomingMeetings assignments={upcomingAssignments} ahora={ahora} /> : null}
 
       {activeTab === "proximas" && configurarOAuthCalendarioZoom() ? (
         <CalendarioZoomAsistente conexion={assistant.calendarioZoom} estado={resolvedParams.calendario} />
       ) : null}
-
-      {activeTab === "proximas" &&
-        (upcomingAssignments.length === 0 ? (
-          <section className="content-section">
-            <div className="empty-state">
-              <CalendarCheck2 size={24} aria-hidden="true" />
-              <p>No tenés reuniones asignadas próximamente.</p>
-            </div>
-          </section>
-        ) : (
-          <div className="period-list assistant-agenda-periods">
-            {upcomingPeriods.map((period) => (
-              <section className="content-section assistant-agenda-month" key={period.clave}>
-                <div className="section-heading assistant-agenda-month-heading">
-                  <div>
-                    <p className="assistant-agenda-month-eyebrow">Agenda mensual</p>
-                    <h2>{formatMonth(period.assignments[0].instancia.inicioProgramadoAt)}</h2>
-                  </div>
-                  <span className="assistant-agenda-count">
-                    {period.assignments.length} {period.assignments.length === 1 ? "reunión" : "reuniones"}
-                  </span>
-                </div>
-
-                <div className="assistant-agenda-list">
-                  {period.assignments.map((assignment) => {
-                    const meeting = assignment.instancia;
-                    const association = meeting.solicitud.docentePrograma;
-                    const teacher = association.docente.usuario;
-                    const meet = seleccionarEventoProveedorActivo(meeting);
-                    const isNext = assignment.id === nextAssignment?.id;
-                    const roomName =
-                      meet?.cuentaProveedor?.emailOrganizador ??
-                      meet?.cuentaProveedor?.nombre ??
-                      "Sin cuenta asignada";
-                    const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
-                    const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
-                    const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-
-                    return (
-                      <article
-                        className={`assistant-agenda-item${isNext ? " is-next" : ""}`}
-                        key={assignment.id}
-                      >
-                        <div className="assistant-agenda-date-block">
-                          <span>{formatDate(inicioAsistencia)}</span>
-                          <MeetingScheduleTimes
-                            startsAt={meeting.inicioProgramadoAt}
-                            endsAt={meeting.finProgramadoAt}
-                            requiresAssistance
-                            modality={modalidad}
-                            assistanceStartsAt={meeting.inicioAsistenciaTecnicaAt}
-                            assistanceEndsAt={meeting.finAsistenciaTecnicaAt}
-                            viewerIsAssistant
-                            compact
-                          />
-                          {isNext ? <em>Próxima</em> : null}
-                        </div>
-
-                        <div className="assistant-agenda-main">
-                          <div className="assistant-agenda-main-meta">
-                            <span>{association.programa.nombre}</span>
-                            <span className="assistant-agenda-mode">
-                              {modalidad === "HIBRIDA" ? "Híbrida · presencial" : "Virtual"}
-                            </span>
-                          </div>
-                          <h3>{meeting.solicitud.titulo}</h3>
-                          <p>
-                            {teacher.nombres} {teacher.apellidos}
-                          </p>
-                        </div>
-
-                        <div className="assistant-agenda-room">
-                          <span>Cuenta Meet</span>
-                          <strong>{roomName}</strong>
-                          <small>{meet?.codigoReunion ?? "Meet pendiente"}</small>
-                        </div>
-
-                        <div className="assistant-agenda-action">
-                          <div className="assistant-agenda-primary-actions">
-                            <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
-                              <Activity size={15} aria-hidden="true" />
-                              Operar
-                            </Link>
-                            {meet?.joinUrl ? (
-                              <MeetLinkActions
-                                className="assistant-agenda-link-actions"
-                                openClassName="assistant-agenda-open-meet"
-                                url={meet.joinUrl}
-                              />
-                            ) : (
-                              <span className="status status-warning">Meet pendiente</span>
-                            )}
-                          </div>
-                          {inicioAsistencia.getTime() > ahora.getTime() ? (
-                            <AssistantSelfUnassignButton
-                              assignmentId={assignment.id}
-                              title={meeting.solicitud.titulo}
-                            />
-                          ) : null}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        ))}
 
       {activeTab === "mes" && (
         <>
@@ -340,36 +401,7 @@ export default async function MiAgendaPage({
         </>
       )}
 
-      {activeTab === "historico" &&
-        (historyPeriods.length === 0 ? (
-          <section className="content-section">
-            <div className="empty-state">
-              <History size={24} />
-              <p>Todavía no tenés reuniones en meses anteriores.</p>
-            </div>
-          </section>
-        ) : (
-          <div className="period-list">
-            {historyPeriods.map((period) => {
-              const periodSummary = resumirAsistencias(period.registros);
-              return (
-                <section className="content-section" key={period.clave}>
-                  <div className="section-heading">
-                    <div>
-                      <h2>{formatMonth(period.registros[0].inicioAt)}</h2>
-                      <p>
-                        {periodSummary.reuniones} reuniones ·{" "}
-                        {formatMinutes(periodSummary.minutosVirtuales + periodSummary.minutosHibridos)} horas
-                        · {formatMoney(periodSummary.monto)}
-                      </p>
-                    </div>
-                  </div>
-                  <AssistantMeetingsTable meetings={period.registros} />
-                </section>
-              );
-            })}
-          </div>
-        ))}
+      {activeTab === "historico" ? <AgendaHistory meetings={historyMeetings} /> : null}
     </div>
   );
 }

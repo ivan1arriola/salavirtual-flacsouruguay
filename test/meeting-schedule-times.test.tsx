@@ -61,6 +61,16 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
     expect(html).not.toContain("Horario técnico por confirmar");
   });
 
+  it("conserva los dos rangos y los estados pendientes en la agenda compacta", () => {
+    const html = renderSchedule({ compact: true, showDetails: false, viewerIsAssistant: true });
+    expect(html).toContain("Tu monitoreo");
+    expect(html).toContain("09:30–17:30");
+    expect(html).toContain("10:00–17:00");
+    expect(html).not.toContain("<small>");
+    const pending = renderSchedule({ assistanceStartsAt: null, showDetails: false });
+    expect(pending).toContain("Horario técnico por confirmar");
+  });
+
   it("omite cobertura cuando no se requiere, sin ocultar la hora del encuentro", () => {
     const html = renderSchedule({ requiresAssistance: false });
     expect(html).not.toContain("Horario de monitoreo");

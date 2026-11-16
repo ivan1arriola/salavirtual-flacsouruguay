@@ -12,7 +12,8 @@ export function MeetingScheduleTimes({
   requiresAssistance = false,
   modality = "VIRTUAL",
   viewerIsAssistant = false,
-  compact = false
+  compact = false,
+  showDetails = true
 }: Readonly<{
   startsAt: Instant;
   endsAt: Instant;
@@ -22,6 +23,7 @@ export function MeetingScheduleTimes({
   modality?: "VIRTUAL" | "HIBRIDA";
   viewerIsAssistant?: boolean;
   compact?: boolean;
+  showDetails?: boolean;
 }>) {
   const start = new Date(startsAt);
   const end = new Date(endsAt);
@@ -52,19 +54,23 @@ export function MeetingScheduleTimes({
             {coverageMissing ? (
               <>
                 <strong>Horario técnico por confirmar</strong>
-                <small>
-                  Administración debe definir la llegada y salida del asistente antes de esta cobertura
-                  híbrida.
-                </small>
+                {showDetails ? (
+                  <small>
+                    Administración debe definir la llegada y salida del asistente antes de esta cobertura
+                    híbrida.
+                  </small>
+                ) : null}
               </>
             ) : (
               <>
                 <strong>{timeRange(assistanceStart, assistanceEnd)}</strong>
-                <small>
-                  {viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"}{" "}
-                  {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}:{" "}
-                  {formatTime(assistanceEnd)}
-                </small>
+                {showDetails ? (
+                  <small>
+                    {viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"}{" "}
+                    {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}:{" "}
+                    {formatTime(assistanceEnd)}
+                  </small>
+                ) : null}
               </>
             )}
           </div>
@@ -75,9 +81,11 @@ export function MeetingScheduleTimes({
         <div>
           <span>Horario del encuentro</span>
           <strong>{timeRange(start, end)}</strong>
-          <small>
-            La reunión empieza: {formatTime(start)} · Finaliza: {formatTime(end)}
-          </small>
+          {showDetails ? (
+            <small>
+              La reunión empieza: {formatTime(start)} · Finaliza: {formatTime(end)}
+            </small>
+          ) : null}
         </div>
       </div>
     </div>

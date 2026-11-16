@@ -9,7 +9,7 @@ const stylesheet = postcss.parse(
 function declarationsInMobileRule(selector: string): Map<string, string> {
   let values = new Map<string, string>();
   stylesheet.walkAtRules("media", (media) => {
-    if (media.params !== "(max-width: 560px)") {
+    if (media.params !== "(max-width: 700px)") {
       return;
     }
     media.walkRules(selector, (rule) => {
@@ -24,13 +24,14 @@ function declarationsInMobileRule(selector: string): Map<string, string> {
 }
 
 describe("horarios de monitoreo en Mi agenda móvil", () => {
-  it("apila los horarios a todo el ancho debajo de la fecha en teléfonos", () => {
-    expect(declarationsInMobileRule(".assistant-agenda-date-block").get("display")).toBe("grid");
+  it("presenta los horarios juntos y deja la cobertura a todo el ancho", () => {
+    expect(declarationsInMobileRule(".assistant-agenda-item").get("grid-template-columns")).toBe(
+      "minmax(0, 1fr)"
+    );
     expect(
-      declarationsInMobileRule(".assistant-agenda-date-block > .meeting-schedule-times").get("grid-column")
-    ).toBe("1 / -1");
-    expect(
-      declarationsInMobileRule(".assistant-agenda-date-block > .meeting-schedule-times").get("width")
-    ).toBe("100%");
+      declarationsInMobileRule(".assistant-agenda-schedule .meeting-schedule-times.is-compact").get(
+        "grid-template-columns"
+      )
+    ).toBe("repeat(2, minmax(0, 1fr))");
   });
 });
