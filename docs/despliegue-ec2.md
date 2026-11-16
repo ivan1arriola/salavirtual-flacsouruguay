@@ -275,7 +275,7 @@ Este orden separa el riesgo de hosting del riesgo de datos y simplifica el rollb
 
 La opción aparece en **Mi agenda** cuando están configurados
 `ASISTENCIA_CALENDAR_GOOGLE_ID` y `ASISTENCIA_CALENDAR_GOOGLE_SECRET` en el
-entorno del servicio. En el proyecto de Google Cloud de esta integración:
+entorno del servicio. Configurar un proyecto de Google Cloud para esta integración.
 
 1. Habilitar Google Calendar API y crear un cliente OAuth de tipo aplicación web
    dedicado a esta conexión. Configurar la audiencia externa si se admiten

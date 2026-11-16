@@ -160,25 +160,16 @@ async function obtenerEventosPublicados(client: OAuth2Client, url: string, ahora
 }
 
 async function actualizarEvento(client: OAuth2Client, url: string, id: string, evento: EventoCoberturaZoom) {
-  await client.request({
-    url: `${url}/${encodeURIComponent(id)}`,
-    method: "PATCH",
-    data: evento.data,
-    timeout: 5000
-  });
+  const endpoint = `${url}/${encodeURIComponent(id)}`;
+  await client.request({ url: endpoint, method: "PATCH", data: evento.data, timeout: 5000 });
 }
 
 async function publicarEvento(client: OAuth2Client, url: string, evento: EventoCoberturaZoom) {
   for (let intento = 0; intento < 20; intento++) {
     const id = intento === 0 ? evento.id : `${evento.id}${intento.toString(16)}`;
+    const data = { ...evento.data, id };
     try {
-      await client.request({
-        url,
-        method: "POST",
-        data: { ...evento.data, id },
-        timeout: 5000,
-        retry: false
-      });
+      await client.request({ url, method: "POST", data, timeout: 5000, retry: false });
       return;
     } catch (error) {
       if (!esErrorGoogle(error, 409)) {
@@ -198,7 +189,7 @@ async function publicarEvento(client: OAuth2Client, url: string, evento: EventoC
   throw new Error("Google Calendar agotó las variantes de ID para esta cobertura.");
 }
 
-async function obtenerEventosDeseados(tx: Prisma.TransactionClient, asistenteTecnicoId: string, ahora: Date) {
+async function leerEventosDeseados(tx: Prisma.TransactionClient, asistenteTecnicoId: string, ahora: Date) {
   const asignaciones = await tx.asignacionAsistenciaTecnica.findMany({
     where: {
       asistenteTecnicoId,
@@ -253,11 +244,10 @@ async function conciliarEventos(
   }
   for (const evento of eventos) {
     const anterior = publicados.get(evento.id);
+    const huella = evento.data.extendedProperties.private.flacsoHuella;
     if (!anterior) {
       await publicarEvento(client, url, evento);
-    } else if (
-      anterior.extendedProperties?.private?.flacsoHuella !== evento.data.extendedProperties.private.flacsoHuella
-    ) {
+    } else if (anterior.extendedProperties?.private?.flacsoHuella !== huella) {
       await actualizarEvento(client, url, anterior.id, evento);
     }
   }
