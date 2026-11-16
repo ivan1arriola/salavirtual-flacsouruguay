@@ -17,6 +17,7 @@ export const perfilPersonalSchema = z.object({
     .max(500)
     .refine((value) => value === "" || URL.canParse(value), "La URL de imagen no es válida.")
     .transform((value) => value || null)
+    .optional()
 });
 
 export const cambioPasswordSchema = z
