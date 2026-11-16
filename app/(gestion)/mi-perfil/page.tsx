@@ -214,7 +214,8 @@ function NotificationsPanel({
             <span>Por correo</span>
           </div>
           {tipos.map((tipo) => {
-            const preference = preferencias.find((item) => item.tipo === tipo) ?? PREFERENCIA_PREDETERMINADA;
+            const saved = preferencias.find((item) => item.tipo === tipo);
+            const preference = saved ?? PREFERENCIA_PREDETERMINADA;
             const label = etiquetaTipoNotificacion(tipo);
             return (
               <div className="notification-preference-row" key={tipo}>
@@ -241,11 +242,13 @@ function NotificationsPanel({
   );
 }
 
-function AvailabilityPanel({ asistente }: Readonly<{ asistente: NonNullable<Profile["asistenteTecnico"]> }>) {
+type Assistant = NonNullable<Profile["asistenteTecnico"]>;
+
+function AvailabilityPanel({ asistente }: Readonly<{ asistente: Assistant }>) {
   return (
     <ProfilePanel
       title="Disponibilidad habitual"
-      description="Administración la usa para sugerir coberturas. Las excepciones por fecha tienen prioridad."
+      description="Se usa para sugerir coberturas. Las excepciones por fecha tienen prioridad."
     >
       <form className="profile-form" action={guardarDisponibilidad}>
         <label className="availability-general">

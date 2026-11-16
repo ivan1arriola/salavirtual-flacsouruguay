@@ -1,5 +1,8 @@
 import type { RolUsuario } from "@/src/modules/usuarios/roles";
-import { TIPOS_NOTIFICACION, type TipoNotificacion } from "@/src/modules/notificaciones/notificaciones.domain";
+import {
+  TIPOS_NOTIFICACION,
+  type TipoNotificacion
+} from "@/src/modules/notificaciones/notificaciones.domain";
 
 export function tiposNotificacionPerfil(rol: RolUsuario): TipoNotificacion[] {
   return TIPOS_NOTIFICACION.filter((tipo) => {

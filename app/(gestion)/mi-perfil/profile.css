@@ -116,6 +116,10 @@
   cursor: pointer;
 }
 
+.my-profile .availability-row:not(:has(input[type="checkbox"]:checked)) > :is(input, select) {
+  display: none;
+}
+
 .my-profile .availability-row input[type="time"],
 .my-profile .availability-row select {
   width: 100%;
@@ -142,6 +146,17 @@
 
   .profile-sections > a {
     padding-inline: 8px;
+  }
+
+  .my-profile .notification-preference-head,
+  .my-profile .notification-preference-row {
+    grid-template-columns: minmax(0, 1fr) 50px 60px;
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .my-profile .notification-preference-row strong {
+    overflow-wrap: anywhere;
   }
 
   .my-profile .profile-form,

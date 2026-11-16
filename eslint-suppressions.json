@@ -19,11 +19,6 @@
       "count": 1
     }
   },
-  "app/(gestion)/mi-perfil/page.tsx": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 2
-    }
-  },
   "app/(gestion)/monitoreo/gestion/page.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 4
