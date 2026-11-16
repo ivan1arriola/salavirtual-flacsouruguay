@@ -43,7 +43,7 @@ Esta contraseña corresponde a tu **usuario personal de Sala Virtual**. No debe 
 
 ## 2. Contraseña personal de Sala Virtual
 
-Desde **Mi perfil → Contraseña** podés modificar la contraseña de tu usuario de Sala Virtual.
+Desde **Mi perfil → Acceso y contraseña** podés modificar la contraseña de tu usuario de Sala Virtual.
 
 Para cambiar una contraseña existente deberás ingresar:
 
@@ -366,7 +366,9 @@ Desde **Mi perfil** también podés configurar qué tipos de avisos querés reci
 
 ## 18. Mi perfil y cuenta
 
-Desde el menú de tu cuenta seleccioná **Mi perfil** para administrar información como nombre, apellido, teléfono, foto de perfil, contraseña y preferencias de notificaciones.
+Desde el menú de tu cuenta seleccioná **Mi perfil**. En **Mis datos** podés editar tu nombre, apellido y
+teléfono. Usá **Acceso y contraseña** para gestionar la contraseña y **Notificaciones** para elegir
+cómo recibir los avisos de Sala Virtual.
 
 El mismo menú permite:
 

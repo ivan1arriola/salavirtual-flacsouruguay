@@ -6,8 +6,8 @@ import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { actualizarPerfilPersonal, cambiarPasswordPersonal } from "@/src/modules/usuarios/perfil.service";
-import { esTipoNotificacion, TIPOS_NOTIFICACION } from "@/src/modules/notificaciones/notificaciones.domain";
 import { actualizarDisponibilidadSemanal } from "@/src/modules/asistencia/asistencia.service";
+import { tiposNotificacionPerfil } from "./preferencias";
 
 async function actorActual() {
   const session = await auth();
@@ -30,7 +30,7 @@ export async function guardarPerfil(formData: FormData): Promise<void> {
     estado = "error-perfil";
   }
   revalidatePath("/mi-perfil");
-  redirect(`/mi-perfil?estado=${estado}`);
+  redirect(`/mi-perfil?seccion=datos&estado=${estado}`);
 }
 
 export async function guardarPassword(formData: FormData): Promise<void> {
@@ -42,7 +42,7 @@ export async function guardarPassword(formData: FormData): Promise<void> {
     estado = "error-password";
   }
   revalidatePath("/mi-perfil");
-  redirect(`/mi-perfil?estado=${estado}`);
+  redirect(`/mi-perfil?seccion=acceso&estado=${estado}`);
 }
 
 export async function guardarPreferenciasNotificacion(formData: FormData): Promise<void> {
@@ -50,10 +50,7 @@ export async function guardarPreferenciasNotificacion(formData: FormData): Promi
   let estado = "notificaciones-guardadas";
   try {
     await db.$transaction(async (tx) => {
-      for (const tipo of TIPOS_NOTIFICACION) {
-        if (!esTipoNotificacion(tipo)) {
-          continue;
-        }
+      for (const tipo of tiposNotificacionPerfil(actor.rol)) {
         await tx.preferenciaNotificacion.upsert({
           where: { usuarioId_tipo: { usuarioId: actor.id, tipo } },
           create: {
@@ -73,7 +70,7 @@ export async function guardarPreferenciasNotificacion(formData: FormData): Promi
     estado = "error-notificaciones";
   }
   revalidatePath("/mi-perfil");
-  redirect(`/mi-perfil?estado=${estado}`);
+  redirect(`/mi-perfil?seccion=notificaciones&estado=${estado}`);
 }
 
 export async function guardarDisponibilidad(formData: FormData): Promise<void> {
@@ -98,5 +95,5 @@ export async function guardarDisponibilidad(formData: FormData): Promise<void> {
   revalidatePath("/mi-perfil");
   revalidatePath("/asistencia-tecnica");
   revalidatePath("/monitoreo");
-  redirect(`/mi-perfil?estado=${estado}`);
+  redirect(`/mi-perfil?seccion=disponibilidad&estado=${estado}`);
 }
