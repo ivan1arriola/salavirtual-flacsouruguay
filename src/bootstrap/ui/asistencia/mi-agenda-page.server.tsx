@@ -233,6 +233,41 @@ function AgendaHistory({ meetings }: Readonly<{ meetings: readonly RegistroAsist
   );
 }
 
+function AgendaTabs({
+  activeTab,
+  upcomingCount
+}: Readonly<{ activeTab: "proximas" | "mes" | "historico"; upcomingCount: number }>) {
+  return (
+    <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
+      <Link
+        aria-current={activeTab === "proximas" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`}
+        href="/mi-agenda"
+      >
+        <CalendarCheck2 size={16} aria-hidden="true" />
+        <span>Próximas</span>
+        {upcomingCount > 0 ? <span className="tab-pill">{upcomingCount}</span> : null}
+      </Link>
+      <Link
+        aria-current={activeTab === "mes" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`}
+        href="/mi-agenda?tab=mes"
+      >
+        <CalendarRange size={16} aria-hidden="true" />
+        <span>Mes</span>
+      </Link>
+      <Link
+        aria-current={activeTab === "historico" ? "page" : undefined}
+        className={`assistant-tab${activeTab === "historico" ? " is-active" : ""}`}
+        href="/mi-agenda?tab=historico"
+      >
+        <History size={16} aria-hidden="true" />
+        <span>Histórico</span>
+      </Link>
+    </nav>
+  );
+}
+
 export default async function MiAgendaPage({
   searchParams
 }: Readonly<{
@@ -319,33 +354,7 @@ export default async function MiAgendaPage({
         {activeTab === "mes" ? <RefreshButton /> : null}
       </header>
 
-      <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
-        <Link
-          aria-current={activeTab === "proximas" ? "page" : undefined}
-          className={`assistant-tab${activeTab === "proximas" ? " is-active" : ""}`}
-          href="/mi-agenda"
-        >
-          <CalendarCheck2 size={16} aria-hidden="true" />
-          <span>Próximas</span>
-          {upcomingCount > 0 ? <span className="tab-pill">{upcomingCount}</span> : null}
-        </Link>
-        <Link
-          aria-current={activeTab === "mes" ? "page" : undefined}
-          className={`assistant-tab${activeTab === "mes" ? " is-active" : ""}`}
-          href="/mi-agenda?tab=mes"
-        >
-          <CalendarRange size={16} aria-hidden="true" />
-          <span>Mes</span>
-        </Link>
-        <Link
-          aria-current={activeTab === "historico" ? "page" : undefined}
-          className={`assistant-tab${activeTab === "historico" ? " is-active" : ""}`}
-          href="/mi-agenda?tab=historico"
-        >
-          <History size={16} aria-hidden="true" />
-          <span>Histórico</span>
-        </Link>
-      </nav>
+      <AgendaTabs activeTab={activeTab} upcomingCount={upcomingCount} />
 
       {activeTab === "proximas" ? <UpcomingMeetings assignments={upcomingAssignments} ahora={ahora} /> : null}
 
