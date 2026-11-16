@@ -86,7 +86,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^5.1.0",
-    "dependency-cruiser": "^17.3.2",
+    "dependency-cruiser": "^18.7.2",
     "dotenv": "^16.6.1",
     "esbuild": "^0.28.1",
     "eslint": "^9.39.1",
