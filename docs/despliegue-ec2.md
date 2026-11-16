@@ -270,3 +270,26 @@ Cuando la aplicación ya esté estable en EC2:
 7. validar `/api/health` y conteos críticos antes de reabrir escrituras.
 
 Este orden separa el riesgo de hosting del riesgo de datos y simplifica el rollback.
+
+## Google Calendar personal de asistentes técnicos
+
+La opción aparece en **Mi agenda** cuando están configurados
+`ASISTENCIA_CALENDAR_GOOGLE_ID` y `ASISTENCIA_CALENDAR_GOOGLE_SECRET` en el
+entorno del servicio. En el proyecto de Google Cloud de esta integración:
+
+1. Habilitar Google Calendar API y crear un cliente OAuth de tipo aplicación web
+   dedicado a esta conexión. Configurar la audiencia externa si se admiten
+   cuentas personales y completar los requisitos de publicación de Google.
+2. Registrar como URI de redirección
+   `https://salavirtual.flacso.edu.uy/api/v1/asistencia/calendario-zoom`.
+   En cada entorno debe coincidir con el origen de `APP_BASE_URL` y la misma ruta.
+3. Declarar los permisos `openid`, `email` y
+   `https://www.googleapis.com/auth/calendar.app.created`.
+4. Verificar el timer ya instalado por el despliegue
+   `salavirtual-google-pending.timer`. Reconcilia las coberturas en tandas cada
+   cinco minutos. La opción **Sincronizar ahora** permite probar una conexión
+   individual.
+
+La conexión crea un calendario secundario y usa el cifrado de configuración
+existente para guardar el token de renovación. Probar con una cuenta personal de
+pruebas la conexión, una reasignación, una reprogramación y la desconexión.

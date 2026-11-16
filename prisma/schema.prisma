@@ -209,6 +209,17 @@ model AsistenteTecnico {
   liquidaciones                  LiquidacionAsistenciaTecnica[]
   reportesMensuales              EnvioReporteMensualAsistencia[]
   registrosMonitoreoRetroactivo   RegistroMonitoreoRetroactivo[]
+  calendarioZoom                 CalendarioZoomAsistente?
+}
+
+model CalendarioZoomAsistente {
+  asistenteId     String           @id
+  calendarId      String
+  email           String
+  tokenCifrado    String           @db.Text
+  ultimoIntentoAt DateTime?
+  error           String?
+  asistente       AsistenteTecnico @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
 }
 
 model EnvioReporteMensualAsistencia {
