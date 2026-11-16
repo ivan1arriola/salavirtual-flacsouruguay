@@ -212,23 +212,6 @@
       "count": 1
     }
   },
-  "src/bootstrap/ui/asistencia/mi-agenda-page.server.tsx": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    },
-    "sonarjs/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx": {
     "sonarjs/cognitive-complexity": {
       "count": 1
