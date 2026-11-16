@@ -1,20 +1,33 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 describe("objetivos táctiles de Mi agenda en móvil", () => {
-  it("mantiene en 44px las acciones de monitoreo y Meet", () => {
-    const css = readFileSync(join(process.cwd(), "app/(gestion)/assistant-agenda.css"), "utf8");
-    const mobileRules = css.match(/@media \(max-width: 560px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  it("mantiene en 44px las acciones primarias y secundarias de cada cobertura", () => {
+    const css = readFileSync(new URL("../app/(gestion)/assistant-agenda.css", import.meta.url), "utf8");
+    const selectors = new Set<string>();
+    postcss.parse(css).walkAtRules("media", (media) => {
+      if (media.params !== "(max-width: 700px)") {
+        return;
+      }
+      media.walkRules((rule) => {
+        const hasTouchTarget = rule.nodes.some(
+          (node) => node.type === "decl" && node.prop === "min-height" && node.value === "44px"
+        );
+        if (hasTouchTarget) {
+          rule.selectors.forEach((selector) => selectors.add(selector));
+        }
+      });
+    });
 
-    expect(mobileRules).toContain(".assistant-self-unassign-button");
-    expect(mobileRules).toMatch(
-      /\.assistant-agenda-primary-actions > \.secondary-action\s*\{[^}]*min-height:\s*44px/s
-    );
-    expect(mobileRules).toMatch(/\.assistant-self-unassign-button\s*\{[^}]*min-height:\s*44px/s);
-    expect(mobileRules).toMatch(/\.assistant-agenda-open-meet\s*\{[^}]*min-height:\s*44px/s);
-    expect(mobileRules).toMatch(
-      /\.assistant-agenda-link-actions \.assistant-agenda-open-meet,\s*\.assistant-agenda-link-actions \.copy-meet-button\s*\{[^}]*min-height:\s*44px/s
+    expect([...selectors]).toEqual(
+      expect.arrayContaining([
+        ".assistant-agenda-action .secondary-action",
+        ".assistant-agenda-open-meeting",
+        ".assistant-agenda-link-actions .copy-meet-button",
+        ".assistant-agenda-more > summary",
+        ".assistant-agenda-action .assistant-self-unassign-button"
+      ])
     );
   });
 });

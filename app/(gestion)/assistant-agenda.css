@@ -342,7 +342,8 @@
   .assistant-agenda-action .secondary-action,
   .assistant-agenda-open-meeting,
   .assistant-agenda-link-actions .copy-meet-button,
-  .assistant-agenda-more > summary {
+  .assistant-agenda-more > summary,
+  .assistant-agenda-action .assistant-self-unassign-button {
     min-height: 44px;
   }
 
