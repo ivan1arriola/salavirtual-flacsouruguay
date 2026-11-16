@@ -59,7 +59,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --write 'app/(gestion)/mi-perfil/page.tsx' && git --no-pager diff -- 'app/(gestion)/mi-perfil/page.tsx' && git diff --exit-code -- 'app/(gestion)/mi-perfil/page.tsx'",
+    "format:check": "prettier --check .",
     "deadcode": "knip",
     "architecture": "depcruise src app auth.ts scripts test --config .dependency-cruiser.cjs --output-type err"
   },

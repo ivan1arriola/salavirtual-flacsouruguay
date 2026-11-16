@@ -261,11 +261,7 @@ function AvailabilityPanel({ asistente }: Readonly<{ asistente: Assistant }>) {
             return (
               <div className="availability-row" key={label}>
                 <label>
-                  <input
-                    name={`dia-${diaSemana}:activo`}
-                    type="checkbox"
-                    defaultChecked={Boolean(current)}
-                  />
+                  <input name={`dia-${diaSemana}:activo`} type="checkbox" defaultChecked={Boolean(current)} />
                   <strong>{label}</strong>
                 </label>
                 <input
