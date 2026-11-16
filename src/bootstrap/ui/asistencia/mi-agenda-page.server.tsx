@@ -24,7 +24,8 @@ import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-p
 import {
   agruparPorMes,
   claveMesUtc3,
-  resumirAsistencias
+  resumirAsistencias,
+  type RegistroAsistenciaPersonal
 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 const upcomingInclude = {
@@ -196,6 +197,42 @@ function UpcomingMeetings({
   );
 }
 
+function AgendaHistory({ meetings }: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
+  const historyPeriods = agruparPorMes(meetings);
+  if (historyPeriods.length === 0) {
+    return (
+      <section className="content-section">
+        <div className="empty-state">
+          <History size={24} />
+          <p>Todavía no tenés reuniones en meses anteriores.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div className="period-list">
+      {historyPeriods.map((period) => {
+        const summary = resumirAsistencias(period.registros);
+        const hours = formatMinutes(summary.minutosVirtuales + summary.minutosHibridos);
+        return (
+          <section className="content-section" key={period.clave}>
+            <div className="section-heading">
+              <div>
+                <h2>{formatMonth(period.registros[0].inicioAt)}</h2>
+                <p>
+                  {summary.reuniones} reuniones · {hours} horas · {formatMoney(summary.monto)}
+                </p>
+              </div>
+            </div>
+            <AssistantMeetingsTable meetings={period.registros} />
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function MiAgendaPage({
   searchParams
 }: Readonly<{
@@ -269,7 +306,6 @@ export default async function MiAgendaPage({
   ]);
 
   const monthSummary = resumirAsistencias(monthMeetings);
-  const historyPeriods = agruparPorMes(historyMeetings);
 
   return (
     <div className="assistant-agenda-page">
@@ -356,36 +392,7 @@ export default async function MiAgendaPage({
         </>
       )}
 
-      {activeTab === "historico" &&
-        (historyPeriods.length === 0 ? (
-          <section className="content-section">
-            <div className="empty-state">
-              <History size={24} />
-              <p>Todavía no tenés reuniones en meses anteriores.</p>
-            </div>
-          </section>
-        ) : (
-          <div className="period-list">
-            {historyPeriods.map((period) => {
-              const periodSummary = resumirAsistencias(period.registros);
-              return (
-                <section className="content-section" key={period.clave}>
-                  <div className="section-heading">
-                    <div>
-                      <h2>{formatMonth(period.registros[0].inicioAt)}</h2>
-                      <p>
-                        {periodSummary.reuniones} reuniones ·{" "}
-                        {formatMinutes(periodSummary.minutosVirtuales + periodSummary.minutosHibridos)} horas
-                        · {formatMoney(periodSummary.monto)}
-                      </p>
-                    </div>
-                  </div>
-                  <AssistantMeetingsTable meetings={period.registros} />
-                </section>
-              );
-            })}
-          </div>
-        ))}
+      {activeTab === "historico" ? <AgendaHistory meetings={historyMeetings} /> : null}
     </div>
   );
 }
