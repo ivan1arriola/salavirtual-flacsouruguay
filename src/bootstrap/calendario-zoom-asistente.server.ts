@@ -262,7 +262,7 @@ export async function sincronizarCalendarioZoom(asistenteTecnicoId: string, clie
     const ahora = new Date();
     client.setCredentials({ refresh_token: descifrarConfiguracion(conexion.tokenCifrado) });
     const eventosUrl = `${destinoCalendario(conexion.calendarId)}/events`;
-    const eventos = await obtenerEventosDeseados(tx, asistenteTecnicoId, ahora);
+    const eventos = await leerEventosDeseados(tx, asistenteTecnicoId, ahora);
     let estado = "sincronizado";
     try {
       await conciliarEventos(client, eventosUrl, eventos, ahora);
