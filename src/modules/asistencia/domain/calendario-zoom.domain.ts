@@ -39,12 +39,14 @@ export function eventoCoberturaZoom(instancia: InstanciaZoom, baseUrl: string) {
   };
   return {
     id,
-    ...contenido,
-    extendedProperties: {
-      private: {
-        flacsoCoberturaZoom: "1",
-        flacsoClave: id,
-        flacsoHuella: sha256(JSON.stringify(contenido))
+    data: {
+      ...contenido,
+      extendedProperties: {
+        private: {
+          flacsoCoberturaZoom: "1",
+          flacsoClave: id,
+          flacsoHuella: sha256(JSON.stringify(contenido))
+        }
       }
     }
   };

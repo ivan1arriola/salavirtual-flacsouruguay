@@ -213,13 +213,13 @@ model AsistenteTecnico {
 }
 
 model CalendarioZoomAsistente {
-  asistenteId     String           @id
-  calendarId      String
-  email           String
-  tokenCifrado    String           @db.Text
-  ultimoIntentoAt DateTime?
-  error           String?
-  asistente       AsistenteTecnico @relation(fields: [asistenteId], references: [id], onDelete: Cascade)
+  asistenteTecnicoId String           @id
+  calendarId        String
+  email             String
+  tokenCifrado      String           @db.Text
+  ultimoIntentoAt   DateTime?
+  error             String?
+  asistenteTecnico   AsistenteTecnico @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Cascade)
 }
 
 model EnvioReporteMensualAsistencia {

@@ -21,7 +21,7 @@ export const maxDuration = 90;
 const cookieName = "flacso-calendario-zoom-oauth";
 const vigencia = 600;
 const intentoOAuth = z.object({
-  asistenteId: z.string(),
+  asistenteTecnicoId: z.string(),
   state: z.string(),
   verifier: z.string(),
   venceAt: z.number()
@@ -52,7 +52,7 @@ async function obtenerAsistente() {
       usuarioId: session.user.id,
       usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null }
     },
-    select: { id: true, calendarioZoom: { select: { asistenteId: true } } }
+    select: { id: true, calendarioZoom: { select: { asistenteTecnicoId: true } } }
   });
 }
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
   try {
     const intento = leerIntento(request);
     const state = request.nextUrl.searchParams.get("state");
-    if (!intento || intento.asistenteId !== asistente.id || intento.venceAt < Date.now()) {
+    if (!intento || intento.asistenteTecnicoId !== asistente.id || intento.venceAt < Date.now()) {
       return terminarOAuth("error");
     }
     if (!esEstadoValido(state, intento.state)) {
@@ -109,7 +109,12 @@ async function iniciarOAuth(client: OAuth2Client, id: string) {
   });
   const response = NextResponse.redirect(url, 303);
   response.headers.set("Cache-Control", "no-store");
-  const intento = { asistenteId: id, state, verifier: codeVerifier, venceAt: Date.now() + vigencia * 1000 };
+  const intento = {
+    asistenteTecnicoId: id,
+    state,
+    verifier: codeVerifier,
+    venceAt: Date.now() + vigencia * 1000
+  };
   response.cookies.set(cookieName, cifrarConfiguracion(JSON.stringify(intento)), {
     path: rutaCalendarioZoom,
     httpOnly: true,

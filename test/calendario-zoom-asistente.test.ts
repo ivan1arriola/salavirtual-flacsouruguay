@@ -25,7 +25,7 @@ describe("evento de cobertura Zoom", () => {
       },
       baseUrl
     );
-    expect(evento).toMatchObject({
+    expect(evento?.data).toMatchObject({
       description: `Abrir la cobertura en Sala Virtual FLACSO: ${baseUrl}/operacion/encuentro-1`,
       start: { dateTime: "2026-12-01T17:30:00.000Z" },
       end: { dateTime: "2026-12-01T20:30:00.000Z" }
@@ -41,8 +41,8 @@ describe("evento de cobertura Zoom", () => {
 
     expect(original?.id).toMatch(/^[a-f0-9]{64}$/);
     expect(editado?.id).toBe(original?.id);
-    expect(editado?.extendedProperties.private.flacsoHuella).not.toBe(
-      original?.extendedProperties.private.flacsoHuella
+    expect(editado?.data.extendedProperties.private.flacsoHuella).not.toBe(
+      original?.data.extendedProperties.private.flacsoHuella
     );
   });
 

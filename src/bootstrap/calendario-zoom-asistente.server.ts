@@ -50,13 +50,13 @@ async function eliminarRecurso(client: OAuth2Client, url: string) {
 }
 
 async function conBloqueo<T>(
-  asistenteId: string,
+  asistenteTecnicoId: string,
   ejecutar: (tx: Prisma.TransactionClient) => Promise<T>
 ): Promise<T | null> {
   return db.$transaction(
     async (tx) => {
       const [resultado] = await tx.$queryRaw<{ adquirido: boolean }[]>`
-        SELECT pg_try_advisory_xact_lock(hashtextextended(${"calendario-zoom:" + asistenteId}, 0)) AS adquirido
+        SELECT pg_try_advisory_xact_lock(hashtextextended(${"calendario-zoom:" + asistenteTecnicoId}, 0)) AS adquirido
       `;
       return resultado?.adquirido ? ejecutar(tx) : null;
     },
@@ -65,7 +65,7 @@ async function conBloqueo<T>(
 }
 
 export async function conectarCalendarioZoom(
-  asistenteId: string,
+  asistenteTecnicoId: string,
   client: OAuth2Client,
   code: string,
   codeVerifier: string
@@ -84,19 +84,19 @@ export async function conectarCalendarioZoom(
   const tokenCifrado = cifrarConfiguracion(tokens.refresh_token);
   client.setCredentials(tokens);
 
-  return conBloqueo(asistenteId, async (tx) => {
-    const existente = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteId } });
+  return conBloqueo(asistenteTecnicoId, async (tx) => {
+    const existente = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteTecnicoId } });
     if (existente) {
       return false;
     }
-    await crearCalendario(tx, asistenteId, client, email, tokenCifrado);
+    await crearCalendario(tx, asistenteTecnicoId, client, email, tokenCifrado);
     return true;
   });
 }
 
 async function crearCalendario(
   tx: Prisma.TransactionClient,
-  asistenteId: string,
+  asistenteTecnicoId: string,
   client: OAuth2Client,
   email: string,
   tokenCifrado: string
@@ -110,7 +110,7 @@ async function crearCalendario(
   });
   try {
     await tx.calendarioZoomAsistente.create({
-      data: { asistenteId, calendarId: data.id, email, tokenCifrado }
+      data: { asistenteTecnicoId, calendarId: data.id, email, tokenCifrado }
     });
   } catch (error) {
     await eliminarRecurso(client, destinoCalendario(data.id)).catch(() => undefined);
@@ -118,9 +118,9 @@ async function crearCalendario(
   }
 }
 
-export async function desconectarCalendarioZoom(asistenteId: string, client: OAuth2Client) {
-  return conBloqueo(asistenteId, async (tx) => {
-    const conexion = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteId } });
+export async function desconectarCalendarioZoom(asistenteTecnicoId: string, client: OAuth2Client) {
+  return conBloqueo(asistenteTecnicoId, async (tx) => {
+    const conexion = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteTecnicoId } });
     if (!conexion) {
       return "desconectado";
     }
@@ -134,7 +134,7 @@ export async function desconectarCalendarioZoom(asistenteId: string, client: OAu
       }
       estado = "desconectado-revocado";
     }
-    await tx.calendarioZoomAsistente.delete({ where: { asistenteId } });
+    await tx.calendarioZoomAsistente.delete({ where: { asistenteTecnicoId } });
     return estado;
   });
 }
@@ -160,15 +160,25 @@ async function obtenerEventosPublicados(client: OAuth2Client, url: string, ahora
 }
 
 async function actualizarEvento(client: OAuth2Client, url: string, id: string, evento: EventoCoberturaZoom) {
-  const { id: _id, ...data } = evento;
-  await client.request({ url: `${url}/${encodeURIComponent(id)}`, method: "PATCH", data, timeout: 5000 });
+  await client.request({
+    url: `${url}/${encodeURIComponent(id)}`,
+    method: "PATCH",
+    data: evento.data,
+    timeout: 5000
+  });
 }
 
 async function publicarEvento(client: OAuth2Client, url: string, evento: EventoCoberturaZoom) {
   for (let intento = 0; intento < 20; intento++) {
     const id = intento === 0 ? evento.id : `${evento.id}${intento.toString(16)}`;
     try {
-      await client.request({ url, method: "POST", data: { ...evento, id }, timeout: 5000, retry: false });
+      await client.request({
+        url,
+        method: "POST",
+        data: { ...evento.data, id },
+        timeout: 5000,
+        retry: false
+      });
       return;
     } catch (error) {
       if (!esErrorGoogle(error, 409)) {
@@ -188,10 +198,10 @@ async function publicarEvento(client: OAuth2Client, url: string, evento: EventoC
   throw new Error("Google Calendar agotó las variantes de ID para esta cobertura.");
 }
 
-async function obtenerEventosDeseados(tx: Prisma.TransactionClient, asistenteId: string, ahora: Date) {
+async function obtenerEventosDeseados(tx: Prisma.TransactionClient, asistenteTecnicoId: string, ahora: Date) {
   const asignaciones = await tx.asignacionAsistenciaTecnica.findMany({
     where: {
-      asistenteTecnicoId: asistenteId,
+      asistenteTecnicoId,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       asistenteTecnico: { usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null } },
       instancia: {
@@ -246,23 +256,23 @@ async function conciliarEventos(
     if (!anterior) {
       await publicarEvento(client, url, evento);
     } else if (
-      anterior.extendedProperties?.private?.flacsoHuella !== evento.extendedProperties.private.flacsoHuella
+      anterior.extendedProperties?.private?.flacsoHuella !== evento.data.extendedProperties.private.flacsoHuella
     ) {
       await actualizarEvento(client, url, anterior.id, evento);
     }
   }
 }
 
-export async function sincronizarCalendarioZoom(asistenteId: string, client: OAuth2Client) {
-  return conBloqueo(asistenteId, async (tx) => {
-    const conexion = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteId } });
+export async function sincronizarCalendarioZoom(asistenteTecnicoId: string, client: OAuth2Client) {
+  return conBloqueo(asistenteTecnicoId, async (tx) => {
+    const conexion = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteTecnicoId } });
     if (!conexion) {
       return "sin-conexion";
     }
     const ahora = new Date();
     client.setCredentials({ refresh_token: descifrarConfiguracion(conexion.tokenCifrado) });
     const eventosUrl = `${destinoCalendario(conexion.calendarId)}/events`;
-    const eventos = await obtenerEventosDeseados(tx, asistenteId, ahora);
+    const eventos = await obtenerEventosDeseados(tx, asistenteTecnicoId, ahora);
     let estado = "sincronizado";
     try {
       await conciliarEventos(client, eventosUrl, eventos, ahora);
@@ -270,7 +280,7 @@ export async function sincronizarCalendarioZoom(asistenteId: string, client: OAu
       estado = permisoRevocado(error) ? "reconectar" : "error";
     }
     await tx.calendarioZoomAsistente.update({
-      where: { asistenteId },
+      where: { asistenteTecnicoId },
       data: { ultimoIntentoAt: ahora, error: estado === "sincronizado" ? null : estado }
     });
     return estado;
@@ -283,14 +293,14 @@ export async function reconciliarCalendariosZoom(): Promise<number> {
   }
   const conexiones = await db.calendarioZoomAsistente.findMany({
     where: { OR: [{ error: null }, { error: "error" }] },
-    orderBy: [{ ultimoIntentoAt: { sort: "asc", nulls: "first" } }, { asistenteId: "asc" }],
+    orderBy: [{ ultimoIntentoAt: { sort: "asc", nulls: "first" } }, { asistenteTecnicoId: "asc" }],
     take: 10,
-    select: { asistenteId: true }
+    select: { asistenteTecnicoId: true }
   });
   const resultados = await Promise.allSettled(
-    conexiones.map(({ asistenteId }) => {
+    conexiones.map(({ asistenteTecnicoId }) => {
       const cliente = configurarOAuthCalendarioZoom();
-      return cliente ? sincronizarCalendarioZoom(asistenteId, cliente) : null;
+      return cliente ? sincronizarCalendarioZoom(asistenteTecnicoId, cliente) : null;
     })
   );
   const fallos = resultados.filter(
