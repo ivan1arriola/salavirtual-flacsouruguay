@@ -2,6 +2,8 @@ import { Activity, CalendarCheck2, CalendarRange, Clock3, History } from "lucide
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { configurarOAuthCalendarioZoom } from "@/src/bootstrap/calendario-zoom-asistente.server";
+import { CalendarioZoomAsistente } from "./calendario-zoom-asistente";
 import { AssistantMeetingsTable } from "@/src/modules/asistencia/presentation/components/assistant-meetings-table";
 import { AssistantMonthList } from "@/src/modules/asistencia/presentation/components/assistant-month-list";
 import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
@@ -23,7 +25,7 @@ import {
 export default async function MiAgendaPage({
   searchParams
 }: Readonly<{
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; calendario?: string }>;
 }>) {
   const session = await auth();
   if (!session?.user) {
@@ -39,7 +41,10 @@ export default async function MiAgendaPage({
 
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },
-    select: { id: true }
+    select: {
+      id: true,
+      calendarioZoom: { select: { email: true, ultimoIntentoAt: true, error: true } }
+    }
   });
   if (!assistant) {
     redirect("/");
@@ -183,6 +188,10 @@ export default async function MiAgendaPage({
           <span>Histórico</span>
         </Link>
       </nav>
+
+      {activeTab === "proximas" && configurarOAuthCalendarioZoom() ? (
+        <CalendarioZoomAsistente conexion={assistant.calendarioZoom} estado={resolvedParams.calendario} />
+      ) : null}
 
       {activeTab === "proximas" &&
         (upcomingAssignments.length === 0 ? (

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reconciliarCalendariosZoom } from "@/src/bootstrap/calendario-zoom-asistente.server";
 import { db } from "@/src/lib/db";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 
@@ -36,16 +37,21 @@ export async function GET(request: Request) {
     take: 10,
     select: { id: true }
   });
-  const resultados = await obtenerServicioConferencias().sincronizarEventosPendientes(
-    pendientes.map(({ id }) => id)
-  );
+  const [resultados, erroresCalendariosZoom] = await Promise.all([
+    obtenerServicioConferencias().sincronizarEventosPendientes(pendientes.map(({ id }) => id)),
+    reconciliarCalendariosZoom().catch(() => {
+      console.warn("[Calendar] Falló la reconciliación de calendarios de coberturas Zoom.");
+      return null;
+    })
+  ]);
   const errores = resultados.filter((result) => result.estado === "ERROR");
   return NextResponse.json(
     {
       procesados: resultados.length,
       sincronizados: resultados.filter((result) => result.estado === "SINCRONIZADA").length,
       pendientes: resultados.filter((result) => result.estado !== "SINCRONIZADA").length,
-      errores: errores.length
+      errores: errores.length,
+      erroresCalendariosZoom
     },
     { status: errores.length ? 502 : 200 }
   );
