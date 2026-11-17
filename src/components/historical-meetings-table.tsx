@@ -25,17 +25,16 @@ export function HistoricalMeetingsTable({
   total: number;
 }>) {
   function enlacePagina(destino: number) {
-    const params = new URLSearchParams({ seccion: "historico", pagina: String(destino) });
+    const params = new URLSearchParams({ pagina: String(destino) });
     if (busqueda) {
       params.set("busqueda", busqueda);
     }
-    return `/configuracion?${params.toString()}`;
+    return `/configuracion/historico?${params.toString()}`;
   }
 
   return (
     <section className="content-section settings-history">
-      <form action="/configuracion" className="settings-history__toolbar" method="get">
-        <input type="hidden" name="seccion" value="historico" />
+      <form action="/configuracion/historico" className="settings-history__toolbar" method="get">
         <label className="settings-search">
           <Search size={18} aria-hidden="true" />
           <span className="sr-only">Buscar reuniones Zoom importadas</span>
@@ -50,7 +49,7 @@ export function HistoricalMeetingsTable({
         <button type="submit" className="secondary-action">
           Buscar
         </button>
-        {busqueda ? <Link href="/configuracion?seccion=historico">Limpiar búsqueda</Link> : null}
+        {busqueda ? <Link href="/configuracion/historico">Limpiar búsqueda</Link> : null}
         <span>
           {total} {total === 1 ? "registro" : "registros"}
         </span>

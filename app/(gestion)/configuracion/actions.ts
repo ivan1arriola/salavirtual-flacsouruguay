@@ -131,7 +131,7 @@ export async function invitarIntegrantePrograma(formData: FormData): Promise<voi
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
-  revalidatePath("/configuracion");
+  revalidatePath("/configuracion", "layout");
   revalidatePath("/usuarios");
   revalidatePath("/reuniones/nueva");
   redirect(programRedirect(programaId, estado, undefined, context));
@@ -152,7 +152,7 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
     );
   }
 
-  revalidatePath("/configuracion");
+  revalidatePath("/configuracion", "layout");
   redirect(asistenciaRedirect("reportes-asistencia-actualizados"));
 }
 
@@ -167,11 +167,11 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
     });
   } catch (error) {
     redirect(
-      `/configuracion?seccion=correo&error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
+      `/configuracion/correo?error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
     );
   }
-  revalidatePath("/configuracion");
-  redirect("/configuracion?seccion=correo&estado=correo-ses-actualizado");
+  revalidatePath("/configuracion", "layout");
+  redirect("/configuracion/correo?estado=correo-ses-actualizado");
 }
 
 async function requireAdmin() {
@@ -213,7 +213,7 @@ function programaInput(formData: FormData) {
 }
 
 function revalidatePrograms(): void {
-  revalidatePath("/configuracion");
+  revalidatePath("/configuracion", "layout");
   revalidatePath("/mis-programas");
   revalidatePath("/usuarios");
   revalidatePath("/reuniones/nueva");
@@ -253,14 +253,14 @@ function programRedirect(
 }
 
 function asistenciaRedirect(estado?: string, error?: string): string {
-  const params = new URLSearchParams({ seccion: "asistencia" });
+  const params = new URLSearchParams();
   if (estado) {
     params.set("estado", estado);
   }
   if (error) {
     params.set("error", error);
   }
-  return `/configuracion?${params.toString()}`;
+  return `/configuracion/notificaciones?${params.toString()}`;
 }
 
 function errorMessage(error: unknown, fallback = "No se pudo actualizar el programa."): string {

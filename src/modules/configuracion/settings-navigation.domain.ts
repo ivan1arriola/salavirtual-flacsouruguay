@@ -97,8 +97,11 @@ export function legacySettingsRedirect(
     return ruta;
   }
   const query = new URLSearchParams();
-  if (params.busqueda) query.set("busqueda", params.busqueda);
-  if (params.pagina) query.set("pagina", params.pagina);
+  for (const [clave, valor] of Object.entries(params)) {
+    if (valor) {
+      query.set(clave, valor);
+    }
+  }
   return query.size ? `${ruta}?${query}` : ruta;
 }
 

@@ -30,7 +30,7 @@ const operationalLinks = [
     icon: Video
   },
   {
-    href: "/configuracion?seccion=workspace",
+    href: "/configuracion/google",
     title: "Operaciones de Google Workspace",
     description: "Consultá sincronizaciones pendientes y el estado de la integración.",
     icon: CloudCog

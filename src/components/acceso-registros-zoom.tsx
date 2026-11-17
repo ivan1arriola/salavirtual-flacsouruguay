@@ -6,7 +6,7 @@ export function AccesoRegistrosZoom({ rol }: Readonly<{ rol: RolUsuario }>) {
     return null;
   }
   return (
-    <Link className="secondary-action" href="/configuracion?seccion=historico">
+    <Link className="secondary-action" href="/configuracion/historico">
       Registros Zoom importados · solo consulta
     </Link>
   );
