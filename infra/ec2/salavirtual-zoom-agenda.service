@@ -1,0 +1,9 @@
+[Unit]
+Description=Sala Virtual FLACSO - sincronizar la agenda de Zoom
+After=salavirtual.service
+Requires=salavirtual.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/srv/apps/salavirtual-flacso/shared/.env.production
+ExecStart=/bin/sh -c '/usr/bin/curl --fail --silent --show-error --max-time 300 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3101/api/v1/configuracion/zoom/agenda/sincronizar'
