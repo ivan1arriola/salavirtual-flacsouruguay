@@ -11,12 +11,7 @@ import {
   PREFERENCIA_PREDETERMINADA,
   type TipoNotificacion
 } from "@/src/modules/notificaciones/notificaciones.domain";
-import {
-  guardarDisponibilidad,
-  guardarPassword,
-  guardarPerfil,
-  guardarPreferenciasNotificacion
-} from "./actions";
+import { guardarPassword, guardarPerfil, guardarPreferenciasNotificacion } from "./actions";
 import { tiposNotificacionPerfil } from "./preferencias";
 import "./profile.css";
 
@@ -30,17 +25,7 @@ const profileSelect = {
   passwordHash: true,
   debeCambiarPassword: true,
   cuentasGoogle: { orderBy: { email: "asc" }, select: { email: true } },
-  preferenciasNotificacion: { select: { tipo: true, push: true, email: true } },
-  asistenteTecnico: {
-    select: {
-      disponibleGeneral: true,
-      disponibilidades: {
-        where: { fecha: null },
-        orderBy: { diaSemana: "asc" },
-        select: { diaSemana: true, horaDesde: true, horaHasta: true, tipo: true }
-      }
-    }
-  }
+  preferenciasNotificacion: { select: { tipo: true, push: true, email: true } }
 } satisfies Prisma.UsuarioSelect;
 
 type Profile = Prisma.UsuarioGetPayload<{ select: typeof profileSelect }>;
@@ -55,22 +40,10 @@ const messages = new Map([
   ["perfil-guardado", "Tus datos fueron actualizados."],
   ["password-guardada", "Tu contraseña fue actualizada."],
   ["notificaciones-guardadas", "Tus preferencias de notificación fueron actualizadas."],
-  ["disponibilidad-guardada", "Tu disponibilidad habitual fue actualizada."],
   ["error-perfil", "No se pudieron guardar los datos. Revisá los campos."],
   ["error-password", "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación."],
-  ["error-notificaciones", "No se pudieron actualizar tus preferencias de notificación."],
-  ["error-disponibilidad", "No se pudo actualizar tu disponibilidad. Revisá los horarios."]
+  ["error-notificaciones", "No se pudieron actualizar tus preferencias de notificación."]
 ]);
-
-const dias = [
-  [1, "Lunes"],
-  [2, "Martes"],
-  [3, "Miércoles"],
-  [4, "Jueves"],
-  [5, "Viernes"],
-  [6, "Sábado"],
-  [0, "Domingo"]
-] as const;
 
 function ProfilePanel({
   title,
@@ -242,63 +215,6 @@ function NotificationsPanel({
   );
 }
 
-type Assistant = NonNullable<Profile["asistenteTecnico"]>;
-
-function AvailabilityPanel({ asistente }: Readonly<{ asistente: Assistant }>) {
-  return (
-    <ProfilePanel
-      title="Disponibilidad habitual"
-      description="Se usa para sugerir coberturas. Las excepciones por fecha tienen prioridad."
-    >
-      <form className="profile-form" action={guardarDisponibilidad}>
-        <label className="availability-general">
-          <input name="disponibleGeneral" type="checkbox" defaultChecked={asistente.disponibleGeneral} />
-          <span>Disponible para recibir asignaciones</span>
-        </label>
-        <div className="availability-grid">
-          {dias.map(([diaSemana, label]) => {
-            const current = asistente.disponibilidades.find((item) => item.diaSemana === diaSemana);
-            return (
-              <div className="availability-row" key={label}>
-                <label>
-                  <input name={`dia-${diaSemana}:activo`} type="checkbox" defaultChecked={Boolean(current)} />
-                  <strong>{label}</strong>
-                </label>
-                <input
-                  aria-label={`Desde ${label}`}
-                  name={`dia-${diaSemana}:desde`}
-                  type="time"
-                  defaultValue={current?.horaDesde ?? "09:00"}
-                />
-                <input
-                  aria-label={`Hasta ${label}`}
-                  name={`dia-${diaSemana}:hasta`}
-                  type="time"
-                  defaultValue={current?.horaHasta ?? "18:00"}
-                />
-                <select
-                  aria-label={`Tipo ${label}`}
-                  name={`dia-${diaSemana}:tipo`}
-                  defaultValue={current?.tipo ?? "DISPONIBLE"}
-                >
-                  <option value="DISPONIBLE">Disponible</option>
-                  <option value="PREFERENTE">Preferente</option>
-                  <option value="NO_DISPONIBLE">No disponible</option>
-                </select>
-              </div>
-            );
-          })}
-        </div>
-        <div className="profile-save">
-          <button className="primary-action" type="submit">
-            Guardar disponibilidad
-          </button>
-        </div>
-      </form>
-    </ProfilePanel>
-  );
-}
-
 export default async function MiPerfilPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ estado?: string; seccion?: string }> }>) {
@@ -333,13 +249,6 @@ export default async function MiPerfilPage({
       )
     }
   ];
-  if (actor.rol === "ASISTENTE_TECNICO" && user.asistenteTecnico) {
-    sections.push({
-      id: "disponibilidad",
-      label: "Disponibilidad",
-      panel: <AvailabilityPanel asistente={user.asistenteTecnico} />
-    });
-  }
   const active = sections.find(({ id }) => id === seccion) ?? sections[0];
   const panel = user.debeCambiarPassword ? <AccessPanel user={user} /> : active.panel;
 

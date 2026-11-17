@@ -459,8 +459,7 @@ Desde el menú de tu cuenta seleccioná **Mi perfil**.
 Allí podés administrar datos de tu usuario y consultar información asociada a tu cuenta.
 
 En **Mis datos** podés editar tu nombre, apellido y teléfono. En **Acceso y contraseña** podés
-actualizar la contraseña. **Notificaciones** reúne los avisos previstos para asistencia técnica,
-y **Disponibilidad** permite editar tus horarios habituales.
+actualizar la contraseña. **Notificaciones** reúne los avisos previstos para asistencia técnica.
 
 ---
 
