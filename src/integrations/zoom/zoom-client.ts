@@ -120,6 +120,31 @@ export function crearProveedorTokenZoom(creds: ZoomCredentials): ProveedorTokenZ
   };
 }
 
+const ZONA_ZOOM_POR_DEFECTO = "America/Montevideo";
+
+/**
+ * Hora local `yyyy-MM-ddTHH:mm:ss` en la zona indicada. Zoom documenta `…Z` (sin milisegundos) para GMT;
+ * con milisegundos puede tomar los dígitos como hora local y correr la reunión horas. Mandar hora local más
+ * `timezone` no deja ambigüedad.
+ */
+export function inicioLocalZoom(fecha: Date, timezone: string): string {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    })
+      .formatToParts(fecha)
+      .map(({ type, value }) => [type, value])
+  );
+  return `${partes.year}-${partes.month}-${partes.day}T${partes.hour}:${partes.minute}:${partes.second}`;
+}
+
 export async function crearReunionZoomHttp(
   token: string,
   userEmail: string,
@@ -135,9 +160,9 @@ export async function crearReunionZoomHttp(
     body: JSON.stringify({
       topic: input.topic,
       type: 2, // Scheduled meeting
-      start_time: input.startTime.toISOString(),
+      start_time: inicioLocalZoom(input.startTime, input.timezone || ZONA_ZOOM_POR_DEFECTO),
       duration: Math.max(1, input.durationMinutes),
-      timezone: input.timezone,
+      timezone: input.timezone || ZONA_ZOOM_POR_DEFECTO,
       agenda: input.agenda ?? undefined,
       settings: {
         host_video: true,
@@ -184,13 +209,14 @@ export async function actualizarReunionZoomHttp(
     body.topic = input.topic;
   }
   if (input.startTime) {
-    body.start_time = input.startTime.toISOString();
+    const zona = input.timezone || ZONA_ZOOM_POR_DEFECTO;
+    body.start_time = inicioLocalZoom(input.startTime, zona);
+    body.timezone = zona;
+  } else if (input.timezone) {
+    body.timezone = input.timezone;
   }
   if (input.durationMinutes) {
     body.duration = Math.max(1, input.durationMinutes);
-  }
-  if (input.timezone) {
-    body.timezone = input.timezone;
   }
   if (input.agenda !== undefined) {
     body.agenda = input.agenda ?? "";
@@ -308,9 +334,9 @@ export async function crearReunionZoomRecurrenteHttp(
     body: JSON.stringify({
       topic: input.topic,
       type: 8, // Recurrente con horario fijo
-      start_time: input.startTime.toISOString(),
+      start_time: inicioLocalZoom(input.startTime, input.timezone || ZONA_ZOOM_POR_DEFECTO),
       duration: Math.max(1, input.durationMinutes),
-      timezone: input.timezone,
+      timezone: input.timezone || ZONA_ZOOM_POR_DEFECTO,
       agenda: input.agenda ?? undefined,
       recurrence: {
         type: input.recurrence.type,
@@ -395,12 +421,14 @@ export async function actualizarOcurrenciaZoomHttp(
   token: string,
   meetingId: string,
   occurrenceId: string,
-  input: Readonly<{ startTime?: Date; durationMinutes?: number }>
+  input: Readonly<{ startTime?: Date; durationMinutes?: number; timezone?: string }>
 ): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
   const body: Record<string, unknown> = {};
   if (input.startTime) {
-    body.start_time = input.startTime.toISOString();
+    const zona = input.timezone || ZONA_ZOOM_POR_DEFECTO;
+    body.start_time = inicioLocalZoom(input.startTime, zona);
+    body.timezone = zona;
   }
   if (input.durationMinutes) {
     body.duration = Math.max(1, input.durationMinutes);
