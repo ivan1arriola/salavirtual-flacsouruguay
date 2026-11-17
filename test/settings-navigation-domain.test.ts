@@ -14,37 +14,46 @@ describe("navegación de configuración", () => {
     expect(resolveSettingsSection("otra")).toBe("resumen");
   });
 
-  it("conserva las secciones públicas y sus enlaces", () => {
-    expect(resolveSettingsSection("workspace")).toBe("workspace");
+  it("resuelve las secciones públicas y arma sus enlaces por ruta", () => {
+    expect(resolveSettingsSection("google")).toBe("google");
     expect(resolveSettingsSection("historico")).toBe("historico");
+    expect(resolveSettingsSection("workspace")).toBe("resumen");
     expect(settingsHref("resumen")).toBe("/configuracion");
-    expect(settingsHref("programas")).toBe("/usuarios?vista=programas");
-    expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
-    expect(legacySettingsRedirect("correo")).toBeNull();
+    expect(settingsHref("google")).toBe("/configuracion/google");
+    expect(settingsHref("historico")).toBe("/configuracion/historico");
     expect(SETTINGS_SECTIONS.find(({ id }) => id === "historico")?.label).toBe("Registros Zoom importados");
   });
 
-  it("expone todas las secciones en el orden de trabajo", () => {
-    expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([
-      "resumen",
-      "workspace",
-      "zoom",
-      "salas",
-      "asistencia",
-      "correo",
-      "historico"
-    ]);
+  it("redirige los enlaces antiguos ?seccion= a su ruta nueva", () => {
+    expect(legacySettingsRedirect("workspace")).toBe("/configuracion/google");
+    expect(legacySettingsRedirect("asistencia")).toBe("/configuracion/notificaciones");
+    expect(legacySettingsRedirect("zoom")).toBe("/configuracion/zoom");
+    expect(legacySettingsRedirect("salas")).toBe("/configuracion/salas");
+    expect(legacySettingsRedirect("correo")).toBe("/configuracion/correo");
+    expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
+    expect(legacySettingsRedirect("historico")).toBe("/configuracion/historico");
+    expect(legacySettingsRedirect("historico", { busqueda: "ana", pagina: "2" })).toBe(
+      "/configuracion/historico?busqueda=ana&pagina=2"
+    );
+    expect(legacySettingsRedirect("otra")).toBeNull();
+    expect(legacySettingsRedirect()).toBeNull();
+  });
+
+  it("expone en el menú las áreas en orden y sin el histórico", () => {
+    const menu = SETTINGS_SECTIONS.filter(({ hidden }) => !hidden);
+    expect(menu.map(({ id }) => id)).toEqual(["resumen", "zoom", "google", "salas", "correo", "notificaciones"]);
+    expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([...menu.map(({ id }) => id), "historico"]);
   });
 
   it("agrupa las secciones por tipo de tarea y deja el resumen sin grupo", () => {
     expect(SETTINGS_SECTIONS.map(({ id, group }) => [id, group])).toEqual([
       ["resumen", undefined],
-      ["workspace", "Integraciones"],
       ["zoom", "Integraciones"],
+      ["google", "Integraciones"],
       ["salas", "Operación"],
-      ["asistencia", "Operación"],
       ["correo", "Comunicación"],
-      ["historico", "Datos"]
+      ["notificaciones", "Comunicación"],
+      ["historico", undefined]
     ]);
   });
 
