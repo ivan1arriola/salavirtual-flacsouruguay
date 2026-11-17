@@ -104,6 +104,18 @@ describe("inconsistencias de agenda", () => {
     expect(resultado.horarioDistinto.map(({ reunion: r }) => r.instanciaId)).toEqual(["2"]);
   });
 
+  it("no marca encuentros que ya empezaron aunque Zoom no los liste", () => {
+    const enCurso = reunion("1", "100", h(17, 11), h(17, 13));
+    const resultado = detectarInconsistenciasAgendaZoom(
+      [obs("o1", "100", h(17, 11), h(17, 13), "ELIMINADA")],
+      [enCurso],
+      new Set(["100"]),
+      hoy
+    );
+    expect(resultado.eliminadasEnZoom).toEqual([]);
+    expect(resultado.horarioDistinto).toEqual([]);
+  });
+
   it("sin datos de Zoom para la reunión no afirma nada", () => {
     const resultado = detectarInconsistenciasAgendaZoom(
       [],
@@ -234,5 +246,39 @@ describe("registro de movimientos y reservas externas", () => {
         hoy
       )
     ).toEqual([]);
+  });
+
+  it("no modifica ocurrencias que ya empezaron ni borra las transcurridas", async () => {
+    const { db, filas } = baseFalsa();
+    // Ahora son las 12:30: la clase de las 12:00 está en curso.
+    const ahora = new Date("2026-11-20T12:30:00Z");
+    filas.push({
+      id: "enCurso",
+      cuentaZoomId: "acc",
+      meetingId: "555",
+      ocurrenciaZoomId: "",
+      anfitrionZoomId: "h1",
+      cuentaProveedorId: "c1",
+      tema: "Original",
+      inicioAt: new Date("2026-11-20T12:00:00Z"),
+      finAt: new Date("2026-11-20T13:00:00Z"),
+      estado: "ACTIVA",
+      origen: "PULL",
+      observadaAt: hoy
+    });
+    await registrarMovimientoReunionZoom(db, movimiento("deleted"), ahora);
+    await registrarMovimientoReunionZoom(
+      db,
+      movimiento("created", { start_time: "2026-11-20T15:00:00Z" }),
+      ahora
+    );
+    expect(filas[0]).toMatchObject({ estado: "ACTIVA", tema: "Original", origen: "PULL" });
+    expect(filas[0]?.inicioAt).toEqual(new Date("2026-11-20T12:00:00Z"));
+  });
+
+  it("no registra una reunión que ya terminó", async () => {
+    const { db, filas } = baseFalsa();
+    await registrarMovimientoReunionZoom(db, movimiento("created"), new Date("2026-11-20T14:00:00Z"));
+    expect(filas).toHaveLength(0);
   });
 });

@@ -64,20 +64,23 @@ export function detectarInconsistenciasAgendaZoom(
       (grupos, fila) => ({ ...grupos, [fila.meetingId]: [...(grupos[fila.meetingId] ?? []), fila] }),
       {}
     );
-  const clasificadas = reuniones.flatMap((reunion): readonly Clasificada[] => {
-    const filas = reunion.meetingId ? (porReunion[reunion.meetingId] ?? []) : [];
-    const vigentes = filas.filter(({ estado }) => estado === "ACTIVA");
-    if (filas.length === 0) {
-      return [];
-    }
-    if (vigentes.length === 0) {
-      return [{ tipo: "ELIMINADA", reunion, enZoom: vigentes }];
-    }
-    const coincide = vigentes.some(
-      ({ inicio }) => Math.abs(inicio.getTime() - reunion.inicio.getTime()) <= TOLERANCIA_MS
-    );
-    return coincide ? [] : [{ tipo: "HORARIO", reunion, enZoom: vigentes }];
-  });
+  // Solo encuentros que todavía no empezaron: lo transcurrido o en curso nunca se marca.
+  const clasificadas = reuniones
+    .filter(({ inicio }) => inicio > ahora)
+    .flatMap((reunion): readonly Clasificada[] => {
+      const filas = reunion.meetingId ? (porReunion[reunion.meetingId] ?? []) : [];
+      const vigentes = filas.filter(({ estado }) => estado === "ACTIVA");
+      if (filas.length === 0) {
+        return [];
+      }
+      if (vigentes.length === 0) {
+        return [{ tipo: "ELIMINADA", reunion, enZoom: vigentes }];
+      }
+      const coincide = vigentes.some(
+        ({ inicio }) => Math.abs(inicio.getTime() - reunion.inicio.getTime()) <= TOLERANCIA_MS
+      );
+      return coincide ? [] : [{ tipo: "HORARIO", reunion, enZoom: vigentes }];
+    });
   const eliminadasEnZoom = clasificadas.flatMap((c) => (c.tipo === "ELIMINADA" ? [c.reunion] : []));
   const horarioDistinto = clasificadas.flatMap((c) =>
     c.tipo === "HORARIO" ? [{ reunion: c.reunion, enZoom: c.enZoom }] : []

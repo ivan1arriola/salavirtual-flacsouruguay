@@ -16,6 +16,7 @@ import { WorkspaceConfigForm } from "@/src/components/workspace-config-form";
 import { ZoomConfigForm } from "@/src/components/zoom-config-form";
 import { ZoomWebhookConfig } from "@/src/components/zoom-webhook-config";
 import { ZoomGrupoConfig } from "@/src/components/zoom-grupo-config";
+import { SincronizarAgendaZoomBoton } from "@/src/components/sincronizar-agenda-zoom-boton";
 import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
@@ -286,6 +287,19 @@ export default async function ConfiguracionPage({
             }
           />
           <ZoomWebhookConfig initialConfigured={Boolean(zoomConfig?.webhookSecretCifrado)} />
+          <section className="content-section" aria-labelledby="zoom-agenda-title">
+            <div className="section-heading">
+              <div>
+                <h2 id="zoom-agenda-title">Agenda de Zoom</h2>
+                <p>
+                  Se sincroniza sola cada 30 minutos y con los avisos de Zoom. Forzá una sincronización
+                  completa si creaste o cambiaste reuniones en Zoom y necesitás verlas ya. No modifica
+                  reuniones en curso ni transcurridas.
+                </p>
+              </div>
+            </div>
+            <SincronizarAgendaZoomBoton />
+          </section>
           <ZoomGrupoConfig
             grupoId={zoomGrupo?.grupoId ?? null}
             grupoNombre={zoomGrupo?.grupoNombre ?? null}
