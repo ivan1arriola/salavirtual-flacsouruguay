@@ -16,9 +16,8 @@ function duracion(segundos: number): string {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
   const s = segundos % 60;
-  return [h ? `${h} h` : "", m ? `${m} min` : "", s || !segundos ? `${s} s` : ""]
-    .filter(Boolean)
-    .join(" ");
+  const partes = [h ? `${h} h` : "", m ? `${m} min` : "", s || !segundos ? `${s} s` : ""];
+  return partes.filter(Boolean).join(" ");
 }
 
 function estadoGrabacion(

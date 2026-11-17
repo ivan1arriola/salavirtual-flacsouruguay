@@ -134,5 +134,5 @@ export async function consultarGrabacionOcurrenciaZoom(auth: AutenticacionZoom, 
   if (archivos?.some(({ status }) => status === "completed")) {
     return "EN_ZOOM";
   }
-  return archivos?.length ? "PROCESANDO" : "SIN_CONFIRMAR";
+  return archivos?.some(({ status }) => status === "processing") ? "PROCESANDO" : "SIN_CONFIRMAR";
 }
