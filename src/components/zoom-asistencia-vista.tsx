@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
 import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
@@ -28,22 +29,32 @@ export function ZoomAsistenciaVista({
         </p>
       ) : null}
       {puedeDescargar && ocurrencias.length > 0 ? (
-        <p className="zoom-attendance-downloads">
-          Datos originales de Zoom (JSON):{" "}
-          {ocurrencias.map((o, i) => (
-            <span key={o.id}>
-              {i > 0 ? " · " : ""}
+        <section className="attendance-raw-export" aria-label="Datos originales de Zoom">
+          <div className="attendance-raw-export-intro">
+            <h2>Datos originales de Zoom</h2>
+            <p>
+              Reporte de participantes tal como lo entrega Zoom, en JSON y sin transformar. Se consulta a Zoom
+              en el momento de la descarga.
+            </p>
+          </div>
+          <div className="attendance-raw-export-buttons">
+            {ocurrencias.map((o) => (
               <a
+                className="attendance-raw-export-json"
                 href={`/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/zoom-original/${encodeURIComponent(o.id)}`}
+                key={o.id}
               >
-                {ocurrencias.length > 1 ? `Descargar ${fecha(o.inicioRealAt)}` : "Descargar JSON original"}
+                <Download size={15} aria-hidden="true" />
+                {ocurrencias.length > 1
+                  ? `JSON original · ${fecha(o.inicioRealAt)}`
+                  : "Descargar JSON original"}
               </a>
-            </span>
-          ))}
-        </p>
+            ))}
+          </div>
+        </section>
       ) : null}
       <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
-      <h3>Resumen consolidado del encuentro</h3>
+      <h2 className="zoom-attendance-title">Resumen consolidado del encuentro</h2>
       {registros.length === 0 ? (
         <p className="attendance-empty">
           {estadoReporte === "VACIO"

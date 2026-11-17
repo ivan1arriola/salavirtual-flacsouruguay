@@ -127,31 +127,33 @@ export function ZoomAsistenciaConciliacion({
               <td>{ETIQUETA[r.estadoConciliacion]}</td>
               {puedeConciliar ? (
                 <td>
-                  <select
-                    aria-label={`Vincular a ${r.nombre}`}
-                    disabled={pendiente}
-                    defaultValue=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        enviar(r, e.target.value, false);
-                      }
-                    }}
-                  >
-                    <option value="">Vincular con invitado…</option>
-                    {invitados.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.nombre ?? i.email}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" disabled={pendiente} onClick={() => enviar(r, null, true)}>
-                    Marcar externo
-                  </button>
-                  {r.estadoConciliacion !== "SIN_CONCILIAR" ? (
-                    <button type="button" disabled={pendiente} onClick={() => enviar(r, null, false)}>
-                      Quitar vínculo
+                  <div className="zoom-attendance-actions">
+                    <select
+                      aria-label={`Vincular a ${r.nombre}`}
+                      disabled={pendiente}
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          enviar(r, e.target.value, false);
+                        }
+                      }}
+                    >
+                      <option value="">Vincular con invitado…</option>
+                      {invitados.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.nombre ?? i.email}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" disabled={pendiente} onClick={() => enviar(r, null, true)}>
+                      Marcar externo
                     </button>
-                  ) : null}
+                    {r.estadoConciliacion !== "SIN_CONCILIAR" ? (
+                      <button type="button" disabled={pendiente} onClick={() => enviar(r, null, false)}>
+                        Quitar vínculo
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               ) : null}
             </tr>

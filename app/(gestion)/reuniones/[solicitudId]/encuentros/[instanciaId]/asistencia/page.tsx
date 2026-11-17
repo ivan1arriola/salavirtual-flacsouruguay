@@ -180,17 +180,29 @@ export default async function EncuentroAsistenciaPage({
       // Zoom: lectura de lo persistido, sin Workspace; Sala Virtual sirve la vista y la exportación tras validar el alcance.
       const zoom = await leerAsistenciaZoomFicha(instanciaId, { id: actor.id, rol: actor.rol });
       return (
-        <main className="attendance-page">
-          <Link href={`/reuniones/${solicitudId}`}>
-            <ArrowLeft size={16} /> Volver a la reunión
+        <main className="attendance-view">
+          <Link className="meeting-detail-back" href={`/reuniones/${solicitudId}#encuentros`}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            Volver a encuentros
           </Link>
-          <h1>Asistencia Zoom · {encuentro.solicitud.titulo}</h1>
-          <p>
-            {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
-            {horaUY(encuentro.finProgramadoAt)} (UY)
-          </p>
+          <header className="attendance-view-header">
+            <div>
+              <p className="page-eyebrow">Zoom</p>
+              <h1>Asistencia del encuentro</h1>
+              <p className="attendance-view-subtitle">{encuentro.solicitud.titulo}</p>
+              <p className="attendance-view-date">
+                <Clock3 size={16} aria-hidden="true" />
+                {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
+                {horaUY(encuentro.finProgramadoAt)} (Uruguay)
+              </p>
+            </div>
+            {actor.rol === "ADMINISTRACION" ? (
+              <div className="attendance-view-actions">
+                <AttendanceRegenerateAction instanciaId={instanciaId} />
+              </div>
+            ) : null}
+          </header>
           <ZoomAsistenciaVista instanciaId={instanciaId} asistencia={zoom} puedeDescargar />
-          {actor.rol === "ADMINISTRACION" ? <AttendanceRegenerateAction instanciaId={instanciaId} /> : null}
         </main>
       );
     }
