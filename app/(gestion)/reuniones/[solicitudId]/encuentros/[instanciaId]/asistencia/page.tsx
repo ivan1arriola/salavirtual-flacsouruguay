@@ -6,8 +6,7 @@ import { AttendanceRegenerateAction } from "@/src/components/attendance-regenera
 import { AttendanceRawDownloads } from "@/src/components/attendance-raw-downloads";
 import { crearArchivosRepository } from "@/src/bootstrap/archivos.server";
 import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
-import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
-import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
+import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -180,7 +179,6 @@ export default async function EncuentroAsistenciaPage({
     if (eventoZoom) {
       // Zoom: lectura de lo persistido, sin Workspace; Sala Virtual sirve la vista y la exportación tras validar el alcance.
       const zoom = await leerAsistenciaZoomFicha(instanciaId, { id: actor.id, rol: actor.rol });
-      const base = `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/exportar/zoom`;
       return (
         <main className="attendance-page">
           <Link href={`/reuniones/${solicitudId}`}>
@@ -191,29 +189,7 @@ export default async function EncuentroAsistenciaPage({
             {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
             {horaUY(encuentro.finProgramadoAt)} (UY)
           </p>
-          <ZoomAsistenciaOcurrencias ocurrencias={zoom.ocurrencias} />
-          <h2>Resumen consolidado del encuentro</h2>
-          {zoom.registros.length === 0 ? (
-            <p className="attendance-empty">
-              {zoom.estadoReporte === "VACIO"
-                ? "El reporte de Zoom no contiene conexiones."
-                : "Todavía no hay registros de asistencia de Zoom. Esto no demuestra que no hubiera participantes."}
-            </p>
-          ) : (
-            <>
-              <p>
-                <a href={`${base}?conjunto=resumen&formato=csv`}>Resumen (CSV)</a> ·{" "}
-                <a href={`${base}?conjunto=sesiones&formato=csv`}>Sesiones originales (CSV)</a> ·{" "}
-                <a href={`${base}?conjunto=resumen&formato=json`}>Resumen (JSON)</a>
-              </p>
-              <ZoomAsistenciaConciliacion
-                instanciaId={instanciaId}
-                registros={zoom.registros}
-                invitados={zoom.invitados}
-                puedeConciliar={zoom.puedeConciliar}
-              />
-            </>
-          )}
+          <ZoomAsistenciaVista instanciaId={instanciaId} asistencia={zoom} puedeDescargar />
           {actor.rol === "ADMINISTRACION" ? <AttendanceRegenerateAction instanciaId={instanciaId} /> : null}
         </main>
       );

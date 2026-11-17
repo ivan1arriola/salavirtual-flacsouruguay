@@ -40,8 +40,8 @@ describe("página de asistencia del encuentro (Zoom)", () => {
     expect(rama).not.toMatch(/leerPlanillaAsistenciaGoogle|crearGoogleAuthJwt|crearArchivosRepository/);
   });
 
-  it("la exportación se sirve desde Sala Virtual y la regeneración es solo para administración", () => {
-    expect(rama).toMatch(/exportar\/zoom/);
+  it("la vista única de Zoom se usa en la página y la regeneración es solo para administración", () => {
+    expect(rama).toMatch(/ZoomAsistenciaVista/);
     expect(rama).toMatch(/actor\.rol === "ADMINISTRACION"/);
   });
 });

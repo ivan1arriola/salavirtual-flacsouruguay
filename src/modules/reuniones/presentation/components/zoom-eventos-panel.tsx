@@ -1,9 +1,6 @@
 import { etiquetaEventoZoom } from "@/src/integrations/zoom/zoom-eventos-catalogo";
 
-type Evento = Readonly<{ tipo: string; ocurridoAt: string }>;
-type Encuentro = Readonly<{
-  id: string;
-  fecha: string;
+export type ActividadEncuentroZoom = Readonly<{
   eventos: readonly Evento[];
   /** Sin ocurrencia de Zoom vinculada: no se puede saber si hubo actividad. */
   sinAsociar?: boolean;
@@ -11,13 +8,15 @@ type Encuentro = Readonly<{
   porHorario?: boolean;
 }>;
 
+type Evento = Readonly<{ tipo: string; ocurridoAt: string }>;
+
 const fecha = new Intl.DateTimeFormat("es-UY", {
   dateStyle: "medium",
   timeStyle: "short",
   timeZone: "America/Montevideo"
 });
 
-function ActividadEncuentro({ encuentro }: Readonly<{ encuentro: Encuentro }>) {
+function Contenido({ encuentro }: Readonly<{ encuentro: ActividadEncuentroZoom }>) {
   if (encuentro.eventos.length === 0) {
     return encuentro.sinAsociar ? (
       <p>Todavía no se puede asociar actividad de Zoom a este encuentro.</p>
@@ -39,17 +38,15 @@ function ActividadEncuentro({ encuentro }: Readonly<{ encuentro: Encuentro }>) {
   );
 }
 
-export function ZoomEventosPanel({ encuentros }: Readonly<{ encuentros: readonly Encuentro[] }>) {
+/** Actividad de Zoom de un solo encuentro: va dentro de su tarjeta, no a nivel de serie. */
+export function ZoomActividadEncuentro({ actividad }: Readonly<{ actividad: ActividadEncuentroZoom }>) {
   return (
-    <section aria-label="Actividad de Zoom">
-      <h2>Actividad de Zoom</h2>
-      <p>Se muestran los avisos asociados con certeza a cada encuentro.</p>
-      {encuentros.map((encuentro) => (
-        <details key={encuentro.id}>
-          <summary>Encuentro del {fecha.format(new Date(encuentro.fecha))}</summary>
-          <ActividadEncuentro encuentro={encuentro} />
-        </details>
-      ))}
-    </section>
+    <details className="zoom-series-card__activity" aria-label="Actividad de Zoom">
+      <summary>
+        Actividad de Zoom
+        {actividad.eventos.length ? ` (${actividad.eventos.length})` : ""}
+      </summary>
+      <Contenido encuentro={actividad} />
+    </details>
   );
 }

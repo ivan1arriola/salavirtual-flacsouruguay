@@ -14,6 +14,9 @@ type Registro = Readonly<{
   esHostOCohost: boolean;
   estadoConciliacion: "SIN_CONCILIAR" | "SUGERIDO" | "CONCILIADO" | "EXTERNO";
   invitadoReunionId: string | null;
+  conexiones: ReadonlyArray<
+    Readonly<{ entradaAt: string; salidaAt: string; email: string | null; status: string | null }>
+  >;
 }>;
 type Invitado = Readonly<{ id: string; email: string; nombre: string | null }>;
 
@@ -23,6 +26,17 @@ const ETIQUETA: Record<Registro["estadoConciliacion"], string> = {
   CONCILIADO: "Conciliado",
   EXTERNO: "Externo"
 };
+
+const hora = (iso: string) =>
+  new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(new Date(iso));
 
 /** Asistencia persistida de Zoom. Solo quien puede conciliar ve los controles; el resto solo lee. */
 export function ZoomAsistenciaConciliacion({
@@ -69,9 +83,9 @@ export function ZoomAsistenciaConciliacion({
   }
 
   return (
-    <div>
+    <div className="attendance-table-scroll">
       {mensaje ? <p role="alert">{mensaje}</p> : null}
-      <table>
+      <table className="attendance-table">
         <thead>
           <tr>
             <th>Nombre</th>
@@ -86,8 +100,27 @@ export function ZoomAsistenciaConciliacion({
             <tr key={r.id}>
               <td>
                 {r.nombre}
-                {r.emailObservado ? <small> · {r.emailObservado}</small> : null}
                 {r.esHostOCohost ? " (anfitrión)" : ""}
+                <br />
+                <small className="zoom-attendance-email">
+                  {r.emailObservado ?? "Sin correo informado por Zoom"}
+                </small>
+                {r.conexiones.length > 0 ? (
+                  <details className="zoom-attendance-connections">
+                    <summary>
+                      {r.conexiones.length === 1 ? "1 conexión" : `${r.conexiones.length} conexiones`}
+                    </summary>
+                    <ul>
+                      {r.conexiones.map((c, i) => (
+                        <li key={`${c.entradaAt}-${i}`}>
+                          {hora(c.entradaAt)} → {hora(c.salidaAt)}
+                          {c.status === "in_waiting_room" ? " · sala de espera" : ""}
+                          {c.email && c.email !== r.emailObservado ? ` · ${c.email}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
               </td>
               <td>{r.minutos}</td>
               <td>{r.porcentaje}</td>

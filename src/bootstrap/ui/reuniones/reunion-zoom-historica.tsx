@@ -13,8 +13,7 @@ import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
-import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
-import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
+import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
@@ -112,31 +111,11 @@ export function ReunionZoomHistorica({
           <Users size={19} />
           <h2>Asistencia Zoom</h2>
         </div>
-        <ZoomAsistenciaOcurrencias ocurrencias={asistencia.ocurrencias} />
-        <h3>Resumen consolidado del encuentro</h3>
-        {asistencia.estadoReporte === "ERROR" ? (
-          <p className={styles.note}>La última sincronización con Zoom falló. Se conserva lo ya guardado.</p>
-        ) : null}
-        {!hayDatos ? (
-          <p className={styles.note}>
-            {asistencia.estadoReporte === "VACIO"
-              ? "El reporte de Zoom no contiene conexiones."
-              : "Zoom todavía no entregó un reporte para este encuentro. No se muestran asistentes de otras fechas."}
-          </p>
-        ) : (
-          <>
-            <p className={styles.note}>
-              Minutos y porcentaje sobre el horario programado, sin duplicar reingresos. Los correos son los
-              informados por Zoom, no identidad confirmada.
-            </p>
-            <ZoomAsistenciaConciliacion
-              instanciaId={reunion.id}
-              registros={registros}
-              invitados={asistencia.invitados}
-              puedeConciliar={asistencia.puedeConciliar}
-            />
-          </>
-        )}
+        <ZoomAsistenciaVista
+          instanciaId={reunion.id}
+          asistencia={asistencia}
+          puedeDescargar={asistencia.puedeConciliar}
+        />
       </section>
       <section className={styles.card} aria-label="Registros de la reunión">
         <div className={styles.heading}>
