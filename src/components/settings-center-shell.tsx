@@ -8,6 +8,8 @@ import {
   type SettingsSectionMetadata
 } from "@/src/modules/configuracion/settings-navigation.domain";
 
+const MENU = SETTINGS_SECTIONS.filter(({ hidden }) => !hidden);
+
 const SETTINGS_ICONS = {
   overview: LayoutDashboard,
   workspace: KeyRound,
@@ -101,9 +103,9 @@ function SettingsNavList({
 }>) {
   return (
     <nav aria-label="Secciones de configuración">
-      {SETTINGS_SECTIONS.map((item, index) => (
+      {MENU.map((item, index) => (
         <Fragment key={item.id}>
-          {item.group && item.group !== SETTINGS_SECTIONS[index - 1]?.group ? (
+          {item.group && item.group !== MENU[index - 1]?.group ? (
             <p className="settings-nav-group">{item.group}</p>
           ) : null}
           <SettingsNavLink
