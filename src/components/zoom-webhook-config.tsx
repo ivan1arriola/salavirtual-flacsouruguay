@@ -66,13 +66,40 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
       <div className="section-heading">
         <div>
           <h2 id="zoom-webhook-title">Notificaciones de Zoom</h2>
-          <p>Recibí el estado de las clases, la asistencia y las grabaciones mediante webhooks.</p>
+          <p>Elegí los eventos de Zoom que Sala Virtual procesa para actualizar clases y grabaciones.</p>
         </div>
+      </div>
+      <div className="zoom-webhook-events" aria-labelledby="zoom-webhook-events-title">
+        <h3 id="zoom-webhook-events-title">Eventos para activar en Zoom Marketplace</h3>
+        <p>En Event Subscriptions, agregá estos eventos a la URL indicada abajo:</p>
+        <ul>
+          <li>
+            <code>meeting.started</code>
+            <span>Marca la clase como iniciada.</span>
+          </li>
+          <li>
+            <code>meeting.ended</code>
+            <span>Marca la clase como finalizada y permite consultar luego el reporte de asistencia.</span>
+          </li>
+          <li>
+            <code>recording.completed</code>
+            <span>Adelanta la búsqueda de archivos de la grabación para copiarlos a Drive.</span>
+          </li>
+          <li>
+            <code>recording.transcript_completed</code>
+            <span>Opcional: adelanta la búsqueda de transcripciones cuando Zoom las genera.</span>
+          </li>
+        </ul>
+        <p>
+          <strong>Asistencia:</strong> no necesita un evento de participantes. Sala Virtual consulta el
+          reporte de Zoom después de la clase. El correo con enlaces se envía cuando todos los archivos de la
+          grabación terminan de copiarse a Drive.
+        </p>
       </div>
       <label className="field">
         <span>Event Notification Endpoint URL</span>
         <input type="text" readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
-        <small>Copiá esta URL en Event Subscriptions de tu app en Zoom Marketplace.</small>
+        <small>Copiá esta URL en Event Subscriptions y pulsá Validate después de guardar el token.</small>
       </label>
       <form onSubmit={save} className="email-test-form">
         <label className="field">
@@ -111,6 +138,8 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
       </form>
       <p>
         Usá el <strong>Secret Token</strong> de Event Subscriptions; es distinto del Client Secret de OAuth.
+        Guardarlo aquí no activa los eventos: también tenés que seleccionarlos y habilitar la suscripción en
+        Zoom.
       </p>
     </section>
   );
