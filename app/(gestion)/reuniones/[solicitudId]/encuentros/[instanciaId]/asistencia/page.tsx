@@ -191,7 +191,7 @@ export default async function EncuentroAsistenciaPage({
             {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
             {horaUY(encuentro.finProgramadoAt)} (UY)
           </p>
-          <ZoomAsistenciaOcurrencias ocurrencias={zoom.ocurrencias} />
+          <ZoomAsistenciaOcurrencias ocurrencias={zoom.ocurrencias} instanciaId={instanciaId} />
           <h2>Resumen consolidado del encuentro</h2>
           {zoom.registros.length === 0 ? (
             <p className="attendance-empty">

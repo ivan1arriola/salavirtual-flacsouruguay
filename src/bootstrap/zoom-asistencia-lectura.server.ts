@@ -1,7 +1,9 @@
 import "server-only";
 import { db } from "../lib/db";
 import {
+  categoriaArchivoZoom,
   consolidarAsistenciaZoom,
+  enlaceArchivoZoom,
   puedeConciliarAsistenciaZoom,
   type ActorConciliacionZoom,
   type SesionObservadaZoom
@@ -33,6 +35,8 @@ export type OcurrenciaAsistenciaZoomFicha = Readonly<{
   id: string;
   inicioRealAt: Date;
   estadoReporte: string;
+  hayGrabacionPendiente: boolean;
+  grabaciones: readonly Readonly<{ id: string; tipo: "VIDEO" | "AUDIO"; url: string | null }>[];
   registros: ReadonlyArray<
     Readonly<{
       clave: string;
@@ -50,6 +54,8 @@ function asistenciaPorOcurrencia(ocurrencia: {
   id: string;
   inicioRealAt: Date;
   estadoAsistencia: string;
+  procesamientoPendiente: boolean;
+  archivos: Array<Parameters<typeof enlaceArchivoZoom>[0] & { id: string; tipoOriginal: string }>;
   sesionesAsistencia: Array<{
     claveSesion: string;
     participanteId: string | null;
@@ -84,8 +90,17 @@ function asistenciaPorOcurrencia(ocurrencia: {
             ultimaSalidaAt: r.ultimaSalidaAt
           }))
       : [];
+  const grabaciones = ocurrencia.archivos.flatMap((archivo) => {
+    const tipo = categoriaArchivoZoom(archivo.tipoOriginal);
+    if (tipo !== "VIDEO" && tipo !== "AUDIO") {
+      return [];
+    }
+    return [{ id: archivo.id, tipo, url: enlaceArchivoZoom(archivo) }];
+  });
   return {
     id: ocurrencia.id,
+    grabaciones,
+    hayGrabacionPendiente: ocurrencia.procesamientoPendiente,
     inicioRealAt: ocurrencia.inicioRealAt,
     estadoReporte: ocurrencia.estadoAsistencia,
     registros
@@ -117,6 +132,11 @@ export async function leerAsistenciaZoomFicha(
           id: true,
           inicioRealAt: true,
           estadoAsistencia: true,
+          procesamientoPendiente: true,
+          archivos: {
+            orderBy: { id: "asc" },
+            select: { id: true, tipoOriginal: true, estado: true, webViewUrl: true }
+          },
           sesionesAsistencia: {
             select: {
               claveSesion: true,
