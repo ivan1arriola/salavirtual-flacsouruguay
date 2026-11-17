@@ -74,6 +74,7 @@ describe("agregarEncuentro - sin nuevos Meet", () => {
           { id: "zoom-host-b", prioridad: 2 }
         ])
       },
+      reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
       eventoProveedor: {
         findMany: vi.fn().mockResolvedValue(conflicts),
         create: vi.fn().mockResolvedValue({ id: "ev-nuevo" })
@@ -153,6 +154,7 @@ describe("encuentro migrado con Meet histórico y Zoom activo", () => {
       cuentaProveedor: {
         findUnique: vi.fn().mockResolvedValue({ id: "zoom-host-a", prioridad: 1, limiteConcurrente: 5 })
       },
+      reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
       eventoProveedor: {
         findMany: vi.fn().mockResolvedValue([]),
         update: vi.fn(),

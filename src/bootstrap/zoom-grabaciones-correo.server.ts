@@ -45,7 +45,8 @@ function nombreLegible(nombre: string): string {
     .replace(/_?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "")
     .replaceAll("_", " ")
     .trim();
-  return `${base || nombre}${ext ? ` (${ext})` : ""}`;
+  const sufijo = ext ? ` (${ext})` : "";
+  return `${base || nombre}${sufijo}`;
 }
 
 function correoGrabacion(

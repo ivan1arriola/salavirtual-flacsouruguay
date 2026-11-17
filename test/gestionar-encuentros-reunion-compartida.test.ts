@@ -67,6 +67,7 @@ function txAgregar(eventos: unknown[], conflicts: unknown[] = []) {
         { id: "zoom-host-b", prioridad: 2 }
       ])
     },
+    reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
     eventoProveedor: {
       findMany: vi.fn().mockResolvedValue(conflicts),
       create: vi.fn().mockResolvedValue({ id: "ev-nuevo" })
@@ -174,6 +175,7 @@ function txEncuentro(evento: Record<string, unknown>) {
     cuentaProveedor: {
       findUnique: vi.fn().mockResolvedValue({ id: "zoom-host-b", prioridad: 1, limiteConcurrente: 5 })
     },
+    reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
     eventoProveedor: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), updateMany: vi.fn() },
     asignacionAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
     postulacionAsistenciaTecnica: { updateMany: vi.fn() }

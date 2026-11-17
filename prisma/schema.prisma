@@ -1359,3 +1359,30 @@ model RegistroAsistenciaZoom {
   @@index([ocurrenciaId])
   @@index([invitadoReunionId])
 }
+
+/// Espejo de la agenda que Zoom informa para cada anfitrión: se alimenta con los webhooks
+/// meeting.created/updated/deleted y con la sincronización manual (pull). Sirve para no crear
+/// reuniones que se superpongan con las creadas directamente en Zoom y para detectar diferencias.
+/// Una fila por ocurrencia (`ocurrenciaZoomId` vacío en reuniones sin recurrencia). Solo metadatos.
+model ReunionZoomObservada {
+  id                String   @id @default(cuid())
+  cuentaZoomId      String
+  meetingId         String
+  ocurrenciaZoomId  String   @default("")
+  anfitrionZoomId   String
+  cuentaProveedorId String?
+  tema              String
+  inicioAt          DateTime
+  finAt             DateTime
+  /// ACTIVA | ELIMINADA (nunca se borra la fila: queda como evidencia de lo que pasó en Zoom).
+  estado            String   @default("ACTIVA")
+  /// WEBHOOK | PULL: de dónde vino el último dato.
+  origen            String
+  observadaAt       DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([cuentaZoomId, meetingId, ocurrenciaZoomId])
+  @@index([cuentaProveedorId, estado, inicioAt])
+  @@index([anfitrionZoomId, estado])
+}

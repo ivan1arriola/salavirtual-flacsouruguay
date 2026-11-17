@@ -11,17 +11,23 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { formatDateTime, formatDuration } from "@/src/lib/ui/format";
 import { colorCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
+import { leerInconsistenciasAgendaZoom } from "@/src/modules/operaciones/zoom-agenda-observada.service";
+import { AgendaZoomSeccion } from "./agenda-zoom-seccion";
 import styles from "./zoom.module.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type Vista = "cuentas" | "series" | "pasadas";
+type Vista = "cuentas" | "series" | "pasadas" | "agenda";
 const motivos = {
   SIN_REUNION: "Falta ID o cuenta",
   IDS_DISTINTOS: "IDs distintos",
   CUENTAS_DISTINTAS: "Cuentas distintas"
 } as const;
+
+const paginaActual = (actual: Vista, tab: Vista) => (actual === tab ? "page" : undefined);
+const VISTAS: readonly Vista[] = ["series", "pasadas", "agenda"];
+const leerVista = (valor?: string): Vista => VISTAS.find((vista) => vista === valor) ?? "cuentas";
 
 function estadoCuenta(
   cuenta: Readonly<{ activa: boolean; fueraDelGrupoAt: Date | null; tieneLicencia: boolean }>
@@ -47,8 +53,10 @@ export default async function DiagnosticoZoomPage({
     redirect("/");
   }
   const params = await searchParams;
-  const vista: Vista = params.vista === "series" || params.vista === "pasadas" ? params.vista : "cuentas";
+  const vista = leerVista(params.vista);
   const datos = await leerDiagnosticoZoom();
+  const agenda = await leerInconsistenciasAgendaZoom(db, datos.reuniones);
+  const totalAgenda = agenda.externas.length + agenda.eliminadasEnZoom.length + agenda.horarioDistinto.length;
   const cuentaSeleccionada =
     vista === "cuentas" ? datos.cuentas.find(({ id }) => id === params.cuenta) : null;
   const pasadaSeleccionada =
@@ -100,14 +108,17 @@ export default async function DiagnosticoZoomPage({
         </p>
       ) : null}
       <nav className={styles.tabs} aria-label="Secciones del diagnóstico">
-        <Link href="?vista=cuentas" aria-current={vista === "cuentas" ? "page" : undefined}>
+        <Link href="?vista=cuentas" aria-current={paginaActual(vista, "cuentas")}>
           Cuentas <span>{datos.cuentas.length}</span>
         </Link>
-        <Link href="?vista=series" aria-current={vista === "series" ? "page" : undefined}>
+        <Link href="?vista=series" aria-current={paginaActual(vista, "series")}>
           Series <span>{datos.incidencias.length}</span>
         </Link>
-        <Link href="?vista=pasadas" aria-current={vista === "pasadas" ? "page" : undefined}>
+        <Link href="?vista=pasadas" aria-current={paginaActual(vista, "pasadas")}>
           Pasadas <span>{datos.pasadas.length}</span>
+        </Link>
+        <Link href="?vista=agenda" aria-current={paginaActual(vista, "agenda")}>
+          Agenda de Zoom <span>{totalAgenda}</span>
         </Link>
       </nav>
       {vista === "cuentas" ? (
@@ -238,6 +249,7 @@ export default async function DiagnosticoZoomPage({
           ))}
         </section>
       ) : null}
+      {vista === "agenda" ? <AgendaZoomSeccion agenda={agenda} total={totalAgenda} /> : null}
       {vista === "pasadas" ? (
         <section aria-label="Reuniones Zoom pasadas" className={styles.list}>
           <p>

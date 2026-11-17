@@ -8,6 +8,9 @@ import {
   verificarFirmaWebhookZoom
 } from "@/src/integrations/zoom/zoom-webhook";
 
+import { interpretarMovimientoReunionZoom } from "@/src/integrations/zoom/zoom-agenda";
+import { registrarMovimientoReunionZoom } from "@/src/modules/operaciones/zoom-agenda-observada.service";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -75,6 +78,14 @@ async function guardarAvisoAdicional(cuerpo: string, evento: unknown): Promise<R
   }
   try {
     await db.eventoWebhookZoomAdicional.createMany({ data: [adicional], skipDuplicates: true });
+    // Altas, cambios y bajas de reuniones alimentan la agenda observada; es idempotente, así que
+    // si falla se responde 503 y Zoom reintenta sin duplicar nada.
+    const movimiento = /^meeting\.(created|updated|deleted)$/.test(adicional.tipo)
+      ? interpretarMovimientoReunionZoom(cuerpo)
+      : null;
+    if (movimiento) {
+      await registrarMovimientoReunionZoom(db, movimiento);
+    }
     return new Response(null, { status: 204, headers: HEADERS });
   } catch {
     return new Response(null, { status: 503, headers: HEADERS });
