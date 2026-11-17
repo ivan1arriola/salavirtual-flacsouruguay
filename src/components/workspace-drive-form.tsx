@@ -1,12 +1,8 @@
 "use client";
 
-import { FolderCheck, Save, ShieldCheck, TestTube2 } from "lucide-react";
+import { FolderCheck, Save, TestTube2 } from "lucide-react";
 import { useState } from "react";
-import {
-  prepareDriveHostAccess,
-  saveWorkspaceSection,
-  testWorkspaceSection
-} from "./workspace-config.client";
+import { saveWorkspaceSection, testWorkspaceSection } from "./workspace-config.client";
 
 export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>) {
   const [message, setMessage] = useState("");
@@ -25,13 +21,6 @@ export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>)
   async function test() {
     setMessage("Probando acceso a Drive…");
     const result = await testWorkspaceSection("DRIVE");
-    setSuccess(result.ok);
-    setMessage(result.message);
-  }
-
-  async function prepareAccess() {
-    setMessage("Dando acceso a las salas Meet…");
-    const result = await prepareDriveHostAccess();
     setSuccess(result.ok);
     setMessage(result.message);
   }
@@ -56,10 +45,6 @@ export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>)
           {message}
         </span>
         <div className="workspace-actions">
-          <button className="secondary-action" type="button" onClick={prepareAccess}>
-            <ShieldCheck size={17} />
-            Acceso a salas
-          </button>
           <button className="secondary-action" type="button" onClick={test}>
             <TestTube2 size={17} />
             Probar
