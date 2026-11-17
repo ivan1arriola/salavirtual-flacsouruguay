@@ -7,8 +7,8 @@ const DIA = 24 * 60 * MIN;
 const ESPERA_REPORTE_MS = 15 * MIN;
 
 /**
- * Ocurrencias cuya asistencia falta: las nunca consultadas (hasta 30 días) y las que Zoom aún no tenía o fallaron
- * (solo los últimos 3 días, con 15 min entre intentos: `updatedAt` cambia al marcar el estado del reporte).
+ * El reporte puede llegar tarde. Revisamos hasta un año: cada 15 min para las recientes y una vez al día
+ * para reintentos antiguos, sin dejar que un error permanente bloquee otras ocurrencias.
  */
 export function crearPrismaAsistenciaPendienteAdapter(
   deps: Readonly<{ db: PrismaClient }>
@@ -21,7 +21,7 @@ export function crearPrismaAsistenciaPendienteAdapter(
             {
               estadoAsistencia: "PENDIENTE",
               inicioRealAt: {
-                gte: new Date(ahora.getTime() - 30 * DIA),
+                gte: new Date(ahora.getTime() - 365 * DIA),
                 lte: new Date(ahora.getTime() - ESPERA_REPORTE_MS)
               }
             },
@@ -29,10 +29,18 @@ export function crearPrismaAsistenciaPendienteAdapter(
               estadoAsistencia: { in: ["NO_DISPONIBLE", "ERROR"] },
               inicioRealAt: { gte: new Date(ahora.getTime() - 3 * DIA) },
               updatedAt: { lte: new Date(ahora.getTime() - ESPERA_REPORTE_MS) }
+            },
+            {
+              estadoAsistencia: { in: ["NO_DISPONIBLE", "ERROR"] },
+              inicioRealAt: {
+                gte: new Date(ahora.getTime() - 365 * DIA),
+                lt: new Date(ahora.getTime() - 3 * DIA)
+              },
+              updatedAt: { lte: new Date(ahora.getTime() - DIA) }
             }
           ]
         },
-        orderBy: [{ inicioRealAt: "desc" }, { id: "desc" }],
+        orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
         take: Math.max(1, Math.trunc(limite)),
         select: { id: true }
       });

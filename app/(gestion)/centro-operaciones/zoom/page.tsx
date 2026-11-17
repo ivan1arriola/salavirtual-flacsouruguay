@@ -241,7 +241,7 @@ export default async function DiagnosticoZoomPage({
       {vista === "pasadas" ? (
         <section aria-label="Reuniones Zoom pasadas" className={styles.list}>
           <p>
-            Las personas consolidadas y el estado de asistencia vienen de la base de Sala Virtual. El detalle
+            Las conexiones registradas y el estado de asistencia vienen de la base de Sala Virtual. El detalle
             de horario y duración se consulta a Zoom al abrirlo.
           </p>
           {datos.pasadas.length === 0 ? <p>No hay ocurrencias vinculadas en este período.</p> : null}
@@ -257,14 +257,14 @@ export default async function DiagnosticoZoomPage({
                 <History size={21} aria-hidden="true" />
               </div>
               <p>
-                {pasada.registrosAsistencia.length} personas consolidadas · Reporte:{" "}
+                {pasada.sesionesAsistencia.length} conexiones registradas · Reporte:{" "}
                 {pasada.estadoAsistencia.toLowerCase().replaceAll("_", " ")}
               </p>
               <div className={styles.actions}>
                 <Link
-                  href={`/reuniones/${pasada.eventoProveedor?.instancia.solicitudSalaId}/encuentros/${pasada.eventoProveedor?.instanciaSalaId}/asistencia`}
+                  href={`/reuniones/${pasada.eventoProveedor?.instancia.solicitudSalaId}/encuentros/${pasada.eventoProveedor?.instanciaSalaId}/asistencia#ocurrencia-${pasada.id}`}
                 >
-                  Ver asistencia
+                  Ver asistencia de este Zoom
                 </Link>
                 <Link
                   href={`?vista=pasadas&ocurrencia=${encodeURIComponent(pasada.id)}`}
@@ -298,7 +298,7 @@ export default async function DiagnosticoZoomPage({
                       {detallePasado.detalle.participantesReportados !== null ? (
                         <p>
                           Participaciones informadas por Zoom: {detallePasado.detalle.participantesReportados}
-                          . Puede incluir reconexiones; el número de personas consolidadas figura arriba.
+                          . Puede incluir reconexiones; la asistencia por ejecución figura en el informe.
                         </p>
                       ) : null}
                     </>

@@ -7,6 +7,7 @@ import { AttendanceRawDownloads } from "@/src/components/attendance-raw-download
 import { crearArchivosRepository } from "@/src/bootstrap/archivos.server";
 import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
+import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -190,6 +191,8 @@ export default async function EncuentroAsistenciaPage({
             {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
             {horaUY(encuentro.finProgramadoAt)} (UY)
           </p>
+          <ZoomAsistenciaOcurrencias ocurrencias={zoom.ocurrencias} />
+          <h2>Resumen consolidado del encuentro</h2>
           {zoom.registros.length === 0 ? (
             <p className="attendance-empty">
               {zoom.estadoReporte === "VACIO"
