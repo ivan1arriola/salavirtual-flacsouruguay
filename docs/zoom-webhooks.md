@@ -21,10 +21,14 @@ y la sincronización de asistencia ya existentes. La URL no requiere sesión de 
    `meeting.participant_left_waiting_room`, `meeting.participant_admitted`,
    `meeting.participant_put_in_waiting_room`, `recording.started`, `recording.stopped`,
    `recording.paused`, `recording.resumed`, `meeting.sharing_started`, `meeting.sharing_ended` y
-   `meeting.alert`. Scopes de la app (según la referencia oficial de Meetings Webhooks): los eventos
-   `meeting.*` requieren `meeting:read:admin` (o `meeting:read`), y los `recording.started/stopped/paused/resumed`
-   requieren `recording:read:admin` (o `recording:read`). En Zoom, los eventos de participante no se
-   envían si la opción de la suscripción para ese evento no está activada; verificarlo en la consola.
+   `meeting.alert`. Scopes de la app: según la referencia oficial de Meetings Webhooks, los eventos de
+   participante (`meeting.participant_*`) aceptan `meeting:read:admin` o `meeting:read` y, en el modelo
+   granular, `meeting:read:participant:admin` o `meeting:read:participant`. **Sin verificar contra la
+   documentación oficial**: los scopes de `recording.started/stopped/paused/resumed`
+   (`recording:read:admin` o `recording:read`), de `meeting.sharing_started/ended` y de `meeting.alert`.
+   Antes de activarlos, abrir la página de cada evento en la consola de Zoom y confirmar el scope que
+   exige. En Zoom, los eventos no se envían si la opción de la suscripción para ese evento no está
+   activada; verificarlo en la consola.
 6. Confirmar en la base que los eventos pasan de `RECIBIDO` a `PROCESADO` y que la ocurrencia aparece
    vinculada a la clase correcta. Si hay dos clases candidatas, la vinculación queda pendiente de revisión.
 
