@@ -1,0 +1,11 @@
+[Unit]
+Description=Sala Virtual FLACSO - sincronización de la agenda de Zoom cada 30 minutos
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+RandomizedDelaySec=60
+Unit=salavirtual-zoom-agenda.service
+
+[Install]
+WantedBy=timers.target

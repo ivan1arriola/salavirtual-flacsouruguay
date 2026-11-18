@@ -15,7 +15,6 @@ describe("resumen de configuración", () => {
           zoomCredentialsDiagnostic: diagnostico,
           workspaceReady: true,
           integrationActive: true,
-          pendingOperations: 0,
           totalHosts: 1,
           activePrograms: 0,
           totalPrograms: 0
@@ -32,7 +31,6 @@ describe("resumen de configuración", () => {
           zoomCredentialsAvailable: false,
           workspaceReady: true,
           integrationActive: true,
-          pendingOperations: 0,
           totalHosts: 2,
           activePrograms: 0,
           totalPrograms: 0
@@ -51,7 +49,6 @@ describe("resumen de configuración", () => {
           zoomCredentialsAvailable: true,
           workspaceReady: false,
           integrationActive: false,
-          pendingOperations: 1,
           totalHosts: 2,
           activePrograms: 0,
           totalPrograms: 0
@@ -60,7 +57,9 @@ describe("resumen de configuración", () => {
     );
     expect(html).toContain("Configuración local de Zoom disponible");
     expect(html).toContain("La conexión con Zoom no se verificó aquí");
-    expect(html).toContain("Google Workspace requiere revisión");
+    expect(html).toContain("Google requiere revisión");
+    expect(html).not.toContain("Meet");
+    expect(html).toContain('href="/configuracion/google"');
     expect(html).not.toContain("Todo está listo para operar");
   });
 });

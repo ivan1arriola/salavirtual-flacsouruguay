@@ -563,13 +563,15 @@ async function provisionarReunionCompartida(
         try {
           await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
             startTime: ajuste.startTime,
-            durationMinutes: ajuste.durationMinutes
+            durationMinutes: ajuste.durationMinutes,
+            timezone: tz
           });
         } catch {
           await new Promise((resolve) => setTimeout(resolve, 500));
           await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
             startTime: ajuste.startTime,
-            durationMinutes: ajuste.durationMinutes
+            durationMinutes: ajuste.durationMinutes,
+            timezone: tz
           }).catch(() => undefined);
         }
       }

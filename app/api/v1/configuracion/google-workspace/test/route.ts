@@ -72,9 +72,9 @@ export async function POST(request: Request) {
         serviceAccountEmail: principal.serviceAccountEmail,
         privateKey: descifrarConfiguracion(principal.privateKeyCifrada)
       };
-      const scopeSubjects = await obtenerSujetosScopes(principal.serviceAccountSubject);
+      const scopeSubjects = obtenerSujetosScopes(principal.serviceAccountSubject);
       if (scopeSubjects.length === 0) {
-        throw new Error("Primero guardá el usuario delegado o configurá al menos una sala Meet.");
+        throw new Error("Primero guardá el usuario delegado.");
       }
 
       const accounts = [];
@@ -93,70 +93,26 @@ export async function POST(request: Request) {
         (total, account) => total + account.scopes.filter(({ autorizado }) => !autorizado).length,
         0
       );
-      const roomCount = accounts.filter(({ tipo }) => tipo === "SALA").length;
 
       return NextResponse.json({
         message:
           missingCount === 0
-            ? `Todos los scopes requeridos están autorizados en ${roomCount} ${roomCount === 1 ? "cuenta sala" : "cuentas sala"}${accounts.some(({ tipo }) => tipo === "GENERAL") ? " y en la cuenta delegada general" : ""}.`
+            ? "Todos los scopes requeridos están autorizados en la cuenta delegada."
             : `${missingCount} ${missingCount === 1 ? "autorización de scope falta" : "autorizaciones de scope faltan"} en ${failedAccounts.length} ${failedAccounts.length === 1 ? "cuenta" : "cuentas"}.`,
         accounts
       });
     }
 
-    const hostEmails =
-      objetivo === "DRIVE"
-        ? (
-            await db.cuentaProveedor.findMany({
-              where: {
-                proveedor: { tipo: "GOOGLE_MEET" },
-                activa: true,
-                emailOrganizador: { not: null }
-              },
-              select: { emailOrganizador: true },
-              orderBy: { prioridad: "asc" }
-            })
-          ).flatMap(({ emailOrganizador }) => (emailOrganizador ? [emailOrganizador] : []))
-        : [];
-
-    const message = await ejecutarPrueba(objetivo, principal, credential, hostEmails);
+    const message = await ejecutarPrueba(objetivo, principal, credential);
     return NextResponse.json({ message });
   } catch (error) {
     return NextResponse.json({ error: mensajeErrorGoogleWorkspace(error) }, { status: 400 });
   }
 }
 
-async function obtenerSujetosScopes(serviceAccountSubject: string | null): Promise<readonly ScopeSubject[]> {
-  const hosts = await db.cuentaProveedor.findMany({
-    where: {
-      proveedor: { tipo: "GOOGLE_MEET" },
-      emailOrganizador: { not: null }
-    },
-    select: { emailOrganizador: true, activa: true },
-    orderBy: { prioridad: "asc" }
-  });
-
-  const seen = new Set<string>();
-  const result: ScopeSubject[] = [];
-  const add = (candidate: ScopeSubject) => {
-    const key = candidate.subject.trim().toLowerCase();
-    if (!key || seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    result.push({ ...candidate, subject: candidate.subject.trim() });
-  };
-
-  if (serviceAccountSubject?.trim()) {
-    add({ subject: serviceAccountSubject, tipo: "GENERAL", activa: true });
-  }
-  for (const host of hosts) {
-    if (!host.emailOrganizador) {
-      continue;
-    }
-    add({ subject: host.emailOrganizador, tipo: "SALA", activa: host.activa });
-  }
-  return result;
+function obtenerSujetosScopes(serviceAccountSubject: string | null): readonly ScopeSubject[] {
+  const subject = serviceAccountSubject?.trim();
+  return subject ? [{ subject, tipo: "GENERAL", activa: true }] : [];
 }
 
 async function ejecutarPrueba(
@@ -165,8 +121,7 @@ async function ejecutarPrueba(
     serviceAccountSubject: string | null;
     driveDestinationId: string | null;
   }>,
-  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>,
-  hostEmails: readonly string[]
+  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>
 ): Promise<string> {
   if (objetivo === "CREDENCIAL") {
     return probarCredencialGoogle(credential);
@@ -185,10 +140,5 @@ async function ejecutarPrueba(
     throw new Error("Primero guardá el destino de Drive.");
   }
   await probarDestinoDrive(delegated, configuration.driveDestinationId);
-  await Promise.all(
-    hostEmails.map((subject) =>
-      probarDestinoDrive({ ...credential, subject }, configuration.driveDestinationId!)
-    )
-  );
-  return `Lectura y escritura confirmadas para el usuario delegado y ${hostEmails.length} salas Meet.`;
+  return "Lectura y escritura confirmadas para el usuario delegado.";
 }

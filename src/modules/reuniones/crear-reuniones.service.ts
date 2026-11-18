@@ -18,6 +18,7 @@ import {
 import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
 import { elegirCuentaHostParaPeriodos } from "./encuentros.domain";
+import { reservasZoomExternas } from "@/src/modules/operaciones/zoom-agenda-observada.service";
 import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
@@ -225,20 +226,32 @@ export async function crearReuniones(
       (email) => !cohostEmailSet.has(email)
     );
 
+    // Reuniones creadas directamente en Zoom (webhooks y sincronización): también ocupan la sala.
+    const reunionesExternasZoom =
+      tipoProveedor === "ZOOM"
+        ? await reservasZoomExternas(tx, {
+            cuentaIds: hosts.map(({ id }) => id),
+            desde: new Date(Math.min(...input.instancias.map(({ inicio }) => inicio.getTime()))),
+            hasta: new Date(Math.max(...input.instancias.map(({ fin }) => fin.getTime())))
+          })
+        : [];
     const cuentaHostId = elegirCuentaHostParaPeriodos(
       null,
       hosts.map((host) => (tipoProveedor === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host)),
-      occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) =>
-        cuentaProveedorId
-          ? [
-              {
-                cuentaProveedorId,
-                inicio: instancia.inicioProgramadoAt,
-                fin: instancia.finProgramadoAt
-              }
-            ]
-          : []
-      ),
+      [
+        ...occupiedHosts.flatMap(({ cuentaProveedorId, instancia }) =>
+          cuentaProveedorId
+            ? [
+                {
+                  cuentaProveedorId,
+                  inicio: instancia.inicioProgramadoAt,
+                  fin: instancia.finProgramadoAt
+                }
+              ]
+            : []
+        ),
+        ...reunionesExternasZoom
+      ],
       input.instancias
     );
     if (!cuentaHostId) {

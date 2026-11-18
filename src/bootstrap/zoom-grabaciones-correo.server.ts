@@ -1,6 +1,6 @@
 // Worker de Node: no usa server-only para poder ejecutarse fuera de Next.
 import type { PrismaClient } from "@prisma/client";
-import { escaparHtmlEmail, envolverCorreo } from "../lib/email/email-design-system";
+import { escaparHtmlEmail, envolverCorreo, panelCorreo } from "../lib/email/email-design-system";
 import type { MailInput, MailSendResult } from "../modules/notificaciones/domain";
 
 type Dependencias = Readonly<{
@@ -32,6 +32,23 @@ export function grabacionZoomListaParaAvisar(
   );
 }
 
+// Vista preferida para el botón principal; si ninguna coincide se usa el primer MP4.
+const PREFERENCIA_VIDEO = ["shared_screen_with_speaker_view", "gallery_view", "active_speaker"];
+
+/** "2026-11-17_M4A_Audio only - Ana_<uuid>.m4a" → "Audio only - Ana (m4a)". */
+function nombreLegible(nombre: string): string {
+  const ext = /\.([a-z0-9]+)$/i.exec(nombre)?.[1]?.toLowerCase() ?? "";
+  const base = nombre
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/^\d{4}-\d{2}-\d{2}_/, "")
+    .replace(/^(MP4|M4A|CHAT|TIMELINE)_/, "")
+    .replace(/_?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "")
+    .replaceAll("_", " ")
+    .trim();
+  const sufijo = ext ? ` (${ext})` : "";
+  return `${base || nombre}${sufijo}`;
+}
+
 function correoGrabacion(
   input: Readonly<{
     titulo: string;
@@ -59,17 +76,36 @@ function correoGrabacion(
     ...archivos.map((archivo) => `${archivo.nombre}: ${archivo.url}`)
   ].join("\n");
   const e = escaparHtmlEmail;
-  const enlacesHtml = archivos
-    .map((archivo) => `<li><a href="${e(archivo.url)}">${e(archivo.nombre)}</a></li>`)
+  const videos = archivos.filter((a) => /\.mp4$/i.test(a.nombre));
+  const principal =
+    PREFERENCIA_VIDEO.map((vista) => videos.find((v) => v.nombre.includes(vista))).find(Boolean) ?? videos[0];
+  const grupos = [
+    { titulo: "Videos", items: videos },
+    { titulo: "Audios", items: archivos.filter((a) => /\.m4a$/i.test(a.nombre)) },
+    { titulo: "Chat y otros archivos", items: archivos.filter((a) => !/\.(mp4|m4a)$/i.test(a.nombre)) }
+  ].filter((grupo) => grupo.items.length > 0);
+  const gruposHtml = grupos
+    .map((grupo) =>
+      panelCorreo(
+        grupo.items
+          .map(
+            (a) =>
+              `<p style="margin:0 0 7px;font-size:13px;line-height:19px"><a href="${e(a.url)}" style="color:#087f9e;text-decoration:underline">${e(nombreLegible(a.nombre))}</a></p>`
+          )
+          .join(""),
+        `${grupo.titulo} (${grupo.items.length})`
+      )
+    )
     .join("");
   const html = envolverCorreo({
     categoria: "Grabaciones de Zoom",
     titulo: "Grabación disponible en Drive",
     resumen: `La grabación de ${input.titulo} y todos sus archivos ya están disponibles.`,
     variante: "accion",
+    accion: principal ? { texto: "Ver la grabación", url: principal.url } : null,
     contenidoHtml:
-      `<p><strong>${e(input.titulo)}</strong> · ${e(input.programa)}<br>${e(fecha)}</p>` +
-      `<ul>${enlacesHtml}</ul>`,
+      `<p style="margin:0 0 18px;font-size:14px;line-height:22px"><strong>${e(input.titulo)}</strong><br>${e(input.programa)}<br>${e(fecha)}</p>` +
+      gruposHtml,
     nota: "Los enlaces son privados para las personas destinatarias de este correo.",
     preferenciasUrl: null
   });

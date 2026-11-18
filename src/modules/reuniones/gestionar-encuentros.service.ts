@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { idsCancelacionesPendientes } from "./encuentros.domain";
+import { reservasZoomExternas } from "@/src/modules/operaciones/zoom-agenda-observada.service";
 import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
@@ -154,21 +155,30 @@ export async function agregarEncuentro(
           : "La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva."
       );
     }
+    // Reuniones creadas directamente en Zoom: también ocupan la sala.
+    const externasZoom = await reservasZoomExternas(tx, {
+      cuentaIds: hostsElegibles.map(({ id }) => id),
+      desde: input.inicio,
+      hasta: input.fin
+    });
     const hostId = elegirCuentaHostParaPeriodos(
       eventoCompartido?.cuentaProveedorId ?? seriePreferredHost,
       // Zoom opera con capacidad 1 por host.
       hostsElegibles.map((host) => ({ ...host, limiteConcurrente: 1 })),
-      conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
-        cuentaProveedorId
-          ? [
-              {
-                cuentaProveedorId,
-                inicio: instancia.inicioProgramadoAt,
-                fin: instancia.finProgramadoAt
-              }
-            ]
-          : []
-      ),
+      [
+        ...conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
+          cuentaProveedorId
+            ? [
+                {
+                  cuentaProveedorId,
+                  inicio: instancia.inicioProgramadoAt,
+                  fin: instancia.finProgramadoAt
+                }
+              ]
+            : []
+        ),
+        ...externasZoom
+      ],
       [input]
     );
     if (!hostId) {
@@ -310,26 +320,39 @@ export async function actualizarEncuentro(
             }
           })
         ]);
+        const externasZoom =
+          event.proveedor.tipo === "ZOOM"
+            ? await reservasZoomExternas(tx, {
+                cuentaIds: [event.cuentaProveedorId],
+                desde: input.inicio,
+                hasta: input.fin
+              })
+            : [];
         const available =
           host &&
           elegirCuentaHostParaPeriodos(
             host.id,
             [event.proveedor.tipo === "ZOOM" ? { ...host, limiteConcurrente: 1 } : host],
-            conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
-              cuentaProveedorId
-                ? [
-                    {
-                      cuentaProveedorId,
-                      inicio: instancia.inicioProgramadoAt,
-                      fin: instancia.finProgramadoAt
-                    }
-                  ]
-                : []
-            ),
+            [
+              ...conflicts.flatMap(({ cuentaProveedorId, instancia }) =>
+                cuentaProveedorId
+                  ? [
+                      {
+                        cuentaProveedorId,
+                        inicio: instancia.inicioProgramadoAt,
+                        fin: instancia.finProgramadoAt
+                      }
+                    ]
+                  : []
+              ),
+              ...externasZoom
+            ],
             [input]
           );
         if (!available) {
-          throw new ConflictApiError("La sala ya alcanzó su límite en ese horario.");
+          throw new ConflictApiError(
+            "La sala ya alcanzó su límite en ese horario (incluye reuniones creadas directamente en Zoom)."
+          );
         }
       }
 

@@ -100,6 +100,7 @@ describe("crearReuniones - cohosts e invitados", () => {
       cuentaProveedor: {
         findMany: vi.fn().mockResolvedValue([{ id: "sala-01", prioridad: 1, limiteConcurrente: null }])
       },
+      reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
       eventoProveedor: {
         findMany: vi.fn().mockResolvedValue([]),
         create: vi.fn().mockImplementation(({ data }) => {

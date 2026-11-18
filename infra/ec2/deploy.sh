@@ -160,6 +160,8 @@ install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.service" /etc/systemd
 install -m 0644 "$SRC/infra/ec2/salavirtual-artifacts-sync.timer" /etc/systemd/system/salavirtual-artifacts-sync.timer
 install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.service" /etc/systemd/system/salavirtual-google-pending.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-google-pending.timer" /etc/systemd/system/salavirtual-google-pending.timer
+install -m 0644 "$SRC/infra/ec2/salavirtual-zoom-agenda.service" /etc/systemd/system/salavirtual-zoom-agenda.service
+install -m 0644 "$SRC/infra/ec2/salavirtual-zoom-agenda.timer" /etc/systemd/system/salavirtual-zoom-agenda.timer
 install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.service" /etc/systemd/system/salavirtual-ops-health.service
 install -m 0644 "$SRC/infra/ec2/salavirtual-ops-health.timer" /etc/systemd/system/salavirtual-ops-health.timer
 install -m 0644 "$SRC/infra/ec2/salavirtual-zoom-archivos.service" /etc/systemd/system/salavirtual-zoom-archivos.service
@@ -196,6 +198,8 @@ reiniciar_worker_zoom
 
 systemctl enable salavirtual-google-pending.timer >/dev/null
 systemctl restart salavirtual-google-pending.timer
+systemctl enable salavirtual-zoom-agenda.timer >/dev/null
+systemctl restart salavirtual-zoom-agenda.timer
 systemctl enable salavirtual-ops-health.timer >/dev/null
 systemctl restart salavirtual-ops-health.timer
 

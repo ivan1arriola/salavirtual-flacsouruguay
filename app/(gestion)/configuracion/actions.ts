@@ -152,7 +152,7 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
     );
   }
 
-  revalidatePath("/configuracion");
+  revalidatePath("/configuracion/notificaciones");
   redirect(asistenciaRedirect("reportes-asistencia-actualizados"));
 }
 
@@ -167,11 +167,11 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
     });
   } catch (error) {
     redirect(
-      `/configuracion?seccion=correo&error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
+      `/configuracion/correo?error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
     );
   }
-  revalidatePath("/configuracion");
-  redirect("/configuracion?seccion=correo&estado=correo-ses-actualizado");
+  revalidatePath("/configuracion/correo");
+  redirect("/configuracion/correo?estado=correo-ses-actualizado");
 }
 
 async function requireAdmin() {
@@ -253,14 +253,14 @@ function programRedirect(
 }
 
 function asistenciaRedirect(estado?: string, error?: string): string {
-  const params = new URLSearchParams({ seccion: "asistencia" });
+  const params = new URLSearchParams();
   if (estado) {
     params.set("estado", estado);
   }
   if (error) {
     params.set("error", error);
   }
-  return `/configuracion?${params.toString()}`;
+  return `/configuracion/notificaciones?${params.toString()}`;
 }
 
 function errorMessage(error: unknown, fallback = "No se pudo actualizar el programa."): string {

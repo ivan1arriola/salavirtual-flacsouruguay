@@ -66,7 +66,9 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
       <div className="section-heading">
         <div>
           <h2 id="zoom-webhook-title">Notificaciones de Zoom</h2>
-          <p>Elegí los eventos de Zoom que Sala Virtual procesa para actualizar clases y grabaciones.</p>
+          <p>
+            Eventos de Zoom que Sala Virtual procesa para actualizar clases, grabaciones y la agenda de salas.
+          </p>
         </div>
       </div>
       <div className="zoom-webhook-events" aria-labelledby="zoom-webhook-events-title">
@@ -89,7 +91,23 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
             <code>recording.transcript_completed</code>
             <span>Opcional: adelanta la búsqueda de transcripciones cuando Zoom las genera.</span>
           </li>
+          <li>
+            <code>meeting.created</code>
+            <span>Registra las reuniones creadas directamente en Zoom para no superponer horarios.</span>
+          </li>
+          <li>
+            <code>meeting.updated</code>
+            <span>Actualiza el horario o la duración de esas reuniones si se cambian en Zoom.</span>
+          </li>
+          <li>
+            <code>meeting.deleted</code>
+            <span>Libera la sala cuando una reunión se elimina en Zoom.</span>
+          </li>
         </ul>
+        <p>
+          <strong>Agenda:</strong> además de estos eventos, Sala Virtual consulta la agenda completa de Zoom
+          cada 30 minutos y desde Centro de operaciones › Zoom › Agenda de Zoom.
+        </p>
         <p>
           <strong>Asistencia:</strong> no necesita un evento de participantes. Sala Virtual consulta el
           reporte de Zoom después de la clase. El correo con enlaces se envía cuando todos los archivos de la

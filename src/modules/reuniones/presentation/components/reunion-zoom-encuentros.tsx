@@ -11,6 +11,7 @@ import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
 import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { enviarAccionEncuentro } from "@/src/modules/reuniones/reunion-zoom-acciones";
 import { ConfirmacionCancelacionZoom } from "./confirmacion-cancelacion-zoom";
+import { ZoomActividadEncuentro, type ActividadEncuentroZoom } from "./zoom-eventos-panel";
 
 export type EncuentroZoomView = Readonly<{
   id: string;
@@ -87,6 +88,7 @@ function aIso(fecha: string, hora: string): string {
 
 export function ReunionZoomEncuentros({
   encuentros,
+  actividad = {},
   solicitudIds,
   esAdmin,
   puedeModificar,
@@ -95,6 +97,8 @@ export function ReunionZoomEncuentros({
   permiteAgregarCompartida
 }: Readonly<{
   encuentros: readonly EncuentroZoomView[];
+  /** Avisos de Zoom de cada encuentro, por id de encuentro. */
+  actividad?: Readonly<Record<string, ActividadEncuentroZoom>>;
   solicitudIds: readonly string[];
   esAdmin: boolean;
   /** Solo el titular de la reunión y administración; el resto la ve sin poder cambiarla. */
@@ -316,6 +320,9 @@ export function ReunionZoomEncuentros({
                       </a>
                     ) : null}
                   </div>
+                ) : null}
+                {actividad[encuentro.id] ? (
+                  <ZoomActividadEncuentro actividad={actividad[encuentro.id]!} />
                 ) : null}
                 {puedeModificar && encuentro.editable ? (
                   <div className="zoom-series-card__secondary-actions">

@@ -6,8 +6,7 @@ import { AttendanceRegenerateAction } from "@/src/components/attendance-regenera
 import { AttendanceRawDownloads } from "@/src/components/attendance-raw-downloads";
 import { crearArchivosRepository } from "@/src/bootstrap/archivos.server";
 import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
-import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
-import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
+import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -181,41 +180,30 @@ export default async function EncuentroAsistenciaPage({
     if (eventoZoom) {
       // Zoom: lectura de lo persistido, sin Workspace; Sala Virtual sirve la vista y la exportación tras validar el alcance.
       const zoom = await leerAsistenciaZoomFicha(instanciaId, { id: actor.id, rol: actor.rol });
-      const base = `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/exportar/zoom`;
       return (
-        <main className="attendance-page">
-          <Link href={`/reuniones/${solicitudId}`}>
-            <ArrowLeft size={16} /> Volver a la reunión
+        <main className="attendance-view">
+          <Link className="meeting-detail-back" href={`/reuniones/${solicitudId}#encuentros`}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            Volver a encuentros
           </Link>
-          <h1>Asistencia Zoom · {encuentro.solicitud.titulo}</h1>
-          <p>
-            {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
-            {horaUY(encuentro.finProgramadoAt)} (UY)
-          </p>
-          <ZoomAsistenciaOcurrencias ocurrencias={zoom.ocurrencias} instanciaId={instanciaId} />
-          <h2>Resumen consolidado del encuentro</h2>
-          {zoom.registros.length === 0 ? (
-            <p className="attendance-empty">
-              {zoom.estadoReporte === "VACIO"
-                ? "El reporte de Zoom no contiene conexiones."
-                : "Todavía no hay registros de asistencia de Zoom. Esto no demuestra que no hubiera participantes."}
-            </p>
-          ) : (
-            <>
-              <p>
-                <a href={`${base}?conjunto=resumen&formato=csv`}>Resumen (CSV)</a> ·{" "}
-                <a href={`${base}?conjunto=sesiones&formato=csv`}>Sesiones originales (CSV)</a> ·{" "}
-                <a href={`${base}?conjunto=resumen&formato=json`}>Resumen (JSON)</a>
+          <header className="attendance-view-header">
+            <div>
+              <p className="page-eyebrow">Zoom</p>
+              <h1>Asistencia del encuentro</h1>
+              <p className="attendance-view-subtitle">{encuentro.solicitud.titulo}</p>
+              <p className="attendance-view-date">
+                <Clock3 size={16} aria-hidden="true" />
+                {fechaUY(encuentro.inicioProgramadoAt)} · {horaUY(encuentro.inicioProgramadoAt)}–
+                {horaUY(encuentro.finProgramadoAt)} (Uruguay)
               </p>
-              <ZoomAsistenciaConciliacion
-                instanciaId={instanciaId}
-                registros={zoom.registros}
-                invitados={zoom.invitados}
-                puedeConciliar={zoom.puedeConciliar}
-              />
-            </>
-          )}
-          {actor.rol === "ADMINISTRACION" ? <AttendanceRegenerateAction instanciaId={instanciaId} /> : null}
+            </div>
+            {actor.rol === "ADMINISTRACION" ? (
+              <div className="attendance-view-actions">
+                <AttendanceRegenerateAction instanciaId={instanciaId} />
+              </div>
+            ) : null}
+          </header>
+          <ZoomAsistenciaVista instanciaId={instanciaId} asistencia={zoom} puedeDescargar />
         </main>
       );
     }

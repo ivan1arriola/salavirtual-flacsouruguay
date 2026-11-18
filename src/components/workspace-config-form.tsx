@@ -1,13 +1,10 @@
-import { CheckCircle2, ChevronDown, Circle, History, KeyRound, SlidersHorizontal } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, KeyRound, SlidersHorizontal } from "lucide-react";
 import { workspaceReadiness } from "@/src/modules/configuracion/settings-navigation.domain";
 import { WorkspaceCredentialForm } from "./workspace-credential-form";
 import { WorkspaceDelegationForm } from "./workspace-delegation-form";
 import { WorkspaceDriveForm } from "./workspace-drive-form";
 import { WorkspaceScopesValidator } from "./workspace-scopes-validator";
-import { WorkspaceCohostResync } from "./workspace-cohost-resync";
-import { WorkspaceCohostsGlobalVerification } from "./workspace-cohosts-global-verification";
 import { WorkspaceStatusForm } from "./workspace-status-form";
-import { WorkspaceLegacyCredentials } from "./workspace-legacy-credentials";
 
 export type WorkspaceConfigVisible = Readonly<{
   serviceAccountEmail: string | null;
@@ -70,24 +67,6 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
       </div>
 
       <WorkspaceScopesValidator />
-      <WorkspaceCohostsGlobalVerification />
-      <WorkspaceCohostResync />
-
-      <details className="settings-disclosure settings-disclosure--historical">
-        <summary>
-          <span className="settings-disclosure__icon">
-            <History size={19} />
-          </span>
-          <span>
-            <strong>Compatibilidad histórica</strong>
-            <small>Credenciales que solo administran reuniones anteriores.</small>
-          </span>
-          <ChevronDown size={18} aria-hidden="true" />
-        </summary>
-        <div className="settings-disclosure__body">
-          <WorkspaceLegacyCredentials />
-        </div>
-      </details>
 
       <details className="settings-disclosure settings-disclosure--advanced" open={!initial?.activa}>
         <summary>

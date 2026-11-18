@@ -1,11 +1,10 @@
 export const SETTINGS_SECTION_IDS = [
   "resumen",
-  "workspace",
   "zoom",
+  "google",
   "salas",
-  "programas",
-  "asistencia",
   "correo",
+  "notificaciones",
   "historico"
 ] as const;
 
@@ -15,57 +14,54 @@ export type SettingsSectionMetadata = Readonly<{
   id: SettingsSection;
   label: string;
   description: string;
-  group?: "Integraciones" | "Operación" | "Comunicación" | "Datos";
+  group?: "Integraciones" | "Operación" | "Comunicación";
+  /** No aparece en el menú; se llega por un enlace. */
+  hidden?: true;
   icon: "overview" | "workspace" | "zoom" | "rooms" | "programs" | "assistance" | "email" | "history";
 }>;
 
 export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
-  {
-    id: "resumen",
-    label: "Resumen",
-    description: "Estado general y tareas pendientes",
-    icon: "overview"
-  },
-  {
-    id: "workspace",
-    label: "Google Workspace",
-    description: "Integración, permisos y archivos",
-    group: "Integraciones",
-    icon: "workspace"
-  },
+  { id: "resumen", label: "Resumen", description: "Estado general y tareas pendientes", icon: "overview" },
   {
     id: "zoom",
     label: "Zoom",
-    description: "Credenciales OAuth y configuración",
+    description: "Conexión, grupo de cuentas, avisos y agenda",
     group: "Integraciones",
     icon: "zoom"
   },
   {
+    id: "google",
+    label: "Google",
+    description: "Cuenta de servicio, delegación y Drive",
+    group: "Integraciones",
+    icon: "workspace"
+  },
+  {
     id: "salas",
     label: "Salas",
-    description: "Cuentas de Zoom y Meet que alojan reuniones",
+    description: "Cuentas de Zoom que alojan reuniones",
     group: "Operación",
     icon: "rooms"
   },
   {
-    id: "asistencia",
-    label: "Monitoreo",
-    description: "Reportes mensuales y destinatarios",
-    group: "Operación",
-    icon: "assistance"
-  },
-  {
     id: "correo",
     label: "Correo",
-    description: "Prueba de invitaciones y avisos",
+    description: "Envío de invitaciones y avisos",
     group: "Comunicación",
     icon: "email"
+  },
+  {
+    id: "notificaciones",
+    label: "Notificaciones",
+    description: "Reportes mensuales y destinatarios",
+    group: "Comunicación",
+    icon: "assistance"
   },
   {
     id: "historico",
     label: "Registros Zoom importados",
     description: "Reuniones importadas disponibles para consulta",
-    group: "Datos",
+    hidden: true,
     icon: "history"
   }
 ];
@@ -75,14 +71,34 @@ export function resolveSettingsSection(value?: string): SettingsSection {
 }
 
 export function settingsHref(section: SettingsSection) {
-  if (section === "programas") {
-    return "/usuarios?vista=programas";
-  }
-  return section === "resumen" ? "/configuracion" : `/configuracion?seccion=${section}`;
+  return section === "resumen" ? "/configuracion" : `/configuracion/${section}`;
 }
 
-export function legacySettingsRedirect(section?: string): string | null {
-  return section === "programas" ? "/usuarios?vista=programas" : null;
+const LEGACY_SECTION_ROUTES: Readonly<Record<string, string>> = {
+  workspace: "/configuracion/google",
+  asistencia: "/configuracion/notificaciones",
+  zoom: "/configuracion/zoom",
+  salas: "/configuracion/salas",
+  correo: "/configuracion/correo",
+  historico: "/configuracion/historico",
+  programas: "/usuarios?vista=programas"
+};
+
+/** Enlaces viejos `/configuracion?seccion=…`; conservan la búsqueda del histórico. */
+export function legacySettingsRedirect(
+  section?: string,
+  params: Readonly<{ busqueda?: string; pagina?: string }> = {}
+): string | null {
+  const ruta = section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
+  if (!ruta) {
+    return null;
+  }
+  if (section !== "historico") {
+    return ruta;
+  }
+  const conValor = Object.entries(params).filter((par): par is [string, string] => Boolean(par[1]));
+  const query = new URLSearchParams(conValor);
+  return query.size ? `${ruta}?${query}` : ruta;
 }
 
 export type SettingsAttentionInput = Readonly<{

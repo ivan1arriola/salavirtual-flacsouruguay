@@ -81,6 +81,44 @@ export async function descargarAsistenciaOriginalZoom(
 }
 
 /**
+ * Páginas del reporte de participantes EXACTAMENTE como las devolvió Zoom, sin interpretar ni filtrar nada
+ * (incluye las sesiones que la consolidación descarta). null: Zoom todavía no tiene el reporte (404).
+ */
+export async function descargarReporteParticipantesZoomOriginalHttp(
+  token: string,
+  meetingUuid: string
+): Promise<readonly unknown[] | null> {
+  const paginas: unknown[] = [];
+  const tokensVistos = new Set<string>();
+  let pagina = "";
+  do {
+    const params = new URLSearchParams({ page_size: "300" });
+    if (pagina) {
+      params.set("next_page_token", pagina);
+    }
+    const id = encodeURIComponent(encodeURIComponent(meetingUuid));
+    const response = await fetch(
+      `https://api.zoom.us/v2/past_meetings/${id}/participants?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error(`Zoom: error al consultar asistencia (${response.status})`);
+    }
+    const data = (await response.json()) as { next_page_token?: string };
+    paginas.push(data);
+    pagina = data.next_page_token ?? "";
+    if (pagina && tokensVistos.has(pagina)) {
+      throw new Error("Zoom devolvió una paginación repetida");
+    }
+    tokensVistos.add(pagina);
+  } while (pagina);
+  return paginas;
+}
+
+/**
  * Consulta el reporte histórico de una instancia de Zoom.
  * En reuniones recurrentes se debe pasar el UUID de la instancia, NO el ID
  * numérico compartido por toda la serie.

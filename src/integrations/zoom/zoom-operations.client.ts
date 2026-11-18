@@ -1,4 +1,5 @@
 import type { ReunionZoomRemota } from "@/src/modules/operaciones/zoom-diagnostico.domain";
+import { ocurrenciasDeObjetoZoom, type OcurrenciaZoomInformada } from "./zoom-agenda";
 import {
   codificarUuidZoom,
   errorPorRespuesta,
@@ -61,6 +62,102 @@ export async function listarProximasReunionesCuentaZoom(
       throw new ZoomApiError("PAGINACION_REPETIDA", "agenda-cuenta");
     }
     vistos.add(token);
+  }
+  throw new ZoomApiError("RESPUESTA_INCOMPLETA", "agenda-cuenta");
+}
+
+/** Una recurrente solo informa sus ocurrencias en el detalle de la reunión. */
+async function detalleReunionRecurrenteZoom(
+  auth: AutenticacionZoom,
+  meetingId: string
+): Promise<Record<string, unknown>> {
+  const detalle = await pedirZoom(auth, "agenda-cuenta", (accessToken) =>
+    fetch(`${API}/meetings/${encodeURIComponent(meetingId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(12000)
+    })
+  );
+  if (!detalle.ok) {
+    throw await errorPorRespuesta("agenda-cuenta", detalle);
+  }
+  return (await detalle.json()) as Record<string, unknown>;
+}
+
+export type ReunionAgendaZoom = Readonly<{
+  meetingId: string;
+  tema: string;
+  ocurrencias: readonly OcurrenciaZoomInformada[];
+}>;
+
+async function reunionDeAgendaZoom(
+  auth: AutenticacionZoom,
+  reunion: Record<string, unknown>
+): Promise<ReunionAgendaZoom | null> {
+  const id = reunion.id ? String(reunion.id) : null;
+  // 1 = instantánea y 3 = sin horario fijo: no ocupan la agenda.
+  if (!id || reunion.type === 1 || reunion.type === 3) {
+    return null;
+  }
+  const fuente = reunion.type === 8 ? await detalleReunionRecurrenteZoom(auth, id) : reunion;
+  const tema = typeof reunion.topic === "string" ? reunion.topic.trim().slice(0, 250) : "";
+  return { meetingId: id, tema: tema || "Reunión Zoom", ocurrencias: ocurrenciasDeObjetoZoom(fuente) };
+}
+
+async function paginaAgendaZoom(auth: AutenticacionZoom, usuarioZoomId: string, token: string) {
+  const url = new URL(`${API}/users/${encodeURIComponent(usuarioZoomId)}/meetings`);
+  url.searchParams.set("type", "upcoming");
+  url.searchParams.set("page_size", "300");
+  if (token) {
+    url.searchParams.set("next_page_token", token);
+  }
+  const respuesta = await pedirZoom(auth, "agenda-cuenta", (accessToken) =>
+    fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(12000)
+    })
+  );
+  if (!respuesta.ok) {
+    throw await errorPorRespuesta("agenda-cuenta", respuesta);
+  }
+  const datos = (await respuesta.json()) as {
+    meetings?: Record<string, unknown>[];
+    next_page_token?: string;
+  };
+  if (!Array.isArray(datos.meetings)) {
+    throw new ZoomApiError("RESPUESTA_INCOMPLETA", "agenda-cuenta");
+  }
+  return { reuniones: datos.meetings, siguiente: datos.next_page_token ?? "" };
+}
+
+/**
+ * Agenda completa (con horarios) de un anfitrión: es el "pull" que reconcilia el espejo local.
+ * Las reuniones recurrentes piden su detalle para conocer cada ocurrencia; un error nunca equivale a agenda vacía.
+ */
+export async function listarAgendaCuentaZoom(
+  auth: AutenticacionZoom,
+  usuarioZoomId: string
+): Promise<readonly ReunionAgendaZoom[]> {
+  const resultado: ReunionAgendaZoom[] = [];
+  const vistos = new Set<string>();
+  let token = "";
+  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+    const { reuniones, siguiente } = await paginaAgendaZoom(auth, usuarioZoomId, token);
+    for (const reunion of reuniones) {
+      const agenda = await reunionDeAgendaZoom(auth, reunion);
+      if (agenda) {
+        resultado.push(agenda);
+      }
+    }
+    if (!siguiente) {
+      return resultado;
+    }
+    if (vistos.has(siguiente)) {
+      throw new ZoomApiError("PAGINACION_REPETIDA", "agenda-cuenta");
+    }
+    vistos.add(siguiente);
+    token = siguiente;
   }
   throw new ZoomApiError("RESPUESTA_INCOMPLETA", "agenda-cuenta");
 }

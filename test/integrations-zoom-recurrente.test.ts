@@ -57,7 +57,7 @@ describe("reuniones recurrentes de Zoom", () => {
       expect(init.method).toBe("POST");
       const cuerpo = JSON.parse(init.body);
       expect(cuerpo.type).toBe(8);
-      expect(cuerpo.start_time).toBe(fechaInicio.toISOString());
+      expect(cuerpo.start_time).toBe("2026-11-10T15:00:00"); // 18:00Z = 15:00 en Uruguay
       expect(cuerpo.duration).toBe(120);
       expect(cuerpo.timezone).toBe("America/Montevideo");
       expect(cuerpo.recurrence).toEqual({
@@ -148,7 +148,7 @@ describe("reuniones recurrentes de Zoom", () => {
       expect(url).toBe("https://api.zoom.us/v2/meetings/123456?occurrence_id=occ-1");
       expect(init.method).toBe("PATCH");
       const cuerpo = JSON.parse(init.body);
-      expect(cuerpo.start_time).toBe(nuevaFecha.toISOString());
+      expect(cuerpo.start_time).toBe("2026-11-12T16:00:00"); // 19:00Z = 16:00 en Uruguay
       expect(cuerpo.duration).toBe(90);
     });
   });

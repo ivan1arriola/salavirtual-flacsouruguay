@@ -10,7 +10,7 @@ import {
   Video
 } from "lucide-react";
 import Link from "next/link";
-import { settingsNeedsAttention } from "@/src/modules/configuracion/settings-navigation.domain";
+import { settingsHref, settingsNeedsAttention } from "@/src/modules/configuracion/settings-navigation.domain";
 
 const TEXTO_VALOR_CREDENCIALES: Readonly<Record<string, string>> = {
   AUSENTES: "Sin credenciales activas y completas",
@@ -31,7 +31,6 @@ export type SettingsOverviewData = Readonly<{
   totalHosts: number;
   activePrograms: number;
   totalPrograms: number;
-  pendingOperations: number;
 }>;
 
 export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData }>) {
@@ -45,7 +44,7 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
       <div className="settings-overview-grid">
         <OverviewCard
           description="Credenciales Server-to-Server OAuth"
-          href="/configuracion?seccion=zoom"
+          href={settingsHref("zoom")}
           icon={<Video size={22} />}
           label="Zoom"
           state={data.zoomCredentialsAvailable ? "neutral" : "warning"}
@@ -62,19 +61,19 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
               ? "Cuenta, delegación y Drive configurados"
               : "Faltan datos para completar la integración"
           }
-          href="/configuracion?seccion=workspace"
+          href={settingsHref("google")}
           icon={<KeyRound size={22} />}
-          label="Google Workspace"
+          label="Google"
           state={data.workspaceReady && data.integrationActive ? "ok" : "warning"}
           value={data.integrationActive ? "Integración activa" : "Integración pausada"}
         />
         <OverviewCard
           description={`${data.zoomAvailableHosts} cuentas Zoom habilitadas; la disponibilidad depende del horario`}
-          href="/configuracion?seccion=salas"
+          href={settingsHref("salas")}
           icon={<Video size={22} />}
           label="Salas"
           state={data.zoomAvailableHosts > 0 ? "ok" : "warning"}
-          value={`${data.totalHosts} ${data.totalHosts === 1 ? "cuenta" : "cuentas"} Meet y Zoom en total`}
+          value={`${data.totalHosts} ${data.totalHosts === 1 ? "cuenta Zoom" : "cuentas Zoom"} en total`}
         />
         <OverviewCard
           description={`${data.activePrograms} activos · ${data.totalPrograms - data.activePrograms} inactivos`}
@@ -86,23 +85,23 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
         />
         <OverviewCard
           description="Destinatarios de los reportes mensuales"
-          href="/configuracion?seccion=asistencia"
+          href={settingsHref("notificaciones")}
           icon={<Clock3 size={22} />}
-          label="Monitoreo"
+          label="Notificaciones"
           state="neutral"
           value="Configurar reportes"
         />
         <OverviewCard
-          description="Comprueba el canal de invitaciones y avisos"
-          href="/configuracion?seccion=correo"
+          description="Canal de invitaciones y avisos"
+          href={settingsHref("correo")}
           icon={<MailCheck size={22} />}
           label="Correo"
           state="neutral"
-          value="Probar el envío"
+          value="Configurar y probar el envío"
         />
         <OverviewCard
           description="Registros migrados disponibles para consulta"
-          href="/configuracion?seccion=historico"
+          href={settingsHref("historico")}
           icon={<History size={22} />}
           label="Registros Zoom importados"
           state="quiet"
@@ -151,12 +150,12 @@ function SettingsAttentionBanner({
           <li>
             {TEXTO_AVISO_CREDENCIALES[data.zoomCredentialsDiagnostic ?? ""] ??
               "No se pudo confirmar la disponibilidad de credenciales."}{" "}
-            <Link href="/configuracion?seccion=zoom">Revisar credenciales de Zoom</Link>
+            <Link href={settingsHref("zoom")}>Revisar credenciales de Zoom</Link>
           </li>
         ) : null}
         {data.zoomAvailableHosts === 0 ? (
           <li>
-            <Link href="/configuracion?seccion=salas">Revisar las cuentas Zoom habilitadas</Link>
+            <Link href={settingsHref("salas")}>Revisar las cuentas Zoom habilitadas</Link>
           </li>
         ) : null}
       </ul>
@@ -166,29 +165,21 @@ function SettingsAttentionBanner({
 }
 
 function GoogleAttention({ data }: Readonly<{ data: SettingsOverviewData }>) {
-  if (!data.pendingOperations && data.workspaceReady && data.integrationActive) {
+  if (data.workspaceReady && data.integrationActive) {
     return null;
   }
   return (
-    <Attention tone="warning" label="Estado de Google Workspace">
-      <strong>Google Workspace requiere revisión</strong>
+    <Attention tone="warning" label="Estado de Google">
+      <strong>Google requiere revisión</strong>
       <ul>
-        {data.pendingOperations > 0 ? (
-          <li>
-            <Link href="#operaciones-pendientes">
-              {data.pendingOperations}{" "}
-              {data.pendingOperations === 1 ? "operación pendiente" : "operaciones pendientes"} con Google
-            </Link>
-          </li>
-        ) : null}
         {!data.workspaceReady ? (
           <li>
-            <Link href="/configuracion?seccion=workspace">Completar Google Workspace</Link>
+            <Link href={settingsHref("google")}>Completar la configuración de Google</Link>
           </li>
         ) : null}
         {!data.integrationActive ? (
           <li>
-            <Link href="/configuracion?seccion=workspace">Activar la integración de Google Workspace</Link>
+            <Link href={settingsHref("google")}>Activar la integración de Google</Link>
           </li>
         ) : null}
       </ul>

@@ -1,28 +1,24 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ZoomEventosPanel } from "../src/modules/reuniones/presentation/components/zoom-eventos-panel";
+import { ZoomActividadEncuentro } from "../src/modules/reuniones/presentation/components/zoom-eventos-panel";
 
-describe("panel de actividad Zoom", () => {
-  it("muestra la actividad por encuentro y aclara cuando no hay avisos", () => {
-    const html = renderToStaticMarkup(
-      <ZoomEventosPanel
-        encuentros={[
-          {
-            id: "a",
-            fecha: "2026-11-13T12:00:00.000Z",
-            eventos: [{ tipo: "meeting.participant_joined", ocurridoAt: "2026-11-13T12:05:00.000Z" }],
-            porHorario: true
-          },
-          { id: "b", fecha: "2026-11-14T12:00:00.000Z", eventos: [] },
-          { id: "c", fecha: "2026-11-15T12:00:00.000Z", eventos: [], sinAsociar: true }
-        ]}
-      />
-    );
-    expect(html).toContain("Actividad de Zoom");
-    expect(html).toContain("Participante se unió");
-    expect(html).toContain("Asociados por número de reunión y horario");
-    expect(html).toContain("Sin actividad registrada");
-    expect(html).toContain("Todavía no se puede asociar actividad");
+const html = (actividad: Parameters<typeof ZoomActividadEncuentro>[0]["actividad"]) =>
+  renderToStaticMarkup(<ZoomActividadEncuentro actividad={actividad} />);
+
+describe("actividad Zoom de un encuentro", () => {
+  it("lista los avisos asociados por horario", () => {
+    const salida = html({
+      eventos: [{ tipo: "meeting.participant_joined", ocurridoAt: "2026-11-13T12:05:00.000Z" }],
+      porHorario: true
+    });
+    expect(salida).toContain("Actividad de Zoom");
+    expect(salida).toContain("Participante se unió");
+    expect(salida).toContain("Asociados por número de reunión y horario");
+  });
+
+  it("aclara cuando no hay avisos o no se pueden asociar", () => {
+    expect(html({ eventos: [] })).toContain("Sin actividad registrada");
+    expect(html({ eventos: [], sinAsociar: true })).toContain("Todavía no se puede asociar actividad");
   });
 });

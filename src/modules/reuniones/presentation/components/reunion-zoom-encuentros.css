@@ -17,7 +17,7 @@
 .zoom-series-page .meeting-detail-back:hover {
   text-decoration: underline;
 }
-.zoom-series-hero {
+.zoom-series-page .zoom-series-hero {
   position: relative;
   display: flex;
   justify-content: space-between;
@@ -31,13 +31,13 @@
     linear-gradient(115deg, #fff 55%, #f4f8ff);
   box-shadow: 0 8px 28px rgba(24, 51, 91, 0.055);
 }
-.zoom-series-hero__content {
+.zoom-series-page .zoom-series-hero__content {
   position: relative;
   z-index: 1;
   min-width: 0;
   flex: 1 1 auto;
 }
-.zoom-series-hero__eyebrow {
+.zoom-series-page .zoom-series-hero__eyebrow {
   display: inline-block;
   margin: 0 0 12px;
   padding: 7px 11px;
@@ -49,25 +49,25 @@
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
-.zoom-series-hero h1 {
+.zoom-series-page .zoom-series-hero h1 {
   margin: 0 0 8px;
   color: #15335e;
   font-size: clamp(1.6rem, 2.7vw, 2.3rem);
   line-height: 1.15;
 }
-.zoom-series-hero__teacher {
+.zoom-series-page .zoom-series-hero__teacher {
   margin: 0;
   color: #394b64;
   font-size: 0.91rem;
 }
-.zoom-series-hero__description {
+.zoom-series-page .zoom-series-hero__description {
   max-width: 760px;
   margin: 9px 0 0;
   color: #52637a;
   font-size: 0.89rem;
   line-height: 1.55;
 }
-.zoom-series-hero__facts {
+.zoom-series-page .zoom-series-hero__facts {
   display: flex;
   width: fit-content;
   max-width: 100%;
@@ -78,7 +78,7 @@
   border-radius: 9px;
   background: rgba(246, 249, 255, 0.92);
 }
-.zoom-series-hero__facts span {
+.zoom-series-page .zoom-series-hero__facts span {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -88,14 +88,14 @@
   font-size: 0.78rem;
   font-weight: 750;
 }
-.zoom-series-hero__facts span + span::before {
+.zoom-series-page .zoom-series-hero__facts span + span::before {
   align-self: stretch;
   width: 1px;
   margin-right: 7px;
   background: #cad6e8;
   content: "";
 }
-.zoom-series-hero__brand {
+.zoom-series-page .zoom-series-hero__brand {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
@@ -107,7 +107,7 @@
   letter-spacing: 0.09em;
   line-height: 1.15;
 }
-.zoom-series-hero__brand-mark {
+.zoom-series-page .zoom-series-hero__brand-mark {
   display: grid;
   width: 57px;
   height: 57px;
@@ -352,7 +352,7 @@
   outline-offset: 3px;
 }
 @media (max-width: 1050px) {
-  .zoom-series-hero__brand {
+  .zoom-series-page .zoom-series-hero__brand {
     display: none;
   }
   .zoom-series-card {
@@ -364,17 +364,17 @@
   .zoom-series-page {
     gap: 13px;
   }
-  .zoom-series-hero {
+  .zoom-series-page .zoom-series-hero {
     padding: 19px;
     border-radius: 12px;
   }
-  .zoom-series-hero__facts {
+  .zoom-series-page .zoom-series-hero__facts {
     width: 100%;
   }
-  .zoom-series-hero__facts span {
+  .zoom-series-page .zoom-series-hero__facts span {
     padding: 7px 10px;
   }
-  .zoom-series-hero__facts span + span::before {
+  .zoom-series-page .zoom-series-hero__facts span + span::before {
     display: none;
   }
   .zoom-series-card {
@@ -428,7 +428,7 @@
   }
 }
 @media (max-width: 390px) {
-  .zoom-series-hero__facts {
+  .zoom-series-page .zoom-series-hero__facts {
     display: grid;
   }
   .zoom-series-card__main-actions .zoom-join-actions {
@@ -591,7 +591,7 @@
 
 /* Cuenta anfitriona: siempre en texto, con un punto del color de la cuenta (el mismo de la lista). */
 .zoom-series-card__host,
-.zoom-series-hero__host {
+.zoom-series-page .zoom-series-hero__host {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -638,4 +638,27 @@
 }
 .zoom-cancel-dialog__actions button {
   min-height: 44px;
+}
+
+/* Actividad de Zoom dentro de cada encuentro. */
+.zoom-series-card__activity {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--series-border);
+  font-size: 0.8rem;
+  color: #394b64;
+}
+.zoom-series-card__activity summary {
+  cursor: pointer;
+  color: var(--series-blue);
+  font-weight: 750;
+}
+.zoom-series-card__activity ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+}
+.zoom-series-card__activity p {
+  margin: 8px 0 0;
 }

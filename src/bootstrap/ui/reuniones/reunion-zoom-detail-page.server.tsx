@@ -1,4 +1,3 @@
-import { ZoomEventosPanel } from "@/src/modules/reuniones/presentation/components/zoom-eventos-panel";
 import { ArrowLeft, CalendarDays, Clock3, History, Repeat2, UserRound, Video } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -352,9 +351,9 @@ export default async function ReunionZoomDetailPage({
           ) : null}
         </section>
       ) : null}
-      <ZoomEventosPanel encuentros={actividadEncuentros} />
       <ReunionZoomEncuentros
         encuentros={encuentros}
+        actividad={Object.fromEntries(actividadEncuentros.map(({ id, ...actividad }) => [id, actividad]))}
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
         permiteCancelarSerie={!otroProveedor}

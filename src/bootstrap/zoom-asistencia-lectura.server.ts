@@ -20,6 +20,10 @@ export type RegistroAsistenciaZoomFicha = Readonly<{
   esHostOCohost: boolean;
   estadoConciliacion: "SIN_CONCILIAR" | "SUGERIDO" | "CONCILIADO" | "EXTERNO";
   invitadoReunionId: string | null;
+  /** Cada conexión observada por Zoom (reingresos y varios dispositivos incluidos), con su correo si lo informó. */
+  conexiones: ReadonlyArray<
+    Readonly<{ entradaAt: string; salidaAt: string; email: string | null; status: string | null }>
+  >;
 }>;
 
 export type AsistenciaZoomFicha = Readonly<{
@@ -175,6 +179,20 @@ export async function leerAsistenciaZoomFicha(
       select: { id: true, email: true, nombre: true }
     })
   ]);
+  // Misma regla que la consolidación: el id de Zoom identifica a la persona; sin él cada sesión es aparte.
+  const conexionesPorClave = new Map<string, RegistroAsistenciaZoomFicha["conexiones"][number][]>();
+  for (const sesion of evento.ocurrenciasArchivoZoom.flatMap((o) => o.sesionesAsistencia)) {
+    const clave = sesion.participanteId ? `id:${sesion.participanteId}` : `sesion:${sesion.claveSesion}`;
+    conexionesPorClave.set(clave, [
+      ...(conexionesPorClave.get(clave) ?? []),
+      {
+        entradaAt: sesion.entradaAt.toISOString(),
+        salidaAt: sesion.salidaAt.toISOString(),
+        email: sesion.email,
+        status: sesion.status
+      }
+    ]);
+  }
   const estados = evento.ocurrenciasArchivoZoom.map((o) => o.estadoAsistencia);
   const estadoReporte =
     estados.length === 0
@@ -194,7 +212,8 @@ export async function leerAsistenciaZoomFicha(
       sesiones: r.sesiones,
       esHostOCohost: r.esHostOCohost,
       estadoConciliacion: r.estadoConciliacion,
-      invitadoReunionId: r.invitadoReunionId
+      invitadoReunionId: r.invitadoReunionId,
+      conexiones: conexionesPorClave.get(r.claveParticipante) ?? []
     })),
     invitados,
     puedeConciliar: puedeConciliarAsistenciaZoom(actor, {

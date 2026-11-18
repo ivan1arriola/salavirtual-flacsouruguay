@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   KeyRound,
   Pencil,
-  Plus,
   Save,
   Search,
   Trash2,
@@ -12,6 +11,7 @@ import {
   Video,
   X
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { esCuentaAsignable } from "@/src/modules/reuniones/cuenta-asignable.domain";
@@ -40,22 +40,8 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [creating, setCreating] = useState(false);
   const [editingHostId, setEditingHostId] = useState<string | null>(null);
   const filteredHosts = filterMeetHosts(hosts, query);
-
-  async function createHost(formData: FormData) {
-    setSaving("new");
-    setMessage("Guardando cuenta…");
-    const result = await request("POST", payloadFromForm(formData));
-    setSuccess(result.ok);
-    setMessage(result.message);
-    setSaving(null);
-    if (result.ok) {
-      setCreating(false);
-      router.refresh();
-    }
-  }
 
   async function updateHost(host: MeetHostVisible, formData: FormData) {
     setSaving(host.id);
@@ -97,7 +83,6 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
   }
 
   function openEditor(hostId: string) {
-    setCreating(false);
     setEditingHostId((current) => (current === hostId ? null : hostId));
     setMessage("");
   }
@@ -115,41 +100,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
             placeholder="Buscar por nombre o correo"
           />
         </label>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={() => {
-            setCreating((current) => !current);
-            setEditingHostId(null);
-            setMessage("");
-          }}
-        >
-          {creating ? <X size={17} /> : <Plus size={17} />}
-          {creating ? "Cerrar formulario" : "Agregar sala"}
-        </button>
       </div>
-
-      {creating ? (
-        <form className="form-section workspace-config settings-room-editor" action={createHost}>
-          <header className="form-section-title">
-            <Plus size={22} aria-hidden="true" />
-            <div>
-              <h2>Agregar cuenta organizadora</h2>
-              <p>La cuenta quedará disponible para nuevas reuniones según su prioridad.</p>
-            </div>
-          </header>
-          <HostFields hostsCount={hosts.length} />
-          <footer className="form-actions">
-            <span className={`form-message${success ? " done" : ""}`} role="status">
-              {saving === "new" ? message : ""}
-            </span>
-            <button className="primary-action" type="submit" disabled={saving !== null}>
-              <Plus size={17} />
-              {saving === "new" ? "Agregando…" : "Agregar cuenta"}
-            </button>
-          </footer>
-        </form>
-      ) : null}
 
       <section className="content-section settings-room-list-section">
         <div className="section-heading settings-list-heading">
@@ -168,6 +119,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
           <div className="empty-state">
             <Video size={24} />
             <p>No hay salas configuradas.</p>
+            <Link href="/configuracion/zoom">Elegir el grupo de cuentas de Zoom</Link>
           </div>
         ) : filteredHosts.length === 0 ? (
           <div className="settings-empty-search">
@@ -196,7 +148,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                         {available ? "Disponible" : "No disponible"}
                       </span>
                       <span className="settings-mini-status is-neutral">
-                        {host.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"}
+                        Zoom
                       </span>
                       {outsideGroup ? (
                         <span className="settings-mini-status is-warning">{outsideGroup}</span>
