@@ -14,6 +14,37 @@ function oauthMock(tokens: string[]) {
   );
 }
 
+describe("caché de tokens de Zoom", () => {
+  it("un secreto distinto no reutiliza el token cacheado del secreto válido", async () => {
+    const fetchMock = oauthMock(["token-valido", "token-otro"]);
+    vi.stubGlobal("fetch", fetchMock);
+    const base = { accountId: "acc-sec-1", clientId: "cli-sec-1" };
+    expect(await obtenerZoomAccessToken({ ...base, clientSecret: "correcto" })).toBe("token-valido");
+    expect(await obtenerZoomAccessToken({ ...base, clientSecret: "mal-escrito" })).toBe("token-otro");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("la solicitud del token tiene límite de espera", async () => {
+    const fetchMock = oauthMock(["t"]);
+    vi.stubGlobal("fetch", fetchMock);
+    await obtenerZoomAccessToken({ accountId: "acc-sec-2", clientId: "cli-sec-2", clientSecret: "s" });
+    const opciones = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(opciones.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("el error de autenticación no incluye el cuerpo de la respuesta", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("detalle interno de zoom", { status: 400, statusText: "Bad Request" }))
+    );
+    const error = await obtenerZoomAccessToken({ accountId: "a3", clientId: "c3", clientSecret: "s" }).catch(
+      (e: Error) => e
+    );
+    expect((error as Error).message).toContain("400");
+    expect((error as Error).message).not.toContain("detalle interno");
+  });
+});
+
 describe("renovación forzada del token Zoom", () => {
   it("invalida el token rechazado y entrega uno distinto desde el caché real", async () => {
     const creds = { accountId: "acc-inv-1", clientId: "cli-inv-1", clientSecret: "s" };
