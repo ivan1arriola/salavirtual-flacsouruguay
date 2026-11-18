@@ -38,7 +38,7 @@ function mensajeZoom(error: unknown): string {
 export async function leerDiagnosticoZoom(ahora = new Date()) {
   const hasta = new Date(ahora.getTime() + 60 * 86400000);
   const desdeHistorico = new Date(ahora.getTime() - 30 * 86400000);
-  const [cuentas, instancias, pasadas] = await Promise.all([
+  const [cuentas, instancias, pasadas, sinVincular] = await Promise.all([
     db.cuentaProveedor.findMany({
       where: { proveedor: { tipo: "ZOOM" } },
       select: {
@@ -84,6 +84,7 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
         uuid: true,
         inicioRealAt: true,
         meetingId: true,
+        eventoProveedorId: true,
         estadoAsistencia: true,
         sesionesAsistencia: { select: { id: true } },
         eventoProveedor: {
@@ -95,6 +96,12 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
       },
       orderBy: { inicioRealAt: "desc" },
       take: 30
+    }),
+    db.ocurrenciaArchivoZoom.findMany({
+      where: { inicioRealAt: { gte: desdeHistorico }, eventoProveedorId: null },
+      select: { id: true, inicioRealAt: true, meetingId: true },
+      orderBy: { inicioRealAt: "desc" },
+      take: 100
     })
   ]);
   const reuniones: ReunionZoomAuditable[] = instancias.slice(0, LIMITE_ENCUENTROS).map((instancia) => {
@@ -114,6 +121,7 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
     reuniones,
     incidencias: auditarSeriesZoom(reuniones),
     solapes: detectarSolapesCuentasZoom(reuniones),
+    sinVincular,
     pasadas: pasadas.filter(({ eventoProveedor }) => Boolean(eventoProveedor)),
     parcial: instancias.length > LIMITE_ENCUENTROS,
     desde: ahora,

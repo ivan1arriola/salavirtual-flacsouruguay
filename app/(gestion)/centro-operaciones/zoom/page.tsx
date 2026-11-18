@@ -13,6 +13,7 @@ import { formatDateTime, formatDuration } from "@/src/lib/ui/format";
 import { colorCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { leerInconsistenciasAgendaZoom } from "@/src/modules/operaciones/zoom-agenda-observada.service";
 import { AgendaZoomSeccion } from "./agenda-zoom-seccion";
+import { AccionesPasada, SinVincularLista } from "./pasadas-conciliacion";
 import styles from "./zoom.module.css";
 
 export const dynamic = "force-dynamic";
@@ -76,8 +77,9 @@ export default async function DiagnosticoZoomPage({
         <p className="page-eyebrow">Control de agenda</p>
         <h1>Diagnóstico de Zoom</h1>
         <p>
-          Estado de las cuentas, coherencia de las series y detalles de clases finalizadas. Esta página es de
-          solo lectura.
+          Estado de las cuentas, coherencia de las series y detalles de clases finalizadas. Las comprobaciones
+          no modifican datos; en Pasadas se pueden vincular, desvincular y reintentar la asistencia de
+          ejecuciones.
         </p>
       </header>
       <div className={styles.metrics}>
@@ -99,7 +101,7 @@ export default async function DiagnosticoZoomPage({
       </div>
       <p className={styles.scope}>
         Próximos 60 días · {formatDateTime(datos.desde)} al {formatDateTime(datos.hasta)}. El historial
-        muestra las últimas 30 ocurrencias vinculadas de los últimos 30 días.
+        muestra las últimas 30 ocurrencias vinculadas y las no vinculadas de los últimos 30 días.
       </p>
       {datos.parcial ? (
         <p className={styles.notice} role="alert">
@@ -256,6 +258,8 @@ export default async function DiagnosticoZoomPage({
             Las conexiones registradas y el estado de asistencia vienen de la base de Sala Virtual. El detalle
             de horario y duración se consulta a Zoom al abrirlo.
           </p>
+          <SinVincularLista items={datos.sinVincular} />
+          <h2>Vinculadas</h2>
           {datos.pasadas.length === 0 ? <p>No hay ocurrencias vinculadas en este período.</p> : null}
           {datos.pasadas.map((pasada) => (
             <article className={styles.card} key={pasada.id}>
@@ -285,6 +289,11 @@ export default async function DiagnosticoZoomPage({
                   Consultar duración real <ArrowRight size={15} />
                 </Link>
               </div>
+              <AccionesPasada
+                ocurrenciaId={pasada.id}
+                eventoId={pasada.eventoProveedorId}
+                instanciaId={pasada.eventoProveedor?.instanciaSalaId}
+              />
               {pasadaSeleccionada?.id === pasada.id && detallePasado ? (
                 <div className={styles.result} role="status">
                   {detallePasado.estado === "DISPONIBLE" ? (

@@ -1,4 +1,4 @@
-import type { ResultadoVinculo, ZoomArchivoRepositoryPort } from "../ports";
+import type { ResultadoDesvinculo, ResultadoVinculo, ZoomArchivoRepositoryPort } from "../ports";
 
 export type ActorVincularZoom = Readonly<{
   id: string | null;
@@ -34,4 +34,17 @@ export async function vincularOcurrenciaZoom(
     }
     throw error;
   }
+}
+
+/** Deshace el vínculo manual de una ocurrencia con un encuentro. Solo administración; no toca inventario ni Drive. */
+export async function desvincularOcurrenciaZoom(
+  deps: Readonly<{ repo: Pick<ZoomArchivoRepositoryPort, "desvincularOcurrencia"> }>,
+  actor: ActorVincularZoom,
+  ocurrenciaId: string,
+  eventoId: string
+): Promise<ResultadoDesvinculo | Readonly<{ tipo: "PROHIBIDO" }>> {
+  if (actor.rol !== "ADMINISTRACION") {
+    return { tipo: "PROHIBIDO" };
+  }
+  return deps.repo.desvincularOcurrencia(ocurrenciaId, eventoId, actor.id === null ? null : { id: actor.id });
 }

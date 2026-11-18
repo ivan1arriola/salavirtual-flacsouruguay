@@ -255,3 +255,16 @@
     font-size: var(--text-2xl);
   }
 }
+
+/* Objetivos táctiles de 44px para los controles de conciliación. */
+.control button,
+.control select {
+  min-height: 44px;
+}
+.control :global(.zoom-link-actions),
+.control :global(.zoom-candidate-picker) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

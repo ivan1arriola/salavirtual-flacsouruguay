@@ -8,6 +8,7 @@ import {
   consultarEstadoZoomArchivosUseCase,
   crearRecuperacionZoom,
   listarInventarioZoomUseCase,
+  desvincularOcurrenciaZoom,
   vincularOcurrenciaZoom,
   type ActorRecuperacionZoom,
   type ResumenRecuperacion,
@@ -109,6 +110,19 @@ export async function vincularOcurrenciaZoomAdmin(
   eventoId: string
 ) {
   return vincularOcurrenciaZoom(
+    { repo: crearPrismaZoomArchivoRepositoryAdapter({ db, hash }) },
+    actor,
+    ocurrenciaId,
+    eventoId
+  );
+}
+
+export async function desvincularOcurrenciaZoomAdmin(
+  actor: ActorRecuperacionZoom,
+  ocurrenciaId: string,
+  eventoId: string
+) {
+  return desvincularOcurrenciaZoom(
     { repo: crearPrismaZoomArchivoRepositoryAdapter({ db, hash }) },
     actor,
     ocurrenciaId,
