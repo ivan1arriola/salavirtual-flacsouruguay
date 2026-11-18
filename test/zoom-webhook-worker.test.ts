@@ -89,3 +89,66 @@ describe("procesar bandeja Zoom", () => {
     expect(mocks.upsert).not.toHaveBeenCalled();
   });
 });
+
+describe("asistencia al finalizar la reunión", () => {
+  const disponible = { tipo: "OK", estadoReporte: "DISPONIBLE", participantes: 3, sesionesNuevas: 3 } as const;
+  const datosDelAviso = () => mocks.updateMany.mock.calls.at(-1)?.[0].data;
+
+  it("meeting.ended sincroniza la ocurrencia y marca el aviso procesado", async () => {
+    const sync = vi.fn().mockResolvedValue(disponible);
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toEqual({ procesados: 1, ignorados: 0, errores: 0 });
+    expect(sync).toHaveBeenCalledTimes(1);
+    expect(sync).toHaveBeenCalledWith("ocurrencia-1");
+  });
+
+  it("meeting.started no sincroniza", async () => {
+    mocks.findMany.mockReset().mockResolvedValueOnce([{ ...aviso, tipo: "meeting.started" }]).mockResolvedValue([]);
+    const sync = vi.fn();
+    await procesarWebhooksZoom("cuenta-1", 2, sync);
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it("otra cuenta se ignora sin llamar a Zoom", async () => {
+    const sync = vi.fn();
+    expect(await procesarWebhooksZoom("cuenta-ajena", 1, sync)).toMatchObject({ ignorados: 1 });
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it("un 404 de Zoom deja el aviso en ERROR reintentable", async () => {
+    const sync = vi.fn().mockResolvedValue({ tipo: "PENDIENTE", estadoReporte: "NO_DISPONIBLE" });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 0, errores: 1 });
+    expect(datosDelAviso()).toMatchObject({
+      estado: "ERROR",
+      errorCodigo: "ReporteZoomPendiente",
+      proximoIntentoAt: expect.any(Date)
+    });
+  });
+
+  it("un 404 en el último intento deja el aviso FALLIDO", async () => {
+    mocks.findMany.mockReset().mockResolvedValueOnce([{ ...aviso, intentos: 9 }]).mockResolvedValue([]);
+    const sync = vi.fn().mockResolvedValue({ tipo: "PENDIENTE", estadoReporte: "NO_DISPONIBLE" });
+    await procesarWebhooksZoom("cuenta-1", 2, sync);
+    expect(datosDelAviso()).toMatchObject({ estado: "FALLIDO" });
+  });
+
+  it("un conflicto por reprogramación cuenta como procesado", async () => {
+    const sync = vi.fn().mockResolvedValue({ tipo: "CONFLICTO", motivo: "REPROGRAMADO" });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 1, errores: 0 });
+  });
+
+  it("el error de la sincronización conserva su código", async () => {
+    const sync = vi.fn().mockResolvedValue({ tipo: "ERROR", codigo: "ZOOM_NO_CONFIGURADO" });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ errores: 1 });
+    expect(datosDelAviso()).toMatchObject({ estado: "ERROR", errorCodigo: "ZOOM_NO_CONFIGURADO" });
+  });
+
+  it("una excepción inesperada no detiene el ciclo", async () => {
+    const sync = vi.fn().mockRejectedValue(new Error("boom"));
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ errores: 1 });
+    expect(datosDelAviso()).toMatchObject({ estado: "ERROR", errorCodigo: "Error" });
+  });
+
+  it("sin función de sincronización se comporta como antes", async () => {
+    expect(await procesarWebhooksZoom("cuenta-1", 2)).toEqual({ procesados: 1, ignorados: 0, errores: 0 });
+  });
+});

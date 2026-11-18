@@ -1,5 +1,6 @@
 // Consumido por el proceso Node del worker, sin dependencia del runtime de Next.
 import { db } from "../lib/db";
+import type { ResultadoAsistenciaZoom } from "../modules/archivos/application/sincronizar-asistencia-zoom.use-case";
 import { vincularAutomaticamenteSiInequivoco } from "../modules/archivos/infrastructure/prisma/zoom-vinculo-automatico";
 
 const MAX_INTENTOS = 10;
@@ -44,11 +45,11 @@ async function aplicarAviso(
   aviso: NonNullable<Awaited<ReturnType<typeof reclamar>>>,
   cuentaConfigurada: string,
   ahora: Date
-): Promise<"PROCESADO" | "IGNORADO"> {
+): Promise<{ estado: "PROCESADO" | "IGNORADO"; ocurrenciaId: string | null }> {
   if (aviso.cuentaZoomId !== cuentaConfigurada) {
-    return "IGNORADO";
+    return { estado: "IGNORADO", ocurrenciaId: null };
   }
-  await db.$transaction(async (tx) => {
+  const ocurrenciaId = await db.$transaction(async (tx) => {
     const cuenta = await tx.cuentaProveedor.findFirst({
       where: { externalAccountId: aviso.anfitrionZoomId, proveedor: { tipo: "ZOOM" } },
       select: { id: true }
@@ -84,14 +85,14 @@ async function aplicarAviso(
     const eventoId =
       ocurrencia.eventoProveedorId ?? (vinculo.tipo === "VINCULADA" ? vinculo.eventoProveedorId : null);
     if (!eventoId) {
-      return;
+      return ocurrencia.id;
     }
     const evento = await tx.eventoProveedor.findUnique({
       where: { id: eventoId },
       select: { instanciaSalaId: true }
     });
     if (!evento) {
-      return;
+      return ocurrencia.id;
     }
     if (aviso.tipo === "meeting.started") {
       await tx.instanciaSala.updateMany({
@@ -105,12 +106,38 @@ async function aplicarAviso(
         data: { estado: "FINALIZADA", inicioRealAt: aviso.inicioRealAt, finRealAt: aviso.finRealAt }
       });
     }
+    return ocurrencia.id;
   });
-  return "PROCESADO";
+  return { estado: "PROCESADO", ocurrenciaId };
 }
 
-/** El inventario y la asistencia existentes recogen después las ocurrencias señaladas por el webhook. */
-export async function procesarWebhooksZoom(cuentaZoomId: string, limite = 25) {
+/** Un fallo reintentable del aviso: reutiliza el backoff y el tope de intentos de la bandeja. */
+function falloReintentable(nombre: string): Error {
+  const error = new Error(nombre);
+  error.name = nombre;
+  return error;
+}
+
+/** Al terminar la reunión se pide el reporte de participantes; si Zoom aún no lo tiene, el aviso se reintenta. */
+async function sincronizarAsistenciaDelAviso(
+  ocurrenciaId: string,
+  sincronizar: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>
+): Promise<void> {
+  const resultado = await sincronizar(ocurrenciaId);
+  if (resultado.tipo === "PENDIENTE") {
+    throw falloReintentable("ReporteZoomPendiente");
+  }
+  if (resultado.tipo === "ERROR") {
+    throw falloReintentable(resultado.codigo);
+  }
+}
+
+/** El inventario recoge después las grabaciones señaladas; la asistencia se pide aquí al terminar la reunión. */
+export async function procesarWebhooksZoom(
+  cuentaZoomId: string,
+  limite = 25,
+  sincronizarAsistencia?: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>
+) {
   let procesados = 0;
   let ignorados = 0;
   let errores = 0;
@@ -121,7 +148,11 @@ export async function procesarWebhooksZoom(cuentaZoomId: string, limite = 25) {
       break;
     }
     try {
-      const estado = await aplicarAviso(aviso, cuentaZoomId, ahora);
+      const { estado, ocurrenciaId } = await aplicarAviso(aviso, cuentaZoomId, ahora);
+      // Fuera de la transacción de aplicarAviso: la llamada a Zoom no debe retener conexiones de base de datos.
+      if (aviso.tipo === "meeting.ended" && estado === "PROCESADO" && ocurrenciaId && sincronizarAsistencia) {
+        await sincronizarAsistenciaDelAviso(ocurrenciaId, sincronizarAsistencia);
+      }
       await db.eventoWebhookZoom.updateMany({
         where: { id: aviso.id, claimHasta: aviso.claimHasta },
         data: { estado, claimHasta: null, procesadoAt: new Date(), errorCodigo: null }

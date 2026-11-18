@@ -15,7 +15,6 @@ import {
   barrerAnfitrionesZoomUseCase,
   diasDeBarridoZoom,
   ordenarCarpetasVinculadasZoomUseCase,
-  sincronizarAsistenciaPendienteZoomUseCase,
   sincronizarAsistenciaZoomUseCase,
   procesarPaginaRecuperacionZoom,
   comprobarSaludWorkerZoom,
@@ -35,7 +34,6 @@ import {
   crearPrismaZoomArchivoRepositoryAdapter,
   crearPrismaZoomBarridoRepositoryAdapter,
   crearPrismaZoomCarpetasRepositoryAdapter,
-  crearPrismaAsistenciaPendienteAdapter,
   crearPrismaAsistenciaZoomRepositoryAdapter,
   crearPrismaSincronizacionAsistenciaZoomAdapter,
   crearZoomAsistenciaProviderAdapter,
@@ -45,7 +43,6 @@ import {
 const TIPOS_ZOOM = ["ZOOM", "ZOOM_HISTORICO"] as const;
 const LOTE_INVENTARIO = 50;
 const LOTE_CARPETAS = 25;
-const LOTE_ASISTENCIA = 20;
 /** Páginas de recuperación histórica por ciclo de mantenimiento: acota el tiempo sin frenar el resto. */
 const PAGINAS_RECUPERACION_POR_CICLO = 20;
 /** Mínimo de días del barrido periódico; en la práctica cubre todo desde INICIO_HISTORICO_ZOOM. */
@@ -67,8 +64,6 @@ export type WorkerZoomArchivos = Readonly<{
   procesarRecuperaciones: () => Promise<unknown>;
   /** Mueve a la raíz de vinculados las carpetas de ocurrencias ya vinculadas a un encuentro. */
   moverCarpetasVinculadas: () => Promise<unknown>;
-  /** Sincroniza la asistencia (reporte de participantes) de las ocurrencias que aún no la tienen. */
-  sincronizarAsistenciaPendiente: () => Promise<unknown>;
   procesarWebhooks: () => Promise<unknown>;
   notificarGrabaciones: () => Promise<unknown>;
 }>;
@@ -123,7 +118,6 @@ export async function crearWorkerZoomArchivos(
       barrerRecientes: async () => undefined,
       procesarRecuperaciones: async () => undefined,
       moverCarpetasVinculadas: async () => undefined,
-      sincronizarAsistenciaPendiente: async () => undefined,
       procesarWebhooks: async () => undefined,
       notificarGrabaciones: async () => undefined
     };
@@ -179,7 +173,15 @@ export async function crearWorkerZoomArchivos(
   return {
     config,
     salud,
-    procesarWebhooks: () => procesarWebhooksZoom(cuentaZoomId),
+    // Al terminar una reunión el webhook pide el reporte de participantes; un 404 se reintenta con el backoff del aviso.
+    procesarWebhooks: () => {
+      const asistencia = {
+        sync: crearPrismaSincronizacionAsistenciaZoomAdapter({ db }),
+        repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }),
+        provider: crearZoomAsistenciaProviderAdapter({ auth, hash })
+      };
+      return procesarWebhooksZoom(cuentaZoomId, 25, (id) => sincronizarAsistenciaZoomUseCase(asistencia, id));
+    },
     notificarGrabaciones: () =>
       notificarGrabacionesZoom(
         {
@@ -214,21 +216,6 @@ export async function crearWorkerZoomArchivos(
         diasAtras: diasDeBarridoZoom(new Date(), INICIO_HISTORICO_ZOOM, DIAS_BARRIDO_RECIENTE),
         corteDias: config.corteDias
       }),
-    sincronizarAsistenciaPendiente: () => {
-      const asistencia = {
-        sync: crearPrismaSincronizacionAsistenciaZoomAdapter({ db }),
-        repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }),
-        provider: crearZoomAsistenciaProviderAdapter({ auth, hash })
-      };
-      return sincronizarAsistenciaPendienteZoomUseCase(
-        {
-          repo: crearPrismaAsistenciaPendienteAdapter({ db }),
-          sincronizar: (id) => sincronizarAsistenciaZoomUseCase(asistencia, id),
-          ahora: () => new Date()
-        },
-        { limite: LOTE_ASISTENCIA }
-      );
-    },
     moverCarpetasVinculadas: () =>
       ordenarCarpetasVinculadasZoomUseCase(
         {

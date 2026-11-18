@@ -1,5 +1,6 @@
 import { Download } from "lucide-react";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
+import { AttendanceRegenerateAction } from "@/src/components/attendance-regenerate-action";
 import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
 import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
 
@@ -10,6 +11,15 @@ const fecha = (valor: Date) =>
     timeStyle: "short"
   }).format(valor);
 
+/** Reintentar tiene sentido sin reporte, o con reporte "disponible" que quedó sin consolidar (se sincronizó antes de vincular). */
+export function debeOfrecerReintentoAsistencia(entrada: {
+  ocurrencias: number;
+  estadoReporte: string;
+  registros: number;
+}): boolean {
+  return entrada.ocurrencias > 0 && (entrada.estadoReporte !== "DISPONIBLE" || entrada.registros === 0);
+}
+
 /**
  * Única vista de la asistencia de un encuentro Zoom (ficha y página de asistencia la comparten).
  * Los botones bajan el reporte tal como lo entrega Zoom, no los datos ya consolidados.
@@ -17,8 +27,15 @@ const fecha = (valor: Date) =>
 export function ZoomAsistenciaVista({
   instanciaId,
   asistencia,
-  puedeDescargar
-}: Readonly<{ instanciaId: string; asistencia: AsistenciaZoomFicha; puedeDescargar: boolean }>) {
+  puedeDescargar,
+  puedeReintentar = false
+}: Readonly<{
+  instanciaId: string;
+  asistencia: AsistenciaZoomFicha;
+  puedeDescargar: boolean;
+  /** Solo administración: vuelve a pedir el reporte a Zoom (la ruta lo vuelve a validar). */
+  puedeReintentar?: boolean;
+}>) {
   const { registros, ocurrencias, estadoReporte } = asistencia;
   const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
   return (
@@ -53,7 +70,15 @@ export function ZoomAsistenciaVista({
           </div>
         </section>
       ) : null}
-      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
+      {puedeReintentar &&
+      debeOfrecerReintentoAsistencia({
+        ocurrencias: ocurrencias.length,
+        estadoReporte,
+        registros: registros.length
+      }) ? (
+        <AttendanceRegenerateAction instanciaId={instanciaId} />
+      ) : null}
+      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} instanciaId={instanciaId} />
       <h2 className="zoom-attendance-title">Resumen consolidado del encuentro</h2>
       {registros.length === 0 ? (
         <p className="attendance-empty">

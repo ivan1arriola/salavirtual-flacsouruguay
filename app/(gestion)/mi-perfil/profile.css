@@ -116,17 +116,6 @@
   cursor: pointer;
 }
 
-.my-profile .availability-row:not(:has(input[type="checkbox"]:checked)) > :is(input, select) {
-  display: none;
-}
-
-.my-profile .availability-row input[type="time"],
-.my-profile .availability-row select {
-  width: 100%;
-  min-width: 0;
-  min-height: 44px;
-}
-
 .my-profile > .form-notice {
   border: 1px solid var(--line);
   border-radius: 8px;

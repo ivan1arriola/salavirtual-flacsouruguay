@@ -5,7 +5,6 @@ import {
   ExternalLink,
   FileText,
   History,
-  Radio,
   Users,
   Video
 } from "lucide-react";
@@ -65,10 +64,6 @@ export function ReunionZoomHistorica({
           </span>
           <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
         </div>
-        <p className={styles.note}>
-          Esta ficha conserva la programación y los registros institucionales. No implica que Zoom haya
-          confirmado la realización ni la duración efectiva de la reunión.
-        </p>
       </header>
       <section className={styles.card} aria-labelledby="historical-summary">
         <div className={styles.heading}>
@@ -76,12 +71,6 @@ export function ReunionZoomHistorica({
           <h2 id="historical-summary">Resumen histórico</h2>
         </div>
         <div className={styles.historyGrid}>
-          <div>
-            <Clock3 size={19} />
-            <span>Horario real</span>
-            <strong>No disponible</strong>
-            <small>Se muestra únicamente el horario programado arriba.</small>
-          </div>
           <div>
             <Users size={19} />
             <span>Participantes reales</span>
@@ -91,12 +80,6 @@ export function ReunionZoomHistorica({
                 ? "No se interpreta como cero asistentes."
                 : "Consolidados por participante; sin conciliar no son personas confirmadas."}
             </small>
-          </div>
-          <div>
-            <Radio size={19} />
-            <span>Grabación</span>
-            <strong>{reunion.requiereGrabacion ? "Solicitada" : "No solicitada"}</strong>
-            <small>La solicitud no confirma que exista un archivo.</small>
           </div>
           <div>
             <AlertTriangle size={19} />
@@ -115,6 +98,7 @@ export function ReunionZoomHistorica({
           instanciaId={reunion.id}
           asistencia={asistencia}
           puedeDescargar={asistencia.puedeConciliar}
+          puedeReintentar={rol === "ADMINISTRACION"}
         />
       </section>
       <section className={styles.card} aria-label="Registros de la reunión">
