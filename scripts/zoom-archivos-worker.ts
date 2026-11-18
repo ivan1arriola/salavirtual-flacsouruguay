@@ -68,11 +68,6 @@ async function main(): Promise<number> {
             log("info", "avisos-grabaciones", { resumen: await worker.notificarGrabaciones() })
         },
         {
-          nombre: "asistencia-pendiente",
-          ejecutar: async () =>
-            log("info", "asistencia", { resumen: await worker.sincronizarAsistenciaPendiente() })
-        },
-        {
           nombre: "recuperacion-historica",
           ejecutar: async () =>
             log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() })

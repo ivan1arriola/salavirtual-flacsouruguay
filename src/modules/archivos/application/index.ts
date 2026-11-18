@@ -13,7 +13,6 @@ export * from "./ordenar-carpetas-vinculadas-zoom.use-case";
 export * from "./comprobar-salud-worker-zoom";
 export * from "./conciliar-asistencia-zoom.use-case";
 export * from "./sincronizar-asistencia-zoom.use-case";
-export * from "./sincronizar-asistencia-pendiente-zoom.use-case";
 export * from "./generar-planilla-asistencia-zoom.use-case";
 export * from "./recuperar-historico-zoom.use-case";
 export * from "./vincular-archivo-zoom.use-case";
