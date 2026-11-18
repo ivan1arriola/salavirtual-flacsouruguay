@@ -84,21 +84,33 @@ const LEGACY_SECTION_ROUTES: Readonly<Record<string, string>> = {
   programas: "/usuarios?vista=programas"
 };
 
-/** Enlaces viejos `/configuracion?seccion=…`; conservan la búsqueda del histórico. */
+type ParametroHeredado = "busqueda" | "pagina" | "programa" | "estado" | "error";
+
+/** Parámetros del enlace viejo que siguen teniendo sentido en la ruta nueva. */
+const PARAMETROS_CONSERVADOS: Readonly<Record<string, readonly ParametroHeredado[]>> = {
+  historico: ["busqueda", "pagina"],
+  programas: ["programa", "estado", "error"]
+};
+
+/** Enlaces viejos `/configuracion?seccion=…`; conservan los parámetros que la ruta nueva entiende. */
 export function legacySettingsRedirect(
   section?: string,
-  params: Readonly<{ busqueda?: string; pagina?: string }> = {}
+  params: Readonly<Partial<Record<ParametroHeredado, string>>> = {}
 ): string | null {
-  const ruta = section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
-  if (!ruta) {
+  const ruta =
+    section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
+  if (!ruta || !section) {
     return null;
   }
-  if (section !== "historico") {
+  const conValor = (PARAMETROS_CONSERVADOS[section] ?? []).flatMap((clave) =>
+    params[clave] ? [[clave, params[clave]] as [string, string]] : []
+  );
+  const query = new URLSearchParams(conValor);
+  if (!query.size) {
     return ruta;
   }
-  const conValor = Object.entries(params).filter((par): par is [string, string] => Boolean(par[1]));
-  const query = new URLSearchParams(conValor);
-  return query.size ? `${ruta}?${query}` : ruta;
+  const separador = ruta.includes("?") ? "&" : "?";
+  return `${ruta}${separador}${query}`;
 }
 
 export type SettingsAttentionInput = Readonly<{

@@ -50,7 +50,8 @@ export async function POST() {
       return NextResponse.json({ error: "Zoom no está configurado." }, { status: 503, headers: NO_CACHE });
     }
     return NextResponse.json(resultado, { headers: NO_CACHE });
-  } catch {
+  } catch (error) {
+    console.error("No se pudo sincronizar la agenda de Zoom", error);
     return NextResponse.json(
       { error: "No se pudo sincronizar con Zoom. Probá de nuevo más tarde." },
       { status: 502, headers: NO_CACHE }

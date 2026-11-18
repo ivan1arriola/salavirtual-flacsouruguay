@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorParaPanel } from "@/src/lib/http/api-error";
 import { auth } from "@/auth";
 import { cifrarConfiguracion } from "@/src/lib/config/encryption";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -106,8 +107,8 @@ export async function PUT(request: Request) {
       }
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Configuracion invalida.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const { status, message } = errorParaPanel(error, "No se pudo guardar la configuración de Google.");
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

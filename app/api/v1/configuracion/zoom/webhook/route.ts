@@ -60,7 +60,8 @@ export async function PUT(request: Request) {
       });
     });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("No se pudo guardar el secreto del webhook de Zoom", error);
     return NextResponse.json({ error: "No se pudo guardar el secreto del webhook." }, { status: 503 });
   }
 }
@@ -87,7 +88,8 @@ export async function DELETE() {
       });
     });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("No se pudo eliminar el secreto del webhook de Zoom", error);
     return NextResponse.json({ error: "No se pudo eliminar el secreto del webhook." }, { status: 503 });
   }
 }

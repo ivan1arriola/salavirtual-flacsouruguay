@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorParaPanel } from "@/src/lib/http/api-error";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -603,9 +604,6 @@ function toSafeHost(
 }
 
 function errorResponse(error: unknown) {
-  if (error instanceof z.ZodError) {
-    return NextResponse.json({ error: error.issues[0]?.message ?? "Datos inválidos." }, { status: 400 });
-  }
-  const message = error instanceof Error ? error.message : "No se pudo guardar la sala.";
-  return NextResponse.json({ error: message }, { status: 400 });
+  const { status, message } = errorParaPanel(error, "No se pudo guardar la sala.");
+  return NextResponse.json({ error: message }, { status });
 }

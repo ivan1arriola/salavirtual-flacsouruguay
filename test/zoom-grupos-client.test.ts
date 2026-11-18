@@ -83,9 +83,22 @@ describe("cliente de grupos de Zoom", () => {
     await expect(listarMiembrosGrupoZoomHttp("tok", "g1")).rejects.toThrow("El grupo de Zoom ya no existe.");
   });
 
-  it("otros errores incluyen estado y mensaje de Zoom", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta(500, { message: "boom" })));
-    await expect(listarGruposZoomHttp("tok")).rejects.toThrow(/500.*boom/);
+  it("otros errores incluyen el estado pero no el cuerpo crudo de Zoom, que se muestra en pantalla", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta(500, { message: "boom interno" })));
+    const error = await listarGruposZoomHttp("tok").catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/500/);
+    expect((error as Error).message).not.toMatch(/boom/);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("limita la espera de cada llamada a Zoom", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(respuesta(200, { groups: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    await listarGruposZoomHttp("tok");
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 
   it("corta una paginación infinita", async () => {

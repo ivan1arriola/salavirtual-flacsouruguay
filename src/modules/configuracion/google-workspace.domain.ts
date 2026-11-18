@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { errorParaPanel } from "../../lib/http/api-error";
 import type { RolUsuario } from "../usuarios/roles";
 
 const privateKeySchema = z
@@ -146,5 +147,5 @@ export function mensajeErrorGoogleWorkspace(error: unknown): string {
   if (normalized.includes("insufficient") || normalized.includes("permission")) {
     return "Google autenticó la cuenta, pero la operación no tiene permisos suficientes. Revisá los scopes y los permisos del usuario delegado sobre el recurso.";
   }
-  return message || "No se pudo completar la prueba con Google.";
+  return errorParaPanel(error, "No se pudo completar la prueba con Google.").message;
 }

@@ -641,7 +641,9 @@ async function asegurarReunionZoom(
         if (deps.zoom.eliminarOcurrencia) {
           const sobrantes = detectarOcurrenciasSobrantes(occurrences, prep.horarios, prep.timezone);
           for (const occId of sobrantes) {
-            await deps.zoom.eliminarOcurrencia(info.meetingId, occId).catch(() => undefined);
+            await deps.zoom
+              .eliminarOcurrencia(info.meetingId, occId)
+              .catch(registrarFallaOcurrencia("eliminar", info.meetingId, occId));
           }
         }
         if (deps.zoom.actualizarOcurrencia) {
@@ -652,7 +654,7 @@ async function asegurarReunionZoom(
                 startTime: ajuste.startTime,
                 durationMinutes: ajuste.durationMinutes
               })
-              .catch(() => undefined);
+              .catch(registrarFallaOcurrencia("ajustar", info.meetingId, ajuste.occurrenceId));
           }
         }
       }
@@ -891,5 +893,15 @@ export async function limpiarReunionesAntiguas(
     eliminadas: resultados.eliminadas,
     pendientes: pendientes + resultados.omitidas,
     errores: resultados.errores
+  };
+}
+
+/** La corrección sigue con las demás ocurrencias, pero la falla queda registrada para revisarla. */
+function registrarFallaOcurrencia(accion: "eliminar" | "ajustar", meetingId: string, occurrenceId: string) {
+  return (error: unknown): void => {
+    console.error(
+      `No se pudo ${accion} la ocurrencia ${occurrenceId} de la reunión Zoom ${meetingId}`,
+      error
+    );
   };
 }

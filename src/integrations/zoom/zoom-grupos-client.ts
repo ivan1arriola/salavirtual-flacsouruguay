@@ -14,7 +14,10 @@ const MENSAJE_PERMISOS =
 const MAX_PAGINAS = 50;
 
 async function pedirZoom<T>(url: string, token: string, accion: string): Promise<T> {
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(12_000)
+  });
   if (response.status === 401 || response.status === 403) {
     throw new ZoomPermisosError();
   }
@@ -22,8 +25,9 @@ async function pedirZoom<T>(url: string, token: string, accion: string): Promise
     throw new Error("El grupo de Zoom ya no existe.");
   }
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(`Zoom API error al ${accion} (${response.status}): ${errorBody || response.statusText}`);
+    // El cuerpo de Zoom puede traer detalles internos y este mensaje se muestra en pantalla: solo se registra.
+    console.error("Zoom API", accion, response.status, await response.text().catch(() => ""));
+    throw new Error(`Zoom API error al ${accion} (${response.status}): ${response.statusText}`);
   }
   return (await response.json()) as T;
 }

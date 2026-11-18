@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export type ZoomCredentials = Readonly<{
   accountId: string;
   clientId: string;
@@ -33,12 +35,23 @@ type TokenCacheEntry = {
   expiresAt: number;
 };
 
+/** Espera máxima por llamada a Zoom: sin esto una caída de zoom.us deja colgada la solicitud. */
+const TIEMPO_LIMITE_ZOOM_MS = 12_000;
+
+/** El motivo de Zoom queda en el registro del servidor; el mensaje que se guarda y muestra lleva solo el estado. */
+async function errorZoom(response: Response, accion: string): Promise<Error> {
+  console.error("Zoom API", accion, response.status, await response.text().catch(() => ""));
+  return new Error(`Zoom API error al ${accion} (${response.status}): ${response.statusText}`);
+}
+
 const tokenCache = new Map<string, TokenCacheEntry>();
 
 const renovacionesEnCurso = new Map<string, Promise<string>>();
 
 function claveCache(creds: ZoomCredentials): string {
-  return `${creds.accountId}:${creds.clientId}`;
+  // La huella del secreto evita que un secreto mal escrito reutilice el token de uno válido.
+  const huella = createHash("sha256").update(creds.clientSecret).digest("hex").slice(0, 16);
+  return `${creds.accountId}:${creds.clientId}:${huella}`;
 }
 
 async function solicitarNuevoToken(creds: ZoomCredentials): Promise<string> {
@@ -47,6 +60,7 @@ async function solicitarNuevoToken(creds: ZoomCredentials): Promise<string> {
   const url = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(creds.accountId)}`;
 
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth}`,
@@ -55,10 +69,7 @@ async function solicitarNuevoToken(creds: ZoomCredentials): Promise<string> {
   });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Error al autenticar con Zoom API (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw new Error(`Error al autenticar con Zoom API (${response.status}): ${response.statusText}`);
   }
 
   const data = (await response.json()) as { access_token: string; expires_in: number };
@@ -151,6 +162,8 @@ export async function crearReunionZoomHttp(
   input: ZoomCreateMeetingInput
 ): Promise<ZoomMeetingResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
+  // shortcut: sin timeout a propósito. Si abortáramos tras crearse la reunión, el reintento la duplicaría
+  // (esta ruta no busca por marca como la recurrente); upgrade: clave de idempotencia o búsqueda previa.
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -177,10 +190,7 @@ export async function crearReunionZoomHttp(
   });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al crear reunión (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "crear reunión");
   }
 
   const data = (await response.json()) as {
@@ -223,6 +233,7 @@ export async function actualizarReunionZoomHttp(
   }
 
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -232,23 +243,18 @@ export async function actualizarReunionZoomHttp(
   });
 
   if (!response.ok && response.status !== 204) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al actualizar reunión (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "actualizar reunión");
   }
 }
 
 export async function obtenerReunionZoomHttp(token: string, meetingId: string): Promise<ZoomMeetingResult> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`;
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al obtener reunión (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "obtener reunión");
   }
   const data = (await response.json()) as {
     id: string | number;
@@ -270,6 +276,7 @@ export async function obtenerReunionZoomHttp(token: string, meetingId: string): 
 export async function eliminarReunionZoomHttp(token: string, meetingId: string): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`;
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`
@@ -277,10 +284,7 @@ export async function eliminarReunionZoomHttp(token: string, meetingId: string):
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al eliminar reunión (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "eliminar reunión");
   }
 }
 
@@ -326,6 +330,7 @@ export async function crearReunionZoomRecurrenteHttp(
 ): Promise<ZoomMeetingWithOccurrencesResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -358,10 +363,7 @@ export async function crearReunionZoomRecurrenteHttp(
   });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al crear reunión recurrente (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "crear reunión recurrente");
   }
 
   const data = (await response.json()) as {
@@ -403,6 +405,7 @@ export async function eliminarOcurrenciaZoomHttp(
 ): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`
@@ -410,10 +413,7 @@ export async function eliminarOcurrenciaZoomHttp(
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al eliminar ocurrencia (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "eliminar ocurrencia");
   }
 }
 
@@ -435,6 +435,7 @@ export async function actualizarOcurrenciaZoomHttp(
   }
 
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -444,10 +445,7 @@ export async function actualizarOcurrenciaZoomHttp(
   });
 
   if (!response.ok && response.status !== 204) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `Zoom API error al actualizar ocurrencia (${response.status}): ${errorBody || response.statusText}`
-    );
+    throw await errorZoom(response, "actualizar ocurrencia");
   }
 }
 
@@ -463,12 +461,12 @@ export async function buscarReunionZoomPorMarcaHttp(
   const base = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings?type=scheduled&page_size=300`;
   const buscarPagina = async (paginaToken: string | null): Promise<ZoomMeetingResult | null> => {
     const url = paginaToken ? `${base}&next_page_token=${encodeURIComponent(paginaToken)}` : base;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS)
+    });
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => "");
-      throw new Error(
-        `Zoom API error al listar reuniones (${response.status}): ${errorBody || response.statusText}`
-      );
+      throw await errorZoom(response, "listar reuniones");
     }
     const data = (await response.json()) as {
       meetings?: readonly { id: number | string; join_url?: string; agenda?: string }[];
