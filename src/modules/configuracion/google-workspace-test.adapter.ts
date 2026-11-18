@@ -2,6 +2,8 @@ import { JWT } from "google-auth-library";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
+/** Las pruebas de configuración son interactivas: no deben quedar colgadas esperando a Google. */
+const PRUEBA_TIMEOUT_MS = 30_000;
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
@@ -16,11 +18,7 @@ type ServiceAccountCredential = Readonly<{
 type DelegatedCredential = ServiceAccountCredential & Readonly<{ subject: string }>;
 
 export type GoogleWorkspaceScopeValidation = Readonly<{
-  key:
-    | "calendar.events"
-    | "drive"
-    | "gmail.send"
-    | "spreadsheets";
+  key: "calendar.events" | "drive" | "gmail.send" | "spreadsheets";
   label: string;
   scope: string;
   autorizado: boolean;
@@ -43,14 +41,10 @@ export async function probarCredencialGoogle(credential: ServiceAccountCredentia
 }
 
 export async function probarDelegacionGoogle(credential: DelegatedCredential): Promise<string> {
-  const auth = crearJwt(credential, [
-    CALENDAR_SCOPE,
-    DRIVE_SCOPE,
-    GMAIL_SEND_SCOPE,
-    SHEETS_SCOPE
-  ]);
+  const auth = crearJwt(credential, [CALENDAR_SCOPE, DRIVE_SCOPE, GMAIL_SEND_SCOPE, SHEETS_SCOPE]);
   const calendarId = encodeURIComponent(credential.subject);
   await auth.request({
+    timeout: PRUEBA_TIMEOUT_MS,
     url: `${CALENDAR_API}/calendars/${calendarId}/events?maxResults=1&singleEvents=true`,
     method: "GET"
   });
@@ -85,6 +79,7 @@ export async function probarDestinoDrive(credential: DelegatedCredential, folder
     mimeType?: string;
     trashed?: boolean;
   }>({
+    timeout: PRUEBA_TIMEOUT_MS,
     url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}?fields=id,name,mimeType,trashed&supportsAllDrives=true`,
     method: "GET"
   });
@@ -92,6 +87,7 @@ export async function probarDestinoDrive(credential: DelegatedCredential, folder
     throw new Error("El ID no corresponde a una carpeta de Drive disponible.");
   }
   const probe = await auth.request<{ id?: string }>({
+    timeout: PRUEBA_TIMEOUT_MS,
     url: `${DRIVE_API}/files?fields=id&supportsAllDrives=true`,
     method: "POST",
     data: {
@@ -120,6 +116,7 @@ export async function prepararAccesoSalasDrive(
       role?: string;
     }>[];
   }>({
+    timeout: PRUEBA_TIMEOUT_MS,
     url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}/permissions?fields=permissions(id,emailAddress,role)&supportsAllDrives=true`,
     method: "GET"
   });
@@ -134,6 +131,7 @@ export async function prepararAccesoSalasDrive(
   await pending.reduce<Promise<unknown>>(async (previous, emailAddress) => {
     await previous;
     return auth.request({
+      timeout: PRUEBA_TIMEOUT_MS,
       url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}/permissions?supportsAllDrives=true&sendNotificationEmail=false&fields=id`,
       method: "POST",
       data: { type: "user", role: "fileOrganizer", emailAddress }
@@ -145,11 +143,13 @@ export async function prepararAccesoSalasDrive(
 async function eliminarPrueba(auth: JWT, fileId: string): Promise<void> {
   try {
     await auth.request({
+      timeout: PRUEBA_TIMEOUT_MS,
       url: `${DRIVE_API}/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
       method: "DELETE"
     });
   } catch {
     await auth.request({
+      timeout: PRUEBA_TIMEOUT_MS,
       url: `${DRIVE_API}/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
       method: "PATCH",
       data: { trashed: true }

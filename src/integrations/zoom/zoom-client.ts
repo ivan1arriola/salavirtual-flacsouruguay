@@ -481,7 +481,6 @@ export async function buscarReunionZoomPorMarcaHttp(
 /** Consulta la configuración efectiva de sala de espera; null significa que Zoom no informó el dato. */
 export async function obtenerSalaEsperaZoomHttp(token: string, meetingId: string): Promise<boolean | null> {
   const response = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, {
-    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
     signal: AbortSignal.timeout(5000)

@@ -74,12 +74,7 @@ describe("pruebas de Google Workspace", () => {
 
     expect(google.options[0]).toMatchObject({
       subject: credential.subject,
-      scopes: [
-        scopes.calendar,
-        scopes.drive,
-        scopes.gmail,
-        scopes.sheets
-      ]
+      scopes: [scopes.calendar, scopes.drive, scopes.gmail, scopes.sheets]
     });
     expect(google.request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -88,6 +83,12 @@ describe("pruebas de Google Workspace", () => {
       }),
       expect.anything()
     );
+  });
+
+  it("limita la espera de las llamadas a Google en las pruebas", async () => {
+    await probarDelegacionGoogle(credential);
+    const opciones = google.request.mock.calls[0][0] as { timeout?: number };
+    expect(opciones.timeout).toBeGreaterThan(0);
   });
 
   it("valida los cuatro scopes por separado, sin permisos de Meet", async () => {

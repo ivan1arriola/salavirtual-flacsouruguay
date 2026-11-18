@@ -26,8 +26,12 @@ export default async function ConfiguracionZoomPage({
     obtenerCredencialesZoom(db, descifrarConfiguracion)
   ]);
   const credencialesOk = credenciales.disponible;
+  const avisoOrigen =
+    credenciales.disponible && credenciales.origen === "ENV"
+      ? " Se usan las variables de entorno del servidor, no las guardadas aquí."
+      : "";
   const resumenCredenciales = credencialesOk
-    ? "Credenciales disponibles. La conexión con Zoom no se verificó aquí."
+    ? `Credenciales disponibles.${avisoOrigen} La conexión con Zoom no se verificó aquí.`
     : (TEXTO_DIAGNOSTICO[credenciales.diagnostico] ?? "No se pudieron comprobar las credenciales.");
   const webhookOk = Boolean(zoomConfig?.webhookSecretCifrado);
   const ultimaSincronizacion = zoomGrupo?.ultimaSincronizacionAt
@@ -68,10 +72,7 @@ export default async function ConfiguracionZoomPage({
             }
           />
         </SettingsBlock>
-        <SettingsBlock
-          title="Grupo de cuentas"
-          summary={resumenGrupo}
-        >
+        <SettingsBlock title="Grupo de cuentas" summary={resumenGrupo}>
           <ZoomGrupoConfig
             grupoId={zoomGrupo?.grupoId ?? null}
             grupoNombre={zoomGrupo?.grupoNombre ?? null}
@@ -81,7 +82,9 @@ export default async function ConfiguracionZoomPage({
         </SettingsBlock>
         <SettingsBlock
           title="Notificaciones de Zoom"
-          summary={webhookOk ? "Secreto del webhook configurado." : "El secreto del webhook no está configurado."}
+          summary={
+            webhookOk ? "Secreto del webhook configurado." : "El secreto del webhook no está configurado."
+          }
           status={{ tone: webhookOk ? "ok" : "warning", label: webhookOk ? "Configurado" : "Pendiente" }}
         >
           <ZoomWebhookConfig initialConfigured={webhookOk} />
