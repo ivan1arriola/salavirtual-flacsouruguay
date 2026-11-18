@@ -6,7 +6,7 @@ import { AccesoRegistrosZoom } from "../src/components/acceso-registros-zoom";
 describe("acceso a registros Zoom importados", () => {
   it("ofrece a administración una consulta diferenciada de las reuniones operativas", () => {
     const html = renderToStaticMarkup(createElement(AccesoRegistrosZoom, { rol: "ADMINISTRACION" }));
-    expect(html).toContain('href="/configuracion?seccion=historico"');
+    expect(html).toContain('href="/configuracion/historico"');
     expect(html).toContain("Registros Zoom importados");
     expect(html).toContain("consulta");
   });

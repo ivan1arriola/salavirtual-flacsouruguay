@@ -96,12 +96,8 @@ export function legacySettingsRedirect(
   if (section !== "historico") {
     return ruta;
   }
-  const query = new URLSearchParams();
-  for (const [clave, valor] of Object.entries(params)) {
-    if (valor) {
-      query.set(clave, valor);
-    }
-  }
+  const conValor = Object.entries(params).filter((par): par is [string, string] => Boolean(par[1]));
+  const query = new URLSearchParams(conValor);
   return query.size ? `${ruta}?${query}` : ruta;
 }
 
