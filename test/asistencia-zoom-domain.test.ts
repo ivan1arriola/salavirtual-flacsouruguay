@@ -234,3 +234,88 @@ describe("claveSesionZoom", () => {
     );
   });
 });
+
+describe("reingresos, identidades ambiguas y reintentos", () => {
+  it("el mismo correo (sin importar mayúsculas) une reingresos con distinto id o sin id", () => {
+    const rs = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "Ana@x.com" }),
+        ses({ entra: "10:20", sale: "10:30", participanteId: "b", email: "ana@x.com" }),
+        ses({ entra: "10:40", sale: "10:50", participanteId: null, email: " ANA@x.com " })
+      ],
+      VENTANA
+    );
+    expect(rs).toHaveLength(1);
+    expect(rs[0]).toMatchObject({ minutos: 30, sesiones: 3, claveParticipante: "id:a" });
+  });
+
+  it("el mismo id sin correo en una conexión se une con la que sí lo tiene", () => {
+    const rs = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "a@x.com" }),
+        ses({ entra: "10:20", sale: "10:30", participanteId: "a", email: null }),
+        ses({ entra: "10:40", sale: "10:50", participanteId: "z", email: "a@x.com" })
+      ],
+      VENTANA
+    );
+    expect(rs).toHaveLength(1);
+    expect(rs[0]!.minutos).toBe(30);
+  });
+
+  it("nombres idénticos o parecidos sin id ni correo nunca se fusionan", () => {
+    const rs = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "10:00", sale: "10:10", participanteId: null, nombre: "Ana Pérez" }),
+        ses({ entra: "10:20", sale: "10:30", participanteId: null, nombre: "Ana Perez" }),
+        ses({ entra: "10:40", sale: "10:50", participanteId: "q", nombre: "Ana Pérez", email: "o@x.com" }),
+        ses({ entra: "10:40", sale: "10:50", participanteId: "r", nombre: "Ana Pérez", email: "p@x.com" })
+      ],
+      VENTANA
+    );
+    expect(rs).toHaveLength(4);
+  });
+
+  it("correos distintos con el mismo id no separan: el id manda", () => {
+    const rs = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "a@x.com" }),
+        ses({ entra: "10:20", sale: "10:30", participanteId: "a", email: "otro@x.com" })
+      ],
+      VENTANA
+    );
+    expect(rs).toHaveLength(1);
+  });
+
+  it("dispositivos simultáneos y solapes entre unidos por correo no se suman dos veces", () => {
+    const [r] = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "10:00", sale: "10:30", participanteId: "a", email: "a@x.com" }),
+        ses({ entra: "10:10", sale: "10:40", participanteId: "b", email: "a@x.com" })
+      ],
+      VENTANA
+    );
+    expect(r!.minutos).toBe(40);
+    expect(r!.sesiones).toBe(2);
+  });
+
+  it("la sala de espera solapada con la reunión no suma ni mueve la primera entrada", () => {
+    const [r] = consolidarAsistenciaZoom(
+      [
+        ses({ entra: "09:50", sale: "10:05", status: "in_waiting_room" }),
+        ses({ entra: "10:05", sale: "10:15" })
+      ],
+      VENTANA
+    );
+    expect(r!.minutos).toBe(10);
+    expect(r!.primeraEntradaAt).toEqual(t("10:05"));
+    expect(r!.sesiones).toBe(2);
+  });
+
+  it("reintentar la sincronización (mismas sesiones repetidas) da el mismo resultado", () => {
+    const una = [ses({ entra: "10:00", sale: "10:20" }), ses({ entra: "10:30", sale: "10:45" })];
+    const uno = consolidarAsistenciaZoom(una, VENTANA);
+    const doble = consolidarAsistenciaZoom([...una, ...una], VENTANA);
+    expect(doble[0]!.minutos).toBe(uno[0]!.minutos);
+    expect(doble[0]!.porcentaje).toBe(uno[0]!.porcentaje);
+  });
+});

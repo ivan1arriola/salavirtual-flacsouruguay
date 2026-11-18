@@ -6,6 +6,7 @@ import {
 import { db } from "../lib/db";
 import {
   categoriaArchivoZoom,
+  claveParticipanteZoom,
   consolidarAsistenciaZoom,
   enlaceArchivoZoom,
   puedeConciliarAsistenciaZoom,
@@ -194,8 +195,10 @@ export async function leerAsistenciaZoomFicha(
   ]);
   // Misma regla que la consolidación: el id de Zoom identifica a la persona; sin él cada sesión es aparte.
   const conexionesPorClave = new Map<string, RegistroAsistenciaZoomFicha["conexiones"][number][]>();
-  for (const sesion of evento.ocurrenciasArchivoZoom.flatMap((o) => o.sesionesAsistencia)) {
-    const clave = sesion.participanteId ? `id:${sesion.participanteId}` : `sesion:${sesion.claveSesion}`;
+  const todas = evento.ocurrenciasArchivoZoom.flatMap((o) => o.sesionesAsistencia);
+  const clavePersona = claveParticipanteZoom(todas.map((s) => ({ ...s, status: null, rol: null })));
+  for (const sesion of todas) {
+    const clave = clavePersona({ ...sesion, status: null, rol: null });
     conexionesPorClave.set(clave, [
       ...(conexionesPorClave.get(clave) ?? []),
       {
