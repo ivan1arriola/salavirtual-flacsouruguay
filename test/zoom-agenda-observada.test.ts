@@ -193,7 +193,7 @@ function baseFalsa(propias: string[] = []) {
         if (existente) {
           return Object.assign(existente, update);
         }
-        const nueva = { ...create, id: `f${filas.length}` } as Fila;
+        const nueva = { ignoradaAt: null, ...create, id: `f${filas.length}` } as Fila;
         filas.push(nueva);
         return nueva;
       }

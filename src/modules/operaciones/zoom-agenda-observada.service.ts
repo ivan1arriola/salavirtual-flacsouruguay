@@ -254,6 +254,7 @@ export async function reservasZoomExternas(
   const filas = await db.reunionZoomObservada.findMany({
     where: {
       estado: "ACTIVA",
+      ignoradaAt: null,
       cuentaProveedorId: { in: [...entrada.cuentaIds] },
       inicioAt: { lt: entrada.hasta },
       finAt: { gt: entrada.desde > ahora ? entrada.desde : ahora }
@@ -284,7 +285,8 @@ export async function leerInconsistenciasAgendaZoom(
     tema: fila.tema,
     inicio: fila.inicioAt,
     fin: fila.finAt,
-    estado: fila.estado
+    estado: fila.estado,
+    ignoradaAt: fila.ignoradaAt
   }));
   const propios = await idsReunionesZoomPropias(db, [
     ...new Set(observadas.map(({ meetingId }) => meetingId))
