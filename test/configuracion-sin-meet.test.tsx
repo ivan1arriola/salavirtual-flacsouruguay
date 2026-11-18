@@ -45,5 +45,6 @@ describe("configuración sin Google Meet", () => {
       "Acceso a salas"
     ].filter((texto) => html.includes(texto));
     expect(presentes).toEqual([]);
+    expect(/meet|meetings\.space/i.test(html)).toBe(false);
   });
 });
