@@ -14,6 +14,7 @@ function txFalso(
   // 1.ª: UUID; 2.ª: encuentros que contienen el inicio; 3.ª: inicio anticipado.
   findMany.mockResolvedValueOnce(eventos).mockResolvedValueOnce(luego).mockResolvedValue(anticipados);
   return {
+    $executeRaw: vi.fn(),
     eventoProveedor: { findMany },
     ocurrenciaArchivoZoom: { updateMany: vi.fn(async () => ({ count: actualizados })) },
     auditoria: { create: vi.fn(async (_a: { data: Record<string, unknown> }) => ({})) },
