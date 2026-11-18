@@ -16,7 +16,13 @@ function txFalso(
   return {
     eventoProveedor: { findMany },
     ocurrenciaArchivoZoom: { updateMany: vi.fn(async () => ({ count: actualizados })) },
-    auditoria: { create: vi.fn(async (_a: { data: Record<string, unknown> }) => ({})) }
+    auditoria: { create: vi.fn(async (_a: { data: Record<string, unknown> }) => ({})) },
+    registroAsistenciaZoom: {
+      findMany: vi.fn(async () => []),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn()
+    }
   };
 }
 const AHORA = new Date("2026-11-11T12:00:00Z");

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { aplicarEjecucionZoomAInstancia } from "./zoom-ejecucion-instancia";
+import { trasladarAsistenciaAlEncuentro } from "./zoom-asistencia-traslado";
 import { vincularAutomaticamenteSiInequivoco } from "./zoom-vinculo-automatico";
 import {
   asignarNombresDestinoZoom,
@@ -802,37 +803,6 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       });
     }
   };
-}
-
-/**
- * Una ocurrencia sin vínculo consolida bajo `ocurrencia:<id>`. Al vincularla, esos registros (con sus
- * conciliaciones y notas) pasan al ámbito del encuentro, salvo los que ya existan allí.
- * shortcut: minutos y porcentaje se recalculan en la próxima sincronización de asistencia, no aquí.
- */
-async function trasladarAsistenciaAlEncuentro(
-  tx: Prisma.TransactionClient,
-  ocurrenciaId: string,
-  eventoProveedorId: string
-): Promise<void> {
-  const destino = `evento:${eventoProveedorId}`;
-  const [origen, existentes] = await Promise.all([
-    tx.registroAsistenciaZoom.findMany({
-      where: { claveAmbito: `ocurrencia:${ocurrenciaId}` },
-      select: { id: true, claveParticipante: true }
-    }),
-    tx.registroAsistenciaZoom.findMany({
-      where: { claveAmbito: destino },
-      select: { claveParticipante: true }
-    })
-  ]);
-  const ocupadas = new Set(existentes.map((e) => e.claveParticipante));
-  const ids = origen.filter((r) => !ocupadas.has(r.claveParticipante)).map((r) => r.id);
-  if (ids.length > 0) {
-    await tx.registroAsistenciaZoom.updateMany({
-      where: { id: { in: ids } },
-      data: { claveAmbito: destino, eventoProveedorId }
-    });
-  }
 }
 
 /** Vínculo automático y, si vincula, las marcas reales que los avisos started/ended dejaron pendientes. */

@@ -1,4 +1,5 @@
 import type { Prisma, TipoProveedor } from "@prisma/client";
+import { trasladarAsistenciaAlEncuentro } from "./zoom-asistencia-traslado";
 
 export type ResultadoVinculoAutomaticoZoom =
   | Readonly<{ tipo: "VINCULADA"; eventoProveedorId: string }>
@@ -69,7 +70,10 @@ export async function vincularAutomaticamenteSiInequivoco(
           where: {
             ...base,
             instancia: {
-              inicioProgramadoAt: { gt: real, lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS) },
+              inicioProgramadoAt: {
+                gt: real,
+                lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS)
+              },
               finProgramadoAt: { gte: real }
             }
           },
@@ -110,5 +114,7 @@ async function vincular(
       valorNuevo: { eventoProveedorId, criterio }
     }
   });
+  // La asistencia sincronizada antes del vínculo vivía bajo la ocurrencia: pasa al encuentro.
+  await trasladarAsistenciaAlEncuentro(tx, entrada.ocurrenciaId, eventoProveedorId);
   return { tipo: "VINCULADA", eventoProveedorId };
 }
