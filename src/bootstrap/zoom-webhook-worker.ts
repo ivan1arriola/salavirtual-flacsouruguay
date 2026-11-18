@@ -49,7 +49,7 @@ async function aplicarAviso(
   if (aviso.cuentaZoomId !== cuentaConfigurada) {
     return { estado: "IGNORADO", ocurrenciaId: null };
   }
-  return db.$transaction(async (tx) => {
+  const ocurrenciaId = await db.$transaction(async (tx) => {
     const cuenta = await tx.cuentaProveedor.findFirst({
       where: { externalAccountId: aviso.anfitrionZoomId, proveedor: { tipo: "ZOOM" } },
       select: { id: true }
@@ -84,16 +84,15 @@ async function aplicarAviso(
     });
     const eventoId =
       ocurrencia.eventoProveedorId ?? (vinculo.tipo === "VINCULADA" ? vinculo.eventoProveedorId : null);
-    const resultado = { estado: "PROCESADO" as const, ocurrenciaId: ocurrencia.id };
     if (!eventoId) {
-      return resultado;
+      return ocurrencia.id;
     }
     const evento = await tx.eventoProveedor.findUnique({
       where: { id: eventoId },
       select: { instanciaSalaId: true }
     });
     if (!evento) {
-      return resultado;
+      return ocurrencia.id;
     }
     if (aviso.tipo === "meeting.started") {
       await tx.instanciaSala.updateMany({
@@ -107,8 +106,9 @@ async function aplicarAviso(
         data: { estado: "FINALIZADA", inicioRealAt: aviso.inicioRealAt, finRealAt: aviso.finRealAt }
       });
     }
-    return resultado;
+    return ocurrencia.id;
   });
+  return { estado: "PROCESADO", ocurrenciaId };
 }
 
 /** Un fallo reintentable del aviso: reutiliza el backoff y el tope de intentos de la bandeja. */

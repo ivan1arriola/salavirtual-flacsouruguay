@@ -115,6 +115,7 @@ export function ReunionZoomHistorica({
           instanciaId={reunion.id}
           asistencia={asistencia}
           puedeDescargar={asistencia.puedeConciliar}
+          puedeReintentar={rol === "ADMINISTRACION"}
         />
       </section>
       <section className={styles.card} aria-label="Registros de la reunión">

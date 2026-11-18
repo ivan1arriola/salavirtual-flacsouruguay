@@ -1,5 +1,6 @@
 import { Download } from "lucide-react";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
+import { AttendanceRegenerateAction } from "@/src/components/attendance-regenerate-action";
 import { ZoomAsistenciaOcurrencias } from "@/src/components/zoom-asistencia-ocurrencias";
 import { ZoomAsistenciaConciliacion } from "@/src/components/zoom-asistencia-conciliacion";
 
@@ -17,8 +18,15 @@ const fecha = (valor: Date) =>
 export function ZoomAsistenciaVista({
   instanciaId,
   asistencia,
-  puedeDescargar
-}: Readonly<{ instanciaId: string; asistencia: AsistenciaZoomFicha; puedeDescargar: boolean }>) {
+  puedeDescargar,
+  puedeReintentar = false
+}: Readonly<{
+  instanciaId: string;
+  asistencia: AsistenciaZoomFicha;
+  puedeDescargar: boolean;
+  /** Solo administración: vuelve a pedir el reporte a Zoom (la ruta lo vuelve a validar). */
+  puedeReintentar?: boolean;
+}>) {
   const { registros, ocurrencias, estadoReporte } = asistencia;
   const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
   return (
@@ -52,6 +60,9 @@ export function ZoomAsistenciaVista({
             ))}
           </div>
         </section>
+      ) : null}
+      {puedeReintentar && ocurrencias.length > 0 && estadoReporte !== "DISPONIBLE" ? (
+        <AttendanceRegenerateAction instanciaId={instanciaId} />
       ) : null}
       <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
       <h2 className="zoom-attendance-title">Resumen consolidado del encuentro</h2>
