@@ -47,7 +47,7 @@ export {
   type GoogleWorkspaceScopeValidation
 } from "./google-workspace-test.adapter";
 
-export { obtenerDatosPaginaConfiguracion, type OperacionPendienteItem } from "./configuracion-page.service";
+export { obtenerDatosPaginaConfiguracion } from "./configuracion-page.service";
 
 export {
   listarGruposZoom,

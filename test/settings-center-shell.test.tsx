@@ -25,28 +25,31 @@ describe("centro de configuración", () => {
     const html = renderToStaticMarkup(
       <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
     );
-    for (const grupo of ["Integraciones", "Operación", "Comunicación", "Datos"]) {
+    for (const grupo of ["Integraciones", "Operación", "Comunicación"]) {
       expect(html.match(new RegExp(`settings-nav-group">${grupo}<`, "g"))).toHaveLength(2);
     }
   });
 
-  it("el aviso de operaciones pendientes enlaza al bloque del propio Resumen", () => {
-    const html = renderToStaticMarkup(
+  it("el menú no ofrece el histórico y el Inicio lo enlaza", () => {
+    const menu = renderToStaticMarkup(
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+    );
+    expect(menu).not.toContain("Registros Zoom importados");
+    const inicio = renderToStaticMarkup(
       <SettingsOverview
         data={{
           zoomAvailableHosts: 1,
           zoomCredentialsAvailable: true,
           workspaceReady: true,
           integrationActive: true,
-          pendingOperations: 2,
-          totalHosts: 2,
+          totalHosts: 1,
           activePrograms: 0,
           totalPrograms: 0
         }}
       />
     );
-    expect(html).toContain('href="#operaciones-pendientes"');
-    expect(html).toContain("2 operaciones pendientes con Google");
+    expect(inicio).toContain('href="/configuracion/historico"');
+    expect(inicio).not.toContain("Meet");
   });
 
   it("todo aviso del Resumen lleva su ícono: el CSS lo reparte en ícono + texto", () => {
@@ -57,7 +60,6 @@ describe("centro de configuración", () => {
           zoomCredentialsAvailable: true,
           workspaceReady: false,
           integrationActive: false,
-          pendingOperations: 1,
           totalHosts: 2,
           activePrograms: 0,
           totalPrograms: 0
@@ -66,7 +68,7 @@ describe("centro de configuración", () => {
     );
     const avisos = html.match(/<section class="settings-attention /g) ?? [];
     const iconos = html.match(/class="settings-attention__icon"/g) ?? [];
-    expect(avisos).toHaveLength(2);
+    expect(avisos).toHaveLength(2); // Zoom con credenciales → aviso "ok" + Google a revisar
     expect(iconos).toHaveLength(avisos.length);
   });
 });

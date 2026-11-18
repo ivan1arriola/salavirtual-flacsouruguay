@@ -1167,3 +1167,29 @@
     transition: none;
   }
 }
+
+.settings-block__summary {
+  color: var(--muted, #5b6770);
+}
+
+.settings-block__edit > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.settings-block__edit > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-block__edit[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.settings-block__form {
+  margin-top: 0.75rem;
+}
