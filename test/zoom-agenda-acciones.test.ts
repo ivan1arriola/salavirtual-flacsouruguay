@@ -59,11 +59,28 @@ describe("ignoradas en el dominio", () => {
     expect(elegirOcurrenciaDelEncuentro(a, enZoom, [a, b]).ok).toBe(false);
     expect(elegirOcurrenciaDelEncuentro(a, [obs("o3", "100", h(20, 14))], [a, b]).ok).toBe(true);
   });
+
+  it("dos encuentros movidos en Zoom: la cercanía sola no prueba la correspondencia", () => {
+    const a = reunion("1", "100", h(20, 12));
+    const b = reunion("2", "100", h(20, 15));
+    // Una sola ocurrencia en Zoom, a las 16: es más cercana a b que a a, así que no se atribuye a a.
+    const enZoom = [obs("o1", "100", h(20, 16), { ocurrenciaZoomId: "x" })];
+    expect(elegirOcurrenciaDelEncuentro(a, enZoom, [a, b]).ok).toBe(false);
+    expect(elegirOcurrenciaDelEncuentro(b, enZoom, [a, b]).ok).toBe(true);
+  });
 });
 
-function entorno(opciones: { zoomFalla?: boolean; observadas?: unknown[] } = {}) {
+function entorno(
+  opciones: {
+    zoomFalla?: boolean;
+    observadas?: unknown[];
+    reclamoOcupado?: boolean;
+    encuentroMovido?: boolean;
+  } = {}
+) {
   const local = reunion("1", "100", h(20, 12));
-  const escrituras = vi.fn();
+  const escrituras = vi.fn(async (..._args: unknown[]) => ({ count: 1 }));
+  const reclamos = vi.fn(async (..._args: unknown[]) => ({ count: opciones.reclamoOcupado ? 0 : 1 }));
   const db = {
     reunionZoomObservada: {
       findMany: async () => opciones.observadas ?? [fila(obs("o1", "100", h(20, 15)))],
@@ -72,14 +89,20 @@ function entorno(opciones: { zoomFalla?: boolean; observadas?: unknown[] } = {})
     },
     eventoProveedor: {
       findMany: async () => [{ codigoReunion: "100", externalEventId: "100" }],
-      updateMany: escrituras
+      // El primer updateMany de «recrear» es el reclamo exclusivo; los demás son escrituras reales.
+      updateMany: async (arg: { data?: Record<string, unknown> }) =>
+        arg.data && "reclamoIntegracionToken" in arg.data && !("externalEventId" in arg.data)
+          ? reclamos(arg)
+          : escrituras(arg)
     },
     instanciaSala: {
       findUnique: async () => ({
         estado: "PROGRAMADA",
         timezone: "America/Montevideo",
         requiereGrabacion: false,
-        inicioProgramadoAt: local.inicio,
+        inicioProgramadoAt: opciones.encuentroMovido
+          ? new Date(local.inicio.getTime() + 3_600_000)
+          : local.inicio,
         finProgramadoAt: local.fin,
         proveedorActivoTipo: "ZOOM",
         solicitud: { titulo: "Clase" },
@@ -120,7 +143,7 @@ function entorno(opciones: { zoomFalla?: boolean; observadas?: unknown[] } = {})
     eliminarEncuentro,
     ahora: () => ahora
   };
-  return { deps, escrituras, zoom, reprogramarEncuentro, eliminarEncuentro };
+  return { deps, escrituras, reclamos, zoom, reprogramarEncuentro, eliminarEncuentro };
 }
 
 const admin = { id: "u", rol: "ADMINISTRACION", activo: true } as never;
@@ -157,6 +180,30 @@ describe("acciones de la agenda de Zoom", () => {
       /No se cambió nada/
     );
     expect(escrituras).not.toHaveBeenCalled();
+  });
+
+  it("recrear reclama el encuentro antes de llamar a Zoom: si otra operación lo tiene, no crea nada", async () => {
+    const { deps, zoom } = entorno({
+      reclamoOcupado: true,
+      observadas: [fila(obs("o1", "100", h(20, 12), { estado: "ELIMINADA" }))]
+    });
+    await expect(recrearReunionEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(/otra operación/);
+    expect(zoom.crearReunion).not.toHaveBeenCalled();
+  });
+
+  it("corregir recomprueba el horario justo antes de tocar Zoom", async () => {
+    const { deps, zoom } = entorno({ encuentroMovido: true });
+    await expect(corregirHorarioEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(/cambió/);
+    expect(zoom.actualizarHorario).not.toHaveBeenCalled();
+  });
+
+  it("si la auditoría complementaria de adoptar falla, igual se devuelven los eventos pendientes", async () => {
+    const { deps } = entorno();
+    (deps.db as unknown as { auditoria: { create: () => Promise<never> } }).auditoria.create = () =>
+      Promise.reject(new Error("auditoría caída"));
+    await expect(adoptarHorarioDeZoom(deps, admin, { instanciaId: "1" })).resolves.toEqual({
+      eventoProveedorIds: []
+    });
   });
 
   it("adoptar delega en la reprogramación existente con el horario de Zoom", async () => {

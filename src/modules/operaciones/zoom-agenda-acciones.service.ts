@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
@@ -12,6 +13,7 @@ import { leerInconsistenciasAgendaZoom, reservasZoomExternas } from "./zoom-agen
 import type { ReunionZoomAuditable } from "./zoom-diagnostico.domain";
 
 const ZONA_POR_DEFECTO = "America/Montevideo";
+const RECLAMO_MS = 10 * 60_000;
 const MIN_MS = 60_000;
 
 export type DependenciasAccionesAgendaZoom = Readonly<{
@@ -183,6 +185,21 @@ export async function corregirHorarioEnZoom(
     );
   }
 
+  // Última comprobación justo antes de la llamada externa: si otra operación movió o canceló el encuentro
+  // desde la lectura inicial, no se empuja un horario obsoleto a Zoom.
+  const vigente = await deps.db.instanciaSala.findUnique({
+    where: { id: reunion.instanciaId },
+    select: { estado: true, inicioProgramadoAt: true, finProgramadoAt: true }
+  });
+  if (
+    vigente?.estado !== "PROGRAMADA" ||
+    vigente.inicioProgramadoAt.getTime() !== reunion.inicio.getTime() ||
+    vigente.finProgramadoAt.getTime() !== reunion.fin.getTime()
+  ) {
+    throw new ConflictApiError(
+      "El encuentro cambió mientras se preparaba la corrección. Actualizá la página."
+    );
+  }
   const duracion = Math.max(1, Math.round((reunion.fin.getTime() - reunion.inicio.getTime()) / MIN_MS));
   await llamarZoom(
     () =>
@@ -236,6 +253,8 @@ export async function adoptarHorarioDeZoom(
     inicio,
     fin
   });
+  // La reprogramación ya está confirmada (y auditada por su propio caso de uso): un fallo de esta auditoría
+  // complementaria no debe ocultar los eventos pendientes de sincronizar con Zoom.
   await auditar(
     deps.db,
     actor.id,
@@ -244,7 +263,7 @@ export async function adoptarHorarioDeZoom(
     reunion.instanciaId,
     { inicio: reunion.inicio.toISOString(), fin: reunion.fin.toISOString() },
     { inicio: inicio.toISOString(), fin: fin.toISOString(), meetingId: reunion.meetingId }
-  );
+  ).catch(() => undefined);
   return resultado;
 }
 
@@ -317,6 +336,25 @@ export async function recrearReunionEnZoom(
     1,
     Math.round((instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) / MIN_MS)
   );
+  // Reclamo exclusivo ANTES de llamar a Zoom: dos solicitudes simultáneas no pueden crear dos reuniones.
+  const ahora = new Date();
+  const token = randomUUID();
+  const reclamado = await deps.db.eventoProveedor.updateMany({
+    where: {
+      id: evento.id,
+      externalEventId: evento.externalEventId,
+      OR: [
+        { reclamoIntegracionAt: null },
+        { reclamoIntegracionAt: { lt: new Date(ahora.getTime() - RECLAMO_MS) } }
+      ]
+    },
+    data: { reclamoIntegracionAt: ahora, reclamoIntegracionToken: token }
+  });
+  if (reclamado.count !== 1) {
+    throw new ConflictApiError(
+      "Ya hay otra operación en curso sobre este encuentro. Esperá unos minutos y actualizá."
+    );
+  }
   const creada = await llamarZoom(
     () =>
       deps.zoom.crearReunion(host, {
@@ -327,10 +365,18 @@ export async function recrearReunionEnZoom(
         requiereGrabacion: instancia.requiereGrabacion
       }),
     "crear la reunión"
-  );
+  ).catch(async (error: unknown) => {
+    // Si Zoom respondió con error la reunión no existe: se libera el reclamo. Ante un resultado incierto
+    // (p. ej. corte de red) puede haberse creado: el mensaje lo advierte para revisarlo en Zoom.
+    await deps.db.eventoProveedor.updateMany({
+      where: { id: evento.id, reclamoIntegracionToken: token },
+      data: { reclamoIntegracionAt: null, reclamoIntegracionToken: null }
+    });
+    throw error;
+  });
   // Solo se escribe si el evento sigue como lo leímos: nunca se pisa un cambio concurrente.
   const guardado = await deps.db.eventoProveedor.updateMany({
-    where: { id: evento.id, externalEventId: evento.externalEventId },
+    where: { id: evento.id, externalEventId: evento.externalEventId, reclamoIntegracionToken: token },
     data: {
       externalEventId: creada.meetingId,
       codigoReunion: creada.meetingId,

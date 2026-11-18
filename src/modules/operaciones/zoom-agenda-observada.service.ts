@@ -253,8 +253,8 @@ export async function reservasZoomExternas(
 ): Promise<ReadonlyArray<Readonly<{ cuentaProveedorId: string; inicio: Date; fin: Date }>>> {
   const filas = await db.reunionZoomObservada.findMany({
     where: {
+      // Ignorada solo oculta la diferencia del diagnóstico: Zoom sigue ocupado y la sala no se reasigna.
       estado: "ACTIVA",
-      ignoradaAt: null,
       cuentaProveedorId: { in: [...entrada.cuentaIds] },
       inicioAt: { lt: entrada.hasta },
       finAt: { gt: entrada.desde > ahora ? entrada.desde : ahora }

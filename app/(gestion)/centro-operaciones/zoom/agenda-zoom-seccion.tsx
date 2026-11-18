@@ -63,7 +63,7 @@ export function AgendaZoomSeccion({
                 accion="IGNORAR"
                 observadaId={observada.id}
                 etiqueta="Ignorar"
-                confirmacion={`¿Ignorar la reunión «${observada.tema}»? Dejará de contar como choque al elegir sala. Podés dejar de ignorarla después.`}
+                confirmacion={`¿Ignorar la reunión «${observada.tema}»? Solo se oculta de este diagnóstico: Zoom sigue ocupado en ese horario y Sala Virtual no asignará esa sala a otra reunión. Podés dejar de ignorarla después.`}
               />
             </article>
           ))}

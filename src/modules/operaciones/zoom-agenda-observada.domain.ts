@@ -114,13 +114,22 @@ export function elegirOcurrenciaDelEncuentro(
   if (!ocurrencia) {
     return { ok: false, motivo: "Zoom no informa ninguna ocurrencia vigente de esta reunión." };
   }
+  // Correspondencia mutua: la ocurrencia elegida debe tener a este encuentro como el más cercano de su serie.
+  // Si otro encuentro está igual o más cerca (o coincide con ella), la cercanía no prueba nada: se rechaza.
+  const distanciaAOcurrencia = (r: ReunionZoomAuditable) =>
+    Math.abs(r.inicio.getTime() - ocurrencia.inicio.getTime());
   const ocupada = reuniones.some(
     (otra) =>
       otra.instanciaId !== reunion.instanciaId &&
       otra.meetingId === reunion.meetingId &&
-      Math.abs(otra.inicio.getTime() - ocurrencia.inicio.getTime()) <= TOLERANCIA_MS
+      (distanciaAOcurrencia(otra) <= TOLERANCIA_MS ||
+        distanciaAOcurrencia(otra) <= distanciaAOcurrencia(reunion))
   );
   return ocupada
-    ? { ok: false, motivo: "La ocurrencia de Zoom más cercana corresponde a otro encuentro de la serie." }
+    ? {
+        ok: false,
+        motivo:
+          "La ocurrencia de Zoom más cercana podría corresponder a otro encuentro de la serie: no se adivina."
+      }
     : { ok: true, ocurrencia };
 }
