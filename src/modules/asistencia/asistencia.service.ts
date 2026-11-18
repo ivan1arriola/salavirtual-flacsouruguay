@@ -1,8 +1,7 @@
-import { ConflictApiError, ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
+import { ConflictApiError, ForbiddenApiError } from "@/src/lib/http/api-error";
 import type { GoogleCalendarCredentials } from "@/src/modules/conferencias/api";
 import type { PrismaClient } from "@prisma/client";
 import {
-  disponibilidadSemanalSchema,
   estadoInteresParaAccion,
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
@@ -220,58 +219,6 @@ export async function renotificarAsistentesDisponibles(
   });
   await safelyNotify(() => notificarUsuarios(db, result.recipients, result.message));
   return result.recipients.length;
-}
-
-export async function actualizarDisponibilidadSemanal(
-  db: PrismaClient,
-  actor: SessionActor,
-  rawInput: unknown
-): Promise<void> {
-  if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
-    throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar su disponibilidad.");
-  }
-  const input = disponibilidadSemanalSchema.parse(rawInput);
-  if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
-    throw new ValidationApiError("Solo puede definirse una franja habitual por día.");
-  }
-  await db.$transaction(async (tx) => {
-    const assistant = await tx.asistenteTecnico.findUnique({
-      where: { usuarioId: actor.id },
-      select: { id: true }
-    });
-    if (!assistant) {
-      throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
-    }
-    await tx.asistenteTecnico.update({
-      where: { id: assistant.id },
-      data: { disponibleGeneral: input.disponibleGeneral }
-    });
-    await tx.disponibilidadAsistenteTecnico.deleteMany({
-      where: { asistenteTecnicoId: assistant.id, fecha: null }
-    });
-    if (input.franjas.length > 0) {
-      await tx.disponibilidadAsistenteTecnico.createMany({
-        data: input.franjas.map((franja) => ({
-          asistenteTecnicoId: assistant.id,
-          ...franja,
-          fecha: null,
-          timezone: "America/Montevideo"
-        }))
-      });
-    }
-    await tx.auditoria.create({
-      data: {
-        actorUsuarioId: actor.id,
-        accion: "DISPONIBILIDAD_ACTUALIZADA",
-        entidadTipo: "AsistenteTecnico",
-        entidadId: assistant.id,
-        valorNuevo: {
-          disponibleGeneral: input.disponibleGeneral,
-          franjas: input.franjas
-        }
-      }
-    });
-  });
 }
 
 async function safelyNotify(action: () => Promise<void>): Promise<void> {
