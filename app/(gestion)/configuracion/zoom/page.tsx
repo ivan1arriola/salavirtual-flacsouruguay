@@ -11,6 +11,10 @@ import { obtenerDatosPaginaConfiguracion } from "@/src/modules/configuracion/api
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { requireAdminPage } from "../require-admin-page";
 
+const TEXTO_DIAGNOSTICO: Readonly<Record<string, string>> = {
+  AUSENTES: "Sin credenciales activas y completas."
+};
+
 export default async function ConfiguracionZoomPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ estado?: string; error?: string }> }>) {
@@ -22,6 +26,9 @@ export default async function ConfiguracionZoomPage({
     obtenerCredencialesZoom(db, descifrarConfiguracion)
   ]);
   const credencialesOk = credenciales.disponible;
+  const resumenCredenciales = credencialesOk
+    ? "Credenciales disponibles. La conexión con Zoom no se verificó aquí."
+    : (TEXTO_DIAGNOSTICO[credenciales.diagnostico] ?? "No se pudieron comprobar las credenciales.");
   const webhookOk = Boolean(zoomConfig?.webhookSecretCifrado);
   const ultimaSincronizacion = zoomGrupo?.ultimaSincronizacionAt
     ? formatDateTime(zoomGrupo.ultimaSincronizacionAt)
@@ -41,11 +48,7 @@ export default async function ConfiguracionZoomPage({
       <div className="settings-workspace-flow">
         <SettingsBlock
           title="Conexión"
-          summary={
-            credencialesOk
-              ? "Credenciales disponibles. La conexión con Zoom no se verificó aquí."
-              : "Sin credenciales activas y completas."
-          }
+          summary={resumenCredenciales}
           status={{
             tone: credencialesOk ? "neutral" : "warning",
             label: credencialesOk ? "Guardada" : "Falta configurar"

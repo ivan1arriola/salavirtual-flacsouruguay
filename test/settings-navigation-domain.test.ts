@@ -36,6 +36,9 @@ describe("navegación de configuración", () => {
       "/configuracion/historico?busqueda=ana&pagina=2"
     );
     expect(legacySettingsRedirect("otra")).toBeNull();
+    for (const heredada of ["constructor", "toString", "__proto__"]) {
+      expect(legacySettingsRedirect(heredada)).toBeNull();
+    }
     expect(legacySettingsRedirect()).toBeNull();
   });
 

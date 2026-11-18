@@ -31,8 +31,8 @@ const operationalLinks = [
   },
   {
     href: "/configuracion/google",
-    title: "Operaciones de Google Workspace",
-    description: "Consultá sincronizaciones pendientes y el estado de la integración.",
+    title: "Configuración de Google",
+    description: "Revisá la cuenta de servicio, la delegación y el destino de Drive.",
     icon: CloudCog
   }
 ] as const;
