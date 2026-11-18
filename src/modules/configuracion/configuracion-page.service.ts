@@ -8,6 +8,8 @@ export async function obtenerDatosPaginaConfiguracion(
   section: string,
   ahora: Date = new Date()
 ) {
+  const necesitaGoogle = section === "resumen" || section === "google";
+  const necesitaCuentas = section === "resumen" || section === "salas";
   const [
     configuration,
     assistantConfiguration,
@@ -17,28 +19,34 @@ export async function obtenerDatosPaginaConfiguracion(
     futureMeetingsByAccount,
     zoomGrupo
   ] = await Promise.all([
-    obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
-    db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
-    db.cuentaProveedor.findMany({
-      where: { proveedor: { tipo: "ZOOM" } },
-      orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        nombre: true,
-        emailOrganizador: true,
-        prioridad: true,
-        limiteConcurrente: true,
-        tieneLicencia: true,
-        activa: true,
-        secretRef: true,
-        origenGrupoZoom: true,
-        fueraDelGrupoAt: true,
-        proveedor: { select: { tipo: true, nombre: true } },
-        _count: { select: { eventosProveedor: true } }
-      }
-    }),
-    db.programa.count(),
-    db.programa.count({ where: { activo: true } }),
+    necesitaGoogle
+      ? obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
+      : Promise.resolve(null),
+    section === "notificaciones"
+      ? db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } })
+      : Promise.resolve(null),
+    necesitaCuentas
+      ? db.cuentaProveedor.findMany({
+          where: { proveedor: { tipo: "ZOOM" } },
+          orderBy: [{ prioridad: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            nombre: true,
+            emailOrganizador: true,
+            prioridad: true,
+            limiteConcurrente: true,
+            tieneLicencia: true,
+            activa: true,
+            secretRef: true,
+            origenGrupoZoom: true,
+            fueraDelGrupoAt: true,
+            proveedor: { select: { tipo: true, nombre: true } },
+            _count: { select: { eventosProveedor: true } }
+          }
+        })
+      : Promise.resolve([]),
+    section === "resumen" ? db.programa.count() : Promise.resolve(0),
+    section === "resumen" ? db.programa.count({ where: { activo: true } }) : Promise.resolve(0),
     section === "salas" ? contarReunionesFuturasZoom(db, ahora) : Promise.resolve<Record<string, number>>({}),
     section === "zoom"
       ? db.configuracionZoom.findUnique({
