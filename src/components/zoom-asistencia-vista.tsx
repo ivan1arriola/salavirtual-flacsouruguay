@@ -53,7 +53,7 @@ export function ZoomAsistenciaVista({
           </div>
         </section>
       ) : null}
-      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
+      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} instanciaId={instanciaId} />
       <h2 className="zoom-attendance-title">Resumen consolidado del encuentro</h2>
       {registros.length === 0 ? (
         <p className="attendance-empty">

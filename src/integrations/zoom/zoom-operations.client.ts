@@ -205,3 +205,31 @@ export async function obtenerDetalleReunionPasadaZoom(
     participantesReportados: typeof datos.participants_count === "number" ? datos.participants_count : null
   };
 }
+
+/** Consulta el video o audio en la nube sin devolver enlaces de descarga ni credenciales. */
+export async function consultarGrabacionOcurrenciaZoom(auth: AutenticacionZoom, uuid: string) {
+  const response = await pedirZoom(auth, "grabacion-pasada", (token) =>
+    fetch(`${API}/meetings/${codificarUuidZoom(uuid)}/recordings`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000)
+    })
+  );
+  if (response.status === 404) {
+    const error = (await response.json().catch(() => null)) as { code?: number } | null;
+    return error?.code === 3301 ? "SIN_ARCHIVOS" : "SIN_CONFIRMAR";
+  }
+  if (!response.ok) {
+    throw await errorPorRespuesta("grabacion-pasada", response);
+  }
+  const data = (await response.json()) as {
+    recording_files?: Array<{ file_type?: string; status?: string }>;
+  };
+  const archivos = data.recording_files?.filter(({ file_type }) =>
+    ["MP4", "M4A", "MP3"].includes(file_type?.toUpperCase() ?? "")
+  );
+  if (archivos?.some(({ status }) => status === "completed")) {
+    return "EN_ZOOM";
+  }
+  return archivos?.some(({ status }) => status === "processing") ? "PROCESANDO" : "SIN_CONFIRMAR";
+}

@@ -55,3 +55,53 @@
   margin-top: 3px;
   color: var(--text-secondary);
 }
+
+.resultados {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.resultados dl {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.resultados dl > div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.resultados dt {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.resultados dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.resultados dd + dd {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.resultados ul {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.resultados > a {
+  min-height: 44px;
+}
