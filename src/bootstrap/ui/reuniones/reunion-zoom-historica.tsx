@@ -10,6 +10,7 @@ import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/
 import {
   derivarEstadoGrabacionZoomFicha,
   type EstadoGrabacionZoomFicha,
+  ETIQUETA_ARCHIVO_GRABACION_ZOOM,
   ETIQUETA_GRABACION_ZOOM
 } from "@/src/modules/reuniones/estado-grabacion-zoom.domain";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
@@ -162,6 +163,16 @@ function SeccionResumen({
   );
 }
 
+const ETIQUETA_TIPO_ZOOM = {
+  VIDEO: "Video",
+  AUDIO: "Audio",
+  CHAT: "Chat",
+  TRANSCRIPCION: "Transcripción",
+  LINEA_DE_TIEMPO: "Línea de tiempo",
+  RESUMEN: "Resumen",
+  OTROS: "Otro archivo"
+} as const;
+
 function SeccionGrabaciones({
   estado,
   ocurrencias
@@ -183,13 +194,13 @@ function SeccionGrabaciones({
         {ocurrencias.flatMap((o) =>
           o.grabaciones.map((g) => (
             <li key={g.id}>
-              <span>{g.tipo === "VIDEO" ? "Video" : "Audio"}</span>
+              <span>{ETIQUETA_TIPO_ZOOM[g.tipo]}</span>
               {g.url ? (
                 <a href={g.url} target="_blank" rel="noreferrer">
                   Abrir en Drive
                 </a>
               ) : (
-                <em>Sincronizando con Drive</em>
+                <em>{ETIQUETA_ARCHIVO_GRABACION_ZOOM[g.estado]}</em>
               )}
             </li>
           ))
