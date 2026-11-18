@@ -663,3 +663,85 @@
   outline: 3px solid var(--focus-ring-color);
   outline-offset: 2px;
 }
+
+/* Participantes de Zoom: tarjetas desplegables (sirven igual en escritorio y teléfono). */
+.zoom-people__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.zoom-person {
+  border: 1px solid #d6e0ed;
+  border-radius: 10px;
+  background: #fff;
+}
+.zoom-person > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) auto;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  min-height: 48px;
+}
+.zoom-person__name {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.zoom-person__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.82rem;
+}
+.zoom-person__state {
+  font-size: 0.75rem;
+  font-weight: 750;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #eef2f8;
+  color: #36486a;
+  white-space: nowrap;
+}
+.zoom-person__state[data-estado="CONCILIADO"] {
+  background: #e3f5e9;
+  color: #17603a;
+}
+.zoom-person__state[data-estado="SUGERIDO"] {
+  background: #fff5df;
+  color: #78540d;
+}
+.zoom-person__body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+.zoom-person__body .zoom-attendance-connections {
+  margin: 0;
+  padding-left: 18px;
+}
+.zoom-person__body .zoom-attendance-actions label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.zoom-person summary:focus-visible {
+  outline: 3px solid #1d3a72;
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .zoom-person > summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .zoom-person__state {
+    justify-self: start;
+  }
+  .zoom-person__body .zoom-attendance-actions :is(select, button) {
+    min-height: 44px;
+    width: 100%;
+  }
+}

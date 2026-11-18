@@ -1,145 +1,155 @@
-import {
-  AlertTriangle,
-  CalendarDays,
-  Clock3,
-  ExternalLink,
-  FileText,
-  History,
-  Users,
-  Video
-} from "lucide-react";
+import { CalendarDays, Clock3, ExternalLink, Repeat2, Video } from "lucide-react";
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
+import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
+import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
+import {
+  derivarEstadoGrabacionZoomFicha,
+  type EstadoGrabacionZoomFicha,
+  ETIQUETA_GRABACION_ZOOM
+} from "@/src/modules/reuniones/estado-grabacion-zoom.domain";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export function ReunionZoomHistorica({
+export const SECCIONES_FICHA_ZOOM = ["resumen", "asistencia", "grabaciones"] as const;
+export type SeccionFichaZoom = (typeof SECCIONES_FICHA_ZOOM)[number];
+const NOMBRE_SECCION: Record<SeccionFichaZoom, string> = {
+  resumen: "Resumen",
+  asistencia: "Asistencia",
+  grabaciones: "Grabaciones"
+};
+
+const hora = new Intl.DateTimeFormat("es-UY", {
+  timeZone: "America/Montevideo",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false
+});
+
+function duracion(inicio: Date | null, fin: Date | null): string {
+  if (!inicio || !fin || fin <= inicio) {
+    return "Sin confirmar";
+  }
+  const minutos = Math.round((fin.getTime() - inicio.getTime()) / 60_000);
+  return minutos >= 60 ? `${Math.floor(minutos / 60)} h ${minutos % 60} min` : `${minutos} min`;
+}
+
+/** Zoom detectó la ejecución (hecho observado); una verificación administrativa sería un paso aparte. */
+function etiquetaEjecucion(inicio: Date | null, fin: Date | null): string {
+  if (fin) {
+    return "Finalizada";
+  }
+  return inicio ? "Iniciada, sin cierre registrado" : "Sin ejecución detectada por Zoom";
+}
+
+const ETIQUETA_REPORTE: Record<string, string> = {
+  ERROR: "Error al sincronizar",
+  VACIO: "Reporte sin conexiones"
+};
+function etiquetaAsistencia(hayReporte: boolean, estadoReporte: string): string {
+  return hayReporte ? "Reporte oficial de Zoom" : (ETIQUETA_REPORTE[estadoReporte] ?? "Pendiente de Zoom");
+}
+
+function SeccionResumen({
   reunion,
-  rol,
-  asistencia
+  asistencia,
+  actividad,
+  esAsistente,
+  hayReporte,
+  conexiones,
+  estadoAsistencia
 }: Readonly<{
   reunion: ReunionOperativaView;
-  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   asistencia: AsistenciaZoomFicha;
+  actividad: readonly EntradaActividadZoom[];
+  esAsistente: boolean;
+  hayReporte: boolean;
+  conexiones: number;
+  estadoAsistencia: string;
 }>) {
-  const registros = asistencia.registros;
-  const hayDatos = asistencia.estadoReporte === "DISPONIBLE" || registros.length > 0;
-  const incidenciasAbiertas = reunion.incidencias.filter(
-    (i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS"
-  );
-  const esAsistente = rol === "ASISTENTE_TECNICO";
-  const estado =
-    reunion.estado === "FINALIZADA"
-      ? "Finalizada"
-      : reunion.estado === "NO_INICIADA"
-        ? "Realización sin verificar"
-        : reunion.estado.replaceAll("_", " ");
+  const { registros, ocurrencias } = asistencia;
+  const { inicioRealAt, finRealAt } = reunion.conferencia;
   return (
-    <main className={styles.page}>
-      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica />
-      <header className={styles.hero}>
-        <div className={styles.eyebrow}>
-          <span>{reunion.programa}</span>
-          <span className={styles.provider}>
-            <Video size={15} /> Zoom
-          </span>
-          <span className={styles.historyTag}>{estado}</span>
-        </div>
-        <h1>{reunion.titulo}</h1>
-        <p className={styles.subtitle}>
-          {reunion.docente}
-          {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
-        </p>
-        <div className={styles.chips}>
-          <span>
-            <CalendarDays size={15} /> {formatDate(reunion.inicioProgramadoAt)}
-          </span>
-          <span>
-            <Clock3 size={15} /> {formatTime(reunion.inicioProgramadoAt)} –{" "}
-            {formatTime(reunion.finProgramadoAt)} (programado)
-          </span>
-          <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
-        </div>
-      </header>
-      <section className={styles.card} aria-labelledby="historical-summary">
-        <div className={styles.heading}>
-          <History size={19} />
-          <h2 id="historical-summary">Resumen histórico</h2>
-        </div>
-        <div className={styles.historyGrid}>
+    <>
+      <section className={styles.card} aria-labelledby="zoom-resumen">
+        <h2 id="zoom-resumen">Resumen de ejecución</h2>
+        <dl className={styles.kpis}>
           <div>
-            <Users size={19} />
-            <span>Participantes reales</span>
-            <strong>{!hayDatos ? "Sin reporte verificable" : `${registros.length} participantes`}</strong>
-            <small>
-              {!hayDatos
-                ? "No se interpreta como cero asistentes."
-                : "Consolidados por participante; sin conciliar no son personas confirmadas."}
-            </small>
+            <dt>Inicio real</dt>
+            <dd>{inicioRealAt ? formatTime(inicioRealAt) : "Sin confirmar"}</dd>
+            <small>Programado {formatTime(reunion.inicioProgramadoAt)}</small>
           </div>
           <div>
-            <AlertTriangle size={19} />
-            <span>Incidencias abiertas</span>
-            <strong>{incidenciasAbiertas.length}</strong>
-            <small>{reunion.incidencias.length} registradas en total.</small>
+            <dt>Fin real</dt>
+            <dd>{finRealAt ? formatTime(finRealAt) : "Sin confirmar"}</dd>
+            <small>Programado {formatTime(reunion.finProgramadoAt)}</small>
           </div>
-        </div>
+          <div>
+            <dt>Duración real</dt>
+            <dd>{duracion(inicioRealAt, finRealAt)}</dd>
+            <small>Según Zoom</small>
+          </div>
+          <div>
+            <dt>Personas</dt>
+            <dd>{hayReporte ? registros.length : "—"}</dd>
+            <small>{hayReporte ? "En el reporte de Zoom" : "Sin reporte verificable"}</small>
+          </div>
+          <div>
+            <dt>Conexiones</dt>
+            <dd>{hayReporte ? conexiones : "—"}</dd>
+            <small>Incluye reingresos</small>
+          </div>
+          <div>
+            <dt>Asistencia</dt>
+            <dd>{estadoAsistencia}</dd>
+          </div>
+        </dl>
       </section>
-      <section className={styles.card} aria-label="Asistencia histórica de Zoom">
-        <div className={styles.heading}>
-          <Users size={19} />
-          <h2>Asistencia Zoom</h2>
-        </div>
-        <ZoomAsistenciaVista
-          instanciaId={reunion.id}
-          asistencia={asistencia}
-          puedeDescargar={asistencia.puedeConciliar}
-          puedeReintentar={rol === "ADMINISTRACION"}
-        />
+      <section className={styles.card} aria-labelledby="zoom-actividad">
+        <h2 id="zoom-actividad">Actividad del encuentro</h2>
+        {actividad.length === 0 ? (
+          <p>
+            {ocurrencias.length
+              ? "Zoom no informó actividad para esta ejecución. Esto no demuestra que no la hubiera."
+              : "Todavía no se puede asociar actividad de Zoom a este encuentro."}
+          </p>
+        ) : (
+          <ol className={styles.timeline}>
+            {actividad.map((a) => (
+              <li key={`${a.tipo}-${a.desde.toISOString()}`}>
+                <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
+                <span>
+                  {a.etiqueta}
+                  {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
-      <section className={styles.card} aria-label="Registros de la reunión">
-        <div className={styles.heading}>
-          <FileText size={19} />
-          <h2>Registros y seguimiento</h2>
-        </div>
-        <details className={styles.incidents}>
-          <summary>Incidencias ({reunion.incidencias.length})</summary>
-          {reunion.incidencias.length ? (
-            <ul>
-              {reunion.incidencias.map((i) => (
-                <li key={i.id}>
-                  <strong>
-                    {i.tipo.replaceAll("_", " ")} · {i.estado}
-                  </strong>
-                  <p>{i.descripcion}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No hay incidencias registradas.</p>
-          )}
-        </details>
-        <div className={styles.quickActions}>
-          {!esAsistente ? (
-            <Link href={`/reuniones/${reunion.solicitudId}`}>
-              <FileText size={18} /> Ficha completa
-            </Link>
-          ) : null}
-          <Link href="/grabaciones">
-            <Video size={18} /> Consultar grabaciones
-          </Link>
-        </div>
-      </section>
+      <details className={styles.advanced}>
+        <summary>Información técnica</summary>
+        <dl className={styles.facts}>
+          {ocurrencias.map((o, i) => (
+            <div key={o.id}>
+              <dt>UUID de la ejecución{ocurrencias.length > 1 ? ` ${i + 1}` : ""}</dt>
+              <dd className={styles.mono}>{o.uuid}</dd>
+            </div>
+          ))}
+          <div>
+            <dt>Asistente técnico</dt>
+            <dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd>
+          </div>
+        </dl>
+      </details>
       {esAsistente && reunion.asistencia.asignacionId ? (
         <section className={styles.card} aria-label="Cierre de asistencia técnica">
-          <div className={styles.heading}>
-            <FileText size={19} />
-            <h2>Cierre de asistencia técnica</h2>
-          </div>
+          <h2>Cierre de asistencia técnica</h2>
           <OperationalAssistanceClosureForm
             asignacionId={reunion.asistencia.asignacionId}
             inicioProgramado={reunion.asistencia.inicioAt.toISOString()}
@@ -148,14 +158,113 @@ export function ReunionZoomHistorica({
           />
         </section>
       ) : null}
-      <details className={styles.advanced}>
-        <summary>
-          <Video size={18} /> Identificación y datos técnicos
-        </summary>
+    </>
+  );
+}
+
+function SeccionGrabaciones({
+  estado,
+  ocurrencias
+}: Readonly<{
+  estado: EstadoGrabacionZoomFicha;
+  ocurrencias: AsistenciaZoomFicha["ocurrencias"];
+}>) {
+  return (
+    <section className={styles.card} aria-labelledby="zoom-grabaciones">
+      <h2 id="zoom-grabaciones">Grabaciones</h2>
+      <p>
+        <strong>{ETIQUETA_GRABACION_ZOOM[estado]}</strong>
+        {estado === "NO_PREVISTA" ? " · Este encuentro no requería grabación." : null}
+        {estado === "SIN_CONFIRMAR"
+          ? " · Se esperaba una grabación y todavía no hay rastro de ella; no se puede afirmar que no exista."
+          : null}
+      </p>
+      <ul className={styles.files}>
+        {ocurrencias.flatMap((o) =>
+          o.grabaciones.map((g) => (
+            <li key={g.id}>
+              <span>{g.tipo === "VIDEO" ? "Video" : "Audio"}</span>
+              {g.url ? (
+                <a href={g.url} target="_blank" rel="noreferrer">
+                  Abrir en Drive
+                </a>
+              ) : (
+                <em>Sincronizando con Drive</em>
+              )}
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+}
+
+export function ReunionZoomHistorica({
+  reunion,
+  rol,
+  asistencia,
+  actividad,
+  seccion
+}: Readonly<{
+  reunion: ReunionOperativaView;
+  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
+  asistencia: AsistenciaZoomFicha;
+  actividad: readonly EntradaActividadZoom[];
+  seccion: SeccionFichaZoom;
+}>) {
+  const { registros, ocurrencias } = asistencia;
+  const esAsistente = rol === "ASISTENTE_TECNICO";
+  const { inicioRealAt, finRealAt } = reunion.conferencia;
+  const ejecucion = etiquetaEjecucion(inicioRealAt, finRealAt);
+  const hayReporte = asistencia.estadoReporte === "DISPONIBLE" && registros.length > 0;
+  const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
+  const estadoGrabacion = derivarEstadoGrabacionZoomFicha({
+    requiereGrabacion: reunion.requiereGrabacion,
+    ocurrencias: ocurrencias.map((o) => ({ pendiente: o.hayGrabacionPendiente, archivos: o.grabaciones }))
+  });
+  const estadoAsistencia = etiquetaAsistencia(hayReporte, asistencia.estadoReporte);
+
+  return (
+    <main className={styles.page}>
+      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica />
+      <header className={styles.hero}>
+        <div className={styles.eyebrow}>
+          <span>{reunion.programa}</span>
+          <span className={styles.provider}>
+            <Video size={15} aria-hidden="true" /> Zoom
+          </span>
+          <span className={styles.historyTag}>{ejecucion}</span>
+          <span className={styles.historyTag}>Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}</span>
+        </div>
+        <h1>{reunion.titulo}</h1>
+        <p className={styles.subtitle}>
+          {reunion.docente}
+          {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
+        </p>
+        <div className={styles.chips}>
+          <span>
+            <CalendarDays size={15} aria-hidden="true" /> {formatDate(reunion.inicioProgramadoAt)}
+          </span>
+          <span>
+            <Clock3 size={15} aria-hidden="true" /> Programado {formatTime(reunion.inicioProgramadoAt)} –{" "}
+            {formatTime(reunion.finProgramadoAt)}
+          </span>
+        </div>
+      </header>
+
+      <section className={styles.card} aria-labelledby="zoom-identificacion">
+        <h2 id="zoom-identificacion" className={styles.srOnly}>
+          Identificación de Zoom
+        </h2>
         <dl className={styles.facts}>
           <div>
-            <dt>ID Zoom</dt>
-            <dd className={styles.mono}>{reunion.zoom.id ?? "No disponible"}</dd>
+            <dt>Meeting ID (compartido por la serie)</dt>
+            <dd className={styles.mono}>
+              {reunion.zoom.id ?? "No disponible"}
+              {reunion.zoom.id ? (
+                <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
+              ) : null}
+            </dd>
           </div>
           <div>
             <dt>Cuenta anfitriona</dt>
@@ -166,16 +275,67 @@ export function ReunionZoomHistorica({
             <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
           </div>
           <div>
-            <dt>Asistente técnico</dt>
-            <dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd>
+            <dt>Ejecución</dt>
+            <dd>
+              {ocurrencias.length ? `${ocurrencias.length} vinculada(s)` : "Sin ejecución de Zoom vinculada"}
+            </dd>
           </div>
         </dl>
-        {reunion.zoom.joinUrl ? (
-          <a className={styles.back} href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
-            <ExternalLink size={15} /> Enlace original de Zoom
-          </a>
-        ) : null}
-      </details>
+        <div className={styles.quickActions}>
+          {reunion.zoom.joinUrl ? (
+            <a href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={18} aria-hidden="true" /> Abrir en Zoom
+            </a>
+          ) : null}
+          {!esAsistente ? (
+            <Link href={`/reuniones/${reunion.solicitudId}`}>
+              <Repeat2 size={18} aria-hidden="true" /> Ver serie completa de Zoom
+            </Link>
+          ) : null}
+        </div>
+      </section>
+
+      <nav className={styles.tabs} aria-label="Secciones del encuentro">
+        {SECCIONES_FICHA_ZOOM.map((s) => (
+          <Link
+            key={s}
+            href={`?seccion=${s}`}
+            aria-current={s === seccion ? "page" : undefined}
+            scroll={false}
+          >
+            {NOMBRE_SECCION[s]}
+          </Link>
+        ))}
+      </nav>
+
+      {seccion === "resumen" ? (
+        <>
+          <SeccionResumen
+            reunion={reunion}
+            asistencia={asistencia}
+            actividad={actividad}
+            esAsistente={esAsistente}
+            hayReporte={hayReporte}
+            conexiones={conexiones}
+            estadoAsistencia={estadoAsistencia}
+          />
+        </>
+      ) : null}
+
+      {seccion === "asistencia" ? (
+        <section className={styles.card} aria-label="Asistencia de Zoom">
+          <ZoomAsistenciaVista
+            instanciaId={reunion.id}
+            asistencia={asistencia}
+            puedeDescargar={asistencia.puedeConciliar}
+            puedeReintentar={rol === "ADMINISTRACION"}
+          />
+        </section>
+      ) : null}
+
+      {seccion === "grabaciones" ? (
+        <SeccionGrabaciones estado={estadoGrabacion} ocurrencias={ocurrencias} />
+      ) : null}
     </main>
   );
 }

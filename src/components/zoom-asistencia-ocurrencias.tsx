@@ -1,5 +1,4 @@
 import type { OcurrenciaAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
-import { ZoomResultadosOcurrencia } from "./zoom-resultados-ocurrencia";
 import styles from "./zoom-asistencia-ocurrencias.module.css";
 
 const fecha = new Intl.DateTimeFormat("es-UY", {
@@ -32,9 +31,8 @@ function estadoReporte(estado: string): string {
 
 /** Cada UUID de Zoom conserva su propio reporte, incluso si una clase se inició más de una vez. */
 export function ZoomAsistenciaOcurrencias({
-  ocurrencias,
-  instanciaId
-}: Readonly<{ ocurrencias: readonly OcurrenciaAsistenciaZoomFicha[]; instanciaId: string }>) {
+  ocurrencias
+}: Readonly<{ ocurrencias: readonly OcurrenciaAsistenciaZoomFicha[] }>) {
   return (
     <section className={styles.section} aria-label="Asistencia por cada reunión Zoom">
       <div>
@@ -62,12 +60,6 @@ export function ZoomAsistenciaOcurrencias({
                 en reunión
               </span>
             </summary>
-            <ZoomResultadosOcurrencia
-              instanciaId={instanciaId}
-              ocurrenciaId={ocurrencia.id}
-              pendiente={ocurrencia.hayGrabacionPendiente}
-              archivos={ocurrencia.grabaciones}
-            />
             {ocurrencia.registros.length ? (
               <div
                 className={styles.scroll}

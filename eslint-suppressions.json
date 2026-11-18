@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "app/(gestion)/configuracion/page.tsx": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "app/(gestion)/docentes/[usuarioId]/reuniones/page.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 1
@@ -84,7 +79,7 @@
       "count": 1
     },
     "sonarjs/no-nested-conditional": {
-      "count": 4
+      "count": 2
     }
   },
   "app/api/v1/configuracion/salas-meet/route.ts": {
@@ -229,11 +224,6 @@
     },
     "sonarjs/no-nested-conditional": {
       "count": 2
-    }
-  },
-  "src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx": {
-    "sonarjs/no-nested-conditional": {
-      "count": 1
     }
   },
   "src/bootstrap/ui/reuniones/reunion-zoom-operativa.tsx": {

@@ -37,6 +37,8 @@ export type AsistenciaZoomFicha = Readonly<{
 
 export type OcurrenciaAsistenciaZoomFicha = Readonly<{
   id: string;
+  /** Identificador único de esta ejecución (el Meeting ID es compartido por toda la serie). */
+  uuid: string;
   inicioRealAt: Date;
   estadoReporte: string;
   hayGrabacionPendiente: boolean;
@@ -56,6 +58,7 @@ export type OcurrenciaAsistenciaZoomFicha = Readonly<{
 
 function asistenciaPorOcurrencia(ocurrencia: {
   id: string;
+  uuid: string;
   inicioRealAt: Date;
   estadoAsistencia: string;
   procesamientoPendiente: boolean;
@@ -103,6 +106,7 @@ function asistenciaPorOcurrencia(ocurrencia: {
   });
   return {
     id: ocurrencia.id,
+    uuid: ocurrencia.uuid,
     grabaciones,
     hayGrabacionPendiente: ocurrencia.procesamientoPendiente,
     inicioRealAt: ocurrencia.inicioRealAt,
@@ -122,7 +126,7 @@ export async function leerAsistenciaZoomFicha(
   actor: ActorConciliacionZoom
 ): Promise<AsistenciaZoomFicha> {
   const evento = await db.eventoProveedor.findFirst({
-    where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
+    where: { instanciaSalaId: instanciaId, proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } } },
     select: {
       id: true,
       instancia: {
@@ -134,6 +138,7 @@ export async function leerAsistenciaZoomFicha(
         orderBy: { inicioRealAt: "asc" },
         select: {
           id: true,
+          uuid: true,
           inicioRealAt: true,
           estadoAsistencia: true,
           procesamientoPendiente: true,

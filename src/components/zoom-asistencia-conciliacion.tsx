@@ -21,10 +21,10 @@ type Registro = Readonly<{
 type Invitado = Readonly<{ id: string; email: string; nombre: string | null }>;
 
 const ETIQUETA: Record<Registro["estadoConciliacion"], string> = {
-  SIN_CONCILIAR: "Sin conciliar",
-  SUGERIDO: "Sugerido (confirmar)",
-  CONCILIADO: "Conciliado",
-  EXTERNO: "Externo"
+  SIN_CONCILIAR: "Sin identificar",
+  SUGERIDO: "Posible coincidencia",
+  CONCILIADO: "Identificada",
+  EXTERNO: "No figura entre los invitados"
 };
 
 const hora = (iso: string) =>
@@ -83,83 +83,83 @@ export function ZoomAsistenciaConciliacion({
   }
 
   return (
-    <div className="attendance-table-scroll">
+    <div className="zoom-people">
       {mensaje ? <p role="alert">{mensaje}</p> : null}
-      <table className="attendance-table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Minutos</th>
-            <th>%</th>
-            <th>Estado</th>
-            {puedeConciliar ? <th>Acción</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {registros.map((r) => (
-            <tr key={r.id}>
-              <td>
-                {r.nombre}
-                {r.esHostOCohost ? " (anfitrión)" : ""}
-                <br />
-                <small className="zoom-attendance-email">
-                  {r.emailObservado ?? "Sin correo informado por Zoom"}
-                </small>
+      <ul className="zoom-people__list">
+        {registros.map((r) => (
+          <li key={r.id}>
+            <details className="zoom-person">
+              <summary>
+                <span className="zoom-person__name">
+                  <strong>{r.nombre}</strong>
+                  {r.esHostOCohost ? <em> · anfitrión</em> : null}
+                  <small className="zoom-attendance-email">
+                    {r.emailObservado ?? "Sin correo informado por Zoom"}
+                  </small>
+                </span>
+                <span className="zoom-person__metrics">
+                  <span>
+                    <b>{r.minutos}</b> min
+                  </span>
+                  <span>
+                    <b>{r.porcentaje}</b>% del horario
+                  </span>
+                  <span>
+                    <b>{r.sesiones}</b> {r.sesiones === 1 ? "conexión" : "conexiones"}
+                  </span>
+                </span>
+                <span className="zoom-person__state" data-estado={r.estadoConciliacion}>
+                  {ETIQUETA[r.estadoConciliacion]}
+                </span>
+              </summary>
+              <div className="zoom-person__body">
                 {r.conexiones.length > 0 ? (
-                  <details className="zoom-attendance-connections">
-                    <summary>
-                      {r.conexiones.length === 1 ? "1 conexión" : `${r.conexiones.length} conexiones`}
-                    </summary>
-                    <ul>
-                      {r.conexiones.map((c, i) => (
-                        <li key={`${c.entradaAt}-${i}`}>
-                          {hora(c.entradaAt)} → {hora(c.salidaAt)}
-                          {c.status === "in_waiting_room" ? " · sala de espera" : ""}
-                          {c.email && c.email !== r.emailObservado ? ` · ${c.email}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
+                  <ul className="zoom-attendance-connections">
+                    {r.conexiones.map((c, i) => (
+                      <li key={`${c.entradaAt}-${i}`}>
+                        {hora(c.entradaAt)} → {hora(c.salidaAt)}
+                        {c.status === "in_waiting_room" ? " · sala de espera (no cuenta como tiempo en reunión)" : ""}
+                        {c.email && c.email !== r.emailObservado ? ` · ${c.email}` : ""}
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
-              </td>
-              <td>{r.minutos}</td>
-              <td>{r.porcentaje}</td>
-              <td>{ETIQUETA[r.estadoConciliacion]}</td>
-              {puedeConciliar ? (
-                <td>
+                {puedeConciliar ? (
                   <div className="zoom-attendance-actions">
-                    <select
-                      aria-label={`Vincular a ${r.nombre}`}
-                      disabled={pendiente}
-                      defaultValue=""
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          enviar(r, e.target.value, false);
-                        }
-                      }}
-                    >
-                      <option value="">Vincular con invitado…</option>
-                      {invitados.map((i) => (
-                        <option key={i.id} value={i.id}>
-                          {i.nombre ?? i.email}
-                        </option>
-                      ))}
-                    </select>
+                    <label>
+                      <span>Identificar persona</span>
+                      <select
+                        disabled={pendiente}
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            enviar(r, e.target.value, false);
+                          }
+                        }}
+                      >
+                        <option value="">Elegir entre los invitados…</option>
+                        {invitados.map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {i.nombre ?? i.email}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <button type="button" disabled={pendiente} onClick={() => enviar(r, null, true)}>
-                      Marcar externo
+                      No figura entre los invitados
                     </button>
                     {r.estadoConciliacion !== "SIN_CONCILIAR" ? (
                       <button type="button" disabled={pendiente} onClick={() => enviar(r, null, false)}>
-                        Quitar vínculo
+                        Quitar identificación
                       </button>
                     ) : null}
                   </div>
-                </td>
-              ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                ) : null}
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

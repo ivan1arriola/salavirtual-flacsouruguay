@@ -24,7 +24,8 @@ import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integra
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
-import { ReunionZoomHistorica } from "./reunion-zoom-historica";
+import { ReunionZoomHistorica, SECCIONES_FICHA_ZOOM } from "./reunion-zoom-historica";
+import { leerActividadEncuentroZoom } from "@/src/bootstrap/zoom-actividad-lectura.server";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { AdminRetryMeetAction } from "@/src/components/admin-attention-actions";
 import { OperationalIncidentForm } from "@/src/components/operational-incident-form";
@@ -41,8 +42,12 @@ import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { obtenerReunionOperativa } from "@/src/bootstrap/reunion-operativa.server";
 
 export default async function ReunionOperativaPage({
-  params
-}: Readonly<{ params: Promise<{ instanciaId: string }> }>) {
+  params,
+  searchParams
+}: Readonly<{
+  params: Promise<{ instanciaId: string }>;
+  searchParams?: Promise<{ seccion?: string }>;
+}>) {
   const session = await auth();
   if (!session?.user) {
     redirect("/acceso");
@@ -67,7 +72,19 @@ export default async function ReunionOperativaPage({
     if (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") {
       // Solo lectura de lo persistido: renderizar no llama a Zoom ni escribe asistencia (ver sincronizarAsistenciaOcurrenciaZoom).
       const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
-      return <ReunionZoomHistorica reunion={reunion} rol={actor.rol} asistencia={asistencia} />;
+      const { seccion } = (await searchParams) ?? {};
+      const actividad = reunion.zoom.eventoProveedorId
+        ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
+        : [];
+      return (
+        <ReunionZoomHistorica
+          reunion={reunion}
+          rol={actor.rol}
+          asistencia={asistencia}
+          actividad={actividad}
+          seccion={SECCIONES_FICHA_ZOOM.find((s) => s === seccion) ?? "resumen"}
+        />
+      );
     }
     let salaEspera: boolean | null = null;
     let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };

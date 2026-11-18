@@ -78,7 +78,7 @@ export function ZoomAsistenciaVista({
       }) ? (
         <AttendanceRegenerateAction instanciaId={instanciaId} />
       ) : null}
-      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} instanciaId={instanciaId} />
+      <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
       <h2 className="zoom-attendance-title">Resumen consolidado del encuentro</h2>
       {registros.length === 0 ? (
         <p className="attendance-empty">
