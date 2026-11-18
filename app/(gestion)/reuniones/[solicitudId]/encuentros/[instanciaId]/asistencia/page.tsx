@@ -145,6 +145,7 @@ export default async function EncuentroAsistenciaPage({
     select: {
       id: true,
       estado: true,
+      proveedorActivoTipo: true,
       inicioProgramadoAt: true,
       finProgramadoAt: true,
       solicitud: { select: { id: true, titulo: true, docentePrograma: { select: { programaId: true } } } },
@@ -171,7 +172,7 @@ export default async function EncuentroAsistenciaPage({
     notFound();
   }
 
-  if (encuentro.eventosProveedor.length === 0) {
+  if (encuentro.proveedorActivoTipo === "ZOOM" || encuentro.eventosProveedor.length === 0) {
     const eventoZoom = await db.eventoProveedor.findFirst({
       where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
       select: { id: true }
