@@ -1,4 +1,4 @@
-import { Activity, CalendarDays, CheckCircle2, CircleAlert, Clock3, ExternalLink, FileVideo, Fingerprint, History, Info, MonitorUp, PlayCircle, Repeat2, UsersRound, Video, UserRound, Wifi, Timer, List } from "lucide-react";
+import { Activity, CalendarDays, CheckCircle2, CircleAlert, Clock3, ExternalLink, FileVideo, History, Info, MonitorUp, PlayCircle, Repeat2, UsersRound, Video, UserRound, Wifi, Timer, List } from "lucide-react";
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
@@ -282,7 +282,7 @@ export function ReunionZoomHistorica({
           <span className={styles.historyTag}><FileVideo size={15} aria-hidden="true" /> Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}</span>
         </div>
         <h1>{reunion.titulo}</h1>
-        <p className={styles.subtitle}><UserRound size={17} aria-hidden="true" /> 
+        <p className={styles.subtitle}><UserRound size={17} aria-hidden="true" />
           {reunion.docente}
           {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
         </p>
