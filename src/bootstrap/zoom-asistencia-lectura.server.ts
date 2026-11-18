@@ -1,4 +1,8 @@
 import "server-only";
+import {
+  estadoArchivoGrabacionZoom,
+  type EstadoArchivoGrabacionZoom
+} from "../modules/reuniones/estado-grabacion-zoom.domain";
 import { db } from "../lib/db";
 import {
   categoriaArchivoZoom,
@@ -42,7 +46,12 @@ export type OcurrenciaAsistenciaZoomFicha = Readonly<{
   inicioRealAt: Date;
   estadoReporte: string;
   hayGrabacionPendiente: boolean;
-  grabaciones: readonly Readonly<{ id: string; tipo: "VIDEO" | "AUDIO"; url: string | null }>[];
+  grabaciones: readonly Readonly<{
+    id: string;
+    tipo: ReturnType<typeof categoriaArchivoZoom>;
+    estado: EstadoArchivoGrabacionZoom;
+    url: string | null;
+  }>[];
   registros: ReadonlyArray<
     Readonly<{
       clave: string;
@@ -97,13 +106,12 @@ function asistenciaPorOcurrencia(ocurrencia: {
             ultimaSalidaAt: r.ultimaSalidaAt
           }))
       : [];
-  const grabaciones = ocurrencia.archivos.flatMap((archivo) => {
-    const tipo = categoriaArchivoZoom(archivo.tipoOriginal);
-    if (tipo !== "VIDEO" && tipo !== "AUDIO") {
-      return [];
-    }
-    return [{ id: archivo.id, tipo, url: enlaceArchivoZoom(archivo) }];
-  });
+  const grabaciones = ocurrencia.archivos.map((archivo) => ({
+    id: archivo.id,
+    tipo: categoriaArchivoZoom(archivo.tipoOriginal),
+    estado: estadoArchivoGrabacionZoom(archivo.estado),
+    url: enlaceArchivoZoom(archivo)
+  }));
   return {
     id: ocurrencia.id,
     uuid: ocurrencia.uuid,
