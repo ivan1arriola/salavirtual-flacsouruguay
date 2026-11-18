@@ -131,7 +131,7 @@ export async function invitarIntegrantePrograma(formData: FormData): Promise<voi
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
   }
 
-  revalidatePath("/configuracion", "layout");
+  revalidatePath("/configuracion");
   revalidatePath("/usuarios");
   revalidatePath("/reuniones/nueva");
   redirect(programRedirect(programaId, estado, undefined, context));
@@ -152,7 +152,7 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
     );
   }
 
-  revalidatePath("/configuracion", "layout");
+  revalidatePath("/configuracion/notificaciones");
   redirect(asistenciaRedirect("reportes-asistencia-actualizados"));
 }
 
@@ -170,7 +170,7 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
       `/configuracion/correo?error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
     );
   }
-  revalidatePath("/configuracion", "layout");
+  revalidatePath("/configuracion/correo");
   redirect("/configuracion/correo?estado=correo-ses-actualizado");
 }
 
@@ -213,7 +213,7 @@ function programaInput(formData: FormData) {
 }
 
 function revalidatePrograms(): void {
-  revalidatePath("/configuracion", "layout");
+  revalidatePath("/configuracion");
   revalidatePath("/mis-programas");
   revalidatePath("/usuarios");
   revalidatePath("/reuniones/nueva");

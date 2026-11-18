@@ -11,6 +11,7 @@ import {
   Video,
   X
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { esCuentaAsignable } from "@/src/modules/reuniones/cuenta-asignable.domain";
@@ -118,6 +119,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
           <div className="empty-state">
             <Video size={24} />
             <p>No hay salas configuradas.</p>
+            <Link href="/configuracion/zoom">Elegir el grupo de cuentas de Zoom</Link>
           </div>
         ) : filteredHosts.length === 0 ? (
           <div className="settings-empty-search">

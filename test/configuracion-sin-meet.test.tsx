@@ -31,6 +31,11 @@ describe("configuración sin Google Meet", () => {
     expect(html.includes("Agregar sala")).toBe(false);
   });
 
+  it("Salas sin cuentas lleva a elegir el grupo de Zoom", () => {
+    const html = renderToStaticMarkup(<MeetHostsConfig hosts={[]} />);
+    expect(html.includes('href="/configuracion/zoom"')).toBe(true);
+  });
+
   it("Google no ofrece verificar ni resincronizar co-hosts, credenciales históricas ni acceso a salas", () => {
     const html = renderToStaticMarkup(<WorkspaceConfigForm initial={null} />);
     const presentes = [
