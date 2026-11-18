@@ -2,14 +2,11 @@ import {
   Activity,
   CalendarDays,
   CheckCircle2,
-  CircleAlert,
   Clock3,
   ExternalLink,
   FileVideo,
   History,
   Info,
-  MonitorUp,
-  PlayCircle,
   Repeat2,
   UsersRound,
   Video,
@@ -23,6 +20,7 @@ import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
+import { ItemActividad } from "./zoom-actividad-item";
 import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
@@ -42,42 +40,6 @@ const NOMBRE_SECCION: Record<SeccionFichaZoom, string> = {
   asistencia: "Asistencia",
   grabaciones: "Grabaciones"
 };
-
-const hora = new Intl.DateTimeFormat("es-UY", {
-  timeZone: "America/Montevideo",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false
-});
-
-const ICONOS_ACTIVIDAD: ReadonlyArray<readonly [readonly string[], typeof FileVideo]> = [
-  [["grabación"], FileVideo],
-  [["pantalla"], MonitorUp],
-  [["participante", "sala de espera"], UsersRound],
-  [["alerta"], CircleAlert]
-];
-
-function IconoActividad({ etiqueta }: Readonly<{ etiqueta: string }>) {
-  const texto = etiqueta.toLowerCase();
-  const Icono = ICONOS_ACTIVIDAD.find(([claves]) => claves.some((c) => texto.includes(c)))?.[1] ?? PlayCircle;
-  return <Icono size={17} />;
-}
-
-function ItemActividad({ a }: Readonly<{ a: EntradaActividadZoom }>) {
-  return (
-    <li>
-      <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
-      <span className={styles.timelineIcon} aria-hidden="true">
-        <IconoActividad etiqueta={a.etiqueta} />
-      </span>
-      <span className={styles.timelineLabel}>
-        {a.etiqueta}
-        {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
-      </span>
-    </li>
-  );
-}
 
 function duracion(inicio: Date | null, fin: Date | null): string {
   if (!inicio || !fin || fin <= inicio) {

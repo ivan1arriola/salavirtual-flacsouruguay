@@ -26,6 +26,8 @@ import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentati
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
+import { ItemActividad } from "./zoom-actividad-item";
+import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
 
 /** La consola Zoom no debe presentar datos o controles de Google Meet como propios.
@@ -35,12 +37,15 @@ export function ReunionZoomOperativa({
   reunion,
   rol,
   salaEspera,
-  asistenciaEnVivo
+  asistenciaEnVivo,
+  actividad = []
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   salaEspera: boolean | null;
   asistenciaEnVivo: EstadoAsistenciaZoomEnVivo;
+  /** Hechos confirmados por webhooks de Zoom para esta ejecución, de más antiguo a más reciente. */
+  actividad?: readonly EntradaActividadZoom[];
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const enlace = reunion.zoom.joinUrl;
@@ -219,6 +224,28 @@ export function ReunionZoomOperativa({
                 ? "Zoom no encuentra una reunión activa para este ID."
                 : "No se pudo verificar la asistencia en vivo. No significa que haya cero asistentes."}
           </p>
+        )}
+      </section>
+
+      <section className={styles.card} aria-labelledby="zoom-actividad-vivo">
+        <h2 id="zoom-actividad-vivo">Actividad reciente</h2>
+        {actividad.length === 0 ? (
+          <p>
+            Todavía no llegaron avisos de Zoom para esta ejecución. Los avisos pueden demorar o llegar fuera
+            de orden, y la ausencia de avisos no significa que no haya participantes.
+          </p>
+        ) : (
+          <>
+            <ol className={styles.timeline}>
+              {actividad.slice(-8).map((a) => (
+                <ItemActividad key={`${a.tipo}-${a.desde.toISOString()}`} a={a} />
+              ))}
+            </ol>
+            <small>
+              Hechos informados por Zoom, ordenados por su hora real. La asistencia oficial se consolida al
+              terminar la reunión.
+            </small>
+          </>
         )}
       </section>
 

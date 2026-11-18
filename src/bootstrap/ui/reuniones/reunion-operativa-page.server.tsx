@@ -108,12 +108,16 @@ export default async function ReunionOperativaPage({
         // Sin permisos, conexión o respuesta válida: no afirmar que está deshabilitada.
       }
     }
+    const actividadEnVivo = reunion.zoom.eventoProveedorId
+      ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
+      : [];
     return (
       <ReunionZoomOperativa
         reunion={reunion}
         rol={actor.rol}
         salaEspera={salaEspera}
         asistenciaEnVivo={asistenciaEnVivo}
+        actividad={actividadEnVivo}
       />
     );
   }
