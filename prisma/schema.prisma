@@ -1381,6 +1381,9 @@ model ReunionZoomObservada {
   /// WEBHOOK | PULL: de dónde vino el último dato.
   origen            String
   observadaAt       DateTime
+  /// Reunión externa que un administrador decidió no tratar como choque (la sincronización no la borra).
+  ignoradaAt        DateTime?
+  ignoradaPorId     String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

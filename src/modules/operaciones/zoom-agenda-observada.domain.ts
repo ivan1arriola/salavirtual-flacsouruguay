@@ -9,6 +9,8 @@ export type ObservadaAgendaZoom = Readonly<{
   inicio: Date;
   fin: Date;
   estado: string;
+  /** Si un administrador la ignoró, no cuenta como choque ni como diferencia. */
+  ignoradaAt?: Date | null;
 }>;
 
 export type InconsistenciasAgendaZoom = Readonly<{
@@ -16,6 +18,8 @@ export type InconsistenciasAgendaZoom = Readonly<{
   externas: ReadonlyArray<
     Readonly<{ observada: ObservadaAgendaZoom; choques: readonly ReunionZoomAuditable[] }>
   >;
+  /** Reuniones externas ignoradas a propósito (solo para poder dejar de ignorarlas). */
+  ignoradas: readonly ObservadaAgendaZoom[];
   /** Encuentros de la app cuya reunión Zoom fue eliminada allá. */
   eliminadasEnZoom: readonly ReunionZoomAuditable[];
   /** Encuentros de la app cuyo horario no coincide con ninguna ocurrencia vigente en Zoom. */
@@ -46,8 +50,10 @@ export function detectarInconsistenciasAgendaZoom(
 ): InconsistenciasAgendaZoom {
   const futuras = observadas.filter(({ fin }) => fin > ahora);
   const activas = futuras.filter(({ estado }) => estado === "ACTIVA");
-  const externas = activas
-    .filter(({ meetingId }) => !idsPropios.has(meetingId))
+  const sinVincular = activas.filter(({ meetingId }) => !idsPropios.has(meetingId));
+  const ignoradas = sinVincular.filter(({ ignoradaAt }) => Boolean(ignoradaAt));
+  const externas = sinVincular
+    .filter(({ ignoradaAt }) => !ignoradaAt)
     .map((observada) => ({
       observada,
       choques: reuniones.filter(
@@ -85,5 +91,36 @@ export function detectarInconsistenciasAgendaZoom(
   const horarioDistinto = clasificadas.flatMap((c) =>
     c.tipo === "HORARIO" ? [{ reunion: c.reunion, enZoom: c.enZoom }] : []
   );
-  return { externas, eliminadasEnZoom, horarioDistinto };
+  return { externas, ignoradas, eliminadasEnZoom, horarioDistinto };
+}
+
+export type OcurrenciaElegida =
+  Readonly<{ ok: true; ocurrencia: ObservadaAgendaZoom }> | Readonly<{ ok: false; motivo: string }>;
+
+/**
+ * Ocurrencia de Zoom que corresponde a un encuentro con horario distinto: la vigente más cercana.
+ * Si esa ocurrencia ya coincide con otro encuentro de la misma reunión, no se adivina: se rechaza.
+ */
+export function elegirOcurrenciaDelEncuentro(
+  reunion: ReunionZoomAuditable,
+  enZoom: readonly ObservadaAgendaZoom[],
+  reuniones: readonly ReunionZoomAuditable[]
+): OcurrenciaElegida {
+  const distancia = (o: ObservadaAgendaZoom) => Math.abs(o.inicio.getTime() - reunion.inicio.getTime());
+  const ocurrencia = enZoom.reduce<ObservadaAgendaZoom | null>(
+    (mejor, o) => (!mejor || distancia(o) < distancia(mejor) ? o : mejor),
+    null
+  );
+  if (!ocurrencia) {
+    return { ok: false, motivo: "Zoom no informa ninguna ocurrencia vigente de esta reunión." };
+  }
+  const ocupada = reuniones.some(
+    (otra) =>
+      otra.instanciaId !== reunion.instanciaId &&
+      otra.meetingId === reunion.meetingId &&
+      Math.abs(otra.inicio.getTime() - ocurrencia.inicio.getTime()) <= TOLERANCIA_MS
+  );
+  return ocupada
+    ? { ok: false, motivo: "La ocurrencia de Zoom más cercana corresponde a otro encuentro de la serie." }
+    : { ok: true, ocurrencia };
 }

@@ -1,5 +1,6 @@
 import { CircleAlert, CircleCheck } from "lucide-react";
 import Link from "next/link";
+import { AccionAgendaZoomBoton } from "@/src/components/accion-agenda-zoom-boton";
 import { SincronizarAgendaZoomBoton } from "@/src/components/sincronizar-agenda-zoom-boton";
 import { formatDateTime } from "@/src/lib/ui/format";
 import type { leerInconsistenciasAgendaZoom } from "@/src/modules/operaciones/zoom-agenda-observada.service";
@@ -58,8 +59,32 @@ export function AgendaZoomSeccion({
               ) : (
                 <p>Sin superposición con encuentros de Sala Virtual.</p>
               )}
+              <AccionAgendaZoomBoton
+                accion="IGNORAR"
+                observadaId={observada.id}
+                etiqueta="Ignorar"
+                confirmacion={`¿Ignorar la reunión «${observada.tema}»? Dejará de contar como choque al elegir sala. Podés dejar de ignorarla después.`}
+              />
             </article>
           ))}
+        </>
+      ) : null}
+      {agenda.ignoradas.length ? (
+        <>
+          <h2>Reuniones de Zoom ignoradas ({agenda.ignoradas.length})</h2>
+          <ul className={styles.warnings}>
+            {agenda.ignoradas.map((observada) => (
+              <li key={observada.id}>
+                {observada.tema} · {formatDateTime(observada.inicio)} · Zoom {observada.meetingId}{" "}
+                <AccionAgendaZoomBoton
+                  accion="DEJAR_DE_IGNORAR"
+                  observadaId={observada.id}
+                  etiqueta="Dejar de ignorar"
+                  confirmacion="¿Volver a considerar esta reunión de Zoom como ocupada?"
+                />
+              </li>
+            ))}
+          </ul>
         </>
       ) : null}
       {agenda.eliminadasEnZoom.length ? (
@@ -72,7 +97,19 @@ export function AgendaZoomSeccion({
                 <Link href={`/reuniones/${reunion.solicitudId}`}>
                   {reunion.titulo} · {formatDateTime(reunion.inicio)}
                 </Link>{" "}
-                ya no existe en Zoom.
+                ya no existe en Zoom.{" "}
+                <AccionAgendaZoomBoton
+                  accion="RECREAR_EN_ZOOM"
+                  instanciaId={reunion.instanciaId}
+                  etiqueta="Recrear en Zoom"
+                  confirmacion={`¿Crear de nuevo en Zoom la reunión «${reunion.titulo}» (${formatDateTime(reunion.inicio)})? El enlace de acceso cambiará y quien tenga el anterior deberá recibir el nuevo.`}
+                />{" "}
+                <AccionAgendaZoomBoton
+                  accion="CANCELAR_ENCUENTRO"
+                  instanciaId={reunion.instanciaId}
+                  etiqueta="Cancelar encuentro"
+                  confirmacion={`¿Cancelar el encuentro «${reunion.titulo}» (${formatDateTime(reunion.inicio)}) en Sala Virtual? Una reunión debe conservar al menos un encuentro.`}
+                />
               </li>
             ))}
           </ul>
@@ -87,7 +124,19 @@ export function AgendaZoomSeccion({
                 <CircleAlert size={15} />{" "}
                 <Link href={`/reuniones/${reunion.solicitudId}`}>{reunion.titulo}</Link>: en Sala Virtual{" "}
                 {formatDateTime(reunion.inicio)}; en Zoom{" "}
-                {enZoom.map(({ inicio }) => formatDateTime(inicio)).join(", ")}.
+                {enZoom.map(({ inicio }) => formatDateTime(inicio)).join(", ")} (hora de Montevideo).{" "}
+                <AccionAgendaZoomBoton
+                  accion="CORREGIR_EN_ZOOM"
+                  instanciaId={reunion.instanciaId}
+                  etiqueta="Corregir en Zoom"
+                  confirmacion={`¿Cambiar en Zoom el horario a ${formatDateTime(reunion.inicio)} (hora de Montevideo), el de Sala Virtual?`}
+                />{" "}
+                <AccionAgendaZoomBoton
+                  accion="ADOPTAR_DE_ZOOM"
+                  instanciaId={reunion.instanciaId}
+                  etiqueta="Adoptar horario de Zoom"
+                  confirmacion={`¿Cambiar el encuentro en Sala Virtual al horario de Zoom (${enZoom.map(({ inicio }) => formatDateTime(inicio)).join(", ")}, hora de Montevideo)?`}
+                />
               </li>
             ))}
           </ul>
