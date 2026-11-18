@@ -15,7 +15,10 @@ vi.mock("next/server", () => ({
 vi.mock("@/auth", () => ({ auth: async () => ({ user: { id: "u1", email: "a@x.test" } }) }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => mock.actor }));
 vi.mock("@/src/lib/db", () => ({
-  db: { eventoProveedor: { findFirst: (...a: unknown[]) => mock.findFirst(...a) } }
+  db: {
+    eventoProveedor: { findFirst: (...a: unknown[]) => mock.findFirst(...a) },
+    instanciaSala: { findUnique: async () => ({ proveedorActivoTipo: null }) }
+  }
 }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({
   sincronizarArtefactos: (...a: unknown[]) => mock.sync(...a)

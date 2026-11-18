@@ -59,7 +59,7 @@ export function AttendanceRegenerateAction({ instanciaId }: Readonly<{ instancia
     <div className="attendance-refresh">
       <button className="primary-action" type="button" onClick={actualizar} disabled={busy} aria-busy={busy}>
         <RefreshCw size={16} aria-hidden="true" />
-        {busy ? "Actualizando…" : "Actualizar asistencia"}
+        {busy ? "Actualizando…" : "Reintentar asistencia"}
       </button>
       {error ? (
         <small role="alert" className="attendance-refresh-error">

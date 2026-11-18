@@ -18,10 +18,18 @@ export async function POST(_request: Request, context: RouteContext) {
   }
   try {
     const { instanciaId } = await context.params;
-    const event = await db.eventoProveedor.findFirst({
-      where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } },
-      select: { id: true }
+    // Una serie migrada a Zoom conserva su evento de Meet: manda el proveedor activo, no la mera existencia del evento.
+    const instancia = await db.instanciaSala.findUnique({
+      where: { id: instanciaId },
+      select: { proveedorActivoTipo: true }
     });
+    const event =
+      instancia?.proveedorActivoTipo === "ZOOM"
+        ? null
+        : await db.eventoProveedor.findFirst({
+            where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } },
+            select: { id: true }
+          });
     if (!event) {
       // Encuentro Zoom: la asistencia sale de la base y la planilla de Drive es un paso independiente (ver detalle por ocurrencia).
       const zoom = await db.eventoProveedor.findFirst({

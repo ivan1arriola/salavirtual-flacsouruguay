@@ -1,10 +1,12 @@
-﻿import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string } },
   actor: null as null | { id: string; rol: string; activo: boolean },
   resolve: vi.fn(),
   findFirst: vi.fn(),
-  sync: vi.fn()
+  sync: vi.fn(),
+  instancia: vi.fn(),
+  regenerarZoom: vi.fn()
 }));
 vi.mock("next/server", () => ({
   NextResponse: {
@@ -19,12 +21,17 @@ vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
   resolveSessionActor: (...args: unknown[]) => mock.resolve(...args)
 }));
 vi.mock("@/src/lib/db", () => ({
-  db: { eventoProveedor: { findFirst: (...args: unknown[]) => mock.findFirst(...args) } }
+  db: {
+    eventoProveedor: { findFirst: (...args: unknown[]) => mock.findFirst(...args) },
+    instanciaSala: { findUnique: (...args: unknown[]) => mock.instancia(...args) }
+  }
 }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({
   sincronizarArtefactos: (...args: unknown[]) => mock.sync(...args)
 }));
-vi.mock("@/src/bootstrap/zoom-asistencia.server", () => ({ regenerarAsistenciaInstanciaZoom: vi.fn() }));
+vi.mock("@/src/bootstrap/zoom-asistencia.server", () => ({
+  regenerarAsistenciaInstanciaZoom: (...args: unknown[]) => mock.regenerarZoom(...args)
+}));
 import { POST } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/regenerar/route";
 const context = { params: Promise.resolve({ instanciaId: "inst-1" }) };
 beforeEach(() => {
@@ -33,6 +40,8 @@ beforeEach(() => {
   mock.resolve.mockReset().mockImplementation(async () => mock.actor);
   mock.findFirst.mockReset();
   mock.sync.mockReset();
+  mock.instancia.mockReset().mockResolvedValue({ proveedorActivoTipo: null });
+  mock.regenerarZoom.mockReset();
 });
 describe("regeneración de asistencia", () => {
   it("rechaza rol distinto a administración antes de consultar el encuentro", async () => {
@@ -49,5 +58,23 @@ describe("regeneración de asistencia", () => {
       200
     );
     expect(mock.sync).toHaveBeenCalledWith(["event-1"], true);
+  });
+  it("en una serie migrada a Zoom con evento Meet conservado sincroniza Zoom, no Meet", async () => {
+    mock.actor = { id: "u1", rol: "ADMINISTRACION", activo: true };
+    mock.instancia.mockResolvedValue({ proveedorActivoTipo: "ZOOM" });
+    mock.findFirst.mockImplementation(async ({ where }: { where: { proveedor: { tipo: string } } }) => ({
+      id: `evento-${where.proveedor.tipo}`
+    }));
+    mock.regenerarZoom.mockResolvedValue({
+      ocurrencias: 1,
+      resultados: [{ sincronizacion: { tipo: "PENDIENTE" }, planilla: { tipo: "ERROR", codigo: "X" } }]
+    });
+    const respuesta = (await POST(new Request("https://example.test"), context)) as {
+      status: number;
+      body: { proveedor?: string };
+    };
+    expect(respuesta.body.proveedor).toBe("ZOOM");
+    expect(mock.regenerarZoom).toHaveBeenCalledWith("inst-1");
+    expect(mock.sync).not.toHaveBeenCalled();
   });
 });

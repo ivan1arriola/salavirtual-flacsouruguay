@@ -318,7 +318,7 @@ export default async function EncuentroAsistenciaPage({
           <p>
             Puede estar pendiente la sincronización de Meet y Reports.{" "}
             {esAdmin
-              ? "Usá «Actualizar asistencia» para recuperarla."
+              ? "Usá «Reintentar asistencia» para recuperarla."
               : "Solicitá a Administración que sincronice la asistencia."}
           </p>
         </section>

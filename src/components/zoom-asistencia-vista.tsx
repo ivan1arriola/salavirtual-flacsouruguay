@@ -11,6 +11,15 @@ const fecha = (valor: Date) =>
     timeStyle: "short"
   }).format(valor);
 
+/** Reintentar tiene sentido sin reporte, o con reporte "disponible" que quedó sin consolidar (se sincronizó antes de vincular). */
+export function debeOfrecerReintentoAsistencia(entrada: {
+  ocurrencias: number;
+  estadoReporte: string;
+  registros: number;
+}): boolean {
+  return entrada.ocurrencias > 0 && (entrada.estadoReporte !== "DISPONIBLE" || entrada.registros === 0);
+}
+
 /**
  * Única vista de la asistencia de un encuentro Zoom (ficha y página de asistencia la comparten).
  * Los botones bajan el reporte tal como lo entrega Zoom, no los datos ya consolidados.
@@ -61,7 +70,12 @@ export function ZoomAsistenciaVista({
           </div>
         </section>
       ) : null}
-      {puedeReintentar && ocurrencias.length > 0 && estadoReporte !== "DISPONIBLE" ? (
+      {puedeReintentar &&
+      debeOfrecerReintentoAsistencia({
+        ocurrencias: ocurrencias.length,
+        estadoReporte,
+        registros: registros.length
+      }) ? (
         <AttendanceRegenerateAction instanciaId={instanciaId} />
       ) : null}
       <ZoomAsistenciaOcurrencias ocurrencias={ocurrencias} />
