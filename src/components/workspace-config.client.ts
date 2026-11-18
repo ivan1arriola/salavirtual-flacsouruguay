@@ -104,16 +104,6 @@ function legacyScopeAccounts(result: Record<string, unknown>): readonly Workspac
   ];
 }
 
-export async function prepareDriveHostAccess(): Promise<ApiResult> {
-  return requestWorkspace(
-    "/api/v1/configuracion/google-workspace/drive-access",
-    {
-      method: "POST"
-    },
-    "Acceso de las salas preparado."
-  );
-}
-
 async function requestWorkspace(url: string, init: RequestInit, fallback: string): Promise<ApiResult> {
   try {
     const response = await fetch(url, {
