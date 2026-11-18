@@ -208,6 +208,21 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
     expect(tx.registroAsistenciaZoom.delete).not.toHaveBeenCalled();
   });
 
+  it("retira solo las filas obsoletas sin decisiones humanas cuando cambia la clave de una persona", async () => {
+    const { tx, repo } = crear({ existentes: ["email:a@x.uy"] });
+    await repo.guardarSesionesYResumen("o1", VERSION, [sesion("s1")], [resumen("id:p1")]);
+    expect(tx.registroAsistenciaZoom.deleteMany).toHaveBeenCalledWith({
+      where: {
+        claveAmbito: "evento:e1",
+        claveParticipante: { notIn: ["id:p1"] },
+        estadoConciliacion: "SIN_CONCILIAR",
+        invitadoReunionId: null,
+        esExterno: null,
+        notasOperador: null
+      }
+    });
+  });
+
   it("no guarda respuesta cruda: las filas solo llevan campos acotados", async () => {
     const { tx, repo } = crear();
     await repo.guardarSesionesYResumen(

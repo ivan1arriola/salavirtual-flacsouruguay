@@ -243,9 +243,10 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           select: { id: true, eventoProveedorId: true }
         });
         // Coincidencia inequívoca (UUID exacto, o reunión + horario único): se vincula sola; todo lo demás queda para vínculo manual.
-        await vincularAutomaticamenteSiInequivoco(tx, {
+        await vincularYCompletarEjecucion(tx, {
           ocurrenciaId: ocurrencia.id,
           uuid: ref.uuid,
+          cuentaZoomId: ref.cuentaZoomId,
           meetingId: ref.meetingId,
           inicioRealAt: ref.inicioRealAt,
           eventoProveedorId: ocurrencia.eventoProveedorId,
@@ -704,6 +705,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             archivo.nombreDestino
           );
         }
+        await trasladarAsistenciaAlEncuentro(tx, ocurrenciaId, eventoId);
         // Los avisos started/ended pudieron llegar antes del vínculo: se completan las marcas reales.
         await aplicarEjecucionZoomAInstancia(tx, {
           instanciaSalaId: evento.instanciaSalaId,
@@ -800,4 +802,65 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       });
     }
   };
+}
+
+/**
+ * Una ocurrencia sin vínculo consolida bajo `ocurrencia:<id>`. Al vincularla, esos registros (con sus
+ * conciliaciones y notas) pasan al ámbito del encuentro, salvo los que ya existan allí.
+ * shortcut: minutos y porcentaje se recalculan en la próxima sincronización de asistencia, no aquí.
+ */
+async function trasladarAsistenciaAlEncuentro(
+  tx: Prisma.TransactionClient,
+  ocurrenciaId: string,
+  eventoProveedorId: string
+): Promise<void> {
+  const destino = `evento:${eventoProveedorId}`;
+  const [origen, existentes] = await Promise.all([
+    tx.registroAsistenciaZoom.findMany({
+      where: { claveAmbito: `ocurrencia:${ocurrenciaId}` },
+      select: { id: true, claveParticipante: true }
+    }),
+    tx.registroAsistenciaZoom.findMany({
+      where: { claveAmbito: destino },
+      select: { claveParticipante: true }
+    })
+  ]);
+  const ocupadas = new Set(existentes.map((e) => e.claveParticipante));
+  const ids = origen.filter((r) => !ocupadas.has(r.claveParticipante)).map((r) => r.id);
+  if (ids.length > 0) {
+    await tx.registroAsistenciaZoom.updateMany({
+      where: { id: { in: ids } },
+      data: { claveAmbito: destino, eventoProveedorId }
+    });
+  }
+}
+
+/** Vínculo automático y, si vincula, las marcas reales que los avisos started/ended dejaron pendientes. */
+async function vincularYCompletarEjecucion(
+  tx: Prisma.TransactionClient,
+  entrada: Readonly<{
+    ocurrenciaId: string;
+    uuid: string;
+    cuentaZoomId: string;
+    meetingId: string;
+    inicioRealAt: Date;
+    eventoProveedorId: string | null;
+    ahora: Date;
+  }>
+): Promise<void> {
+  const vinculo = await vincularAutomaticamenteSiInequivoco(tx, entrada);
+  if (vinculo.tipo !== "VINCULADA") {
+    return;
+  }
+  const destino = await tx.eventoProveedor.findUnique({
+    where: { id: vinculo.eventoProveedorId },
+    select: { instanciaSalaId: true }
+  });
+  if (destino) {
+    await aplicarEjecucionZoomAInstancia(tx, {
+      instanciaSalaId: destino.instanciaSalaId,
+      cuentaZoomId: entrada.cuentaZoomId,
+      uuid: entrada.uuid
+    });
+  }
 }

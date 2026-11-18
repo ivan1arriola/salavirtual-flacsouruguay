@@ -82,10 +82,12 @@ export async function sincronizarAsistenciaZoomUseCase(
     return { tipo: "OK", estadoReporte: "VACIO" };
   }
 
-  // El reporte no informa roles. Solo se afirma lo comprobable: la sesión cuyo userId coincide con el del
-  // anfitrión de la ocurrencia es HOST. Los co-anfitriones no se infieren (quedan sin rol, como hasta ahora).
+  // El reporte no informa roles. Solo se afirma lo comprobable: la sesión cuyo id (user_id o id de participante,
+  // según lo que Zoom informe para cuentas registradas) coincide con el anfitrión de la ocurrencia es HOST.
+  // Ningún otro participante puede compartir ese id; los co-anfitriones no se infieren.
+  const idsAnfitrion = (s: SesionObservadaZoom) => [s.userId, s.participanteId];
   const nuevas = reporte.sesiones.map((s) =>
-    s.rol === null && s.userId !== null && s.userId === ocurrencia.anfitrionZoomId
+    s.rol === null && idsAnfitrion(s).includes(ocurrencia.anfitrionZoomId)
       ? { ...s, rol: "HOST" as const }
       : s
   );

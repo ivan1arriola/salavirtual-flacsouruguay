@@ -95,7 +95,9 @@ describe("procesar bandeja Zoom", () => {
 
 describe("asistencia al finalizar la reunión", () => {
   const disponible = { tipo: "OK", estadoReporte: "DISPONIBLE", participantes: 3, sesionesNuevas: 3 } as const;
-  const datosDelAviso = () => mocks.updateMany.mock.calls.at(-1)?.[0].data;
+  // Ignora el barrido de reclamos agotados: la actualización del aviso filtra por su claimHasta.
+  const datosDelAviso = () =>
+    mocks.updateMany.mock.calls.filter(([arg]) => arg.where?.id !== undefined).at(-1)?.[0].data;
 
   it("meeting.ended sincroniza la ocurrencia y marca el aviso procesado", async () => {
     const sync = vi.fn().mockResolvedValue(disponible);
@@ -134,9 +136,21 @@ describe("asistencia al finalizar la reunión", () => {
     expect(datosDelAviso()).toMatchObject({ estado: "FALLIDO" });
   });
 
-  it("un conflicto por reprogramación cuenta como procesado", async () => {
+  it("un conflicto por reprogramación se reintenta, no se da por procesado", async () => {
     const sync = vi.fn().mockResolvedValue({ tipo: "CONFLICTO", motivo: "REPROGRAMADO" });
-    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 1, errores: 0 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 0, errores: 1 });
+    expect(datosDelAviso()).toMatchObject({ estado: "ERROR", errorCodigo: "ReporteZoomConflicto" });
+  });
+
+  it("cierra como FALLIDO los avisos que agotaron intentos y quedaron sin reclamo vigente", async () => {
+    mocks.findMany.mockReset().mockResolvedValue([]);
+    await procesarWebhooksZoom("cuenta-1", 1);
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ intentos: { gte: 10 } }),
+        data: expect.objectContaining({ estado: "FALLIDO", errorCodigo: "INTENTOS_AGOTADOS" })
+      })
+    );
   });
 
   it("el error de la sincronización conserva su código", async () => {

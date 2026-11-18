@@ -169,6 +169,23 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
             registrosActualizados += count;
           }
 
+          // La clave de una persona puede cambiar (p. ej. de correo a id al llegar una conexión identificada):
+          // se retiran las filas que dejaron de calcularse, salvo las que ya tienen decisiones humanas.
+          // shortcut: una fila obsoleta con conciliación o notas se conserva; unirla a la nueva requiere revisión manual.
+          // Sin ningún participante calculado no se retira nada: un lote vacío nunca borra lo guardado.
+          if (unicos.length > 0) {
+            await tx.registroAsistenciaZoom.deleteMany({
+              where: {
+                claveAmbito,
+                claveParticipante: { notIn: unicos.map((r) => r.claveParticipante) },
+                estadoConciliacion: "SIN_CONCILIAR",
+                invitadoReunionId: null,
+                esExterno: null,
+                notasOperador: null
+              }
+            });
+          }
+
           return { tipo: "GUARDADO" as const, sesionesNuevas, registrosCreados, registrosActualizados };
         });
       } catch (error) {

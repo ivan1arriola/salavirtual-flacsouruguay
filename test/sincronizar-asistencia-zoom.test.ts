@@ -188,6 +188,15 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     ]);
   });
 
+  it("el anfitrión también se reconoce cuando Zoom lo informa en el id de participante", async () => {
+    const porId = { ...ses("c1", "10:00", "10:30", "p1"), userId: "efimero", participanteId: "host-1" };
+    const otra = { ...ses("c2", "10:05", "10:25", "p2"), userId: "efimero-2", participanteId: "p-otro" };
+    const { repo, ejecutar } = crear({ reporte: { estado: "DISPONIBLE", sesiones: [porId, otra] } });
+    await ejecutar();
+    const guardadas = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[])[2] as SesionObservadaZoom[];
+    expect(guardadas.map((x) => x.rol)).toEqual(["HOST", null]);
+  });
+
   it("ocurrencia inexistente: ERROR sin llamar a Zoom", async () => {
     const { provider, ejecutar } = crear({ ocurrencia: null });
     expect(await ejecutar()).toEqual({ tipo: "ERROR", codigo: "OCURRENCIA_NO_ENCONTRADA" });

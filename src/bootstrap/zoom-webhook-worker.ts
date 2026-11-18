@@ -14,6 +14,15 @@ function proximoIntento(ahora: Date, intentos: number): Date {
 
 /** Reclamo atómico: varios workers pueden compartir la misma bandeja sin ejecutar un aviso dos veces. */
 async function reclamar(ahora: Date) {
+  // Un proceso que cae en el último intento deja la fila sin elegibilidad y sin estado final: se cierra aquí.
+  await db.eventoWebhookZoom.updateMany({
+    where: {
+      estado: { in: ["RECIBIDO", "ERROR"] },
+      intentos: { gte: MAX_INTENTOS },
+      OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }]
+    },
+    data: { estado: "FALLIDO", claimHasta: null, errorCodigo: "INTENTOS_AGOTADOS" }
+  });
   const elegibles = await db.eventoWebhookZoom.findMany({
     where: {
       estado: { in: ["RECIBIDO", "ERROR"] },
@@ -125,6 +134,10 @@ async function sincronizarAsistenciaDelAviso(
   }
   if (resultado.tipo === "ERROR") {
     throw falloReintentable(resultado.codigo);
+  }
+  // Reprogramación concurrente: cada intento recarga la ocurrencia y su horario, así que reintentar es seguro.
+  if (resultado.tipo === "CONFLICTO") {
+    throw falloReintentable("ReporteZoomConflicto");
   }
 }
 

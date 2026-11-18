@@ -4,9 +4,15 @@ import { vincularAutomaticamenteSiInequivoco } from "../src/modules/archivos/inf
 
 type EventoCand = { id: string; instancia?: { inicioProgramadoAt: Date; finProgramadoAt: Date } };
 /** `eventos` = respuesta del 1.º findMany (UUID); `luego` = respuesta del 2.º (reunión + horario). */
-function txFalso(eventos: EventoCand[], actualizados = 1, luego: EventoCand[] = []) {
+function txFalso(
+  eventos: EventoCand[],
+  actualizados = 1,
+  luego: EventoCand[] = [],
+  anticipados: EventoCand[] = []
+) {
   const findMany = vi.fn(async (_args?: unknown) => eventos);
-  findMany.mockResolvedValueOnce(eventos).mockResolvedValue(luego);
+  // 1.ª: UUID; 2.ª: encuentros que contienen el inicio; 3.ª: inicio anticipado.
+  findMany.mockResolvedValueOnce(eventos).mockResolvedValueOnce(luego).mockResolvedValue(anticipados);
   return {
     eventoProveedor: { findMany },
     ocurrenciaArchivoZoom: { updateMany: vi.fn(async () => ({ count: actualizados })) },
@@ -96,19 +102,18 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
   it("consulta por número de reunión, proveedores Zoom y horario que abarque el inicio real (con 45 min de tolerancia previa)", async () => {
     const tx = txFalso([], 1, []);
     await correr(tx);
-    const arg = tx.eventoProveedor.findMany.mock.calls[1]![0] as {
-      where: Record<string, unknown>;
-      take: number;
-    };
-    expect(arg.where).toMatchObject({
+    const consulta = (n: number) =>
+      tx.eventoProveedor.findMany.mock.calls[n]![0] as { where: Record<string, unknown>; take: number };
+    expect(consulta(1).where).toMatchObject({
       externalEventId: "888",
       proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } },
-      instancia: {
-        inicioProgramadoAt: { lte: new Date(REAL.getTime() + 45 * MIN) },
-        finProgramadoAt: { gte: REAL }
-      }
+      instancia: { inicioProgramadoAt: { lte: REAL }, finProgramadoAt: { gte: REAL } }
     });
-    expect(arg.take).toBe(5);
+    // Con take 2 basta para detectar ambigüedad sin que un límite oculte a un segundo candidato.
+    expect(consulta(1).take).toBe(2);
+    expect(consulta(2).where).toMatchObject({
+      instancia: { inicioProgramadoAt: { gt: REAL, lte: new Date(REAL.getTime() + 45 * MIN) } }
+    });
   });
 
   it("dos encuentros que contienen el inicio real son ambiguos: no se vincula", async () => {
@@ -134,11 +139,17 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
   });
 
   it("un encuentro que contiene el inicio gana sobre otro que solo está en tolerancia", async () => {
-    const tx = txFalso([], 1, [
-      { id: "contiene", instancia: inst(-5, 55) },
-      { id: "temprano", instancia: inst(30, 90) }
-    ]);
+    const tx = txFalso([], 1, [{ id: "contiene" }], [{ id: "temprano" }]);
     expect(await correr(tx)).toEqual({ tipo: "VINCULADA", eventoProveedorId: "contiene" });
+    expect(tx.eventoProveedor.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("sin encuentro que lo contenga, un único inicio anticipado se vincula y dos son ambiguos", async () => {
+    expect(await correr(txFalso([], 1, [], [{ id: "temprano" }]))).toEqual({
+      tipo: "VINCULADA",
+      eventoProveedorId: "temprano"
+    });
+    expect(await correr(txFalso([], 1, [], [{ id: "a" }, { id: "b" }]))).toEqual({ tipo: "AMBIGUA" });
   });
 
   it("si el UUID ya fue ambiguo no se intenta adivinar por horario", async () => {

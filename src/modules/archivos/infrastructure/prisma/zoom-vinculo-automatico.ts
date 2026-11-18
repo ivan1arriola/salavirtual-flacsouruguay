@@ -10,7 +10,6 @@ type CriterioVinculo = "UUID_EXACTO" | "REUNION_Y_HORARIO";
 
 /** Una reunión puede empezar hasta 45 minutos antes de su horario programado. */
 const TOLERANCIA_INICIO_ANTICIPADO_MS = 45 * 60_000;
-const MAXIMO_CANDIDATOS = 5;
 const TIPOS_ZOOM: TipoProveedor[] = ["ZOOM", "ZOOM_HISTORICO"];
 
 /**
@@ -50,25 +49,37 @@ export async function vincularAutomaticamenteSiInequivoco(
   }
 
   const real = entrada.inicioRealAt;
-  const candidatos = await tx.eventoProveedor.findMany({
+  const base = { externalEventId: entrada.meetingId, proveedor: { tipo: { in: TIPOS_ZOOM } } };
+  const seleccion = { id: true } as const;
+  // Primero los encuentros cuyo horario contiene el inicio: take 2 basta para detectar la ambigüedad.
+  const contienen = await tx.eventoProveedor.findMany({
     where: {
-      externalEventId: entrada.meetingId,
-      proveedor: { tipo: { in: TIPOS_ZOOM } },
-      instancia: {
-        inicioProgramadoAt: { lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS) },
-        finProgramadoAt: { gte: real }
-      }
+      ...base,
+      instancia: { inicioProgramadoAt: { lte: real }, finProgramadoAt: { gte: real } }
     },
-    select: { id: true, instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } },
+    select: seleccion,
     orderBy: { id: "asc" },
-    take: MAXIMO_CANDIDATOS
+    take: 2
   });
-  if (candidatos.length === 0) {
+  // Solo si ninguno lo contiene se admite un inicio anticipado (hasta 45 min antes del horario).
+  const elegidos =
+    contienen.length > 0
+      ? contienen
+      : await tx.eventoProveedor.findMany({
+          where: {
+            ...base,
+            instancia: {
+              inicioProgramadoAt: { gt: real, lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS) },
+              finProgramadoAt: { gte: real }
+            }
+          },
+          select: seleccion,
+          orderBy: { id: "asc" },
+          take: 2
+        });
+  if (elegidos.length === 0) {
     return { tipo: "SIN_COINCIDENCIA" };
   }
-
-  const contienen = candidatos.filter((c) => c.instancia.inicioProgramadoAt.getTime() <= real.getTime());
-  const elegidos = contienen.length > 0 ? contienen : candidatos;
   if (elegidos.length > 1) {
     return { tipo: "AMBIGUA" };
   }
