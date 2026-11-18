@@ -38,6 +38,12 @@ type TokenCacheEntry = {
 /** Espera máxima por llamada a Zoom: sin esto una caída de zoom.us deja colgada la solicitud. */
 const TIEMPO_LIMITE_ZOOM_MS = 12_000;
 
+/** El motivo de Zoom queda en el registro del servidor; el mensaje que se guarda y muestra lleva solo el estado. */
+async function errorZoom(response: Response, accion: string): Promise<Error> {
+  console.error("Zoom API", accion, response.status, await response.text().catch(() => ""));
+  return new Error(`Zoom API error al ${accion} (${response.status}): ${response.statusText}`);
+}
+
 const tokenCache = new Map<string, TokenCacheEntry>();
 
 const renovacionesEnCurso = new Map<string, Promise<string>>();
@@ -156,8 +162,9 @@ export async function crearReunionZoomHttp(
   input: ZoomCreateMeetingInput
 ): Promise<ZoomMeetingResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
+  // shortcut: sin timeout a propósito. Si abortáramos tras crearse la reunión, el reintento la duplicaría
+  // (esta ruta no busca por marca como la recurrente); upgrade: clave de idempotencia o búsqueda previa.
   const response = await fetch(url, {
-    signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS),
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -183,7 +190,7 @@ export async function crearReunionZoomHttp(
   });
 
   if (!response.ok) {
-    throw new Error(`Zoom API error al crear reunión (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "crear reunión");
   }
 
   const data = (await response.json()) as {
@@ -236,7 +243,7 @@ export async function actualizarReunionZoomHttp(
   });
 
   if (!response.ok && response.status !== 204) {
-    throw new Error(`Zoom API error al actualizar reunión (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "actualizar reunión");
   }
 }
 
@@ -247,7 +254,7 @@ export async function obtenerReunionZoomHttp(token: string, meetingId: string): 
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!response.ok) {
-    throw new Error(`Zoom API error al obtener reunión (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "obtener reunión");
   }
   const data = (await response.json()) as {
     id: string | number;
@@ -277,7 +284,7 @@ export async function eliminarReunionZoomHttp(token: string, meetingId: string):
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
-    throw new Error(`Zoom API error al eliminar reunión (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "eliminar reunión");
   }
 }
 
@@ -356,9 +363,7 @@ export async function crearReunionZoomRecurrenteHttp(
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Zoom API error al crear reunión recurrente (${response.status}): ${response.statusText}`
-    );
+    throw await errorZoom(response, "crear reunión recurrente");
   }
 
   const data = (await response.json()) as {
@@ -408,7 +413,7 @@ export async function eliminarOcurrenciaZoomHttp(
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
-    throw new Error(`Zoom API error al eliminar ocurrencia (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "eliminar ocurrencia");
   }
 }
 
@@ -440,7 +445,7 @@ export async function actualizarOcurrenciaZoomHttp(
   });
 
   if (!response.ok && response.status !== 204) {
-    throw new Error(`Zoom API error al actualizar ocurrencia (${response.status}): ${response.statusText}`);
+    throw await errorZoom(response, "actualizar ocurrencia");
   }
 }
 
@@ -461,7 +466,7 @@ export async function buscarReunionZoomPorMarcaHttp(
       signal: AbortSignal.timeout(TIEMPO_LIMITE_ZOOM_MS)
     });
     if (!response.ok) {
-      throw new Error(`Zoom API error al listar reuniones (${response.status}): ${response.statusText}`);
+      throw await errorZoom(response, "listar reuniones");
     }
     const data = (await response.json()) as {
       meetings?: readonly { id: number | string; join_url?: string; agenda?: string }[];
