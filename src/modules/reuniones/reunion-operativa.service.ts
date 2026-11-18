@@ -247,7 +247,7 @@ export async function obtenerReunionOperativa(
         }
       },
       eventosProveedor: {
-        where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
+        where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM", "ZOOM_HISTORICO"] } } },
         include: { proveedor: true, cuentaProveedor: true }
       },
       cohosts: {
@@ -289,7 +289,10 @@ export async function obtenerReunionOperativa(
     meeting.proveedorActivoTipo === "ZOOM"
       ? null
       : (meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET") ?? null);
-  const eventoZoom = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM") ?? null;
+  const eventoZoom =
+    meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM") ??
+    meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM_HISTORICO") ??
+    null;
   const proveedorActivo =
     meeting.proveedorActivoTipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const);
   const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
@@ -328,6 +331,12 @@ export async function obtenerReunionOperativa(
     : "DO_NOT_GENERATE";
   let conferenciaIdActual: string | null = null;
   const indiceAuditados = crearIndiceUnicoPorNombre<{ email: string; externo: boolean | null }>();
+
+  if (meeting.proveedorActivoTipo === "ZOOM") {
+    // Marcas oficiales de ejecución que dejan los webhooks de Zoom (meeting.started / meeting.ended).
+    inicioRealAt = meeting.inicioRealAt;
+    finRealAt = meeting.finRealAt;
+  }
 
   if (evento?.codigoReunion && evento.cuentaProveedor?.emailOrganizador) {
     const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion);

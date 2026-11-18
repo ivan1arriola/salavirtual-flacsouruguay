@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findUnique: vi.fn(),
   updateInstance: vi.fn(),
-  vincular: vi.fn()
+  vincular: vi.fn(),
+  ejecucion: vi.fn()
+}));
+vi.mock("../src/modules/archivos/infrastructure/prisma/zoom-ejecucion-instancia", () => ({
+  aplicarEjecucionZoomAInstancia: mocks.ejecucion
 }));
 vi.mock("../src/lib/db", () => ({
   db: {
@@ -62,12 +66,11 @@ describe("procesar bandeja Zoom", () => {
       })
     );
     expect(mocks.upsert.mock.calls[0]?.[0].create).not.toHaveProperty("estadoAsistencia");
-    expect(mocks.updateInstance).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "instancia-1", estado: { in: ["PROGRAMADA", "EN_CURSO"] } },
-        data: expect.objectContaining({ estado: "FINALIZADA" })
-      })
-    );
+    expect(mocks.ejecucion).toHaveBeenCalledWith(expect.anything(), {
+      instanciaSalaId: "instancia-1",
+      cuentaZoomId: "cuenta-1",
+      uuid: "uuid-1"
+    });
   });
 
   it("no atribuye un aviso ambiguo y adelanta el inventario si hay grabación", async () => {

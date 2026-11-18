@@ -1,6 +1,7 @@
 // Consumido por el proceso Node del worker, sin dependencia del runtime de Next.
 import { db } from "../lib/db";
 import type { ResultadoAsistenciaZoom } from "../modules/archivos/application/sincronizar-asistencia-zoom.use-case";
+import { aplicarEjecucionZoomAInstancia } from "../modules/archivos/infrastructure/prisma/zoom-ejecucion-instancia";
 import { vincularAutomaticamenteSiInequivoco } from "../modules/archivos/infrastructure/prisma/zoom-vinculo-automatico";
 
 const MAX_INTENTOS = 10;
@@ -94,16 +95,11 @@ async function aplicarAviso(
     if (!evento) {
       return ocurrencia.id;
     }
-    if (aviso.tipo === "meeting.started") {
-      await tx.instanciaSala.updateMany({
-        where: { id: evento.instanciaSalaId, estado: "PROGRAMADA" },
-        data: { estado: "EN_CURSO", inicioRealAt: aviso.inicioRealAt }
-      });
-    }
-    if (aviso.tipo === "meeting.ended") {
-      await tx.instanciaSala.updateMany({
-        where: { id: evento.instanciaSalaId, estado: { in: ["PROGRAMADA", "EN_CURSO"] } },
-        data: { estado: "FINALIZADA", inicioRealAt: aviso.inicioRealAt, finRealAt: aviso.finRealAt }
+    if (aviso.tipo === "meeting.started" || aviso.tipo === "meeting.ended") {
+      await aplicarEjecucionZoomAInstancia(tx, {
+        instanciaSalaId: evento.instanciaSalaId,
+        cuentaZoomId: aviso.cuentaZoomId,
+        uuid: aviso.uuid
       });
     }
     return ocurrencia.id;

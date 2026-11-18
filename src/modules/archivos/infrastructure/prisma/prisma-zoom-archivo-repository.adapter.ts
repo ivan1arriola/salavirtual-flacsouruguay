@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { aplicarEjecucionZoomAInstancia } from "./zoom-ejecucion-instancia";
 import { vincularAutomaticamenteSiInequivoco } from "./zoom-vinculo-automatico";
 import {
   asignarNombresDestinoZoom,
@@ -669,7 +670,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         }
         const evento = await tx.eventoProveedor.findUnique({
           where: { id: eventoId },
-          select: { proveedor: { select: { tipo: true } } }
+          select: { instanciaSalaId: true, proveedor: { select: { tipo: true } } }
         });
         if (!evento) {
           return { tipo: "NO_ENCONTRADA", recurso: "EVENTO" };
@@ -703,6 +704,12 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             archivo.nombreDestino
           );
         }
+        // Los avisos started/ended pudieron llegar antes del vínculo: se completan las marcas reales.
+        await aplicarEjecucionZoomAInstancia(tx, {
+          instanciaSalaId: evento.instanciaSalaId,
+          cuentaZoomId: ocurrencia.cuentaZoomId,
+          uuid: ocurrencia.uuid
+        });
         await tx.auditoria.create({
           data: {
             actorUsuarioId: actor?.id ?? null,
