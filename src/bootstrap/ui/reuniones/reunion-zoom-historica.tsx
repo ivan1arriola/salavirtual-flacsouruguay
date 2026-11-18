@@ -120,6 +120,7 @@ function SeccionResumen({
               : "Todavía no se puede asociar actividad de Zoom a este encuentro."}
           </p>
         ) : (
+          <>
           <ol className={styles.timeline}>
             {actividad.slice(0, 7).map((a) => (
               <li key={`${a.tipo}-${a.desde.toISOString()}`}>
@@ -165,6 +166,7 @@ function SeccionResumen({
               </li>
             ))}</ol>
           ) : null}
+          </>
         )}
       </section>
       <details className={styles.advanced}>
