@@ -167,6 +167,65 @@ describe("recepción durable", () => {
     expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("privado");
   });
 
+  it("persiste eventos en vivo por ejecución, sin datos personales, idempotente y fuera de orden", async () => {
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
+    crearAdicional.mockResolvedValue({ count: 0 });
+    const evento = (event: string, uuid: string, ts: number, extra: object = {}) =>
+      JSON.stringify({
+        event,
+        event_ts: ts,
+        payload: {
+          account_id: "cuenta",
+          object: {
+            id: 777,
+            uuid,
+            join_url: "https://secret.example/j",
+            participant: { participant_uuid: "p-1", user_name: "Ana Pérez", email: "ana@x.uy", public_ip: "ip-privada" },
+            ...extra
+          }
+        }
+      });
+    // Serie: mismo Meeting ID, UUID distintos; llegan desordenados y uno repetido.
+    const cuerpos = [
+      evento("meeting.participant_left", "uuid-B", 3000),
+      evento("meeting.participant_joined", "uuid-A", 1000),
+      evento("meeting.participant_joined", "uuid-A", 1000),
+      evento("meeting.alert", "uuid-A", 2000, { issues: ["Unstable audio quality"] }),
+      evento("recording.started", "uuid-B", 2500)
+    ];
+    for (const c of cuerpos) {
+      expect((await POST(peticion(c))).status).toBe(204);
+    }
+    const filas = crearAdicional.mock.calls.map(([arg]) => arg.data[0]);
+    expect(filas.every((f) => f.recursoId === "777")).toBe(true);
+    expect(filas.map((f) => f.uuid)).toEqual(["uuid-B", "uuid-A", "uuid-A", "uuid-A", "uuid-B"]);
+    expect(filas[1].huella).toBe(filas[2].huella); // duplicado: misma huella, lo absorbe skipDuplicates
+    expect(filas[1].huella).not.toBe(filas[0].huella);
+    expect(filas[1].participanteId).toBe("p-1");
+    expect(filas[3].detalle).toBe("Unstable audio quality");
+    const guardado = JSON.stringify(filas);
+    for (const prohibido of ["Ana", "ana@x.uy", "ip-privada", "secret.example"]) {
+      expect(guardado).not.toContain(prohibido);
+    }
+    expect(crearAdicional.mock.calls.every(([a]) => a.skipDuplicates === true)).toBe(true);
+  });
+
+  it("acepta eventos en vivo sin reunión asociada y rechaza firma inválida o falla de persistencia", async () => {
+    buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
+    crearAdicional.mockResolvedValue({ count: 1 });
+    const huerfano = JSON.stringify({
+      event: "meeting.sharing_started",
+      event_ts: 5,
+      payload: { account_id: "cuenta", object: { id: 9 } }
+    });
+    expect((await POST(peticion(huerfano))).status).toBe(204);
+    expect(crearAdicional.mock.calls[0][0].data[0]).toMatchObject({ uuid: null, participanteId: null });
+    expect((await POST(peticion(huerfano, false))).status).toBe(401);
+    expect(crearAdicional).toHaveBeenCalledTimes(1);
+    crearAdicional.mockRejectedValue(new Error("DB caída"));
+    expect((await POST(peticion(huerfano))).status).toBe(503);
+  });
+
   it("pide reintentar eventos adicionales si no se guardan o faltan datos esenciales", async () => {
     buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
     crearAdicional.mockRejectedValue(new Error("DB caída"));

@@ -16,13 +16,29 @@ y la sincronización de asistencia ya existentes. La URL no requiere sesión de 
 4. Suscribir `meeting.started`, `meeting.ended`, `recording.completed` y, si la licencia permite
    transcripciones de grabación, `recording.transcript_completed`. Zoom exige los scopes de lectura de
    reuniones y de cloud recording correspondientes a cada evento; agregarlos en la app antes de guardar.
-5. Confirmar en la base que los eventos pasan de `RECIBIDO` a `PROCESADO` y que la ocurrencia aparece
+5. Opcional, para la cronología del encuentro: suscribir además `meeting.participant_joined`,
+   `meeting.participant_left`, `meeting.participant_joined_waiting_room`,
+   `meeting.participant_left_waiting_room`, `meeting.participant_admitted`,
+   `meeting.participant_put_in_waiting_room`, `recording.started`, `recording.stopped`,
+   `recording.paused`, `recording.resumed`, `meeting.sharing_started`, `meeting.sharing_ended` y
+   `meeting.alert`. Scopes de la app (según la referencia oficial de Meetings Webhooks): los eventos
+   `meeting.*` requieren `meeting:read:admin` (o `meeting:read`), y los `recording.started/stopped/paused/resumed`
+   requieren `recording:read:admin` (o `recording:read`). En Zoom, los eventos de participante no se
+   envían si la opción de la suscripción para ese evento no está activada; verificarlo en la consola.
+6. Confirmar en la base que los eventos pasan de `RECIBIDO` a `PROCESADO` y que la ocurrencia aparece
    vinculada a la clase correcta. Si hay dos clases candidatas, la vinculación queda pendiente de revisión.
 
 Los eventos de reunión crean una ocurrencia por UUID, incluso si no hubo grabación. `meeting.ended`
 permite que el worker consulte después el reporte de participantes. Los eventos de grabación adelantan
 el inventario fresco por UUID; el cuerpo del webhook **no** se usa como fuente de archivos ni para
 descargar. El barrido periódico sigue cubriendo eventos que Zoom no entregue.
+
+Los eventos en vivo del paso 5 se guardan en `EventoWebhookZoomAdicional`, asociados por cuenta Zoom +
+UUID de ejecución (nunca solo por Meeting ID: una serie comparte ese número). Se persiste solo el tipo,
+la hora, el Meeting ID, el UUID, un id opaco de participante (`participant_uuid`) y, en `meeting.alert`,
+los códigos de problema. Nombre, correo, IP y URLs no se leen ni se guardan; no hacen falta para la
+cronología. La huella única del cuerpo firmado hace idempotentes los reintentos; los eventos fuera de
+orden o sin reunión conocida se guardan igual y la cronología ordena por la hora del aviso.
 
 El receptor solo guarda metadatos de reunión y una huella del cuerpo firmado. Descarta contraseñas,
 URLs de descarga, tokens y datos de participantes. Responde 503 si no hay secreto o no puede confirmar

@@ -8,50 +8,50 @@ datasource db {
 }
 
 model Usuario {
-  id                                      String                           @id
-  legacyZoomUserId                        String?                          @unique
-  nombres                                 String
-  apellidos                               String?
-  telefono                                String?
-  emailPrincipal                          String?                          @unique
-  emailVerificadoAt                       DateTime?
-  imagenUrl                               String?
-  passwordHash                            String?
-  passwordInicialCifrada                  String?                          @db.Text
-  debeCambiarPassword                     Boolean                          @default(false)
-  rol                                     RolUsuario                       @default(DOCENTE)
-  activo                                  Boolean                          @default(true)
-  ultimoAccesoAt                          DateTime?
-  ultimoAccesoIp                          String?
-  ultimoAccesoAgente                      String?
-  ultimoProveedor                         String?
-  fusionadoEnId                           String?
-  fusionadoAt                             DateTime?
-  createdAt                               DateTime                         @default(now())
-  updatedAt                               DateTime                         @updatedAt
-  fusionadoEn                             Usuario?                         @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
-  usuariosFusionados                      Usuario[]                        @relation("UsuarioFusionDestino")
-  solicitudesCreadas                      SolicitudSala[]                  @relation("SolicitudCreadaPor")
-  auditorias                              Auditoria[]                      @relation("AuditoriaActor")
-  emailAliases                            UsuarioEmailAlias[]
-  cuentasGoogle                           CuentaGoogleFlacso[]
-  sesiones                                SesionUsuario[]
-  authenticators                          Authenticator[]
-  fusionesComoOrigen                      UsuarioFusion[]                  @relation("FusionUsuarioOrigen")
-  fusionesComoDestino                     UsuarioFusion[]                  @relation("FusionUsuarioDestino")
-  fusionesEjecutadas                      UsuarioFusion[]                  @relation("FusionEjecutadaPor")
-  configuracionesGoogleActualizadas       ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
-  configuracionesAsistenciaActualizadas   ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
-  configuracionesCorreoSesActualizadas    ConfiguracionCorreoSes[]        @relation("ConfiguracionCorreoSesActualizadaPor")
-  configuracionesZoomActualizadas         ConfiguracionZoom[]              @relation("ConfiguracionZoomActualizadaPor")
-  docente                                 Docente?
-  asistenteTecnico                        AsistenteTecnico?
-  notificaciones                          Notificacion[]
-  recordatoriosReunion                    RecordatorioReunion[]
-  preferenciasNotificacion                PreferenciaNotificacion[]
-  solicitudesAccesoGoogleAprobadas        SolicitudAccesoGoogle[]         @relation("SolicitudesAccesoGoogleAprobadas")
-  ocurrenciasZoomVinculadas               OcurrenciaArchivoZoom[]         @relation("OcurrenciaArchivoZoomVinculadaPor")
-  barridosArchivoZoom                     BarridoArchivoZoom[]            @relation("BarridoArchivoZoomSolicitante")
+  id                                    String                           @id
+  legacyZoomUserId                      String?                          @unique
+  nombres                               String
+  apellidos                             String?
+  telefono                              String?
+  emailPrincipal                        String?                          @unique
+  emailVerificadoAt                     DateTime?
+  imagenUrl                             String?
+  passwordHash                          String?
+  passwordInicialCifrada                String?                          @db.Text
+  debeCambiarPassword                   Boolean                          @default(false)
+  rol                                   RolUsuario                       @default(DOCENTE)
+  activo                                Boolean                          @default(true)
+  ultimoAccesoAt                        DateTime?
+  ultimoAccesoIp                        String?
+  ultimoAccesoAgente                    String?
+  ultimoProveedor                       String?
+  fusionadoEnId                         String?
+  fusionadoAt                           DateTime?
+  createdAt                             DateTime                         @default(now())
+  updatedAt                             DateTime                         @updatedAt
+  fusionadoEn                           Usuario?                         @relation("UsuarioFusionDestino", fields: [fusionadoEnId], references: [id], onDelete: Restrict)
+  usuariosFusionados                    Usuario[]                        @relation("UsuarioFusionDestino")
+  solicitudesCreadas                    SolicitudSala[]                  @relation("SolicitudCreadaPor")
+  auditorias                            Auditoria[]                      @relation("AuditoriaActor")
+  emailAliases                          UsuarioEmailAlias[]
+  cuentasGoogle                         CuentaGoogleFlacso[]
+  sesiones                              SesionUsuario[]
+  authenticators                        Authenticator[]
+  fusionesComoOrigen                    UsuarioFusion[]                  @relation("FusionUsuarioOrigen")
+  fusionesComoDestino                   UsuarioFusion[]                  @relation("FusionUsuarioDestino")
+  fusionesEjecutadas                    UsuarioFusion[]                  @relation("FusionEjecutadaPor")
+  configuracionesGoogleActualizadas     ConfiguracionGoogleWorkspace[]   @relation("ConfiguracionGoogleActualizadaPor")
+  configuracionesAsistenciaActualizadas ConfiguracionAsistenciaTecnica[] @relation("ConfiguracionAsistenciaActualizadaPor")
+  configuracionesCorreoSesActualizadas  ConfiguracionCorreoSes[]         @relation("ConfiguracionCorreoSesActualizadaPor")
+  configuracionesZoomActualizadas       ConfiguracionZoom[]              @relation("ConfiguracionZoomActualizadaPor")
+  docente                               Docente?
+  asistenteTecnico                      AsistenteTecnico?
+  notificaciones                        Notificacion[]
+  recordatoriosReunion                  RecordatorioReunion[]
+  preferenciasNotificacion              PreferenciaNotificacion[]
+  solicitudesAccesoGoogleAprobadas      SolicitudAccesoGoogle[]          @relation("SolicitudesAccesoGoogleAprobadas")
+  ocurrenciasZoomVinculadas             OcurrenciaArchivoZoom[]          @relation("OcurrenciaArchivoZoomVinculadaPor")
+  barridosArchivoZoom                   BarridoArchivoZoom[]             @relation("BarridoArchivoZoomSolicitante")
 
   @@index([apellidos, nombres])
   @@index([rol, activo])
@@ -103,46 +103,46 @@ model ConfiguracionGoogleWorkspace {
 }
 
 model ConfiguracionZoom {
-  id                  String   @id @default("principal")
-  accountId           String?
-  clientId            String?
-  clientSecretCifrado String?  @db.Text
-  webhookSecretCifrado String? @db.Text
-  activa              Boolean  @default(true)
-  grupoId             String?
-  grupoNombre         String?
+  id                            String    @id @default("principal")
+  accountId                     String?
+  clientId                      String?
+  clientSecretCifrado           String?   @db.Text
+  webhookSecretCifrado          String?   @db.Text
+  activa                        Boolean   @default(true)
+  grupoId                       String?
+  grupoNombre                   String?
   ultimaSincronizacionAt        DateTime?
-  ultimaSincronizacionResultado String?  @db.Text
+  ultimaSincronizacionResultado String?   @db.Text
   sincronizandoDesdeAt          DateTime?
-  actualizadaPorId    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  actualizadaPor      Usuario? @relation("ConfiguracionZoomActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: SetNull)
+  actualizadaPorId              String?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
+  actualizadaPor                Usuario?  @relation("ConfiguracionZoomActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: SetNull)
 
   @@index([actualizadaPorId, updatedAt])
 }
 
 model ConfiguracionAsistenciaTecnica {
-  id                          String   @id @default("principal")
-  correosCopiaReporteMensual  String[] @default([])
-  actualizadaPorId            String
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
-  actualizadaPor              Usuario  @relation("ConfiguracionAsistenciaActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+  id                         String   @id @default("principal")
+  correosCopiaReporteMensual String[] @default([])
+  actualizadaPorId           String
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  actualizadaPor             Usuario  @relation("ConfiguracionAsistenciaActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
 
   @@index([actualizadaPorId, updatedAt])
 }
 
 model ConfiguracionCorreoSes {
-  id             String   @id @default("principal")
-  awsRegion      String?
-  fromEmail      String?
-  replyToEmail   String?
-  activa         Boolean  @default(false)
+  id               String   @id @default("principal")
+  awsRegion        String?
+  fromEmail        String?
+  replyToEmail     String?
+  activa           Boolean  @default(false)
   actualizadaPorId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  actualizadaPor Usuario  @relation("ConfiguracionCorreoSesActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  actualizadaPor   Usuario  @relation("ConfiguracionCorreoSesActualizadaPor", fields: [actualizadaPorId], references: [id], onDelete: Restrict)
 
   @@index([actualizadaPorId, updatedAt])
 }
@@ -195,85 +195,85 @@ model DocentePrograma {
 
 /// Persona habilitada para realizar asistencias tecnicas en reuniones.
 model AsistenteTecnico {
-  id                             String                            @id @default(cuid())
-  usuarioId                      String                            @unique
-  slug                           String                            @unique
+  id                             String                           @id @default(cuid())
+  usuarioId                      String                           @unique
+  slug                           String                           @unique
   aliasOperativo                 String?
-  disponibleGeneral              Boolean                           @default(true)
-  cesadoHastaProximoInicioSesion Boolean                           @default(false)
+  disponibleGeneral              Boolean                          @default(true)
+  cesadoHastaProximoInicioSesion Boolean                          @default(false)
   datosPago                      String?
-  usuario                        Usuario                           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario                        Usuario                          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   disponibilidades               DisponibilidadAsistenteTecnico[]
   intereses                      PostulacionAsistenciaTecnica[]
   asignaciones                   AsignacionAsistenciaTecnica[]
   liquidaciones                  LiquidacionAsistenciaTecnica[]
   reportesMensuales              EnvioReporteMensualAsistencia[]
-  registrosMonitoreoRetroactivo   RegistroMonitoreoRetroactivo[]
+  registrosMonitoreoRetroactivo  RegistroMonitoreoRetroactivo[]
   calendarioZoom                 CalendarioZoomAsistente?
 }
 
 model CalendarioZoomAsistente {
   asistenteTecnicoId String           @id
-  calendarId        String
-  email             String
-  tokenCifrado      String           @db.Text
-  ultimoIntentoAt   DateTime?
-  error             String?
+  calendarId         String
+  email              String
+  tokenCifrado       String           @db.Text
+  ultimoIntentoAt    DateTime?
+  error              String?
   asistenteTecnico   AsistenteTecnico @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Cascade)
 }
 
 model EnvioReporteMensualAsistencia {
-  id                 String                           @id @default(cuid())
+  id                 String                    @id @default(cuid())
   asistenteTecnicoId String
   periodo            String
-  estado             EstadoEnvioReporteMensual       @default(PENDIENTE)
+  estado             EstadoEnvioReporteMensual @default(PENDIENTE)
   minutosTotal       Int
   minutosVirtuales   Int
   minutosHibridos    Int
   reuniones          Int
   destinatario       String
-  copias             String[]                         @default([])
-  intentos           Int                              @default(1)
+  copias             String[]                  @default([])
+  intentos           Int                       @default(1)
   ultimoError        String?
   enviadoAt          DateTime?
-  createdAt          DateTime                         @default(now())
-  updatedAt          DateTime                         @updatedAt
-  asistenteTecnico   AsistenteTecnico                 @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  asistenteTecnico   AsistenteTecnico          @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
 
   @@unique([asistenteTecnicoId, periodo])
   @@index([periodo, estado])
 }
 
 model ProveedorReunion {
-  id        String            @id @default(cuid())
-  tipo      TipoProveedor     @unique
-  nombre    String
-  operativo Boolean           @default(false)
-  historico Boolean           @default(false)
-  cuentas   CuentaProveedor[]
-  eventos   EventoProveedor[]
+  id                   String             @id @default(cuid())
+  tipo                 TipoProveedor      @unique
+  nombre               String
+  operativo            Boolean            @default(false)
+  historico            Boolean            @default(false)
+  cuentas              CuentaProveedor[]
+  eventos              EventoProveedor[]
   reunionesCompartidas ReunionProveedor[]
 }
 
 model CuentaProveedor {
-  id                 String            @id @default(cuid())
-  legacyZoomCuentaId String?           @unique
-  proveedorId        String
-  nombre             String
-  emailOrganizador   String?
-  externalAccountId  String?
-  secretRef          String?
-  prioridad          Int               @default(100)
-  tieneLicencia      Boolean           @default(false)
-  limiteConcurrente  Int?
-  activa             Boolean           @default(true)
-  origenGrupoZoom    Boolean           @default(false)
-  fueraDelGrupoAt    DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  proveedor          ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  eventosProveedor   EventoProveedor[]
-  reunionesCompartidas ReunionProveedor[]
+  id                     String                  @id @default(cuid())
+  legacyZoomCuentaId     String?                 @unique
+  proveedorId            String
+  nombre                 String
+  emailOrganizador       String?
+  externalAccountId      String?
+  secretRef              String?
+  prioridad              Int                     @default(100)
+  tieneLicencia          Boolean                 @default(false)
+  limiteConcurrente      Int?
+  activa                 Boolean                 @default(true)
+  origenGrupoZoom        Boolean                 @default(false)
+  fueraDelGrupoAt        DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  proveedor              ProveedorReunion        @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  eventosProveedor       EventoProveedor[]
+  reunionesCompartidas   ReunionProveedor[]
   ocurrenciasArchivoZoom OcurrenciaArchivoZoom[]
 
   @@unique([proveedorId, externalAccountId])
@@ -299,8 +299,8 @@ model SolicitudSala {
   cantidadInstancias        Int              @default(1)
   capacidadEstimada         Int?
   requiereAsistenciaTecnica Boolean          @default(false)
-  inicioAsistenciaTecnicaAt  DateTime?
-  finAsistenciaTecnicaAt     DateTime?
+  inicioAsistenciaTecnicaAt DateTime?
+  finAsistenciaTecnicaAt    DateTime?
   motivoAsistenciaTecnica   String?
   requiereGrabacion         Boolean          @default(false)
   regimenEncuentros         String?
@@ -322,45 +322,45 @@ model SolicitudSala {
 }
 
 model InstanciaSala {
-  id                        String                                @id @default(cuid())
-  legacyZoomEventoId        String?                               @unique
-  solicitudSalaId           String
-  ordinal                   Int
-  descripcion               String?
-  inicioProgramadoAt          DateTime
-  finProgramadoAt             DateTime
-  modalidadOverride           ModalidadReunion?
-  inicioAsistenciaTecnicaAt   DateTime?
-  finAsistenciaTecnicaAt      DateTime?
-  timezone                    String
-  estado                      EstadoInstancia                       @default(PROGRAMADA)
-  proveedorActivoTipo         TipoProveedor?
-  conservarGoogleMeet         Boolean                               @default(false)
-  motivoConservarGoogleMeet   String?
-  requiereAsistenciaTecnica   Boolean                               @default(false)
-  requiereGrabacion         Boolean                               @default(false)
-  inicioRealAt              DateTime?
-  finRealAt                 DateTime?
-  minutosReportados         Int?
-  comentariosReporte        String?
-  costoEstimado             Decimal?                              @db.Decimal(12, 2)
-  costoReal                 Decimal?                              @db.Decimal(12, 2)
-  solicitud                 SolicitudSala                         @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
-  eventosProveedor          EventoProveedor[]
-  cambiosEnlaceCita         CambioEnlaceCita[]
-  postulaciones             PostulacionAsistenciaTecnica[]
-  asignaciones              AsignacionAsistenciaTecnica[]
-  incidencias               Incidencia[]
-  grabaciones               Grabacion[]
-  detallesLiquidacion       DetalleLiquidacionAsistenciaTecnica[]
-  cohosts                   CohostReunion[]
-  cohostEmails              CohostEmailReunion[]
-  invitados                 InvitadoReunion[]
-  recordatoriosInvitados     RecordatorioInvitadoReunion[]
-  avisosMigracionZoom       AvisoMigracionZoom[]
-  registrosAsistencia       RegistroAsistenciaMeet[]
+  id                            String                                @id @default(cuid())
+  legacyZoomEventoId            String?                               @unique
+  solicitudSalaId               String
+  ordinal                       Int
+  descripcion                   String?
+  inicioProgramadoAt            DateTime
+  finProgramadoAt               DateTime
+  modalidadOverride             ModalidadReunion?
+  inicioAsistenciaTecnicaAt     DateTime?
+  finAsistenciaTecnicaAt        DateTime?
+  timezone                      String
+  estado                        EstadoInstancia                       @default(PROGRAMADA)
+  proveedorActivoTipo           TipoProveedor?
+  conservarGoogleMeet           Boolean                               @default(false)
+  motivoConservarGoogleMeet     String?
+  requiereAsistenciaTecnica     Boolean                               @default(false)
+  requiereGrabacion             Boolean                               @default(false)
+  inicioRealAt                  DateTime?
+  finRealAt                     DateTime?
+  minutosReportados             Int?
+  comentariosReporte            String?
+  costoEstimado                 Decimal?                              @db.Decimal(12, 2)
+  costoReal                     Decimal?                              @db.Decimal(12, 2)
+  solicitud                     SolicitudSala                         @relation(fields: [solicitudSalaId], references: [id], onDelete: Cascade)
+  eventosProveedor              EventoProveedor[]
+  cambiosEnlaceCita             CambioEnlaceCita[]
+  postulaciones                 PostulacionAsistenciaTecnica[]
+  asignaciones                  AsignacionAsistenciaTecnica[]
+  incidencias                   Incidencia[]
+  grabaciones                   Grabacion[]
+  detallesLiquidacion           DetalleLiquidacionAsistenciaTecnica[]
+  cohosts                       CohostReunion[]
+  cohostEmails                  CohostEmailReunion[]
+  invitados                     InvitadoReunion[]
+  recordatoriosInvitados        RecordatorioInvitadoReunion[]
+  avisosMigracionZoom           AvisoMigracionZoom[]
+  registrosAsistencia           RegistroAsistenciaMeet[]
   registrosMonitoreoRetroactivo RegistroMonitoreoRetroactivo[]
-  recordatorios             RecordatorioReunion[]
+  recordatorios                 RecordatorioReunion[]
 
   @@unique([solicitudSalaId, ordinal])
   @@index([estado, inicioProgramadoAt])
@@ -368,7 +368,7 @@ model InstanciaSala {
 }
 
 model EventoProveedor {
-  id                      String            @id @default(cuid())
+  id                      String                         @id @default(cuid())
   instanciaSalaId         String
   proveedorId             String
   cuentaProveedorId       String?
@@ -382,7 +382,7 @@ model EventoProveedor {
   hostUrl                 String?
   payloadUltimo           Json?
   sincronizadoAt          DateTime?
-  estadoIntegracion       EstadoIntegracion @default(PENDIENTE)
+  estadoIntegracion       EstadoIntegracion              @default(PENDIENTE)
   operacionPendiente      OperacionIntegracionProveedor?
   reclamoIntegracionAt    DateTime?
   reclamoIntegracionToken String?
@@ -393,22 +393,22 @@ model EventoProveedor {
   driveFolderId           String?
   archivosSincronizadosAt DateTime?
   errorArchivos           String?
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  instancia               InstanciaSala     @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  proveedor               ProveedorReunion  @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
-  cuentaProveedor         CuentaProveedor?  @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
-  reunionProveedor        ReunionProveedor? @relation(fields: [reunionProveedorId], references: [id], onDelete: SetNull)
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
+  instancia               InstanciaSala                  @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  proveedor               ProveedorReunion               @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  cuentaProveedor         CuentaProveedor?               @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  reunionProveedor        ReunionProveedor?              @relation(fields: [reunionProveedorId], references: [id], onDelete: SetNull)
   archivos                ArchivoReunion[]
   ocurrenciasArchivoZoom  OcurrenciaArchivoZoom[]
+  asistenciaZoom          RegistroAsistenciaZoom[]
 
+  @@unique([instanciaSalaId, proveedorId])
   @@index([proveedorId, externalEventId])
   @@index([zoomMeetingUuid])
   @@index([reunionProveedorId])
-  @@unique([instanciaSalaId, proveedorId])
   @@index([instanciaSalaId, proveedorId])
   @@index([grabacionEstadoMeet, grabacionObservadaAt])
-  asistenciaZoom          RegistroAsistenciaZoom[]
 }
 
 model ArchivoReunion {
@@ -458,15 +458,15 @@ model CohostEmailReunion {
 /// Participante invitado, independiente de los permisos de anfitrión/coanfitrión.
 
 model RecordatorioInvitadoReunion {
-  id                String       @id @default(cuid())
+  id                 String        @id @default(cuid())
   instanciaSalaId    String
-  email             String
+  email              String
   inicioProgramadoAt DateTime
-  estado            String       @default("RESERVADO")
-  enviadoAt         DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  instancia         InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  estado             String        @default("RESERVADO")
+  enviadoAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  instancia          InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
 
   @@unique([instanciaSalaId, email, inicioProgramadoAt], map: "RecordatorioInvitadoUnico")
   @@index([estado, createdAt])
@@ -494,16 +494,16 @@ model AvisoMigracionZoom {
 }
 
 model InvitadoReunion {
-  id              String       @id @default(cuid())
-  instanciaSalaId  String
+  id              String                   @id @default(cuid())
+  instanciaSalaId String
   email           String
   nombre          String?
-  createdAt       DateTime     @default(now())
-  instancia       InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime                 @default(now())
+  instancia       InstanciaSala            @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistenciaZoom  RegistroAsistenciaZoom[]
 
   @@unique([instanciaSalaId, email])
   @@index([email])
-  asistenciaZoom  RegistroAsistenciaZoom[]
 }
 
 model Grabacion {
@@ -567,26 +567,26 @@ model AsignacionAsistenciaTecnica {
 /// Registro histórico pendiente de control administrativo: NO participa en pagos
 /// hasta que una aprobación explícita crea la asignación confirmada.
 model RegistroMonitoreoRetroactivo {
-  id                       String           @id @default(cuid())
-  instanciaSalaId          String
-  asistenteTecnicoId       String
-  inicioRealAt             DateTime
-  finRealAt                DateTime
-  minutos                  Int
+  id                        String           @id @default(cuid())
+  instanciaSalaId           String
+  asistenteTecnicoId        String
+  inicioRealAt              DateTime
+  finRealAt                 DateTime
+  minutos                   Int
   tarifaAsistenciaTecnicaId String
-  tarifaHora               Decimal          @db.Decimal(10, 2)
-  moneda                   String
-  montoEstimado            Decimal          @db.Decimal(12, 2)
-  motivo                   String
-  estado                   String           @default("PENDIENTE")
-  creadoPorUsuarioId       String
-  revisadoPorUsuarioId     String?
-  motivoRechazo            String?
-  revisadoAt               DateTime?
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
-  instancia                InstanciaSala    @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  asistente                AsistenteTecnico @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
+  tarifaHora                Decimal          @db.Decimal(10, 2)
+  moneda                    String
+  montoEstimado             Decimal          @db.Decimal(12, 2)
+  motivo                    String
+  estado                    String           @default("PENDIENTE")
+  creadoPorUsuarioId        String
+  revisadoPorUsuarioId      String?
+  motivoRechazo             String?
+  revisadoAt                DateTime?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  instancia                 InstanciaSala    @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  asistente                 AsistenteTecnico @relation(fields: [asistenteTecnicoId], references: [id], onDelete: Restrict)
 
   @@index([instanciaSalaId, estado])
   @@index([asistenteTecnicoId, estado])
@@ -686,19 +686,18 @@ model Auditoria {
   @@index([accion, createdAt])
 }
 
-
 model RecordatorioReunion {
-  id                String       @id @default(cuid())
-  instanciaSalaId   String
-  usuarioId         String
+  id                 String        @id @default(cuid())
+  instanciaSalaId    String
+  usuarioId          String
   inicioProgramadoAt DateTime
-  estado            String       @default("RESERVADO")
-  enviadoAt         DateTime?
-  errorCodigo       String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  instancia         InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
-  usuario           Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  estado             String        @default("RESERVADO")
+  enviadoAt          DateTime?
+  errorCodigo        String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  instancia          InstanciaSala @relation(fields: [instanciaSalaId], references: [id], onDelete: Cascade)
+  usuario            Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@unique([instanciaSalaId, usuarioId, inicioProgramadoAt], map: "RecordatorioReunion_unico_24h")
   @@index([estado, createdAt])
@@ -760,18 +759,18 @@ model CuentaGoogleFlacso {
 }
 
 model SolicitudAccesoGoogle {
-  id                    String                     @id @default(cuid())
-  email                 String                     @unique
-  providerAccountId     String                     @unique
-  nombres               String
-  apellidos             String?
-  imagenUrl             String?
-  estado                EstadoSolicitudAccesoGoogle @default(PENDIENTE)
-  aprobadaPorUsuarioId  String?
-  aprobadaAt            DateTime?
-  createdAt             DateTime                   @default(now())
-  updatedAt             DateTime                   @updatedAt
-  aprobadaPor           Usuario?                   @relation("SolicitudesAccesoGoogleAprobadas", fields: [aprobadaPorUsuarioId], references: [id], onDelete: SetNull)
+  id                   String                      @id @default(cuid())
+  email                String                      @unique
+  providerAccountId    String                      @unique
+  nombres              String
+  apellidos            String?
+  imagenUrl            String?
+  estado               EstadoSolicitudAccesoGoogle @default(PENDIENTE)
+  aprobadaPorUsuarioId String?
+  aprobadaAt           DateTime?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  aprobadaPor          Usuario?                    @relation("SolicitudesAccesoGoogleAprobadas", fields: [aprobadaPorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([estado, createdAt])
 }
@@ -927,24 +926,23 @@ enum EstadoIncidencia {
   CERRADA
 }
 
-
 /// An outgoing Google POST is attempted at most once automatically per stable key.
 /// ENVIANDO that outlives the worker is intentionally NOT retried: its outcome is
 /// unknowable without external reconciliation. Do not store credential payloads.
 model GoogleOperacionExterna {
-  clave        String   @id
-  proveedor    String
-  tipo         String
-  cuenta       String
-  referencia   String?
-  estado       String   @default("RESERVADA")
-  resultado    Json?
-  errorCodigo  String?
-  intentos     Int      @default(0)
-  iniciadaAt   DateTime?
-  terminadaAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  clave       String    @id
+  proveedor   String
+  tipo        String
+  cuenta      String
+  referencia  String?
+  estado      String    @default("RESERVADA")
+  resultado   Json?
+  errorCodigo String?
+  intentos    Int       @default(0)
+  iniciadaAt  DateTime?
+  terminadaAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([estado, updatedAt])
   @@index([proveedor, cuenta, estado])
@@ -1060,59 +1058,59 @@ model AvisoEnlaceSerie {
 /// un encuentro puede tener varias ocurrencias. Borrar o desvincular el encuentro no
 /// borra la ocurrencia ni sus archivos de origen.
 model OcurrenciaArchivoZoom {
-  id                      String             @id @default(cuid())
-  cuentaZoomId            String
-  uuid                    String
-  meetingId               String
-  anfitrionZoomId         String
-  cuentaProveedorId       String?
-  eventoProveedorId       String?
-  inicioRealAt            DateTime
-  titulo                  String
-  driveFolderId           String?
-  inventariadoAt          DateTime?
-  proximoInventarioAt     DateTime?
+  id                               String                   @id @default(cuid())
+  cuentaZoomId                     String
+  uuid                             String
+  meetingId                        String
+  anfitrionZoomId                  String
+  cuentaProveedorId                String?
+  eventoProveedorId                String?
+  inicioRealAt                     DateTime
+  titulo                           String
+  driveFolderId                    String?
+  inventariadoAt                   DateTime?
+  proximoInventarioAt              DateTime?
   /// Hay elementos sin ID todavía procesándose en Zoom: se inventarían al completarse.
-  procesamientoPendiente  Boolean            @default(false)
+  procesamientoPendiente           Boolean                  @default(false)
   /// Observaciones no descartadas del último inventario (sin URLs ni tokens).
-  observacionesInventario Json?
-  vinculadaAt             DateTime?
+  observacionesInventario          Json?
+  vinculadaAt                      DateTime?
   /// La carpeta de Drive de la ocurrencia ya está verificada bajo la raíz de grabaciones vinculadas.
-  carpetaVinculadaAt      DateTime?
+  carpetaVinculadaAt               DateTime?
   notificacionGrabacionPreparadaAt DateTime?
-  vinculadaPorId          String?
+  vinculadaPorId                   String?
   /// Estado de asistencia de la ocurrencia; los valores los define la entrega C.
-  estadoAsistencia        String             @default("PENDIENTE")
-  errorAsistencia         String?
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
-  cuentaProveedor         CuentaProveedor?   @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
-  eventoProveedor         EventoProveedor?   @relation(fields: [eventoProveedorId], references: [id], onDelete: SetNull)
-  vinculadaPor            Usuario?           @relation("OcurrenciaArchivoZoomVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
-  archivos                ArchivoOrigenZoom[]
-  avisosGrabacion         AvisoGrabacionZoom[]
+  estadoAsistencia                 String                   @default("PENDIENTE")
+  errorAsistencia                  String?
+  createdAt                        DateTime                 @default(now())
+  updatedAt                        DateTime                 @updatedAt
+  cuentaProveedor                  CuentaProveedor?         @relation(fields: [cuentaProveedorId], references: [id], onDelete: SetNull)
+  eventoProveedor                  EventoProveedor?         @relation(fields: [eventoProveedorId], references: [id], onDelete: SetNull)
+  vinculadaPor                     Usuario?                 @relation("OcurrenciaArchivoZoomVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
+  archivos                         ArchivoOrigenZoom[]
+  avisosGrabacion                  AvisoGrabacionZoom[]
+  sesionesAsistencia               SesionAsistenciaZoom[]
+  registrosAsistencia              RegistroAsistenciaZoom[]
 
   @@unique([cuentaZoomId, uuid])
   @@index([eventoProveedorId])
   @@index([cuentaProveedorId])
   @@index([proximoInventarioAt])
   @@index([carpetaVinculadaAt])
-  sesionesAsistencia      SesionAsistenciaZoom[]
-  registrosAsistencia     RegistroAsistenciaZoom[]
 }
 
 /// Un correo por destinatario y ocurrencia. RESERVADO es incierto tras una caída:
 /// no se reintenta automáticamente para evitar enviar el mismo correo dos veces.
 model AvisoGrabacionZoom {
-  id              String                @id @default(cuid())
-  ocurrenciaId    String
-  email           String
-  estado          String                @default("PENDIENTE")
-  enviadoAt       DateTime?
-  errorCodigo     String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  ocurrencia      OcurrenciaArchivoZoom @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
+  id           String                @id @default(cuid())
+  ocurrenciaId String
+  email        String
+  estado       String                @default("PENDIENTE")
+  enviadoAt    DateTime?
+  errorCodigo  String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  ocurrencia   OcurrenciaArchivoZoom @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
 
   @@unique([ocurrenciaId, email])
   @@index([estado, updatedAt])
@@ -1120,25 +1118,25 @@ model AvisoGrabacionZoom {
 
 /// Bandeja durable de avisos Zoom. Solo metadatos mínimos: nunca tokens, URLs ni participantes.
 model EventoWebhookZoom {
-  id                 String    @id @default(cuid())
-  huella             String    @unique
-  tipo               String
-  cuentaZoomId       String
-  meetingId          String
-  uuid               String
-  anfitrionZoomId    String
-  inicioRealAt       DateTime
-  finRealAt          DateTime?
-  titulo             String
-  ocurridoAt         DateTime
-  estado             String    @default("RECIBIDO")
-  intentos           Int       @default(0)
-  proximoIntentoAt   DateTime  @default(now())
-  claimHasta         DateTime?
-  procesadoAt        DateTime?
-  errorCodigo        String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  huella           String    @unique
+  tipo             String
+  cuentaZoomId     String
+  meetingId        String
+  uuid             String
+  anfitrionZoomId  String
+  inicioRealAt     DateTime
+  finRealAt        DateTime?
+  titulo           String
+  ocurridoAt       DateTime
+  estado           String    @default("RECIBIDO")
+  intentos         Int       @default(0)
+  proximoIntentoAt DateTime  @default(now())
+  claimHasta       DateTime?
+  procesadoAt      DateTime?
+  errorCodigo      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([estado, proximoIntentoAt])
   @@index([cuentaZoomId, uuid])
@@ -1146,15 +1144,19 @@ model EventoWebhookZoom {
 
 /// Metadatos mínimos de avisos que aún no tienen un procesador específico.
 model EventoWebhookZoomAdicional {
-  id           String   @id @default(cuid())
-  huella       String   @unique
-  tipo         String
-  cuentaZoomId String
-  recursoId    String?
-  uuid         String?
-  uuids        String[] @default([])
-  ocurridoAt   DateTime
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  huella         String   @unique
+  tipo           String
+  cuentaZoomId   String
+  recursoId      String?
+  uuid           String?
+  uuids          String[] @default([])
+  /// Id opaco del participante (participant_uuid); nunca nombre ni correo.
+  participanteId String?
+  /// Códigos de meeting.alert; sin datos personales.
+  detalle        String?
+  ocurridoAt     DateTime
+  createdAt      DateTime @default(now())
 
   @@index([cuentaZoomId, tipo, ocurridoAt])
   @@index([cuentaZoomId, uuid])
@@ -1254,11 +1256,11 @@ model ReservaTransferenciaZoom {
   /// Offset confirmado por Drive al reservar.
   bytesConfirmadosInicio BigInt                     @default(0)
   prioridad              PrioridadTransferenciaZoom
-  reservadoAt     DateTime
-  ajustadoBytes   BigInt?
-  liberadoAt      DateTime?
-  createdAt       DateTime                   @default(now())
-  archivoOrigen   ArchivoOrigenZoom          @relation(fields: [archivoOrigenId], references: [id], onDelete: Restrict)
+  reservadoAt            DateTime
+  ajustadoBytes          BigInt?
+  liberadoAt             DateTime?
+  createdAt              DateTime                   @default(now())
+  archivoOrigen          ArchivoOrigenZoom          @relation(fields: [archivoOrigenId], references: [id], onDelete: Restrict)
 
   @@index([reservadoAt])
   @@index([archivoOrigenId])
@@ -1328,31 +1330,31 @@ model SesionAsistenciaZoom {
 /// o por ocurrencia sin vincular (`ocurrencia:<id>`). Sin umbral ni veredicto de cumplimiento.
 /// La tabla de Meet (RegistroAsistenciaMeet) no se toca.
 model RegistroAsistenciaZoom {
-  id                   String                           @id @default(cuid())
-  claveAmbito          String
-  eventoProveedorId    String?
-  ocurrenciaId         String?
+  id                 String                           @id @default(cuid())
+  claveAmbito        String
+  eventoProveedorId  String?
+  ocurrenciaId       String?
   /// `id:<participanteId>` o `sesion:<claveSesion>` cuando no hay identificador fiable.
-  claveParticipante    String
-  nombre               String
-  emailObservado       String?
-  minutos              Decimal                          @default(0) @db.Decimal(8, 2)
-  porcentaje           Decimal                          @default(0) @db.Decimal(5, 2)
-  sesiones             Int                              @default(0)
-  primeraEntradaAt     DateTime?
-  ultimaSalidaAt       DateTime?
-  esHostOCohost        Boolean                          @default(false)
-  estadoConciliacion   EstadoConciliacionAsistenciaZoom @default(SIN_CONCILIAR)
-  invitadoReunionId    String?
-  esExterno            Boolean?
-  notasOperador        String?
+  claveParticipante  String
+  nombre             String
+  emailObservado     String?
+  minutos            Decimal                          @default(0) @db.Decimal(8, 2)
+  porcentaje         Decimal                          @default(0) @db.Decimal(5, 2)
+  sesiones           Int                              @default(0)
+  primeraEntradaAt   DateTime?
+  ultimaSalidaAt     DateTime?
+  esHostOCohost      Boolean                          @default(false)
+  estadoConciliacion EstadoConciliacionAsistenciaZoom @default(SIN_CONCILIAR)
+  invitadoReunionId  String?
+  esExterno          Boolean?
+  notasOperador      String?
   /// Control de edición concurrente de los campos humanos (conciliación y notas).
-  version              Int                              @default(1)
-  createdAt            DateTime                         @default(now())
-  updatedAt            DateTime                         @updatedAt
-  eventoProveedor      EventoProveedor?                 @relation(fields: [eventoProveedorId], references: [id], onDelete: Cascade)
-  ocurrencia           OcurrenciaArchivoZoom?           @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
-  invitadoReunion      InvitadoReunion?                 @relation(fields: [invitadoReunionId], references: [id], onDelete: SetNull)
+  version            Int                              @default(1)
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+  eventoProveedor    EventoProveedor?                 @relation(fields: [eventoProveedorId], references: [id], onDelete: Cascade)
+  ocurrencia         OcurrenciaArchivoZoom?           @relation(fields: [ocurrenciaId], references: [id], onDelete: Cascade)
+  invitadoReunion    InvitadoReunion?                 @relation(fields: [invitadoReunionId], references: [id], onDelete: SetNull)
 
   @@unique([claveAmbito, claveParticipante])
   @@index([eventoProveedorId])

@@ -7,6 +7,23 @@ export const EVENTOS_ZOOM = [
   "recording.transcript_completed"
 ] as const;
 
+/** Eventos en vivo que se asocian a una ejecución por cuenta + UUID (nunca solo por Meeting ID). */
+export const EVENTOS_EN_VIVO: ReadonlySet<string> = new Set([
+  "meeting.participant_joined",
+  "meeting.participant_left",
+  "meeting.participant_joined_waiting_room",
+  "meeting.participant_left_waiting_room",
+  "meeting.participant_admitted",
+  "meeting.participant_put_in_waiting_room",
+  "recording.started",
+  "recording.stopped",
+  "recording.paused",
+  "recording.resumed",
+  "meeting.sharing_started",
+  "meeting.sharing_ended",
+  "meeting.alert"
+]);
+
 export type AvisoZoom = Readonly<{
   huella: string;
   tipo: (typeof EVENTOS_ZOOM)[number];
@@ -130,6 +147,19 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   ) {
     return null;
   }
+  const participante = objeto(recurso?.participant);
+  // Solo ids opacos: nombre, correo, IP y demás datos del participante jamás se leen.
+  const participanteId = EVENTOS_EN_VIVO.has(tipo)
+    ? (texto(participante?.participant_uuid) ?? texto(participante?.id) ?? texto(participante?.user_id))
+    : null;
+  // Códigos de alerta de Zoom (p. ej. "Unstable audio quality"): texto corto, sin personas.
+  const detalle =
+    tipo === "meeting.alert" && Array.isArray(recurso?.issues)
+      ? recurso.issues.map(texto).filter((v): v is string => v !== null).join(", ").slice(0, 250) || null
+      : null;
+  if (participanteId && participanteId.length > 255) {
+    return null;
+  }
   return {
     huella: createHash("sha256").update(cuerpo).digest("hex"),
     tipo,
@@ -137,6 +167,8 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
     recursoId,
     uuid,
     uuids,
+    participanteId,
+    detalle,
     ocurridoAt
   };
 }
