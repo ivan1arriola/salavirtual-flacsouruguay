@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listarParticipantesReunionPasadaZoomHttp } from "@/src/integrations/zoom/zoom-reports.client";
+import {
+  descargarAsistenciaOriginalZoom,
+  listarParticipantesReunionPasadaZoomHttp
+} from "@/src/integrations/zoom/zoom-reports.client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -47,6 +50,22 @@ describe("reportes de asistencia Zoom", () => {
     expect(rows?.[1].email).toBeNull();
     expect(String(fetchMock.mock.calls[1][0])).toContain("next_page_token=segunda");
     expect(String(fetchMock.mock.calls[0][0])).toContain("uuid%252Finstancia");
+  });
+
+  it("devuelve el cuerpo original con campos que no usa la vista", async () => {
+    const original = '{ "total_records": 1, "participants": [{ "custom": "valor" }] }';
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(original)));
+    expect(await descargarAsistenciaOriginalZoom("token", "uuid")).toBe(original);
+  });
+
+  it("conserva las páginas originales del reporte paginado", async () => {
+    const primera = '{ "participants": [], "next_page_token": "siguiente" }';
+    const segunda = '{ "participants": [], "page_count": 2 }';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(new Response(primera)).mockResolvedValueOnce(new Response(segunda))
+    );
+    expect(await descargarAsistenciaOriginalZoom("token", "uuid")).toBe(`[\n${primera},\n${segunda}\n]`);
   });
 
   it("distingue reporte no publicado de reporte vacío", async () => {
