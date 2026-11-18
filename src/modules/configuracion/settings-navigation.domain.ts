@@ -106,7 +106,11 @@ export function legacySettingsRedirect(
     params[clave] ? [[clave, params[clave]] as [string, string]] : []
   );
   const query = new URLSearchParams(conValor);
-  return query.size ? `${ruta}${ruta.includes("?") ? "&" : "?"}${query}` : ruta;
+  if (!query.size) {
+    return ruta;
+  }
+  const separador = ruta.includes("?") ? "&" : "?";
+  return `${ruta}${separador}${query}`;
 }
 
 export type SettingsAttentionInput = Readonly<{
