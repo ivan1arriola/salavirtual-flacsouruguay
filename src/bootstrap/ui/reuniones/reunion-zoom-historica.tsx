@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, ExternalLink, Repeat2, Video } from "lucide-react";
+import { Activity, CalendarDays, CheckCircle2, CircleAlert, Clock3, ExternalLink, FileVideo, Fingerprint, History, Info, MonitorUp, PlayCircle, Repeat2, UsersRound, Video, UserRound, Wifi, Timer, List } from "lucide-react";
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
@@ -78,41 +78,41 @@ function SeccionResumen({
   return (
     <>
       <section className={styles.card} aria-labelledby="zoom-resumen">
-        <h2 id="zoom-resumen">Resumen de ejecución</h2>
+        <h2 id="zoom-resumen" className={styles.sectionTitle}><Activity size={21} aria-hidden="true" /> Resumen de ejecución</h2>
         <dl className={styles.kpis}>
           <div>
-            <dt>Inicio real</dt>
+            <dt><CalendarDays size={21} aria-hidden="true" /> Inicio real</dt>
             <dd>{inicioRealAt ? formatTime(inicioRealAt) : "Sin confirmar"}</dd>
             <small>Programado {formatTime(reunion.inicioProgramadoAt)}</small>
           </div>
           <div>
-            <dt>Fin real</dt>
+            <dt><Clock3 size={21} aria-hidden="true" /> Fin real</dt>
             <dd>{finRealAt ? formatTime(finRealAt) : "Sin confirmar"}</dd>
             <small>Programado {formatTime(reunion.finProgramadoAt)}</small>
           </div>
           <div>
-            <dt>Duración real</dt>
+            <dt><Timer size={21} aria-hidden="true" /> Duración real</dt>
             <dd>{duracion(inicioRealAt, finRealAt)}</dd>
             <small>Según Zoom</small>
           </div>
           <div>
-            <dt>Personas</dt>
+            <dt><UsersRound size={21} aria-hidden="true" /> Personas</dt>
             <dd>{hayReporte ? registros.length : "—"}</dd>
             <small>{hayReporte ? "En el reporte de Zoom" : "Sin reporte verificable"}</small>
           </div>
           <div>
-            <dt>Conexiones</dt>
+            <dt><Wifi size={21} aria-hidden="true" /> Conexiones</dt>
             <dd>{hayReporte ? conexiones : "—"}</dd>
             <small>Incluye reingresos</small>
           </div>
           <div>
-            <dt>Asistencia</dt>
+            <dt><CheckCircle2 size={21} aria-hidden="true" /> Asistencia</dt>
             <dd>{estadoAsistencia}</dd>
           </div>
         </dl>
       </section>
       <section className={styles.card} aria-labelledby="zoom-actividad">
-        <h2 id="zoom-actividad">Actividad del encuentro</h2>
+        <h2 id="zoom-actividad" className={styles.sectionTitle}><History size={21} aria-hidden="true" /> Actividad del encuentro</h2>
         {actividad.length === 0 ? (
           <p>
             {ocurrencias.length
@@ -121,20 +121,54 @@ function SeccionResumen({
           </p>
         ) : (
           <ol className={styles.timeline}>
-            {actividad.map((a) => (
+            {actividad.slice(0, 7).map((a) => (
               <li key={`${a.tipo}-${a.desde.toISOString()}`}>
                 <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
-                <span>
+                <span className={styles.timelineIcon} aria-hidden="true">
+                  {a.etiqueta.toLowerCase().includes("grabación") ? <FileVideo size={17} /> : a.etiqueta.toLowerCase().includes("pantalla") ? <MonitorUp size={17} /> : a.etiqueta.toLowerCase().includes("participante") || a.etiqueta.toLowerCase().includes("sala de espera") ? <UsersRound size={17} /> : a.etiqueta.toLowerCase().includes("alerta") ? <CircleAlert size={17} /> : <PlayCircle size={17} />}
+                </span>
+                <span className={styles.timelineLabel}>
                   {a.etiqueta}
                   {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
                 </span>
               </li>
             ))}
           </ol>
+          {actividad.length > 8 ? (
+            <details className={styles.moreActivity}>
+              <summary><List size={16} aria-hidden="true" /> Ver las {actividad.length - 8} actividades intermedias</summary>
+              <ol className={styles.timeline}>{actividad.slice(7, -1).map((a) => (
+              <li key={`${a.tipo}-${a.desde.toISOString()}`}>
+                <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
+                <span className={styles.timelineIcon} aria-hidden="true">
+                  {a.etiqueta.toLowerCase().includes("grabación") ? <FileVideo size={17} /> : a.etiqueta.toLowerCase().includes("pantalla") ? <MonitorUp size={17} /> : a.etiqueta.toLowerCase().includes("participante") || a.etiqueta.toLowerCase().includes("sala de espera") ? <UsersRound size={17} /> : a.etiqueta.toLowerCase().includes("alerta") ? <CircleAlert size={17} /> : <PlayCircle size={17} />}
+                </span>
+                <span className={styles.timelineLabel}>
+                  {a.etiqueta}
+                  {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
+                </span>
+              </li>
+            ))}</ol>
+            </details>
+          ) : null}
+          {actividad.length > 7 ? (
+            <ol className={styles.timeline}>{actividad.slice(-1).map((a) => (
+              <li key={`${a.tipo}-${a.desde.toISOString()}`}>
+                <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
+                <span className={styles.timelineIcon} aria-hidden="true">
+                  {a.etiqueta.toLowerCase().includes("grabación") ? <FileVideo size={17} /> : a.etiqueta.toLowerCase().includes("pantalla") ? <MonitorUp size={17} /> : a.etiqueta.toLowerCase().includes("participante") || a.etiqueta.toLowerCase().includes("sala de espera") ? <UsersRound size={17} /> : a.etiqueta.toLowerCase().includes("alerta") ? <CircleAlert size={17} /> : <PlayCircle size={17} />}
+                </span>
+                <span className={styles.timelineLabel}>
+                  {a.etiqueta}
+                  {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
+                </span>
+              </li>
+            ))}</ol>
+          ) : null}
         )}
       </section>
       <details className={styles.advanced}>
-        <summary>Información técnica</summary>
+        <summary><Info size={19} aria-hidden="true" /> Información técnica</summary>
         <dl className={styles.facts}>
           {ocurrencias.map((o, i) => (
             <div key={o.id}>
@@ -182,7 +216,7 @@ function SeccionGrabaciones({
 }>) {
   return (
     <section className={styles.card} aria-labelledby="zoom-grabaciones">
-      <h2 id="zoom-grabaciones">Grabaciones</h2>
+      <h2 id="zoom-grabaciones" className={styles.sectionTitle}><FileVideo size={21} aria-hidden="true" /> Grabaciones</h2>
       <p>
         <strong>{ETIQUETA_GRABACION_ZOOM[estado]}</strong>
         {estado === "NO_PREVISTA" ? " · Este encuentro no requería grabación." : null}
@@ -244,11 +278,11 @@ export function ReunionZoomHistorica({
           <span className={styles.provider}>
             <Video size={15} aria-hidden="true" /> Zoom
           </span>
-          <span className={styles.historyTag}>{ejecucion}</span>
-          <span className={styles.historyTag}>Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}</span>
+          <span className={styles.historyTag}><CheckCircle2 size={15} aria-hidden="true" /> {ejecucion}</span>
+          <span className={styles.historyTag}><FileVideo size={15} aria-hidden="true" /> Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}</span>
         </div>
         <h1>{reunion.titulo}</h1>
-        <p className={styles.subtitle}>
+        <p className={styles.subtitle}><UserRound size={17} aria-hidden="true" /> 
           {reunion.docente}
           {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
         </p>
@@ -263,49 +297,6 @@ export function ReunionZoomHistorica({
         </div>
       </header>
 
-      <section className={styles.card} aria-labelledby="zoom-identificacion">
-        <h2 id="zoom-identificacion" className={styles.srOnly}>
-          Identificación de Zoom
-        </h2>
-        <dl className={styles.facts}>
-          <div>
-            <dt>Meeting ID (compartido por la serie)</dt>
-            <dd className={styles.mono}>
-              {reunion.zoom.id ?? "No disponible"}
-              {reunion.zoom.id ? (
-                <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
-              ) : null}
-            </dd>
-          </div>
-          <div>
-            <dt>Cuenta anfitriona</dt>
-            <dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd>
-          </div>
-          <div>
-            <dt>Integración</dt>
-            <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
-          </div>
-          <div>
-            <dt>Ejecución</dt>
-            <dd>
-              {ocurrencias.length ? `${ocurrencias.length} vinculada(s)` : "Sin ejecución de Zoom vinculada"}
-            </dd>
-          </div>
-        </dl>
-        <div className={styles.quickActions}>
-          {reunion.zoom.joinUrl ? (
-            <a href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={18} aria-hidden="true" /> Abrir en Zoom
-            </a>
-          ) : null}
-          {!esAsistente ? (
-            <Link href={`/reuniones/${reunion.solicitudId}`}>
-              <Repeat2 size={18} aria-hidden="true" /> Ver serie completa de Zoom
-            </Link>
-          ) : null}
-        </div>
-      </section>
-
       <nav className={styles.tabs} aria-label="Secciones del encuentro">
         {SECCIONES_FICHA_ZOOM.map((s) => (
           <Link
@@ -319,6 +310,8 @@ export function ReunionZoomHistorica({
         ))}
       </nav>
 
+      <div className={styles.historicalLayout}>
+        <div className={styles.historicalMain}>
       {seccion === "resumen" ? (
         <>
           <SeccionResumen
@@ -347,6 +340,62 @@ export function ReunionZoomHistorica({
       {seccion === "grabaciones" ? (
         <SeccionGrabaciones estado={estadoGrabacion} ocurrencias={ocurrencias} />
       ) : null}
+        </div>
+        <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
+          <section className={styles.card} aria-labelledby="zoom-identificacion">
+      <h2 id="zoom-identificacion" className={styles.sectionTitle}><Info size={20} aria-hidden="true" />
+          Detalles de la reunión
+        </h2>
+        <dl className={styles.facts}>
+          <div>
+            <dt><Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)</dt>
+            <dd className={styles.mono}>
+              {reunion.zoom.id ?? "No disponible"}
+              {reunion.zoom.id ? (
+                <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
+              ) : null}
+            </dd>
+          </div>
+          <div>
+            <dt><UserRound size={17} aria-hidden="true" /> Cuenta anfitriona</dt>
+            <dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd>
+          </div>
+          <div>
+            <dt><CheckCircle2 size={17} aria-hidden="true" /> Integración</dt>
+            <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
+          </div>
+          <div>
+            <dt><Repeat2 size={17} aria-hidden="true" /> Ejecución</dt>
+            <dd>
+              {ocurrencias.length ? `${ocurrencias.length} vinculada(s)` : "Sin ejecución de Zoom vinculada"}
+            </dd>
+          </div>
+        </dl>
+          </section>
+          <section className={styles.card} aria-labelledby="zoom-acciones">
+            <h2 id="zoom-acciones" className={styles.sectionTitle}><ExternalLink size={20} aria-hidden="true" /> Acciones rápidas</h2>
+        <div className={styles.quickActions}>
+          {reunion.zoom.joinUrl ? (
+            <a href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={18} aria-hidden="true" /> Abrir en Zoom
+            </a>
+          ) : null}
+          {!esAsistente ? (
+            <Link href={`/reuniones/${reunion.solicitudId}`}>
+              <Repeat2 size={18} aria-hidden="true" /> Ver serie completa de Zoom
+            </Link>
+          ) : null}
+        </div>
+          </section>
+          <section className={styles.card} aria-labelledby="zoom-grabacion-resumen">
+            <h2 id="zoom-grabacion-resumen" className={styles.sectionTitle}><FileVideo size={20} aria-hidden="true" /> Grabación</h2>
+            <p className={styles.recordingStatus}><CheckCircle2 size={17} aria-hidden="true" /> {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}</p>
+            {ocurrencias.flatMap((o) => o.grabaciones).filter((g) => Boolean(g.url)).slice(0, 1).map((g) => (
+              <a className={styles.recordingLink} key={g.id} href={g.url!} target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> Abrir en Drive</a>
+            ))}
+          </section>
+        </aside>
+      </div>
     </main>
   );
 }
