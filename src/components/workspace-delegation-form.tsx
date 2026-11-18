@@ -7,9 +7,6 @@ import { saveWorkspaceSection, testWorkspaceSection } from "./workspace-config.c
 const SCOPES = [
   "calendar.events",
   "drive",
-  "meetings.space.settings",
-  "meetings.space.readonly",
-  "meetings.space.created",
   "gmail.send"
 ] as const;
 

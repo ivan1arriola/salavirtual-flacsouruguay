@@ -10,5 +10,5 @@ export default async function HistoricoPage() {
     redirect("/");
   }
 
-  redirect("/configuracion?seccion=historico");
+  redirect("/configuracion/historico");
 }

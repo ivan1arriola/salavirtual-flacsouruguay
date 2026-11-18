@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CircleAlert, Code2, Info, LoaderCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CircleAlert, Code2, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import {
   validateWorkspaceScopes,
@@ -11,9 +11,6 @@ import {
 const SCOPE_LABELS = [
   ["Calendar", "calendar.events", "https://www.googleapis.com/auth/calendar.events"],
   ["Drive", "drive", "https://www.googleapis.com/auth/drive"],
-  ["Meet · ajustes", "meetings.space.settings", "https://www.googleapis.com/auth/meetings.space.settings"],
-  ["Meet · lectura", "meetings.space.readonly", "https://www.googleapis.com/auth/meetings.space.readonly"],
-  ["Meet · cohosts", "meetings.space.created", "https://www.googleapis.com/auth/meetings.space.created"],
   ["Gmail", "gmail.send", "https://www.googleapis.com/auth/gmail.send"],
   ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"]
 ] as const;
@@ -47,7 +44,7 @@ export function WorkspaceScopesValidator() {
         <ShieldCheck size={22} aria-hidden="true" />
         <div>
           <h2 id="workspace-scopes-title">Permisos de Google</h2>
-          <p>Verificá los permisos de Calendar, Drive, Meet, Gmail y Sheets usados por Sala Virtual.</p>
+          <p>Verificá los permisos de Calendar, Drive, Gmail y Sheets usados por Sala Virtual.</p>
         </div>
       </header>
 
@@ -57,17 +54,6 @@ export function WorkspaceScopesValidator() {
             {SCOPE_LABELS.map(([label, key]) => (
               <span key={key}>{label}</span>
             ))}
-          </div>
-
-          <div className="workspace-preview-note">
-            <Info size={17} aria-hidden="true" />
-            <div>
-              <strong>Cohosts por API</strong>
-              <span>
-                El permiso “Meet · cohosts” requiere además que el proyecto esté habilitado en Google
-                Workspace Developer Preview.
-              </span>
-            </div>
           </div>
 
           <details className="workspace-technical-details">

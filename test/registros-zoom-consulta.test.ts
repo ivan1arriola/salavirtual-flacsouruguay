@@ -64,7 +64,7 @@ describe("consulta de registros Zoom importados", () => {
         total: 101
       })
     );
-    expect(html).toContain('name="seccion" value="historico"');
+    expect(html).toContain('action="/configuracion/historico"');
     expect(html).toContain("Zoom+%26+clase");
     expect(html).toContain("Página 2 de 3");
     expect(html).toContain("Limpiar búsqueda");
