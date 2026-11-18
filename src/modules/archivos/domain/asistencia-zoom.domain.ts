@@ -23,7 +23,7 @@ export type SesionObservadaZoom = Readonly<{
 export type VentanaAsistenciaZoom = Readonly<{ inicioAt: Date; finAt: Date }>;
 
 export type AsistenciaZoomConsolidada = Readonly<{
-  /** `id:<participanteId>` si hay identificador fiable; si no `sesion:<claveSesion>` (sesión diferenciada). */
+  /** `id:<participanteId>` (o `email:<correo>`) si hay evidencia de identidad; si no `sesion:<claveSesion>` (sesión diferenciada). */
   claveParticipante: string;
   nombre: string;
   emailObservado: string | null;
@@ -86,8 +86,37 @@ const redondear2 = (valor: number) => Math.round(valor * 100) / 100;
 
 type Observacion = Readonly<{ sesion: SesionObservadaZoom; ventana: VentanaAsistenciaZoom }>;
 
-function clavePersona(s: SesionObservadaZoom): string {
-  return s.participanteId ? `id:${s.participanteId}` : `sesion:${s.claveSesion}`;
+const correoNormalizado = (s: SesionObservadaZoom): string | null => s.email?.trim().toLowerCase() || null;
+
+/**
+ * Clave de persona por sesión. Solo hay evidencia suficiente para unir con el mismo id de participante de Zoom
+ * o con un correo idéntico; el nombre jamás une. Sin ninguna de las dos, la sesión queda aparte.
+ * shortcut: un id con dos correos distintos queda en el grupo de su primer correo, no se encadena más; revisar si Zoom lo emite.
+ */
+export function claveParticipanteZoom(
+  sesiones: readonly SesionObservadaZoom[]
+): (s: SesionObservadaZoom) => string {
+  const conId = sesiones.filter((s) => s.participanteId);
+  const porCorreo = [...conId, ...sesiones.filter((s) => !s.participanteId)].reduce<
+    Readonly<Record<string, string>>
+  >((acc, s) => {
+    const correo = correoNormalizado(s);
+    return !correo || acc[correo]
+      ? acc
+      : { ...acc, [correo]: s.participanteId ? `id:${s.participanteId}` : `email:${correo}` };
+  }, {});
+  const porId = conId.reduce<Readonly<Record<string, string>>>((acc, s) => {
+    const correo = correoNormalizado(s);
+    const id = s.participanteId!;
+    return acc[id] || !correo ? acc : { ...acc, [id]: porCorreo[correo]! };
+  }, {});
+  return (s) => {
+    if (s.participanteId) {
+      return porId[s.participanteId] ?? `id:${s.participanteId}`;
+    }
+    const correo = correoNormalizado(s);
+    return correo ? porCorreo[correo]! : `sesion:${s.claveSesion}`;
+  };
 }
 
 function consolidar(
@@ -105,6 +134,7 @@ function consolidar(
     sesiones.filter(sesionValida).map((sesion): Observacion => ({ sesion, ventana }))
   );
   // Agrupa conservando el orden de aparición: Object conserva el orden de inserción de claves de texto.
+  const clavePersona = claveParticipanteZoom(observaciones.map((o) => o.sesion));
   const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>((acc, o) => {
     const clave = clavePersona(o.sesion);
     return { ...acc, [clave]: [...(acc[clave] ?? []), o] };

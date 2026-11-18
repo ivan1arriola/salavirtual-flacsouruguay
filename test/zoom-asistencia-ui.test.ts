@@ -45,3 +45,14 @@ describe("página de asistencia del encuentro (Zoom)", () => {
     expect(rama).toMatch(/actor\.rol === "ADMINISTRACION"/);
   });
 });
+
+describe("descarga del reporte procesado", () => {
+  const vista = leer("src/components/zoom-asistencia-vista.tsx");
+  it("ofrece un solo enlace por CSV, distinto del JSON original y bajo el mismo permiso", () => {
+    expect(vista.match(/asistencia\/exportar\/zoom\?formato=csv&conjunto=/g)).toHaveLength(1);
+    expect(vista).toMatch(/\["resumen", "CSV de participantes consolidados"\]/);
+    expect(vista).toMatch(/\["sesiones", "CSV de conexiones/);
+    expect(vista.match(/asistencia\/zoom-original\//g)).toHaveLength(1);
+    expect(vista.match(/puedeDescargar && /g)).toHaveLength(2);
+  });
+});

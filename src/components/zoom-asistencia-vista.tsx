@@ -70,6 +70,35 @@ export function ZoomAsistenciaVista({
           </div>
         </section>
       ) : null}
+      {puedeDescargar && registros.length > 0 ? (
+        <section className="attendance-raw-export" aria-label="Reporte procesado">
+          <div className="attendance-raw-export-intro">
+            <h2>Reporte procesado</h2>
+            <p>
+              Cálculo de Sala Virtual, distinto del JSON original de Zoom: participantes consolidados (sin
+              duplicar reingresos ni solapes, sala de espera excluida) y cada conexión con su entrada y
+              salida. Estos son CSV de lo ya guardado.
+            </p>
+          </div>
+          <div className="attendance-raw-export-buttons">
+            {(
+              [
+                ["resumen", "CSV de participantes consolidados"],
+                ["sesiones", "CSV de conexiones (entradas y salidas)"]
+              ] as const
+            ).map(([conjunto, etiqueta]) => (
+              <a
+                className="attendance-raw-export-json"
+                href={`/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/exportar/zoom?formato=csv&conjunto=${conjunto}`}
+                key={conjunto}
+              >
+                <Download size={15} aria-hidden="true" />
+                {etiqueta}
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {puedeReintentar &&
       debeOfrecerReintentoAsistencia({
         ocurrencias: ocurrencias.length,

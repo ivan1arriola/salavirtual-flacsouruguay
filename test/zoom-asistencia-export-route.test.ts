@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -119,5 +120,26 @@ describe("exportación de asistencia Zoom", () => {
     const r = await pedir("zoom");
     expect(r.status).toBe(502);
     expect(JSON.stringify(await r.json())).not.toMatch(/ana@|postgres/);
+  });
+});
+
+describe("reporte procesado: mismos permisos que el JSON original", () => {
+  it.each(["resumen", "sesiones"])("sin permiso sobre el programa el conjunto %s no se sirve", async (c) => {
+    mocks.puedeGestionarPrograma.mockResolvedValue(false);
+    expect((await pedir("zoom", `?formato=csv&conjunto=${c}`)).status).toBe(404);
+    expect(mocks.cargar).not.toHaveBeenCalled();
+  });
+
+  it("ambas rutas se protegen con sesión, actor activo y puedeGestionarPrograma", () => {
+    const base = "app/api/v1/reuniones/instancias/[instanciaId]/asistencia";
+    for (const ruta of [
+      `${base}/exportar/[fuente]/route.ts`,
+      `${base}/zoom-original/[ocurrenciaId]/route.ts`
+    ]) {
+      const fuente = readFileSync(ruta, "utf8");
+      expect(fuente).toMatch(/await auth\(\)/);
+      expect(fuente).toMatch(/actor\?\.activo/);
+      expect(fuente).toMatch(/puedeGestionarPrograma/);
+    }
   });
 });
