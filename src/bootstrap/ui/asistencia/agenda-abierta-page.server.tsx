@@ -171,30 +171,16 @@ export default async function AgendaAbiertaPage({
   }));
 
   const params = await searchParams;
-  const onlyApplications = actor.rol === "ASISTENTE_TECNICO" && params.vista === "postulaciones";
+  const onlyApplications = isOnlyApplicationsView(actor.rol, params.vista);
   const activeApplicationIds = new Set(
     interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").map((i) => i.instanciaSalaId)
   );
-  const visibleMeetings = onlyApplications
-    ? meetings.filter((m) => activeApplicationIds.has(m.id))
-    : meetings;
+  const visibleMeetings = meetingsForView(meetings, activeApplicationIds, onlyApplications);
   const dayGroups = agruparPorFecha(visibleMeetings, ahora, "America/Montevideo");
 
   return (
     <>
-      <header className="page-header">
-        <div>
-          <p className="page-eyebrow">Monitoreo</p>
-          <h1>{onlyApplications ? "Mis postulaciones" : "Agenda abierta"}</h1>
-          <p>
-            {visibleMeetings.length}{" "}
-            {onlyApplications
-              ? "postulaciones activas a encuentros todavía sin asignar."
-              : "reuniones sin asistente de monitoreo asignado."}
-          </p>
-        </div>
-        <Hand size={28} color="var(--brand)" aria-hidden="true" />
-      </header>
+      <AgendaHeader onlyApplications={onlyApplications} meetingCount={visibleMeetings.length} />
 
       {actor.rol === "ASISTENTE_TECNICO" ? (
         <section className="open-agenda-summary-bar" aria-label="Resumen de disponibilidad">
@@ -219,37 +205,17 @@ export default async function AgendaAbiertaPage({
         </section>
       ) : null}
 
-      {actor.rol === "ASISTENTE_TECNICO" ? (
-        <nav className="role-dashboard-shortcuts" aria-label="Vistas de agenda abierta">
-          <Link
-            className="role-dashboard-shortcut"
-            aria-current={!onlyApplications ? "page" : undefined}
-            href="/agenda-abierta"
-          >
-            Todas las coberturas
-          </Link>
-          <Link
-            className="role-dashboard-shortcut"
-            aria-current={onlyApplications ? "page" : undefined}
-            href="/agenda-abierta?vista=postulaciones"
-          >
-            Mis postulaciones ({activeApplicationsCount})
-          </Link>
-        </nav>
-      ) : null}
+      <AssistantAgendaViewNavigation
+        role={actor.rol}
+        onlyApplications={onlyApplications}
+        activeApplicationsCount={activeApplicationsCount}
+      />
       <section
         className="content-section"
         data-tour={actor.rol === "ASISTENTE_TECNICO" ? "assistant-open-list" : undefined}
       >
         {visibleMeetings.length === 0 ? (
-          <div className="empty-state">
-            <Hand size={24} aria-hidden="true" />
-            <p>
-              {onlyApplications
-                ? "No tenés postulaciones activas en encuentros abiertos."
-                : "No hay reuniones abiertas para postulación."}
-            </p>
-          </div>
+          <AgendaEmptyState onlyApplications={onlyApplications} />
         ) : actor.rol === "ASISTENTE_TECNICO" ? (
           <div className="open-agenda-days-container">
             {dayGroups.map((group) => (
@@ -498,5 +464,84 @@ export default async function AgendaAbiertaPage({
         )}
       </section>
     </>
+  );
+}
+
+function isOnlyApplicationsView(role: string, view: string | undefined): boolean {
+  return role === "ASISTENTE_TECNICO" && view === "postulaciones";
+}
+
+function meetingsForView<T extends { id: string }>(
+  meetings: T[],
+  activeApplicationIds: ReadonlySet<string>,
+  onlyApplications: boolean
+): T[] {
+  return onlyApplications ? meetings.filter((meeting) => activeApplicationIds.has(meeting.id)) : meetings;
+}
+
+function AgendaHeader({
+  onlyApplications,
+  meetingCount
+}: Readonly<{ onlyApplications: boolean; meetingCount: number }>) {
+  return (
+    <header className="page-header">
+      <div>
+        <p className="page-eyebrow">Monitoreo</p>
+        <h1>{onlyApplications ? "Mis postulaciones" : "Agenda abierta"}</h1>
+        <p>
+          {meetingCount}{" "}
+          {onlyApplications
+            ? "postulaciones activas a encuentros todavía sin asignar."
+            : "reuniones sin asistente de monitoreo asignado."}
+        </p>
+      </div>
+      <Hand size={28} color="var(--brand)" aria-hidden="true" />
+    </header>
+  );
+}
+
+function AssistantAgendaViewNavigation({
+  role,
+  onlyApplications,
+  activeApplicationsCount
+}: Readonly<{
+  role: string;
+  onlyApplications: boolean;
+  activeApplicationsCount: number;
+}>) {
+  if (role !== "ASISTENTE_TECNICO") {
+    return null;
+  }
+
+  return (
+    <nav className="role-dashboard-shortcuts" aria-label="Vistas de agenda abierta">
+      <Link
+        className="role-dashboard-shortcut"
+        aria-current={!onlyApplications ? "page" : undefined}
+        href="/agenda-abierta"
+      >
+        Todas las coberturas
+      </Link>
+      <Link
+        className="role-dashboard-shortcut"
+        aria-current={onlyApplications ? "page" : undefined}
+        href="/agenda-abierta?vista=postulaciones"
+      >
+        Mis postulaciones ({activeApplicationsCount})
+      </Link>
+    </nav>
+  );
+}
+
+function AgendaEmptyState({ onlyApplications }: Readonly<{ onlyApplications: boolean }>) {
+  return (
+    <div className="empty-state">
+      <Hand size={24} aria-hidden="true" />
+      <p>
+        {onlyApplications
+          ? "No tenés postulaciones activas en encuentros abiertos."
+          : "No hay reuniones abiertas para postulación."}
+      </p>
+    </div>
   );
 }

@@ -191,35 +191,45 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     return notificationTourForRole(role);
   }
   if (role === "DOCENTE") {
-    if (route === "/mis-clases") {
-      return "teacher-agenda";
-    }
-    if (route === "/reuniones/nueva") {
-      return "teacher-create";
-    }
-    if (route === "/mis-programas") {
-      return "teacher-programs";
-    }
-    if (route === "/grabaciones") {
-      return "teacher-recordings";
-    }
+    return teacherTourForRoute(route);
   }
   if (role === "ASISTENTE_TECNICO") {
-    if (route === "/") {
-      return "assistant-dashboard";
-    }
-    if (href === "/mi-agenda?tab=proximas") {
-      return "assistant-my-agenda";
-    }
-    if (href === "/agenda-abierta") {
-      return "assistant-open-agenda";
-    }
-    if (route === "/grabaciones") {
-      return "assistant-recordings";
-    }
-    if (route === "/mi-perfil") {
-      return "assistant-profile";
-    }
+    return assistantTourForRoute(route, href);
+  }
+  return undefined;
+}
+
+function teacherTourForRoute(route: string): string | undefined {
+  if (route === "/mis-clases") {
+    return "teacher-agenda";
+  }
+  if (route === "/reuniones/nueva") {
+    return "teacher-create";
+  }
+  if (route === "/mis-programas") {
+    return "teacher-programs";
+  }
+  if (route === "/grabaciones") {
+    return "teacher-recordings";
+  }
+  return undefined;
+}
+
+function assistantTourForRoute(route: string, href: string): string | undefined {
+  if (route === "/") {
+    return "assistant-dashboard";
+  }
+  if (href === "/mi-agenda?tab=proximas") {
+    return "assistant-my-agenda";
+  }
+  if (href === "/agenda-abierta") {
+    return "assistant-open-agenda";
+  }
+  if (route === "/grabaciones") {
+    return "assistant-recordings";
+  }
+  if (route === "/mi-perfil") {
+    return "assistant-profile";
   }
   return undefined;
 }
