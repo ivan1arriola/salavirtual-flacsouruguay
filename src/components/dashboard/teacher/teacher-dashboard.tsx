@@ -21,9 +21,9 @@ export async function TeacherDashboard({
       <DashboardHeader
         actions={
           <>
-            <Link className="secondary-action" data-tour="teacher-agenda" href="/reuniones">
+            <Link className="secondary-action" data-tour="teacher-agenda" href="/mis-clases">
               <CalendarRange size={16} />
-              <span>Ver mi agenda</span>
+              <span>Mis clases</span>
             </Link>
             <Link className="primary-action" data-tour="teacher-create" href="/reuniones/nueva">
               <CalendarPlus size={17} />
@@ -39,11 +39,19 @@ export async function TeacherDashboard({
         emptyStateActionHref="/reuniones/nueva"
         emptyStateActionLabel="Crear una reunión"
         emptyStateCopy="Consultá el cronograma de tus cursos o programá un nuevo encuentro virtual o híbrido."
-        emptyStateTitle="No tenés clases programadas para hoy"
+        emptyStateTitle="No tenés próximas clases programadas"
         meeting={data.heroMeeting}
         role="DOCENTE"
       />
 
+      <div className="role-dashboard-shortcuts" aria-label="Accesos académicos">
+        <Link href="/mis-clases" className="role-dashboard-shortcut">
+          <strong>{data.totalUpcomingCount}</strong><span>Próximas clases</span>
+        </Link>
+        <Link href="/mis-programas" className="role-dashboard-shortcut">Mis programas</Link>
+        <Link href="/mis-clases?vista=anteriores" className="role-dashboard-shortcut">Consultar asistencia</Link>
+        <Link href="/grabaciones" className="role-dashboard-shortcut">Biblioteca de grabaciones</Link>
+      </div>
       <div className="teacher-dashboard-columns">
         <TeacherUpcomingList meetings={data.upcomingMeetings} />
         <TeacherRecentRecordings recordings={data.recentRecordings} />
