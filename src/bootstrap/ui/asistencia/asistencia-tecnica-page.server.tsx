@@ -75,7 +75,7 @@ export default async function AsistenciaTecnicaPage({
       },
       asignaciones: {
         where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-        include: { asistenteTecnico: { include: { usuario: true } } },
+        select: { asistenteTecnicoId: true },
         orderBy: { updatedAt: "desc" }
       },
       postulaciones: {
@@ -106,7 +106,9 @@ export default async function AsistenciaTecnicaPage({
   const total = meetings.length;
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
   const pending = total - covered;
-  const applicantsCount = meetings.reduce((count, meeting) => count + meeting.postulaciones.length, 0);
+  const applicantsCount = new Set(
+    meetings.flatMap((meeting) => meeting.postulaciones.map(({ asistenteTecnicoId }) => asistenteTecnicoId))
+  ).size;
   const days = agruparPorDia(rows, ({ meeting }) => meeting.inicioProgramadoAt, now);
   const filters = [
     { value: "todas", label: "Todas", count: total },
