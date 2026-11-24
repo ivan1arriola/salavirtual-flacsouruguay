@@ -490,14 +490,9 @@ export default async function ReunionesZoomPage({
                         ) : null}
                         {resumen.unificada ? (
                           <>
-                            <span className={claseEstadoEnlace}>
-                              {etiquetaEnlace}
-                            </span>
+                            <span className={claseEstadoEnlace}>{etiquetaEnlace}</span>
                             {enlaceParaUnirse ? (
-                              <ZoomJoinActions
-                                url={enlaceParaUnirse}
-                                contexto={primero.solicitud.titulo}
-                              />
+                              <ZoomJoinActions url={enlaceParaUnirse} contexto={primero.solicitud.titulo} />
                             ) : null}
                           </>
                         ) : (
