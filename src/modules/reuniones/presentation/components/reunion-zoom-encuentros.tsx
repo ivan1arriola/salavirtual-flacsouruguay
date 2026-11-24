@@ -32,6 +32,8 @@ export type EncuentroZoomView = Readonly<{
   operacion: ResumenEnlaceZoom["operacion"];
 }>;
 
+type MensajeEncuentro = Readonly<{ texto: string; error: boolean; encuentroId?: string }>;
+
 const ZONA = "America/Montevideo";
 const fechaFmt = new Intl.DateTimeFormat("es-UY", {
   timeZone: ZONA,
@@ -112,30 +114,39 @@ export function ReunionZoomEncuentros({
   const [pending, startTransition] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
+  const [mensaje, setMensaje] = useState<MensajeEncuentro | null>(null);
   const [cancelacion, setCancelacion] = useState<
     | { tipo: "encuentro"; encuentro: EncuentroZoomView; fecha: string }
     | { tipo: "serie"; cantidad: number }
     | null
   >(null);
   const fechaInputRef = useRef<HTMLInputElement>(null);
-  const botonEditarRef = useRef<HTMLButtonElement>(null);
-  const devolverFocoRef = useRef(false);
+  const botonesEditarRef = useRef(new Map<string, HTMLButtonElement>());
+  const devolverFocoRef = useRef<string | null>(null);
   useEffect(() => {
     if (editando) {
       fechaInputRef.current?.focus();
     } else if (devolverFocoRef.current) {
-      devolverFocoRef.current = false;
-      botonEditarRef.current?.focus();
+      const encuentroId = devolverFocoRef.current;
+      devolverFocoRef.current = null;
+      botonesEditarRef.current.get(encuentroId)?.focus();
     }
   }, [editando]);
   const hayEditables = puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
 
-  function ejecutar(accion: () => ReturnType<typeof enviarAccionEncuentro>, alTerminar?: () => void) {
+  function ejecutar(
+    accion: () => ReturnType<typeof enviarAccionEncuentro>,
+    alTerminar?: () => void,
+    encuentroId?: string
+  ) {
     setMensaje(null);
     startTransition(async () => {
       const resultado = await accion();
-      setMensaje({ texto: resultado.mensaje, error: !resultado.ok });
+      setMensaje({
+        texto: resultado.mensaje,
+        error: !resultado.ok,
+        encuentroId: resultado.ok ? undefined : encuentroId
+      });
       if (resultado.ok) {
         alTerminar?.();
         router.refresh();
@@ -149,7 +160,11 @@ export function ReunionZoomEncuentros({
     const inicio = String(datos.get("horaInicio") ?? "");
     const fin = String(datos.get("horaFin") ?? "");
     if (!fecha || !inicio || !fin || fin <= inicio) {
-      setMensaje({ texto: "Revisá la fecha y que la hora de fin sea posterior al inicio.", error: true });
+      setMensaje({
+        texto: "Revisá la fecha y que la hora de fin sea posterior al inicio.",
+        error: true,
+        encuentroId: encuentro.id
+      });
       return;
     }
     ejecutar(
@@ -162,7 +177,11 @@ export function ReunionZoomEncuentros({
             body: { accion: "EDITAR_FECHA", inicio: aIso(fecha, inicio), fin: aIso(fecha, fin) }
           }
         ),
-      () => setEditando(null)
+      () => {
+        devolverFocoRef.current = encuentro.id;
+        setEditando(null);
+      },
+      encuentro.id
     );
   }
 
@@ -234,169 +253,46 @@ export function ReunionZoomEncuentros({
 
   return (
     <section className="zoom-encuentros zoom-series-encounters" aria-label="Encuentros de la serie">
+      {mensaje && !mensaje.encuentroId ? (
+        <p className="zoom-series-encounters__message" role={mensaje.error ? "alert" : "status"}>
+          {mensaje.texto}
+        </p>
+      ) : null}
       <ul className="zoom-series-encounters__list">
         {encuentros.map((encuentro) => {
-          const inicio = new Date(encuentro.inicioIso);
-          const fin = new Date(encuentro.finIso);
-          const valores = aInputs(encuentro.inicioIso);
-          const finValor = aInputs(encuentro.finIso);
-          const estado = ESTADOS_ENCUENTRO[encuentro.estado.toUpperCase()] ?? {
-            etiqueta: encuentro.estado.toLowerCase().replaceAll("_", " "),
-            clase: "is-desconocido"
-          };
-          const contexto = `${contextoFechaFmt.format(inicio)}, ${horaFmt.format(inicio)}`;
           return (
-            <li key={encuentro.id} className="zoom-series-card">
-              <div className="zoom-series-card__date" aria-label={fechaFmt.format(inicio)}>
-                <span className="zoom-series-card__weekday">{semanaFmt.format(inicio)}</span>
-                <strong className="zoom-series-card__day">{diaFmt.format(inicio)}</strong>
-                <span className="zoom-series-card__month">{mesFmt.format(inicio)}</span>
-                <span className="zoom-series-card__time">
-                  <Clock3 size={16} aria-hidden="true" /> {horaFmt.format(inicio)} – {horaFmt.format(fin)}
-                </span>
-              </div>
-              <div className="zoom-series-card__body">
-                <div className="zoom-series-card__heading">
-                  <h2>{encuentro.descripcion || "Encuentro por Zoom"}</h2>
-                  <span className={`zoom-series-card__state ${estado.clase}`}>{estado.etiqueta}</span>
-                </div>
-                <div className="zoom-series-card__meta">
-                  {encuentro.puedeUnirse ? (
-                    <ZoomLinkStatus
-                      estado={encuentro.estadoEnlace}
-                      esAdmin={esAdmin}
-                      eventoProveedorId={encuentro.eventoProveedorId}
-                      operacion={encuentro.operacion}
-                      contexto={contexto}
-                    />
-                  ) : null}
-                  <span
-                    className="zoom-series-card__host"
-                    style={
-                      {
-                        "--cuenta":
-                          PALETA_CUENTAS_ZOOM[colorCuentaZoom(encuentro.cuentaAnfitrion) ?? -1]?.fuerte ??
-                          "#8093ae"
-                      } as React.CSSProperties
-                    }
-                  >
-                    <UserRound size={15} aria-hidden="true" /> Cuenta anfitriona:{" "}
-                    <strong>{encuentro.cuentaAnfitrion ?? "Sin asignar"}</strong>
-                  </span>
-                  {encuentro.zoomMeetingId ? (
-                    <span className="zoom-series-card__id">
-                      <Hash size={15} aria-hidden="true" /> ID de reunión:{" "}
-                      <strong>{encuentro.zoomMeetingId}</strong>
-                    </span>
-                  ) : (
-                    <span className="zoom-series-card__id zoom-series-card__id--pending">
-                      <Hash size={15} aria-hidden="true" /> ID de reunión pendiente
-                    </span>
-                  )}
-                </div>
-                <div className="zoom-series-card__main-actions">
-                  <Link
-                    className="secondary-action"
-                    href={`/operacion/${encuentro.id}`}
-                    aria-label={`Abrir ficha del encuentro del ${contexto}`}
-                  >
-                    <ArrowUpRight size={16} aria-hidden="true" /> Ver encuentro
-                  </Link>
-                </div>
-                {encuentro.puedeUnirse ? (
-                  <div className="zoom-series-card__main-actions">
-                    {encuentro.joinUrl ? (
-                      <ZoomJoinActions url={encuentro.joinUrl} contexto={contexto} />
-                    ) : null}
-                    {encuentro.puedeIniciar ? (
-                      <a
-                        className="secondary-action"
-                        href={`/api/v1/reuniones/instancias/${encuentro.id}/iniciar-zoom`}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        <Video size={16} aria-hidden="true" /> Iniciar como anfitrión
-                        <span className="sr-only"> (se abre en una pestaña nueva)</span>
-                      </a>
-                    ) : null}
-                  </div>
-                ) : null}
-                {actividad[encuentro.id] ? (
-                  <ZoomActividadEncuentro actividad={actividad[encuentro.id]!} />
-                ) : null}
-                {puedeModificar && encuentro.editable ? (
-                  <div className="zoom-series-card__secondary-actions">
-                    {editando === encuentro.id ? (
-                      <form
-                        className="zoom-encuentro__form zoom-series-card__form"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          guardar(encuentro, event.currentTarget);
-                        }}
-                      >
-                        <label>
-                          Fecha
-                          <input
-                            ref={fechaInputRef}
-                            defaultValue={valores.fecha}
-                            name="fecha"
-                            required
-                            type="date"
-                          />
-                        </label>
-                        <label>
-                          Inicio
-                          <input defaultValue={valores.hora} name="horaInicio" required type="time" />
-                        </label>
-                        <label>
-                          Fin
-                          <input defaultValue={finValor.hora} name="horaFin" required type="time" />
-                        </label>
-                        <button className="primary-action" disabled={pending} type="submit">
-                          Guardar
-                        </button>
-                        <button
-                          className="secondary-action"
-                          disabled={pending}
-                          onClick={() => {
-                            devolverFocoRef.current = true;
-                            setEditando(null);
-                          }}
-                          type="button"
-                        >
-                          Cancelar edición
-                        </button>
-                      </form>
-                    ) : (
-                      <>
-                        <button
-                          ref={botonEditarRef}
-                          className="zoom-series-card__text-action"
-                          disabled={pending}
-                          onClick={() => {
-                            devolverFocoRef.current = false;
-                            setEditando(encuentro.id);
-                          }}
-                          type="button"
-                        >
-                          <CalendarClock size={16} aria-hidden="true" /> Editar fecha y hora
-                        </button>
-                        {encuentro.puedeCancelar ? (
-                          <button
-                            className="zoom-series-card__text-action zoom-series-card__text-action--danger"
-                            disabled={pending}
-                            onClick={() => cancelarEncuentro(encuentro)}
-                            type="button"
-                          >
-                            <Trash2 size={16} aria-hidden="true" /> Cancelar encuentro
-                          </button>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            </li>
+            <ZoomSeriesEncounterCard
+              key={encuentro.id}
+              encuentro={encuentro}
+              actividad={actividad[encuentro.id]}
+              esAdmin={esAdmin}
+              puedeModificar={puedeModificar}
+              editando={editando === encuentro.id}
+              pending={pending}
+              mensaje={mensaje}
+              onFechaInputRef={(element) => {
+                fechaInputRef.current = element;
+              }}
+              onEditar={() => {
+                devolverFocoRef.current = null;
+                setMensaje(null);
+                setEditando(encuentro.id);
+              }}
+              onEditarRef={(element) => {
+                if (element) {
+                  botonesEditarRef.current.set(encuentro.id, element);
+                } else {
+                  botonesEditarRef.current.delete(encuentro.id);
+                }
+              }}
+              onGuardar={(form) => guardar(encuentro, form)}
+              onCancelarEdicion={() => {
+                devolverFocoRef.current = encuentro.id;
+                setMensaje(null);
+                setEditando(null);
+              }}
+              onCancelarEncuentro={() => cancelarEncuentro(encuentro)}
+            />
           );
         })}
       </ul>
@@ -476,7 +372,6 @@ export function ReunionZoomEncuentros({
           </button>
         </div>
       ) : null}
-      {mensaje ? <p role={mensaje.error ? "alert" : "status"}>{mensaje.texto}</p> : null}
       {cancelacion ? (
         <ConfirmacionCancelacionZoom
           detalle={cancelacion}
@@ -485,5 +380,309 @@ export function ReunionZoomEncuentros({
         />
       ) : null}
     </section>
+  );
+}
+
+function ZoomSeriesEncounterCard({
+  encuentro,
+  actividad,
+  esAdmin,
+  puedeModificar,
+  editando,
+  pending,
+  mensaje,
+  onFechaInputRef,
+  onEditar,
+  onEditarRef,
+  onGuardar,
+  onCancelarEdicion,
+  onCancelarEncuentro
+}: Readonly<{
+  encuentro: EncuentroZoomView;
+  actividad?: ActividadEncuentroZoom;
+  esAdmin: boolean;
+  puedeModificar: boolean;
+  editando: boolean;
+  pending: boolean;
+  mensaje: MensajeEncuentro | null;
+  onFechaInputRef: (element: HTMLInputElement | null) => void;
+  onEditar: () => void;
+  onEditarRef: (element: HTMLButtonElement | null) => void;
+  onGuardar: (form: HTMLFormElement) => void;
+  onCancelarEdicion: () => void;
+  onCancelarEncuentro: () => void;
+}>) {
+  const inicio = new Date(encuentro.inicioIso);
+  const fin = new Date(encuentro.finIso);
+  const valores = aInputs(encuentro.inicioIso);
+  const finValor = aInputs(encuentro.finIso);
+  const estado = resolverEstadoVisualEncuentro(encuentro.estado);
+  const contexto = `${contextoFechaFmt.format(inicio)}, ${horaFmt.format(inicio)}`;
+
+  return (
+    <li className="zoom-series-card">
+      <EncounterDateSummary inicio={inicio} fin={fin} />
+      <div className="zoom-series-card__body">
+        <EncounterHeading
+          encuentro={encuentro}
+          contexto={contexto}
+          estado={estado}
+          mostrarBotonEditar={puedeModificar && encuentro.editable && !editando}
+          pending={pending}
+          onEditar={onEditar}
+          onEditarRef={onEditarRef}
+        />
+        <EncounterMetadata encuentro={encuentro} contexto={contexto} esAdmin={esAdmin} />
+        <div className="zoom-series-card__main-actions">
+          <Link
+            className="secondary-action"
+            href={`/operacion/${encuentro.id}`}
+            aria-label={`Abrir ficha del encuentro del ${contexto}`}
+          >
+            <ArrowUpRight size={16} aria-hidden="true" /> Ver encuentro
+          </Link>
+        </div>
+        <EncounterParticipationActions encuentro={encuentro} contexto={contexto} />
+        {actividad ? <ZoomActividadEncuentro actividad={actividad} /> : null}
+        <EncounterEditControls
+          encuentro={encuentro}
+          contexto={contexto}
+          editable={puedeModificar && encuentro.editable}
+          editando={editando}
+          pending={pending}
+          valores={valores}
+          finHora={finValor.hora}
+          mensaje={mensaje?.encuentroId === encuentro.id ? mensaje : null}
+          onFechaInputRef={onFechaInputRef}
+          onGuardar={onGuardar}
+          onCancelarEdicion={onCancelarEdicion}
+          onCancelarEncuentro={onCancelarEncuentro}
+        />
+      </div>
+    </li>
+  );
+}
+
+function resolverEstadoVisualEncuentro(estado: string) {
+  return (
+    ESTADOS_ENCUENTRO[estado.toUpperCase()] ?? {
+      etiqueta: estado.toLowerCase().replaceAll("_", " "),
+      clase: "is-desconocido"
+    }
+  );
+}
+
+function EncounterDateSummary({ inicio, fin }: Readonly<{ inicio: Date; fin: Date }>) {
+  return (
+    <div className="zoom-series-card__date" aria-label={fechaFmt.format(inicio)}>
+      <span className="zoom-series-card__weekday">{semanaFmt.format(inicio)}</span>
+      <strong className="zoom-series-card__day">{diaFmt.format(inicio)}</strong>
+      <span className="zoom-series-card__month">{mesFmt.format(inicio)}</span>
+      <span className="zoom-series-card__time">
+        <Clock3 size={16} aria-hidden="true" /> {horaFmt.format(inicio)} – {horaFmt.format(fin)}
+      </span>
+    </div>
+  );
+}
+
+function EncounterHeading({
+  encuentro,
+  contexto,
+  estado,
+  mostrarBotonEditar,
+  pending,
+  onEditar,
+  onEditarRef
+}: Readonly<{
+  encuentro: EncuentroZoomView;
+  contexto: string;
+  estado: Readonly<{ etiqueta: string; clase: string }>;
+  mostrarBotonEditar: boolean;
+  pending: boolean;
+  onEditar: () => void;
+  onEditarRef: (element: HTMLButtonElement | null) => void;
+}>) {
+  return (
+    <div className="zoom-series-card__heading">
+      <h2>{encuentro.descripcion || "Encuentro por Zoom"}</h2>
+      <span className={`zoom-series-card__state ${estado.clase}`}>{estado.etiqueta}</span>
+      {mostrarBotonEditar ? (
+        <button
+          ref={onEditarRef}
+          className="zoom-series-card__edit-toggle"
+          disabled={pending}
+          onClick={onEditar}
+          type="button"
+          aria-label={`Cambiar fecha y horario del encuentro del ${contexto}`}
+        >
+          <CalendarClock size={16} aria-hidden="true" /> Cambiar fecha y horario
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function EncounterMetadata({
+  encuentro,
+  contexto,
+  esAdmin
+}: Readonly<{ encuentro: EncuentroZoomView; contexto: string; esAdmin: boolean }>) {
+  const colorCuenta =
+    PALETA_CUENTAS_ZOOM[colorCuentaZoom(encuentro.cuentaAnfitrion) ?? -1]?.fuerte ?? "#8093ae";
+  return (
+    <div className="zoom-series-card__meta">
+      {encuentro.puedeUnirse ? (
+        <ZoomLinkStatus
+          estado={encuentro.estadoEnlace}
+          esAdmin={esAdmin}
+          eventoProveedorId={encuentro.eventoProveedorId}
+          operacion={encuentro.operacion}
+          contexto={contexto}
+        />
+      ) : null}
+      <span className="zoom-series-card__host" style={{ "--cuenta": colorCuenta } as React.CSSProperties}>
+        <UserRound size={15} aria-hidden="true" /> Cuenta anfitriona:{" "}
+        <strong>{encuentro.cuentaAnfitrion ?? "Sin asignar"}</strong>
+      </span>
+      <EncounterMeetingId zoomMeetingId={encuentro.zoomMeetingId} />
+    </div>
+  );
+}
+
+function EncounterMeetingId({ zoomMeetingId }: Readonly<{ zoomMeetingId?: string | null }>) {
+  return zoomMeetingId ? (
+    <span className="zoom-series-card__id">
+      <Hash size={15} aria-hidden="true" /> ID de reunión: <strong>{zoomMeetingId}</strong>
+    </span>
+  ) : (
+    <span className="zoom-series-card__id zoom-series-card__id--pending">
+      <Hash size={15} aria-hidden="true" /> ID de reunión pendiente
+    </span>
+  );
+}
+
+function EncounterParticipationActions({
+  encuentro,
+  contexto
+}: Readonly<{ encuentro: EncuentroZoomView; contexto: string }>) {
+  if (!encuentro.puedeUnirse) {
+    return null;
+  }
+  return (
+    <div className="zoom-series-card__main-actions">
+      {encuentro.joinUrl ? <ZoomJoinActions url={encuentro.joinUrl} contexto={contexto} /> : null}
+      {encuentro.puedeIniciar ? (
+        <a
+          className="secondary-action"
+          href={`/api/v1/reuniones/instancias/${encuentro.id}/iniciar-zoom`}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <Video size={16} aria-hidden="true" /> Iniciar como anfitrión
+          <span className="sr-only"> (se abre en una pestaña nueva)</span>
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+function EncounterEditControls({
+  encuentro,
+  contexto,
+  editable,
+  editando,
+  pending,
+  valores,
+  finHora,
+  mensaje,
+  onFechaInputRef,
+  onGuardar,
+  onCancelarEdicion,
+  onCancelarEncuentro
+}: Readonly<{
+  encuentro: EncuentroZoomView;
+  contexto: string;
+  editable: boolean;
+  editando: boolean;
+  pending: boolean;
+  valores: Readonly<{ fecha: string; hora: string }>;
+  finHora: string;
+  mensaje: MensajeEncuentro | null;
+  onFechaInputRef: (element: HTMLInputElement | null) => void;
+  onGuardar: (form: HTMLFormElement) => void;
+  onCancelarEdicion: () => void;
+  onCancelarEncuentro: () => void;
+}>) {
+  if (!editable) {
+    return null;
+  }
+  const formulario = editando ? (
+    <form
+      id={`zoom-edit-form-${encuentro.id}`}
+      className="zoom-encuentro__form zoom-series-card__form"
+      aria-label={`Editar encuentro del ${contexto}`}
+      aria-busy={pending}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onGuardar(event.currentTarget);
+      }}
+    >
+      <p className="zoom-series-card__form-note">Todos los horarios corresponden a Uruguay.</p>
+      <label>
+        Fecha
+        <input ref={onFechaInputRef} defaultValue={valores.fecha} name="fecha" required type="date" />
+      </label>
+      <label>
+        Inicio
+        <input
+          defaultValue={valores.hora}
+          name="horaInicio"
+          required
+          type="time"
+          aria-label="Hora de inicio, hora de Uruguay"
+        />
+      </label>
+      <label>
+        Fin
+        <input
+          defaultValue={finHora}
+          name="horaFin"
+          required
+          type="time"
+          aria-label="Hora de fin, hora de Uruguay"
+        />
+      </label>
+      <button className="primary-action" disabled={pending} type="submit">
+        {pending ? "Guardando…" : "Guardar nuevo horario"}
+      </button>
+      <button className="secondary-action" disabled={pending} onClick={onCancelarEdicion} type="button">
+        Cancelar edición
+      </button>
+      {mensaje ? (
+        <p
+          className={`zoom-series-card__form-message${mensaje.error ? " is-error" : ""}`}
+          role={mensaje.error ? "alert" : "status"}
+        >
+          {mensaje.texto}
+        </p>
+      ) : null}
+    </form>
+  ) : null;
+  const botonCancelar =
+    !editando && encuentro.puedeCancelar ? (
+      <button
+        className="zoom-series-card__text-action zoom-series-card__text-action--danger"
+        disabled={pending}
+        onClick={onCancelarEncuentro}
+        type="button"
+      >
+        <Trash2 size={16} aria-hidden="true" /> Cancelar encuentro
+      </button>
+    ) : null;
+  return (
+    <div className="zoom-series-card__secondary-actions">
+      {formulario}
+      {botonCancelar}
+    </div>
   );
 }

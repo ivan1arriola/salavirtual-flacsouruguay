@@ -54,7 +54,7 @@ describe("encuentros de una reunión Zoom", () => {
   it("oculta 'Cancelar encuentro' cuando es el único activo, pero deja editarlo y cancelar la serie", () => {
     const html = render(false, false, { puedeCancelar: false });
     expect(html).not.toContain("Cancelar encuentro");
-    expect(html).toContain("Editar fecha y hora");
+    expect(html).toContain("Cambiar fecha y horario");
     expect(html).toContain("Cancelar toda la serie");
   });
 
@@ -69,7 +69,7 @@ describe("encuentros de una reunión Zoom", () => {
       })
     );
     expect(html).toContain("Unirse");
-    expect(html).not.toContain("Editar fecha y hora");
+    expect(html).not.toContain("Cambiar fecha y horario");
     expect(html).not.toContain("Cancelar encuentro");
     expect(html).not.toContain("Cancelar toda la serie");
   });
@@ -85,7 +85,7 @@ describe("encuentros de una reunión Zoom", () => {
       })
     );
     expect(html).not.toContain("Cancelar toda la serie");
-    expect(html).toContain("Editar fecha y hora");
+    expect(html).toContain("Cambiar fecha y horario");
   });
 
   it("la página decide puedeModificar con la regla del titular", () => {
@@ -101,7 +101,7 @@ describe("encuentros de una reunión Zoom", () => {
     const html = render(true, false, { editable: false, puedeUnirse: true });
     expect(html).toContain("Unirse");
     expect(html).toContain("Iniciar como anfitrión");
-    expect(html).not.toContain("Editar fecha y hora");
+    expect(html).not.toContain("Cambiar fecha y horario");
   });
 
   it("no ofrece unirse, iniciar ni estado de enlace en un encuentro cancelado", () => {

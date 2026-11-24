@@ -213,6 +213,35 @@
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
+.zoom-series-card__edit-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-left: auto;
+  border: 1px solid #e2b900;
+  border-radius: 9px;
+  background: #ffd526;
+  padding: 9px 13px;
+  color: #173969;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+.zoom-series-card__edit-toggle:hover {
+  background: #ffca00;
+  box-shadow: 0 3px 10px rgba(23, 57, 105, 0.13);
+}
+.zoom-series-card__edit-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .zoom-series-card__state {
   padding: 4px 9px;
   border-radius: 999px;
@@ -289,7 +318,7 @@
 }
 .zoom-series-card__text-action {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 44px;
   align-items: center;
   gap: 7px;
   border: 0;
@@ -319,6 +348,38 @@
   gap: 10px;
   align-items: end;
   width: 100%;
+}
+.zoom-series-card__form-note,
+.zoom-series-card__form-message {
+  flex: 1 0 100%;
+  margin: 0;
+  color: #52637a;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.zoom-series-card__form-message {
+  border-left: 3px solid #2b6d50;
+  border-radius: 0 6px 6px 0;
+  background: #edf7f1;
+  padding: 9px 11px;
+  color: #195439;
+}
+.zoom-series-card__form-message.is-error,
+.zoom-series-encounters__message[role="alert"] {
+  border-left-color: #a8343c;
+  background: #fff1f1;
+  color: #842b32;
+}
+.zoom-series-encounters__message {
+  margin: 0;
+  border: 1px solid #c9ded2;
+  border-left: 4px solid #2b6d50;
+  border-radius: 9px;
+  background: #f2faf5;
+  padding: 12px 15px;
+  color: #195439;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 .zoom-series-card__form label {
   display: grid;
@@ -411,6 +472,13 @@
   .zoom-series-card__body {
     padding: 2px 3px 4px;
   }
+  .zoom-series-card__heading {
+    align-items: flex-start;
+  }
+  .zoom-series-card__edit-toggle {
+    flex: 1 0 100%;
+    margin: 2px 0 0;
+  }
   .zoom-series-card__main-actions,
   .zoom-series-card__main-actions .zoom-join-actions {
     width: 100%;
@@ -422,6 +490,10 @@
   .zoom-series-card__form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .zoom-series-card__form-note,
+  .zoom-series-card__form-message {
+    grid-column: 1 / -1;
   }
   .zoom-series-card__form label:first-child {
     grid-column: 1 / -1;
