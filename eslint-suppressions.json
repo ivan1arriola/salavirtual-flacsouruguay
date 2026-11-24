@@ -14,11 +14,6 @@
       "count": 1
     }
   },
-  "app/(gestion)/monitoreo/gestion/page.tsx": {
-    "sonarjs/no-nested-conditional": {
-      "count": 4
-    }
-  },
   "app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 2
