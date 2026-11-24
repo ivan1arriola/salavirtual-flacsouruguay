@@ -1,0 +1,31 @@
+name: Prepare SonarJS 4 upgrade
+on:
+  push:
+    branches:
+      - chore/prepare-dependabot-sonarjs-4
+    paths:
+      - .github/workflows/prepare-sonarjs4.yml
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --save-dev --save-exact eslint-plugin-sonarjs@4.2.2 --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npm run lint:fix -- --prune-suppressions
+        continue-on-error: true
+      - run: npm run format
+      - run: |
+          git diff --stat
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git diff --cached --quiet || git commit -m "chore: migrate SonarJS and apply supported lint fixes"
+          git push origin HEAD:chore/prepare-dependabot-sonarjs-4
+      - run: npm run lint
