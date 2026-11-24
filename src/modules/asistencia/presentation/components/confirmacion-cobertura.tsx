@@ -36,7 +36,8 @@ function textoConfirmacion(detalle: ConfirmacionCoberturaDetalle) {
     case "cancelar":
       return {
         titulo: "Quitar requisito de monitoreo",
-        descripcion: "El encuentro seguirá programado, pero dejará de requerir monitoreo y se retirarán las postulaciones activas."
+        descripcion:
+          "El encuentro seguirá programado, pero dejará de requerir monitoreo y se retirarán las postulaciones activas."
       };
     case "aprobacion":
       return {
@@ -92,7 +93,11 @@ export function ConfirmacionCobertura({
         <button ref={volver} type="button" className="secondary-action" onClick={onCerrar}>
           Volver
         </button>
-        <button type="button" className={destructive ? "monitoring-danger-action" : "primary-action"} onClick={onConfirmar}>
+        <button
+          type="button"
+          className={destructive ? "monitoring-danger-action" : "primary-action"}
+          onClick={onConfirmar}
+        >
           {texto.titulo}
         </button>
       </div>

@@ -133,7 +133,12 @@ export function GestionCoberturaPanel({
       return;
     }
     if (meeting.asignado) {
-      setConfirmacion({ tipo: "reasignacion", anterior: meeting.asignado, nombre: person.name, asistenteId: id });
+      setConfirmacion({
+        tipo: "reasignacion",
+        anterior: meeting.asignado,
+        nombre: person.name,
+        asistenteId: id
+      });
       return;
     }
     sendAssignment(id);
@@ -236,8 +241,14 @@ export function GestionCoberturaPanel({
             <div className="monitoring-workflow-banner is-warning" role="status">
               <CircleAlert size={20} aria-hidden="true" />
               <div className="monitoring-status-copy">
-                <strong>{meeting.requiereMonitoreo ? "Pendiente de monitoreo" : "No requiere monitoreo"}</strong>
-                <small>{meeting.requiereMonitoreo ? "Todavía no hay una persona asignada." : "Podés solicitar cobertura si es necesario."}</small>
+                <strong>
+                  {meeting.requiereMonitoreo ? "Pendiente de monitoreo" : "No requiere monitoreo"}
+                </strong>
+                <small>
+                  {meeting.requiereMonitoreo
+                    ? "Todavía no hay una persona asignada."
+                    : "Podés solicitar cobertura si es necesario."}
+                </small>
               </div>
             </div>
           )}
@@ -246,18 +257,35 @@ export function GestionCoberturaPanel({
               className="monitoring-danger-action"
               type="button"
               disabled={pending}
-              onClick={() => setConfirmacion({ tipo: "desasignacion", nombre: meeting.asignado!, asignacionId: assignmentId })}
+              onClick={() =>
+                setConfirmacion({
+                  tipo: "desasignacion",
+                  nombre: meeting.asignado!,
+                  asignacionId: assignmentId
+                })
+              }
             >
               <UserRoundMinus size={17} aria-hidden="true" /> Desasignar asistente
             </button>
           ) : null}
           {canManage && assignmentId ? (
-            <p className="monitoring-workflow-help">La desasignación mantiene el monitoreo pendiente, sin cancelar el encuentro ni convocar al equipo.</p>
+            <p className="monitoring-workflow-help">
+              La desasignación mantiene el monitoreo pendiente, sin cancelar el encuentro ni convocar al
+              equipo.
+            </p>
           ) : null}
         </div>
       </section>
-      {notice ? <p className="monitoring-workflow-feedback" role="status">{notice}</p> : null}
-      {error ? <p className="monitoring-workflow-error" role="alert">{error}</p> : null}
+      {notice ? (
+        <p className="monitoring-workflow-feedback" role="status">
+          {notice}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="monitoring-workflow-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <section className="monitoring-workflow-surface" aria-labelledby="applicants-title">
         <div className="monitoring-workflow-section-heading">
@@ -489,7 +517,9 @@ export function GestionCoberturaPanel({
             {canManage ? (
               <>
                 <form className="monitoring-workflow-form monitoring-direct-form" onSubmit={submitFuture}>
-                  <label htmlFor="future-assistant">{meeting.asignado ? "Reasignar a otra persona" : "Asignar asistente"}</label>
+                  <label htmlFor="future-assistant">
+                    {meeting.asignado ? "Reasignar a otra persona" : "Asignar asistente"}
+                  </label>
                   <select
                     id="future-assistant"
                     required
@@ -503,30 +533,49 @@ export function GestionCoberturaPanel({
                       .map((assistant) => (
                         <option key={assistant.id} value={assistant.id}>
                           {assistant.name}
-                          {applicants.some((application) => application.assistantId === assistant.id) ? " · Postulada" : ""}
+                          {applicants.some((application) => application.assistantId === assistant.id)
+                            ? " · Postulada"
+                            : ""}
                         </option>
                       ))}
                   </select>
-                  <button className="primary-action" type="submit" disabled={pending || !assistantId || missingHours}>
+                  <button
+                    className="primary-action"
+                    type="submit"
+                    disabled={pending || !assistantId || missingHours}
+                  >
                     <UserRoundCheck size={17} aria-hidden="true" />
                     {meeting.asignado ? "Reasignar" : "Asignar directamente"}
                   </button>
-                  <p className="monitoring-workflow-help">Se verifican conflictos de agenda antes de guardar. No se envía una convocatoria general.</p>
+                  <p className="monitoring-workflow-help">
+                    Se verifican conflictos de agenda antes de guardar. No se envía una convocatoria general.
+                  </p>
                 </form>
                 {missingHours ? (
                   <div className="monitoring-workflow-banner is-warning" role="status">
                     <CalendarClock size={20} aria-hidden="true" />
-                    Definí llegada y salida desde la edición del encuentro híbrido antes de asignar o convocar.
+                    Definí llegada y salida desde la edición del encuentro híbrido antes de asignar o
+                    convocar.
                   </div>
                 ) : null}
                 {!meeting.asignado ? (
                   <div className="monitoring-secondary-options">
-                    <button className="secondary-action" type="button" disabled={pending || missingHours} onClick={() => setConfirmacion({ tipo: "convocatoria" })}>
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      disabled={pending || missingHours}
+                      onClick={() => setConfirmacion({ tipo: "convocatoria" })}
+                    >
                       <Megaphone size={17} aria-hidden="true" /> Abrir convocatoria
                     </button>
                     <small>Notifica al equipo disponible para que pueda postularse.</small>
                     {meeting.requiereMonitoreo ? (
-                      <button className="monitoring-danger-action" type="button" disabled={pending} onClick={() => setConfirmacion({ tipo: "cancelar" })}>
+                      <button
+                        className="monitoring-danger-action"
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setConfirmacion({ tipo: "cancelar" })}
+                      >
                         <UserRoundX size={17} aria-hidden="true" /> Quitar requisito de monitoreo
                       </button>
                     ) : null}
@@ -534,7 +583,9 @@ export function GestionCoberturaPanel({
                 ) : null}
               </>
             ) : (
-              <p className="monitoring-workflow-help">Las asignaciones solo se modifican aquí en encuentros programados y no finalizados.</p>
+              <p className="monitoring-workflow-help">
+                Las asignaciones solo se modifican aquí en encuentros programados y no finalizados.
+              </p>
             )}
           </div>
         </section>
