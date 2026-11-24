@@ -39,13 +39,14 @@ export async function AdminDashboard({
         userName={user.name ?? "Administración"}
       />
 
-      <AdminTodayTimeline meetings={data.todayTimeline} />
-
-      <AdminUpcomingList meetings={data.upcomingTimeline} />
+      <AdminMetricsBar metrics={data.metrics} />
 
       <AdminTriageSection attentionData={data.attentionData} />
 
-      <AdminMetricsBar metrics={data.metrics} />
+      <div className="admin-dashboard-agenda-grid">
+        <AdminTodayTimeline meetings={data.todayTimeline} />
+        <AdminUpcomingList meetings={data.upcomingTimeline} />
+      </div>
     </div>
   );
 }
