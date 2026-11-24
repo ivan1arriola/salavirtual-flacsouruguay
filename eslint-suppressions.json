@@ -194,14 +194,6 @@
       "count": 5
     }
   },
-  "src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx": {
-    "sonarjs/no-nested-conditional": {
-      "count": 5
-    },
-    "sonarjs/no-nested-template-literals": {
-      "count": 1
-    }
-  },
   "src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx": {
     "sonarjs/cognitive-complexity": {
       "count": 1
