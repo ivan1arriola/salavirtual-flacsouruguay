@@ -1,0 +1,39 @@
+name: Format role UX once
+on:
+  push:
+    branches:
+      - feat/role-navigation-dashboard-ux
+    paths:
+      - .github/workflows/format-role-ux-once.yml
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - .github/workflows/format-role-ux-once.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.ref == 'refs/heads/feat/role-navigation-dashboard-ux' || (github.event.pull_request.head.ref == 'feat/role-navigation-dashboard-ux' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feat/role-navigation-dashboard-ux
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+      - run: git pull --rebase origin feat/role-navigation-dashboard-ux
+      - run: npm run format
+      - run: npm run lint -- --prune-suppressions
+        continue-on-error: true
+      - run: npm run format
+      - run: npm run format:check
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git diff --cached --quiet || git commit -m "style: aplicar Prettier y retirar supresiones obsoletas"
+          git push origin HEAD:feat/role-navigation-dashboard-ux
