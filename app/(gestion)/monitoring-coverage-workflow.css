@@ -403,3 +403,114 @@
     width: 100%;
   }
 }
+
+/* La gestión tiene prioridad sobre los identificadores técnicos. */
+.monitoring-status-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.monitoring-status-copy strong {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.monitoring-status-copy small {
+  font-size: 0.85rem;
+}
+
+.monitoring-direct-form,
+.monitoring-secondary-options {
+  display: grid;
+  gap: 10px;
+}
+
+.monitoring-secondary-options {
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f1;
+}
+
+.monitoring-secondary-options small {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.monitoring-danger-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #b91c1c;
+  border-radius: 10px;
+  background: #fff;
+  color: #991b1b;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.monitoring-danger-action:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.monitoring-danger-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.monitoring-danger-action:focus-visible,
+.monitoring-meeting-info summary:focus-visible {
+  outline: 3px solid #2c4777;
+  outline-offset: -3px;
+}
+
+.monitoring-confirm-dialog .monitoring-danger-action {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.monitoring-confirm-dialog .monitoring-danger-action:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.monitoring-meeting-info > summary {
+  display: flex;
+  justify-content: space-between;
+  min-height: 48px;
+  cursor: pointer;
+  color: #16345b;
+  font-weight: 700;
+  list-style: none;
+}
+
+.monitoring-meeting-info > summary::-webkit-details-marker {
+  display: none;
+}
+
+.monitoring-meeting-info[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.monitoring-meeting-info .monitoring-workflow-body {
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+.monitoring-meeting-info p {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .monitoring-workflow-page {
+    gap: 10px;
+  }
+
+  .monitoring-workflow-page .monitoring-danger-action,
+  .monitoring-secondary-options > button {
+    width: 100%;
+  }
+}
