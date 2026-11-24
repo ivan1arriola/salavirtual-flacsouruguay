@@ -324,7 +324,7 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     // Cada ventana se consulta dos veces (activas y papelera): la continuidad se comprueba sobre las activas.
     const todas = origen.listarOcurrencias.mock.calls.map((c: any[]) => c[1]);
     const ventanas = todas.filter((v: any) => !v.papelera);
-    expect(todas.length).toBe(ventanas.length * 2);
+    expect(todas).toHaveLength(ventanas.length * 2);
     expect(ventanas.length).toBeGreaterThanOrEqual(3);
     for (let i = 1; i < ventanas.length; i++) {
       const previo = new Date(`${ventanas[i - 1].hasta}T00:00:00Z`).getTime() + DIA;

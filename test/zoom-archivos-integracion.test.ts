@@ -475,7 +475,7 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
       ["M4A", "CONSERVADO"],
       ["MP4", "ERROR_REINTENTABLE"]
     ]);
-    expect(primera.filter((t) => t === "FALLO").length).toBe(1);
+    expect(primera.filter((t) => t === "FALLO")).toHaveLength(1);
 
     // Pasado el backoff se reintenta: Drive ya tenía el primer bloque, así que se reanuda desde ahí, no desde cero.
     await vaciarCola(r, origen, drive, MAS_TARDE);
@@ -524,7 +524,7 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     expect(vinculo).toEqual({ tipo: "VINCULADA", referenciasCreadas: 3 });
     // Nada que transferir: cero descargas nuevas.
     expect(await r.repo.reclamarArchivo(MAS_TARDE)).toBeNull();
-    expect(origen.abrirDescarga.mock.calls.length).toBe(descargasAntes);
+    expect(origen.abrirDescarga.mock.calls).toHaveLength(descargasAntes);
 
     // El worker mueve la carpeta (no copia): mismos IDs de archivo, nuevo padre directamente bajo VINCULADOS.
     const resumen = await ordenarCarpetasVinculadasZoomUseCase(

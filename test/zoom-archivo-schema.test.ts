@@ -215,7 +215,7 @@ describe("migración aditiva de inventario Zoom", () => {
   });
 
   it("solo es aditiva: sin DROP, sin TRUNCATE/DELETE/UPDATE y sin alterar tablas existentes", () => {
-    const sinComentarios = sql.replace(/--.*$/gm, "");
+    const sinComentarios = sql.split(/\r?\n/).map((line) => line.split("--", 1)[0]).join("\n");
     expect(sinComentarios).not.toMatch(/\bDROP\b/i);
     expect(sinComentarios).not.toMatch(/\bTRUNCATE\b|\bDELETE\s+FROM\b|\bUPDATE\s+"/i);
     expect(sinComentarios).not.toMatch(/\bRENAME\b/i);

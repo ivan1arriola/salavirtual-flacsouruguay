@@ -306,7 +306,7 @@ describe("procesarPaginaRecuperacionZoom", () => {
         break;
       }
       // Tras cada página, lo anunciado como encontrado ya está guardado.
-      expect(archivos.guardarInventario.mock.calls.length).toBe(repo.estado().ocurrenciasEncontradas);
+      expect(archivos.guardarInventario.mock.calls).toHaveLength(repo.estado().ocurrenciasEncontradas);
     }
     expect(vistos.at(-1)).toBe("COMPLETADO");
     expect(archivos.guardarInventario).toHaveBeenCalledTimes(3);

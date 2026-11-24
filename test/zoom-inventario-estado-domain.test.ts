@@ -212,7 +212,7 @@ describe("referencias, tipos y errores saneados", () => {
     const limpio = sanearErrorZoom(texto)!;
     expect(limpio).not.toMatch(/SECRETO|eyJabc|OTRO|FIRMA|ssrweb/);
     expect(limpio).toContain("[url]");
-    expect(sanearErrorZoom("x".repeat(900))!.length).toBe(500);
+    expect(sanearErrorZoom("x".repeat(900))).toHaveLength(500);
     expect(sanearErrorZoom("   ")).toBeNull();
     expect(sanearErrorZoom(null)).toBeNull();
   });

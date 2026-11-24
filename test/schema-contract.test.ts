@@ -47,8 +47,8 @@ describe("schema 3NF inicial", () => {
     const solicitud = model("SolicitudSala");
     expect(schema).toContain("model DocentePrograma");
     expect(solicitud).toContain("docenteProgramaId");
-    expect(solicitud).not.toMatch(/^\s+docenteId\s/m);
-    expect(solicitud).not.toMatch(/^\s+programaId\s/m);
+    expect(solicitud).not.toMatch(/^[ \t]+docenteId\s/m);
+    expect(solicitud).not.toMatch(/^[ \t]+programaId\s/m);
   });
 
   it("conserva trazabilidad de fusiones de usuarios docentes", () => {
@@ -59,7 +59,7 @@ describe("schema 3NF inicial", () => {
   it("no duplica docente, programa, host ni dias en cada instancia", () => {
     const instancia = model("InstanciaSala");
     expect(instancia).toContain("solicitudSalaId");
-    expect(instancia).not.toMatch(/^\s+(docenteId|programaId|cuentaHostId|diaSemana|dias)\s/m);
+    expect(instancia).not.toMatch(/^[ \t]+(docenteId|programaId|cuentaHostId|diaSemana|dias)\s/m);
   });
 
   it("mantiene codigo y host dentro del evento del proveedor", () => {
@@ -72,7 +72,7 @@ describe("schema 3NF inicial", () => {
     const archivo = model("ArchivoReunion");
     expect(archivo).toContain("eventoProveedorId");
     expect(archivo).toContain("externalResourceName");
-    expect(archivo).not.toMatch(/^\s+(programaId|docenteId|cuentaHostId|instanciaSalaId)\s/m);
+    expect(archivo).not.toMatch(/^[ \t]+(programaId|docenteId|cuentaHostId|instanciaSalaId)\s/m);
     expect(archivo).toContain("@@unique([eventoProveedorId, externalResourceName])");
   });
 
@@ -82,7 +82,7 @@ describe("schema 3NF inicial", () => {
     expect(cohost).toContain("instanciaSalaId");
     expect(cohost).toContain("cuentaGoogleId");
     expect(cohost).toContain("@@unique([instanciaSalaId, cuentaGoogleId])");
-    expect(instancia).not.toMatch(/^\s+cohostCuentaIds\s/m);
+    expect(instancia).not.toMatch(/^[ \t]+cohostCuentaIds\s/m);
   });
 
   it("modela notificaciones dirigidas con estado de lectura", () => {
