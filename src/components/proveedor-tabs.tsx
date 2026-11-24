@@ -3,7 +3,10 @@ import type { ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion
 
 const NOMBRES: Record<ProveedorReunion, string> = { GOOGLE_MEET: "Meet", ZOOM: "Zoom" };
 
-function conservarFiltros(href: string, filtros: Readonly<Record<string, string | undefined>>): string {
+function conservarFiltros(
+  href: string,
+  filtros: Readonly<Record<string, string | undefined>>
+): string {
   const search = new URLSearchParams(href.split("?")[1]);
   for (const clave of ["vista", "q", "programa", "periodo", "desde", "hasta"]) {
     const valor = filtros[clave];
@@ -20,7 +23,14 @@ export function ProveedorTabs({
   filtros = {}
 }: Readonly<{
   activo: ProveedorReunion;
-  filtros?: Readonly<{ vista?: string; q?: string; programa?: string; periodo?: string; desde?: string; hasta?: string }>;
+  filtros?: Readonly<{
+    vista?: string;
+    q?: string;
+    programa?: string;
+    periodo?: string;
+    desde?: string;
+    hasta?: string;
+  }>;
 }>) {
   const tabs = [
     { proveedor: "ZOOM", href: "/reuniones?proveedor=zoom" },
