@@ -219,12 +219,16 @@ export default async function AsistenciaTecnicaPage({
             </span>
             <h2>
               {meetings.length === 0
-                ? "No hay reuniones próximas"
+                ? q
+                  ? "No encontramos coincidencias"
+                  : "No hay reuniones próximas"
                 : "No encontramos reuniones para este filtro"}
             </h2>
             <p>
               {meetings.length === 0
-                ? "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda."
+                ? q
+                  ? "Probá con otro término de búsqueda o quitá el filtro para volver a ver la agenda."
+                  : "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda."
                 : "Probá con otro estado o quitá la búsqueda para volver a ver las reuniones."}
             </p>
             {estado !== "todas" || q ? (
