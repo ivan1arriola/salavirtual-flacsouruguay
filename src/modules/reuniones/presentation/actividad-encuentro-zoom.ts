@@ -1,7 +1,13 @@
 import { etiquetaEventoZoom } from "../../../integrations/zoom/zoom-eventos-catalogo";
 
 /** Hecho confirmado por un aviso de Zoom, ya asociado a una ejecución por cuenta + UUID. */
-export type HechoZoom = Readonly<{ tipo: string; ocurridoAt: Date; huella?: string; participanteId?: string | null; detalle?: string | null }>;
+export type HechoZoom = Readonly<{
+  tipo: string;
+  ocurridoAt: Date;
+  huella?: string;
+  participanteId?: string | null;
+  detalle?: string | null;
+}>;
 
 export type EntradaActividadZoom = Readonly<{
   /** Tipo del primer hecho del grupo. */
@@ -13,6 +19,7 @@ export type EntradaActividadZoom = Readonly<{
   cantidad: number;
   participanteId?: string | null;
   detalle?: string | null;
+  huella?: string;
 }>;
 
 /** [singular, plural] */
@@ -47,20 +54,31 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
       vistos.add(clave);
       return true;
     });
-  const entradas: { tipo: string; desde: Date; hasta: Date; cantidad: number; participanteId?: string | null; detalle?: string | null }[] = [];
-  for (const { tipo, ocurridoAt, participanteId, detalle } of ordenados) {
+  const entradas: {
+    tipo: string;
+    desde: Date;
+    hasta: Date;
+    cantidad: number;
+    participanteId?: string | null;
+    detalle?: string | null;
+    huella?: string;
+  }[] = [];
+  for (const { tipo, ocurridoAt, participanteId, detalle, huella } of ordenados) {
     const ultima = entradas.at(-1);
     if (
       ultima &&
       AGRUPABLES.has(tipo) &&
-      !participanteId && !detalle && !ultima.participanteId && !ultima.detalle &&
+      !participanteId &&
+      !detalle &&
+      !ultima.participanteId &&
+      !ultima.detalle &&
       ultima.tipo === tipo &&
       ocurridoAt.getTime() - ultima.desde.getTime() <= VENTANA_AGRUPACION_MS
     ) {
       ultima.hasta = ocurridoAt;
       ultima.cantidad++;
     } else {
-      entradas.push({ tipo, desde: ocurridoAt, hasta: ocurridoAt, cantidad: 1, participanteId, detalle });
+      entradas.push({ tipo, desde: ocurridoAt, hasta: ocurridoAt, cantidad: 1, participanteId, detalle, huella });
     }
   }
   return entradas.map((entrada) => ({ ...entrada, etiqueta: etiquetaEntrada(entrada) }));
