@@ -11,7 +11,7 @@ describe("página de monitoreo compacta", () => {
     expect(page).not.toContain("coverage-card monitoring-account-card");
     expect(page).not.toContain("metric-grid coverage-stats");
     expect(page).not.toContain("coverage-card-footer");
-    expect(page).toContain('"/monitoreo/gestionar/" + meeting.id');
+    expect(page).toContain("/monitoreo/gestionar/${meeting.id}");
     expect(page).toContain("applicantsCount={applicantsCount}");
     expect(page).toContain("monitoring-status-filters");
     expect(page).toContain("monitoring-empty-state");
