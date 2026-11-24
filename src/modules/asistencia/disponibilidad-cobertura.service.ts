@@ -90,7 +90,10 @@ export async function consultarDisponibilidadCobertura(
         .filter(({ title }) => title !== null)
         .map(({ title, inicio, fin }) => `${title} (${formatTime(inicio)} – ${formatTime(fin)})`)
         .join("; ");
-      result.set(id, `Conflicto de agenda: ${details}. Se requieren ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos de separación entre monitoreos.`);
+      result.set(
+        id,
+        `Conflicto de agenda: ${details}. Se requieren ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos de separación entre monitoreos.`
+      );
     }
   }
   return result;

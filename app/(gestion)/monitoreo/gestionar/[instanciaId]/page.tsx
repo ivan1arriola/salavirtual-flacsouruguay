@@ -62,9 +62,10 @@ export default async function GestionCoberturaPage({
   }
   const past = meeting.finProgramadoAt <= new Date();
   const cancelled = meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA";
-  const availability = !past && !cancelled && meeting.estado === "PROGRAMADA"
-    ? await consultarDisponibilidadCobertura(db, meeting, assistants)
-    : new Map<string, string | null>();
+  const availability =
+    !past && !cancelled && meeting.estado === "PROGRAMADA"
+      ? await consultarDisponibilidadCobertura(db, meeting, assistants)
+      : new Map<string, string | null>();
   const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
   const current = meeting.asignaciones[0] ?? null;
   const event = seleccionarEventoProveedorActivo(meeting);
@@ -129,7 +130,10 @@ export default async function GestionCoberturaPage({
         assistants={assistants.map((assistant) => ({
           id: assistant.id,
           name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
-          eligible: assistant.usuario.activo && assistant.usuario.rol === "ASISTENTE_TECNICO" && !assistant.cesadoHastaProximoInicioSesion,
+          eligible:
+            assistant.usuario.activo &&
+            assistant.usuario.rol === "ASISTENTE_TECNICO" &&
+            !assistant.cesadoHastaProximoInicioSesion,
           unavailableReason: availability.get(assistant.id) ?? null
         }))}
         applicants={meeting.postulaciones.map((application) => ({

@@ -30,10 +30,9 @@ const assignment = (id: string, end: string) => ({
 
 describe("disponibilidad anticipada de cobertura", () => {
   it("distingue separación suficiente, conflicto e inhabilitación en una consulta", async () => {
-    const findMany = vi.fn().mockResolvedValue([
-      assignment("conflict", "09:16"),
-      assignment("available", "09:15")
-    ]);
+    const findMany = vi
+      .fn()
+      .mockResolvedValue([assignment("conflict", "09:16"), assignment("available", "09:15")]);
     const db = { asignacionAsistenciaTecnica: { findMany } } as unknown as PrismaClient;
     const result = await consultarDisponibilidadCobertura(db, meeting, [
       assistant("conflict"),
@@ -61,11 +60,9 @@ describe("disponibilidad anticipada de cobertura", () => {
   it("no anuncia disponibilidad si faltan los horarios híbridos", async () => {
     const findMany = vi.fn();
     const db = { asignacionAsistenciaTecnica: { findMany } } as unknown as PrismaClient;
-    const result = await consultarDisponibilidadCobertura(
-      db,
-      { ...meeting, modalidadOverride: "HIBRIDA" },
-      [assistant("a")]
-    );
+    const result = await consultarDisponibilidadCobertura(db, { ...meeting, modalidadOverride: "HIBRIDA" }, [
+      assistant("a")
+    ]);
     expect(result.get("a")).toContain("híbrido");
     expect(findMany).not.toHaveBeenCalled();
   });

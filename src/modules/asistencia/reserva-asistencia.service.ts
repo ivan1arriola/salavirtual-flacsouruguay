@@ -43,7 +43,6 @@ export function buscarConflictoAsistencia<T extends Periodo>(periodos: readonly 
   return null;
 }
 
-
 /** Regla transaccional única para la asignación inicial y posterior. */
 export async function reservarAsistenteDisponible(
   tx: Prisma.TransactionClient,

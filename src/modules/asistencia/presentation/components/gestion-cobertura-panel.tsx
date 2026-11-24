@@ -84,11 +84,17 @@ function UnavailableAssistants({
 
 function ApplicantAvailability({ assistant }: Readonly<{ assistant: Assistant | undefined }>) {
   if (assistant && canAssign(assistant)) {
-    return <small className="monitoring-availability is-available"><CheckCircle2 size={16} aria-hidden="true" /> Disponible según agenda</small>;
+    return (
+      <small className="monitoring-availability is-available">
+        <CheckCircle2 size={16} aria-hidden="true" /> Disponible según agenda
+      </small>
+    );
   }
   return (
     <div className="monitoring-availability is-unavailable">
-      <strong><CircleAlert size={16} aria-hidden="true" /> No disponible</strong>
+      <strong>
+        <CircleAlert size={16} aria-hidden="true" /> No disponible
+      </strong>
       <small>{assistant?.unavailableReason ?? "No habilitada para asignación."}</small>
     </div>
   );
@@ -606,18 +612,30 @@ export function GestionCoberturaPanel({
                     disabled={pending || missingHours}
                   >
                     <option value="">Seleccionar persona…</option>
-                    <AvailabilityOptions assistants={assistants} applicants={applicants} assignedId={assignedId} />
+                    <AvailabilityOptions
+                      assistants={assistants}
+                      applicants={applicants}
+                      assignedId={assignedId}
+                    />
                   </select>
                   <button
                     className="primary-action"
                     type="submit"
-                    disabled={pending || missingHours || !assistants.some((assistant) => assistant.id === assistantId && assistant.id !== assignedId && canAssign(assistant))}
+                    disabled={
+                      pending ||
+                      missingHours ||
+                      !assistants.some(
+                        (assistant) =>
+                          assistant.id === assistantId && assistant.id !== assignedId && canAssign(assistant)
+                      )
+                    }
                   >
                     <UserRoundCheck size={17} aria-hidden="true" />
                     {meeting.asignado ? "Reasignar" : "Asignar directamente"}
                   </button>
                   <p className="monitoring-workflow-help">
-                    La disponibilidad se calcula según la agenda y se vuelve a verificar al guardar. No se envía una convocatoria general.
+                    La disponibilidad se calcula según la agenda y se vuelve a verificar al guardar. No se
+                    envía una convocatoria general.
                   </p>
                   <UnavailableAssistants assistants={assistants} assignedId={assignedId} />
                 </form>
