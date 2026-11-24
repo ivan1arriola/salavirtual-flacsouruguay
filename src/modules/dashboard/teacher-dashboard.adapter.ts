@@ -6,7 +6,7 @@ import {
   extraerCohostsUnificadosDeInstancia
 } from "@/src/modules/conferencias/api";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
-import { determinarEstadoTemporal, esMismoDiaMontevideo } from "./dashboard.domain";
+import { determinarEstadoTemporal } from "./dashboard.domain";
 import type { HeroMeetingDTO, RecentRecordingDTO, UpcomingMeetingSummaryDTO } from "./types";
 
 export interface TeacherDashboardData {
@@ -166,44 +166,37 @@ export async function obtenerDashboardDocente(
     };
   });
 
-  // Hero meeting: The earliest meeting if it is EN_VIVO or starts today (or next if within 24h)
+  // Mostrar el próximo encuentro incluso cuando sea otro día.
   const firstMeeting = mappedMeetings[0];
   let heroMeeting: HeroMeetingDTO | null = null;
 
   if (firstMeeting) {
-    const startsToday = esMismoDiaMontevideo(firstMeeting.instance.inicioProgramadoAt, ahora);
-    const isLive = firstMeeting.estadoTemporal === "EN_VIVO";
-    const hoursUntilStart =
-      (firstMeeting.instance.inicioProgramadoAt.getTime() - ahora.getTime()) / (3600 * 1000);
-
-    if (isLive || startsToday || hoursUntilStart <= 24) {
-      heroMeeting = {
-        id: firstMeeting.instance.id,
-        solicitudId: firstMeeting.instance.solicitud.id,
-        titulo: firstMeeting.instance.solicitud.titulo,
-        programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
-        modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
-        inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
-        finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
-        inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
-          ? (
-              firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
-            ).toISOString()
-          : null,
-        finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
-          ? (
-              firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt
-            ).toISOString()
-          : null,
-        joinUrl: firstMeeting.meet?.joinUrl ?? null,
-        providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
-        cohostConfirmado: firstMeeting.isVerified,
-        cohosts: firstMeeting.cohostsList,
-        asistente: firstMeeting.asistente,
-        requiereAsistencia: firstMeeting.instance.requiereAsistenciaTecnica,
-        salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null
-      };
-    }
+    heroMeeting = {
+      id: firstMeeting.instance.id,
+      solicitudId: firstMeeting.instance.solicitud.id,
+      titulo: firstMeeting.instance.solicitud.titulo,
+      programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
+      modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
+      inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
+      finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
+      inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+        ? (
+            firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
+          ).toISOString()
+        : null,
+      finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+        ? (
+            firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt
+          ).toISOString()
+        : null,
+      joinUrl: firstMeeting.meet?.joinUrl ?? null,
+      providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
+      cohostConfirmado: firstMeeting.isVerified,
+      cohosts: firstMeeting.cohostsList,
+      asistente: firstMeeting.asistente,
+      requiereAsistencia: firstMeeting.instance.requiereAsistenciaTecnica,
+      salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null
+    };
   }
 
   // Upcoming list: exclude hero if shown, or list the remaining

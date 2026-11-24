@@ -31,7 +31,7 @@ function homeSteps(): DriveStep[] {
       align: "start"
     }),
     step('[data-tour="teacher-agenda"]', {
-      title: "Agenda",
+      title: "Mis clases",
       description:
         "Acá consultás todas las reuniones asociadas a tus programas. Podés revisar fecha y horario, cuenta asignada, enlace de acceso, monitoreo y entrar al detalle para modificar encuentros futuros.",
       side: "right",
@@ -54,7 +54,7 @@ function homeSteps(): DriveStep[] {
     step('[data-tour="teacher-notifications"]', {
       title: "Notificaciones",
       description:
-        "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
+        "Abrí Notificaciones desde la navegación o la campana en el encabezado del celular. El contador indica los avisos sin leer.",
       side: "right",
       align: "start"
     }),

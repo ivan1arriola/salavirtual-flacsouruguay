@@ -169,7 +169,6 @@ export async function obtenerDashboardAdministracion(
         estado: "PROGRAMADA"
       },
       orderBy: { inicioProgramadoAt: "asc" },
-      take: 8,
       include: {
         solicitud: {
           include: {
@@ -495,7 +494,17 @@ export async function obtenerDashboardAdministracion(
         }))
       }
     },
-    todayTimeline,
+    todayTimeline: [...todayTimeline]
+      .sort((a, b) => {
+        const rank = (meeting: AdminTodayMeetingDTO) => {
+          if (meeting.estadoTemporal === "EN_VIVO") {
+            return 0;
+          }
+          return meeting.estadoTemporal === "FINALIZADA" ? 2 : 1;
+        };
+        return rank(a) - rank(b);
+      })
+      .slice(0, 8),
     upcomingTimeline
   };
 }

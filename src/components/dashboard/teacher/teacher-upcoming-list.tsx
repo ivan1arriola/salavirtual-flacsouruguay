@@ -18,8 +18,8 @@ export function TeacherUpcomingList({
           <h2>Próximas clases</h2>
           <p>Tu cronograma académico ordenado cronológicamente.</p>
         </div>
-        <Link className="text-link" href="/reuniones">
-          Ver agenda completa <ArrowRight size={16} />
+        <Link className="text-link" href="/mis-clases">
+          Ver todas mis clases <ArrowRight size={16} />
         </Link>
       </div>
 

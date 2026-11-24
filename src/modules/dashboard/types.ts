@@ -55,6 +55,8 @@ export interface AssistantOpportunityDTO {
   readonly modalidad: "HIBRIDA" | "VIRTUAL";
   readonly inicioProgramadoAt: string;
   readonly finProgramadoAt: string;
+  readonly inicioAsistenciaAt?: string | null;
+  readonly finAsistenciaAt?: string | null;
   readonly yaPostulado: boolean;
 }
 

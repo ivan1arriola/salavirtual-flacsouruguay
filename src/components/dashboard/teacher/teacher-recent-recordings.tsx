@@ -33,7 +33,7 @@ export function TeacherRecentRecordings({
       <div className="section-heading">
         <div>
           <h2>Grabaciones recientes</h2>
-          <p>Acceso directo a los videos procesados y listos para compartir con alumnos.</p>
+          <p>Acceso directo a los grabaciones recientes de tus cursos.</p>
         </div>
         <Link className="text-link" href="/grabaciones">
           Biblioteca de grabaciones <ArrowRight size={16} />

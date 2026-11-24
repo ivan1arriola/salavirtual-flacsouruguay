@@ -6,7 +6,7 @@ import { AssistantHoursSummary } from "@/src/components/dashboard/assistant/assi
 import { AssistantOpenOpportunities } from "@/src/components/dashboard/assistant/assistant-open-opportunities";
 import { DashboardHeader } from "@/src/components/dashboard/dashboard-header";
 import { LiveMeetingHero } from "@/src/components/dashboard/live-meeting-hero";
-import { ASSISTANT_AGENDA_HREF } from "@/src/components/app-navigation";
+import { ASSISTANT_MONITORINGS_HREF } from "@/src/components/app-navigation";
 import { formatDate } from "@/src/lib/ui/format";
 import type { AssistantDashboardData } from "@/src/modules/dashboard/types";
 
@@ -22,11 +22,11 @@ export function AssistantDashboardView({
       <DashboardHeader
         actions={
           <>
-            <Link className="secondary-action" href={ASSISTANT_AGENDA_HREF}>
+            <Link className="secondary-action" href={ASSISTANT_MONITORINGS_HREF}>
               <CalendarRange size={16} />
               <span>Mi agenda</span>
             </Link>
-            <Link className="primary-action" href="/agenda-abierta">
+            <Link className="secondary-action" href="/agenda-abierta">
               <CalendarPlus size={16} />
               <span>Agenda abierta</span>
             </Link>
@@ -45,14 +45,27 @@ export function AssistantDashboardView({
         role="ASISTENTE_TECNICO"
       />
 
+      <div className="role-dashboard-shortcuts" aria-label="Accesos de monitoreo">
+        <Link href="/agenda-abierta?vista=postulaciones" className="role-dashboard-shortcut">
+          <strong>{data.stats.postulacionesCount}</strong>
+          <span>Postulaciones activas</span>
+        </Link>
+        <Link href="/agenda-abierta" className="role-dashboard-shortcut">
+          <strong>{data.stats.reunionesDisponibles}</strong>
+          <span>Coberturas disponibles</span>
+        </Link>
+        <Link href="/mi-agenda?tab=historico" className="role-dashboard-shortcut">
+          Horas e historial
+        </Link>
+      </div>
       {data.upcomingCoverages.length > 0 ? (
         <section className="dashboard-content-section assistant-coverages-section">
           <div className="section-heading">
             <div>
               <h2>Próximos monitoreos asignados</h2>
-              <p>Tus próximas reuniones asignadas a continuación.</p>
+              <p>Consultá los horarios de cobertura de tus próximos encuentros.</p>
             </div>
-            <Link className="text-link" href={ASSISTANT_AGENDA_HREF}>
+            <Link className="text-link" href={ASSISTANT_MONITORINGS_HREF}>
               Ver agenda completa <ArrowRight size={16} />
             </Link>
           </div>
@@ -88,7 +101,7 @@ export function AssistantDashboardView({
                   <div className="assistant-coverage-actions">
                     <Link className="secondary-action" href={`/operacion/${cov.id}`}>
                       <Activity size={15} />
-                      Operar
+                      Abrir consola
                     </Link>
                     {cov.joinUrl ? (
                       <CopyMeetLinkButton url={cov.joinUrl} />

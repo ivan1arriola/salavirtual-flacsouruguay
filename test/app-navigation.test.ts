@@ -1,95 +1,73 @@
 import { describe, expect, it } from "vitest";
-import { getNavigationForRole, isNavigationItemActive } from "@/src/components/app-navigation";
+import {
+  getNavigationForRole,
+  getSecondaryNavigation,
+  isNavigationItemActive
+} from "@/src/components/app-navigation";
 
-describe("role based application navigation", () => {
-  it("groups administration around daily work, resources, and system tasks", () => {
+describe("navegación por rol", () => {
+  it("prioriza las operaciones y permite crear reuniones desde móvil", () => {
     const navigation = getNavigationForRole("ADMINISTRACION");
-
-    expect(navigation.groups.map(({ label }) => label)).toEqual([
-      "Trabajo diario",
-      "Equipo de monitoreo",
-      "Recursos",
-      "Sistema"
-    ]);
-    expect(navigation.groups.flatMap(({ items }) => items.map(({ label }) => label))).toEqual([
-      "Inicio",
-      "Agenda",
-      "Reuniones",
-      "Monitoreo",
-      "Nueva reunión",
-      "Asistentes de monitoreo",
-      "Grabaciones y archivos",
-      "Personas y programas",
-      "Centro de operaciones",
-      "Configuración"
-    ]);
-    expect(
-      navigation.groups.find(({ label }) => label === "Recursos")?.items.map(({ label }) => label)
-    ).toEqual(["Grabaciones y archivos", "Personas y programas"]);
+    expect(navigation.groups.map(({ label }) => label)).toEqual(["Operaciones", "Administración", "Sistema"]);
     expect(navigation.mobilePrimary.map(({ label }) => label)).toEqual([
       "Inicio",
       "Agenda",
-      "Reuniones",
+      "Nueva reunión",
       "Monitoreo"
     ]);
-    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href)).not.toContain(
-      "/reuniones/buscar-meet"
+    expect(navigation.groups.flatMap(({ items }) => items.map(({ href }) => href))).toContain(
+      "/notificaciones"
     );
-    expect(navigation.groups.flatMap(({ items }) => items).map(({ href }) => href)).not.toContain(
-      "/reuniones/duplicados"
-    );
+    expect(
+      getSecondaryNavigation(navigation).flatMap(({ items }) => items.map(({ label }) => label))
+    ).toContain("Series y reuniones");
   });
 
-  it("exposes the complete teacher workflow through the main and more menus", () => {
+  it("prioriza clases, creación y grabaciones para docentes", () => {
     const navigation = getNavigationForRole("DOCENTE");
-    const labels = navigation.groups.flatMap(({ items }) => items.map(({ label }) => label));
-
-    expect(labels).toEqual([
-      "Inicio",
-      "Mis clases",
-      "Nueva reunión",
-      "Mis programas",
-      "Grabaciones",
-      "Notificaciones",
-      "Mi perfil"
+    expect(navigation.mobilePrimary.map(({ href }) => href)).toEqual([
+      "/",
+      "/mis-clases",
+      "/reuniones/nueva",
+      "/grabaciones"
     ]);
-    expect(navigation.mobilePrimary).toHaveLength(4);
-    expect(navigation.mobilePrimary[1].href).toBe("/mis-clases");
   });
 
-  it("exposes the complete monitoring assistant workflow with distinct agenda and assigned work", () => {
+  it("prioriza trabajo asignado y postulaciones para asistentes", () => {
     const navigation = getNavigationForRole("ASISTENTE_TECNICO");
-    const items = navigation.groups.flatMap(({ items }) => items);
-
-    expect(items.map(({ label }) => label)).toEqual([
-      "Inicio",
-      "Mi agenda",
-      "Agenda abierta",
-      "Mis monitoreos",
-      "Historial",
-      "Grabaciones",
-      "Notificaciones",
-      "Mi perfil"
+    expect(navigation.mobilePrimary.map(({ href }) => href)).toEqual([
+      "/",
+      "/mi-agenda?tab=proximas",
+      "/agenda-abierta",
+      "/agenda-abierta?vista=postulaciones"
     ]);
-    expect(items.find(({ label }) => label === "Mi agenda")?.href).toBe("/mi-agenda?tab=mes");
-    expect(items.find(({ label }) => label === "Mis monitoreos")?.href).toBe("/mi-agenda?tab=proximas");
-    expect(items.find(({ label }) => label === "Historial")?.href).toBe("/mi-agenda?tab=historico");
-    expect(navigation.mobilePrimary).toHaveLength(4);
+    expect(navigation.groups.flatMap(({ items }) => items.map(({ href }) => href))).toContain(
+      "/mi-agenda?tab=historico"
+    );
   });
 
-  it("marks only the matching view active when multiple links share a route", () => {
-    const adminLinks = getNavigationForRole("ADMINISTRACION").groups[0].items;
-    const agenda = adminLinks.find(({ label }) => label === "Agenda");
-    const meetings = adminLinks.find(({ label }) => label === "Reuniones");
-    expect(agenda).toBeDefined();
-    expect(meetings).toBeDefined();
+  it("mantiene exactamente una sección activa en las vistas compartidas", () => {
+    const items = getNavigationForRole("ADMINISTRACION").groups.flatMap(({ items }) => items);
+    const active = (path: string, query = "") =>
+      items
+        .filter((item) => isNavigationItemActive(item, path, new URLSearchParams(query), true))
+        .map(({ label }) => label);
+    expect(active("/reuniones", "vista=encuentros")).toEqual(["Agenda"]);
+    expect(active("/reuniones")).toEqual(["Series y reuniones"]);
+    expect(active("/reuniones/abc")).toEqual(["Series y reuniones"]);
+    expect(active("/reuniones/nueva")).toEqual(["Nueva reunión"]);
+  });
 
-    const encountersQuery = new URLSearchParams("vista=encuentros");
-    expect(isNavigationItemActive(agenda!, "/reuniones", encountersQuery, true)).toBe(true);
-    expect(isNavigationItemActive(meetings!, "/reuniones", encountersQuery, true)).toBe(false);
-
-    const defaultSeriesQuery = new URLSearchParams();
-    expect(isNavigationItemActive(agenda!, "/reuniones", defaultSeriesQuery, true)).toBe(false);
-    expect(isNavigationItemActive(meetings!, "/reuniones", defaultSeriesQuery, true)).toBe(true);
+  it("conserva la sección activa al navegar por la agenda y postulaciones", () => {
+    const items = getNavigationForRole("ASISTENTE_TECNICO").groups.flatMap(({ items }) => items);
+    const active = (path: string, query = "") =>
+      items
+        .filter((item) => isNavigationItemActive(item, path, new URLSearchParams(query)))
+        .map(({ label }) => label);
+    expect(active("/agenda-abierta")).toEqual(["Agenda abierta"]);
+    expect(active("/agenda-abierta", "vista=postulaciones")).toEqual(["Mis postulaciones"]);
+    expect(active("/mi-agenda", "tab=mes")).toEqual(["Mi agenda"]);
+    expect(active("/operacion/abc")).toEqual(["Mi agenda"]);
+    expect(active("/mi-agenda", "tab=historico")).toEqual(["Horas e historial"]);
   });
 });

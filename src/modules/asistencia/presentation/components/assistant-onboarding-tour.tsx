@@ -68,7 +68,7 @@ function homeSteps(): DriveStep[] {
     step('[data-tour="assistant-notifications"]', {
       title: "Notificaciones",
       description:
-        "Las notificaciones están dentro del menú de tu cuenta. El distintivo rojo permanece visible mientras tengas avisos sin leer.",
+        "Consultá Notificaciones en la navegación o la campana del celular. El contador indica los avisos sin leer.",
       side: "bottom",
       align: "end"
     }),

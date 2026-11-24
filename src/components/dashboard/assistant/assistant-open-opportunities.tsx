@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarCheck2, Check, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { formatDate, formatTime } from "@/src/lib/ui/format";
+import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
+import { formatDate } from "@/src/lib/ui/format";
 import type { AssistantOpportunityDTO } from "@/src/modules/dashboard/types";
 
 export function AssistantOpenOpportunities({
@@ -38,9 +39,16 @@ export function AssistantOpenOpportunities({
               <article className="assistant-opportunity-card" key={opp.id}>
                 <div className="assistant-opportunity-when">
                   <span className="assistant-opportunity-date">{formatDate(inicio)}</span>
-                  <strong className="assistant-opportunity-time">
-                    {formatTime(inicio)}–{formatTime(fin)}
-                  </strong>
+                  <MeetingScheduleTimes
+                    startsAt={inicio}
+                    endsAt={fin}
+                    requiresAssistance
+                    modality={opp.modalidad}
+                    assistanceStartsAt={opp.inicioAsistenciaAt}
+                    assistanceEndsAt={opp.finAsistenciaAt}
+                    viewerIsAssistant
+                    compact
+                  />
                   <span className="badge-tag">{opp.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
                 </div>
 
@@ -57,9 +65,12 @@ export function AssistantOpenOpportunities({
                       <Check size={14} /> Ya te postulaste
                     </span>
                   ) : (
-                    <Link className="primary-action opportunity-apply-btn" href="/agenda-abierta">
+                    <Link
+                      className="primary-action opportunity-apply-btn"
+                      href={`/agenda-abierta#encuentro-${opp.id}`}
+                    >
                       <CalendarCheck2 size={16} />
-                      <span>Postularme</span>
+                      <span>Ver y postularme</span>
                     </Link>
                   )}
                 </div>

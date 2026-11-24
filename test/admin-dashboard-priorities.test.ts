@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getAdminSummaryMetrics } from "@/src/modules/dashboard/admin-dashboard-summary";
 
 describe("prioridades del dashboard de administración", () => {
-  it("presenta reuniones de hoy y próximas actividades antes del triage y los indicadores", () => {
+  it("presenta indicadores y alertas antes de la agenda", () => {
     const source = readFileSync(
       new URL("../src/components/dashboard/admin/admin-dashboard.tsx", import.meta.url),
       "utf8"
@@ -14,12 +14,13 @@ describe("prioridades del dashboard de administración", () => {
     const metricsIndex = source.indexOf("<AdminMetricsBar");
 
     expect(todayIndex).toBeGreaterThan(-1);
+    expect(metricsIndex).toBeGreaterThan(-1);
+    expect(triageIndex).toBeGreaterThan(metricsIndex);
+    expect(todayIndex).toBeGreaterThan(triageIndex);
     expect(upcomingIndex).toBeGreaterThan(todayIndex);
-    expect(triageIndex).toBeGreaterThan(upcomingIndex);
-    expect(metricsIndex).toBeGreaterThan(triageIndex);
   });
 
-  it("reserva los indicadores secundarios para datos no repetidos por la agenda y el triage", () => {
+  it("muestra indicadores operativos y generales", () => {
     const summary = getAdminSummaryMetrics({
       openRequests: 8,
       todayMeetings: 4,
@@ -31,8 +32,14 @@ describe("prioridades del dashboard de administración", () => {
       duplicateRisks: 0
     });
 
-    expect(summary.map(({ label }) => label)).toEqual(["Solicitudes activas", "Próximos 7 días"]);
-    expect(summary.map(({ value }) => value)).toEqual([8, 12]);
+    expect(summary.map(({ label }) => label)).toEqual([
+      "Reuniones hoy",
+      "Sin monitoreo",
+      "Incidencias abiertas",
+      "Solicitudes activas",
+      "Próximos 7 días"
+    ]);
+    expect(summary.map(({ value }) => value)).toEqual([4, 2, 1, 8, 12]);
   });
 
   it("ordena las incidencias antes de cobertura, Meet, grabaciones y duplicados", () => {

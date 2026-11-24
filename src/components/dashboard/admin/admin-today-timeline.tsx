@@ -24,7 +24,7 @@ export function AdminTodayTimeline({
             <p>Reuniones programadas y su estado operativo.</p>
           </div>
         </div>
-        <Link className="text-link" href="/reuniones">
+        <Link className="text-link" href="/reuniones?vista=encuentros">
           Ver agenda completa <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </div>
@@ -48,7 +48,7 @@ export function AdminTodayTimeline({
                   {isLive ? (
                     <span className="live-pill-sm">
                       <span className="live-indicator-dot" />
-                      <strong>En vivo</strong>
+                      <strong>{inicio > new Date() ? "Por comenzar" : "En horario previsto"}</strong>
                     </span>
                   ) : (
                     <span className="timeline-hour-badge">

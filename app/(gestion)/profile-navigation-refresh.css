@@ -336,3 +336,108 @@
     color: #e5eaf2;
   }
 }
+
+/* Navegación compartida por rol. */
+.sidebar {
+  padding: 20px 14px 14px;
+}
+
+.sidebar .brand {
+  padding-bottom: 16px;
+}
+
+.sidebar .brand small {
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.sidebar-primary-create {
+  flex: 0 0 auto;
+  margin: 0 0 20px;
+  min-height: 46px;
+}
+
+.sidebar-navigation {
+  gap: 16px;
+}
+
+.sidebar-group + .sidebar-group {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.side-nav a {
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.side-nav a svg {
+  flex-shrink: 0;
+}
+
+.sidebar-unread-count,
+.mobile-notification-link > strong {
+  min-width: 20px;
+  min-height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 2px 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-unread-count {
+  margin-left: auto;
+}
+
+.sidebar .account-block {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.mobile-notification-link {
+  position: relative;
+  display: grid;
+  width: 44px;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 9px;
+  color: #fff;
+}
+
+.mobile-notification-link > strong {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+}
+
+.mobile-notification-link:focus-visible,
+.sidebar-primary-create:focus-visible {
+  outline: 3px solid #fdd223;
+  outline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+  .mobile-nav > .mobile-create-action {
+    background: #fdd223;
+    color: #243651;
+  }
+
+  .mobile-nav > .mobile-create-action svg {
+    color: #243651;
+  }
+
+  .mobile-nav > .mobile-create-action.is-active {
+    outline: 2px solid #2c4777;
+    outline-offset: -2px;
+  }
+
+  .mobile-nav > a,
+  .mobile-nav-more > summary {
+    min-height: 48px;
+  }
+}

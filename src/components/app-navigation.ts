@@ -1,5 +1,7 @@
 import {
   Activity,
+  Bell,
+  ClipboardList,
   BookOpen,
   CalendarCheck2,
   CalendarDays,
@@ -9,7 +11,6 @@ import {
   History,
   LayoutDashboard,
   Settings,
-  UserRound,
   UserRoundCheck,
   Users
 } from "lucide-react";
@@ -48,7 +49,7 @@ const createMeeting: NavigationItem = {
 
 const adminGroups: readonly NavigationGroup[] = [
   {
-    label: "Trabajo diario",
+    label: "Operaciones",
     items: [
       { href: "/", label: "Inicio", icon: LayoutDashboard },
       {
@@ -59,94 +60,99 @@ const adminGroups: readonly NavigationGroup[] = [
       },
       {
         href: "/reuniones?vista=series",
-        label: "Reuniones",
+        label: "Series y reuniones",
+        shortLabel: "Series",
         icon: CalendarCheck2,
         search: { key: "vista", value: "series", defaultActive: true }
       },
       { href: "/monitoreo", label: "Monitoreo", icon: Hand },
+      { href: "/centro-operaciones", label: "Centro de operaciones", icon: Activity },
       createMeeting
     ]
   },
   {
-    label: "Equipo de monitoreo",
-    items: [{ href: "/asistentes", label: "Asistentes de monitoreo", icon: UserRoundCheck }]
-  },
-  {
-    label: "Recursos",
+    label: "Administración",
     items: [
-      { href: "/grabaciones", label: "Grabaciones y archivos", icon: FileVideo2 },
-      { href: "/usuarios", label: "Personas y programas", icon: Users }
+      { href: "/asistentes", label: "Equipo de monitoreo", icon: UserRoundCheck },
+      { href: "/usuarios", label: "Personas y programas", icon: Users },
+      { href: "/grabaciones", label: "Grabaciones y archivos", icon: FileVideo2 }
     ]
   },
   {
     label: "Sistema",
     items: [
-      { href: "/centro-operaciones", label: "Centro de operaciones", icon: Activity },
-      { href: "/configuracion", label: "Configuración", icon: Settings }
+      { href: "/configuracion", label: "Configuración", icon: Settings },
+      { href: "/notificaciones", label: "Notificaciones", icon: Bell }
     ]
   }
 ];
 
 const teacherGroups: readonly NavigationGroup[] = [
   {
-    label: "Trabajo diario",
+    label: "Actividad académica",
     items: [
       { href: "/", label: "Inicio", icon: LayoutDashboard },
       { href: "/mis-clases", label: "Mis clases", icon: CalendarDays },
-      createMeeting,
-      { href: "/mis-programas", label: "Mis programas", icon: BookOpen }
+      { href: "/mis-programas", label: "Mis programas", icon: BookOpen },
+      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 },
+      createMeeting
     ]
   },
   {
-    label: "Recursos y cuenta",
-    items: [
-      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 },
-      { href: "/notificaciones", label: "Notificaciones", icon: Activity },
-      { href: "/mi-perfil", label: "Mi perfil", icon: UserRound }
-    ]
+    label: "Personal",
+    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }]
   }
 ];
 
 const assistantGroups: readonly NavigationGroup[] = [
   {
-    label: "Monitoreo",
+    label: "Trabajo diario",
     items: [
       { href: "/", label: "Inicio", icon: LayoutDashboard },
       {
-        href: ASSISTANT_AGENDA_HREF,
+        href: ASSISTANT_MONITORINGS_HREF,
         label: "Mi agenda",
         icon: CalendarDays,
-        search: { key: "tab", value: "mes" }
-      },
-      { href: "/agenda-abierta", label: "Agenda abierta", icon: Hand },
-      {
-        href: ASSISTANT_MONITORINGS_HREF,
-        label: "Mis monitoreos",
-        icon: CalendarCheck2,
         search: { key: "tab", value: "proximas", defaultActive: true }
       },
       {
-        href: "/mi-agenda?tab=historico",
-        label: "Historial",
-        icon: History,
-        search: { key: "tab", value: "historico" }
+        href: "/agenda-abierta",
+        label: "Agenda abierta",
+        shortLabel: "Abierta",
+        icon: Hand,
+        search: { key: "vista", value: "todas", defaultActive: true }
+      },
+      {
+        href: "/agenda-abierta?vista=postulaciones",
+        label: "Mis postulaciones",
+        shortLabel: "Postulaciones",
+        icon: ClipboardList,
+        search: { key: "vista", value: "postulaciones" }
       }
     ]
   },
   {
-    label: "Recursos y cuenta",
+    label: "Registros",
     items: [
-      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 },
-      { href: "/notificaciones", label: "Notificaciones", icon: Activity },
-      { href: "/mi-perfil", label: "Mi perfil", icon: UserRound }
+      {
+        href: "/mi-agenda?tab=historico",
+        label: "Horas e historial",
+        icon: History,
+        search: { key: "tab", value: "historico" }
+      },
+      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 }
     ]
+  },
+  {
+    label: "Personal",
+    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }]
   }
 ];
 
 const mobilePrimary: Readonly<Record<RolUsuario, readonly NavigationItem[]>> = {
-  ADMINISTRACION: adminGroups[0].items.slice(0, 4),
+  ADMINISTRACION: [adminGroups[0].items[0], adminGroups[0].items[1], createMeeting, adminGroups[0].items[3]],
   DOCENTE: [teacherGroups[0].items[0], teacherGroups[0].items[1], createMeeting, teacherGroups[0].items[3]],
-  ASISTENTE_TECNICO: assistantGroups[0].items.slice(0, 4)
+  ASISTENTE_TECNICO: assistantGroups[0].items
 };
 
 export function getNavigationForRole(role: RolUsuario): RoleNavigation {
@@ -173,6 +179,18 @@ export function isNavigationItemActive(
   exact = false
 ): boolean {
   const route = item.href.split("?")[0];
+  if (route === "/mi-agenda" && pathname === route && searchParams.get("tab") === "mes") {
+    return item.search?.value === "proximas";
+  }
+  if (route === "/reuniones" && pathname.startsWith("/reuniones/")) {
+    return !pathname.startsWith("/reuniones/nueva") && item.search?.value === "series";
+  }
+  if (route === "/mi-agenda" && pathname.startsWith("/operacion/")) {
+    return item.search?.value === "proximas";
+  }
+  if (route === "/mis-clases" && pathname.startsWith("/reuniones/")) {
+    return !pathname.startsWith("/reuniones/nueva");
+  }
   const routeActive = pathname === route || (!exact && route !== "/" && pathname.startsWith(`${route}/`));
   if (!routeActive || !item.search) {
     return routeActive;

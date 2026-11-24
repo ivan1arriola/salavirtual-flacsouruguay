@@ -31,10 +31,6 @@ export function AdminTriageSection({
     openIncidents.count +
     duplicateRisks.count;
 
-  if (totalUrgent === 0) {
-    return null;
-  }
-
   return (
     <section className="dashboard-content-section admin-triage-section" aria-labelledby="admin-triage-title">
       <div className="section-heading admin-dashboard-section-heading">

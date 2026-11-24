@@ -114,7 +114,7 @@ export function LiveMeetingHero({
           {isLive && !paraAsistente ? (
             <span className="live-pill">
               <span className="live-indicator-dot" />
-              <strong>En vivo ahora</strong>
+              <strong>{inicio > ahora ? "Por comenzar" : "En horario previsto"}</strong>
             </span>
           ) : (
             <span className="timing-pill">
@@ -171,7 +171,9 @@ export function LiveMeetingHero({
           {meeting.joinUrl ? (
             <>
               <a
-                className="primary-action hero-meet-action"
+                className={
+                  paraAsistente ? "secondary-action hero-meet-action" : "primary-action hero-meet-action"
+                }
                 href={meeting.joinUrl}
                 rel="noreferrer"
                 target="_blank"
@@ -186,9 +188,9 @@ export function LiveMeetingHero({
           )}
 
           {role === "ASISTENTE_TECNICO" ? (
-            <Link className="secondary-action" href={`/operacion/${meeting.id}`}>
+            <Link className="primary-action hero-operation-action" href={`/operacion/${meeting.id}`}>
               <Activity size={16} />
-              Operar reunión
+              Abrir consola de monitoreo
             </Link>
           ) : null}
 
