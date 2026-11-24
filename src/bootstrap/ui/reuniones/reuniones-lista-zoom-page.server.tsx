@@ -450,7 +450,11 @@ export default async function ReunionesZoomPage({
                       <div className={styles.when}>
                         <strong>{formatTime(primero.inicioProgramadoAt)}</strong>
                         <span>{formatTime(primero.finProgramadoAt)}</span>
-                        <EstadoHorario fin={primero.finProgramadoAt} inicio={primero.inicioProgramadoAt} ahora={ahora} />
+                        <EstadoHorario
+                          fin={primero.finProgramadoAt}
+                          inicio={primero.inicioProgramadoAt}
+                          ahora={ahora}
+                        />
                       </div>
                       <div className={styles.what}>
                         <Link className={styles.titleLink} href={`/reuniones/${primero.solicitudSalaId}`}>
@@ -467,7 +471,9 @@ export default async function ReunionesZoomPage({
                             <ChipCuenta correo={null} />
                           )}
                         </span>
-                        <span className={styles.seriesBadge}>{serie.length} {serie.length === 1 ? "encuentro" : "encuentros"} en este listado</span>
+                        <span className={styles.seriesBadge}>
+                          {serie.length} {serie.length === 1 ? "encuentro" : "encuentros"} en este listado
+                        </span>
                       </div>
                       <div className={styles.link}>
                         {idZoom ? (
@@ -477,11 +483,23 @@ export default async function ReunionesZoomPage({
                         ) : null}
                         {resumen.unificada ? (
                           <>
-                            <span className={etiquetaEnlace === "Enlace pendiente" ? styles.statusWarning : styles.statusOk}>
+                            <span
+                              className={
+                                etiquetaEnlace === "Enlace pendiente"
+                                  ? styles.statusWarning
+                                  : styles.statusOk
+                              }
+                            >
                               {etiquetaEnlace}
                             </span>
-                            {resumen.enlaces[0] && !isHistory && siguiente && etiquetaEnlace !== "Enlace pendiente" ? (
-                              <ZoomJoinActions url={resumen.enlaces[0]} contexto={primero.solicitud.titulo} />
+                            {resumen.enlaces[0] &&
+                            !isHistory &&
+                            siguiente &&
+                            etiquetaEnlace !== "Enlace pendiente" ? (
+                              <ZoomJoinActions
+                                url={resumen.enlaces[0]}
+                                contexto={primero.solicitud.titulo}
+                              />
                             ) : null}
                           </>
                         ) : (
@@ -517,7 +535,9 @@ export default async function ReunionesZoomPage({
                   const { docentePrograma } = encuentro.solicitud;
                   const docente =
                     `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
-                  const contexto = `${encuentro.solicitud.titulo}, ${formatShortDate(encuentro.inicioProgramadoAt)} ${formatTime(encuentro.inicioProgramadoAt)}`;
+                  const contexto = `${encuentro.solicitud.titulo}, ${formatShortDate(
+                    encuentro.inicioProgramadoAt
+                  )} ${formatTime(encuentro.inicioProgramadoAt)}`;
                   const serieClave = claveSerieReunion(encuentro.solicitud);
                   const zoomId = idReunionZoom(encuentro);
                   return (
@@ -531,7 +551,11 @@ export default async function ReunionesZoomPage({
                           <Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} –{" "}
                           {formatTime(encuentro.finProgramadoAt)}
                         </strong>
-                        <EstadoHorario fin={encuentro.finProgramadoAt} inicio={encuentro.inicioProgramadoAt} ahora={ahora} />
+                        <EstadoHorario
+                          fin={encuentro.finProgramadoAt}
+                          inicio={encuentro.inicioProgramadoAt}
+                          ahora={ahora}
+                        />
                         <span className={styles.durationChip}>
                           {formatDuration(encuentro.inicioProgramadoAt, encuentro.finProgramadoAt)}
                         </span>
