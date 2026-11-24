@@ -33,7 +33,7 @@ describe("fila compacta de monitoreo", () => {
   it("pendiente: destaca y ofrece Asignar", () => {
     const html = render();
     expect(html).toContain("is-pending");
-    expect(html).toContain("Sin asignar");
+    expect(html).toContain("Pendiente");
     expect(html).toContain('href="/monitoreo/gestionar/i1"');
     expect(html).toContain(">Asignar<");
     expect(html).not.toContain(">Gestionar<");
@@ -51,10 +51,13 @@ describe("fila compacta de monitoreo", () => {
     const html = render({ applicantsCount: 1 });
     expect(html).toContain("<details");
     expect(html).toContain("Host");
+    expect(html).toContain("1 persona postulada");
+    expect(html).toContain('aria-label="1 persona postulada"');
     expect(html).toContain("N.º de reunión");
     expect(html).toContain("84039254055");
     expect(html).toContain("1 persona postulada");
     expect(render()).toContain("0 personas postuladas");
+    expect(render()).toContain('aria-label="0 personas postuladas"');
   });
 
   it("enlaces: con joinUrl abre Zoom y ver detalle; sin joinUrl avisa", () => {
@@ -67,6 +70,7 @@ describe("fila compacta de monitoreo", () => {
   it("omite datos ausentes sin imprimir undefined/null", () => {
     const html = render({ hostLabel: null, codigoReunion: null, plataforma: "GOOGLE_MEET" });
     expect(html).toContain("Sin cuenta host asignada");
+    expect(html).toContain("is-none");
     expect(html).not.toContain("N.º de reunión");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("null");
