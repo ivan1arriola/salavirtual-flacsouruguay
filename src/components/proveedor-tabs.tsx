@@ -3,8 +3,25 @@ import type { ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion
 
 const NOMBRES: Record<ProveedorReunion, string> = { GOOGLE_MEET: "Meet", ZOOM: "Zoom" };
 
+function conservarFiltros(href: string, filtros: Readonly<Record<string, string | undefined>>): string {
+  const search = new URLSearchParams(href.split("?")[1]);
+  for (const clave of ["vista", "q", "programa", "periodo", "desde", "hasta"]) {
+    const valor = filtros[clave];
+    if (valor) {
+      search.set(clave, valor);
+    }
+  }
+  return "/reuniones?" + search.toString();
+}
+
 /** Separa las reuniones por proveedor: las que siguen en Meet y las de Zoom (nuevas y migradas). */
-export function ProveedorTabs({ activo }: Readonly<{ activo: ProveedorReunion }>) {
+export function ProveedorTabs({
+  activo,
+  filtros = {}
+}: Readonly<{
+  activo: ProveedorReunion;
+  filtros?: Readonly<{ vista?: string; q?: string; programa?: string; periodo?: string; desde?: string; hasta?: string }>;
+}>) {
   const tabs = [
     { proveedor: "ZOOM", href: "/reuniones?proveedor=zoom" },
     { proveedor: "GOOGLE_MEET", href: "/reuniones?proveedor=meet" }
@@ -15,7 +32,7 @@ export function ProveedorTabs({ activo }: Readonly<{ activo: ProveedorReunion }>
         <Link
           aria-current={proveedor === activo ? "page" : undefined}
           className={proveedor === activo ? "active" : ""}
-          href={href}
+          href={conservarFiltros(href, filtros)}
           key={proveedor}
         >
           {NOMBRES[proveedor]}

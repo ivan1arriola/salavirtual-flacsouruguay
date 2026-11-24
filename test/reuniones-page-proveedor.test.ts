@@ -57,3 +57,35 @@ describe("lista de reuniones filtrada por proveedor", () => {
     );
   });
 });
+
+describe("límite diario de la agenda en Uruguay", () => {
+  it.each(["proximas", "anteriores"] as const)("usa medianoche en %s", async (periodo) => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-25T02:59:59Z"));
+      const { db, cliente } = fakeDb();
+      await obtenerDatosPaginaReuniones(cliente, admin, { vista: "encuentros", periodo });
+      const medianoche = new Date("2026-11-24T03:00:00Z");
+      const filtro = periodo === "proximas" ? { gte: medianoche } : { lt: medianoche };
+      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({ finProgramadoAt: filtro });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("mueve el límite al día siguiente a las 00:00 de Uruguay, también por serie", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-25T03:00:00Z"));
+      const { db, cliente } = fakeDb([{ id: "s1" }]);
+      await obtenerDatosPaginaReuniones(cliente, admin, { vista: "series" });
+      const filtro = { gte: new Date("2026-11-25T03:00:00Z") };
+      expect(donde(db.solicitudSala.findMany.mock.calls[0])).toMatchObject({
+        instancias: { some: { finProgramadoAt: filtro } }
+      });
+      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({ finProgramadoAt: filtro });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

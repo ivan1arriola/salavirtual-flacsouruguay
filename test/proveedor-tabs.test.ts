@@ -7,6 +7,16 @@ import { OtroProveedorAviso, ProveedorTabs } from "../src/components/proveedor-t
 const leer = (ruta: string) => readFileSync(new URL(`../${ruta}`, import.meta.url), "utf8");
 
 describe("pestañas Meet y Zoom", () => {
+  it("conserva la vista y los filtros al cambiar de proveedor", () => {
+    const html = renderToStaticMarkup(
+      createElement(ProveedorTabs, {
+        activo: "ZOOM",
+        filtros: { vista: "encuentros", q: "Brou", periodo: "anteriores" }
+      })
+    );
+    expect(html).toContain("proveedor=meet&amp;vista=encuentros&amp;q=Brou&amp;periodo=anteriores");
+  });
+
   it("muestra las dos pestañas y marca la activa", () => {
     const html = renderToStaticMarkup(createElement(ProveedorTabs, { activo: "ZOOM" }));
     expect(html).toContain("Meet");

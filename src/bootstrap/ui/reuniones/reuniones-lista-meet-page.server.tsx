@@ -96,7 +96,7 @@ export default async function ReunionesPage({
     <div
       className={`meetings-agenda-page agenda-v2 ${actor.rol === "ADMINISTRACION" ? "agenda-admin-view" : "agenda-role-view"}`}
     >
-      <ProveedorTabs activo="GOOGLE_MEET" />
+      <ProveedorTabs activo="GOOGLE_MEET" filtros={{ vista, q, programa: programaId, periodo, desde: desdeParam, hasta: hastaParam }} />
 
       <header className="meetings-agenda-hero">
         <div>
@@ -104,8 +104,8 @@ export default async function ReunionesPage({
           <h1>Agenda de reuniones</h1>
           <p>
             {isHistory
-              ? "Historial de reuniones realizadas."
-              : "Próximas reuniones, cohosts y cobertura de monitoreo."}
+              ? "Reuniones de días anteriores."
+              : "Reuniones de hoy y próximas, cohosts y cobertura de monitoreo."}
           </p>
         </div>
         <Link className="primary-action" href="/reuniones/nueva">
@@ -134,7 +134,7 @@ export default async function ReunionesPage({
           >
             <CalendarDays size={17} />
             <span>
-              Próximas <small>desde ahora</small>
+              Hoy y próximas <small>desde medianoche</small>
             </span>
           </Link>
           <Link

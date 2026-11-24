@@ -1,6 +1,5 @@
 import {
   CalendarDays,
-  CalendarPlus,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -70,9 +69,7 @@ type LinkFilters = Readonly<{
 function reunionesHref(params: LinkFilters): string {
   const search = new URLSearchParams();
   search.set("proveedor", "zoom");
-  if (params.vista === "series") {
-    search.set("vista", "series");
-  }
+  search.set("vista", params.vista);
   if (params.densidad === "compacta") {
     search.set("densidad", "compacta");
   }
@@ -131,6 +128,23 @@ function idReunionZoom(
     return null;
   }
   return evento.codigoReunion ?? evento.externalEventId ?? null;
+}
+
+function EstadoHorario({ fin, inicio, ahora }: Readonly<{ fin: Date; inicio: Date; ahora: Date }>) {
+  if (fin <= ahora) {
+    return <span className={styles.scheduleStatus}>Horario finalizado</span>;
+  }
+  if (inicio <= ahora) {
+    return <span className={styles.scheduleStatus}>En horario previsto</span>;
+  }
+  return null;
+}
+
+function etiquetaEnlaceSerie(serie: readonly Parameters<typeof resumenEnlaceZoom>[0][], cantidadEnlaces: number) {
+  if (!cantidadEnlaces || serie.some((item) => !resumenEnlaceZoom(item).joinUrl)) {
+    return "Enlace pendiente";
+  }
+  return serie.length === 1 ? "Enlace disponible" : "Enlace compartido";
 }
 
 function Paginacion({
@@ -206,7 +220,7 @@ export default async function ReunionesZoomPage({
   const esAdmin = actor.rol === "ADMINISTRACION";
   const datos = await obtenerDatosPaginaReuniones(db, actor, {
     ...params,
-    vista: params.vista === "series" ? "series" : "encuentros",
+    vista: params.vista,
     proveedor: "zoom"
   });
   const { q, programaId, periodo, isHistory, pagination, programs, desdeParam, hastaParam } = datos;
@@ -251,30 +265,27 @@ export default async function ReunionesZoomPage({
 
   return (
     <div className={`${styles.page} ${densidad === "compacta" ? styles.compact : ""}`}>
-      <ProveedorTabs activo="ZOOM" />
       <header className={styles.header}>
         <div>
           <p className="page-eyebrow">{formatShortDate(new Date())}</p>
           <h1>
             <Video size={27} aria-hidden="true" /> Reuniones
           </h1>
-          <p>{isHistory ? "Historial de reuniones por Zoom." : "Próximas reuniones por Zoom."}</p>
+          <p>{isHistory ? "Reuniones de días anteriores." : "Reuniones de hoy y de los próximos días."}</p>
         </div>
         <div className={styles.headerActions}>
           <AccesoRegistrosZoom rol={actor.rol} />
-          <Link className="primary-action" href="/reuniones/nueva">
-            <CalendarPlus size={18} aria-hidden="true" /> Nueva reunión
-          </Link>
         </div>
       </header>
 
+      <ProveedorTabs activo="ZOOM" filtros={filtro} />
       <div className={styles.toolbar}>
         <nav className={styles.tabs} aria-label="Período de reuniones">
           <Link aria-current={!isHistory ? "page" : undefined} href={url({ periodo: "proximas", page: 1 })}>
-            <CalendarDays size={17} /> Próximas
+            <CalendarDays size={17} /> Hoy y próximas
           </Link>
           <Link aria-current={isHistory ? "page" : undefined} href={url({ periodo: "anteriores", page: 1 })}>
-            <Clock3 size={17} /> Pasadas
+            <Clock3 size={17} /> Anteriores
           </Link>
         </nav>
         <nav className={styles.tabs} aria-label="Agrupar reuniones">
@@ -302,7 +313,7 @@ export default async function ReunionesZoomPage({
         <input type="hidden" name="proveedor" value="zoom" />
         <input type="hidden" name="periodo" value={periodo} />
         <input type="hidden" name="porPagina" value={pagination.tamanoPagina} />
-        {porSerie ? <input type="hidden" name="vista" value="series" /> : null}
+        <input type="hidden" name="vista" value={filtro.vista} />
         {densidad === "compacta" ? <input type="hidden" name="densidad" value="compacta" /> : null}
         <label className={styles.search}>
           <span className={styles.fieldLabel}>Buscar reunión</span>
@@ -350,12 +361,12 @@ export default async function ReunionesZoomPage({
       <div className={styles.listTools}>
         <span>
           {pagination.totalElementos} {porSerie ? "series" : "reuniones"} ·{" "}
-          {isHistory ? "Pasadas" : "Próximas"}
+          {isHistory ? "Anteriores" : "Hoy y próximas"}
         </span>
         <form method="get" className={styles.pageSizeForm}>
           <input type="hidden" name="proveedor" value="zoom" />
           {periodo === "anteriores" ? <input type="hidden" name="periodo" value="anteriores" /> : null}
-          {porSerie ? <input type="hidden" name="vista" value="series" /> : null}
+          <input type="hidden" name="vista" value={filtro.vista} />
           {densidad === "compacta" ? <input type="hidden" name="densidad" value="compacta" /> : null}
           {q ? <input type="hidden" name="q" value={q} /> : null}
           {programaId ? <input type="hidden" name="programa" value={programaId} /> : null}
@@ -412,12 +423,14 @@ export default async function ReunionesZoomPage({
               <ul className={styles.list}>
                 {dia.items.map((serie) => {
                   const primero = serie[0];
+                  const siguiente = serie.find((item) => item.finProgramadoAt > ahora);
+                  const referencia = siguiente ?? primero;
                   const { docentePrograma } = primero.solicitud;
                   const docente =
                     `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
                   const resumen = resumirSerieZoom(serie);
                   const serieClave = claveSerieReunion(primero.solicitud);
-                  const idZoom = resumen.unificada ? idReunionZoom(primero) : null;
+                  const idZoom = resumen.unificada ? idReunionZoom(referencia) : null;
                   return (
                     <li
                       className={styles.item}
@@ -431,13 +444,9 @@ export default async function ReunionesZoomPage({
                       key={serieClave}
                     >
                       <div className={styles.when}>
-                        <strong>
-                          {serie.length} {serie.length === 1 ? "encuentro" : "encuentros"}
-                        </strong>
-                        <span>
-                          <CalendarDays size={15} /> {formatShortDate(primero.inicioProgramadoAt)}
-                        </span>
-                        <span>{formatTime(primero.inicioProgramadoAt)}</span>
+                        <strong>{formatTime(primero.inicioProgramadoAt)}</strong>
+                        <span>{formatTime(primero.finProgramadoAt)}</span>
+                        <EstadoHorario fin={primero.finProgramadoAt} inicio={primero.inicioProgramadoAt} ahora={ahora} />
                       </div>
                       <div className={styles.what}>
                         <Link className={styles.titleLink} href={`/reuniones/${primero.solicitudSalaId}`}>
@@ -454,7 +463,7 @@ export default async function ReunionesZoomPage({
                             <ChipCuenta correo={null} />
                           )}
                         </span>
-                        <span className={styles.seriesBadge}>Serie · {serie.length} encuentros</span>
+                        <span className={styles.seriesBadge}>{serie.length} {serie.length === 1 ? "encuentro" : "encuentros"} en este listado</span>
                       </div>
                       <div className={styles.link}>
                         {idZoom ? (
@@ -464,8 +473,10 @@ export default async function ReunionesZoomPage({
                         ) : null}
                         {resumen.unificada ? (
                           <>
-                            <span className={styles.statusOk}>Enlace compartido</span>
-                            {resumen.enlaces[0] && !isHistory ? (
+                            <span className={resumen.enlaces.length ? styles.statusOk : styles.statusWarning}>
+                              {etiquetaEnlaceSerie(serie, resumen.enlaces.length)}
+                            </span>
+                            {resumen.enlaces[0] && !isHistory && siguiente ? (
                               <ZoomJoinActions url={resumen.enlaces[0]} contexto={primero.solicitud.titulo} />
                             ) : null}
                           </>
@@ -516,6 +527,7 @@ export default async function ReunionesZoomPage({
                           <Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} –{" "}
                           {formatTime(encuentro.finProgramadoAt)}
                         </strong>
+                        <EstadoHorario fin={encuentro.finProgramadoAt} inicio={encuentro.inicioProgramadoAt} ahora={ahora} />
                         <span className={styles.durationChip}>
                           {formatDuration(encuentro.inicioProgramadoAt, encuentro.finProgramadoAt)}
                         </span>
@@ -546,7 +558,7 @@ export default async function ReunionesZoomPage({
                             contexto={contexto}
                           />
                         ) : null}
-                        {enlace.joinUrl && !isHistory ? (
+                        {enlace.joinUrl && !isHistory && encuentro.finProgramadoAt > ahora ? (
                           <ZoomJoinActions url={enlace.joinUrl} contexto={contexto} />
                         ) : null}
                         <Link className={styles.details} href={`/reuniones/${encuentro.solicitudSalaId}`}>
