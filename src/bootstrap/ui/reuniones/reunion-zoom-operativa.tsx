@@ -223,6 +223,7 @@ export function ReunionZoomOperativa({
               : asistenciaEnVivo.motivo === "SIN_REUNION"
                 ? "Zoom no encuentra una reunión activa para este ID."
                 : "No se pudo verificar la asistencia en vivo. No significa que haya cero asistentes."}
+            {asistenciaEnVivo.httpStatus ? ` (Zoom Dashboard: HTTP ${asistenciaEnVivo.httpStatus})` : ""}
           </p>
         )}
       </section>
