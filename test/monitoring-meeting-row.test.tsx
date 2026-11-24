@@ -70,7 +70,8 @@ describe("fila compacta de monitoreo", () => {
   it("omite datos ausentes sin imprimir undefined/null", () => {
     const html = render({ hostLabel: null, codigoReunion: null, plataforma: "GOOGLE_MEET" });
     expect(html).toContain("Sin cuenta host asignada");
-    expect(html).toContain("is-none");
+    expect(html).toContain("is-meet");
+    expect(render({ plataforma: null })).toContain("is-none");
     expect(html).not.toContain("N.º de reunión");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("null");
