@@ -140,7 +140,10 @@ function EstadoHorario({ fin, inicio, ahora }: Readonly<{ fin: Date; inicio: Dat
   return null;
 }
 
-function etiquetaEnlaceSerie(serie: readonly Parameters<typeof resumenEnlaceZoom>[0][], cantidadEnlaces: number) {
+function etiquetaEnlaceSerie(
+  serie: readonly Parameters<typeof resumenEnlaceZoom>[0][],
+  cantidadEnlaces: number
+) {
   if (!cantidadEnlaces || serie.some((item) => !resumenEnlaceZoom(item).joinUrl)) {
     return "Enlace pendiente";
   }
@@ -431,6 +434,7 @@ export default async function ReunionesZoomPage({
                   const resumen = resumirSerieZoom(serie);
                   const serieClave = claveSerieReunion(primero.solicitud);
                   const idZoom = resumen.unificada ? idReunionZoom(referencia) : null;
+                  const etiquetaEnlace = etiquetaEnlaceSerie(serie, resumen.enlaces.length);
                   return (
                     <li
                       className={styles.item}
@@ -473,10 +477,10 @@ export default async function ReunionesZoomPage({
                         ) : null}
                         {resumen.unificada ? (
                           <>
-                            <span className={resumen.enlaces.length ? styles.statusOk : styles.statusWarning}>
-                              {etiquetaEnlaceSerie(serie, resumen.enlaces.length)}
+                            <span className={etiquetaEnlace === "Enlace pendiente" ? styles.statusWarning : styles.statusOk}>
+                              {etiquetaEnlace}
                             </span>
-                            {resumen.enlaces[0] && !isHistory && siguiente ? (
+                            {resumen.enlaces[0] && !isHistory && siguiente && etiquetaEnlace !== "Enlace pendiente" ? (
                               <ZoomJoinActions url={resumen.enlaces[0]} contexto={primero.solicitud.titulo} />
                             ) : null}
                           </>
