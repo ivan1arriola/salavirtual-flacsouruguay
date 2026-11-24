@@ -8,7 +8,7 @@ import type {
   CorreoAuditadoMeet
 } from "../../domain/archivos.types";
 
-export type { ParametroAuditoriaMeet, EventoAuditoriaMeet, CorreoAuditadoMeet };
+export type { EventoAuditoriaMeet, CorreoAuditadoMeet };
 
 export function filtrarEventosAuditoriaConferencia(
   eventos: readonly EventoAuditoriaMeet[],

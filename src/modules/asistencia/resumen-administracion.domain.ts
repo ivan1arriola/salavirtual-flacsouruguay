@@ -4,11 +4,4 @@ export {
   resumirAsignacionesPorAsistente,
   resumirTotales
 } from "@/src/modules/liquidaciones/domain";
-export type {
-  AsignacionResumenAdministracion,
-  AsistenteResumenBase,
-  FilaResumenAsistente,
-  MontoMoneda,
-  PeriodoMes,
-  TotalesResumen
-} from "@/src/modules/liquidaciones/domain";
+export type { MontoMoneda, PeriodoMes } from "@/src/modules/liquidaciones/domain";

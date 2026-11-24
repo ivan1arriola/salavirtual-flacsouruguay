@@ -1,7 +1,5 @@
 export {
   filtrarEncuentrosConArchivos,
   resolverEstadoVisualGrabacion,
-  type EstadoVisualGrabacion,
-  type GrupoEncuentroConArchivos,
-  type TipoFiltroArtefacto
+  type GrupoEncuentroConArchivos
 } from "@/src/modules/archivos/presentation";

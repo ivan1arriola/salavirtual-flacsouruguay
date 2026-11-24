@@ -1,6 +1,1 @@
-export {
-  parseAuthConfig,
-  resolverRedireccionAutorizada,
-  type AuthConfig,
-  type AuthEnvironment
-} from "@/src/modules/identity/api";
+export { parseAuthConfig, resolverRedireccionAutorizada } from "@/src/modules/identity/api";

@@ -24,13 +24,9 @@ export {
   configurarGoogleMeetExistente,
   sincronizarCohostsGoogleExistente,
   consultarCohostsEspacioMeet,
-  type ResultadoVerificacionEspacioMeet,
   type GoogleCalendarCredentials
 } from "./infrastructure/google/google-conference-provider.adapter";
-export {
-  crearPrismaConferenciasRepository,
-  type PrismaConferenciasRepositoryOptions
-} from "./infrastructure/prisma/prisma-conferencias-repository.adapter";
+export { crearPrismaConferenciasRepository } from "./infrastructure/prisma/prisma-conferencias-repository.adapter";
 
 export type ServicioConferencias = Readonly<{
   sincronizarEventosPendientes: (ids: readonly string[]) => Promise<readonly ProvisionConferenciaResult[]>;

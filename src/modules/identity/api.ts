@@ -5,8 +5,6 @@ export {
   type UsuarioAutenticado,
   type PerfilGoogle,
   type CuentaGoogleVinculada,
-  type AuthConfig,
-  type AuthEnvironment,
   buscarRolAnterior,
   mapearRolAnterior,
   puedeAdministrar,
@@ -23,17 +21,6 @@ export {
   resolverRedireccionAutorizada
 } from "./domain";
 
-export type { IdentityRepository, CalendarioAsistenteDispatcher } from "./ports";
+export { crearAutenticarCredencialesUseCase, crearResolverUsuarioGoogleUseCase } from "./application";
 
-export {
-  crearAutenticarCredencialesUseCase,
-  type PasswordVerifier,
-  crearResolverUsuarioGoogleUseCase
-} from "./application";
-
-export {
-  crearPrismaIdentityAdapter,
-  crearAsistenciaCalendarioDispatcher,
-  type AsistenciaCalendarioDependencies,
-  type SincronizarCalendariosAsistenteUsuarioFn
-} from "./infrastructure";
+export { crearPrismaIdentityAdapter, crearAsistenciaCalendarioDispatcher } from "./infrastructure";
