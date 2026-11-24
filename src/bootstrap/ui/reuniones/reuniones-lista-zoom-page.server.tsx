@@ -493,14 +493,14 @@ export default async function ReunionesZoomPage({
                               {etiquetaEnlace}
                             </span>
                             {resumen.enlaces[0] &&
-                            !isHistory &&
-                            siguiente &&
-                            etiquetaEnlace !== "Enlace pendiente" ? (
-                              <ZoomJoinActions
-                                url={resumen.enlaces[0]}
-                                contexto={primero.solicitud.titulo}
-                              />
-                            ) : null}
+                              !isHistory &&
+                              siguiente &&
+                              etiquetaEnlace !== "Enlace pendiente" ? (
+                                <ZoomJoinActions
+                                  url={resumen.enlaces[0]}
+                                  contexto={primero.solicitud.titulo}
+                                />
+                              ) : null}
                           </>
                         ) : (
                           <>
