@@ -330,3 +330,76 @@
 .monitoring-confirm-dialog__actions button {
   min-height: 44px;
 }
+
+.monitoring-workflow-page .primary-action,
+.monitoring-confirm-dialog .primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #21477d;
+  border-radius: 10px;
+  background: #21477d;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.monitoring-workflow-page .secondary-action,
+.monitoring-confirm-dialog .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #315a94;
+  border-radius: 10px;
+  background: #fff;
+  color: #21477d;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.monitoring-workflow-page .primary-action:disabled,
+.monitoring-workflow-page .secondary-action:disabled,
+.monitoring-confirm-dialog button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.monitoring-applicants {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.monitoring-applicants li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d3dfed;
+  border-radius: 10px;
+}
+.monitoring-applicants li > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.monitoring-applicants small {
+  color: #526a87;
+}
+.monitoring-applicants p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .monitoring-applicants button {
+    width: 100%;
+  }
+}
