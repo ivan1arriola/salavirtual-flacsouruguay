@@ -65,11 +65,15 @@ function montevideoIso(value: string): string {
 export function GestionCoberturaPanel({
   meeting,
   assistants,
-  historical
+  historical,
+  applicants = [],
+  assignedId = null
 }: Readonly<{
   meeting: Meeting;
   assistants: readonly Assistant[];
   historical: readonly HistoricalRecord[];
+  applicants?: readonly Readonly<{ assistantId: string; comment: string | null; date: string }>[];
+  assignedId?: string | null;
 }>) {
   const router = useRouter();
   const [mode, setMode] = useState<"DIRECTA" | "ABIERTA">("DIRECTA");
@@ -170,6 +174,52 @@ export function GestionCoberturaPanel({
         </div>
       ) : null}
 
+      <section className="monitoring-workflow-surface" aria-labelledby="applicants-title">
+        <div className="monitoring-workflow-section-heading">
+          <div>
+            <h2 id="applicants-title">Personas postuladas ({applicants.length})</h2>
+            <p>Postulaciones activas para este encuentro.</p>
+          </div>
+        </div>
+        <div className="monitoring-workflow-body">
+          {applicants.length === 0 ? (
+            <p className="monitoring-workflow-help">No hay postulaciones activas.</p>
+          ) : (
+            <ul className="monitoring-applicants">
+              {applicants.map((application) => {
+                const assistant = assistants.find(({ id }) => id === application.assistantId);
+                const assigned = assignedId === application.assistantId;
+                return (
+                  <li key={application.assistantId}>
+                    <div>
+                      <strong>{assistant?.name ?? "Persona no disponible"}</strong>
+                      <small>Postulación: {localDateTime(application.date).replace("T", " ")}</small>
+                      {application.comment ? <p>{application.comment}</p> : null}
+                      {assigned ? <small>Ya asignada</small> : null}
+                      {!assistant?.eligible ? <small>No habilitada para asignación</small> : null}
+                    </div>
+                    {!meeting.past && !meeting.cancelled && !assigned ? (
+                      <button
+                        className="secondary-action"
+                        type="button"
+                        disabled={pending || !assistant?.eligible}
+                        onClick={() => {
+                          setMode("DIRECTA");
+                          setAssistantId(application.assistantId);
+                        }}
+                      >
+                        {assistantId === application.assistantId && mode === "DIRECTA"
+                          ? "Seleccionada"
+                          : "Seleccionar para asignar"}
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
       {meeting.past ? (
         <section className="monitoring-workflow-surface" aria-labelledby="historical-title">
           <div className="monitoring-workflow-section-heading">
@@ -404,6 +454,9 @@ export function GestionCoberturaPanel({
                     .map((assistant) => (
                       <option key={assistant.id} value={assistant.id}>
                         {assistant.name}
+                        {applicants.some((application) => application.assistantId === assistant.id)
+                          ? " · Postulada"
+                          : ""}
                       </option>
                     ))}
                 </select>
