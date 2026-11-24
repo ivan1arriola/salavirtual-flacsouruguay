@@ -1,4 +1,11 @@
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  CircleAlert,
+  Clock3,
+  UsersRound
+} from "lucide-react";
 import Link from "next/link";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 
@@ -32,17 +39,21 @@ function etiquetaPlataforma(plataforma: MonitoringMeetingRowData["plataforma"]):
 export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetingRowData }>) {
   const isZoom = data.plataforma === "ZOOM";
   const platformLabel = etiquetaPlataforma(data.plataforma);
+  const platformClass = isZoom ? "is-zoom" : data.plataforma === "GOOGLE_MEET" ? "is-meet" : "is-none";
   const hostTitle = isZoom ? "Host de Zoom" : "Cuenta de Meet";
 
   return (
     <article
-      className={`monitoring-row monitoring-account-card ${data.covered ? "is-covered" : "is-pending"}`}
+      className={"monitoring-row monitoring-account-card " + (data.covered ? "is-covered" : "is-pending")}
       data-cuenta={data.cuenta}
     >
       <div className="monitoring-row-main">
-        <span className="monitoring-row-time">{data.horaAsistencia}</span>
+        <span className="monitoring-row-time">
+          <Clock3 size={15} aria-hidden="true" />
+          {data.horaAsistencia}
+        </span>
         <div className="monitoring-row-title">
-          <span className={`monitoring-platform ${isZoom ? "is-zoom" : "is-meet"}`}>{platformLabel}</span>
+          <span className={"monitoring-platform " + platformClass}>{platformLabel}</span>
           <Link className="coverage-title-link" href={data.detalleHref}>
             {data.titulo}
           </Link>
@@ -50,16 +61,27 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
             {data.programa} · {data.docente}
           </small>
         </div>
-        <span className={`monitoring-row-status ${data.covered ? "status-ok" : "status-warning"}`}>
-          {data.covered ? data.assistantName : "Sin asignar"}
+        <span className={"monitoring-row-status " + (data.covered ? "status-ok" : "status-warning")}>
+          {data.covered ? <CheckCircle2 size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
+          <span>{data.covered ? "Cubierta" : "Pendiente"}</span>
+          <small>{data.covered ? data.assistantName : "Necesita asignación"}</small>
+        </span>
+        <span className="monitoring-row-applicants" aria-label={data.applicantsCount + " personas postuladas"}>
+          <UsersRound size={15} aria-hidden="true" />
+          <strong>{data.applicantsCount}</strong>
+          <small>{data.applicantsCount === 1 ? "postulada" : "postuladas"}</small>
         </span>
         <Link className={data.covered ? "secondary-action" : "primary-action"} href={data.gestionarHref}>
           {data.covered ? "Gestionar" : "Asignar"}
+          <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
 
       <details className="monitoring-row-details">
-        <summary>Detalles</summary>
+        <summary>
+          <ChevronDown size={15} aria-hidden="true" />
+          Más detalles del encuentro
+        </summary>
         <div className="monitoring-row-details-body">
           <span>
             <strong>{hostTitle}</strong> {data.hostLabel ?? "Sin cuenta host asignada"}
