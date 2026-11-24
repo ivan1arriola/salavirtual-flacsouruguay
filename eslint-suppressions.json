@@ -143,32 +143,12 @@
       "count": 1
     }
   },
-  "public/sw.js": {
-    "sonarjs/void-use": {
-      "count": 1
-    }
-  },
-  "scripts/actualizar-cohosts-serie.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
-  "scripts/audit-oauth-legacy.ts": {
-    "sonarjs/void-use": {
-      "count": 1
-    }
-  },
   "scripts/dev-with-tunnel.mjs": {
     "sonarjs/no-nested-template-literals": {
       "count": 2
     },
     "sonarjs/no-os-command-from-path": {
       "count": 2
-    }
-  },
-  "scripts/email-message-helpers.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "scripts/generar-mensajes-reuniones-asistentes.ts": {
@@ -330,11 +310,6 @@
       "count": 1
     }
   },
-  "src/components/notification-actions.tsx": {
-    "sonarjs/void-use": {
-      "count": 1
-    }
-  },
   "src/components/operational-assistance-closure-form.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 1
@@ -364,11 +339,6 @@
   },
   "src/components/program-members-config.tsx": {
     "sonarjs/redundant-type-aliases": {
-      "count": 1
-    }
-  },
-  "src/components/pwa-register.tsx": {
-    "sonarjs/void-use": {
       "count": 1
     }
   },
@@ -424,34 +394,16 @@
       "count": 1
     }
   },
-  "src/integrations/google/gmail/gmail-messages.client.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "src/integrations/zoom/zoom-download.client.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
     "sonarjs/misplaced-loop-counter": {
       "count": 1
-    },
-    "sonarjs/void-use": {
-      "count": 1
     }
   },
   "src/integrations/zoom/zoom-http.ts": {
     "sonarjs/no-nested-template-literals": {
-      "count": 1
-    }
-  },
-  "src/lib/auth/mobile-token.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
-  "src/lib/ui/assistant-route.ts": {
-    "sonarjs/slow-regex": {
       "count": 1
     }
   },
@@ -495,16 +447,10 @@
     },
     "sonarjs/no-redundant-assignments": {
       "count": 1
-    },
-    "sonarjs/void-use": {
-      "count": 1
     }
   },
   "src/modules/archivos/domain/attendance-view.domain.ts": {
     "sonarjs/no-nested-conditional": {
-      "count": 1
-    },
-    "sonarjs/slow-regex": {
       "count": 1
     }
   },
@@ -513,34 +459,13 @@
       "count": 1
     }
   },
-  "src/modules/archivos/domain/meet-email-attribution.domain.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "src/modules/archivos/domain/meet-reports-reconciliation.domain.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 3
-    },
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
-  "src/modules/archivos/domain/zoom-archivos.domain.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
-  "src/modules/archivos/domain/zoom-biblioteca.domain.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "src/modules/archivos/domain/zoom-inventario-estado.domain.ts": {
     "sonarjs/no-inverted-boolean-check": {
-      "count": 1
-    },
-    "sonarjs/slow-regex": {
       "count": 1
     }
   },
@@ -580,23 +505,12 @@
       "count": 2
     }
   },
-  "src/modules/archivos/infrastructure/google/google-meet-audit-emails.client.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "src/modules/archivos/infrastructure/prisma/prisma-archivos-repository.adapter.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 2
-    },
-    "sonarjs/no-nested-functions": {
-      "count": 4
     }
   },
   "src/modules/archivos/infrastructure/prisma/prisma-asistencia-zoom-repository.adapter.ts": {
-    "sonarjs/no-nested-functions": {
-      "count": 1
-    },
     "sonarjs/no-nested-template-literals": {
       "count": 1
     }
@@ -629,9 +543,6 @@
   "src/modules/asistencia/infrastructure/prisma/prisma-asistencia-repository.adapter.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
-    },
-    "sonarjs/no-nested-functions": {
-      "count": 1
     },
     "sonarjs/no-nested-template-literals": {
       "count": 1
@@ -750,11 +661,6 @@
       "count": 1
     }
   },
-  "src/modules/migracion/usuarios-legacy.domain.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "src/modules/mobile-admin/queries.adapter.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 1
@@ -771,9 +677,6 @@
   "src/modules/notificaciones/domain/notificacion-email.domain.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 6
-    },
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "src/modules/operaciones/google-operaciones-externas.service.ts": {
@@ -850,9 +753,6 @@
     },
     "sonarjs/concise-regex": {
       "count": 1
-    },
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "src/modules/reuniones/migracion-zoom-calendar.domain.ts": {
@@ -873,9 +773,6 @@
   "src/modules/reuniones/presentation/components/email-list-editor.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 2
-    },
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx": {
@@ -962,12 +859,6 @@
     },
     "sonarjs/no-nested-conditional": {
       "count": 3
-    },
-    "sonarjs/no-nested-functions": {
-      "count": 1
-    },
-    "sonarjs/slow-regex": {
-      "count": 4
     }
   },
   "src/modules/reuniones/recordatorio-reunion-email.domain.ts": {
@@ -980,9 +871,6 @@
       "count": 1
     },
     "sonarjs/concise-regex": {
-      "count": 1
-    },
-    "sonarjs/slow-regex": {
       "count": 1
     }
   },
@@ -1035,16 +923,6 @@
       "count": 1
     }
   },
-  "src/modules/usuarios/recuperacion-password.domain.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
-    }
-  },
-  "test/architecture-boundaries.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "test/asistencia-infrastructure.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 4
@@ -1052,16 +930,6 @@
   },
   "test/auditoria-module.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "test/aviso-enlace-serie-email.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 3
-    }
-  },
-  "test/aviso-enlace-serie.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
       "count": 1
     }
   },
@@ -1073,11 +941,6 @@
   "test/conciliar-asistencia-zoom-route.test.ts": {
     "sonarjs/no-clear-text-protocols": {
       "count": 1
-    }
-  },
-  "test/conferencias-application.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 2
     }
   },
   "test/conferencias-reunion-compartida-adapter.test.ts": {
@@ -1100,24 +963,6 @@
       "count": 19
     },
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
-    }
-  },
-  "test/correo-monitoreo.test.ts": {
-    "sonarjs/code-eval": {
-      "count": 2
-    }
-  },
-  "test/credentials-domain.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 2
-    }
-  },
-  "test/email-design-system.test.ts": {
-    "sonarjs/code-eval": {
       "count": 1
     }
   },
@@ -1151,30 +996,14 @@
       "count": 3
     }
   },
-  "test/identity-application.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 3
-    }
-  },
   "test/identity-bootstrap.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 2
-    }
-  },
-  "test/identity-domain.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
       "count": 1
     }
   },
   "test/identity-infrastructure.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 4
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
     }
   },
   "test/incidencias-operativas-route.test.ts": {
@@ -1187,19 +1016,9 @@
       "count": 3
     }
   },
-  "test/integrations-zoom-client.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 5
-    }
-  },
   "test/liquidaciones-infrastructure.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 6
-    }
-  },
-  "test/live-participants-feature.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "test/meet-cohosts-regression.test.ts": {
@@ -1207,11 +1026,6 @@
       "count": 3
     },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "test/meet-link.test.ts": {
-    "sonarjs/code-eval": {
       "count": 1
     }
   },
@@ -1224,9 +1038,6 @@
     "@typescript-eslint/no-explicit-any": {
       "count": 22
     },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
-    },
     "sonarjs/void-use": {
       "count": 1
     }
@@ -1234,14 +1045,6 @@
   "test/migracion-zoom-avisos.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 7
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
-    }
-  },
-  "test/migracion-zoom-calendar.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 3
     }
   },
   "test/migracion-zoom-routes.test.ts": {
@@ -1252,14 +1055,6 @@
   "test/migracion-zoom-serie-aplicar.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 19
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
-    }
-  },
-  "test/migracion-zoom-serie-ui.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "test/migracion-zoom-series-routes.test.ts": {
@@ -1270,9 +1065,6 @@
   "test/mobile-login.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 5
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
     }
   },
   "test/mobile-logout.test.ts": {
@@ -1300,17 +1092,9 @@
       "count": 6
     }
   },
-  "test/perfil-domain.test.ts": {
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 7
-    }
-  },
   "test/proveedor-activo-consumidores.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 5
-    },
-    "sonarjs/no-hardcoded-passwords": {
-      "count": 1
     }
   },
   "test/recordatorios-24h.test.ts": {
@@ -1343,22 +1127,12 @@
       "count": 11
     },
     "sonarjs/no-hardcoded-passwords": {
-      "count": 3
-    }
-  },
-  "test/schema-contract.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 5
+      "count": 2
     }
   },
   "test/serie-link-guest-service.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
-    }
-  },
-  "test/serie-zoom-resumen.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
     }
   },
   "test/series-enlaces-route.test.ts": {
@@ -1376,20 +1150,12 @@
       "count": 3
     }
   },
-  "test/zoom-archivo-schema.test.ts": {
-    "sonarjs/slow-regex": {
-      "count": 1
-    }
-  },
   "test/zoom-archivos-integracion.test.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 3
     }
   },
   "test/zoom-archivos-library.test.ts": {
-    "sonarjs/code-eval": {
-      "count": 1
-    },
     "sonarjs/no-clear-text-protocols": {
       "count": 1
     }
