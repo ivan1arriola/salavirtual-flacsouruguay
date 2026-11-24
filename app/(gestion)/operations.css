@@ -4568,3 +4568,233 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Gestión de cobertura: mismos controles y jerarquía que el panel de monitoreo. */
+.monitoring-management-index .management-search-form {
+  flex-basis: auto;
+}
+
+.management-pending-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #ebd1a6;
+  border-radius: 10px;
+  background: #fff8e9;
+  color: #835114;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.management-pending-shortcut > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.management-status-filters .monitoring-status-filter {
+  min-height: 44px;
+}
+
+.management-clear-search {
+  width: fit-content;
+  color: #2c4777;
+  font-weight: 700;
+  font-size: 0.83rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.management-coverage-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.65fr) auto;
+  align-items: center;
+  gap: 5px 16px;
+  padding: 12px 16px;
+  border: 1px solid #dce4ef;
+  border-left: 4px solid #227f60;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.management-coverage-card.is-pending {
+  border-color: #ebd1a6;
+  border-left-color: #b7791f;
+  background: #fffdf8;
+}
+
+.management-coverage-meta {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.management-coverage-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.management-coverage-meta .monitoring-platform {
+  margin: 0;
+  font-size: 0.7rem;
+  padding: 3px 8px;
+}
+
+.management-coverage-card h3 {
+  grid-column: 1;
+  margin: 0;
+  color: #203453;
+  font-size: 0.96rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.management-class-schedule {
+  grid-column: 1;
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+.management-coverage-status {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.management-coverage-status.status-ok {
+  background: #edf7f1;
+  color: #195d41;
+}
+
+.management-coverage-status.status-warning {
+  background: #fff3df;
+  color: #835114;
+}
+
+.management-coverage-status > svg {
+  flex: 0 0 auto;
+}
+
+.management-coverage-status > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.management-coverage-footer {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  display: grid;
+  gap: 8px;
+}
+
+.management-applicant-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.management-coverage-footer > a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #2c4777;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.management-coverage-footer > .primary-action {
+  color: #fff;
+  background: #2c4777;
+}
+
+.management-coverage-footer > .secondary-action {
+  color: #2c4777;
+  background: #fff;
+}
+
+.management-coverage-footer > a:hover {
+  box-shadow: 0 2px 6px rgb(44 71 119 / 15%);
+}
+
+.monitoring-management-index a:focus-visible,
+.monitoring-management-index button:focus-visible {
+  outline: 3px solid #5276a8;
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+  .management-coverage-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 12px;
+  }
+
+  .management-coverage-meta,
+  .management-coverage-card h3,
+  .management-class-schedule {
+    grid-column: 1 / -1;
+  }
+
+  .management-coverage-status {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .management-coverage-footer {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 680px) {
+  .management-status-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .management-status-filters .monitoring-status-filter {
+    font-size: 0.75rem;
+    white-space: normal;
+  }
+
+  .management-coverage-footer > a {
+    min-width: 104px;
+  }
+
+  .management-coverage-meta {
+    font-size: 0.76rem;
+  }
+}
