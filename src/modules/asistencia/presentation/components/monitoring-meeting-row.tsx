@@ -23,17 +23,60 @@ export type MonitoringMeetingRowData = {
 };
 
 function etiquetaPlataforma(plataforma: MonitoringMeetingRowData["plataforma"]): string {
-  if (plataforma === "ZOOM") {
-    return "Zoom";
+  switch (plataforma) {
+    case "ZOOM":
+      return "Zoom";
+    case "GOOGLE_MEET":
+      return "Google Meet";
+    default:
+      return "Sin plataforma";
   }
-  return plataforma ? "Google Meet" : "Sin plataforma";
+}
+
+function clasePlataforma(plataforma: MonitoringMeetingRowData["plataforma"]): string {
+  switch (plataforma) {
+    case "ZOOM":
+      return "is-zoom";
+    case "GOOGLE_MEET":
+      return "is-meet";
+    default:
+      return "is-none";
+  }
+}
+
+function estadoAsignacion(covered: boolean, assistantName: string | null) {
+  if (covered) {
+    return {
+      className: "status-ok",
+      label: "Cubierta",
+      description: assistantName,
+      Icon: CheckCircle2
+    };
+  }
+  return {
+    className: "status-warning",
+    label: "Pendiente",
+    description: "Necesita asignación",
+    Icon: CircleAlert
+  };
+}
+
+function accionGestion(covered: boolean) {
+  if (covered) {
+    return { className: "secondary-action", label: "Gestionar" };
+  }
+  return { className: "primary-action", label: "Asignar" };
 }
 
 export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetingRowData }>) {
   const isZoom = data.plataforma === "ZOOM";
   const platformLabel = etiquetaPlataforma(data.plataforma);
-  const platformClass = isZoom ? "is-zoom" : data.plataforma === "GOOGLE_MEET" ? "is-meet" : "is-none";
+  const platformClass = clasePlataforma(data.plataforma);
   const hostTitle = isZoom ? "Host de Zoom" : "Cuenta de Meet";
+  const assignmentStatus = estadoAsignacion(data.covered, data.assistantName);
+  const action = accionGestion(data.covered);
+  const StatusIcon = assignmentStatus.Icon;
+  const provider = isZoom ? "ZOOM" : "GOOGLE_MEET";
 
   return (
     <article
@@ -54,14 +97,10 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
             {data.programa} · {data.docente}
           </small>
         </div>
-        <span className={"monitoring-row-status " + (data.covered ? "status-ok" : "status-warning")}>
-          {data.covered ? (
-            <CheckCircle2 size={16} aria-hidden="true" />
-          ) : (
-            <CircleAlert size={16} aria-hidden="true" />
-          )}
-          <span>{data.covered ? "Cubierta" : "Pendiente"}</span>
-          <small>{data.covered ? data.assistantName : "Necesita asignación"}</small>
+        <span className={"monitoring-row-status " + assignmentStatus.className}>
+          <StatusIcon size={16} aria-hidden="true" />
+          <span>{assignmentStatus.label}</span>
+          <small>{assignmentStatus.description}</small>
         </span>
         <span
           className="monitoring-row-applicants"
@@ -74,8 +113,8 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
           <strong>{data.applicantsCount}</strong>
           <small>{data.applicantsCount === 1 ? "postulada" : "postuladas"}</small>
         </span>
-        <Link className={data.covered ? "secondary-action" : "primary-action"} href={data.gestionarHref}>
-          {data.covered ? "Gestionar" : "Asignar"}
+        <Link className={action.className} href={data.gestionarHref}>
+          {action.label}
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
@@ -107,7 +146,7 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
           </span>
           <div className="coverage-quick-links">
             {data.joinUrl ? (
-              <MeetLinkActions url={data.joinUrl} provider={isZoom ? "ZOOM" : "GOOGLE_MEET"} />
+              <MeetLinkActions url={data.joinUrl} provider={provider} />
             ) : (
               <span className="muted-text">Enlace pendiente</span>
             )}
