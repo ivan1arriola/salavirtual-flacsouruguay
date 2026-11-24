@@ -13,7 +13,10 @@ export function mensajeRegeneracion(data: {
     return "Google todavía está procesando los datos. Volvé a intentar más tarde.";
   }
   const resultados = data.resultados ?? [];
-  if (resultados.length > 0 && !resultados.some((r) => r.sincronizacion === "OK" || r.sincronizacion === "CONFLICTO")) {
+  if (
+    resultados.length > 0 &&
+    !resultados.some((r) => r.sincronizacion === "OK" || r.sincronizacion === "CONFLICTO")
+  ) {
     return resultados.some((r) => r.sincronizacion === "ERROR")
       ? "No se pudo sincronizar con Zoom. Volvé a intentar más tarde."
       : "Zoom aún no entregó el reporte. Volvé a intentar más tarde.";
