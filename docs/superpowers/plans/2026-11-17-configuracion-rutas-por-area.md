@@ -37,10 +37,12 @@
 ### Task 1: Navegación y redirecciones (dominio)
 
 **Files:**
+
 - Modify: `src/modules/configuracion/settings-navigation.domain.ts`
 - Test: `test/settings-navigation-domain.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `SETTINGS_SECTION_IDS = ["resumen","zoom","google","salas","correo","notificaciones","historico"]`
   - `SettingsSectionMetadata` gana `hidden?: true` (no aparece en el menú). `historico` lleva `hidden: true`.
@@ -58,10 +60,12 @@
 ### Task 2: Datos de la página sin Meet
 
 **Files:**
+
 - Modify: `src/modules/configuracion/configuracion-page.service.ts`
 - Test: `test/configuracion-page-salas.test.ts`
 
 **Interfaces:**
+
 - Consumes: nombres de sección de Task 1 (`"zoom" | "salas" | "notificaciones" | …`).
 - Produces: `obtenerDatosPaginaConfiguracion(db, section: string, ahora?: Date)` devuelve `{ configuration, assistantConfiguration, hosts, programCount, activeProgramCount, adminReportRecipients, availableHosts, zoomAvailableHosts, zoomGrupo }`. Desaparecen `pendingMeetOperations`, `pendingOperationItems`, `programs`, `teachers`, `academicUnits` y el tipo `OperacionPendienteItem` solo si ningún otro archivo lo importa (`grep` antes de borrar; si alguien lo usa, déjalo).
 
@@ -74,11 +78,13 @@
 ### Task 3: Componentes: bloque con Editar, avisos, Inicio y shell
 
 **Files:**
+
 - Create: `src/components/settings-block.tsx`
 - Modify: `src/components/settings-center-shell.tsx`, `src/components/settings-overview.tsx`
 - Test: `test/settings-center-shell.test.tsx`, `test/settings-overview-zoom.test.tsx`, create `test/settings-block.test.tsx`
 
 **Interfaces:**
+
 - Produces:
   - `SettingsBlock({ title, summary, status?, children, defaultOpen? }): JSX` — `<section>` con `<h2>{title}</h2>`, el `summary` (ReactNode) siempre visible, y los `children` dentro de `<details>` cuyo `<summary>` dice "Editar" (con `open` si `defaultOpen`). `status?: { tone: "ok" | "warning" | "neutral"; label: string }` se dibuja con la clase existente `settings-section-status is-<tone>`.
   - `SettingsNotices({ estado, error, mensajes }: { estado?: string; error?: string; mensajes: Readonly<Record<string,string>> })` — `<p className="form-notice" role="status">` si `mensajes[estado]` existe; `<p className="form-notice form-notice-error" role="alert">` si hay `error`.
@@ -94,16 +100,19 @@
 ### Task 4: Rutas por área y retiro del monolito
 
 **Files:**
+
 - Create: `app/(gestion)/configuracion/require-admin-page.ts`, `zoom/page.tsx`, `google/page.tsx`, `salas/page.tsx`, `correo/page.tsx`, `notificaciones/page.tsx`, `historico/page.tsx`, `src/components/zoom-agenda-block.tsx`
 - Modify: `app/(gestion)/configuracion/page.tsx` (queda como Inicio), `app/(gestion)/configuracion/actions.ts`, `app/(gestion)/historico/page.tsx`, `app/(gestion)/centro-operaciones/page.tsx:33`, `src/components/acceso-registros-zoom.tsx:9`, `src/components/historical-meetings-table.tsx:53`
 - Test: `test/configuracion-redirecciones.test.ts` (nuevo)
 
 **Interfaces:**
+
 - Produces: `requireAdminPage(): Promise<Session>` — llama `auth()`, y si `session?.user.role !== "ADMINISTRACION"` hace `redirect("/")`; devuelve la sesión.
 - `zoom-agenda-block.tsx` exporta `ZoomAgendaBlock()` con el texto de agenda y `SincronizarAgendaZoomBoton` que hoy está escrito dentro de `page.tsx`.
 - `actions.ts`: `actualizarReportesAsistenciaAdmin` redirige a `/configuracion/notificaciones?estado=reportes-asistencia-actualizados` (o `?error=`); `actualizarCorreoSesAdmin` a `/configuracion/correo?estado=correo-ses-actualizado` (o `?error=`); todas las `revalidatePath("/configuracion")` pasan a `revalidatePath("/configuracion", "layout")`. Las acciones de programas siguen yendo a `/usuarios?vista=programas`; su rama `seccion=programas` de `/configuracion` se elimina.
 
 Contenido por pantalla (cada una: `requireAdminPage()`, `obtenerDatosPaginaConfiguracion(db, "<id>")`, `SettingsCenterShell`, `SettingsSectionHeader`, `SettingsNotices`):
+
 - **Inicio** (`page.tsx`): si `legacySettingsRedirect(seccion, {busqueda, pagina})` devuelve ruta → `redirect`. Si no, `SettingsOverview` con datos reales.
 - **zoom**: cuatro `SettingsBlock`: Conexión OAuth (`ZoomConfigForm`), Grupo de cuentas (`ZoomGrupoConfig`), Notificaciones de Zoom (`ZoomWebhookConfig`), Agenda (`ZoomAgendaBlock`). Resúmenes con estado actual (credenciales disponibles/ausentes, grupo y última sincronización, webhook configurado sí/no). Sin credenciales, el bloque de conexión abre con `defaultOpen`.
 - **google**: `WorkspaceConfigForm` en bloques cuenta de servicio/delegación y Drive; encabezado con `workspaceReadiness`. Estado vacío cuando no hay configuración guardada.
@@ -121,10 +130,12 @@ Contenido por pantalla (cada una: `requireAdminPage()`, `obtenerDatosPaginaConfi
 ### Task 5: Ocultar Meet en los componentes
 
 **Files:**
+
 - Modify: `src/components/workspace-config-form.tsx` (líneas 7-8 y 73-74), `src/components/meet-hosts-config.tsx`
 - Test: `test/meet-hosts-config-zoom.test.tsx` (nuevo)
 
 **Interfaces:**
+
 - `WorkspaceConfigForm` deja de renderizar `WorkspaceCohostsGlobalVerification` y `WorkspaceCohostResync` (los archivos quedan, sin importarse).
 - `MeetHostsConfig`: sin el botón/formulario "Agregar sala" (`HostFields` crea cuentas Meet) ni opciones de Meet; la etiqueta de proveedor de la fila deja de mostrar "Meet".
 

@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  CheckCircle2,
-  KeyRound,
-  Pencil,
-  Save,
-  Search,
-  Trash2,
-  TriangleAlert,
-  Video,
-  X
-} from "lucide-react";
+import { CheckCircle2, KeyRound, Pencil, Save, Search, Trash2, TriangleAlert, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -147,9 +137,7 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                       <span className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}>
                         {available ? "Disponible" : "No disponible"}
                       </span>
-                      <span className="settings-mini-status is-neutral">
-                        Zoom
-                      </span>
+                      <span className="settings-mini-status is-neutral">Zoom</span>
                       {outsideGroup ? (
                         <span className="settings-mini-status is-warning">{outsideGroup}</span>
                       ) : null}

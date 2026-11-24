@@ -4,10 +4,7 @@ export type WorkspaceTestTarget = Exclude<WorkspaceSection, "ESTADO">;
 type ApiResult = Readonly<{ ok: boolean; message: string }>;
 
 export type WorkspaceScopeValidation = Readonly<{
-  key:
-    | "calendar.events"
-    | "drive"
-    | "gmail.send";
+  key: "calendar.events" | "drive" | "gmail.send";
   label: string;
   scope: string;
   autorizado: boolean;
@@ -102,16 +99,6 @@ function legacyScopeAccounts(result: Record<string, unknown>): readonly Workspac
       scopes
     }
   ];
-}
-
-export async function prepareDriveHostAccess(): Promise<ApiResult> {
-  return requestWorkspace(
-    "/api/v1/configuracion/google-workspace/drive-access",
-    {
-      method: "POST"
-    },
-    "Acceso de las salas preparado."
-  );
 }
 
 async function requestWorkspace(url: string, init: RequestInit, fallback: string): Promise<ApiResult> {

@@ -33,10 +33,12 @@
 ### Task 1: Sincronizar asistencia al procesar `meeting.ended`
 
 **Files:**
+
 - Modify: `src/bootstrap/zoom-webhook-worker.ts` (`aplicarAviso`, `procesarWebhooksZoom`)
 - Test: `test/zoom-webhook-worker.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ResultadoAsistenciaZoom` de `src/modules/archivos/application/sincronizar-asistencia-zoom.use-case.ts` (`tipo: "OK" | "PENDIENTE" | "CONFLICTO" | "ERROR"`, el de error trae `codigo`).
 - Produces: `procesarWebhooksZoom(cuentaZoomId: string, limite = 25, sincronizarAsistencia?: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>)`. `aplicarAviso` devuelve `{ estado: "PROCESADO" | "IGNORADO"; ocurrenciaId: string | null }`.
 
@@ -62,16 +64,18 @@
 ### Task 2: Cablear el worker y retirar el sondeo de asistencia
 
 **Files:**
+
 - Modify: `src/bootstrap/zoom-archivos.server.ts` (quitar `sincronizarAsistenciaPendiente` del tipo `WorkerZoomArchivos`, de la rama "salud no ok", de la rama activa, el import `sincronizarAsistenciaPendienteZoomUseCase`, `crearPrismaAsistenciaPendienteAdapter` y la constante `LOTE_ASISTENCIA`; pasar la sincronización a `procesarWebhooks`)
 - Modify: `scripts/zoom-archivos-worker.ts` (quitar la tarea `"asistencia-pendiente"`)
 - Modify: `src/modules/archivos/application/index.ts:16`, `src/modules/archivos/infrastructure/index.ts:16` (quitar los `export *` de lo eliminado)
 - Delete: `src/modules/archivos/application/sincronizar-asistencia-pendiente-zoom.use-case.ts`, `src/modules/archivos/infrastructure/prisma/prisma-asistencia-pendiente.adapter.ts`, `test/zoom-asistencia-pendiente.test.ts`
 
 **Interfaces:**
+
 - Consumes: `procesarWebhooksZoom(cuentaZoomId, limite, sincronizarAsistencia)` (Task 1); `sincronizarAsistenciaZoomUseCase`, `crearPrismaSincronizacionAsistenciaZoomAdapter`, `crearPrismaAsistenciaZoomRepositoryAdapter`, `crearZoomAsistenciaProviderAdapter` (ya importados en ese archivo).
 - Produces: `WorkerZoomArchivos` sin `sincronizarAsistenciaPendiente`. `procesarWebhooks: () => procesarWebhooksZoom(cuentaZoomId, 25, (id) => sincronizarAsistenciaZoomUseCase(asistencia, id))`, con `asistencia = { sync, repo, provider }` armado como hoy en la rama activa.
 
-- [ ] **Step 1: Cablear** `procesarWebhooks` en la rama activa y retirar el resto como indica *Files*; en la rama "salud no ok" `procesarWebhooks` sigue siendo no-op.
+- [ ] **Step 1: Cablear** `procesarWebhooks` en la rama activa y retirar el resto como indica _Files_; en la rama "salud no ok" `procesarWebhooks` sigue siendo no-op.
 - [ ] **Step 2: Verify** — `npx tsc --noEmit` sin errores; `grep -rn "AsistenciaPendiente\|asistencia-pendiente" src scripts test` sin resultados.
 - [ ] **Step 3: Run** `npx vitest run` → todo PASS (ajustar cualquier test de despliegue/worker que mencione la tarea eliminada).
 - [ ] **Step 4: Commit** — `git add -A && git commit -m "refactor(zoom): retirar el sondeo de asistencia; el worker usa el webhook"`
@@ -79,12 +83,14 @@
 ### Task 3: Botón de reintento en la ficha
 
 **Files:**
+
 - Modify: `src/components/attendance-regenerate-action.tsx` (exportar `mensajeRegeneracion`; usarlo en `actualizar`)
 - Modify: `src/components/zoom-asistencia-vista.tsx` (prop `puedeReintentar?: boolean`, por defecto `false`; renderiza `<AttendanceRegenerateAction instanciaId={instanciaId} />` junto al bloque de ocurrencias cuando es `true` y el estado no es `DISPONIBLE`)
 - Modify: `src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx` (pasar `puedeReintentar={rol === "ADMINISTRACION"}`) y los demás consumidores de `ZoomAsistenciaVista` que sean fichas de administración (buscar con `grep -rn "ZoomAsistenciaVista" src app`; la página `.../asistencia/page.tsx` ya tiene su propio botón: no duplicar)
 - Test: `test/mensaje-regeneracion.test.ts`
 
 **Interfaces:**
+
 - Produces: `mensajeRegeneracion(data: { estado?: string; resultados?: ReadonlyArray<{ sincronizacion: string }> }): string`.
 
 - [ ] **Step 1: Write the failing test** `test/mensaje-regeneracion.test.ts`:
@@ -107,5 +113,6 @@
 - [ ] **Step 4:** Tras la próxima reunión Zoom, por SSH en `servidor-flacso`: `journalctl -u salavirtual-zoom-archivos.service --since today | grep webhooks` debe mostrar el aviso procesado y la asistencia aparecer sin pulsar nada.
 
 ## Fuera de alcance / seguimiento
+
 - La ficha de "Formación BROU" sigue en "Realización sin verificar": el vínculo automático ya tolera 45 min de inicio anticipado ([zoom-vinculo-automatico.ts:12](../../../src/modules/archivos/infrastructure/prisma/zoom-vinculo-automatico.ts)), así que la causa es otra (probable `externalEventId` ≠ `meetingId`). Requiere una consulta de solo lectura a la base de producción; se trata aparte.
 - Inconsistencias de la ficha histórica (horario real ignora `inicioRealAt`; botón JSON sin reporte).

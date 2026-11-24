@@ -26,10 +26,7 @@ import {
   type ZoomMeetingResult
 } from "@/src/integrations/zoom/zoom-client";
 import { debeEliminarseReunionCompartida } from "@/src/modules/reuniones/reunion-compartida.domain";
-import {
-  calcularRecurrenciaZoom,
-  detectarOcurrenciasAjustar
-} from "../domain/zoom-recurrence.domain";
+import { calcularRecurrenciaZoom, detectarOcurrenciasAjustar } from "../domain/zoom-recurrence.domain";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
