@@ -42,12 +42,17 @@ describe("participantes Zoom en vivo", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 403 })));
     expect(await obtenerParticipantesZoomEnVivoHttp("token", "123")).toEqual({
       estado: "NO_DISPONIBLE",
-      motivo: "SIN_PERMISOS"
+      motivo: "SIN_PERMISOS",
+      httpStatus: 403
     });
   });
 
-  it("propaga fallos transitorios", async () => {
+  it("conserva el código HTTP de fallos transitorios", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
-    await expect(obtenerParticipantesZoomEnVivoHttp("token", "123")).rejects.toThrow("500");
+    expect(await obtenerParticipantesZoomEnVivoHttp("token", "123")).toEqual({
+      estado: "NO_DISPONIBLE",
+      motivo: "SIN_DATOS",
+      httpStatus: 500
+    });
   });
 });

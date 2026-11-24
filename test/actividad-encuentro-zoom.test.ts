@@ -34,6 +34,16 @@ describe("actividad del encuentro", () => {
       { tipo: "meeting.algo_nuevo", ocurridoAt: t(4) }
     ]);
     expect(r).toHaveLength(4);
-    expect(r[3]?.etiqueta).toBe("Otra actividad de Zoom");
+    expect(r[3]?.etiqueta).toBe("Evento de Zoom: meeting.algo_nuevo");
+  });
+  it("conserva eventos simultáneos con huellas distintas y detalles", () => {
+    const hecho = { tipo: "meeting.sharing_started", ocurridoAt: t(1) };
+    const r = construirActividadEncuentroZoom([
+      { ...hecho, huella: "a", participanteId: "p1" },
+      { ...hecho, huella: "b", participanteId: "p2", detalle: "detalle" },
+      { ...hecho, huella: "a", participanteId: "p1" }
+    ]);
+    expect(r.map((e) => e.participanteId)).toEqual(["p1", "p2"]);
+    expect(r[1]?.detalle).toBe("detalle");
   });
 });

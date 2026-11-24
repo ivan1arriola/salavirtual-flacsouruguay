@@ -223,6 +223,7 @@ export function ReunionZoomOperativa({
               : asistenciaEnVivo.motivo === "SIN_REUNION"
                 ? "Zoom no encuentra una reunión activa para este ID."
                 : "No se pudo verificar la asistencia en vivo. No significa que haya cero asistentes."}
+            {asistenciaEnVivo.httpStatus ? ` (Zoom Dashboard: HTTP ${asistenciaEnVivo.httpStatus})` : ""}
           </p>
         )}
       </section>
@@ -237,13 +238,16 @@ export function ReunionZoomOperativa({
         ) : (
           <>
             <ol className={styles.timeline}>
-              {actividad.slice(-8).map((a) => (
-                <ItemActividad key={`${a.tipo}-${a.desde.toISOString()}`} a={a} />
-              ))}
+              {actividad
+                .slice(-30)
+                .reverse()
+                .map((a) => (
+                  <ItemActividad key={a.huella ?? `${a.tipo}-${a.desde.toISOString()}`} a={a} />
+                ))}
             </ol>
             <small>
-              Hechos informados por Zoom, ordenados por su hora real. La asistencia oficial se consolida al
-              terminar la reunión.
+              Hechos informados por Zoom, ordenados del más reciente al más antiguo. La asistencia oficial se
+              consolida al terminar la reunión.
             </small>
           </>
         )}

@@ -71,4 +71,4 @@ const entradas = [
 
 export const CATALOGO_EVENTOS_ZOOM = entradas.map(([tipo, etiqueta]) => ({ tipo, etiqueta }));
 export const etiquetaEventoZoom = (tipo: string): string =>
-  CATALOGO_EVENTOS_ZOOM.find((evento) => evento.tipo === tipo)?.etiqueta ?? "Otra actividad de Zoom";
+  CATALOGO_EVENTOS_ZOOM.find((evento) => evento.tipo === tipo)?.etiqueta ?? `Evento de Zoom: ${tipo}`;
