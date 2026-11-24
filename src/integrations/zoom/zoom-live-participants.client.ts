@@ -7,7 +7,7 @@ export type ParticipanteZoomEnVivo = Readonly<{
 
 export type EstadoAsistenciaZoomEnVivo =
   | { estado: "DISPONIBLE"; participantes: readonly ParticipanteZoomEnVivo[] }
-  | { estado: "NO_DISPONIBLE"; motivo: "SIN_REUNION" | "SIN_PERMISOS" | "SIN_DATOS" };
+  | { estado: "NO_DISPONIBLE"; motivo: "SIN_REUNION" | "SIN_PERMISOS" | "SIN_DATOS"; httpStatus?: number };
 
 /**
  * Zoom Dashboard API: requiere plan y permisos de dashboard.
@@ -30,13 +30,13 @@ export async function obtenerParticipantesZoomEnVivoHttp(
       { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
     );
     if (response.status === 403 || response.status === 401) {
-      return { estado: "NO_DISPONIBLE", motivo: "SIN_PERMISOS" };
+      return { estado: "NO_DISPONIBLE", motivo: "SIN_PERMISOS", httpStatus: response.status };
     }
     if (response.status === 404) {
-      return { estado: "NO_DISPONIBLE", motivo: "SIN_REUNION" };
+      return { estado: "NO_DISPONIBLE", motivo: "SIN_REUNION", httpStatus: response.status };
     }
     if (!response.ok) {
-      throw new Error(`Zoom Dashboard API (${response.status})`);
+      return { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS", httpStatus: response.status };
     }
     const data = (await response.json()) as {
       participants?: Array<{
