@@ -25,6 +25,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+      - run: git pull --rebase origin feat/monitoreo-dashboard-presentation
       - run: npm run format
       - run: npm run format:check
       - run: |
