@@ -112,6 +112,16 @@ describe("gestión de cobertura y retroactividad", () => {
     expect(page).toContain('actor.rol !== "ADMINISTRACION"');
   });
 
+  it("muestra postulaciones activas y permite seleccionarlas para asignación", () => {
+    const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
+    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    expect(page).toContain('where: { estado: "ME_INTERESA" }');
+    expect(page).toContain("applicants={meeting.postulaciones.map");
+    expect(panel).toContain("Personas postuladas");
+    expect(panel).toContain("setAssistantId(application.assistantId)");
+    expect(panel).toContain("No hay postulaciones activas.");
+  });
+
   it("el endpoint no sincroniza proveedores en encuentros históricos", () => {
     const route = read("app/api/v1/asistencia/gestion-cobertura/route.ts");
     expect(route).toContain('result.accion === "CONVOCAR" || result.accion === "ASIGNAR_DIRECTO"');
