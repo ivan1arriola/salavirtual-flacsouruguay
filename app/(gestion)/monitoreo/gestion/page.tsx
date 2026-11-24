@@ -129,17 +129,24 @@ export default async function GestionMonitoreoListado({
         <div className="monitoring-controls-heading">
           <div>
             <h2>Encuentros para gestionar</h2>
-            <p>{counts.asignadas} de {counts.todas} con cobertura asignada</p>
+            <p>
+              {counts.asignadas} de {counts.todas} con cobertura asignada
+            </p>
           </div>
           <span className="monitoring-results-count">{rows.length} resultados</span>
         </div>
         {pending > 0 ? (
           <Link className="management-pending-shortcut" href={filterHref("pendientes", q)}>
             <span>{pending} sin asignar</span>
-            <span>Revisar pendientes <ArrowRight size={16} aria-hidden="true" /></span>
+            <span>
+              Revisar pendientes <ArrowRight size={16} aria-hidden="true" />
+            </span>
           </Link>
         ) : null}
-        <nav className="monitoring-status-filters management-status-filters" aria-label="Filtrar por cobertura">
+        <nav
+          className="monitoring-status-filters management-status-filters"
+          aria-label="Filtrar por cobertura"
+        >
           {FILTERS.map((filter) => (
             <Link
               key={filter.value}
@@ -154,10 +161,18 @@ export default async function GestionMonitoreoListado({
         </nav>
         <form className="monitoring-search-form management-search-form" method="get">
           <input type="hidden" name="estado" value={estado} />
-          <label className="sr-only" htmlFor="management-search">Buscar reunión</label>
+          <label className="sr-only" htmlFor="management-search">
+            Buscar reunión
+          </label>
           <div className="monitoring-search-field">
             <Search size={18} aria-hidden="true" />
-            <input id="management-search" type="search" name="q" defaultValue={q} placeholder="Buscar por reunión" />
+            <input
+              id="management-search"
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Buscar por reunión"
+            />
           </div>
           <button className="primary-action" type="submit">
             <Search size={16} aria-hidden="true" />
@@ -165,27 +180,41 @@ export default async function GestionMonitoreoListado({
           </button>
         </form>
         {q ? (
-          <Link className="management-clear-search" href={filterHref(estado, "")}>Quitar búsqueda</Link>
+          <Link className="management-clear-search" href={filterHref(estado, "")}>
+            Quitar búsqueda
+          </Link>
         ) : null}
       </section>
 
       <section className="monitoring-day-list" aria-label="Encuentros por fecha">
         {rows.length === 0 ? (
           <div className="monitoring-empty-state">
-            <span className="monitoring-empty-icon" aria-hidden="true"><UsersRound size={25} /></span>
+            <span className="monitoring-empty-icon" aria-hidden="true">
+              <UsersRound size={25} />
+            </span>
             <h2>No hay reuniones para este filtro</h2>
             <p>Probá otro estado o quitá la búsqueda para consultar los próximos encuentros.</p>
-            <Link className="secondary-action" href="/monitoreo/gestion">Limpiar filtros</Link>
+            <Link className="secondary-action" href="/monitoreo/gestion">
+              Limpiar filtros
+            </Link>
           </div>
         ) : (
           days.map((day) => (
-            <section className="monitoring-day-group" key={day.clave} aria-labelledby={"management-day-" + day.clave}>
+            <section
+              className="monitoring-day-group"
+              key={day.clave}
+              aria-labelledby={"management-day-" + day.clave}
+            >
               <h2 className="monitoring-day-title" id={"management-day-" + day.clave}>
                 <span className="monitoring-day-heading-main">
-                  {day.relativo ? <span className="monitoring-day-relative">{relativeDay(day.relativo)}</span> : null}
+                  {day.relativo ? (
+                    <span className="monitoring-day-relative">{relativeDay(day.relativo)}</span>
+                  ) : null}
                   {day.etiqueta}
                 </span>
-                <small>{day.items.length} {day.items.length === 1 ? "encuentro" : "encuentros"}</small>
+                <small>
+                  {day.items.length} {day.items.length === 1 ? "encuentro" : "encuentros"}
+                </small>
               </h2>
               <div className="monitoring-day-cards">
                 {day.items.map((meeting) => {
@@ -202,8 +231,11 @@ export default async function GestionMonitoreoListado({
                         platform: platformLabel(event?.proveedor.tipo),
                         modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
                         schedule: formatTime(inicio) + "–" + formatTime(fin),
-                        classSchedule: formatTime(meeting.inicioProgramadoAt) + "–" + formatTime(meeting.finProgramadoAt),
-                        assistantName: assigned ? [assigned.nombres, assigned.apellidos].filter(Boolean).join(" ") : null,
+                        classSchedule:
+                          formatTime(meeting.inicioProgramadoAt) + "–" + formatTime(meeting.finProgramadoAt),
+                        assistantName: assigned
+                          ? [assigned.nombres, assigned.apellidos].filter(Boolean).join(" ")
+                          : null,
                         applicantsCount: meeting.postulaciones.length
                       }}
                     />

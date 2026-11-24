@@ -24,7 +24,9 @@ export function ManagementCoverageRow({ data }: Readonly<{ data: CoverageData }>
   return (
     <article className={"management-coverage-card " + (covered ? "is-covered" : "is-pending")}>
       <div className="management-coverage-meta">
-        <span><Clock3 size={16} aria-hidden="true" /> {data.schedule}</span>
+        <span>
+          <Clock3 size={16} aria-hidden="true" /> {data.schedule}
+        </span>
         <span className={"monitoring-platform " + platformClasses[data.platform]}>{data.platform}</span>
         {data.modality === "HIBRIDA" ? <span>Híbrida</span> : null}
       </div>
