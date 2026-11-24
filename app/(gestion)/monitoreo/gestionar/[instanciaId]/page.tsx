@@ -40,6 +40,11 @@ export default async function GestionCoberturaPage({
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           include: { asistenteTecnico: { include: { usuario: true } } }
         },
+        postulaciones: {
+          where: { estado: "ME_INTERESA" },
+          select: { asistenteTecnicoId: true, comentario: true, createdAt: true },
+          orderBy: { createdAt: "asc" }
+        },
         registrosMonitoreoRetroactivo: {
           orderBy: { createdAt: "desc" },
           include: { asistente: { include: { usuario: true } } }
@@ -64,7 +69,7 @@ export default async function GestionCoberturaPage({
 
   return (
     <div className="monitoring-workflow-page">
-      <Link className="monitoring-workflow-back" href="/monitoreo">
+      <Link className="monitoring-workflow-back secondary-action" href="/monitoreo">
         <ArrowLeft size={17} aria-hidden="true" /> Volver a monitoreo
       </Link>
       <header className="monitoring-workflow-header">
@@ -140,7 +145,7 @@ export default async function GestionCoberturaPage({
           )}
           {event?.joinUrl ? (
             <p>
-              <a href={event.joinUrl} target="_blank" rel="noopener noreferrer">
+              <a className="secondary-action" href={event.joinUrl} target="_blank" rel="noopener noreferrer">
                 Abrir reunión
               </a>
             </p>
@@ -170,6 +175,12 @@ export default async function GestionCoberturaPage({
           name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
           eligible: assistant.usuario.activo && !assistant.cesadoHastaProximoInicioSesion
         }))}
+        applicants={meeting.postulaciones.map((application) => ({
+          assistantId: application.asistenteTecnicoId,
+          comment: application.comentario,
+          date: application.createdAt.toISOString()
+        }))}
+        assignedId={current?.asistenteTecnicoId ?? null}
         historical={meeting.registrosMonitoreoRetroactivo.map((record) => ({
           id: record.id,
           estado: record.estado,
