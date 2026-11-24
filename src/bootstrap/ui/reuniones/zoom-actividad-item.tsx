@@ -33,6 +33,8 @@ export function ItemActividad({ a }: Readonly<{ a: EntradaActividadZoom }>) {
       <span className={styles.timelineLabel}>
         {a.etiqueta}
         {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
+        {a.detalle ? <small> · {a.detalle}</small> : null}
+        {a.participanteId ? <small> · Participante {a.participanteId.slice(-8)}</small> : null}
       </span>
     </li>
   );
