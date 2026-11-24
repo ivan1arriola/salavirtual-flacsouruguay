@@ -1,5 +1,1 @@
-export {
-  obtenerAlcanceGrabaciones,
-  puedeSincronizarGrabaciones,
-  type AlcanceGrabaciones
-} from "@/src/modules/archivos/presentation";
+export { obtenerAlcanceGrabaciones, puedeSincronizarGrabaciones } from "@/src/modules/archivos/presentation";

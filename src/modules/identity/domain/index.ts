@@ -4,8 +4,7 @@ export {
   type UsuarioCredenciales,
   type UsuarioAutenticado,
   type PerfilGoogle,
-  type CuentaGoogleVinculada,
-  type AuthConfig
+  type CuentaGoogleVinculada
 } from "./identity.types";
 
 export { buscarRolAnterior, mapearRolAnterior, puedeAdministrar, esRolUsuario } from "./roles.domain";
@@ -24,4 +23,4 @@ export {
   resolverVinculacionSubjectGoogle
 } from "./google-login.domain";
 
-export { parseAuthConfig, resolverRedireccionAutorizada, type AuthEnvironment } from "./auth-config.domain";
+export { parseAuthConfig, resolverRedireccionAutorizada } from "./auth-config.domain";

@@ -1,1 +1,1 @@
-export { normalizeMeetLink, meetLinks, type MeetLink } from "@/src/modules/conferencias/api";
+export { normalizeMeetLink, meetLinks } from "@/src/modules/conferencias/api";

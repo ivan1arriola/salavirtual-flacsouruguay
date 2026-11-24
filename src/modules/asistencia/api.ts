@@ -29,15 +29,8 @@ import type {
 export * from "./domain";
 export * from "./ports";
 export * from "./application";
-export {
-  crearGoogleAssistantCalendarProvider,
-  publicarEventoCalendarioAsistente,
-  eliminarEventoCalendarioAsistente
-} from "./infrastructure/google/google-assistant-calendar-provider.adapter";
-export {
-  crearPrismaAssistantCalendarRepository,
-  type PrismaAssistantCalendarRepositoryOptions
-} from "./infrastructure/prisma/prisma-assistant-calendar-repository.adapter";
+export { crearGoogleAssistantCalendarProvider } from "./infrastructure/google/google-assistant-calendar-provider.adapter";
+export { crearPrismaAssistantCalendarRepository } from "./infrastructure/prisma/prisma-assistant-calendar-repository.adapter";
 export { crearPrismaAsistenciaRepositoryAdapter } from "./infrastructure/prisma/prisma-asistencia-repository.adapter";
 
 export type ServicioCalendarioAsistente = Readonly<{
