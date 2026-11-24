@@ -1,5 +1,6 @@
 import { CalendarDays, Clock3, Hourglass, UserCheck } from "lucide-react";
 import Link from "next/link";
+import { ASSISTANT_AGENDA_HREF } from "@/src/components/app-navigation";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
 
 export function AssistantHoursSummary({
@@ -25,8 +26,8 @@ export function AssistantHoursSummary({
           <h2>Resumen operativo y horas</h2>
           <p>Cómputo de horas trabajadas en el período y estado de tus postulaciones.</p>
         </div>
-        <Link className="text-link" href="/mi-agenda?tab=historico">
-          Consultar horas e historial
+        <Link className="text-link" href={ASSISTANT_AGENDA_HREF}>
+          Consultar horas del mes
         </Link>
       </div>
 
