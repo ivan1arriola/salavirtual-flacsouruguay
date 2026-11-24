@@ -19,7 +19,8 @@ describe("pantalla de migración con series bloqueadas", () => {
   });
 
   it("permite marcar la excepción Conservar en Meet también en los encuentros de una serie bloqueada", () => {
-    expect(control).toMatch(/const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(\s*fila\.estado\s*\);/);
-    expect(control).toMatch(/\{editable &&\s*\(?\s*<ExcepcionMeetControl/);
+    const estadosEditables = control.match(/const editable = \[([^\]]*)\]\.includes\(\s*fila\.estado\s*\);/);
+    expect(estadosEditables?.[1]).toContain('"SERIE"');
+    expect(control).toMatch(/\{editable &&\s*(?:\(\s*)?<ExcepcionMeetControl/);
   });
 });

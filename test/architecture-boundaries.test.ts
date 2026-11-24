@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import ts from "typescript";
 
 const MODULES_ROOT = join(process.cwd(), "src/modules");
 
@@ -16,26 +17,21 @@ type FileInfo = Readonly<{
 }>;
 
 function extractImports(source: string): string[] {
-  const staticMatches = source.matchAll(/(?:import|export)\s+(?:type\s+)?[\s\S]*?from\s+["']([^"']+)["']/g);
-  const dynamicMatches = source.matchAll(/import\s*\(\s*["']([^"']+)["']\s*\)/g);
-  const sideEffectMatches = source.matchAll(/import\s+["']([^"']+)["']/g);
-
+  const parsed = ts.createSourceFile("source.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const results: string[] = [];
-  for (const match of staticMatches) {
-    if (match[1]) {
-      results.push(match[1]);
+  function visit(node: ts.Node): void {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      results.push(node.moduleSpecifier.text);
     }
-  }
-  for (const match of dynamicMatches) {
-    if (match[1]) {
-      results.push(match[1]);
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) {
+      results.push(node.arguments[0].text);
     }
-  }
-  for (const match of sideEffectMatches) {
-    if (match[1]) {
-      results.push(match[1]);
+    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal)) {
+      results.push(node.argument.literal.text);
     }
+    ts.forEachChild(node, visit);
   }
+  visit(parsed);
   return results;
 }
 

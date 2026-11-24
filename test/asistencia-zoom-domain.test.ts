@@ -62,8 +62,8 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
       [{ ...ses({ entra: "10:00", sale: "10:01" }), salidaAt: new Date("2026-11-09T10:01:20Z") }],
       VENTANA
     );
-    expect(r!.minutos).toBe(1.33);
-    expect(r!.porcentaje).toBe(2.22);
+    expect(r!.minutos).toBeCloseTo(1.33, 8);
+    expect(r!.porcentaje).toBeCloseTo(2.22, 8);
     const [lleno] = consolidarAsistenciaZoom([ses({ entra: "09:00", sale: "12:00" })], VENTANA);
     expect(lleno!.porcentaje).toBe(100);
   });
@@ -213,7 +213,7 @@ describe("varias ocurrencias de un mismo encuentro", () => {
     expect(rs).toHaveLength(1);
     // 30 min en la primera + 20 recortados en la segunda (11:00–11:20) = 50 de 60.
     expect(rs[0]!.minutos).toBe(50);
-    expect(rs[0]!.porcentaje).toBe(83.33);
+    expect(rs[0]!.porcentaje).toBeCloseTo(83.33, 8);
     expect(rs[0]!.sesiones).toBe(2);
   });
 });

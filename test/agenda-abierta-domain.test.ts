@@ -81,22 +81,13 @@ describe("agenda-abierta.domain", () => {
   });
 
   describe("formatearDiasRestantes", () => {
-    it("devuelve 'Hoy' para el mismo día en la zona horaria", () => {
+    it.each([
+      ["2026-09-10T21:00:00Z", "Hoy"],
+      ["2026-09-11T14:00:00Z", "Mañana"],
+      ["2026-09-13T14:00:00Z", "En 3 días"]
+    ])("formatea %s como %s", (fecha, esperado) => {
       const ahora = new Date("2026-09-10T14:00:00Z");
-      const fecha = new Date("2026-09-10T21:00:00Z");
-      expect(formatearDiasRestantes(fecha, ahora, "America/Montevideo")).toBe("Hoy");
-    });
-
-    it("devuelve 'Mañana' para el día siguiente", () => {
-      const ahora = new Date("2026-09-10T14:00:00Z");
-      const fecha = new Date("2026-09-11T14:00:00Z");
-      expect(formatearDiasRestantes(fecha, ahora, "America/Montevideo")).toBe("Mañana");
-    });
-
-    it("devuelve 'En 3 días' para 3 días hacia adelante", () => {
-      const ahora = new Date("2026-09-10T14:00:00Z");
-      const fecha = new Date("2026-09-13T14:00:00Z");
-      expect(formatearDiasRestantes(fecha, ahora, "America/Montevideo")).toBe("En 3 días");
+      expect(formatearDiasRestantes(new Date(fecha), ahora, "America/Montevideo")).toBe(esperado);
     });
   });
 

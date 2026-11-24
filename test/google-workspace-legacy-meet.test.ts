@@ -230,7 +230,7 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     const legacyAuths = state.jwtInstances.filter(
       (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
-    expect(legacyAuths.length).toBe(0);
+    expect(legacyAuths).toHaveLength(0);
   });
 
   it("errores no relacionados con permisos NO disparan fallback a Legacy", async () => {
@@ -247,7 +247,7 @@ describe("Fallback de credenciales Legacy para Google Meet", () => {
     const legacyAuths = state.jwtInstances.filter(
       (j) => j.email === "vieja@flacso-zoom-app.iam.gserviceaccount.com"
     );
-    expect(legacyAuths.length).toBe(0);
+    expect(legacyAuths).toHaveLength(0);
   });
 
   it("cargarCredencialesLegacyGoogleWorkspace conserva el subject de Workspace en base de datos para otros servicios (Drive, etc)", async () => {

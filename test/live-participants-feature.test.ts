@@ -33,7 +33,7 @@ describe("participantes activos de Google Meet", () => {
     expect(source).toContain("conectados");
     expect(timelineSource).toContain("LiveParticipantsIndicator");
     expect(timelineSource).toMatch(
-      /isLive && provider\.supportsCohosts \?\s*\(?\s*<LiveParticipantsIndicator/
+      /isLive && provider\.supportsCohosts \?\s*(?:\(\s*)?<LiveParticipantsIndicator/
     );
   });
 });

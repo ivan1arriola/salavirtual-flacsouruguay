@@ -56,6 +56,6 @@ describe("lista Zoom por serie", () => {
   it("permite agrupar por reunión o por serie y ofrece corregir solo a Administración", () => {
     expect(pagina).toContain("Por reunión");
     expect(pagina).toContain("Por serie");
-    expect(pagina).toMatch(/esAdmin && !isHistory \?\s*\(?\s*<CorregirSerieZoomBoton/);
+    expect(pagina).toMatch(/esAdmin && !isHistory \?\s*(?:\(\s*)?<CorregirSerieZoomBoton/);
   });
 });
