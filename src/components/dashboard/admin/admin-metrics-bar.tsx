@@ -22,7 +22,7 @@ export function AdminMetricsBar({
           </span>
           <div>
             <h2>Indicadores generales</h2>
-            <p>Solicitudes activas y reuniones de los próximos siete días.</p>
+            <p>Actividad institucional, cobertura y casos abiertos.</p>
           </div>
         </div>
       </div>
