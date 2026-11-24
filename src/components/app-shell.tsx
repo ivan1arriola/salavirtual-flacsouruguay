@@ -60,7 +60,7 @@ export async function AppShell({
         </div>
 
         <div className="account-block">
-          <ProfileMenu user={user} account={rememberedAccount} unreadNotifications={0} />
+          <ProfileMenu user={user} account={rememberedAccount} unreadNotifications={unreadNotifications} />
         </div>
       </aside>
 
@@ -71,7 +71,7 @@ export async function AppShell({
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
-            <SidebarLink className="mobile-notification-link" href="/notificaciones" dataTour={user.role === "DOCENTE" ? "teacher-notifications" : undefined}>
+            <SidebarLink className="mobile-notification-link" href="/notificaciones" dataTour={notificationTourForRole(user.role)}>
               <Bell size={20} aria-hidden="true" />
               <span className="sr-only">Notificaciones: {unreadNotifications} sin leer</span>
               {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
@@ -80,7 +80,7 @@ export async function AppShell({
               compact
               user={user}
               account={rememberedAccount}
-              unreadNotifications={0}
+              unreadNotifications={unreadNotifications}
             />
           </span>
         </header>
@@ -170,6 +170,9 @@ function SidebarGroup({
 
 function tourForHref(role: Session["user"]["role"], href: string): string | undefined {
   const route = href.split("?")[0];
+  if (route === "/notificaciones") {
+    return notificationTourForRole(role);
+  }
   if (role === "DOCENTE") {
     if (route === "/mis-clases") {
       return "teacher-agenda";
@@ -188,10 +191,10 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     if (route === "/") {
       return "assistant-dashboard";
     }
-    if (route === "/mi-agenda") {
+    if (href === "/mi-agenda?tab=proximas") {
       return "assistant-my-agenda";
     }
-    if (route === "/agenda-abierta") {
+    if (href === "/agenda-abierta") {
       return "assistant-open-agenda";
     }
     if (route === "/grabaciones") {
@@ -200,6 +203,16 @@ function tourForHref(role: Session["user"]["role"], href: string): string | unde
     if (route === "/mi-perfil") {
       return "assistant-profile";
     }
+  }
+  return undefined;
+}
+
+function notificationTourForRole(role: Session["user"]["role"]): string | undefined {
+  if (role === "DOCENTE") {
+    return "teacher-notifications";
+  }
+  if (role === "ASISTENTE_TECNICO") {
+    return "assistant-notifications";
   }
   return undefined;
 }
