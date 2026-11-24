@@ -20,6 +20,34 @@ describe("confirmación de cobertura", () => {
     expect(html).toContain("<dialog");
   });
 
+  it("explica que desasignar conserva el requisito y no convoca al equipo", () => {
+    const html = renderToStaticMarkup(
+      createElement(ConfirmacionCobertura, {
+        detalle: { tipo: "desasignacion", nombre: "Ana Pérez", asignacionId: "a1" },
+        onCerrar: vi.fn(),
+        onConfirmar: vi.fn()
+      })
+    );
+    expect(html).toContain("Ana Pérez");
+    expect(html).toContain("seguirá requiriendo cobertura");
+    expect(html).toContain("quedará pendiente");
+    expect(html).toContain("Solo se notificará a la persona afectada");
+    expect(html).toContain("Desasignar asistente");
+  });
+
+  it("distingue la reasignación y sus destinatarios", () => {
+    const html = renderToStaticMarkup(
+      createElement(ConfirmacionCobertura, {
+        detalle: { tipo: "reasignacion", anterior: "Ana Pérez", nombre: "Luis", asistenteId: "a2" },
+        onCerrar: vi.fn(),
+        onConfirmar: vi.fn()
+      })
+    );
+    expect(html).toContain("Ana Pérez");
+    expect(html).toContain("Luis");
+    expect(html).toContain("sin convocatoria general");
+  });
+
   it("identifica la persona y las consecuencias de aprobar un registro", () => {
     const html = renderToStaticMarkup(
       createElement(ConfirmacionCobertura, {
