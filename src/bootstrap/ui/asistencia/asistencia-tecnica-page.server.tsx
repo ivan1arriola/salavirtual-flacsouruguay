@@ -46,7 +46,7 @@ function obtenerEstadoVacio(total: number, query: string) {
   };
 }
 
-function etiquetaRelativaDia(relativo: string): string | null {
+function etiquetaRelativaDia(relativo: string | null | undefined): string | null {
   if (relativo === "HOY") {
     return "Hoy";
   }
@@ -59,7 +59,7 @@ function etiquetaRelativaDia(relativo: string): string | null {
 function obtenerEtiquetaHost(
   cuenta: { nombre: string; emailOrganizador: string | null } | null | undefined,
   isZoom: boolean,
-  hostEmail: string | null
+  hostEmail: string | null | undefined
 ): string | null {
   if (!cuenta) {
     return null;
