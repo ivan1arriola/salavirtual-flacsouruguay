@@ -78,7 +78,15 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
       ultima.hasta = ocurridoAt;
       ultima.cantidad++;
     } else {
-      entradas.push({ tipo, desde: ocurridoAt, hasta: ocurridoAt, cantidad: 1, participanteId, detalle, huella });
+      entradas.push({
+        tipo,
+        desde: ocurridoAt,
+        hasta: ocurridoAt,
+        cantidad: 1,
+        participanteId,
+        detalle,
+        huella
+      });
     }
   }
   return entradas.map((entrada) => ({ ...entrada, etiqueta: etiquetaEntrada(entrada) }));
