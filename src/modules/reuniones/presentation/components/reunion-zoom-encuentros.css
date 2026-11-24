@@ -230,7 +230,9 @@
   font-size: 0.8rem;
   font-weight: 800;
   text-align: center;
-  transition: background-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 .zoom-series-card__edit-toggle:hover {
   background: #ffca00;
