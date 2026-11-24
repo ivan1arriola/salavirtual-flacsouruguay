@@ -178,13 +178,13 @@ export function isNavigationItemActive(
     return item.search?.value === "proximas";
   }
   if (route === "/reuniones" && pathname.startsWith("/reuniones/")) {
-    return pathname !== "/reuniones/nueva" && item.search?.value === "series";
+    return !pathname.startsWith("/reuniones/nueva") && item.search?.value === "series";
   }
   if (route === "/mi-agenda" && pathname.startsWith("/operacion/")) {
     return item.search?.value === "proximas";
   }
   if (route === "/mis-clases" && pathname.startsWith("/reuniones/")) {
-    return pathname !== "/reuniones/nueva";
+    return !pathname.startsWith("/reuniones/nueva");
   }
   const routeActive = pathname === route || (!exact && route !== "/" && pathname.startsWith(`${route}/`));
   if (!routeActive || !item.search) {
