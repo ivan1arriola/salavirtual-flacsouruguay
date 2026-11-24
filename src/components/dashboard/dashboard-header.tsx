@@ -14,18 +14,23 @@ export function DashboardHeader({
 }>) {
   const roleLabels: Record<string, string> = {
     ADMINISTRACION: "Administración",
-    DOCENTE: "Cuerpo Docente",
-    ASISTENTE_TECNICO: "Monitoreo"
+    DOCENTE: "Docente",
+    ASISTENTE_TECNICO: "Asistente técnico"
   };
 
   const defaultSubtitles: Record<string, string> = {
-    ADMINISTRACION: "Supervisión de salas, triage operativo y agenda institucional.",
+    ADMINISTRACION: "Reuniones, coberturas e incidencias que requieren tu atención.",
     DOCENTE: "Tus clases, enlaces de acceso y grabaciones recientes.",
-    ASISTENTE_TECNICO: "Tus coberturas asignadas, vacantes abiertas y registro de horas."
+    ASISTENTE_TECNICO: "Tus monitoreos, postulaciones y registro de horas."
   };
 
   const now = new Date();
-  const firstName = userName.trim().split(" ")[0] || "Docente";
+  const firstName = userName.trim().split(" ")[0] || roleLabels[role];
+  const titles = {
+    ADMINISTRACION: "Panel de operaciones",
+    DOCENTE: "Mi actividad académica",
+    ASISTENTE_TECNICO: "Mi jornada"
+  };
 
   return (
     <header className="dashboard-header-hero">
@@ -36,7 +41,8 @@ export function DashboardHeader({
             {roleLabels[role] ?? role}
           </span>
         </div>
-        <h1 className="dashboard-header-title">Hola, {firstName}</h1>
+        <h1 className="dashboard-header-title">{titles[role]}</h1>
+        <p className="dashboard-header-greeting">Hola, {firstName}</p>
         <p className="dashboard-header-subtitle">{subtitle ?? defaultSubtitles[role] ?? ""}</p>
       </div>
 
