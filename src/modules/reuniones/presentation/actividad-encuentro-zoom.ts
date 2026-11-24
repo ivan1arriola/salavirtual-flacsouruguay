@@ -1,5 +1,7 @@
+import { etiquetaEventoZoom } from "../../../integrations/zoom/zoom-eventos-catalogo";
+
 /** Hecho confirmado por un aviso de Zoom, ya asociado a una ejecución por cuenta + UUID. */
-export type HechoZoom = Readonly<{ tipo: string; ocurridoAt: Date }>;
+export type HechoZoom = Readonly<{ tipo: string; ocurridoAt: Date; huella?: string; participanteId?: string | null; detalle?: string | null }>;
 
 export type EntradaActividadZoom = Readonly<{
   /** Tipo del primer hecho del grupo. */
@@ -9,22 +11,10 @@ export type EntradaActividadZoom = Readonly<{
   hasta: Date;
   /** Cantidad de avisos que resume (1 si no se agrupó). */
   cantidad: number;
+  participanteId?: string | null;
+  detalle?: string | null;
 }>;
 
-const ETIQUETAS: Record<string, string> = {
-  "meeting.started": "Reunión iniciada",
-  "meeting.ended": "Reunión finalizada",
-  "recording.started": "Grabación iniciada",
-  "recording.stopped": "Grabación detenida",
-  "recording.paused": "Grabación pausada",
-  "recording.resumed": "Grabación reanudada",
-  "recording.completed": "Grabación procesada por Zoom",
-  "recording.transcript_completed": "Transcripción disponible",
-  "meeting.sharing_started": "Pantalla compartida iniciada",
-  "meeting.sharing_ended": "Pantalla compartida finalizada",
-  "meeting.alert": "Alerta técnica informada por Zoom",
-  "meeting.summary_completed": "Resumen de reunión disponible"
-};
 /** [singular, plural] */
 const PLURALES: Record<string, readonly [string, string]> = {
   "meeting.participant_joined": ["entrada de participante", "entradas de participantes"],
@@ -49,27 +39,28 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
   const vistos = new Set<string>();
   const ordenados = [...hechos]
     .sort((a, b) => a.ocurridoAt.getTime() - b.ocurridoAt.getTime())
-    .filter(({ tipo, ocurridoAt }) => {
-      const clave = `${tipo}|${ocurridoAt.getTime()}`;
-      if (vistos.has(clave) && !AGRUPABLES.has(tipo)) {
+    .filter(({ tipo, ocurridoAt, huella }) => {
+      const clave = huella ?? `${tipo}|${ocurridoAt.getTime()}`;
+      if (vistos.has(clave) && (huella !== undefined || !AGRUPABLES.has(tipo))) {
         return false;
       }
       vistos.add(clave);
       return true;
     });
-  const entradas: { tipo: string; desde: Date; hasta: Date; cantidad: number }[] = [];
-  for (const { tipo, ocurridoAt } of ordenados) {
+  const entradas: { tipo: string; desde: Date; hasta: Date; cantidad: number; participanteId?: string | null; detalle?: string | null }[] = [];
+  for (const { tipo, ocurridoAt, participanteId, detalle } of ordenados) {
     const ultima = entradas.at(-1);
     if (
       ultima &&
       AGRUPABLES.has(tipo) &&
+      !participanteId && !detalle && !ultima.participanteId && !ultima.detalle &&
       ultima.tipo === tipo &&
-      ocurridoAt.getTime() - ultima.hasta.getTime() <= VENTANA_AGRUPACION_MS
+      ocurridoAt.getTime() - ultima.desde.getTime() <= VENTANA_AGRUPACION_MS
     ) {
       ultima.hasta = ocurridoAt;
       ultima.cantidad++;
     } else {
-      entradas.push({ tipo, desde: ocurridoAt, hasta: ocurridoAt, cantidad: 1 });
+      entradas.push({ tipo, desde: ocurridoAt, hasta: ocurridoAt, cantidad: 1, participanteId, detalle });
     }
   }
   return entradas.map((entrada) => ({ ...entrada, etiqueta: etiquetaEntrada(entrada) }));
@@ -80,5 +71,5 @@ function etiquetaEntrada(entrada: Readonly<{ tipo: string; cantidad: number }>):
   if (formas) {
     return `${entrada.cantidad} ${formas[entrada.cantidad === 1 ? 0 : 1]}`;
   }
-  return ETIQUETAS[entrada.tipo] ?? "Otra actividad de Zoom";
+  return etiquetaEventoZoom(entrada.tipo);
 }
