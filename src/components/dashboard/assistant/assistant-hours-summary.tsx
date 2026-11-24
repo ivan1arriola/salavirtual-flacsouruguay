@@ -25,8 +25,8 @@ export function AssistantHoursSummary({
           <h2>Resumen operativo y horas</h2>
           <p>Cómputo de horas trabajadas en el período y estado de tus postulaciones.</p>
         </div>
-        <Link className="text-link" href="/mi-perfil">
-          Mi perfil y tarifas
+        <Link className="text-link" href="/mi-agenda?tab=historico">
+          Consultar horas e historial
         </Link>
       </div>
 
@@ -36,7 +36,7 @@ export function AssistantHoursSummary({
             <span className="assistant-stat-icon">
               <Clock3 size={20} />
             </span>
-            <small>Horas este mes</small>
+            <small>Horas registradas este mes</small>
           </div>
           <strong className="assistant-stat-value">{formatMinutes(stats.currentMonthMinutes)} h</strong>
           <p className="assistant-stat-breakdown">
@@ -68,7 +68,7 @@ export function AssistantHoursSummary({
           </div>
           <strong className="assistant-stat-value">{stats.postulacionesCount}</strong>
           <p className="assistant-stat-breakdown">
-            {stats.respondidas} respondidas · {stats.pendientesRespuesta} pendientes
+            {stats.respondidas} oportunidades respondidas · {stats.pendientesRespuesta} sin responder
           </p>
         </article>
 
