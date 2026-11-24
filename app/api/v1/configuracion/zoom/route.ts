@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorParaPanel } from "@/src/lib/http/api-error";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cifrarConfiguracion, descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -69,8 +70,8 @@ export async function PUT(request: Request) {
     const result = await guardarConfiguracionZoom(db, cifrarConfiguracion, actor.id, body);
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al guardar configuración de Zoom.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const { status, message } = errorParaPanel(error, "Error al guardar configuración de Zoom.");
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
       tokenGenerado: Boolean(token)
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al conectar con la API de Zoom.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const { status, message } = errorParaPanel(error, "Error al conectar con la API de Zoom.");
+    return NextResponse.json({ error: message }, { status });
   }
 }

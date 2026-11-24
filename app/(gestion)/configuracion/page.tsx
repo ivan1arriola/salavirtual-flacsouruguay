@@ -11,11 +11,18 @@ import { requireAdminPage } from "./require-admin-page";
 export default async function ConfiguracionInicioPage({
   searchParams
 }: Readonly<{
-  searchParams: Promise<{ seccion?: string; busqueda?: string; pagina?: string }>;
+  searchParams: Promise<{
+    seccion?: string;
+    busqueda?: string;
+    pagina?: string;
+    programa?: string;
+    estado?: string;
+    error?: string;
+  }>;
 }>) {
   await requireAdminPage();
   const query = await searchParams;
-  const legacy = legacySettingsRedirect(query.seccion, { busqueda: query.busqueda, pagina: query.pagina });
+  const legacy = legacySettingsRedirect(query.seccion, query);
   if (legacy) {
     redirect(legacy);
   }

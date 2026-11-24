@@ -7,6 +7,7 @@ import {
   type WorkspaceScopeAccountValidation,
   type WorkspaceScopesResult
 } from "./workspace-config.client";
+import { resumirValidacionScopes } from "./workspace-scopes-summary";
 
 const SCOPE_LABELS = [
   ["Calendar", "calendar.events", "https://www.googleapis.com/auth/calendar.events"],
@@ -19,11 +20,7 @@ export function WorkspaceScopesValidator() {
   const [result, setResult] = useState<WorkspaceScopesResult | null>(null);
   const [busy, setBusy] = useState(false);
   const accounts = result?.accounts ?? [];
-  const roomAccounts = accounts.filter(({ tipo }) => tipo === "SALA");
-  const okRooms = roomAccounts.filter(({ ok }) => ok).length;
-  const missingScopes = accounts.flatMap((account) =>
-    account.scopes.filter(({ autorizado }) => !autorizado).map((scope) => ({ account, scope }))
-  );
+  const resumen = resumirValidacionScopes(accounts);
 
   async function validate() {
     setBusy(true);
@@ -69,17 +66,11 @@ export function WorkspaceScopesValidator() {
         </div>
       ) : (
         <div className="workspace-validation-results">
-          <div className={`workspace-validation-summary${result.ok ? " is-ok" : " is-warning"}`}>
-            {result.ok ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}
+          <div className={`workspace-validation-summary${resumen.ok ? " is-ok" : " is-warning"}`}>
+            {resumen.ok ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}
             <div>
-              <strong>
-                {okRooms}/{roomAccounts.length} cuentas sala correctas
-              </strong>
-              <span>
-                {missingScopes.length === 0
-                  ? "Todos los permisos requeridos están autorizados."
-                  : `${missingScopes.length} autorizaciones requieren atención.`}
-              </span>
+              <strong>{resumen.titulo}</strong>
+              <span>{resumen.detalle}</span>
             </div>
           </div>
 

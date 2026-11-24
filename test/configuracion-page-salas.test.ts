@@ -116,4 +116,22 @@ describe("datos de Configuración › Salas", () => {
     const datos = await obtenerDatosPaginaConfiguracion(db, "notificaciones", AHORA);
     expect(datos.adminReportRecipients).toEqual([{ emailPrincipal: "admin@flacso.edu.uy" }]);
   });
+
+  it("cada área consulta solo lo que muestra", async () => {
+    const consultadas = async (seccion: string) => {
+      const { mock, db } = crearDb();
+      await obtenerDatosPaginaConfiguracion(db, seccion, AHORA);
+      return {
+        cuentas: mock.cuentaProveedor.findMany.mock.calls.length,
+        programas: mock.programa.count.mock.calls.length,
+        asistencia: mock.configuracionAsistenciaTecnica.findUnique.mock.calls.length
+      };
+    };
+    expect(await consultadas("google")).toEqual({ cuentas: 0, programas: 0, asistencia: 0 });
+    expect(await consultadas("zoom")).toEqual({ cuentas: 0, programas: 0, asistencia: 0 });
+    expect(await consultadas("correo")).toEqual({ cuentas: 0, programas: 0, asistencia: 0 });
+    expect(await consultadas("notificaciones")).toEqual({ cuentas: 0, programas: 0, asistencia: 1 });
+    expect(await consultadas("salas")).toEqual({ cuentas: 1, programas: 0, asistencia: 0 });
+    expect(await consultadas("resumen")).toEqual({ cuentas: 1, programas: 2, asistencia: 0 });
+  });
 });

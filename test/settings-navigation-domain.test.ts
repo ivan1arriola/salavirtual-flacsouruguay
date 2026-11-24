@@ -31,6 +31,9 @@ describe("navegación de configuración", () => {
     expect(legacySettingsRedirect("salas")).toBe("/configuracion/salas");
     expect(legacySettingsRedirect("correo")).toBe("/configuracion/correo");
     expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
+    expect(legacySettingsRedirect("programas", { programa: "p1", estado: "programa-creado" })).toBe(
+      "/usuarios?vista=programas&programa=p1&estado=programa-creado"
+    );
     expect(legacySettingsRedirect("historico")).toBe("/configuracion/historico");
     expect(legacySettingsRedirect("historico", { busqueda: "ana", pagina: "2" })).toBe(
       "/configuracion/historico?busqueda=ana&pagina=2"
@@ -44,7 +47,14 @@ describe("navegación de configuración", () => {
 
   it("expone en el menú las áreas en orden y sin el histórico", () => {
     const menu = SETTINGS_SECTIONS.filter(({ hidden }) => !hidden);
-    expect(menu.map(({ id }) => id)).toEqual(["resumen", "zoom", "google", "salas", "correo", "notificaciones"]);
+    expect(menu.map(({ id }) => id)).toEqual([
+      "resumen",
+      "zoom",
+      "google",
+      "salas",
+      "correo",
+      "notificaciones"
+    ]);
     expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([...menu.map(({ id }) => id), "historico"]);
   });
 

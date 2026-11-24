@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { errorParaPanel } from "@/src/lib/http/api-error";
 import { actualizarConfiguracionAsistenciaTecnica } from "@/src/modules/configuracion/asistencia-tecnica.service";
 import { actualizarConfiguracionCorreoSes } from "@/src/modules/configuracion/correo-ses.service";
 import {
@@ -264,5 +265,5 @@ function asistenciaRedirect(estado?: string, error?: string): string {
 }
 
 function errorMessage(error: unknown, fallback = "No se pudo actualizar el programa."): string {
-  return error instanceof Error ? error.message : fallback;
+  return errorParaPanel(error, fallback).message;
 }

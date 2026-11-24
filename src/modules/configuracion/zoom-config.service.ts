@@ -42,14 +42,16 @@ export async function obtenerCredencialesZoom(
           clientSecret,
           origen: "DATABASE"
         };
-      } catch {
+      } catch (error) {
         errorComprobacion = true;
-        // Fallback a env si falla descifrado
+        // Fallback a env si falla descifrado; se registra para no ocultar que el secreto guardado es ilegible.
+        console.error("No se pudo descifrar el secreto de Zoom guardado", error);
       }
     }
-  } catch {
+  } catch (error) {
     errorComprobacion = true;
     // Si la tabla no existe en algún test unitario
+    console.error("No se pudieron leer las credenciales de Zoom de la base", error);
   }
 
   const envAccountId = process.env.ZOOM_ACCOUNT_ID?.trim();
