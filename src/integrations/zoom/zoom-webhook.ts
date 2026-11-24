@@ -155,7 +155,11 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   // Códigos de alerta de Zoom (p. ej. "Unstable audio quality"): texto corto, sin personas.
   const detalle =
     tipo === "meeting.alert" && Array.isArray(recurso?.issues)
-      ? recurso.issues.map(texto).filter((v): v is string => v !== null).join(", ").slice(0, 250) || null
+      ? recurso.issues
+          .map(texto)
+          .filter((v): v is string => v !== null)
+          .join(", ")
+          .slice(0, 250) || null
       : null;
   if (participanteId && participanteId.length > 255) {
     return null;

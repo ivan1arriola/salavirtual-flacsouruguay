@@ -89,7 +89,8 @@ export function legacySettingsRedirect(
   section?: string,
   params: Readonly<{ busqueda?: string; pagina?: string }> = {}
 ): string | null {
-  const ruta = section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
+  const ruta =
+    section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
   if (!ruta) {
     return null;
   }

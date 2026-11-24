@@ -26,7 +26,8 @@ export default async function ConfiguracionNotificacionesPage({
         error={query.error}
         estado={query.estado}
         mensajes={{
-          "reportes-asistencia-actualizados": "Los destinatarios adicionales de los reportes fueron actualizados."
+          "reportes-asistencia-actualizados":
+            "Los destinatarios adicionales de los reportes fueron actualizados."
         }}
       />
       <AssistantReportConfigForm

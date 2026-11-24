@@ -365,14 +365,6 @@
       "count": 1
     }
   },
-  "src/components/pending-meet-operations-manager.tsx": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
   "src/components/profile-menu.tsx": {
     "sonarjs/no-nested-template-literals": {
       "count": 2
@@ -401,25 +393,12 @@
       "count": 1
     }
   },
-  "src/components/workspace-cohosts-global-verification.tsx": {
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 7
-    }
-  },
   "src/components/workspace-credential-form.tsx": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
     "sonarjs/no-nested-conditional": {
       "count": 2
-    }
-  },
-  "src/components/workspace-legacy-credentials.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
     }
   },
   "src/components/workspace-scopes-validator.tsx": {

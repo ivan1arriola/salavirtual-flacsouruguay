@@ -74,12 +74,7 @@ describe("pruebas de Google Workspace", () => {
 
     expect(google.options[0]).toMatchObject({
       subject: credential.subject,
-      scopes: [
-        scopes.calendar,
-        scopes.drive,
-        scopes.gmail,
-        scopes.sheets
-      ]
+      scopes: [scopes.calendar, scopes.drive, scopes.gmail, scopes.sheets]
     });
     expect(google.request).toHaveBeenCalledWith(
       expect.objectContaining({

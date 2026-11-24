@@ -118,7 +118,9 @@ export function ZoomAsistenciaConciliacion({
                     {r.conexiones.map((c, i) => (
                       <li key={`${c.entradaAt}-${i}`}>
                         {hora(c.entradaAt)} → {hora(c.salidaAt)}
-                        {c.status === "in_waiting_room" ? " · sala de espera (no cuenta como tiempo en reunión)" : ""}
+                        {c.status === "in_waiting_room"
+                          ? " · sala de espera (no cuenta como tiempo en reunión)"
+                          : ""}
                         {c.email && c.email !== r.emailObservado ? ` · ${c.email}` : ""}
                       </li>
                     ))}

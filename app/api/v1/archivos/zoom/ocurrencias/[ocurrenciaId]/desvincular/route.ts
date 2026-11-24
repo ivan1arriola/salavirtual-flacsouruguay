@@ -34,7 +34,10 @@ export async function POST(request: Request, context: RouteContext) {
       case "DESVINCULADA":
         return NextResponse.json({ referenciasEliminadas: r.referenciasEliminadas }, { status: 200 });
       case "NO_VINCULADA":
-        return NextResponse.json({ error: "La ocurrencia no está vinculada a ese encuentro." }, { status: 409 });
+        return NextResponse.json(
+          { error: "La ocurrencia no está vinculada a ese encuentro." },
+          { status: 409 }
+        );
       case "NO_ENCONTRADA":
         return NextResponse.json({ error: "No encontrada." }, { status: 404 });
       case "PROHIBIDO":

@@ -4,11 +4,7 @@ import { Code2, Save, TestTube2, UserRoundCheck } from "lucide-react";
 import { useState } from "react";
 import { saveWorkspaceSection, testWorkspaceSection } from "./workspace-config.client";
 
-const SCOPES = [
-  "calendar.events",
-  "drive",
-  "gmail.send"
-] as const;
+const SCOPES = ["calendar.events", "drive", "gmail.send"] as const;
 
 export function WorkspaceDelegationForm({ subject }: Readonly<{ subject: string }>) {
   const [message, setMessage] = useState("");

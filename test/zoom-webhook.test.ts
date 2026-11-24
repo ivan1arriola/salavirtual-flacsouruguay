@@ -180,7 +180,12 @@ describe("recepción durable", () => {
             id: 777,
             uuid,
             join_url: "https://secret.example/j",
-            participant: { participant_uuid: "p-1", user_name: "Ana Pérez", email: "ana@x.uy", public_ip: "ip-privada" },
+            participant: {
+              participant_uuid: "p-1",
+              user_name: "Ana Pérez",
+              email: "ana@x.uy",
+              public_ip: "ip-privada"
+            },
             ...extra
           }
         }

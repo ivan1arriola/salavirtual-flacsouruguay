@@ -68,10 +68,7 @@ export default async function ConfiguracionZoomPage({
             }
           />
         </SettingsBlock>
-        <SettingsBlock
-          title="Grupo de cuentas"
-          summary={resumenGrupo}
-        >
+        <SettingsBlock title="Grupo de cuentas" summary={resumenGrupo}>
           <ZoomGrupoConfig
             grupoId={zoomGrupo?.grupoId ?? null}
             grupoNombre={zoomGrupo?.grupoNombre ?? null}
@@ -81,7 +78,9 @@ export default async function ConfiguracionZoomPage({
         </SettingsBlock>
         <SettingsBlock
           title="Notificaciones de Zoom"
-          summary={webhookOk ? "Secreto del webhook configurado." : "El secreto del webhook no está configurado."}
+          summary={
+            webhookOk ? "Secreto del webhook configurado." : "El secreto del webhook no está configurado."
+          }
           status={{ tone: webhookOk ? "ok" : "warning", label: webhookOk ? "Configurado" : "Pendiente" }}
         >
           <ZoomWebhookConfig initialConfigured={webhookOk} />
