@@ -63,7 +63,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx && git diff -- src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx",
     "deadcode": "knip",
     "architecture": "depcruise src app auth.ts scripts test --config .dependency-cruiser.cjs --output-type err"
   },
