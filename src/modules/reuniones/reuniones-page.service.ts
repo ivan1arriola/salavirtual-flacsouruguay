@@ -97,6 +97,7 @@ export async function obtenerDatosPaginaReuniones(
   const isHistory = periodo === "anteriores";
   const meetingCodeQuery = normalizarCodigoReunionBuscado(query);
   const now = new Date();
+  const todayStart = startOfMontevideoDay(now);
 
   const desdeIso = parsearFechaFiltro(desdeParam, false);
   const hastaIso = parsearFechaFiltro(hastaParam, true);
@@ -123,7 +124,7 @@ export async function obtenerDatosPaginaReuniones(
         : {};
 
   const temporalWhere: Prisma.InstanciaSalaWhereInput = {
-    finProgramadoAt: isHistory ? { lt: now } : { gte: now },
+    finProgramadoAt: isHistory ? { lt: todayStart } : { gte: todayStart },
     ...(desdeDate || hastaDate
       ? {
           inicioProgramadoAt: {
@@ -330,11 +331,10 @@ export async function obtenerDatosPaginaReuniones(
             });
           });
 
-  const todayStart = startOfMontevideoDay(now);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const [
     meetings,
@@ -365,12 +365,12 @@ export async function obtenerDatosPaginaReuniones(
     }),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: sevenDaysAgo, lt: now } }]
+        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: sevenDaysAgo, lt: todayStart } }]
       }
     }),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: thirtyDaysAgo, lt: now } }]
+        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: thirtyDaysAgo, lt: todayStart } }]
       }
     }),
     db.instanciaSala.count({
@@ -379,6 +379,7 @@ export async function obtenerDatosPaginaReuniones(
           encounterWhere,
           {
             requiereAsistenciaTecnica: true,
+            ...(isHistory ? {} : { finProgramadoAt: { gt: now } }),
             asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
           }
         ]
