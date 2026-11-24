@@ -131,7 +131,7 @@ export async function obtenerDashboardAsistenteOptimizado(
   }
 
   const upcomingCoverages: UpcomingMeetingSummaryDTO[] = baseDashboard.proximasCoberturas
-    .slice(1)
+    .filter((m) => m.id !== heroMeeting?.id)
     .map((m) => ({
       id: m.id,
       solicitudId: m.solicitudId,
@@ -157,6 +157,8 @@ export async function obtenerDashboardAsistenteOptimizado(
     modalidad: opp.modalidadOverride ?? opp.solicitud.modalidad,
     inicioProgramadoAt: opp.inicioProgramadoAt.toISOString(),
     finProgramadoAt: opp.finProgramadoAt.toISOString(),
+    inicioAsistenciaAt: opp.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
+    finAsistenciaAt: opp.finAsistenciaTecnicaAt?.toISOString() ?? null,
     yaPostulado: opp.postulaciones.some((p) => p.estado === "ME_INTERESA")
   }));
 
