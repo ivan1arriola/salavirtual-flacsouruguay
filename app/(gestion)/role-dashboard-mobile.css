@@ -157,3 +157,125 @@
     font-size: 0.75rem;
   }
 }
+
+/* Composición común: primero el trabajo, después los accesos y los registros. */
+.role-dashboard .dashboard-header-hero {
+  min-height: 0;
+  padding: 18px 22px;
+  gap: 16px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.role-dashboard .dashboard-header-greeting {
+  color: #e2e8f2;
+  font-size: 0.85rem;
+  margin: 0 0 4px;
+}
+
+.role-dashboard .dashboard-header-title {
+  font-size: clamp(1.4rem, 2.3vw, 1.85rem);
+}
+
+.role-dashboard .dashboard-header-actions {
+  flex-wrap: wrap;
+}
+
+.role-dashboard .primary-action,
+.role-dashboard .secondary-action {
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.role-dashboard .secondary-action:not(.dashboard-header-actions a) {
+  border-color: #b7c8dd;
+}
+
+.role-dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-block: 8px;
+}
+
+.role-dashboard-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #2c4777;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.role-dashboard-shortcut > strong {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.role-dashboard-shortcut:hover,
+.role-dashboard-shortcut[aria-current="page"] {
+  background: #e8edf6;
+  border-color: #2c4777;
+}
+
+.role-dashboard-shortcut:focus-visible {
+  outline: 3px solid #2c4777;
+  outline-offset: 2px;
+}
+
+.admin-dashboard-agenda-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.admin-dashboard-redesigned .admin-metrics-bar-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.hero-operation-action {
+  order: -1;
+}
+
+.open-agenda-card[id] {
+  scroll-margin-top: 84px;
+}
+
+.open-agenda-card:target {
+  outline: 3px solid #2c4777;
+  outline-offset: 3px;
+}
+
+@media (max-width: 1280px) {
+  .admin-dashboard-agenda-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .role-dashboard .dashboard-header-hero {
+    padding: 14px 16px;
+  }
+
+  .role-dashboard-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .role-dashboard-shortcut {
+    min-height: 48px;
+    padding: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-dashboard-redesigned .admin-metrics-bar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
