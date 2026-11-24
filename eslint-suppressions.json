@@ -665,7 +665,7 @@
       "count": 1
     },
     "sonarjs/no-nested-conditional": {
-      "count": 3
+      "count": 2
     }
   },
   "src/modules/asistencia/reserva-asistentes.adapter.ts": {

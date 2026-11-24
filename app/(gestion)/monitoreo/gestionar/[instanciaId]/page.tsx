@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarClock, Clock3, UserRoundCheck } from "lucide-react";
+import { ArrowLeft, CalendarClock, ChevronDown, Clock3, UserRoundCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -103,16 +103,58 @@ export default async function GestionCoberturaPage({
           </span>
         </div>
       </header>
-      <section className="monitoring-workflow-surface" aria-label="Información de la reunión">
-        <div className="monitoring-workflow-section-heading">
-          <h2>Información de la reunión</h2>
-        </div>
+      <GestionCoberturaPanel
+        meeting={{
+          id: meeting.id,
+          requestId: meeting.solicitud.id,
+          past,
+          cancelled,
+          estado: meeting.estado,
+          requiereMonitoreo: meeting.requiereAsistenciaTecnica,
+          modalidad: modality,
+          inicio: meeting.inicioProgramadoAt.toISOString(),
+          fin: meeting.finProgramadoAt.toISOString(),
+          inicioMonitoreo: meeting.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
+          finMonitoreo: meeting.finAsistenciaTecnicaAt?.toISOString() ?? null,
+          asignado: current
+            ? [current.asistenteTecnico.usuario.nombres, current.asistenteTecnico.usuario.apellidos]
+                .filter(Boolean)
+                .join(" ")
+            : null
+        }}
+        assistants={assistants.map((assistant) => ({
+          id: assistant.id,
+          name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
+          eligible: assistant.usuario.activo && !assistant.cesadoHastaProximoInicioSesion
+        }))}
+        applicants={meeting.postulaciones.map((application) => ({
+          assistantId: application.asistenteTecnicoId,
+          comment: application.comentario,
+          date: application.createdAt.toISOString()
+        }))}
+        assignedId={current?.asistenteTecnicoId ?? null}
+        assignmentId={current?.id ?? null}
+        historical={meeting.registrosMonitoreoRetroactivo.map((record) => ({
+          id: record.id,
+          estado: record.estado,
+          name: [record.asistente.usuario.nombres, record.asistente.usuario.apellidos]
+            .filter(Boolean)
+            .join(" "),
+          inicio: record.inicioRealAt.toISOString(),
+          fin: record.finRealAt.toISOString(),
+          minutos: record.minutos,
+          monto: record.montoEstimado.toNumber(),
+          moneda: record.moneda,
+          motivo: record.motivo,
+          motivoRechazo: record.motivoRechazo
+        }))}
+      />
+      <details className="monitoring-workflow-surface monitoring-meeting-info">
+        <summary className="monitoring-workflow-section-heading">
+          <span>Información técnica · {zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}</span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
         <div className="monitoring-workflow-body">
-          <p>
-            <span className={`monitoring-platform ${zoom ? "is-zoom" : "is-meet"}`}>
-              {zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}
-            </span>
-          </p>
           <p>
             <strong>{zoom ? "Host de Zoom" : "Cuenta de Meet"}:</strong>{" "}
             {event?.cuentaProveedor
@@ -151,51 +193,7 @@ export default async function GestionCoberturaPage({
             </p>
           ) : null}
         </div>
-      </section>
-      <GestionCoberturaPanel
-        meeting={{
-          id: meeting.id,
-          past,
-          cancelled,
-          estado: meeting.estado,
-          requiereMonitoreo: meeting.requiereAsistenciaTecnica,
-          modalidad: modality,
-          inicio: meeting.inicioProgramadoAt.toISOString(),
-          fin: meeting.finProgramadoAt.toISOString(),
-          inicioMonitoreo: meeting.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
-          finMonitoreo: meeting.finAsistenciaTecnicaAt?.toISOString() ?? null,
-          asignado: current
-            ? [current.asistenteTecnico.usuario.nombres, current.asistenteTecnico.usuario.apellidos]
-                .filter(Boolean)
-                .join(" ")
-            : null
-        }}
-        assistants={assistants.map((assistant) => ({
-          id: assistant.id,
-          name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
-          eligible: assistant.usuario.activo && !assistant.cesadoHastaProximoInicioSesion
-        }))}
-        applicants={meeting.postulaciones.map((application) => ({
-          assistantId: application.asistenteTecnicoId,
-          comment: application.comentario,
-          date: application.createdAt.toISOString()
-        }))}
-        assignedId={current?.asistenteTecnicoId ?? null}
-        historical={meeting.registrosMonitoreoRetroactivo.map((record) => ({
-          id: record.id,
-          estado: record.estado,
-          name: [record.asistente.usuario.nombres, record.asistente.usuario.apellidos]
-            .filter(Boolean)
-            .join(" "),
-          inicio: record.inicioRealAt.toISOString(),
-          fin: record.finRealAt.toISOString(),
-          minutos: record.minutos,
-          monto: record.montoEstimado.toNumber(),
-          moneda: record.moneda,
-          motivo: record.motivo,
-          motivoRechazo: record.motivoRechazo
-        }))}
-      />
+      </details>
     </div>
   );
 }

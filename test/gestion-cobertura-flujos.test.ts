@@ -118,8 +118,23 @@ describe("gestión de cobertura y retroactividad", () => {
     expect(page).toContain('where: { estado: "ME_INTERESA" }');
     expect(page).toContain("applicants={meeting.postulaciones.map");
     expect(panel).toContain("Personas postuladas");
-    expect(panel).toContain("setAssistantId(application.assistantId)");
+    expect(panel).toContain("assign(application.assistantId)");
     expect(panel).toContain("No hay postulaciones activas.");
+  });
+
+  it("desasigna desde la cobertura sin quitar el requisito ni convocar", () => {
+    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
+    const dialog = read("src/modules/asistencia/presentation/components/confirmacion-cobertura.tsx");
+    expect(page).toContain("assignmentId={current?.id ?? null}");
+    expect(panel).toContain("Desasignar asistente");
+    expect(panel).toContain("/api/v1/asistencia/asignaciones/desvincular");
+    expect(panel).toContain("{ asignacionId: detail.asignacionId }");
+    expect(panel).toContain("Pendiente de monitoreo");
+    expect(dialog).toContain("El encuentro seguirá requiriendo cobertura");
+    expect(panel).toContain("assistant.id !== assignedId");
+    expect(panel).toContain("Quitar requisito de monitoreo");
+    expect(page.indexOf("<GestionCoberturaPanel")).toBeLessThan(page.indexOf("<details"));
   });
 
   it("el endpoint no sincroniza proveedores en encuentros históricos", () => {

@@ -4,6 +4,9 @@ import { useEffect, useId, useRef } from "react";
 
 export type ConfirmacionCoberturaDetalle =
   | Readonly<{ tipo: "convocatoria" }>
+  | Readonly<{ tipo: "desasignacion"; nombre: string; asignacionId: string }>
+  | Readonly<{ tipo: "reasignacion"; anterior: string; nombre: string; asistenteId: string }>
+  | Readonly<{ tipo: "cancelar" }>
   | Readonly<{
       tipo: "aprobacion";
       nombre: string;
@@ -12,6 +15,37 @@ export type ConfirmacionCoberturaDetalle =
       importe: string;
       registroId: string;
     }>;
+
+function textoConfirmacion(detalle: ConfirmacionCoberturaDetalle) {
+  switch (detalle.tipo) {
+    case "convocatoria":
+      return {
+        titulo: "Abrir convocatoria",
+        descripcion: "La reunión aparecerá en Agenda abierta y se notificará a los asistentes disponibles."
+      };
+    case "desasignacion":
+      return {
+        titulo: "Desasignar asistente",
+        descripcion: `Se quitará a ${detalle.nombre} del monitoreo. El encuentro seguirá requiriendo cobertura y quedará pendiente. Solo se notificará a la persona afectada.`
+      };
+    case "reasignacion":
+      return {
+        titulo: "Confirmar reasignación",
+        descripcion: `Se sustituirá a ${detalle.anterior} por ${detalle.nombre}. Se notificará a ambas personas, sin convocatoria general.`
+      };
+    case "cancelar":
+      return {
+        titulo: "Quitar requisito de monitoreo",
+        descripcion:
+          "El encuentro seguirá programado, pero dejará de requerir monitoreo y se retirarán las postulaciones activas."
+      };
+    case "aprobacion":
+      return {
+        titulo: "Aprobar registro",
+        descripcion: `Se aprobará el registro de ${detalle.nombre}: ${detalle.minutos} minutos, ${detalle.moneda} ${detalle.importe}. Las horas y el importe se incluirán en las liquidaciones del período.`
+      };
+  }
+}
 
 export function ConfirmacionCobertura({
   detalle,
@@ -40,7 +74,8 @@ export function ConfirmacionCobertura({
     };
   }, []);
 
-  const convocatoria = detalle.tipo === "convocatoria";
+  const texto = textoConfirmacion(detalle);
+  const destructive = detalle.tipo === "desasignacion" || detalle.tipo === "cancelar";
   return (
     <dialog
       ref={dialogo}
@@ -52,18 +87,18 @@ export function ConfirmacionCobertura({
         onCerrar();
       }}
     >
-      <h2 id={`${id}-titulo`}>{convocatoria ? "Abrir convocatoria" : "Aprobar registro"}</h2>
-      <p id={`${id}-descripcion`}>
-        {detalle.tipo === "convocatoria"
-          ? "La reunión aparecerá en Agenda abierta y se notificará a los asistentes disponibles."
-          : `Se aprobará el registro de ${detalle.nombre}: ${detalle.minutos} minutos, ${detalle.moneda} ${detalle.importe}. Las horas y el importe se incluirán en las liquidaciones del período.`}
-      </p>
+      <h2 id={`${id}-titulo`}>{texto.titulo}</h2>
+      <p id={`${id}-descripcion`}>{texto.descripcion}</p>
       <div className="monitoring-confirm-dialog__actions">
         <button ref={volver} type="button" className="secondary-action" onClick={onCerrar}>
           Volver
         </button>
-        <button type="button" className="primary-action" onClick={onConfirmar}>
-          {convocatoria ? "Abrir convocatoria" : "Aprobar registro"}
+        <button
+          type="button"
+          className={destructive ? "monitoring-danger-action" : "primary-action"}
+          onClick={onConfirmar}
+        >
+          {texto.titulo}
         </button>
       </div>
     </dialog>

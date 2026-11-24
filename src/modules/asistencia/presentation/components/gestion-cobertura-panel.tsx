@@ -7,7 +7,9 @@ import {
   Clock3,
   History,
   Megaphone,
-  UserRoundCheck
+  UserRoundCheck,
+  UserRoundMinus,
+  UserRoundX
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,6 +18,7 @@ import { ConfirmacionCobertura, type ConfirmacionCoberturaDetalle } from "./conf
 type Assistant = Readonly<{ id: string; name: string; eligible: boolean }>;
 type Meeting = Readonly<{
   id: string;
+  requestId: string;
   past: boolean;
   cancelled: boolean;
   estado: string;
@@ -67,16 +70,17 @@ export function GestionCoberturaPanel({
   assistants,
   historical,
   applicants = [],
-  assignedId = null
+  assignedId = null,
+  assignmentId = null
 }: Readonly<{
   meeting: Meeting;
   assistants: readonly Assistant[];
   historical: readonly HistoricalRecord[];
   applicants?: readonly Readonly<{ assistantId: string; comment: string | null; date: string }>[];
   assignedId?: string | null;
+  assignmentId?: string | null;
 }>) {
   const router = useRouter();
-  const [mode, setMode] = useState<"DIRECTA" | "ABIERTA">("DIRECTA");
   const [assistantId, setAssistantId] = useState("");
   const [start, setStart] = useState(() => localDateTime(meeting.inicioMonitoreo ?? meeting.inicio));
   const [end, setEnd] = useState(() => localDateTime(meeting.finMonitoreo ?? meeting.fin));
@@ -86,16 +90,23 @@ export function GestionCoberturaPanel({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [confirmacion, setConfirmacion] = useState<ConfirmacionCoberturaDetalle | null>(null);
+  const canManage = !meeting.past && !meeting.cancelled && meeting.estado === "PROGRAMADA";
+  const missingHours = meeting.modalidad === "HIBRIDA" && (!meeting.inicioMonitoreo || !meeting.finMonitoreo);
   const currentPending = historical.find((record) => record.estado === "PENDIENTE");
   const alreadyApproved = historical.find((record) => record.estado === "APROBADO");
 
-  async function send(payload: Record<string, string>, successMessage: string) {
+  async function send(
+    payload: Record<string, string | boolean>,
+    successMessage: string,
+    url = "/api/v1/asistencia/gestion-cobertura",
+    method = "POST"
+  ) {
     setPending(true);
     setError("");
     setNotice("");
     try {
-      const response = await fetch("/api/v1/asistencia/gestion-cobertura", {
-        method: "POST",
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -104,6 +115,7 @@ export function GestionCoberturaPanel({
         throw new Error(result.error ?? "No se pudo completar la operación.");
       }
       setNotice(result.warning ? `${successMessage} ${result.warning}` : successMessage);
+      setAssistantId("");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo completar la operación.");
@@ -112,23 +124,69 @@ export function GestionCoberturaPanel({
     }
   }
 
+  function assign(id: string) {
+    if (!canManage || missingHours || pending || id === assignedId) {
+      return;
+    }
+    const person = assistants.find((item) => item.id === id && item.eligible);
+    if (!person) {
+      return;
+    }
+    if (meeting.asignado) {
+      setConfirmacion({
+        tipo: "reasignacion",
+        anterior: meeting.asignado,
+        nombre: person.name,
+        asistenteId: id
+      });
+      return;
+    }
+    sendAssignment(id);
+  }
+
+  function sendAssignment(id: string) {
+    void send(
+      { accion: "ASIGNAR_DIRECTO", instanciaSalaId: meeting.id, asistenteTecnicoId: id },
+      "Cobertura guardada. No se envió una convocatoria general."
+    );
+  }
+
   function submitFuture(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mode === "ABIERTA") {
-      setConfirmacion({ tipo: "convocatoria" });
-      return;
+    assign(assistantId);
+  }
+
+  function confirmAction(detail: ConfirmacionCoberturaDetalle) {
+    setConfirmacion(null);
+    switch (detail.tipo) {
+      case "convocatoria":
+        void send({ accion: "CONVOCAR", instanciaSalaId: meeting.id }, "La convocatoria quedó registrada.");
+        break;
+      case "desasignacion":
+        void send(
+          { asignacionId: detail.asignacionId },
+          "Asistente desasignado. El encuentro continúa pendiente de monitoreo.",
+          "/api/v1/asistencia/asignaciones/desvincular"
+        );
+        break;
+      case "reasignacion":
+        sendAssignment(detail.asistenteId);
+        break;
+      case "cancelar":
+        void send(
+          { accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false },
+          "El encuentro ya no requiere monitoreo.",
+          `/api/v1/reuniones/${meeting.requestId}/encuentros/${meeting.id}`,
+          "PATCH"
+        );
+        break;
+      case "aprobacion":
+        void send(
+          { accion: "APROBAR_RETROACTIVO", registroId: detail.registroId },
+          "Registro aprobado y habilitado para liquidaciones."
+        );
+        break;
     }
-    if (!assistantId) {
-      return;
-    }
-    void send(
-      {
-        accion: "ASIGNAR_DIRECTO",
-        instanciaSalaId: meeting.id,
-        asistenteTecnicoId: assistantId
-      },
-      "Monitoreo asignado directamente. No se enviaron notificaciones generales."
-    );
   }
 
   function submitHistorical(event: React.FormEvent<HTMLFormElement>) {
@@ -166,12 +224,67 @@ export function GestionCoberturaPanel({
           Este encuentro fue cancelado o no se realizó. No se pueden agregar asignaciones.
         </div>
       ) : null}
-      {meeting.asignado ? (
-        <div className="monitoring-workflow-banner" role="status">
-          <CheckCircle2 size={20} aria-hidden="true" />
-          Persona asignada: <strong>{meeting.asignado}</strong>
-          {meeting.past ? " · Registro confirmado." : " · Podés reasignar si es necesario."}
+      <section className="monitoring-workflow-surface" aria-labelledby="coverage-status-title">
+        <div className="monitoring-workflow-section-heading">
+          <h2 id="coverage-status-title">Estado de cobertura</h2>
         </div>
+        <div className="monitoring-workflow-body">
+          {meeting.asignado ? (
+            <div className="monitoring-workflow-banner" role="status">
+              <CheckCircle2 size={20} aria-hidden="true" />
+              <div className="monitoring-status-copy">
+                <small>Persona asignada</small>
+                <strong>{meeting.asignado}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="monitoring-workflow-banner is-warning" role="status">
+              <CircleAlert size={20} aria-hidden="true" />
+              <div className="monitoring-status-copy">
+                <strong>
+                  {meeting.requiereMonitoreo ? "Pendiente de monitoreo" : "No requiere monitoreo"}
+                </strong>
+                <small>
+                  {meeting.requiereMonitoreo
+                    ? "Todavía no hay una persona asignada."
+                    : "Podés solicitar cobertura si es necesario."}
+                </small>
+              </div>
+            </div>
+          )}
+          {canManage && assignmentId && meeting.asignado ? (
+            <button
+              className="monitoring-danger-action"
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                setConfirmacion({
+                  tipo: "desasignacion",
+                  nombre: meeting.asignado!,
+                  asignacionId: assignmentId
+                })
+              }
+            >
+              <UserRoundMinus size={17} aria-hidden="true" /> Desasignar asistente
+            </button>
+          ) : null}
+          {canManage && assignmentId ? (
+            <p className="monitoring-workflow-help">
+              La desasignación mantiene el monitoreo pendiente, sin cancelar el encuentro ni convocar al
+              equipo.
+            </p>
+          ) : null}
+        </div>
+      </section>
+      {notice ? (
+        <p className="monitoring-workflow-feedback" role="status">
+          {notice}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="monitoring-workflow-error" role="alert">
+          {error}
+        </p>
       ) : null}
 
       <section className="monitoring-workflow-surface" aria-labelledby="applicants-title">
@@ -198,19 +311,14 @@ export function GestionCoberturaPanel({
                       {assigned ? <small>Ya asignada</small> : null}
                       {!assistant?.eligible ? <small>No habilitada para asignación</small> : null}
                     </div>
-                    {!meeting.past && !meeting.cancelled && !assigned ? (
+                    {canManage && !assigned ? (
                       <button
                         className="secondary-action"
                         type="button"
-                        disabled={pending || !assistant?.eligible}
-                        onClick={() => {
-                          setMode("DIRECTA");
-                          setAssistantId(application.assistantId);
-                        }}
+                        disabled={pending || missingHours || !assistant?.eligible}
+                        onClick={() => assign(application.assistantId)}
                       >
-                        {assistantId === application.assistantId && mode === "DIRECTA"
-                          ? "Seleccionada"
-                          : "Seleccionar para asignar"}
+                        {meeting.asignado ? "Reasignar a esta persona" : "Asignar a esta persona"}
                       </button>
                     ) : null}
                   </li>
@@ -405,120 +513,88 @@ export function GestionCoberturaPanel({
               </p>
             </div>
           </div>
-          <form className="monitoring-workflow-body monitoring-workflow-form" onSubmit={submitFuture}>
-            <div className="monitoring-workflow-choices" role="radiogroup" aria-label="Tipo de gestión">
-              <label className={mode === "DIRECTA" ? "is-selected" : ""}>
-                <input
-                  type="radio"
-                  checked={mode === "DIRECTA"}
-                  onChange={() => setMode("DIRECTA")}
-                  name="modo"
-                  value="DIRECTA"
-                  disabled={pending || meeting.cancelled}
-                />
-                <UserRoundCheck size={20} aria-hidden="true" />
-                <span>
-                  <strong>Asignación directa</strong>
-                  <small>Elegí a la persona; sin convocatoria general.</small>
-                </span>
-              </label>
-              <label className={mode === "ABIERTA" ? "is-selected" : ""}>
-                <input
-                  type="radio"
-                  checked={mode === "ABIERTA"}
-                  onChange={() => setMode("ABIERTA")}
-                  name="modo"
-                  value="ABIERTA"
-                  disabled={pending || meeting.cancelled || Boolean(meeting.asignado)}
-                />
-                <Megaphone size={20} aria-hidden="true" />
-                <span>
-                  <strong>Convocatoria abierta</strong>
-                  <small>Notificará a todos los asistentes disponibles para postularse.</small>
-                </span>
-              </label>
-            </div>
-            {mode === "DIRECTA" ? (
+          <div className="monitoring-workflow-body">
+            {canManage ? (
               <>
-                <label htmlFor="future-assistant">Asistente de monitoreo</label>
-                <select
-                  id="future-assistant"
-                  required
-                  value={assistantId}
-                  onChange={(e) => setAssistantId(e.target.value)}
-                  disabled={pending || meeting.cancelled}
-                >
-                  <option value="">Seleccionar persona…</option>
-                  {assistants
-                    .filter((assistant) => assistant.eligible)
-                    .map((assistant) => (
-                      <option key={assistant.id} value={assistant.id}>
-                        {assistant.name}
-                        {applicants.some((application) => application.assistantId === assistant.id)
-                          ? " · Postulada"
-                          : ""}
-                      </option>
-                    ))}
-                </select>
-                <p className="monitoring-workflow-help">
-                  Solo se notificará a la persona elegida. Se verifican conflictos de agenda y se sincronizan
-                  Meet y Calendar después de guardar.
-                </p>
+                <form className="monitoring-workflow-form monitoring-direct-form" onSubmit={submitFuture}>
+                  <label htmlFor="future-assistant">
+                    {meeting.asignado ? "Reasignar a otra persona" : "Asignar asistente"}
+                  </label>
+                  <select
+                    id="future-assistant"
+                    required
+                    value={assistantId}
+                    onChange={(e) => setAssistantId(e.target.value)}
+                    disabled={pending || missingHours}
+                  >
+                    <option value="">Seleccionar persona…</option>
+                    {assistants
+                      .filter((assistant) => assistant.eligible && assistant.id !== assignedId)
+                      .map((assistant) => (
+                        <option key={assistant.id} value={assistant.id}>
+                          {assistant.name}
+                          {applicants.some((application) => application.assistantId === assistant.id)
+                            ? " · Postulada"
+                            : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    className="primary-action"
+                    type="submit"
+                    disabled={pending || !assistantId || missingHours}
+                  >
+                    <UserRoundCheck size={17} aria-hidden="true" />
+                    {meeting.asignado ? "Reasignar" : "Asignar directamente"}
+                  </button>
+                  <p className="monitoring-workflow-help">
+                    Se verifican conflictos de agenda antes de guardar. No se envía una convocatoria general.
+                  </p>
+                </form>
+                {missingHours ? (
+                  <div className="monitoring-workflow-banner is-warning" role="status">
+                    <CalendarClock size={20} aria-hidden="true" />
+                    Definí llegada y salida desde la edición del encuentro híbrido antes de asignar o
+                    convocar.
+                  </div>
+                ) : null}
+                {!meeting.asignado ? (
+                  <div className="monitoring-secondary-options">
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      disabled={pending || missingHours}
+                      onClick={() => setConfirmacion({ tipo: "convocatoria" })}
+                    >
+                      <Megaphone size={17} aria-hidden="true" /> Abrir convocatoria
+                    </button>
+                    <small>Notifica al equipo disponible para que pueda postularse.</small>
+                    {meeting.requiereMonitoreo ? (
+                      <button
+                        className="monitoring-danger-action"
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setConfirmacion({ tipo: "cancelar" })}
+                      >
+                        <UserRoundX size={17} aria-hidden="true" /> Quitar requisito de monitoreo
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             ) : (
               <p className="monitoring-workflow-help">
-                La reunión aparecerá en Agenda abierta. Esta acción sí enviará notificaciones generales.
+                Las asignaciones solo se modifican aquí en encuentros programados y no finalizados.
               </p>
             )}
-            {meeting.modalidad === "HIBRIDA" && (!meeting.inicioMonitoreo || !meeting.finMonitoreo) ? (
-              <div className="monitoring-workflow-banner is-warning" role="status">
-                <CalendarClock size={20} aria-hidden="true" />
-                Antes de continuar, definí llegada y salida desde la edición del encuentro híbrido.
-              </div>
-            ) : null}
-            <button
-              className="primary-action"
-              type="submit"
-              disabled={
-                pending ||
-                meeting.cancelled ||
-                (mode === "DIRECTA" && !assistantId) ||
-                (meeting.modalidad === "HIBRIDA" && (!meeting.inicioMonitoreo || !meeting.finMonitoreo))
-              }
-            >
-              {pending ? "Procesando…" : mode === "DIRECTA" ? "Asignar directamente" : "Abrir convocatoria"}
-            </button>
-          </form>
+          </div>
         </section>
       )}
-      {notice ? (
-        <p className="monitoring-workflow-feedback" role="status">
-          {notice}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="monitoring-workflow-error" role="alert">
-          {error}
-        </p>
-      ) : null}
       {confirmacion ? (
         <ConfirmacionCobertura
           detalle={confirmacion}
           onCerrar={() => setConfirmacion(null)}
-          onConfirmar={() => {
-            setConfirmacion(null);
-            if (confirmacion.tipo === "convocatoria") {
-              void send(
-                { accion: "CONVOCAR", instanciaSalaId: meeting.id },
-                "La convocatoria quedó registrada."
-              );
-            } else {
-              void send(
-                { accion: "APROBAR_RETROACTIVO", registroId: confirmacion.registroId },
-                "Registro aprobado y habilitado para liquidaciones."
-              );
-            }
-          }}
+          onConfirmar={() => confirmAction(confirmacion)}
         />
       ) : null}
     </div>
