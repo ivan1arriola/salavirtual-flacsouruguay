@@ -3736,7 +3736,7 @@
 }
 
 .monitoring-stat > small {
-  color: #758196;
+  color: #64748b;
   font-size: 0.7rem;
   line-height: 1.4;
 }
@@ -3820,7 +3820,7 @@
 }
 
 .monitoring-coverage-progress > small {
-  color: #758196;
+  color: #64748b;
   font-size: 0.7rem;
 }
 
@@ -3848,7 +3848,7 @@
 
 .monitoring-controls-heading p {
   margin: 0;
-  color: #718096;
+  color: #64748b;
   font-size: 0.78rem;
 }
 
@@ -4118,7 +4118,7 @@
 }
 
 .monitoring-row-title small {
-  color: #718096;
+  color: #64748b;
   font-size: 0.72rem;
   line-height: 1.4;
 }
@@ -4304,7 +4304,7 @@
 .monitoring-empty-state p {
   max-width: 480px;
   margin: 0 0 5px;
-  color: #68788f;
+  color: #64748b;
   font-size: 0.82rem;
   line-height: 1.55;
 }
