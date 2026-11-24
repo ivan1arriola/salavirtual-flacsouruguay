@@ -120,7 +120,7 @@ function roleLabel(role: Session["user"]["role"]): string {
     return "Administración";
   }
   if (role === "ASISTENTE_TECNICO") {
-    return "Monitoreo";
+    return "Asistente técnico";
   }
   return "Docente";
 }
