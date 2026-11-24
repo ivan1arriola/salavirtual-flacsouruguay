@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  CheckCircle2,
-  ChevronDown,
-  CircleAlert,
-  Clock3,
-  UsersRound
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Clock3, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 
@@ -62,11 +55,21 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
           </small>
         </div>
         <span className={"monitoring-row-status " + (data.covered ? "status-ok" : "status-warning")}>
-          {data.covered ? <CheckCircle2 size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
+          {data.covered ? (
+            <CheckCircle2 size={16} aria-hidden="true" />
+          ) : (
+            <CircleAlert size={16} aria-hidden="true" />
+          )}
           <span>{data.covered ? "Cubierta" : "Pendiente"}</span>
           <small>{data.covered ? data.assistantName : "Necesita asignación"}</small>
         </span>
-        <span className="monitoring-row-applicants" aria-label={data.applicantsCount + (data.applicantsCount === 1 ? " persona postulada" : " personas postuladas")}>
+        <span
+          className="monitoring-row-applicants"
+          aria-label={
+            data.applicantsCount +
+            (data.applicantsCount === 1 ? " persona postulada" : " personas postuladas")
+          }
+        >
           <UsersRound size={15} aria-hidden="true" />
           <strong>{data.applicantsCount}</strong>
           <small>{data.applicantsCount === 1 ? "postulada" : "postuladas"}</small>

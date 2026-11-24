@@ -29,9 +29,7 @@ describe("resumen de monitoreo", () => {
   });
 
   it("conserva la búsqueda en el enlace de pendientes", () => {
-    const html = renderToStaticMarkup(
-      <MonitoringSummary total={2} covered={1} pending={1} q="china" />
-    );
+    const html = renderToStaticMarkup(<MonitoringSummary total={2} covered={1} pending={1} q="china" />);
     expect(html).toContain("/monitoreo?estado=pendientes&amp;q=china");
   });
 

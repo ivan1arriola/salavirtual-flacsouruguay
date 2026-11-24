@@ -3608,7 +3608,6 @@
   }
 }
 
-
 /* Dashboard de monitoreo: jerarquía, métricas y controles. */
 .monitoring-dashboard {
   display: grid;
@@ -3671,7 +3670,10 @@
   background: transparent;
   color: #52627a;
   font-size: 0.88rem;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .monitoring-dashboard-tabs > a.is-active {
@@ -3886,7 +3888,10 @@
   font-size: 0.77rem;
   font-weight: 750;
   text-decoration: none;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .monitoring-status-filter > span {
@@ -4050,7 +4055,9 @@
   overflow: hidden;
   border-radius: 11px;
   border-color: #dce4ef;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .monitoring-row:hover {

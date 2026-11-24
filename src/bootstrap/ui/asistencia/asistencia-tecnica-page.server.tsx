@@ -188,7 +188,9 @@ export default async function AsistenciaTecnicaPage({
           <div className="monitoring-toolbar-actions">
             <form className="monitoring-search-form" method="get">
               <input type="hidden" name="estado" value={estado} />
-              <label className="sr-only" htmlFor="monitoring-search">Buscar reuniones</label>
+              <label className="sr-only" htmlFor="monitoring-search">
+                Buscar reuniones
+              </label>
               <div className="monitoring-search-field">
                 <Search size={18} aria-hidden="true" />
                 <input
@@ -265,8 +267,8 @@ export default async function AsistenciaTecnicaPage({
                           assignment.asistenteTecnico.usuario.nombres,
                           assignment.asistenteTecnico.usuario.apellidos
                         ]
-                            .filter(Boolean)
-                            .join(" ")
+                          .filter(Boolean)
+                          .join(" ")
                       : null;
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
                     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
@@ -285,8 +287,10 @@ export default async function AsistenciaTecnicaPage({
                           gestionarHref: "/monitoreo/gestionar/" + meeting.id,
                           titulo: meeting.solicitud.titulo,
                           programa: association.programa.nombre,
-                          docente: association.docente.usuario.nombres + " " + association.docente.usuario.apellidos,
-                          horaAsistencia: formatTime(inicioAsistencia) + "–" + formatTime(finAsistencia) + " h",
+                          docente:
+                            association.docente.usuario.nombres + " " + association.docente.usuario.apellidos,
+                          horaAsistencia:
+                            formatTime(inicioAsistencia) + "–" + formatTime(finAsistencia) + " h",
                           covered,
                           assistantName,
                           plataforma: isZoom ? "ZOOM" : event ? "GOOGLE_MEET" : null,

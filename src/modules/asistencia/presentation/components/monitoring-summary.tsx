@@ -82,7 +82,9 @@ export function MonitoringSummary({
         >
           <span style={{ width: coverageRate + "%" }} />
         </div>
-        <small>{covered} de {total} reuniones tienen una persona asignada</small>
+        <small>
+          {covered} de {total} reuniones tienen una persona asignada
+        </small>
       </div>
     </section>
   );
