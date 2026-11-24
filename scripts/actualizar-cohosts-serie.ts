@@ -235,7 +235,7 @@ function argumentValues(name: string): string[] {
 
 function normalizeEmail(value: string): string {
   const email = value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(email)) {
     throw new Error(`Correo inválido: ${value}`);
   }
   return email;

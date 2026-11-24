@@ -43,7 +43,7 @@ function porcentaje(value: unknown): number {
 
 function emailVerificado(value: unknown): string | null {
   const candidate = texto(value).toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) ? candidate : null;
+  return /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(candidate) ? candidate : null;
 }
 
 function convertirFilaAntigua(

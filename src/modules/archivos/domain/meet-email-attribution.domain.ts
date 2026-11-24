@@ -30,7 +30,7 @@ export const TOLERANCIA_CORREO_MS = 1000;
 
 function correoValido(value: string): string | null {
   const candidate = value.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) ? candidate : null;
+  return /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(candidate) ? candidate : null;
 }
 
 export function atribuirCorreosPorHorario(

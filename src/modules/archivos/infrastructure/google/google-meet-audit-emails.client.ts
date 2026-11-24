@@ -128,7 +128,7 @@ export function agruparCorreosAuditoriaMeet(
     }
     const correo = event.identifier.trim().toLowerCase();
     if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ||
+      !/^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(correo) ||
       !event.conferenceId ||
       !Number.isFinite(Date.parse(event.timestamp))
     ) {

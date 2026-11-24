@@ -31,7 +31,7 @@ export type ResultadoRecordatorios = Readonly<{
 
 function normalizarEmail(email: string | null | undefined): string | null {
   const trimmed = email?.trim().toLowerCase();
-  return trimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : null;
+  return trimmed && /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(trimmed) ? trimmed : null;
 }
 
 /** No informa "verificado" por la DB: solamente la respuesta actual de spaces.members. */

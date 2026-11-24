@@ -51,7 +51,7 @@ const vacio = (estado: ResumenAvisosMigracion["estado"], motivo: string): Resume
 
 export function normalizarEmailAviso(email: string | null | undefined): string | null {
   const limpio = email?.trim().toLowerCase();
-  return limpio && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio) ? limpio : null;
+  return limpio && /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(limpio) ? limpio : null;
 }
 
 function esDuplicado(error: unknown): boolean {

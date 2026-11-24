@@ -191,7 +191,7 @@ export function SeriesManagement({
     }
   }
 
-  const guestValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInput.trim());
+  const guestValid = /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(guestInput.trim());
   const guestCount = guestEmails.length;
   const canRecoverLink =
     failedCohostChecks >= 2 ||
@@ -201,7 +201,7 @@ export function SeriesManagement({
   function addGuest() {
     const email = guestInput.trim().toLowerCase();
     if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !/^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(email) ||
       guestEmails.includes(email) ||
       selectedEmails.has(email) ||
       guestEmails.length >= 100
@@ -324,13 +324,13 @@ export function SeriesManagement({
         )
         .slice(0, 7)
     : [];
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim());
+  const validEmail = /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(query.trim());
   const configuredCount = selectedEmails.size;
 
   function addCohost(email: string) {
     const normalized = email.trim().toLowerCase();
     if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) ||
+      !/^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(normalized) ||
       selectedEmails.has(normalized) ||
       configuredCount >= 50
     ) {

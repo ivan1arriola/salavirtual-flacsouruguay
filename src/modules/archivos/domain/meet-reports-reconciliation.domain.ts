@@ -66,7 +66,7 @@ export type ResultadoConciliacion = Readonly<{
 
 function correoValido(value: string): string | null {
   const valueLower = value.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valueLower) ? valueLower : null;
+  return /^[^\s@]+@[^\s@][^.\s@]*\.[^\s@]+$/.test(valueLower) ? valueLower : null;
 }
 
 function intervaloValido(inicio: string, fin: string): boolean {
