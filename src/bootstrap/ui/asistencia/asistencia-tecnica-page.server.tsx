@@ -287,8 +287,8 @@ export default async function AsistenciaTecnicaPage({
                         key={meeting.id}
                         data={{
                           id: meeting.id,
-                          detalleHref: "/reuniones/" + meeting.solicitud.id,
-                          gestionarHref: "/monitoreo/gestionar/" + meeting.id,
+                          detalleHref: `/reuniones/${meeting.solicitud.id}`,
+                          gestionarHref: `/monitoreo/gestionar/${meeting.id}`,
                           titulo: meeting.solicitud.titulo,
                           programa: association.programa.nombre,
                           docente:
