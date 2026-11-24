@@ -34,7 +34,7 @@ export async function leerActividadEncuentroZoom(eventoProveedorId: string): Pro
     clave,
     { cuentaZoomId: clave.cuentaZoomId, uuids: { has: clave.uuid } }
   ]);
-  const seleccion = { tipo: true, ocurridoAt: true } as const;
+  const seleccion = { tipo: true, ocurridoAt: true, huella: true } as const;
   const [principales, hitos, participantes] = await Promise.all([
     db.eventoWebhookZoom.findMany({
       where: { OR: claves },
@@ -46,13 +46,13 @@ export async function leerActividadEncuentroZoom(eventoProveedorId: string): Pro
       where: { OR: donde, tipo: { notIn: TIPOS_PARTICIPANTE } },
       orderBy: { ocurridoAt: "desc" },
       take: TOPE_HITOS,
-      select: seleccion
+      select: { ...seleccion, participanteId: true, detalle: true }
     }),
     db.eventoWebhookZoomAdicional.findMany({
       where: { OR: donde, tipo: { in: TIPOS_PARTICIPANTE } },
       orderBy: { ocurridoAt: "desc" },
       take: TOPE_PARTICIPANTES,
-      select: seleccion
+      select: { ...seleccion, participanteId: true, detalle: true }
     })
   ]);
   return construirActividadEncuentroZoom([...principales, ...hitos, ...participantes]);
