@@ -171,32 +171,32 @@ export async function obtenerDashboardDocente(
   let heroMeeting: HeroMeetingDTO | null = null;
 
   if (firstMeeting) {
-      heroMeeting = {
-        id: firstMeeting.instance.id,
-        solicitudId: firstMeeting.instance.solicitud.id,
-        titulo: firstMeeting.instance.solicitud.titulo,
-        programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
-        modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
-        inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
-        finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
-        inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
-          ? (
-              firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
-            ).toISOString()
-          : null,
-        finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
-          ? (
-              firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt
-            ).toISOString()
-          : null,
-        joinUrl: firstMeeting.meet?.joinUrl ?? null,
-        providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
-        cohostConfirmado: firstMeeting.isVerified,
-        cohosts: firstMeeting.cohostsList,
-        asistente: firstMeeting.asistente,
-        requiereAsistencia: firstMeeting.instance.requiereAsistenciaTecnica,
-        salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null
-      };
+    heroMeeting = {
+      id: firstMeeting.instance.id,
+      solicitudId: firstMeeting.instance.solicitud.id,
+      titulo: firstMeeting.instance.solicitud.titulo,
+      programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
+      modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
+      inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
+      finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
+      inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+        ? (
+            firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
+          ).toISOString()
+        : null,
+      finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
+        ? (
+            firstMeeting.instance.finAsistenciaTecnicaAt ?? firstMeeting.instance.finProgramadoAt
+          ).toISOString()
+        : null,
+      joinUrl: firstMeeting.meet?.joinUrl ?? null,
+      providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
+      cohostConfirmado: firstMeeting.isVerified,
+      cohosts: firstMeeting.cohostsList,
+      asistente: firstMeeting.asistente,
+      requiereAsistencia: firstMeeting.instance.requiereAsistenciaTecnica,
+      salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null
+    };
   }
 
   // Upcoming list: exclude hero if shown, or list the remaining

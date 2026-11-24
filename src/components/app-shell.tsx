@@ -48,14 +48,23 @@ export async function AppShell({
         </Link>
 
         {canCreateMeeting ? (
-          <SidebarLink className="sidebar-create-action sidebar-primary-create" href="/reuniones/nueva" dataTour={tourForHref(user.role, "/reuniones/nueva")}>
+          <SidebarLink
+            className="sidebar-create-action sidebar-primary-create"
+            href="/reuniones/nueva"
+            dataTour={tourForHref(user.role, "/reuniones/nueva")}
+          >
             <CalendarPlus size={18} aria-hidden="true" />
             <span>Nueva reunión</span>
           </SidebarLink>
         ) : null}
         <div className="sidebar-navigation">
           {navigation.groups.map((group) => (
-            <SidebarGroup group={group} role={user.role} unreadNotifications={unreadNotifications} key={group.label} />
+            <SidebarGroup
+              group={group}
+              role={user.role}
+              unreadNotifications={unreadNotifications}
+              key={group.label}
+            />
           ))}
         </div>
 
@@ -71,7 +80,11 @@ export async function AppShell({
             <strong>Sala Virtual</strong>
           </Link>
           <span className="mobile-account-actions">
-            <SidebarLink className="mobile-notification-link" href="/notificaciones" dataTour={notificationTourForRole(user.role)}>
+            <SidebarLink
+              className="mobile-notification-link"
+              href="/notificaciones"
+              dataTour={notificationTourForRole(user.role)}
+            >
               <Bell size={20} aria-hidden="true" />
               <span className="sr-only">Notificaciones: {unreadNotifications} sin leer</span>
               {unreadNotifications > 0 ? <strong>{unreadNotifications}</strong> : null}
@@ -150,19 +163,23 @@ function SidebarGroup({
     <section className="sidebar-group" aria-label={group.label}>
       <p>{group.label}</p>
       <nav className="side-nav" aria-label={group.label}>
-        {group.items.filter(({ emphasis }) => emphasis !== "primary").map(({ href, label, icon: Icon, search }) => (
-          <SidebarLink
-            dataTour={tourForHref(role, href)}
-            exact={href.split("?")[0] === "/" || href.split("?")[0] === "/reuniones"}
-            href={href}
-            key={href}
-            activeSearch={search}
-          >
-            <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
-            <span>{label}</span>
-            {href === "/notificaciones" && unreadNotifications > 0 ? <strong className="sidebar-unread-count">{unreadNotifications}</strong> : null}
-          </SidebarLink>
-        ))}
+        {group.items
+          .filter(({ emphasis }) => emphasis !== "primary")
+          .map(({ href, label, icon: Icon, search }) => (
+            <SidebarLink
+              dataTour={tourForHref(role, href)}
+              exact={href.split("?")[0] === "/" || href.split("?")[0] === "/reuniones"}
+              href={href}
+              key={href}
+              activeSearch={search}
+            >
+              <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+              <span>{label}</span>
+              {href === "/notificaciones" && unreadNotifications > 0 ? (
+                <strong className="sidebar-unread-count">{unreadNotifications}</strong>
+              ) : null}
+            </SidebarLink>
+          ))}
       </nav>
     </section>
   );

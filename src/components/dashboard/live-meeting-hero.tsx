@@ -171,7 +171,9 @@ export function LiveMeetingHero({
           {meeting.joinUrl ? (
             <>
               <a
-                className={paraAsistente ? "secondary-action hero-meet-action" : "primary-action hero-meet-action"}
+                className={
+                  paraAsistente ? "secondary-action hero-meet-action" : "primary-action hero-meet-action"
+                }
                 href={meeting.joinUrl}
                 rel="noreferrer"
                 target="_blank"

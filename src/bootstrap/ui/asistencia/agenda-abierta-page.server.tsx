@@ -172,8 +172,12 @@ export default async function AgendaAbiertaPage({
 
   const params = await searchParams;
   const onlyApplications = actor.rol === "ASISTENTE_TECNICO" && params.vista === "postulaciones";
-  const activeApplicationIds = new Set(interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").map((i) => i.instanciaSalaId));
-  const visibleMeetings = onlyApplications ? meetings.filter((m) => activeApplicationIds.has(m.id)) : meetings;
+  const activeApplicationIds = new Set(
+    interests.filter((i) => "estado" in i && i.estado === "ME_INTERESA").map((i) => i.instanciaSalaId)
+  );
+  const visibleMeetings = onlyApplications
+    ? meetings.filter((m) => activeApplicationIds.has(m.id))
+    : meetings;
   const dayGroups = agruparPorFecha(visibleMeetings, ahora, "America/Montevideo");
 
   return (
@@ -182,7 +186,12 @@ export default async function AgendaAbiertaPage({
         <div>
           <p className="page-eyebrow">Monitoreo</p>
           <h1>{onlyApplications ? "Mis postulaciones" : "Agenda abierta"}</h1>
-          <p>{visibleMeetings.length} {onlyApplications ? "postulaciones activas a encuentros todavía sin asignar." : "reuniones sin asistente de monitoreo asignado."}</p>
+          <p>
+            {visibleMeetings.length}{" "}
+            {onlyApplications
+              ? "postulaciones activas a encuentros todavía sin asignar."
+              : "reuniones sin asistente de monitoreo asignado."}
+          </p>
         </div>
         <Hand size={28} color="var(--brand)" aria-hidden="true" />
       </header>
@@ -212,8 +221,20 @@ export default async function AgendaAbiertaPage({
 
       {actor.rol === "ASISTENTE_TECNICO" ? (
         <nav className="role-dashboard-shortcuts" aria-label="Vistas de agenda abierta">
-          <Link className="role-dashboard-shortcut" aria-current={!onlyApplications ? "page" : undefined} href="/agenda-abierta">Todas las coberturas</Link>
-          <Link className="role-dashboard-shortcut" aria-current={onlyApplications ? "page" : undefined} href="/agenda-abierta?vista=postulaciones">Mis postulaciones ({activeApplicationsCount})</Link>
+          <Link
+            className="role-dashboard-shortcut"
+            aria-current={!onlyApplications ? "page" : undefined}
+            href="/agenda-abierta"
+          >
+            Todas las coberturas
+          </Link>
+          <Link
+            className="role-dashboard-shortcut"
+            aria-current={onlyApplications ? "page" : undefined}
+            href="/agenda-abierta?vista=postulaciones"
+          >
+            Mis postulaciones ({activeApplicationsCount})
+          </Link>
         </nav>
       ) : null}
       <section
@@ -223,7 +244,11 @@ export default async function AgendaAbiertaPage({
         {visibleMeetings.length === 0 ? (
           <div className="empty-state">
             <Hand size={24} aria-hidden="true" />
-            <p>{onlyApplications ? "No tenés postulaciones activas en encuentros abiertos." : "No hay reuniones abiertas para postulación."}</p>
+            <p>
+              {onlyApplications
+                ? "No tenés postulaciones activas en encuentros abiertos."
+                : "No hay reuniones abiertas para postulación."}
+            </p>
           </div>
         ) : actor.rol === "ASISTENTE_TECNICO" ? (
           <div className="open-agenda-days-container">
@@ -273,7 +298,11 @@ export default async function AgendaAbiertaPage({
                           : " is-available";
 
                     return (
-                      <article id={`encuentro-${meeting.id}`} className={`open-agenda-card${cardStateClass}`} key={meeting.id}>
+                      <article
+                        id={`encuentro-${meeting.id}`}
+                        className={`open-agenda-card${cardStateClass}`}
+                        key={meeting.id}
+                      >
                         <div className="open-agenda-card-meta">
                           <span className="time-tag">
                             {missingHybridSchedule ? (

@@ -134,7 +134,12 @@ const assistantGroups: readonly NavigationGroup[] = [
   {
     label: "Registros",
     items: [
-      { href: "/mi-agenda?tab=historico", label: "Horas e historial", icon: History, search: { key: "tab", value: "historico" } },
+      {
+        href: "/mi-agenda?tab=historico",
+        label: "Horas e historial",
+        icon: History,
+        search: { key: "tab", value: "historico" }
+      },
       { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 }
     ]
   },

@@ -46,11 +46,18 @@ export async function TeacherDashboard({
 
       <div className="role-dashboard-shortcuts" aria-label="Accesos académicos">
         <Link href="/mis-clases" className="role-dashboard-shortcut">
-          <strong>{data.totalUpcomingCount}</strong><span>Próximas clases</span>
+          <strong>{data.totalUpcomingCount}</strong>
+          <span>Próximas clases</span>
         </Link>
-        <Link href="/mis-programas" className="role-dashboard-shortcut">Mis programas</Link>
-        <Link href="/mis-clases?vista=anteriores" className="role-dashboard-shortcut">Consultar asistencia</Link>
-        <Link href="/grabaciones" className="role-dashboard-shortcut">Biblioteca de grabaciones</Link>
+        <Link href="/mis-programas" className="role-dashboard-shortcut">
+          Mis programas
+        </Link>
+        <Link href="/mis-clases?vista=anteriores" className="role-dashboard-shortcut">
+          Consultar asistencia
+        </Link>
+        <Link href="/grabaciones" className="role-dashboard-shortcut">
+          Biblioteca de grabaciones
+        </Link>
       </div>
       <div className="teacher-dashboard-columns">
         <TeacherUpcomingList meetings={data.upcomingMeetings} />

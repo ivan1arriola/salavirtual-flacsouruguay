@@ -47,12 +47,16 @@ export function AssistantDashboardView({
 
       <div className="role-dashboard-shortcuts" aria-label="Accesos de monitoreo">
         <Link href="/agenda-abierta?vista=postulaciones" className="role-dashboard-shortcut">
-          <strong>{data.stats.postulacionesCount}</strong><span>Postulaciones activas</span>
+          <strong>{data.stats.postulacionesCount}</strong>
+          <span>Postulaciones activas</span>
         </Link>
         <Link href="/agenda-abierta" className="role-dashboard-shortcut">
-          <strong>{data.stats.reunionesDisponibles}</strong><span>Coberturas disponibles</span>
+          <strong>{data.stats.reunionesDisponibles}</strong>
+          <span>Coberturas disponibles</span>
         </Link>
-        <Link href="/mi-agenda?tab=historico" className="role-dashboard-shortcut">Horas e historial</Link>
+        <Link href="/mi-agenda?tab=historico" className="role-dashboard-shortcut">
+          Horas e historial
+        </Link>
       </div>
       {data.upcomingCoverages.length > 0 ? (
         <section className="dashboard-content-section assistant-coverages-section">

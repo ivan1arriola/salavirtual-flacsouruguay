@@ -32,7 +32,13 @@ describe("prioridades del dashboard de administración", () => {
       duplicateRisks: 0
     });
 
-    expect(summary.map(({ label }) => label)).toEqual(["Reuniones hoy", "Sin monitoreo", "Incidencias abiertas", "Solicitudes activas", "Próximos 7 días"]);
+    expect(summary.map(({ label }) => label)).toEqual([
+      "Reuniones hoy",
+      "Sin monitoreo",
+      "Incidencias abiertas",
+      "Solicitudes activas",
+      "Próximos 7 días"
+    ]);
     expect(summary.map(({ value }) => value)).toEqual([4, 2, 1, 8, 12]);
   });
 
