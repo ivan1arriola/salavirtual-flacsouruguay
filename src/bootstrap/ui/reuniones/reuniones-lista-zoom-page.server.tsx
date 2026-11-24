@@ -130,7 +130,9 @@ function idReunionZoom(
   return evento.codigoReunion ?? evento.externalEventId ?? null;
 }
 
-function EstadoHorario({ fin, inicio, ahora }: Readonly<{ fin: Date; inicio: Date; ahora: Date }>) {
+type EstadoHorarioProps = Readonly<{ fin: Date; inicio: Date; ahora: Date }>;
+
+function EstadoHorario({ fin, inicio, ahora }: EstadoHorarioProps) {
   if (fin <= ahora) {
     return <span className={styles.scheduleStatus}>Horario finalizado</span>;
   }
@@ -140,10 +142,9 @@ function EstadoHorario({ fin, inicio, ahora }: Readonly<{ fin: Date; inicio: Dat
   return null;
 }
 
-function etiquetaEnlaceSerie(
-  serie: readonly Parameters<typeof resumenEnlaceZoom>[0][],
-  cantidadEnlaces: number
-) {
+type EncuentroZoomLista = Parameters<typeof resumenEnlaceZoom>[0];
+
+function etiquetaEnlaceSerie(serie: readonly EncuentroZoomLista[], cantidadEnlaces: number) {
   if (!cantidadEnlaces || serie.some((item) => !resumenEnlaceZoom(item).joinUrl)) {
     return "Enlace pendiente";
   }
@@ -435,6 +436,12 @@ export default async function ReunionesZoomPage({
                   const serieClave = claveSerieReunion(primero.solicitud);
                   const idZoom = resumen.unificada ? idReunionZoom(referencia) : null;
                   const etiquetaEnlace = etiquetaEnlaceSerie(serie, resumen.enlaces.length);
+                  const claseEstadoEnlace =
+                    etiquetaEnlace === "Enlace pendiente" ? styles.statusWarning : styles.statusOk;
+                  const enlaceParaUnirse =
+                    !isHistory && siguiente && etiquetaEnlace !== "Enlace pendiente"
+                      ? resumen.enlaces[0]
+                      : null;
                   return (
                     <li
                       className={styles.item}
@@ -483,24 +490,15 @@ export default async function ReunionesZoomPage({
                         ) : null}
                         {resumen.unificada ? (
                           <>
-                            <span
-                              className={
-                                etiquetaEnlace === "Enlace pendiente"
-                                  ? styles.statusWarning
-                                  : styles.statusOk
-                              }
-                            >
+                            <span className={claseEstadoEnlace}>
                               {etiquetaEnlace}
                             </span>
-                            {resumen.enlaces[0] &&
-                              !isHistory &&
-                              siguiente &&
-                              etiquetaEnlace !== "Enlace pendiente" ? (
-                                <ZoomJoinActions
-                                  url={resumen.enlaces[0]}
-                                  contexto={primero.solicitud.titulo}
-                                />
-                              ) : null}
+                            {enlaceParaUnirse ? (
+                              <ZoomJoinActions
+                                url={enlaceParaUnirse}
+                                contexto={primero.solicitud.titulo}
+                              />
+                            ) : null}
                           </>
                         ) : (
                           <>
