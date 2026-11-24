@@ -112,30 +112,41 @@ export function ReunionZoomEncuentros({
   const [pending, startTransition] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ texto: string; error: boolean } | null>(null);
+  const [mensaje, setMensaje] = useState<
+    { texto: string; error: boolean; encuentroId?: string } | null
+  >(null);
   const [cancelacion, setCancelacion] = useState<
     | { tipo: "encuentro"; encuentro: EncuentroZoomView; fecha: string }
     | { tipo: "serie"; cantidad: number }
     | null
   >(null);
   const fechaInputRef = useRef<HTMLInputElement>(null);
-  const botonEditarRef = useRef<HTMLButtonElement>(null);
-  const devolverFocoRef = useRef(false);
+  const botonesEditarRef = useRef(new Map<string, HTMLButtonElement>());
+  const devolverFocoRef = useRef<string | null>(null);
   useEffect(() => {
     if (editando) {
       fechaInputRef.current?.focus();
     } else if (devolverFocoRef.current) {
-      devolverFocoRef.current = false;
-      botonEditarRef.current?.focus();
+      const encuentroId = devolverFocoRef.current;
+      devolverFocoRef.current = null;
+      botonesEditarRef.current.get(encuentroId)?.focus();
     }
   }, [editando]);
   const hayEditables = puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
 
-  function ejecutar(accion: () => ReturnType<typeof enviarAccionEncuentro>, alTerminar?: () => void) {
+  function ejecutar(
+    accion: () => ReturnType<typeof enviarAccionEncuentro>,
+    alTerminar?: () => void,
+    encuentroId?: string
+  ) {
     setMensaje(null);
     startTransition(async () => {
       const resultado = await accion();
-      setMensaje({ texto: resultado.mensaje, error: !resultado.ok });
+      setMensaje({
+        texto: resultado.mensaje,
+        error: !resultado.ok,
+        encuentroId: resultado.ok ? undefined : encuentroId
+      });
       if (resultado.ok) {
         alTerminar?.();
         router.refresh();
@@ -149,7 +160,11 @@ export function ReunionZoomEncuentros({
     const inicio = String(datos.get("horaInicio") ?? "");
     const fin = String(datos.get("horaFin") ?? "");
     if (!fecha || !inicio || !fin || fin <= inicio) {
-      setMensaje({ texto: "Revisá la fecha y que la hora de fin sea posterior al inicio.", error: true });
+      setMensaje({
+        texto: "Revisá la fecha y que la hora de fin sea posterior al inicio.",
+        error: true,
+        encuentroId: encuentro.id
+      });
       return;
     }
     ejecutar(
@@ -162,7 +177,11 @@ export function ReunionZoomEncuentros({
             body: { accion: "EDITAR_FECHA", inicio: aIso(fecha, inicio), fin: aIso(fecha, fin) }
           }
         ),
-      () => setEditando(null)
+      () => {
+        devolverFocoRef.current = encuentro.id;
+        setEditando(null);
+      },
+      encuentro.id
     );
   }
 
@@ -234,6 +253,11 @@ export function ReunionZoomEncuentros({
 
   return (
     <section className="zoom-encuentros zoom-series-encounters" aria-label="Encuentros de la serie">
+      {mensaje && !mensaje.encuentroId ? (
+        <p className="zoom-series-encounters__message" role={mensaje.error ? "alert" : "status"}>
+          {mensaje.texto}
+        </p>
+      ) : null}
       <ul className="zoom-series-encounters__list">
         {encuentros.map((encuentro) => {
           const inicio = new Date(encuentro.inicioIso);
@@ -259,6 +283,28 @@ export function ReunionZoomEncuentros({
                 <div className="zoom-series-card__heading">
                   <h2>{encuentro.descripcion || "Encuentro por Zoom"}</h2>
                   <span className={`zoom-series-card__state ${estado.clase}`}>{estado.etiqueta}</span>
+                  {puedeModificar && encuentro.editable && editando !== encuentro.id ? (
+                    <button
+                      ref={(element) => {
+                        if (element) {
+                          botonesEditarRef.current.set(encuentro.id, element);
+                        } else {
+                          botonesEditarRef.current.delete(encuentro.id);
+                        }
+                      }}
+                      className="zoom-series-card__edit-toggle"
+                      disabled={pending}
+                      onClick={() => {
+                        devolverFocoRef.current = null;
+                        setMensaje(null);
+                        setEditando(encuentro.id);
+                      }}
+                      type="button"
+                      aria-label={`Cambiar fecha y horario del encuentro del ${contexto}`}
+                    >
+                      <CalendarClock size={16} aria-hidden="true" /> Cambiar fecha y horario
+                    </button>
+                  ) : null}
                 </div>
                 <div className="zoom-series-card__meta">
                   {encuentro.puedeUnirse ? (
@@ -328,12 +374,16 @@ export function ReunionZoomEncuentros({
                   <div className="zoom-series-card__secondary-actions">
                     {editando === encuentro.id ? (
                       <form
+                        id={`zoom-edit-form-${encuentro.id}`}
                         className="zoom-encuentro__form zoom-series-card__form"
+                        aria-label={`Editar encuentro del ${contexto}`}
+                        aria-busy={pending}
                         onSubmit={(event) => {
                           event.preventDefault();
                           guardar(encuentro, event.currentTarget);
                         }}
                       >
+                        <p className="zoom-series-card__form-note">Todos los horarios corresponden a Uruguay.</p>
                         <label>
                           Fecha
                           <input
@@ -346,41 +396,50 @@ export function ReunionZoomEncuentros({
                         </label>
                         <label>
                           Inicio
-                          <input defaultValue={valores.hora} name="horaInicio" required type="time" />
+                          <input
+                            defaultValue={valores.hora}
+                            name="horaInicio"
+                            required
+                            type="time"
+                            aria-label="Hora de inicio, hora de Uruguay"
+                          />
                         </label>
                         <label>
                           Fin
-                          <input defaultValue={finValor.hora} name="horaFin" required type="time" />
+                          <input
+                            defaultValue={finValor.hora}
+                            name="horaFin"
+                            required
+                            type="time"
+                            aria-label="Hora de fin, hora de Uruguay"
+                          />
                         </label>
                         <button className="primary-action" disabled={pending} type="submit">
-                          Guardar
+                          {pending ? "Guardando…" : "Guardar nuevo horario"}
                         </button>
                         <button
                           className="secondary-action"
                           disabled={pending}
                           onClick={() => {
-                            devolverFocoRef.current = true;
+                            devolverFocoRef.current = encuentro.id;
+                            setMensaje(null);
                             setEditando(null);
                           }}
                           type="button"
                         >
                           Cancelar edición
                         </button>
+                        {mensaje?.encuentroId === encuentro.id ? (
+                          <p
+                            className={`zoom-series-card__form-message${mensaje.error ? " is-error" : ""}`}
+                            role={mensaje.error ? "alert" : "status"}
+                          >
+                            {mensaje.texto}
+                          </p>
+                        ) : null}
                       </form>
                     ) : (
                       <>
-                        <button
-                          ref={botonEditarRef}
-                          className="zoom-series-card__text-action"
-                          disabled={pending}
-                          onClick={() => {
-                            devolverFocoRef.current = false;
-                            setEditando(encuentro.id);
-                          }}
-                          type="button"
-                        >
-                          <CalendarClock size={16} aria-hidden="true" /> Editar fecha y hora
-                        </button>
                         {encuentro.puedeCancelar ? (
                           <button
                             className="zoom-series-card__text-action zoom-series-card__text-action--danger"
@@ -476,7 +535,6 @@ export function ReunionZoomEncuentros({
           </button>
         </div>
       ) : null}
-      {mensaje ? <p role={mensaje.error ? "alert" : "status"}>{mensaje.texto}</p> : null}
       {cancelacion ? (
         <ConfirmacionCancelacionZoom
           detalle={cancelacion}
