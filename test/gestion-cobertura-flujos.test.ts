@@ -137,6 +137,18 @@ describe("gestión de cobertura y retroactividad", () => {
     expect(page.indexOf("<GestionCoberturaPanel")).toBeLessThan(page.indexOf("<details"));
   });
 
+  it("expone disponibilidad anticipada en postulaciones y asignación directa", () => {
+    const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
+    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const reserve = read("src/modules/asistencia/reserva-asistencia.service.ts");
+    expect(page).toContain("consultarDisponibilidadCobertura(db, meeting, assistants)");
+    expect(panel).toContain("ApplicantAvailability");
+    expect(panel).toContain("No disponibles");
+    expect(panel).toContain("Ver motivos de indisponibilidad");
+    expect(panel).toContain("canAssign(assistant)");
+    expect(reserve).toContain("buscarConflictoAsistencia(all)");
+  });
+
   it("el endpoint no sincroniza proveedores en encuentros históricos", () => {
     const route = read("app/api/v1/asistencia/gestion-cobertura/route.ts");
     expect(route).toContain('result.accion === "CONVOCAR" || result.accion === "ASIGNAR_DIRECTO"');

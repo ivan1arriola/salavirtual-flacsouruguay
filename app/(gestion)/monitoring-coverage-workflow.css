@@ -514,3 +514,63 @@
     width: 100%;
   }
 }
+
+.monitoring-availability {
+  display: grid;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.monitoring-availability svg {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.monitoring-availability.is-available {
+  color: #166534;
+  font-weight: 700;
+}
+
+.monitoring-availability.is-unavailable {
+  color: #991b1b;
+  background: #fff5f5;
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.monitoring-availability.is-unavailable small {
+  color: inherit;
+}
+
+.monitoring-unavailable-list {
+  border: 1px solid #d9e3f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.monitoring-unavailable-list summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  color: #2c4777;
+  font-weight: 700;
+}
+
+.monitoring-unavailable-list ul {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+
+.monitoring-unavailable-list li {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.monitoring-unavailable-list li span {
+  color: #991b1b;
+}

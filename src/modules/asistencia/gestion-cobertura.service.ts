@@ -7,7 +7,7 @@ import {
   ValidationApiError
 } from "@/src/lib/http/api-error";
 import { notificarUsuario } from "@/src/modules/notificaciones/notificaciones.service";
-import { reservarAsistenteDisponible } from "./reserva-asistencia.service";
+import { assistantWindow, reservarAsistenteDisponible } from "./reserva-asistencia.service";
 import { renotificarAsistentesDisponibles } from "./asistencia.service";
 import { gestionarCoberturaSchema, validarIntervaloRetroactivo } from "./domain/gestion-cobertura.domain";
 
@@ -51,29 +51,6 @@ function requirePast(meeting: Readonly<{ estado: string; finProgramadoAt: Date }
   if (HISTORICAL_LIMIT.some((state) => state === meeting.estado) || meeting.finProgramadoAt > now) {
     throw new ConflictApiError("El registro retroactivo solo admite encuentros realizados y finalizados.");
   }
-}
-
-function assistantWindow(
-  meeting: Readonly<{
-    modalidadOverride: "VIRTUAL" | "HIBRIDA" | null;
-    solicitud: { modalidad: "VIRTUAL" | "HIBRIDA" };
-    inicioProgramadoAt: Date;
-    finProgramadoAt: Date;
-    inicioAsistenciaTecnicaAt: Date | null;
-    finAsistenciaTecnicaAt: Date | null;
-  }>
-) {
-  const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
-  if (modalidad === "HIBRIDA" && (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)) {
-    throw new ConflictApiError("Definí llegada y salida del monitoreo híbrido antes de asignar o convocar.");
-  }
-  const inicio =
-    meeting.inicioAsistenciaTecnicaAt ?? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000);
-  const fin = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-  if (fin <= inicio) {
-    throw new ConflictApiError("Los horarios de monitoreo no son válidos.");
-  }
-  return { modalidad, inicio, fin };
 }
 
 async function audit(

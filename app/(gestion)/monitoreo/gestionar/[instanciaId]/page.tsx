@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
+import { consultarDisponibilidadCobertura } from "@/src/modules/asistencia/disponibilidad-cobertura.service";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { uuidsDeOcurrenciasZoom } from "@/src/modules/reuniones/uuids-ocurrencias-zoom.domain";
 import { GestionCoberturaPanel } from "@/src/modules/asistencia/presentation/components/gestion-cobertura-panel";
@@ -53,7 +54,7 @@ export default async function GestionCoberturaPage({
     }),
     db.asistenteTecnico.findMany({
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
-      include: { usuario: { select: { nombres: true, apellidos: true, activo: true } } }
+      include: { usuario: { select: { nombres: true, apellidos: true, activo: true, rol: true } } }
     })
   ]);
   if (!meeting) {
@@ -61,6 +62,10 @@ export default async function GestionCoberturaPage({
   }
   const past = meeting.finProgramadoAt <= new Date();
   const cancelled = meeting.estado === "CANCELADA" || meeting.estado === "NO_REALIZADA";
+  const availability =
+    !past && !cancelled && meeting.estado === "PROGRAMADA"
+      ? await consultarDisponibilidadCobertura(db, meeting, assistants)
+      : new Map<string, string | null>();
   const modality = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
   const current = meeting.asignaciones[0] ?? null;
   const event = seleccionarEventoProveedorActivo(meeting);
@@ -125,7 +130,11 @@ export default async function GestionCoberturaPage({
         assistants={assistants.map((assistant) => ({
           id: assistant.id,
           name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
-          eligible: assistant.usuario.activo && !assistant.cesadoHastaProximoInicioSesion
+          eligible:
+            assistant.usuario.activo &&
+            assistant.usuario.rol === "ASISTENTE_TECNICO" &&
+            !assistant.cesadoHastaProximoInicioSesion,
+          unavailableReason: availability.get(assistant.id) ?? null
         }))}
         applicants={meeting.postulaciones.map((application) => ({
           assistantId: application.asistenteTecnicoId,

@@ -10,6 +10,39 @@ import { obtenerTarifaVigente } from "./tarifas.adapter";
 const ACTIVAS = ["ASIGNADO", "ACEPTADO"] as const;
 type Periodo = Readonly<{ inicio: Date; fin: Date }>;
 
+export function assistantWindow(
+  meeting: Readonly<{
+    modalidadOverride: "VIRTUAL" | "HIBRIDA" | null;
+    solicitud: { modalidad: "VIRTUAL" | "HIBRIDA" };
+    inicioProgramadoAt: Date;
+    finProgramadoAt: Date;
+    inicioAsistenciaTecnicaAt: Date | null;
+    finAsistenciaTecnicaAt: Date | null;
+  }>
+) {
+  const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
+  if (modalidad === "HIBRIDA" && (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)) {
+    throw new ConflictApiError("Definí llegada y salida del monitoreo híbrido antes de asignar o convocar.");
+  }
+  const inicio =
+    meeting.inicioAsistenciaTecnicaAt ?? new Date(meeting.inicioProgramadoAt.getTime() - 15 * 60_000);
+  const fin = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
+  if (fin <= inicio) {
+    throw new ConflictApiError("Los horarios de monitoreo no son válidos.");
+  }
+  return { modalidad, inicio, fin };
+}
+
+export function buscarConflictoAsistencia<T extends Periodo>(periodos: readonly T[]): readonly [T, T] | null {
+  for (const [index, periodo] of periodos.entries()) {
+    const otro = periodos.slice(0, index).find((item) => !cumpleSeparacionMinimaAsistencias(periodo, item));
+    if (otro) {
+      return [otro, periodo];
+    }
+  }
+  return null;
+}
+
 /** Regla transaccional única para la asignación inicial y posterior. */
 export async function reservarAsistenteDisponible(
   tx: Prisma.TransactionClient,
@@ -60,9 +93,7 @@ export async function reservarAsistenteDisponible(
     })),
     ...periodos
   ];
-  const conflict = all.some((periodo, index) =>
-    all.slice(0, index).some((other) => !cumpleSeparacionMinimaAsistencias(periodo, other))
-  );
+  const conflict = buscarConflictoAsistencia(all);
   if (conflict) {
     throw new ConflictApiError(
       `El asistente necesita al menos ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos entre reuniones.`

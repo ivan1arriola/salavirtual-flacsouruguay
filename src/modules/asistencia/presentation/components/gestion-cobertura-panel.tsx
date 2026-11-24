@@ -15,7 +15,90 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmacionCobertura, type ConfirmacionCoberturaDetalle } from "./confirmacion-cobertura";
 
-type Assistant = Readonly<{ id: string; name: string; eligible: boolean }>;
+type Assistant = Readonly<{
+  id: string;
+  name: string;
+  eligible: boolean;
+  unavailableReason: string | null;
+}>;
+
+function canAssign(assistant: Assistant): boolean {
+  return assistant.eligible && !assistant.unavailableReason;
+}
+
+function AvailabilityOptions({
+  assistants,
+  applicants,
+  assignedId
+}: Readonly<{
+  assistants: readonly Assistant[];
+  applicants: readonly Readonly<{ assistantId: string }>[];
+  assignedId: string | null;
+}>) {
+  const candidates = assistants.filter((assistant) => assistant.id !== assignedId);
+  const available = candidates.filter(canAssign);
+  const unavailable = candidates.filter((assistant) => !canAssign(assistant));
+  return (
+    <>
+      <optgroup label={`Disponibles (${available.length})`}>
+        {available.map((assistant) => (
+          <option key={assistant.id} value={assistant.id}>
+            {assistant.name}
+            {applicants.some((application) => application.assistantId === assistant.id) ? " · Postulada" : ""}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label={`No disponibles (${unavailable.length})`}>
+        {unavailable.map((assistant) => (
+          <option key={assistant.id} value={assistant.id} disabled>
+            {assistant.name} · No disponible
+          </option>
+        ))}
+      </optgroup>
+    </>
+  );
+}
+
+function UnavailableAssistants({
+  assistants,
+  assignedId
+}: Readonly<{ assistants: readonly Assistant[]; assignedId: string | null }>) {
+  const unavailable = assistants.filter((assistant) => assistant.id !== assignedId && !canAssign(assistant));
+  if (!unavailable.length) {
+    return null;
+  }
+  return (
+    <details className="monitoring-unavailable-list">
+      <summary>Ver motivos de indisponibilidad ({unavailable.length})</summary>
+      <ul>
+        {unavailable.map((assistant) => (
+          <li key={assistant.id}>
+            <strong>{assistant.name}</strong>
+            <span>{assistant.unavailableReason ?? "No habilitada para asignación."}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function ApplicantAvailability({ assistant }: Readonly<{ assistant: Assistant | undefined }>) {
+  if (assistant && canAssign(assistant)) {
+    return (
+      <small className="monitoring-availability is-available">
+        <CheckCircle2 size={16} aria-hidden="true" /> Disponible según agenda
+      </small>
+    );
+  }
+  return (
+    <div className="monitoring-availability is-unavailable">
+      <strong>
+        <CircleAlert size={16} aria-hidden="true" /> No disponible
+      </strong>
+      <small>{assistant?.unavailableReason ?? "No habilitada para asignación."}</small>
+    </div>
+  );
+}
 type Meeting = Readonly<{
   id: string;
   requestId: string;
@@ -119,6 +202,7 @@ export function GestionCoberturaPanel({
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo completar la operación.");
+      router.refresh();
     } finally {
       setPending(false);
     }
@@ -128,7 +212,7 @@ export function GestionCoberturaPanel({
     if (!canManage || missingHours || pending || id === assignedId) {
       return;
     }
-    const person = assistants.find((item) => item.id === id && item.eligible);
+    const person = assistants.find((item) => item.id === id && canAssign(item));
     if (!person) {
       return;
     }
@@ -309,13 +393,13 @@ export function GestionCoberturaPanel({
                       <small>Postulación: {localDateTime(application.date).replace("T", " ")}</small>
                       {application.comment ? <p>{application.comment}</p> : null}
                       {assigned ? <small>Ya asignada</small> : null}
-                      {!assistant?.eligible ? <small>No habilitada para asignación</small> : null}
+                      {canManage && !assigned ? <ApplicantAvailability assistant={assistant} /> : null}
                     </div>
                     {canManage && !assigned ? (
                       <button
                         className="secondary-action"
                         type="button"
-                        disabled={pending || missingHours || !assistant?.eligible}
+                        disabled={pending || missingHours || !assistant || !canAssign(assistant)}
                         onClick={() => assign(application.assistantId)}
                       >
                         {meeting.asignado ? "Reasignar a esta persona" : "Asignar a esta persona"}
@@ -528,28 +612,32 @@ export function GestionCoberturaPanel({
                     disabled={pending || missingHours}
                   >
                     <option value="">Seleccionar persona…</option>
-                    {assistants
-                      .filter((assistant) => assistant.eligible && assistant.id !== assignedId)
-                      .map((assistant) => (
-                        <option key={assistant.id} value={assistant.id}>
-                          {assistant.name}
-                          {applicants.some((application) => application.assistantId === assistant.id)
-                            ? " · Postulada"
-                            : ""}
-                        </option>
-                      ))}
+                    <AvailabilityOptions
+                      assistants={assistants}
+                      applicants={applicants}
+                      assignedId={assignedId}
+                    />
                   </select>
                   <button
                     className="primary-action"
                     type="submit"
-                    disabled={pending || !assistantId || missingHours}
+                    disabled={
+                      pending ||
+                      missingHours ||
+                      !assistants.some(
+                        (assistant) =>
+                          assistant.id === assistantId && assistant.id !== assignedId && canAssign(assistant)
+                      )
+                    }
                   >
                     <UserRoundCheck size={17} aria-hidden="true" />
                     {meeting.asignado ? "Reasignar" : "Asignar directamente"}
                   </button>
                   <p className="monitoring-workflow-help">
-                    Se verifican conflictos de agenda antes de guardar. No se envía una convocatoria general.
+                    La disponibilidad se calcula según la agenda y se vuelve a verificar al guardar. No se
+                    envía una convocatoria general.
                   </p>
+                  <UnavailableAssistants assistants={assistants} assignedId={assignedId} />
                 </form>
                 {missingHours ? (
                   <div className="monitoring-workflow-banner is-warning" role="status">
