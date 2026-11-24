@@ -25,10 +25,7 @@ export function buildRawGmailMessage(input: GoogleMailInput, from: string): stri
   ];
   const body = input.html ?? input.text;
   return Buffer.from(`${headers.join("\r\n")}\r\n\r\n${body}`, "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+    .toString("base64url");
 }
 
 export async function enviarMensajeGmailHttp(auth: JWT, rawBase64Message: string): Promise<void> {

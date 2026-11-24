@@ -185,7 +185,7 @@ export function sanearErrorZoom(texto: string | null | undefined, largoMaximo = 
     return null;
   }
   const limpio = texto
-    .replace(/[a-z][a-z0-9+.-]*:\/\/\S+/gi, "[url]")
+    .replace(/\S+/g, (parte) => (parte.includes("://") ? "[url]" : parte))
     .replace(/\bBearer\s+\S+/gi, "Bearer [redactado]")
     .replace(
       /\b(access_token|refresh_token|token|signature|sig|key|password|secret|authorization|client_secret)\s*[=:]\s*[^&\s]+/gi,

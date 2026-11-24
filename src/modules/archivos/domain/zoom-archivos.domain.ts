@@ -212,15 +212,19 @@ export function normalizarInventarioZoom(
 }
 
 function sanearSegmento(valor: string, largoMaximo: number): string {
-  return valor
+  const normalizado = valor
     .normalize("NFC")
 
     .replace(/[\u0000-\u001f\u007f\\/:*?"<>|]+/g, "-")
     .replace(/\s+/g, " ")
     .replace(/\.{2,}/g, ".")
     .trim()
-    .replace(/^[-. ]+|[-. ]+$/g, "")
-    .slice(0, largoMaximo);
+    .replace(/^[-. ]+/, "");
+  let fin = normalizado.length;
+  while (fin > 0 && "-. ".includes(normalizado[fin - 1])) {
+    fin--;
+  }
+  return normalizado.slice(0, Math.min(fin, largoMaximo));
 }
 
 /**

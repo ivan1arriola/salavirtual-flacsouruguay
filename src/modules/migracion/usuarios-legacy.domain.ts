@@ -63,13 +63,17 @@ function textoOpcional(value: string | null): string | null {
 
 export function crearUsuarioIdBase(email: string): string {
   const localPart = email.split("@")[0] ?? "";
-  const normalized = localPart
+  const sinPrefijo = localPart
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, ".")
-    .replace(/^[._-]+|[._-]+$/g, "")
-    .slice(0, 42);
+    .replace(/^[._-]+/, "");
+  let fin = sinPrefijo.length;
+  while (fin > 0 && "._-".includes(sinPrefijo[fin - 1])) {
+    fin--;
+  }
+  const normalized = sinPrefijo.slice(0, Math.min(fin, 42));
 
   return normalized.length >= 3 ? normalized : `usuario.${normalized || "legacy"}`;
 }

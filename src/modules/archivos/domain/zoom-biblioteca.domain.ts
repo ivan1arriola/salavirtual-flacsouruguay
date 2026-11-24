@@ -195,7 +195,7 @@ export function describirVarianteZoom(
     }
     return null;
   }
-  const pistaParticipante = /^audio\s+only\s*-\s*(.+)$/i.exec(texto);
+  const pistaParticipante = /^audio\s+only\s*-\s*(\S.*)$/i.exec(texto);
   if (pistaParticipante) {
     return `Pista de participante · ${pistaParticipante[1]!.trim()}`;
   }

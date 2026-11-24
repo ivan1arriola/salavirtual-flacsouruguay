@@ -141,7 +141,7 @@ export function mobileActorFromRequest(request: Request, secret: string): Mobile
   if (!authorization) {
     return null;
   }
-  const match = /^Bearer\s+(.+)$/i.exec(authorization);
+  const match = /^Bearer\s+(\S.*)$/i.exec(authorization);
   if (!match?.[1]) {
     return null;
   }

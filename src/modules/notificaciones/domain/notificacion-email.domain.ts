@@ -194,14 +194,15 @@ function renderStructuredLines(raw: string): string {
           "</p>"
         );
       }
-      const matched = line.match(/^(?:•\s*)?([\p{L}\s/()]+):\s*(.*)$/u);
-      if (matched && matched[1].length < 38) {
+      const separator = line.indexOf(":");
+      const label = separator > 0 ? line.slice(0, separator).replace(/^•\s*/, "") : "";
+      if (label.length < 38 && /^[\p{L}\s/()]+$/u.test(label)) {
         return (
           '<p style="margin:0 0 9px;font-size:13px;line-height:20px;color:#526277">' +
           '<strong style="color:#192b44">' +
-          escapeHtml(matched[1].trim()) +
+          escapeHtml(label.trim()) +
           ":</strong> " +
-          linkifyEscaped(escapeHtml(matched[2])) +
+          linkifyEscaped(escapeHtml(line.slice(separator + 1).trimStart())) +
           "</p>"
         );
       }

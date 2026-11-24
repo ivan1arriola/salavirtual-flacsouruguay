@@ -54,7 +54,11 @@ export function fullName(persona: Readonly<{ nombres: string; apellidos?: string
 }
 
 export function firstName(persona: Readonly<{ nombres: string }>): string {
-  return persona.nombres.replace(/,+$/, "");
+  let end = persona.nombres.length;
+  while (end > 0 && persona.nombres[end - 1] === ",") {
+    end--;
+  }
+  return persona.nombres.slice(0, end);
 }
 
 export function passwordSala(cuenta: CuentaSala, descifrar: (value: string) => string): string | null {
