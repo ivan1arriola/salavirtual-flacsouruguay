@@ -25,7 +25,9 @@ export async function backfillEjecucionZoom(
       continue;
     }
     const instanciaSalaId = eventoProveedor.instanciaSalaId;
-    await db.$transaction((tx) => aplicarEjecucionZoomAInstancia(tx, { instanciaSalaId, cuentaZoomId, uuid }));
+    await db.$transaction((tx) =>
+      aplicarEjecucionZoomAInstancia(tx, { instanciaSalaId, cuentaZoomId, uuid })
+    );
     aplicadas++;
   }
   return { candidatas: candidatas.length, aplicadas };

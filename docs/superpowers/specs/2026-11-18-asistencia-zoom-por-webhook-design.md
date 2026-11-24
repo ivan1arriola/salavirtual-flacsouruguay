@@ -3,6 +3,7 @@
 Aprobado por el usuario el 2026-11-18 (propuesta + botón de reintento manual).
 
 ## Intención
+
 La asistencia de una reunión Zoom debe aparecer sola poco después de terminar, sin que el worker consulte a Zoom
 cada pocos minutos. Hoy el sondeo está roto: reintenta `NO_DISPONIBLE`/`ERROR` solo si `updatedAt` tiene 15 min de
 antigüedad, pero el barrido de grabaciones reescribe todas las ocurrencias cada minuto (el upsert de
@@ -10,6 +11,7 @@ antigüedad, pero el barrido de grabaciones reescribe todas las ocurrencias cada
 `asistencia: revisadas 0` en cada ciclo.
 
 ## Objetivos
+
 - `meeting.ended` dispara la sincronización de la asistencia de esa ocurrencia.
 - Si Zoom responde 404 (reporte aún no listo), se reintenta con la espera creciente ya existente del webhook
   (2, 5, 15, 60 min) y luego se detiene.
@@ -17,17 +19,20 @@ antigüedad, pero el barrido de grabaciones reescribe todas las ocurrencias cada
 - Se elimina el sondeo periódico y su condición sobre `updatedAt`.
 
 ## No objetivos
+
 - No hay barrido de respaldo diario (decisión del usuario: webhook + botón manual).
 - No se construye la asistencia a partir de `participant_joined/left`: la API de participantes sigue siendo la fuente.
 - No se rediseña el vínculo ocurrencia↔clase, solo se verifica (ver Pendiente).
 
 ## Enfoques considerados
+
 1. **Webhook + reintento con la cola existente + botón (elegido).** Reutiliza `EventoWebhookZoom` (reclamo atómico,
    backoff, estados). Sin escaneo.
 2. Construir asistencia desde eventos de participante: mucho código, pierde exactitud; descartado.
 3. Arreglar el sondeo con una columna `asistenciaIntentadaAt`: sigue siendo consulta continua; descartado.
 
 ## Diseño
+
 - `aplicarAviso` (zoom-webhook-worker.ts): tras el upsert de la ocurrencia, si `tipo === "meeting.ended"` llama a
   `sincronizarAsistenciaZoomUseCase` para esa ocurrencia. Resultado `PENDIENTE` (404) se traduce a un error
   reintentable del aviso para que use `proximoIntento` (se ajusta la escala a 2/5/15/60 min para este caso y se
@@ -43,11 +48,13 @@ antigüedad, pero el barrido de grabaciones reescribe todas las ocurrencias cada
 - Recuperación de lo atascado hoy: el botón (o una única corrida manual `--once`), sin barrido nuevo.
 
 ## Restricciones
+
 - Next.js de esta versión tiene cambios incompatibles: leer `node_modules/next/dist/docs/` antes de tocar rutas.
 - Despliegue por SSH con `scripts/deploy-ec2.sh`; sin migraciones previstas.
 - Un error o 404 nunca borra asistencia ya guardada (comportamiento actual del caso de uso).
 
 ## Pendiente (a verificar en el plan)
+
 - Por qué la ficha de "Formación BROU" sigue en "Realización sin verificar" pese a recibir `meeting.started/ended`
   (probable fallo de `vincularAutomaticamenteSiInequivoco`: inicio real 17:35 vs programado 18:00). Sin vínculo la
   ficha no ve la asistencia; si es un bug, se corrige aparte o dentro de este plan según su tamaño.

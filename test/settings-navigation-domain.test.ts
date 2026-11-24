@@ -44,7 +44,14 @@ describe("navegación de configuración", () => {
 
   it("expone en el menú las áreas en orden y sin el histórico", () => {
     const menu = SETTINGS_SECTIONS.filter(({ hidden }) => !hidden);
-    expect(menu.map(({ id }) => id)).toEqual(["resumen", "zoom", "google", "salas", "correo", "notificaciones"]);
+    expect(menu.map(({ id }) => id)).toEqual([
+      "resumen",
+      "zoom",
+      "google",
+      "salas",
+      "correo",
+      "notificaciones"
+    ]);
     expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([...menu.map(({ id }) => id), "historico"]);
   });
 

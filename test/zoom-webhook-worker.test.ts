@@ -94,20 +94,32 @@ describe("procesar bandeja Zoom", () => {
 });
 
 describe("asistencia al finalizar la reunión", () => {
-  const disponible = { tipo: "OK", estadoReporte: "DISPONIBLE", participantes: 3, sesionesNuevas: 3 } as const;
+  const disponible = {
+    tipo: "OK",
+    estadoReporte: "DISPONIBLE",
+    participantes: 3,
+    sesionesNuevas: 3
+  } as const;
   // Ignora el barrido de reclamos agotados: la actualización del aviso filtra por su claimHasta.
   const datosDelAviso = () =>
     mocks.updateMany.mock.calls.filter(([arg]) => arg.where?.id !== undefined).at(-1)?.[0].data;
 
   it("meeting.ended sincroniza la ocurrencia y marca el aviso procesado", async () => {
     const sync = vi.fn().mockResolvedValue(disponible);
-    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toEqual({ procesados: 1, ignorados: 0, errores: 0 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toEqual({
+      procesados: 1,
+      ignorados: 0,
+      errores: 0
+    });
     expect(sync).toHaveBeenCalledTimes(1);
     expect(sync).toHaveBeenCalledWith("ocurrencia-1");
   });
 
   it("meeting.started no sincroniza", async () => {
-    mocks.findMany.mockReset().mockResolvedValueOnce([{ ...aviso, tipo: "meeting.started" }]).mockResolvedValue([]);
+    mocks.findMany
+      .mockReset()
+      .mockResolvedValueOnce([{ ...aviso, tipo: "meeting.started" }])
+      .mockResolvedValue([]);
     const sync = vi.fn();
     await procesarWebhooksZoom("cuenta-1", 2, sync);
     expect(sync).not.toHaveBeenCalled();
@@ -130,7 +142,10 @@ describe("asistencia al finalizar la reunión", () => {
   });
 
   it("un 404 en el último intento deja el aviso FALLIDO", async () => {
-    mocks.findMany.mockReset().mockResolvedValueOnce([{ ...aviso, intentos: 9 }]).mockResolvedValue([]);
+    mocks.findMany
+      .mockReset()
+      .mockResolvedValueOnce([{ ...aviso, intentos: 9 }])
+      .mockResolvedValue([]);
     const sync = vi.fn().mockResolvedValue({ tipo: "PENDIENTE", estadoReporte: "NO_DISPONIBLE" });
     await procesarWebhooksZoom("cuenta-1", 2, sync);
     expect(datosDelAviso()).toMatchObject({ estado: "FALLIDO" });

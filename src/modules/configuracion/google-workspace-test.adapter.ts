@@ -16,11 +16,7 @@ type ServiceAccountCredential = Readonly<{
 type DelegatedCredential = ServiceAccountCredential & Readonly<{ subject: string }>;
 
 export type GoogleWorkspaceScopeValidation = Readonly<{
-  key:
-    | "calendar.events"
-    | "drive"
-    | "gmail.send"
-    | "spreadsheets";
+  key: "calendar.events" | "drive" | "gmail.send" | "spreadsheets";
   label: string;
   scope: string;
   autorizado: boolean;
@@ -43,12 +39,7 @@ export async function probarCredencialGoogle(credential: ServiceAccountCredentia
 }
 
 export async function probarDelegacionGoogle(credential: DelegatedCredential): Promise<string> {
-  const auth = crearJwt(credential, [
-    CALENDAR_SCOPE,
-    DRIVE_SCOPE,
-    GMAIL_SEND_SCOPE,
-    SHEETS_SCOPE
-  ]);
+  const auth = crearJwt(credential, [CALENDAR_SCOPE, DRIVE_SCOPE, GMAIL_SEND_SCOPE, SHEETS_SCOPE]);
   const calendarId = encodeURIComponent(credential.subject);
   await auth.request({
     url: `${CALENDAR_API}/calendars/${calendarId}/events?maxResults=1&singleEvents=true`,
