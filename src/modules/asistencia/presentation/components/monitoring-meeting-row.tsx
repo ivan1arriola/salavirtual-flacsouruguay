@@ -66,7 +66,7 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
           <span>{data.covered ? "Cubierta" : "Pendiente"}</span>
           <small>{data.covered ? data.assistantName : "Necesita asignación"}</small>
         </span>
-        <span className="monitoring-row-applicants" aria-label={data.applicantsCount + " personas postuladas"}>
+        <span className="monitoring-row-applicants" aria-label={data.applicantsCount + (data.applicantsCount === 1 ? " persona postulada" : " personas postuladas")}>
           <UsersRound size={15} aria-hidden="true" />
           <strong>{data.applicantsCount}</strong>
           <small>{data.applicantsCount === 1 ? "postulada" : "postuladas"}</small>
