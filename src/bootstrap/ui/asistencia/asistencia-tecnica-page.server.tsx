@@ -75,7 +75,7 @@ export default async function AsistenciaTecnicaPage({
       },
       asignaciones: {
         where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-        select: { asistenteTecnicoId: true },
+        include: { asistenteTecnico: { include: { usuario: true } } },
         orderBy: { updatedAt: "desc" }
       },
       postulaciones: {
@@ -83,7 +83,7 @@ export default async function AsistenciaTecnicaPage({
           estado: "ME_INTERESA",
           asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
         },
-        include: { asistenteTecnico: { include: { usuario: true } } },
+        select: { asistenteTecnicoId: true },
         orderBy: { createdAt: "asc" }
       },
       eventosProveedor: {
