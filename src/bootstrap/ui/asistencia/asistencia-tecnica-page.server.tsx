@@ -17,6 +17,67 @@ import { formatTime } from "@/src/lib/ui/format";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
+function coincideFiltroCobertura(covered: boolean, estado: string): boolean {
+  if (estado === "pendientes") {
+    return !covered;
+  }
+  if (estado === "cubiertas") {
+    return covered;
+  }
+  return true;
+}
+
+function obtenerEstadoVacio(total: number, query: string) {
+  if (total === 0 && query) {
+    return {
+      title: "No encontramos coincidencias",
+      description: "Probá con otro término de búsqueda o quitá el filtro para volver a ver la agenda."
+    };
+  }
+  if (total === 0) {
+    return {
+      title: "No hay reuniones próximas",
+      description: "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda."
+    };
+  }
+  return {
+    title: "No encontramos reuniones para este filtro",
+    description: "Probá con otro estado o quitá la búsqueda para volver a ver las reuniones."
+  };
+}
+
+function etiquetaRelativaDia(relativo: string): string | null {
+  if (relativo === "HOY") {
+    return "Hoy";
+  }
+  if (relativo === "MANANA") {
+    return "Mañana";
+  }
+  return null;
+}
+
+function obtenerEtiquetaHost(
+  cuenta: { nombre: string; emailOrganizador: string | null } | null | undefined,
+  isZoom: boolean,
+  hostEmail: string | null
+): string | null {
+  if (!cuenta) {
+    return null;
+  }
+  const nombre = isZoom && hostEmail ? nombreCuentaZoom(hostEmail) : cuenta.nombre;
+  return cuenta.emailOrganizador ? nombre + " · " + cuenta.emailOrganizador : nombre;
+}
+
+function obtenerPlataforma(isZoom: boolean, hasEvent: boolean): "ZOOM" | "GOOGLE_MEET" | null {
+  if (isZoom) {
+    return "ZOOM";
+  }
+  if (hasEvent) {
+    return "GOOGLE_MEET";
+  }
+  return null;
+}
+
 export default async function AsistenciaTecnicaPage({
   searchParams
 }: Readonly<{ searchParams: Promise<{ estado?: string; q?: string }> }>) {
@@ -101,7 +162,7 @@ export default async function AsistenciaTecnicaPage({
         covered: Boolean(assignment)
       };
     })
-    .filter(({ covered }) => (estado === "pendientes" ? !covered : estado === "cubiertas" ? covered : true));
+    .filter(({ covered }) => coincideFiltroCobertura(covered, estado));
 
   const total = meetings.length;
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
@@ -110,6 +171,7 @@ export default async function AsistenciaTecnicaPage({
     meetings.flatMap((meeting) => meeting.postulaciones.map(({ asistenteTecnicoId }) => asistenteTecnicoId))
   ).size;
   const days = agruparPorDia(rows, ({ meeting }) => meeting.inicioProgramadoAt, now);
+  const emptyState = obtenerEstadoVacio(meetings.length, q);
   const filters = [
     { value: "todas", label: "Todas", count: total },
     { value: "pendientes", label: "Pendientes", count: pending },
@@ -217,20 +279,8 @@ export default async function AsistenciaTecnicaPage({
             <span className="monitoring-empty-icon" aria-hidden="true">
               <UsersRound size={25} />
             </span>
-            <h2>
-              {meetings.length === 0
-                ? q
-                  ? "No encontramos coincidencias"
-                  : "No hay reuniones próximas"
-                : "No encontramos reuniones para este filtro"}
-            </h2>
-            <p>
-              {meetings.length === 0
-                ? q
-                  ? "Probá con otro término de búsqueda o quitá el filtro para volver a ver la agenda."
-                  : "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda."
-                : "Probá con otro estado o quitá la búsqueda para volver a ver las reuniones."}
-            </p>
+            <h2>{emptyState.title}</h2>
+            <p>{emptyState.description}</p>
             {estado !== "todas" || q ? (
               <Link className="secondary-action" href="/monitoreo">
                 Limpiar filtros
@@ -247,10 +297,8 @@ export default async function AsistenciaTecnicaPage({
               >
                 <h2 className="monitoring-day-title" id={"monitoring-day-" + day.clave}>
                   <span className="monitoring-day-heading-main">
-                    {day.relativo === "HOY" ? (
-                      <span className="monitoring-day-relative">Hoy</span>
-                    ) : day.relativo === "MANANA" ? (
-                      <span className="monitoring-day-relative">Mañana</span>
+                    {etiquetaRelativaDia(day.relativo) ? (
+                      <span className="monitoring-day-relative">{etiquetaRelativaDia(day.relativo)}</span>
                     ) : null}
                     {day.etiqueta}
                   </span>
@@ -278,10 +326,8 @@ export default async function AsistenciaTecnicaPage({
                     const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
                     const cuenta = event?.cuentaProveedor;
-                    const hostLabel = cuenta
-                      ? (isZoom && hostEmail ? nombreCuentaZoom(hostEmail) : cuenta.nombre) +
-                        (cuenta.emailOrganizador ? " · " + cuenta.emailOrganizador : "")
-                      : null;
+                    const hostLabel = obtenerEtiquetaHost(cuenta, isZoom, hostEmail);
+                    const plataforma = obtenerPlataforma(isZoom, Boolean(event));
                     return (
                       <MonitoringMeetingRow
                         key={meeting.id}
@@ -297,7 +343,7 @@ export default async function AsistenciaTecnicaPage({
                             formatTime(inicioAsistencia) + "–" + formatTime(finAsistencia) + " h",
                           covered,
                           assistantName,
-                          plataforma: isZoom ? "ZOOM" : event ? "GOOGLE_MEET" : null,
+                          plataforma,
                           joinUrl: event?.joinUrl ?? null,
                           hostLabel,
                           codigoReunion:
