@@ -70,7 +70,9 @@ const ETIQUETA_REPORTE: Record<string, string> = {
   VACIO: "Reporte sin conexiones"
 };
 function etiquetaAsistencia(hayReporte: boolean, estadoReporte: string): string {
-  return hayReporte ? "Reporte oficial de Zoom" : (ETIQUETA_REPORTE[estadoReporte] ?? "Pendiente de Zoom");
+  return hayReporte
+    ? "Reporte oficial de Zoom"
+    : (ETIQUETA_REPORTE[estadoReporte] ?? "Pendiente de Zoom");
 }
 
 function SeccionResumen({
@@ -291,7 +293,7 @@ function SeccionGrabaciones({
         <strong>{ETIQUETA_GRABACION_ZOOM[estado]}</strong>
         {estado === "NO_PREVISTA" ? " · Este encuentro no requería grabación." : null}
         {estado === "SIN_CONFIRMAR"
-          ? " · Se esperaba una grabación, pero todavía no hay rastro; no se puede afirmar que no exista."
+          ? " · Se esperaba una grabación, pero aún no hay rastro; no se puede afirmar que no exista."
           : null}
       </p>
       <ul className={styles.files}>
