@@ -220,7 +220,8 @@ export function ReunionZoomOperativa({
             : reunion.estado.replaceAll("_", " ").toLowerCase()}
         </p>
         {estadoActual?.ejecucion &&
-        (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
+          (estadoActual.tipo === "ACTIVA" ||
+            estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
           <p className={styles.note}>
             Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.
           </p>
