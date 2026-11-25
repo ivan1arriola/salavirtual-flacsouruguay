@@ -62,6 +62,17 @@ Los tests de `presentation-layer-boundaries.test.ts` ya comprueban parte de esta
 
 `docs/arquitectura.md` debe actualizarse después de aprobar la arquitectura objetivo; no mezclar una edición documental ahora con una decisión funcional todavía no aprobada.
 
+## Avances comprobados respecto al diagnóstico anterior
+
+Al contrastar hallazgos concretos del informe del 17 de octubre con la línea base actual:
+
+- La lectura de credenciales Google Workspace está más centralizada: existe `src/modules/configuracion/google-workspace.service.ts` (450 líneas) y una fachada `src/modules/configuracion/api.ts`. La búsqueda exacta de `configuracionGoogleWorkspace.findUnique` devuelve cuatro archivos, no los 18 puntos de lectura reportados en octubre. Las referencias a `privateKeyCifrada` no equivalen todas a descifrar la clave: algunas solo muestran si hay credencial configurada.
+- La aparente duplicación de `sincronizarCohostsDeInstancia` en asistencia ya no es una implementación paralela: `asistencia.service.ts` delega a `sincronizarCohostsDeInstanciaUseCase`.
+- Siguen existiendo flujos diferenciados para actualizar cohosts de una serie, resincronizar masivamente y verificar globalmente. Deben revisarse como casos de uso distintos antes de unificarlos.
+- La capa de presentación de reuniones continúa concentrada en archivos server extensos, mientras `reuniones` conserva 62 archivos en raíz. El avance en credenciales y asistencia no resuelve ese acoplamiento.
+
+Por tanto, el diagnóstico anterior no debe copiarse como si siguiera íntegramente vigente. Sus hallazgos deben llevar estado: corregido, parcialmente corregido, vigente o pendiente de revalidación.
+
 ## Dirección recomendada
 
 1. No crear nuevos repositorios ni microservicios por esta auditoría.
