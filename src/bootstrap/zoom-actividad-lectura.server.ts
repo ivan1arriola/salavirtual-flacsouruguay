@@ -26,9 +26,12 @@ const TIPOS_PARTICIPANTE = [
  * Actividad confirmada por webhooks para las ejecuciones (cuenta + UUID) vinculadas a un encuentro.
  * Nunca asocia por Meeting ID: una serie comparte ese número entre muchas ejecuciones.
  */
-export async function leerActividadEncuentroZoom(eventoProveedorId: string): Promise<EntradaActividadZoom[]> {
+export async function leerActividadEncuentroZoom(
+  eventoProveedorId: string,
+  ejecucion?: Readonly<{ cuentaZoomId: string; uuid: string }>
+): Promise<EntradaActividadZoom[]> {
   const ocurrencias = await db.ocurrenciaArchivoZoom.findMany({
-    where: { eventoProveedorId },
+    where: { eventoProveedorId, ...(ejecucion ?? {}) },
     select: { cuentaZoomId: true, uuid: true }
   });
   if (ocurrencias.length === 0) {

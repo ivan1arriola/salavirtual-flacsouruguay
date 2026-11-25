@@ -8,11 +8,13 @@ import styles from "./reunion-zoom-operativa.module.css";
 export function NavegacionEncuentroZoom({
   reunion,
   rol,
-  historica
+  historica,
+  actualizarAutomaticamente
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   historica: boolean;
+  actualizarAutomaticamente?: boolean;
 }>) {
   const asistente = rol === "ASISTENTE_TECNICO";
   return (
@@ -31,7 +33,7 @@ export function NavegacionEncuentroZoom({
         ) : (
           <>
             <OperationalAutoRefresh
-              enabled={reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO"}
+              enabled={actualizarAutomaticamente ?? (reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO")}
             />
             <RefreshButton />
           </>

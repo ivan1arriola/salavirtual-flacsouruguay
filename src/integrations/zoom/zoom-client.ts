@@ -498,3 +498,26 @@ export async function obtenerSalaEsperaZoomHttp(token: string, meetingId: string
   const data = (await response.json()) as { settings?: { waiting_room?: unknown } };
   return typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null;
 }
+
+/** Estado de la serie y UUID de su ejecución más reciente, sin depender de Dashboard. */
+export async function obtenerEstadoActualZoomHttp(token: string, meetingId: string) {
+  const response = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000)
+  });
+  if (!response.ok) {
+    throw new Error("Zoom API: no se pudo consultar el estado actual (" + response.status + ")");
+  }
+  const data = (await response.json()) as {
+    status?: unknown;
+    uuid?: unknown;
+    settings?: { waiting_room?: unknown };
+  };
+  const estado = data.status === "started" || data.status === "waiting" ? data.status : null;
+  return {
+    estado,
+    uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,
+    salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null
+  };
+}

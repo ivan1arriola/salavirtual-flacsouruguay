@@ -33,6 +33,10 @@ import {
   type EntradaActividadZoom
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
+import {
+  etiquetaEstadoActualZoom,
+  type EstadoActualZoom
+} from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 
 /** La consola Zoom no presenta datos ni controles de Google Meet como propios. */
 export function ReunionZoomOperativa({
@@ -40,7 +44,9 @@ export function ReunionZoomOperativa({
   rol,
   salaEspera,
   asistenciaEnVivo,
-  actividad = []
+  actividad = [],
+  estadoActual,
+  actualizarAutomaticamente
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
@@ -48,6 +54,8 @@ export function ReunionZoomOperativa({
   asistenciaEnVivo: EstadoAsistenciaZoomEnVivo;
   /** Hechos confirmados por webhooks de Zoom para esta ejecución, de más antiguo a más reciente. */
   actividad?: readonly EntradaActividadZoom[];
+  estadoActual?: EstadoActualZoom;
+  actualizarAutomaticamente?: boolean;
 }>) {
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const enlace = reunion.zoom.joinUrl;
@@ -90,7 +98,12 @@ export function ReunionZoomOperativa({
 
   return (
     <main className={styles.page}>
-      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica={false} />
+      <NavegacionEncuentroZoom
+        reunion={reunion}
+        rol={rol}
+        historica={false}
+        actualizarAutomaticamente={actualizarAutomaticamente}
+      />
 
       <header className={styles.hero}>
         <div className={styles.eyebrow}>
@@ -195,7 +208,17 @@ export function ReunionZoomOperativa({
           <Activity size={19} aria-hidden="true" />
           <h2>Estado de la reunión</h2>
         </div>
-        <p className={styles.status}>{reunion.estado.replaceAll("_", " ").toLowerCase()}</p>
+        <p className={styles.status}>
+          {estadoActual ? etiquetaEstadoActualZoom(estadoActual) : reunion.estado.replaceAll("_", " ").toLowerCase()}
+        </p>
+        {estadoActual?.ejecucion && (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
+          <p className={styles.note}>Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.</p>
+        ) : null}
+        {estadoActual?.tipo === "OTRA_EJECUCION" ? (
+          <p className={styles.note}>
+            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el vínculo.
+          </p>
+        ) : null}
         <div className={styles.statusGrid}>
           <div>
             <Video size={18} aria-hidden="true" />
@@ -216,8 +239,9 @@ export function ReunionZoomOperativa({
           </div>
           <div>
             <Radio size={18} aria-hidden="true" />
-            <strong>Solicitud de grabación</strong>
-            <span>{reunion.requiereGrabacion ? "Requerida" : "No requerida"}</span>
+            <strong>Grabación</strong>
+            <span>{estadoGrabacionActual(actividad)}</span>
+            <small>{reunion.requiereGrabacion ? "Requerida" : "No requerida"}</small>
           </div>
         </div>
         <p className={styles.note}>
@@ -696,4 +720,22 @@ function traducirAlertaZoom(detalle: string): string {
     .filter(Boolean)
     .map((parte) => traducciones[parte] ?? parte)
     .join(" · ");
+}
+
+function estadoGrabacionActual(actividad: readonly EntradaActividadZoom[]): string {
+  const ultimo = actividad.findLast((a) =>
+    ["recording.started", "recording.resumed", "recording.paused", "recording.stopped", "recording.completed"].includes(a.tipo)
+  );
+  switch (ultimo?.tipo) {
+    case "recording.started":
+    case "recording.resumed":
+      return "Inicio informado por Zoom";
+    case "recording.paused":
+      return "Pausa informada por Zoom";
+    case "recording.stopped":
+    case "recording.completed":
+      return "Finalización informada por Zoom";
+    default:
+      return "Sin confirmar";
+  }
 }
