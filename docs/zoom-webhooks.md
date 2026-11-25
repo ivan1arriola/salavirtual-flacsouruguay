@@ -66,6 +66,8 @@ motivo de salida, tipo de conexión y puntuaciones de audio, vídeo y pantalla c
 proyecta solo esos campos operativos. No lee ni conserva direcciones IP, MAC, identificadores de disco,
 nombres de equipo ni otros datos técnicos sensibles que Zoom pueda incluir. Las puntuaciones de calidad
 solo aparecen si está habilitada la opción **Meeting quality scores and network alerts on Dashboard**.
+Zoom puede omitir nombre y correo de participantes externos o por restricciones de cuentas HIPAA; la
+interfaz debe admitir esos campos vacíos sin tratarlo como un error.
 
 La API puede responder HTTP 400 con código Zoom 200 cuando el plan o Dashboard no cumplen los requisitos.
 La consola muestra el código y el mensaje de Zoom para distinguir ese caso de scopes incorrectos, IDs
