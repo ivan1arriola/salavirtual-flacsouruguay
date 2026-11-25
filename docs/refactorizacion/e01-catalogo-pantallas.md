@@ -1,6 +1,10 @@
 # E01.1 — Catálogo técnico de pantallas
 
-Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública, R = registro condicionado a sesión. Los casos marcados como condicionales dependen del rol, estado o proveedor y requieren comprobación exhaustiva. Los roles indicados son de acceso de página, no permisos para cada acción.
+Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no
+sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública,
+R = registro condicionado a sesión. Los casos marcados como condicionales dependen del rol, estado o
+proveedor y requieren comprobación exhaustiva. Los roles indicados son de acceso de página, no
+permisos para cada acción.
 
 ## S01 — /acceso
 
@@ -308,9 +312,16 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventar
 
 ## Corrección de cobertura
 
-El recuento de 38 pantallas base sigue válido. Los 57 casos iniciales agrupaban S18 en dos variantes (Meet y Zoom). La rama histórica de Zoom tiene tres secciones comprobadas en reunion-zoom-historica.tsx (resumen, asistencia, grabaciones), además de la consola Zoom no histórica. Sustituir los dos casos anteriores por cinco (Meet, Zoom no histórico y tres secciones históricas) eleva el mínimo a 60 vistas, o 180 combinaciones nominales en tres anchos. No es un inventario exhaustivo de estados o roles; las combinaciones deben ajustarse a la aplicabilidad.
+El recuento de 38 pantallas base sigue válido. Los 57 casos iniciales agrupaban S18 en dos variantes
+(Meet y Zoom). La rama histórica de Zoom tiene tres secciones comprobadas en
+reunion-zoom-historica.tsx (resumen, asistencia, grabaciones), además de la consola Zoom no
+histórica. Sustituir los dos casos anteriores por cinco (Meet, Zoom no histórico y tres secciones
+históricas) eleva el mínimo a 60 vistas, o 180 combinaciones nominales en tres anchos. No es un
+inventario exhaustivo de estados o roles; las combinaciones deben ajustarse a la aplicabilidad.
 
 ## Evidencias pendientes por pantalla
 
-Agregar captura de escritorio, tablet y teléfono, ruta exacta con parámetros y datos sintéticos; registrar controles de teclado, foco, errores, vacío y carga. Probar los recorridos con usuarios de prueba de cada rol. No usar credenciales reales ni guardar PII.
+Agregar captura de escritorio, tablet y teléfono, ruta exacta con parámetros y datos sintéticos;
+registrar controles de teclado, foco, errores, vacío y carga. Probar los recorridos con usuarios de
+prueba de cada rol. No usar credenciales reales ni guardar PII.
 
