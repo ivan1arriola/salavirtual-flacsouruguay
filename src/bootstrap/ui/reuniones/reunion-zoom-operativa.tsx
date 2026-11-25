@@ -227,8 +227,8 @@ export function ReunionZoomOperativa({
         ) : null}
         {estadoActual?.tipo === "OTRA_EJECUCION" ? (
           <p className={styles.note}>
-            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el
-            vínculo.
+            No se muestran asistentes de otra ejecución de la serie. Se actualizará
+            cuando se confirme el vínculo.
           </p>
         ) : null}
         <p className={styles.note}>
@@ -288,8 +288,8 @@ export function ReunionZoomOperativa({
         {asistenciaEnVivo.estado === "DISPONIBLE" ? (
           <>
             <p className={styles.note}>
-              Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron. Una persona
-              que vuelve a entrar puede aparecer en más de una conexión.
+              Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron.
+              Una persona que vuelve a entrar puede aparecer en más de una conexión.
             </p>
             <div className={styles.liveSummary}>
               <div>
@@ -351,15 +351,18 @@ export function ReunionZoomOperativa({
                   ))}
                 </div>
                 {sinEstado > 0 ? (
-                  <p className={styles.note}>{sinEstado} conexión(es) sin estado informado por Zoom.</p>
+                  <p className={styles.note}>
+                    {sinEstado} conexión(es) sin estado informado por Zoom.
+                  </p>
                 ) : null}
               </>
             ) : (
               <p className={styles.note}>Zoom no devolvió conexiones para esta consulta.</p>
             )}
             <p className={styles.disclaimer}>
-              Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las puntuaciones de
-              calidad en Zoom Dashboard. «Sin dato» no significa que la conexión sea buena o mala.
+              Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las
+              puntuaciones de calidad en Zoom Dashboard. «Sin dato» no significa que la conexión
+              sea buena o mala.
             </p>
           </>
         ) : (
@@ -394,8 +397,9 @@ export function ReunionZoomOperativa({
                 : "No se recibieron identificadores suficientes para estimar presencia."}
             </p>
             <p className={styles.note}>
-              Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar incompletos,
-              no confirman cuántas personas están conectadas ahora y no sustituyen la asistencia oficial.
+              Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar
+              incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la
+              asistencia oficial.
               {presenciaObservada.sinIdentificador > 0
                 ? " Avisos sin identificador: " + presenciaObservada.sinIdentificador + "."
                 : ""}

@@ -27,7 +27,7 @@ function estadoDeInscripto(email: string, asistencia: EstadoAsistenciaZoomEnVivo
   return "Sin coincidencia por correo en esta consulta";
 }
 
-/** Invitados programados del encuentro, separados de la asistencia y de los participantes de Zoom. */
+/** Invitados del encuentro, separados de la asistencia y de los participantes de Zoom. */
 export function ZoomInscriptos({
   invitados,
   asistenciaEnVivo
@@ -64,8 +64,8 @@ export function ZoomInscriptos({
       )}
       <p className={styles.note}>
         El estado de conexión se estima por coincidencia exacta de correo con la consulta de Zoom.
-        Si no hay coincidencia, no significa que la persona no haya participado: Zoom puede no informar
-        su correo o usar otra identidad.
+        Si no hay coincidencia, no significa que la persona no haya participado: Zoom puede no
+        informar su correo o usar otra identidad.
       </p>
     </section>
   );

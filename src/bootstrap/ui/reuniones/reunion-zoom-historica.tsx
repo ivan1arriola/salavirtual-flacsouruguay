@@ -98,14 +98,13 @@ function SeccionResumen({
   let finRealLabel = "Sin confirmar";
   if (ejecuciones.length > 1) {
     inicioRealLabel = "Ver ejecuciones";
+  } else if (inicioRealAt) {
+    inicioRealLabel = formatTime(inicioRealAt);
+  }
+  if (ejecuciones.length > 1) {
     finRealLabel = "Ver ejecuciones";
-  } else {
-    if (inicioRealAt) {
-      inicioRealLabel = formatTime(inicioRealAt);
-    }
-    if (finRealAt) {
-      finRealLabel = formatTime(finRealAt);
-    }
+  } else if (finRealAt) {
+    finRealLabel = formatTime(finRealAt);
   }
   const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo)).reverse();
   const otrasActividades = actividad.length - actividadOperativa.length;
@@ -184,7 +183,9 @@ function SeccionResumen({
           <History size={21} aria-hidden="true" /> Actividad del encuentro
         </h2>
         {actividadOperativa.length === 0 ? (
-          <p>No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.</p>
+          <p>
+            No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.
+          </p>
         ) : (
           <>
             <ol className={styles.timeline}>
@@ -198,7 +199,8 @@ function SeccionResumen({
             {actividadOperativa.length > 15 ? (
               <details className={styles.moreActivity}>
                 <summary>
-                  <List size={16} aria-hidden="true" /> Ver {actividadOperativa.length - 15} avisos anteriores
+                  <List size={16} aria-hidden="true" />
+                  Ver {actividadOperativa.length - 15} avisos anteriores
                 </summary>
                 <ol className={styles.timeline}>
                   {actividadOperativa.slice(15).map((a, i) => (
@@ -289,7 +291,7 @@ function SeccionGrabaciones({
         <strong>{ETIQUETA_GRABACION_ZOOM[estado]}</strong>
         {estado === "NO_PREVISTA" ? " · Este encuentro no requería grabación." : null}
         {estado === "SIN_CONFIRMAR"
-          ? " · Se esperaba una grabación y todavía no hay rastro de ella; no se puede afirmar que no exista."
+          ? " · Se esperaba una grabación, pero todavía no hay rastro; no se puede afirmar que no exista."
           : null}
       </p>
       <ul className={styles.files}>
@@ -341,7 +343,10 @@ export function ReunionZoomHistorica({
   const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
   const estadoGrabacion = derivarEstadoGrabacionZoomFicha({
     requiereGrabacion: reunion.requiereGrabacion,
-    ocurrencias: ocurrencias.map((o) => ({ pendiente: o.hayGrabacionPendiente, archivos: o.grabaciones }))
+    ocurrencias: ocurrencias.map((o) => ({
+      pendiente: o.hayGrabacionPendiente,
+      archivos: o.grabaciones
+    }))
   });
   const estadoAsistencia = etiquetaAsistencia(hayReporte, asistencia.estadoReporte);
 
@@ -363,7 +368,8 @@ export function ReunionZoomHistorica({
             <CheckCircle2 size={15} aria-hidden="true" /> {ejecucion}
           </span>
           <span className={styles.historyTag}>
-            <FileVideo size={15} aria-hidden="true" /> Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
+            <FileVideo size={15} aria-hidden="true" />
+            Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
           </span>
         </div>
         <h1>{reunion.titulo}</h1>
@@ -377,7 +383,8 @@ export function ReunionZoomHistorica({
             <CalendarDays size={15} aria-hidden="true" /> {formatDate(reunion.inicioProgramadoAt)}
           </span>
           <span>
-            <Clock3 size={15} aria-hidden="true" /> Programado {formatTime(reunion.inicioProgramadoAt)} –{" "}
+            <Clock3 size={15} aria-hidden="true" />
+            Programado {formatTime(reunion.inicioProgramadoAt)} –{" "}
             {formatTime(reunion.finProgramadoAt)}
           </span>
         </div>
@@ -500,14 +507,21 @@ export function ReunionZoomHistorica({
               <FileVideo size={20} aria-hidden="true" /> Grabación
             </h2>
             <p className={styles.recordingStatus}>
-              <CheckCircle2 size={17} aria-hidden="true" /> {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
+              <CheckCircle2 size={17} aria-hidden="true" />
+              {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
             </p>
             {ocurrencias
               .flatMap((o) => o.grabaciones)
               .filter((g) => Boolean(g.url))
               .slice(0, 1)
               .map((g) => (
-                <a className={styles.recordingLink} key={g.id} href={g.url!} target="_blank" rel="noreferrer">
+                <a
+                  className={styles.recordingLink}
+                  key={g.id}
+                  href={g.url!}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <ExternalLink size={16} aria-hidden="true" /> Abrir en Drive
                 </a>
               ))}
