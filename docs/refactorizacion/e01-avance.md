@@ -10,3 +10,9 @@ Fecha: 2026-11-25. Base: `bfcbfc091277086b37a7ae499bc95e54fe441272`.
 La auditoría permanece abierta; no se declara E01 completada. Antes de E02, cerrar capturas por rol, rastrear permisos de todos los métodos y medir duplicación en componentes. No iniciar cambios funcionales todavía.
 
 Documentos: [catálogo](e01-catalogo-pantallas.md), [permisos y acciones](e01-permisos-acciones.md), [superficie técnica](e01-superficie-tecnica.md).
+
+## Incremento: inventario reproducible y acceso a datos
+
+El PR #281 quedó integrado con CI y workflow de inventario aprobados. Ver [resultados](e01-resultados-inventario.md).
+
+E01.3: clasificación de las 23 páginas con import directo de db completada: 13 consultas propias, 9 inyección en servicios, 1 solo identidad. Ver [acceso a datos](e01-acceso-datos.md). Se detectó E01-AUTH-01, inconsistencia de guards administrativos basada en el rol de sesión; requiere corrección y pruebas negativas independientes. La arquitectura visual y la autorización exhaustiva siguen abiertas.
