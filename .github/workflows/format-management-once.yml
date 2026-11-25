@@ -1,10 +1,16 @@
-name: Format management redesign
+name: Format targeted files once
 on:
   push:
     branches:
       - feat/monitoring-management-redesign
+      - fix/zoom-current-execution
     paths:
       - .github/workflows/format-management-once.yml
+      - src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx
+      - src/bootstrap/ui/reuniones/reunion-zoom-operativa.tsx
+      - src/bootstrap/ui/reuniones/zoom-inscriptos.tsx
+      - src/integrations/zoom/zoom-live-participants.client.ts
+      - test/estado-actual-zoom.test.ts
 permissions:
   contents: write
 jobs:
@@ -13,17 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: feat/monitoring-management-redesign
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-      - run: npm run format
-      - run: |
+      - name: Format target files
+        run: npx prettier --write src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx src/bootstrap/ui/reuniones/reunion-zoom-operativa.tsx src/bootstrap/ui/reuniones/zoom-inscriptos.tsx src/integrations/zoom/zoom-live-participants.client.ts test/estado-actual-zoom.test.ts
+      - name: Commit formatted files
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -u
-          git diff --cached --quiet || git commit -m "style: aplicar Prettier al rediseño de gestión"
-          git push origin HEAD:feat/monitoring-management-redesign
-      - run: npm run format:check
+          git add src/bootstrap/ui/reuniones/reunion-zoom-historica.tsx src/bootstrap/ui/reuniones/reunion-zoom-operativa.tsx src/bootstrap/ui/reuniones/zoom-inscriptos.tsx src/integrations/zoom/zoom-live-participants.client.ts test/estado-actual-zoom.test.ts
+          git diff --cached --quiet || git commit -m "style(zoom): apply Prettier formatting"
+          git push origin HEAD:${{ github.ref_name }}
