@@ -220,21 +220,16 @@ export function ReunionZoomOperativa({
             : reunion.estado.replaceAll("_", " ").toLowerCase()}
         </p>
         {estadoActual?.ejecucion &&
-          (estadoActual.tipo === "ACTIVA" ||
-            estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
-          <p className={styles.note}>
-            Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.
-          </p>
+        (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
+          <p className={styles.note}>Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.</p>
         ) : null}
         {estadoActual?.tipo === "OTRA_EJECUCION" ? (
           <p className={styles.note}>
-            No se muestran asistentes de otra ejecución de la serie. Se actualizará
-            cuando se confirme el vínculo.
+            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el
+            vínculo.
           </p>
         ) : null}
-        <p className={styles.note}>
-          Última comprobación: {formatTime(reunion.actualizadoAt)}.
-        </p>
+        <p className={styles.note}>Última comprobación: {formatTime(reunion.actualizadoAt)}.</p>
         <div className={styles.statusGrid}>
           <div>
             <Video size={18} aria-hidden="true" />
@@ -245,9 +240,7 @@ export function ReunionZoomOperativa({
             <Users size={18} aria-hidden="true" />
             <strong>En reunión</strong>
             <span>
-              {asistenciaEnVivo.estado === "DISPONIBLE"
-                ? enReunion + " conexión(es)"
-                : "Sin verificar"}
+              {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " conexión(es)" : "Sin verificar"}
             </span>
           </div>
           <div>
@@ -271,10 +264,7 @@ export function ReunionZoomOperativa({
         ) : null}
       </section>
 
-      <ZoomInscriptos
-        invitados={reunion.invitados}
-        asistenciaEnVivo={asistenciaEnVivo}
-      />
+      <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
 
       <section className={styles.card} aria-label="Participantes de Zoom en vivo">
         <div className={styles.sectionHeading}>
@@ -289,8 +279,8 @@ export function ReunionZoomOperativa({
         {asistenciaEnVivo.estado === "DISPONIBLE" ? (
           <>
             <p className={styles.note}>
-              Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron.
-              Una persona que vuelve a entrar puede aparecer en más de una conexión.
+              Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron. Una persona
+              que vuelve a entrar puede aparecer en más de una conexión.
             </p>
             <div className={styles.liveSummary}>
               <div>
@@ -318,18 +308,14 @@ export function ReunionZoomOperativa({
                       <div className={styles.liveIdentity}>
                         <strong>{p.nombre}</strong>
                         <span>{p.email ?? "Correo no disponible"}</span>
-                        {p.rol !== "DESCONOCIDO" ? (
-                          <small>{rolParticipanteLabel(p.rol)}</small>
-                        ) : null}
+                        {p.rol !== "DESCONOCIDO" ? <small>{rolParticipanteLabel(p.rol)}</small> : null}
                       </div>
                       <div className={styles.liveStatus}>
                         <span className={estadoParticipanteClass(p.estado)}>
                           {estadoParticipanteLabel(p.estado)}
                         </span>
                         <small>
-                          {p.ingreso
-                            ? "Entró " + formatTime(new Date(p.ingreso))
-                            : "Ingreso sin horario"}
+                          {p.ingreso ? "Entró " + formatTime(new Date(p.ingreso)) : "Ingreso sin horario"}
                         </small>
                         {p.salida ? <small>Salió {formatTime(new Date(p.salida))}</small> : null}
                         {p.motivoSalida ? <small>{p.motivoSalida}</small> : null}
@@ -352,18 +338,15 @@ export function ReunionZoomOperativa({
                   ))}
                 </div>
                 {sinEstado > 0 ? (
-                  <p className={styles.note}>
-                    {sinEstado} conexión(es) sin estado informado por Zoom.
-                  </p>
+                  <p className={styles.note}>{sinEstado} conexión(es) sin estado informado por Zoom.</p>
                 ) : null}
               </>
             ) : (
               <p className={styles.note}>Zoom no devolvió conexiones para esta consulta.</p>
             )}
             <p className={styles.disclaimer}>
-              Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las
-              puntuaciones de calidad en Zoom Dashboard. «Sin dato» no significa que la conexión
-              sea buena o mala.
+              Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las puntuaciones de
+              calidad en Zoom Dashboard. «Sin dato» no significa que la conexión sea buena o mala.
             </p>
           </>
         ) : (
@@ -380,9 +363,7 @@ export function ReunionZoomOperativa({
                     : ""}
                 </small>
               ) : null}
-              {asistenciaEnVivo.detalle ? (
-                <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small>
-              ) : null}
+              {asistenciaEnVivo.detalle ? <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small> : null}
             </div>
           </div>
         )}
@@ -399,8 +380,8 @@ export function ReunionZoomOperativa({
             </p>
             <p className={styles.note}>
               Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar
-              incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la
-              asistencia oficial.
+              incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la asistencia
+              oficial.
               {presenciaObservada.sinIdentificador > 0
                 ? " Avisos sin identificador: " + presenciaObservada.sinIdentificador + "."
                 : ""}
@@ -778,15 +759,17 @@ function traducirAlertaZoom(detalle: string): string {
 }
 
 function estadoGrabacionActual(actividad: readonly EntradaActividadZoom[]): string {
-  const ultimo = [...actividad].reverse().find((a) =>
-    [
-      "recording.started",
-      "recording.resumed",
-      "recording.paused",
-      "recording.stopped",
-      "recording.completed"
-    ].includes(a.tipo)
-  );
+  const ultimo = [...actividad]
+    .reverse()
+    .find((a) =>
+      [
+        "recording.started",
+        "recording.resumed",
+        "recording.paused",
+        "recording.stopped",
+        "recording.completed"
+      ].includes(a.tipo)
+    );
   switch (ultimo?.tipo) {
     case "recording.started":
     case "recording.resumed":

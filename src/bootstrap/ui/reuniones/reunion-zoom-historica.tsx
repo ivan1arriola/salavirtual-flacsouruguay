@@ -70,9 +70,7 @@ const ETIQUETA_REPORTE: Record<string, string> = {
   VACIO: "Reporte sin conexiones"
 };
 function etiquetaAsistencia(hayReporte: boolean, estadoReporte: string): string {
-  return hayReporte
-    ? "Reporte oficial de Zoom"
-    : (ETIQUETA_REPORTE[estadoReporte] ?? "Pendiente de Zoom");
+  return hayReporte ? "Reporte oficial de Zoom" : (ETIQUETA_REPORTE[estadoReporte] ?? "Pendiente de Zoom");
 }
 
 function SeccionResumen({
@@ -125,7 +123,9 @@ function SeccionResumen({
                 .sort((a, b) => a.inicio.getTime() - b.inicio.getTime())
                 .map((e) => (
                   <li key={e.cuentaZoomId + ":" + e.uuid}>
-                    <span>{formatDate(e.inicio)} · {formatTime(e.inicio)}</span>
+                    <span>
+                      {formatDate(e.inicio)} · {formatTime(e.inicio)}
+                    </span>
                     <span>
                       {e.fin
                         ? formatTime(e.fin) + " · " + duracion(e.inicio, e.fin)
@@ -185,17 +185,12 @@ function SeccionResumen({
           <History size={21} aria-hidden="true" /> Actividad del encuentro
         </h2>
         {actividadOperativa.length === 0 ? (
-          <p>
-            No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.
-          </p>
+          <p>No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.</p>
         ) : (
           <>
             <ol className={styles.timeline}>
               {actividadOperativa.slice(0, 15).map((a, i) => (
-                <ItemActividad
-                  key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
-                  a={a}
-                />
+                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
               ))}
             </ol>
             {actividadOperativa.length > 15 ? (
@@ -206,10 +201,7 @@ function SeccionResumen({
                 </summary>
                 <ol className={styles.timeline}>
                   {actividadOperativa.slice(15).map((a, i) => (
-                    <ItemActividad
-                      key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
-                      a={a}
-                    />
+                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
                   ))}
                 </ol>
               </details>
@@ -225,10 +217,7 @@ function SeccionResumen({
                 .slice(-20)
                 .reverse()
                 .map((a, i) => (
-                  <ItemActividad
-                    key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
-                    a={a}
-                  />
+                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
                 ))}
             </ol>
             <p>Últimos 20 grupos de avisos administrativos.</p>
@@ -386,8 +375,7 @@ export function ReunionZoomHistorica({
           </span>
           <span>
             <Clock3 size={15} aria-hidden="true" />
-            Programado {formatTime(reunion.inicioProgramadoAt)} –{" "}
-            {formatTime(reunion.finProgramadoAt)}
+            Programado {formatTime(reunion.inicioProgramadoAt)} – {formatTime(reunion.finProgramadoAt)}
           </span>
         </div>
       </header>
@@ -517,13 +505,7 @@ export function ReunionZoomHistorica({
               .filter((g) => Boolean(g.url))
               .slice(0, 1)
               .map((g) => (
-                <a
-                  className={styles.recordingLink}
-                  key={g.id}
-                  href={g.url!}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a className={styles.recordingLink} key={g.id} href={g.url!} target="_blank" rel="noreferrer">
                   <ExternalLink size={16} aria-hidden="true" /> Abrir en Drive
                 </a>
               ))}

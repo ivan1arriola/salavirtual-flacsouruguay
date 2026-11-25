@@ -200,9 +200,7 @@ export async function obtenerParticipantesZoomEnVivoHttp(
   const participantes: ParticipanteZoomEnVivo[] = [];
   const identificador = encodeURIComponent(meetingId);
   const idCodificado =
-    meetingId.startsWith("/") || meetingId.includes("//")
-      ? encodeURIComponent(identificador)
-      : identificador;
+    meetingId.startsWith("/") || meetingId.includes("//") ? encodeURIComponent(identificador) : identificador;
   let siguiente = "";
   const visitados = new Set<string>();
   let pagina = 0;
@@ -224,10 +222,7 @@ export async function obtenerParticipantesZoomEnVivoHttp(
     let response: Response;
     try {
       response = await fetch(
-        "https://api.zoom.us/v2/metrics/meetings/" +
-          idCodificado +
-          "/participants?" +
-          params,
+        "https://api.zoom.us/v2/metrics/meetings/" + idCodificado + "/participants?" + params,
         {
           headers: { Authorization: "Bearer " + token },
           cache: "no-store",
