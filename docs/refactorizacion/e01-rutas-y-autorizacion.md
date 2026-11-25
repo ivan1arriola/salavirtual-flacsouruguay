@@ -71,6 +71,20 @@ Las 79 rutas se distribuyen entre autenticación/salud, archivos Zoom, asistenci
 7. Decidir plan de retirada de tokens móviles versión 1 tras comprobar sesiones reales y compatibilidad.
 8. Distinguir un 200 de sincronización completa de un 202 con persistencia local y sincronización externa pendiente.
 
+## Contraste con la auditoría F9 existente
+
+`docs/f9-auditoria-permisos-api.md` registra que PR #102 corrigió tres lecturas administrativas sensibles que antes confiaban solo en el rol de sesión (Google Workspace, cuentas Google de usuarios y planilla de pagos), además de errores de estado HTTP en móvil y asistencia. No se deben reabrir esos hallazgos sin comprobar que la corrección haya regresado.
+
+La misma auditoría deja pendientes que E01 debe revalidar:
+
+- Protección CSRF/origen/host para mutaciones API autenticadas con cookies, teniendo en cuenta proxy y SameSite.
+- Rate limiting distribuido para login móvil y límites/observabilidad de 401, 403 y 429.
+- Consultas móviles sin paginación y contratos API compartidos con clientes Android.
+- Revisión de los endpoints administrativos y server actions restantes para descartar confianza exclusiva en claims de sesión.
+- Cobertura E2E multirol y de integración con Android, más allá de las pruebas PostgreSQL ya existentes para separación de programas.
+
+Estos puntos se registran como riesgos pendientes en la auditoría anterior; su estado actual debe confirmarse antes de calificarlos como defectos vigentes o explotables.
+
 ## Estado
 
 La revisión confirma mecanismos distintos y varias reglas de dominio relevantes. No se ejecutaron pruebas negativas contra una instancia desplegada, no se probaron tokens ni secretos reales y no se recorrieron los 79 endpoints con cuentas de cada rol. E01.2 permanece parcial.
