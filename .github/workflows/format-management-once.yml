@@ -1,4 +1,5 @@
-name: Format management redesign
+name: Format Zoom observability once
+# Retry pass after the first formatter push raced with a concurrent branch commit.
 on:
   push:
     branches:
