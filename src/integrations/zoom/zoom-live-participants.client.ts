@@ -171,7 +171,10 @@ function errorZoom(response: Response, cuerpo: unknown): EstadoAsistenciaZoomEnV
     motivo = "LIMITE_CONSULTAS";
   } else if (
     (response.status === 400 && codigoNumerico === 200) ||
-    /only available.*(paid|business|zmp)|business or higher|dashboard feature/.test(textoError)
+    textoError.includes("only available") ||
+    textoError.includes("business or higher") ||
+    textoError.includes("dashboard feature") ||
+    textoError.includes("zmp")
   ) {
     motivo = "PLAN_DASHBOARD_REQUERIDO";
   } else if (response.status === 400 && codigoNumerico === 300) {
@@ -211,7 +214,9 @@ export async function obtenerParticipantesZoomEnVivoHttp(
       };
     }
     const params = new URLSearchParams({ type: "live", page_size: "300" });
-    if (siguiente) params.set("next_page_token", siguiente);
+    if (siguiente) {
+      params.set("next_page_token", siguiente);
+    }
 
     let response: Response;
     try {
