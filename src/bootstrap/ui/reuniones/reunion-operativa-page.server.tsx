@@ -79,13 +79,17 @@ export default async function ReunionOperativaPage({
       : [];
     // Durante la ventana de clase (y si hay un inicio sin cierre) nunca se congela la consola
     // en la primera ejecución finalizada. Se comprueba la serie sin usar Dashboard.
+    const { seccion, vista } = (await searchParams) ?? {};
     const ahora = reunion.actualizadoAt.getTime();
     const cercaDelHorario =
       ahora >= reunion.inicioProgramadoAt.getTime() - 60 * 60_000 &&
       ahora <= reunion.finProgramadoAt.getTime() + 60 * 60_000;
     const ultimo = resolverEstadoActualZoom(ejecuciones, null, null);
     const consultar =
-      cercaDelHorario || ultimo.tipo === "INICIO_SIN_VERIFICAR" || reunion.estado === "EN_CURSO";
+      vista === "actual" ||
+      cercaDelHorario ||
+      ultimo.tipo === "INICIO_SIN_VERIFICAR" ||
+      reunion.estado === "EN_CURSO";
     let api: EstadoApiZoom | null = null;
     let cuentaApi: string | null = null;
     let token: string | null = null;
@@ -107,7 +111,6 @@ export default async function ReunionOperativaPage({
       actual.tipo === "ACTIVA" ||
       actual.tipo === "INICIO_SIN_VERIFICAR" ||
       (reunion.estado === "PROGRAMADA" && ahora < reunion.inicioProgramadoAt.getTime());
-    const { seccion, vista } = (await searchParams) ?? {};
     if (!mostrarOperativa || vista === "historial") {
       const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
       const actividad = reunion.zoom.eventoProveedorId
