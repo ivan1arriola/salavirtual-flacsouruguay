@@ -324,4 +324,3 @@ inventario exhaustivo de estados o roles; las combinaciones deben ajustarse a la
 Agregar captura de escritorio, tablet y teléfono, ruta exacta con parámetros y datos sintéticos;
 registrar controles de teclado, foco, errores, vacío y carga. Probar los recorridos con usuarios de
 prueba de cada rol. No usar credenciales reales ni guardar PII.
-
