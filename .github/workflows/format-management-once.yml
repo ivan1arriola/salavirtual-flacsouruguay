@@ -2,7 +2,7 @@ name: Format management redesign
 on:
   push:
     branches:
-      - feat/monitoring-management-redesign
+      - feat/zoom-operational-observability
     paths:
       - .github/workflows/format-management-once.yml
 permissions:
@@ -13,17 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: feat/monitoring-management-redesign
+          ref: feat/zoom-operational-observability
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-      - run: npm run format
+      - run: npm run lint -- --prune-suppressions
       - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -u
-          git diff --cached --quiet || git commit -m "style: aplicar Prettier al rediseño de gestión"
-          git push origin HEAD:feat/monitoring-management-redesign
+          git diff --cached --quiet || git commit -m "chore(eslint): podar supresiones resueltas en la rama Zoom"
+          git push origin HEAD:feat/zoom-operational-observability
       - run: npm run format:check
