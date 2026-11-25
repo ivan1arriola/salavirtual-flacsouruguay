@@ -6,25 +6,25 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Recuento estructural de
 
 Hay 17 directorios en `src/modules`. Seis contienen las cuatro carpetas `domain`, `ports`, `application` e `infrastructure`: archivos, auditoria, conferencias, identity, liquidaciones y notificaciones. Asistencia contiene esas cuatro capas y presentation, pero conserva 28 archivos directamente en la raíz. Reuniones tiene presentation, pero no las otras cuatro capas y concentra 62 archivos en la raíz de un total de 89.
 
-| Módulo | Estructura observada | Archivos en raíz / total |
-| --- | --- | ---: |
-| archivos | domain, ports, application, infrastructure | 2 / 84 |
-| asistencia | domain, ports, application, infrastructure, presentation | 28 / 82 |
-| auditoria | domain, ports, application, infrastructure | 1 / 6 |
-| conferencias | domain, ports, application, infrastructure | 1 / 22 |
-| configuracion | archivos planos | 18 / 18 |
-| dashboard | archivos planos | 7 / 7 |
-| historico | archivos planos | 2 / 2 |
-| identity | domain, ports, application, infrastructure | 1 / 16 |
-| liquidaciones | domain, ports, application, infrastructure | 2 / 20 |
-| meet | compatibilidad/transición, archivos planos | 9 / 9 |
-| migracion | archivos planos | 2 / 2 |
-| mobile-admin | archivos planos | 2 / 2 |
-| notificaciones | domain, ports, application, infrastructure | 4 / 21 |
-| operaciones | archivos planos | 6 / 6 |
-| programas | archivos planos | 2 / 2 |
-| reuniones | presentation, archivos planos | 62 / 89 |
-| usuarios | archivos planos | 25 / 25 |
+| Módulo         | Estructura observada                                     | Archivos en raíz / total |
+| :------------- | :------------------------------------------------------- | -----------------------: |
+| archivos       | domain, ports, application, infrastructure               |                   2 / 84 |
+| asistencia     | domain, ports, application, infrastructure, presentation |                  28 / 82 |
+| auditoria      | domain, ports, application, infrastructure               |                    1 / 6 |
+| conferencias   | domain, ports, application, infrastructure               |                   1 / 22 |
+| configuracion  | archivos planos                                          |                  18 / 18 |
+| dashboard      | archivos planos                                          |                    7 / 7 |
+| historico      | archivos planos                                          |                    2 / 2 |
+| identity       | domain, ports, application, infrastructure               |                   1 / 16 |
+| liquidaciones  | domain, ports, application, infrastructure               |                   2 / 20 |
+| meet           | compatibilidad/transición, archivos planos               |                    9 / 9 |
+| migracion      | archivos planos                                          |                    2 / 2 |
+| mobile-admin   | archivos planos                                          |                    2 / 2 |
+| notificaciones | domain, ports, application, infrastructure               |                   4 / 21 |
+| operaciones    | archivos planos                                          |                    6 / 6 |
+| programas      | archivos planos                                          |                    2 / 2 |
+| reuniones      | presentation, archivos planos                            |                  62 / 89 |
+| usuarios       | archivos planos                                          |                  25 / 25 |
 
 El árbol confirma una arquitectura híbrida. La modularidad hexagonal está implementada en varios dominios, pero no es todavía la convención uniforme del repositorio. No conviene contar cada directorio como un módulo terminado: hay que revisar imports, dependencias y flujos reales.
 
