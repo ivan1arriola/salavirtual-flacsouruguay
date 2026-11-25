@@ -114,7 +114,8 @@ export default async function ReunionOperativaPage({
         asistenciaEnVivo = {
           estado: "NO_DISPONIBLE",
           motivo: "ERROR_CONEXION",
-          detalle: "No se pudo autenticar o consultar Zoom. Revisá las credenciales y permisos de la cuenta anfitriona."
+          detalle:
+            "No se pudo autenticar o consultar Zoom. Revisá las credenciales y permisos de la cuenta anfitriona."
         };
       }
     }

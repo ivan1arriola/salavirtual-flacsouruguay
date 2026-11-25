@@ -53,7 +53,6 @@ describe("actividad del encuentro", () => {
   });
 });
 
-
 describe("resumen operativo de Zoom", () => {
   it("agrupa eventos de una misma conexión, pero no mezcla participantes distintos", () => {
     const r = construirActividadEncuentroZoom([

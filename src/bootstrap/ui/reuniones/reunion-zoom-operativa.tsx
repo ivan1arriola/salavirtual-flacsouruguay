@@ -67,9 +67,9 @@ export function ReunionZoomOperativa({
   const tieneMetricasCalidad = participantes.some(
     (p) => p.calidadAudio || p.calidadVideo || p.calidadPantalla
   );
-  const conProblemasCalidad = participantes.filter(
-    (p) => [p.calidadAudio, p.calidadVideo, p.calidadPantalla].some((calidad) =>
-      calidad === "poor" || calidad === "bad"
+  const conProblemasCalidad = participantes.filter((p) =>
+    [p.calidadAudio, p.calidadVideo, p.calidadPantalla].some(
+      (calidad) => calidad === "poor" || calidad === "bad"
     )
   ).length;
 
@@ -294,9 +294,7 @@ export function ReunionZoomOperativa({
                           Pantalla: {calidadLabel(p.calidadPantalla)}
                         </span>
                         {p.tipoConexion || p.tipoRed ? (
-                          <small>
-                            {[p.tipoConexion, p.tipoRed].filter(Boolean).join(" · ")}
-                          </small>
+                          <small>{[p.tipoConexion, p.tipoRed].filter(Boolean).join(" · ")}</small>
                         ) : null}
                       </div>
                     </article>
@@ -350,7 +348,9 @@ export function ReunionZoomOperativa({
                 <li key={a.huella ?? a.tipo + a.desde.toISOString()}>
                   <time dateTime={a.desde.toISOString()}>{formatTime(a.desde)}</time>
                   <div>
-                    <strong>{a.detalle ? traducirAlertaZoom(a.detalle) : "Problema de calidad reportado"}</strong>
+                    <strong>
+                      {a.detalle ? traducirAlertaZoom(a.detalle) : "Problema de calidad reportado"}
+                    </strong>
                     <small>Alerta emitida por Zoom</small>
                   </div>
                 </li>
@@ -391,15 +391,42 @@ export function ReunionZoomOperativa({
         ) : (
           <>
             <div className={styles.activitySummary}>
-              <div><strong>{resumen.entradas}</strong><span>Entradas</span></div>
-              <div><strong>{resumen.salidas}</strong><span>Salidas</span></div>
-              <div><strong>{resumen.admisiones}</strong><span>Admisiones</span></div>
-              <div><strong>{resumen.esperaAnfitrion}</strong><span>Esperas</span></div>
-              <div><strong>{resumen.cambiosRol}</strong><span>Cambios de rol</span></div>
-              <div><strong>{resumen.movimientosGrupos}</strong><span>Movimientos en grupos</span></div>
-              <div><strong>{resumen.alertasCalidad}</strong><span>Alertas de calidad</span></div>
-              <div><strong>{resumen.eventosGrabacion}</strong><span>Eventos de grabación</span></div>
-              <div><strong>{resumen.comparticiones}</strong><span>Eventos de pantalla compartida</span></div>
+              <div>
+                <strong>{resumen.entradas}</strong>
+                <span>Entradas</span>
+              </div>
+              <div>
+                <strong>{resumen.salidas}</strong>
+                <span>Salidas</span>
+              </div>
+              <div>
+                <strong>{resumen.admisiones}</strong>
+                <span>Admisiones</span>
+              </div>
+              <div>
+                <strong>{resumen.esperaAnfitrion}</strong>
+                <span>Esperas</span>
+              </div>
+              <div>
+                <strong>{resumen.cambiosRol}</strong>
+                <span>Cambios de rol</span>
+              </div>
+              <div>
+                <strong>{resumen.movimientosGrupos}</strong>
+                <span>Movimientos en grupos</span>
+              </div>
+              <div>
+                <strong>{resumen.alertasCalidad}</strong>
+                <span>Alertas de calidad</span>
+              </div>
+              <div>
+                <strong>{resumen.eventosGrabacion}</strong>
+                <span>Eventos de grabación</span>
+              </div>
+              <div>
+                <strong>{resumen.comparticiones}</strong>
+                <span>Eventos de pantalla compartida</span>
+              </div>
             </div>
             <ol className={styles.timeline}>
               {eventosRecientes.map((a) => (
@@ -426,11 +453,16 @@ export function ReunionZoomOperativa({
           <details className={styles.moreActivity}>
             <summary>Otros eventos de Zoom ({actividadSecundaria.length})</summary>
             <ol className={styles.timeline}>
-              {actividadSecundaria.slice(-20).reverse().map((a) => (
-                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString()} a={a} />
-              ))}
+              {actividadSecundaria
+                .slice(-20)
+                .reverse()
+                .map((a) => (
+                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString()} a={a} />
+                ))}
             </ol>
-            <small>Incluye inscripciones y cambios administrativos que no forman parte de la actividad en vivo.</small>
+            <small>
+              Incluye inscripciones y cambios administrativos que no forman parte de la actividad en vivo.
+            </small>
           </details>
         ) : null}
       </section>

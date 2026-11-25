@@ -97,7 +97,8 @@ describe("consulta de participantes en vivo de Zoom", () => {
         respuesta(
           {
             code: 200,
-            message: "Only available for ZMP and Business or higher accounts that have enabled the Dashboard feature."
+            message:
+              "Only available for ZMP and Business or higher accounts that have enabled the Dashboard feature."
           },
           400
         )
@@ -115,7 +116,10 @@ describe("consulta de participantes en vivo de Zoom", () => {
   });
 
   it("distingue scopes incorrectos de una respuesta vacía", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta({ code: 200, message: "Invalid scope" }, 403)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(respuesta({ code: 200, message: "Invalid scope" }, 403))
+    );
 
     const resultado = await obtenerParticipantesZoomEnVivoHttp("token", "123456789");
 

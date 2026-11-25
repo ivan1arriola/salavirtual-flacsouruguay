@@ -53,14 +53,8 @@ const PLURALES: Record<string, readonly [string, string]> = {
     "participante abandonó la espera del anfitrión",
     "participantes abandonaron la espera del anfitrión"
   ],
-  "meeting.participant_joined_breakout_room": [
-    "entrada a grupo pequeño",
-    "entradas a grupos pequeños"
-  ],
-  "meeting.participant_left_breakout_room": [
-    "salida de grupo pequeño",
-    "salidas de grupos pequeños"
-  ]
+  "meeting.participant_joined_breakout_room": ["entrada a grupo pequeño", "entradas a grupos pequeños"],
+  "meeting.participant_left_breakout_room": ["salida de grupo pequeño", "salidas de grupos pequeños"]
 };
 
 /** Eventos que se resumen cuando son consecutivos del mismo tipo y participante. */
@@ -148,7 +142,10 @@ export function resumirActividadEncuentroZoom(
 ): ResumenActividadEncuentroZoom {
   const contar = (tipos: readonly string[]) => {
     const conjunto = new Set(tipos);
-    return actividad.reduce((total, entrada) => total + (conjunto.has(entrada.tipo) ? entrada.cantidad : 0), 0);
+    return actividad.reduce(
+      (total, entrada) => total + (conjunto.has(entrada.tipo) ? entrada.cantidad : 0),
+      0
+    );
   };
 
   return {
@@ -159,10 +156,7 @@ export function resumirActividadEncuentroZoom(
       "meeting.participant_jbh_waiting_left"
     ]),
     admisiones: contar(["meeting.participant_admitted"]),
-    esperaAnfitrion: contar([
-      "meeting.participant_jbh_waiting",
-      "meeting.participant_joined_waiting_room"
-    ]),
+    esperaAnfitrion: contar(["meeting.participant_jbh_waiting", "meeting.participant_joined_waiting_room"]),
     cambiosRol: contar(["meeting.participant_role_changed"]),
     movimientosGrupos: contar([
       "meeting.participant_joined_breakout_room",

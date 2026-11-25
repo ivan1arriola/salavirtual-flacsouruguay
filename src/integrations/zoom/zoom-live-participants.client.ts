@@ -40,9 +40,7 @@ export type EstadoAsistenciaZoomEnVivo =
 type Registro = Record<string, unknown>;
 
 function registro(valor: unknown): Registro | null {
-  return valor !== null && typeof valor === "object" && !Array.isArray(valor)
-    ? (valor as Registro)
-    : null;
+  return valor !== null && typeof valor === "object" && !Array.isArray(valor) ? (valor as Registro) : null;
 }
 
 function texto(valor: unknown): string | null {
@@ -250,7 +248,8 @@ export async function obtenerParticipantesZoomEnVivoHttp(
         estado: "NO_DISPONIBLE",
         motivo: "ERROR_API",
         httpStatus: response.status,
-        detalle: "Zoom respondió correctamente, pero la respuesta no contiene una lista válida de participantes."
+        detalle:
+          "Zoom respondió correctamente, pero la respuesta no contiene una lista válida de participantes."
       };
     }
 
