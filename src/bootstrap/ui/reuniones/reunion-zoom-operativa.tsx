@@ -143,6 +143,9 @@ export function ReunionZoomOperativa({
           />
         </details>
         <div className={styles.actions}>
+          <Link href="?vista=historial&seccion=asistencia" className={styles.secondary}>
+            <FileText size={17} aria-hidden="true" /> Asistencia y grabaciones anteriores
+          </Link>
           {enlace ? (
             <a href={enlace} rel="noreferrer" target="_blank" className={styles.primary}>
               <ExternalLink size={17} aria-hidden="true" /> Unirse a Zoom
@@ -430,7 +433,9 @@ export function ReunionZoomOperativa({
               {ultimoEvento ? " Último aviso: " + formatTime(ultimoEvento.desde) + "." : ""}
             </p>
           </div>
-          <span className={styles.updatedTag}>Actualización automática cada 30 s</span>
+          {actualizarAutomaticamente ? (
+            <span className={styles.updatedTag}>Actualización automática cada 30 s</span>
+          ) : null}
         </div>
         {actividadOperativa.length === 0 ? (
           <p>

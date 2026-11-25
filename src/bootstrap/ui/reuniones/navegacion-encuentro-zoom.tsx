@@ -27,9 +27,13 @@ export function NavegacionEncuentroZoom({
           <List size={16} aria-hidden="true" /> Ver serie y encuentros
         </Link>
         {historica ? (
-          <span className={styles.historyTag}>
-            <History size={15} aria-hidden="true" /> Historial
-          </span>
+          <>
+            <span className={styles.historyTag}>
+              <History size={15} aria-hidden="true" /> Historial
+            </span>
+            <OperationalAutoRefresh enabled={actualizarAutomaticamente ?? false} />
+            <RefreshButton />
+          </>
         ) : (
           <>
             <OperationalAutoRefresh

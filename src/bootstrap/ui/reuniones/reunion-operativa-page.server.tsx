@@ -51,7 +51,7 @@ export default async function ReunionOperativaPage({
   searchParams
 }: Readonly<{
   params: Promise<{ instanciaId: string }>;
-  searchParams?: Promise<{ seccion?: string }>;
+  searchParams?: Promise<{ seccion?: string; vista?: string }>;
 }>) {
   const session = await auth();
   if (!session?.user) {
@@ -107,9 +107,9 @@ export default async function ReunionOperativaPage({
       actual.tipo === "ACTIVA" ||
       actual.tipo === "INICIO_SIN_VERIFICAR" ||
       (reunion.estado === "PROGRAMADA" && ahora < reunion.inicioProgramadoAt.getTime());
-    if (!mostrarOperativa) {
+    const { seccion, vista } = (await searchParams) ?? {};
+    if (!mostrarOperativa || vista === "historial") {
       const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
-      const { seccion } = (await searchParams) ?? {};
       const actividad = reunion.zoom.eventoProveedorId
         ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
         : [];
@@ -120,6 +120,9 @@ export default async function ReunionOperativaPage({
           asistencia={asistencia}
           actividad={actividad}
           seccion={SECCIONES_FICHA_ZOOM.find((s) => s === seccion) ?? "resumen"}
+          ejecuciones={ejecuciones}
+          estadoActual={consultar ? actual : undefined}
+          mostrarRegresoEnVivo={mostrarOperativa}
         />
       );
     }
