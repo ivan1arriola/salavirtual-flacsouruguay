@@ -58,6 +58,9 @@ export function ReunionZoomOperativa({
   const completada = reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA";
   const participantes = asistenciaEnVivo.estado === "DISPONIBLE" ? asistenciaEnVivo.participantes : [];
   const enReunion = participantes.filter((p) => p.estado === "EN_REUNION").length;
+  const anfitrionesConectados = participantes.filter(
+    (p) => p.estado === "EN_REUNION" && p.rol === "ANFITRION"
+  ).length;
   const enEspera = participantes.filter((p) => p.estado === "EN_ESPERA").length;
   const salieron = participantes.filter((p) => p.estado === "DESCONECTADO").length;
   const sinEstado = participantes.filter((p) => p.estado === "DESCONOCIDO").length;
@@ -200,6 +203,15 @@ export function ReunionZoomOperativa({
             <strong>En reunión</strong>
             <span>
               {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " conexión(es)" : "Sin verificar"}
+            </span>
+          </div>
+          <div>
+            <Users size={18} aria-hidden="true" />
+            <strong>Anfitrión</strong>
+            <span>
+              {asistenciaEnVivo.estado === "DISPONIBLE"
+                ? anfitrionesConectados > 0 ? "Detectado en sala" : "No detectado en sala"
+                : "Sin verificar"}
             </span>
           </div>
           <div>
