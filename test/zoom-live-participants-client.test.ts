@@ -51,7 +51,7 @@ describe("participantes Zoom en vivo", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
     expect(await obtenerParticipantesZoomEnVivoHttp("token", "123")).toEqual({
       estado: "NO_DISPONIBLE",
-      motivo: "SIN_DATOS",
+      motivo: "ERROR_API",
       httpStatus: 500
     });
   });
