@@ -54,7 +54,8 @@ describe("estado actual de Zoom", () => {
   });
 
   it("no reactiva una ejecución por un aviso viejo sin cierre si existe otra posterior cerrada", () => {
-    expect(resolverEstadoActualZoom([{ ...primera, fin: null }, { ...segunda, fin: primera.fin }], null, null))
-      .toMatchObject({ tipo: "SIN_VERIFICAR" });
+    expect(
+      resolverEstadoActualZoom([{ ...primera, fin: null }, { ...segunda, fin: primera.fin }], null, null)
+    ).toMatchObject({ tipo: "SIN_VERIFICAR" });
   });
 });

@@ -30,6 +30,7 @@ import { ItemActividad } from "./zoom-actividad-item";
 import {
   esActividadOperativaZoom,
   resumirActividadEncuentroZoom,
+  resumirPresenciaObservadaZoom,
   type EntradaActividadZoom
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
@@ -84,6 +85,7 @@ export function ReunionZoomOperativa({
   const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo));
   const actividadSecundaria = actividad.filter((a) => !esActividadOperativaZoom(a.tipo));
   const resumen = resumirActividadEncuentroZoom(actividadOperativa);
+  const presenciaObservada = resumirPresenciaObservadaZoom(actividadOperativa);
   const alertasCalidad = actividadOperativa
     .filter((a) => a.tipo === "meeting.alert")
     .slice(-5)
@@ -209,16 +211,21 @@ export function ReunionZoomOperativa({
           <h2>Estado de la reunión</h2>
         </div>
         <p className={styles.status}>
-          {estadoActual ? etiquetaEstadoActualZoom(estadoActual) : reunion.estado.replaceAll("_", " ").toLowerCase()}
+          {estadoActual
+            ? etiquetaEstadoActualZoom(estadoActual)
+            : reunion.estado.replaceAll("_", " ").toLowerCase()}
         </p>
-        {estadoActual?.ejecucion && (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
+        {estadoActual?.ejecucion &&
+        (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
           <p className={styles.note}>Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.</p>
         ) : null}
         {estadoActual?.tipo === "OTRA_EJECUCION" ? (
           <p className={styles.note}>
-            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el vínculo.
+            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el
+            vínculo.
           </p>
         ) : null}
+        <p className={styles.note}>Última comprobación: {formatTime(reunion.actualizadoAt)}.</p>
         <div className={styles.statusGrid}>
           <div>
             <Video size={18} aria-hidden="true" />
@@ -354,6 +361,24 @@ export function ReunionZoomOperativa({
             </div>
           </div>
         )}
+        {asistenciaEnVivo.estado !== "DISPONIBLE" && presenciaObservada.ultimoAviso ? (
+          <div className={styles.card}>
+            <h3>Última presencia observada por webhooks</h3>
+            <p>
+              {presenciaObservada.identificadores > 0
+                ? presenciaObservada.enSala + " identificador(es) con entrada sin salida posterior · " +
+                  presenciaObservada.enEspera + " en espera según el último aviso"
+                : "No se recibieron identificadores suficientes para estimar presencia."}
+            </p>
+            <p className={styles.note}>
+              Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar incompletos,
+              no confirman cuántas personas están conectadas ahora y no sustituyen la asistencia oficial.
+              {presenciaObservada.sinIdentificador > 0
+                ? " Avisos sin identificador: " + presenciaObservada.sinIdentificador + "."
+                : ""}
+            </p>
+          </div>
+        ) : null}
       </section>
 
       <section className={styles.card} aria-label="Calidad de la reunión">
@@ -723,8 +748,14 @@ function traducirAlertaZoom(detalle: string): string {
 }
 
 function estadoGrabacionActual(actividad: readonly EntradaActividadZoom[]): string {
-  const ultimo = actividad.findLast((a) =>
-    ["recording.started", "recording.resumed", "recording.paused", "recording.stopped", "recording.completed"].includes(a.tipo)
+  const ultimo = [...actividad].reverse().find((a) =>
+    [
+      "recording.started",
+      "recording.resumed",
+      "recording.paused",
+      "recording.stopped",
+      "recording.completed"
+    ].includes(a.tipo)
   );
   switch (ultimo?.tipo) {
     case "recording.started":

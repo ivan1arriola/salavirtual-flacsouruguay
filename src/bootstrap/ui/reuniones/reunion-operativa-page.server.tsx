@@ -84,8 +84,8 @@ export default async function ReunionOperativaPage({
       ahora >= reunion.inicioProgramadoAt.getTime() - 60 * 60_000 &&
       ahora <= reunion.finProgramadoAt.getTime() + 60 * 60_000;
     const ultimo = resolverEstadoActualZoom(ejecuciones, null, null);
-    const consultar = cercaDelHorario || ultimo.tipo === "INICIO_SIN_VERIFICAR" ||
-      reunion.estado === "EN_CURSO";
+    const consultar =
+      cercaDelHorario || ultimo.tipo === "INICIO_SIN_VERIFICAR" || reunion.estado === "EN_CURSO";
     let api: EstadoApiZoom | null = null;
     let cuentaApi: string | null = null;
     let token: string | null = null;
@@ -103,7 +103,10 @@ export default async function ReunionOperativaPage({
     }
     const actual = resolverEstadoActualZoom(ejecuciones, api, cuentaApi);
     const mostrarOperativa =
-      consultar || (reunion.estado !== "FINALIZADA" && reunion.estado !== "NO_INICIADA");
+      cercaDelHorario ||
+      actual.tipo === "ACTIVA" ||
+      actual.tipo === "INICIO_SIN_VERIFICAR" ||
+      (reunion.estado === "PROGRAMADA" && ahora < reunion.inicioProgramadoAt.getTime());
     if (!mostrarOperativa) {
       const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
       const { seccion } = (await searchParams) ?? {};
@@ -126,10 +129,16 @@ export default async function ReunionOperativaPage({
     if (token && ejecucionActiva) {
       asistenciaEnVivo = await obtenerParticipantesZoomEnVivoHttp(token, ejecucionActiva.uuid);
     }
-    const actividadEnVivo = reunion.zoom.eventoProveedorId && ejecucionActiva
-      ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId, ejecucionActiva)
-      : [];
-    const estado = activa ? "EN_CURSO" : "ESPERANDO_INICIO";
+    const actividadEnVivo =
+      reunion.zoom.eventoProveedorId && ejecucionActiva
+        ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId, ejecucionActiva)
+        : [];
+    let estado = reunion.estado;
+    if (activa) {
+      estado = "EN_CURSO";
+    } else if (cercaDelHorario) {
+      estado = "ESPERANDO_INICIO";
+    }
     return (
       <ReunionZoomOperativa
         reunion={{ ...reunion, estado }}
