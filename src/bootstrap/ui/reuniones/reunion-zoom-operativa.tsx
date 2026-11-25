@@ -199,7 +199,7 @@ export function ReunionZoomOperativa({
             <Users size={18} aria-hidden="true" />
             <strong>En reunión</strong>
             <span>
-              {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " participante(s)" : "Sin verificar"}
+              {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " conexión(es)" : "Sin verificar"}
             </span>
           </div>
           <div>
@@ -236,19 +236,19 @@ export function ReunionZoomOperativa({
             <div className={styles.liveSummary}>
               <div>
                 <strong>{enReunion}</strong>
-                <span>En reunión</span>
+                <span>Conexiones en reunión</span>
               </div>
               <div>
                 <strong>{enEspera}</strong>
-                <span>En espera</span>
+                <span>Conexiones en espera</span>
               </div>
               <div>
                 <strong>{salieron}</strong>
-                <span>Salieron</span>
+                <span>Conexiones que salieron</span>
               </div>
               <div>
                 <strong>{conProblemasCalidad}</strong>
-                <span>Con calidad deficiente</span>
+                <span>Conexiones con calidad deficiente</span>
               </div>
             </div>
             {participantes.length ? (
