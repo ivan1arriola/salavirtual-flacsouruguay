@@ -20,11 +20,10 @@ function walk(node, visit) {
 }
 
 function directive(node) {
-  return (
-    ts.isExpressionStatement(node) &&
-    ts.isStringLiteral(node.expression) &&
-    node.expression.text === "use server"
-  );
+  if (!ts.isExpressionStatement(node)) {
+    return false;
+  }
+  return ts.isStringLiteral(node.expression) && node.expression.text === "use server";
 }
 
 function exported(node) {
@@ -64,8 +63,11 @@ function exportEntries(statement) {
       }))
     );
   }
-  if (ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
-    return statement.exportClause.elements.map((element) => ({ name: element.name.text, node: element }));
+  if (ts.isExportDeclaration(statement)) {
+    const clause = statement.exportClause;
+    if (clause && ts.isNamedExports(clause)) {
+      return clause.elements.map((element) => ({ name: element.name.text, node: element }));
+    }
   }
   return [];
 }
@@ -111,9 +113,8 @@ function scanEntries(source) {
   const moduleAction = source.statements.some(directive);
   const entries = source.statements.flatMap(exportEntries);
   const selected = entries.filter((item) => (route ? methods.has(item.name) : moduleAction));
-  const result = selected.map((item) =>
-    entry(source, route ? "http" : "server-export", item.name, item.node)
-  );
+  const kind = route ? "http" : "server-export";
+  const result = selected.map((item) => entry(source, kind, item.name, item.node));
   const positions = new Set(selected.map((item) => item.node.pos));
   walk(source, (node) => {
     if (!ts.isFunctionLike(node) || !node.body || !ts.isBlock(node.body)) {
@@ -151,9 +152,9 @@ function owner(path) {
 function graphSummary(modules) {
   const groups = new Map();
   const unresolved = [];
-  for (const module of modules) {
-    const from = localPath(module.source);
-    for (const dep of module.dependencies ?? []) {
+  for (const graphNode of modules) {
+    const from = localPath(graphNode.source);
+    for (const dep of graphNode.dependencies ?? []) {
       if (dep.couldNotResolve) {
         unresolved.push({ from, specifier: dep.module });
       }
@@ -194,9 +195,9 @@ const css = parsed.flatMap(cssImports);
 const graph = JSON.parse(readFileSync(join(output, "dependencies.json"), "utf8"));
 const { edges, unresolved } = graphSummary(graph.modules);
 const pagesWithDb = graph.modules
-  .filter((module) => /(^|\/)page\.tsx$/.test(module.source))
-  .filter((module) => module.dependencies?.some((dep) => localPath(dep.resolved ?? "") === "src/lib/db.ts"))
-  .map((module) => localPath(module.source));
+  .filter((item) => /(^|\/)page\.tsx$/.test(item.source))
+  .filter((item) => item.dependencies?.some((dep) => localPath(dep.resolved ?? "") === "src/lib/db.ts"))
+  .map((item) => localPath(item.source));
 const summary = {
   sourceFiles: sources.length,
   routeFiles: routeFiles.length,
