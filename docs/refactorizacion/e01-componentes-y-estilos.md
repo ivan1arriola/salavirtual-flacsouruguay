@@ -56,6 +56,8 @@ Decisión propuesta: `app/brand.css` debe ser la fuente canónica de tokens; las
 
 `DismissibleDetails` ya contempla cerrar al activar un enlace (incluso si la URL no cambia), tocar fuera, mover el foco fuera, pulsar Escape y activar el control explícito. Lo utilizan tanto el menú «Más» como el menú de perfil.
 
+La revisión del 5 de noviembre en `docs/superpowers/reviews/2026-11-05-cuentas-zoom-por-grupo/codex-sidebar.md` decía que el menú no cerraba al activar un enlace. Esa observación quedó desactualizada: el código actual incluye `handleLinkClick` en fase de captura y una prueba específica para enlaces internos, incluso cuando la URL no cambia. No repetir ese hallazgo como defecto vigente.
+
 Las pruebas actuales son principalmente estáticas para este comportamiento: `navigation-disclosure.test.ts` comprueba fragmentos del código fuente; `mobile-more-navigation-ui.test.ts` analiza CSS con PostCSS; `app-navigation.test.ts` prueba reglas de navegación. No ejecutan el evento real en un navegador. En `package.json` no se encontraron Playwright, Cypress, Puppeteer, jsdom ni axe-core. La existencia del handler no demuestra por sí sola que el menú cierre correctamente en todos los dispositivos.
 
 Acción E01.4: incorporar pruebas de navegador para seleccionar un enlace del menú móvil, seleccionar la página actual, cerrar con Escape, click exterior, gestión de foco, perfil y navegación atrás. Mantener las pruebas unitarias actuales.
