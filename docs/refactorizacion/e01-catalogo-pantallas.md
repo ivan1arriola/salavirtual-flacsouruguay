@@ -1,6 +1,6 @@
 # E01.1 — Catálogo técnico de pantallas
 
-Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública, R = registro condicionado a sesión. * = alcance dependiente del caso de uso, pendiente de comprobar exhaustivamente. Los roles indicados son de acceso de página, no permisos para cada acción.
+Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública, R = registro condicionado a sesión. La marca (*) indica un alcance dependiente del caso de uso, pendiente de comprobar exhaustivamente. Los roles indicados son de acceso de página, no permisos para cada acción.
 
 ## S01 — /acceso
 
@@ -305,7 +305,6 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventar
 - Variantes y estados a cubrir: Búsqueda y paginación.
 - Implementación: `app/(gestion)/configuracion/historico/page.tsx`.
 - Evidencia visual y pruebas de interacción: pendientes.
-
 
 ## Corrección de cobertura
 
