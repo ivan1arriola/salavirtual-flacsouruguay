@@ -78,6 +78,8 @@ describe("consulta de participantes en vivo de Zoom", () => {
       motivoSalida: "Desconexión o problema de red"
     });
     expect(JSON.stringify(resultado)).not.toContain("192.0.2.1");
+    expect(JSON.stringify(resultado)).not.toContain("10.0.0.1");
+    expect(JSON.stringify(resultado)).not.toContain("00:00:00:00:00:00");
     expect(JSON.stringify(resultado)).not.toContain("disk-privado");
     expect(JSON.stringify(resultado)).not.toContain("equipo-privado");
     expect(fetchMock).toHaveBeenCalledWith(
