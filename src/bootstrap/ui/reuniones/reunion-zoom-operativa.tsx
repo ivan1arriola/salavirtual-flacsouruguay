@@ -83,12 +83,10 @@ export function ReunionZoomOperativa({
   const eventosRecientes = actividadOperativa.slice(-15).reverse();
   const eventosAnteriores = actividadOperativa.slice(0, -15).reverse();
   const ultimoEvento = actividad.at(-1);
-  const estadoAnfitrion =
-    asistenciaEnVivo.estado !== "DISPONIBLE"
-      ? "Sin verificar"
-      : anfitrionesConectados > 0
-        ? "Detectado en sala"
-        : "No detectado en sala";
+  let estadoAnfitrion = "Sin verificar";
+  if (asistenciaEnVivo.estado === "DISPONIBLE") {
+    estadoAnfitrion = anfitrionesConectados > 0 ? "Detectado en sala" : "No detectado en sala";
+  }
 
   return (
     <main className={styles.page}>
