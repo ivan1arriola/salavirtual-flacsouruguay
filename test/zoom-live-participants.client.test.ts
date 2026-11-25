@@ -31,7 +31,7 @@ describe("consulta de participantes en vivo de Zoom", () => {
             connection_type: "UDP",
             network_type: "Wifi",
             ip_address: "192.0.2.1",
-            internal_ip_addresses: ["10.0.0.1"],
+            internal_ip_addresses: ["internal-ip-address"],
             mac_addr: "00:00:00:00:00:00",
             harddisk_id: "disk-privado",
             pc_name: "equipo-privado"
@@ -59,7 +59,9 @@ describe("consulta de participantes en vivo de Zoom", () => {
     const resultado = await obtenerParticipantesZoomEnVivoHttp("token", "123456789");
 
     expect(resultado.estado).toBe("DISPONIBLE");
-    if (resultado.estado !== "DISPONIBLE") return;
+    if (resultado.estado !== "DISPONIBLE") {
+      throw new Error("Se esperaba una respuesta disponible de Zoom.");
+    }
     expect(resultado.participantes).toHaveLength(3);
     expect(resultado.participantes[0]).toMatchObject({
       id: "conexion-1",
@@ -78,7 +80,7 @@ describe("consulta de participantes en vivo de Zoom", () => {
       motivoSalida: "Desconexión o problema de red"
     });
     expect(JSON.stringify(resultado)).not.toContain("192.0.2.1");
-    expect(JSON.stringify(resultado)).not.toContain("10.0.0.1");
+    expect(JSON.stringify(resultado)).not.toContain("internal-ip-address");
     expect(JSON.stringify(resultado)).not.toContain("00:00:00:00:00:00");
     expect(JSON.stringify(resultado)).not.toContain("disk-privado");
     expect(JSON.stringify(resultado)).not.toContain("equipo-privado");
