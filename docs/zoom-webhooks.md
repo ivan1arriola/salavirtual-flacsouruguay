@@ -48,9 +48,11 @@ los códigos de problema. Nombre, correo, IP y URLs no se leen ni se guardan; no
 cronología. La huella única del cuerpo firmado hace idempotentes los reintentos; los eventos fuera de
 orden o sin reunión conocida se guardan igual y la cronología ordena por la hora del aviso.
 
-El receptor solo guarda metadatos de reunión y una huella del cuerpo firmado. Descarta contraseñas,
-URLs de descarga, tokens y datos de participantes. Responde 503 si no hay secreto o no puede confirmar
-la inserción en la base, para que Zoom reintente. El worker reclama avisos de forma exclusiva, reintenta
+El receptor guarda metadatos de reunión, una huella del cuerpo firmado y, para los eventos de
+participantes, únicamente un identificador opaco de correlación. Descarta nombres, correos, contraseñas,
+URLs de descarga, tokens y datos técnicos personales. Las alertas conservan solo los códigos de problema;
+los cambios de rol y pantalla compartida conservan etiquetas operativas, no la identidad de quien actuó.
+Responde 503 si no hay secreto o no puede confirmar la inserción en la base, para que Zoom reintente. El worker reclama avisos de forma exclusiva, reintenta
 fallos con espera creciente y conserva el código de error sin mensajes sensibles. `FALLIDO` después de
 10 intentos requiere investigación; la bandeja no se elimina automáticamente.
 
