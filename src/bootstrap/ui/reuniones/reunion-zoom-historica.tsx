@@ -23,7 +23,15 @@ import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
 import { ItemActividad } from "./zoom-actividad-item";
 import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
-import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
+import {
+  esActividadOperativaZoom,
+  type EntradaActividadZoom
+} from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
+import {
+  etiquetaEstadoActualZoom,
+  type EjecucionZoomObservada,
+  type EstadoActualZoom
+} from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 import {
   derivarEstadoGrabacionZoomFicha,
   type EstadoGrabacionZoomFicha,
@@ -72,7 +80,8 @@ function SeccionResumen({
   esAsistente,
   hayReporte,
   conexiones,
-  estadoAsistencia
+  estadoAsistencia,
+  ejecuciones = []
 }: Readonly<{
   reunion: ReunionOperativaView;
   asistencia: AsistenciaZoomFicha;
@@ -81,35 +90,72 @@ function SeccionResumen({
   hayReporte: boolean;
   conexiones: number;
   estadoAsistencia: string;
+  ejecuciones?: readonly EjecucionZoomObservada[];
 }>) {
   const { registros, ocurrencias } = asistencia;
   const { inicioRealAt, finRealAt } = reunion.conferencia;
+  let inicioRealLabel = "Sin confirmar";
+  let finRealLabel = "Sin confirmar";
+  if (ejecuciones.length > 1) {
+    inicioRealLabel = "Ver ejecuciones";
+  } else if (inicioRealAt) {
+    inicioRealLabel = formatTime(inicioRealAt);
+  }
+  if (ejecuciones.length > 1) {
+    finRealLabel = "Ver ejecuciones";
+  } else if (finRealAt) {
+    finRealLabel = formatTime(finRealAt);
+  }
+  const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo)).reverse();
+  const otrasActividades = actividad.length - actividadOperativa.length;
   return (
     <>
       <section className={styles.card} aria-labelledby="zoom-resumen">
         <h2 id="zoom-resumen" className={styles.sectionTitle}>
           <Activity size={21} aria-hidden="true" /> Resumen de ejecución
         </h2>
+        {ejecuciones.length > 1 ? (
+          <div>
+            <strong>{ejecuciones.length} ejecuciones vinculadas</strong>
+            <p>El inicio y el cierre de cada ejecución se muestran por separado.</p>
+            <ul className={styles.files}>
+              {[...ejecuciones]
+                .sort((a, b) => a.inicio.getTime() - b.inicio.getTime())
+                .map((e) => (
+                  <li key={e.cuentaZoomId + ":" + e.uuid}>
+                    <span>
+                      {formatDate(e.inicio)} · {formatTime(e.inicio)}
+                    </span>
+                    <span>
+                      {e.fin
+                        ? formatTime(e.fin) + " · " + duracion(e.inicio, e.fin)
+                        : "Sin cierre confirmado"}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ) : null}
         <dl className={styles.kpis}>
           <div>
             <dt>
               <CalendarDays size={21} aria-hidden="true" /> Inicio real
             </dt>
-            <dd>{inicioRealAt ? formatTime(inicioRealAt) : "Sin confirmar"}</dd>
+            <dd>{inicioRealLabel}</dd>
             <small>Programado {formatTime(reunion.inicioProgramadoAt)}</small>
           </div>
           <div>
             <dt>
               <Clock3 size={21} aria-hidden="true" /> Fin real
             </dt>
-            <dd>{finRealAt ? formatTime(finRealAt) : "Sin confirmar"}</dd>
+            <dd>{finRealLabel}</dd>
             <small>Programado {formatTime(reunion.finProgramadoAt)}</small>
           </div>
           <div>
             <dt>
               <Timer size={21} aria-hidden="true" /> Duración real
             </dt>
-            <dd>{duracion(inicioRealAt, finRealAt)}</dd>
+            <dd>{ejecuciones.length > 1 ? "Por ejecución" : duracion(inicioRealAt, finRealAt)}</dd>
             <small>Según Zoom</small>
           </div>
           <div>
@@ -138,40 +184,45 @@ function SeccionResumen({
         <h2 id="zoom-actividad" className={styles.sectionTitle}>
           <History size={21} aria-hidden="true" /> Actividad del encuentro
         </h2>
-        {actividad.length === 0 ? (
-          <p>
-            {ocurrencias.length
-              ? "Zoom no informó actividad para esta ejecución. Esto no demuestra que no la hubiera."
-              : "Todavía no se puede asociar actividad de Zoom a este encuentro."}
-          </p>
+        {actividadOperativa.length === 0 ? (
+          <p>No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.</p>
         ) : (
           <>
             <ol className={styles.timeline}>
-              {actividad.slice(0, 7).map((a) => (
-                <ItemActividad key={`${a.tipo}-${a.desde.toISOString()}`} a={a} />
+              {actividadOperativa.slice(0, 15).map((a, i) => (
+                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
               ))}
             </ol>
-            {actividad.length > 8 ? (
+            {actividadOperativa.length > 15 ? (
               <details className={styles.moreActivity}>
                 <summary>
-                  <List size={16} aria-hidden="true" /> Ver las {actividad.length - 8} actividades intermedias
+                  <List size={16} aria-hidden="true" />
+                  Ver {actividadOperativa.length - 15} avisos anteriores
                 </summary>
                 <ol className={styles.timeline}>
-                  {actividad.slice(7, -1).map((a) => (
-                    <ItemActividad key={`${a.tipo}-${a.desde.toISOString()}`} a={a} />
+                  {actividadOperativa.slice(15).map((a, i) => (
+                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
                   ))}
                 </ol>
               </details>
             ) : null}
-            {actividad.length > 7 ? (
-              <ol className={styles.timeline}>
-                {actividad.slice(-1).map((a) => (
-                  <ItemActividad key={`${a.tipo}-${a.desde.toISOString()}`} a={a} />
-                ))}
-              </ol>
-            ) : null}
           </>
         )}
+        {otrasActividades > 0 ? (
+          <details className={styles.moreActivity}>
+            <summary>Eventos administrativos ({otrasActividades})</summary>
+            <ol className={styles.timeline}>
+              {actividad
+                .filter((a) => !esActividadOperativaZoom(a.tipo))
+                .slice(-20)
+                .reverse()
+                .map((a, i) => (
+                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
+                ))}
+            </ol>
+            <p>Últimos 20 grupos de avisos administrativos.</p>
+          </details>
+        ) : null}
       </section>
       <details className={styles.advanced}>
         <summary>
@@ -231,7 +282,7 @@ function SeccionGrabaciones({
         <strong>{ETIQUETA_GRABACION_ZOOM[estado]}</strong>
         {estado === "NO_PREVISTA" ? " · Este encuentro no requería grabación." : null}
         {estado === "SIN_CONFIRMAR"
-          ? " · Se esperaba una grabación y todavía no hay rastro de ella; no se puede afirmar que no exista."
+          ? " · Se esperaba una grabación, pero aún no hay rastro; no se puede afirmar que no exista."
           : null}
       </p>
       <ul className={styles.files}>
@@ -259,29 +310,45 @@ export function ReunionZoomHistorica({
   rol,
   asistencia,
   actividad,
-  seccion
+  seccion,
+  ejecuciones = [],
+  estadoActual,
+  mostrarRegresoEnVivo = false
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   asistencia: AsistenciaZoomFicha;
   actividad: readonly EntradaActividadZoom[];
   seccion: SeccionFichaZoom;
+  ejecuciones?: readonly EjecucionZoomObservada[];
+  estadoActual?: EstadoActualZoom;
+  mostrarRegresoEnVivo?: boolean;
 }>) {
   const { registros, ocurrencias } = asistencia;
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const { inicioRealAt, finRealAt } = reunion.conferencia;
-  const ejecucion = etiquetaEjecucion(inicioRealAt, finRealAt);
+  const ejecucion = estadoActual
+    ? etiquetaEstadoActualZoom(estadoActual)
+    : etiquetaEjecucion(inicioRealAt, finRealAt);
   const hayReporte = asistencia.estadoReporte === "DISPONIBLE" && registros.length > 0;
   const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
   const estadoGrabacion = derivarEstadoGrabacionZoomFicha({
     requiereGrabacion: reunion.requiereGrabacion,
-    ocurrencias: ocurrencias.map((o) => ({ pendiente: o.hayGrabacionPendiente, archivos: o.grabaciones }))
+    ocurrencias: ocurrencias.map((o) => ({
+      pendiente: o.hayGrabacionPendiente,
+      archivos: o.grabaciones
+    }))
   });
   const estadoAsistencia = etiquetaAsistencia(hayReporte, asistencia.estadoReporte);
 
   return (
     <main className={styles.page}>
-      <NavegacionEncuentroZoom reunion={reunion} rol={rol} historica />
+      <NavegacionEncuentroZoom
+        reunion={reunion}
+        rol={rol}
+        historica
+        actualizarAutomaticamente={mostrarRegresoEnVivo}
+      />
       <header className={styles.hero}>
         <div className={styles.eyebrow}>
           <span>{reunion.programa}</span>
@@ -292,7 +359,8 @@ export function ReunionZoomHistorica({
             <CheckCircle2 size={15} aria-hidden="true" /> {ejecucion}
           </span>
           <span className={styles.historyTag}>
-            <FileVideo size={15} aria-hidden="true" /> Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
+            <FileVideo size={15} aria-hidden="true" />
+            Grabación: {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
           </span>
         </div>
         <h1>{reunion.titulo}</h1>
@@ -306,17 +374,25 @@ export function ReunionZoomHistorica({
             <CalendarDays size={15} aria-hidden="true" /> {formatDate(reunion.inicioProgramadoAt)}
           </span>
           <span>
-            <Clock3 size={15} aria-hidden="true" /> Programado {formatTime(reunion.inicioProgramadoAt)} –{" "}
-            {formatTime(reunion.finProgramadoAt)}
+            <Clock3 size={15} aria-hidden="true" />
+            Programado {formatTime(reunion.inicioProgramadoAt)} – {formatTime(reunion.finProgramadoAt)}
           </span>
         </div>
       </header>
 
+      {mostrarRegresoEnVivo ? (
+        <section className={styles.card}>
+          <strong>Estás consultando el historial, no la actividad en vivo.</strong>
+          <Link href="?vista=actual" className={styles.primary}>
+            Ver estado actual de la reunión
+          </Link>
+        </section>
+      ) : null}
       <nav className={styles.tabs} aria-label="Secciones del encuentro">
         {SECCIONES_FICHA_ZOOM.map((s) => (
           <Link
             key={s}
-            href={`?seccion=${s}`}
+            href={`?vista=historial&seccion=${s}`}
             aria-current={s === seccion ? "page" : undefined}
             scroll={false}
           >
@@ -333,10 +409,11 @@ export function ReunionZoomHistorica({
                 reunion={reunion}
                 asistencia={asistencia}
                 actividad={actividad}
-                esAsistente={esAsistente}
+                esAsistente={esAsistente && !mostrarRegresoEnVivo}
                 hayReporte={hayReporte}
                 conexiones={conexiones}
                 estadoAsistencia={estadoAsistencia}
+                ejecuciones={ejecuciones}
               />
             </>
           ) : null}
@@ -420,7 +497,8 @@ export function ReunionZoomHistorica({
               <FileVideo size={20} aria-hidden="true" /> Grabación
             </h2>
             <p className={styles.recordingStatus}>
-              <CheckCircle2 size={17} aria-hidden="true" /> {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
+              <CheckCircle2 size={17} aria-hidden="true" />
+              {ETIQUETA_GRABACION_ZOOM[estadoGrabacion]}
             </p>
             {ocurrencias
               .flatMap((o) => o.grabaciones)

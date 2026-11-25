@@ -84,6 +84,8 @@ export type RegistroAsistenciaOperativoView = Readonly<{
 export type ReunionOperativaView = Readonly<{
   id: string;
   solicitudId: string;
+  /** Invitados registrados específicamente para este encuentro; no equivale a asistencia. */
+  invitados: readonly Readonly<{ id: string; nombre: string | null; email: string }>[];
   proveedorActivo: "ZOOM" | "GOOGLE_MEET";
   zoom: Readonly<{
     eventoProveedorId: string | null;
@@ -254,6 +256,10 @@ export async function obtenerReunionOperativa(
         include: { cuentaGoogle: true }
       },
       cohostEmails: true,
+      invitados: {
+        orderBy: { email: "asc" },
+        select: { id: true, nombre: true, email: true }
+      },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
         include: {
@@ -924,6 +930,7 @@ export async function obtenerReunionOperativa(
     reunion: {
       id: meeting.id,
       solicitudId: meeting.solicitud.id,
+      invitados: meeting.invitados,
       proveedorActivo,
       zoom: {
         eventoProveedorId: eventoZoom?.id ?? null,

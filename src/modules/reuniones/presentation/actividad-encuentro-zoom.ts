@@ -206,3 +206,48 @@ function etiquetaEntrada(entrada: Readonly<{ tipo: string; cantidad: number }>):
   }
   return etiquetaEventoZoom(entrada.tipo);
 }
+
+/** Último estado observado por ID opaco. Nunca equivale a un censo actual ni a personas únicas. */
+export function resumirPresenciaObservadaZoom(actividad: readonly EntradaActividadZoom[]) {
+  const presencia = new Map<string, "SALA" | "ESPERA" | "FUERA">();
+  let sinIdentificador = 0;
+  let ultimoAviso: Date | null = null;
+  for (const aviso of [...actividad].sort((a, b) => a.hasta.getTime() - b.hasta.getTime())) {
+    let estado: "SALA" | "ESPERA" | "FUERA";
+    switch (aviso.tipo) {
+      case "meeting.participant_joined":
+        estado = "SALA";
+        break;
+      case "meeting.participant_joined_waiting_room":
+      case "meeting.participant_put_in_waiting_room":
+        estado = "ESPERA";
+        break;
+      case "meeting.participant_left":
+        estado = "FUERA";
+        break;
+      case "meeting.participant_admitted":
+      case "meeting.participant_left_waiting_room":
+        if (aviso.participanteId && presencia.get(aviso.participanteId) === "SALA") {
+          continue;
+        }
+        estado = "FUERA";
+        break;
+      default:
+        continue;
+    }
+    ultimoAviso = aviso.hasta;
+    if (aviso.participanteId) {
+      presencia.set(aviso.participanteId, estado);
+    } else {
+      sinIdentificador += aviso.cantidad;
+    }
+  }
+  const estados = [...presencia.values()];
+  return {
+    identificadores: estados.length,
+    enSala: estados.filter((e) => e === "SALA").length,
+    enEspera: estados.filter((e) => e === "ESPERA").length,
+    sinIdentificador,
+    ultimoAviso
+  };
+}

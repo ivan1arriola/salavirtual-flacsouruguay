@@ -486,15 +486,25 @@ export async function buscarReunionZoomPorMarcaHttp(
 }
 
 /** Consulta la configuración efectiva de sala de espera; null significa que Zoom no informó el dato. */
-export async function obtenerSalaEsperaZoomHttp(token: string, meetingId: string): Promise<boolean | null> {
+export async function obtenerEstadoActualZoomHttp(token: string, meetingId: string) {
   const response = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
     signal: AbortSignal.timeout(5000)
   });
   if (!response.ok) {
-    throw new Error(`Zoom API error al consultar sala de espera (${response.status})`);
+    throw new Error("Zoom API: no se pudo consultar el estado actual (" + response.status + ")");
   }
-  const data = (await response.json()) as { settings?: { waiting_room?: unknown } };
-  return typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null;
+  const data = (await response.json()) as {
+    status?: unknown;
+    uuid?: unknown;
+    settings?: { waiting_room?: unknown };
+  };
+  const estado: "started" | "waiting" | null =
+    data.status === "started" || data.status === "waiting" ? data.status : null;
+  return {
+    estado,
+    uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,
+    salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null
+  };
 }

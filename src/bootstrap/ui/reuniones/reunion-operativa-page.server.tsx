@@ -20,7 +20,12 @@ import {
   obtenerParticipantesZoomEnVivoHttp,
   type EstadoAsistenciaZoomEnVivo
 } from "@/src/integrations/zoom/zoom-live-participants.client";
-import { obtenerSalaEsperaZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import { obtenerEstadoActualZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
+import {
+  resolverEstadoActualZoom,
+  type EstadoApiZoom
+} from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
@@ -46,7 +51,7 @@ export default async function ReunionOperativaPage({
   searchParams
 }: Readonly<{
   params: Promise<{ instanciaId: string }>;
-  searchParams?: Promise<{ seccion?: string }>;
+  searchParams?: Promise<{ seccion?: string; vista?: string }>;
 }>) {
   const session = await auth();
   if (!session?.user) {
@@ -69,10 +74,46 @@ export default async function ReunionOperativaPage({
 
   const reunion = result.reunion;
   if (reunion.proveedorActivo === "ZOOM") {
-    if (reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA") {
-      // Solo lectura de lo persistido: renderizar no llama a Zoom ni escribe asistencia (ver sincronizarAsistenciaOcurrenciaZoom).
+    const ejecuciones = reunion.zoom.eventoProveedorId
+      ? await leerEjecucionesZoomActuales(reunion.zoom.eventoProveedorId)
+      : [];
+    // Durante la ventana de clase (y si hay un inicio sin cierre) nunca se congela la consola
+    // en la primera ejecución finalizada. Se comprueba la serie sin usar Dashboard.
+    const { seccion, vista } = (await searchParams) ?? {};
+    const ahora = reunion.actualizadoAt.getTime();
+    const cercaDelHorario =
+      ahora >= reunion.inicioProgramadoAt.getTime() - 60 * 60_000 &&
+      ahora <= reunion.finProgramadoAt.getTime() + 60 * 60_000;
+    const ultimo = resolverEstadoActualZoom(ejecuciones, null, null);
+    const consultar =
+      vista === "actual" ||
+      cercaDelHorario ||
+      ultimo.tipo === "INICIO_SIN_VERIFICAR" ||
+      reunion.estado === "EN_CURSO";
+    let api: EstadoApiZoom | null = null;
+    let cuentaApi: string | null = null;
+    let token: string | null = null;
+    if (consultar && reunion.zoom.id) {
+      try {
+        const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
+        if (credenciales.disponible) {
+          cuentaApi = credenciales.accountId;
+          token = await obtenerZoomAccessToken(credenciales);
+          api = await obtenerEstadoActualZoomHttp(token, reunion.zoom.id);
+        }
+      } catch {
+        // Un fallo de consulta nunca equivale a una reunión cerrada.
+      }
+    }
+    const actual = resolverEstadoActualZoom(ejecuciones, api, cuentaApi);
+    const mostrarOperativa =
+      vista === "actual" ||
+      cercaDelHorario ||
+      actual.tipo === "ACTIVA" ||
+      actual.tipo === "INICIO_SIN_VERIFICAR" ||
+      (reunion.estado === "PROGRAMADA" && ahora < reunion.inicioProgramadoAt.getTime());
+    if (!mostrarOperativa || vista === "historial") {
       const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
-      const { seccion } = (await searchParams) ?? {};
       const actividad = reunion.zoom.eventoProveedorId
         ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
         : [];
@@ -83,52 +124,37 @@ export default async function ReunionOperativaPage({
           asistencia={asistencia}
           actividad={actividad}
           seccion={SECCIONES_FICHA_ZOOM.find((s) => s === seccion) ?? "resumen"}
+          ejecuciones={ejecuciones}
+          estadoActual={consultar ? actual : undefined}
+          mostrarRegresoEnVivo={mostrarOperativa}
         />
       );
     }
-    let salaEspera: boolean | null = null;
     let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };
-    if (reunion.zoom.id) {
-      try {
-        const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
-        if (credenciales.disponible) {
-          const token = await obtenerZoomAccessToken(credenciales);
-          const [espera, asistencia] = await Promise.allSettled([
-            obtenerSalaEsperaZoomHttp(token, reunion.zoom.id),
-            obtenerParticipantesZoomEnVivoHttp(token, reunion.zoom.id)
-          ]);
-          if (espera.status === "fulfilled") {
-            salaEspera = espera.value;
-          }
-          if (asistencia.status === "fulfilled") {
-            asistenciaEnVivo = asistencia.value;
-          } else {
-            asistenciaEnVivo = {
-              estado: "NO_DISPONIBLE",
-              motivo: "ERROR_CONEXION",
-              detalle: "La consulta de participantes falló antes de recibir una respuesta de Zoom."
-            };
-          }
-        }
-      } catch {
-        asistenciaEnVivo = {
-          estado: "NO_DISPONIBLE",
-          motivo: "ERROR_CONEXION",
-          detalle:
-            "No se pudo autenticar o consultar Zoom. Revisá las credenciales y permisos de la cuenta anfitriona."
-        };
-      }
+    const activa = actual.tipo === "ACTIVA" || actual.tipo === "INICIO_SIN_VERIFICAR";
+    const ejecucionActiva = activa ? actual.ejecucion : null;
+    if (token && ejecucionActiva) {
+      asistenciaEnVivo = await obtenerParticipantesZoomEnVivoHttp(token, ejecucionActiva.uuid);
     }
-    const actividadEnVivo = reunion.zoom.eventoProveedorId
-      ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
-      : [];
+    const actividadEnVivo =
+      reunion.zoom.eventoProveedorId && ejecucionActiva
+        ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId, ejecucionActiva)
+        : [];
+    let estado = reunion.estado;
+    if (activa) {
+      estado = "EN_CURSO";
+    } else if (cercaDelHorario) {
+      estado = "ESPERANDO_INICIO";
+    }
     return (
       <ReunionZoomOperativa
-        reunion={reunion}
+        reunion={{ ...reunion, estado }}
         rol={actor.rol}
-        salaEspera={salaEspera}
+        salaEspera={api?.salaEspera ?? null}
         asistenciaEnVivo={asistenciaEnVivo}
         actividad={actividadEnVivo}
+        estadoActual={actual}
+        actualizarAutomaticamente={consultar}
       />
     );
   }

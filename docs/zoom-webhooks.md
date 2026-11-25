@@ -88,3 +88,12 @@ la reunión.
 La disponibilidad de los webhooks depende de que el worker de archivos Zoom esté ejecutándose y sano.
 El Secret Token se administra en Sala Virtual y se obtiene de la misma app Zoom; el despliegue por sí
 solo no activa la suscripción.
+
+## Estado actual frente a historial
+
+Una serie puede generar varios UUID para el mismo encuentro si el anfitrión sale y reinicia Zoom.
+La ficha consulta el estado actual de la serie (GET /meetings/{meetingId}) durante la ventana de clase
+(una hora antes y una hora después) o si hay un inicio sin cierre. Solo atribuye actividad a este encuentro
+si el UUID y la cuenta coinciden con una ocurrencia vinculada. Dashboard, cuando está disponible,
+se consulta por UUID. Si falla, los webhooks permiten mostrar el último estado observado por identificador,
+no un censo confirmado. El historial de las ejecuciones sigue disponible por separado.
