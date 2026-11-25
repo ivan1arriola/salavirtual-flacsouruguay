@@ -4,14 +4,14 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Alcance: 79 archivos `r
 
 ## Mecanismos de entrada identificados
 
-| Tipo | Implementación observada | Revisión requerida |
-| --- | --- | --- |
-| Sesión web | Auth.js mediante `auth()`; muchas rutas resuelven actor actual desde base | Sesión expirada, cuenta inactiva, cambio de rol y propiedad del recurso |
-| Sesión móvil | `requireMobileActor` y token Bearer firmado | Rol actual, revocación, expiración y compatibilidad de tokens antiguos |
-| Tarea programada | `Authorization: Bearer CRON_SECRET` | Secreto ausente/incorrecto, rotación, exposición y permisos mínimos |
-| Webhook Zoom | Validación de firma con secreto de webhook | Firma, timestamp, replay, idempotencia y persistencia antes de responder |
-| Salud pública | `/api/health` sin sesión | Respuesta mínima, sin datos operativos ni secretos |
-| Auth.js | `/api/auth/[...nextauth]` delega en handlers | Flujos OAuth, cookies y callbacks |
+| Tipo             | Implementación observada                                                  | Revisión requerida                                                       |
+| :--------------- | :------------------------------------------------------------------------ | :----------------------------------------------------------------------- |
+| Sesión web       | Auth.js mediante `auth()`; muchas rutas resuelven actor actual desde base | Sesión expirada, cuenta inactiva, cambio de rol y propiedad del recurso  |
+| Sesión móvil     | `requireMobileActor` y token Bearer firmado                               | Rol actual, revocación, expiración y compatibilidad de tokens antiguos   |
+| Tarea programada | `Authorization: Bearer CRON_SECRET`                                       | Secreto ausente/incorrecto, rotación, exposición y permisos mínimos      |
+| Webhook Zoom     | Validación de firma con secreto de webhook                                | Firma, timestamp, replay, idempotencia y persistencia antes de responder |
+| Salud pública    | `/api/health` sin sesión                                                  | Respuesta mínima, sin datos operativos ni secretos                       |
+| Auth.js          | `/api/auth/[...nextauth]` delega en handlers                              | Flujos OAuth, cookies y callbacks                                        |
 
 ## Rutas móviles
 
