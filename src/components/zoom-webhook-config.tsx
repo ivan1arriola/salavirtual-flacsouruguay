@@ -93,7 +93,7 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
           <li><code>meeting.participant_joined_breakout_room</code> y <code>meeting.participant_left_breakout_room</code><span>Movimientos entre la sala principal y grupos pequeños.</span></li>
           <li><code>meeting.sharing_started</code> y <code>meeting.sharing_ended</code><span>Inicio y fin de pantalla compartida.</span></li>
         </ul>
-        <p><strong>Scopes para participantes y pantalla compartida:</strong> <code>meeting:read:participant:admin</code> o <code>meeting:read:participant</code> (granulares), o los scopes de lectura de reuniones equivalentes.</p>
+        <p><strong>Scopes:</strong> participantes: <code>meeting:read:participant:admin</code> o <code>meeting:read:participant</code>; pantalla compartida: <code>meeting:read:participant_sharing:admin</code> o <code>meeting:read:participant_sharing</code>.</p>
 
         <h4>Calidad de la reunión (muy recomendado)</h4>
         <ul>
