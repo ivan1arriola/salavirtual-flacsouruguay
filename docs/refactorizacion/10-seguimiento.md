@@ -39,3 +39,7 @@ Fecha, épica/tarea, responsable, PR/issue, base y destino, decisión, alternati
 ## Siguiente incremento
 
 E01.1: completar catálogo de vistas, capturas y estados con acceso autorizado; después E01.2, matriz de permisos y acciones. No iniciar cambios de navegación antes de aprobar E02. El PR de este plan no crea automáticamente issues ni un GitHub Project.
+
+## Avance de E01
+
+Consultar [registro de auditoría](e01-avance.md). El inventario técnico está iniciado; la épica sigue abierta.
