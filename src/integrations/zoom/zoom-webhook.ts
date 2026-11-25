@@ -175,14 +175,22 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
       const anterior = texto(participante?.old_role);
       const nuevo = texto(participante?.new_role);
       const etiquetaRol = (valor: string | null): string | null => {
-        if (valor === "host") return "anfitrión";
-        if (valor === "co-host" || valor === "cohost" || valor === "co_host") return "coanfitrión";
-        if (valor === "attendee") return "participante";
+        if (valor === "host") {
+          return "anfitrión";
+        }
+        if (valor === "co-host" || valor === "cohost" || valor === "co_host") {
+          return "coanfitrión";
+        }
+        if (valor === "attendee") {
+          return "participante";
+        }
         return null;
       };
       const desde = etiquetaRol(anterior);
       const hacia = etiquetaRol(nuevo);
-      if (!desde || !hacia) return null;
+      if (!desde || !hacia) {
+        return null;
+      }
       return "Rol: " + desde + " → " + hacia;
     }
     if (tipo === "meeting.sharing_started") {
