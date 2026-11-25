@@ -1,4 +1,4 @@
-import { Bell, CalendarPlus, Menu } from "lucide-react";
+import { Bell, CalendarPlus, Check, Menu, X } from "lucide-react";
 import type { Session } from "next-auth";
 import Link from "next/link";
 import { AppLogoMark } from "@/src/components/app-logo";
@@ -115,14 +115,24 @@ export async function AppShell({
             </SidebarLink>
           ))}
           <DismissibleDetails className="mobile-nav-more" dataTour={moreTourForRole(user.role)}>
-            <summary>
+            <summary aria-controls="mobile-more-menu">
               <Menu size={20} aria-hidden="true" />
               <span>Más</span>
             </summary>
-            <div className="mobile-more-menu">
+            <div className="mobile-more-menu" id="mobile-more-menu">
               <div className="mobile-more-heading">
-                <span>Más opciones</span>
-                <small>{roleLabel(user.role)}</small>
+                <div>
+                  <span>Más opciones</span>
+                  <small>{roleLabel(user.role)}</small>
+                </div>
+                <button
+                  type="button"
+                  className="mobile-more-close"
+                  data-disclosure-close
+                  aria-label="Cerrar menú de navegación"
+                >
+                  <X size={20} aria-hidden="true" />
+                </button>
               </div>
               {secondaryNavigation.map((group) => (
                 <section className="mobile-more-group" aria-label={group.label} key={group.label}>
@@ -137,6 +147,7 @@ export async function AppShell({
                       >
                         <Icon size={18} aria-hidden="true" />
                         <span>{label}</span>
+                        <Check className="mobile-more-current" size={18} aria-hidden="true" />
                       </SidebarLink>
                     ))}
                   </nav>
