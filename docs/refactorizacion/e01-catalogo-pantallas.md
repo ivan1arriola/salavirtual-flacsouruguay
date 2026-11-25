@@ -1,6 +1,6 @@
 # E01.1 — Catálogo técnico de pantallas
 
-Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública, R = registro condicionado a sesión. La marca (*) indica un alcance dependiente del caso de uso, pendiente de comprobar exhaustivamente. Los roles indicados son de acceso de página, no permisos para cada acción.
+Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventario S01–S38; no sustituye la auditoría visual. A = administración, D = docente, T = asistente, P = entrada pública, R = registro condicionado a sesión. Los casos marcados como condicionales dependen del rol, estado o proveedor y requieren comprobación exhaustiva. Los roles indicados son de acceso de página, no permisos para cada acción.
 
 ## S01 — /acceso
 
@@ -140,7 +140,7 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventar
 
 ## S18 — /operacion/[instanciaId]
 
-- Roles: A/T*.
+- Roles: A/T (condicional).
 - Tarea: Consultar y operar encuentro.
 - Variantes y estados a cubrir: Meet; Zoom activo; Zoom histórico: resumen, asistencia, grabaciones.
 - Implementación: `src/bootstrap/ui/reuniones/reunion-operativa-page.server.tsx`.
@@ -212,7 +212,7 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Complementa el inventar
 
 ## S27 — /grabaciones
 
-- Roles: A/D/T*.
+- Roles: A/D/T (condicional).
 - Tarea: Consultar archivos y grabaciones.
 - Variantes y estados a cubrir: Proveedor, filtros, alcance, sincronización.
 - Implementación: `app/(gestion)/grabaciones/page.tsx`.
