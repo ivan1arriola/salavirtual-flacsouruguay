@@ -385,6 +385,9 @@ export function ReunionZoomOperativa({
               <div><strong>{resumen.esperaAnfitrion}</strong><span>Esperas</span></div>
               <div><strong>{resumen.cambiosRol}</strong><span>Cambios de rol</span></div>
               <div><strong>{resumen.movimientosGrupos}</strong><span>Movimientos en grupos</span></div>
+              <div><strong>{resumen.alertasCalidad}</strong><span>Alertas de calidad</span></div>
+              <div><strong>{resumen.eventosGrabacion}</strong><span>Eventos de grabación</span></div>
+              <div><strong>{resumen.comparticiones}</strong><span>Eventos de pantalla compartida</span></div>
             </div>
             <ol className={styles.timeline}>
               {eventosRecientes.map((a) => (
