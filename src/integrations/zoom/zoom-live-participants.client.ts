@@ -55,19 +55,47 @@ function calidad(valor: unknown): CalidadZoom | null {
 
 function motivoSalidaZoom(valor: unknown): string | null {
   const motivo = texto(valor)?.toLowerCase();
-  if (!motivo) return null;
+  if (!motivo) {
+    return null;
+  }
   if (motivo.includes("got disconnected") || motivo.includes("network connection error")) {
     return "Desconexión o problema de red";
   }
-  if (motivo.includes("removed by host from waiting room")) return "Retirado de la sala de espera";
-  if (motivo.includes("removed by host")) return "Retirado por el anfitrión";
-  if (motivo.includes("leave waiting room")) return "Abandonó la sala de espera";
-  if (motivo.includes("host did not join")) return "El anfitrión no ingresó";
-  if (motivo.includes("host ended") || motivo.includes("host closed")) return "El anfitrión finalizó la reunión";
-  if (motivo.includes("host started a new meeting")) return "El anfitrión inició otra reunión";
-  if (motivo.includes("exceeded free meeting minutes")) return "Se alcanzó el límite de minutos";
-  if (motivo.includes("left the meeting")) return "Salió de la reunión";
+  if (motivo.includes("removed by host from waiting room")) {
+    return "Retirado de la sala de espera";
+  }
+  if (motivo.includes("removed by host")) {
+    return "Retirado por el anfitrión";
+  }
+  if (motivo.includes("leave waiting room")) {
+    return "Abandonó la sala de espera";
+  }
+  if (motivo.includes("host did not join")) {
+    return "El anfitrión no ingresó";
+  }
+  if (motivo.includes("host ended") || motivo.includes("host closed")) {
+    return "El anfitrión finalizó la reunión";
+  }
+  if (motivo.includes("host started a new meeting")) {
+    return "El anfitrión inició otra reunión";
+  }
+  if (motivo.includes("exceeded free meeting minutes")) {
+    return "Se alcanzó el límite de minutos";
+  }
+  if (motivo.includes("left the meeting")) {
+    return "Salió de la reunión";
+  }
   return "Motivo informado por Zoom";
+}
+
+function rolParticipante(valor: unknown): RolParticipanteZoom {
+  if (valor === "host") {
+    return "ANFITRION";
+  }
+  if (valor === "attendee") {
+    return "PARTICIPANTE";
+  }
+  return "DESCONOCIDO";
 }
 
 function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoomEnVivo {
@@ -75,13 +103,14 @@ function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoom
   const ingreso = texto(p.join_time);
   const salida = texto(p.leave_time);
   const estadoZoom = texto(p.status);
-  const estado: EstadoParticipanteZoom = salida
-    ? "DESCONECTADO"
-    : estadoZoom === "in_meeting"
-      ? "EN_REUNION"
-      : estadoZoom === "in_waiting_room"
-        ? "EN_ESPERA"
-        : "DESCONOCIDO";
+  let estado: EstadoParticipanteZoom = "DESCONOCIDO";
+  if (salida) {
+    estado = "DESCONECTADO";
+  } else if (estadoZoom === "in_meeting") {
+    estado = "EN_REUNION";
+  } else if (estadoZoom === "in_waiting_room") {
+    estado = "EN_ESPERA";
+  }
   const id =
     texto(p.participant_uuid) ??
     texto(p.participant_user_id) ??
@@ -96,7 +125,7 @@ function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoom
     ingreso,
     salida,
     estado,
-    rol: p.role === "host" ? "ANFITRION" : p.role === "attendee" ? "PARTICIPANTE" : "DESCONOCIDO",
+    rol: rolParticipante(p.role),
     motivoSalida: motivoSalidaZoom(p.leave_reason),
     calidadAudio: calidad(p.audio_quality),
     calidadVideo: calidad(p.video_quality),
@@ -108,12 +137,17 @@ function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoom
 
 function detalleSeguro(valor: unknown): string | undefined {
   const mensaje = texto(valor);
-  if (!mensaje) return undefined;
-  return mensaje
+  if (!mensaje) {
+    return undefined;
+  }
+  const sinCredenciales = mensaje
     .replace(/\s+/g, " ")
     .replace(/Bearer\s+\S+/gi, "[credencial oculta]")
-    .replace(/https?:\/\/\S+/gi, "[enlace]")
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[correo]")
+    .replace(/https?:\/\/\S+/gi, "[enlace]");
+  return sinCredenciales
+    .split(" ")
+    .map((parte) => (parte.includes("@") ? "[correo]" : parte))
+    .join(" ")
     .slice(0, 240);
 }
 
@@ -227,7 +261,9 @@ export async function obtenerParticipantesZoomEnVivoHttp(
         detalle: "Zoom devolvió un cursor de paginación repetido; se detuvo la consulta."
       };
     }
-    if (siguiente) visitados.add(siguiente);
+    if (siguiente) {
+      visitados.add(siguiente);
+    }
   } while (siguiente);
 
   return { estado: "DISPONIBLE", participantes };
