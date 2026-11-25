@@ -187,7 +187,13 @@ export function traducirDetalleActividadZoom(detalle: string | null | undefined)
     desktop: "Escritorio",
     airplay: "AirPlay",
     camera: "Cámara",
-    unknown: "Contenido no identificado"
+    unknown: "Contenido no identificado",
+    "Contenido: application": "Compartió una aplicación",
+    "Contenido: whiteboard": "Compartió una pizarra",
+    "Contenido: desktop": "Compartió el escritorio",
+    "Contenido: airplay": "Compartió mediante AirPlay",
+    "Contenido: camera": "Compartió una cámara",
+    "Contenido: unknown": "Compartió contenido no identificado"
   };
   return detalle
     .split(",")
