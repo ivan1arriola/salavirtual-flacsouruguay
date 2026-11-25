@@ -161,30 +161,37 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
       texto(participante?.id))
     : null;
   // Se guardan únicamente códigos de calidad, roles y tipos de contenido; nunca nombres ni correos.
-  const detalle =
-    tipo === "meeting.alert" && Array.isArray(recurso?.issues)
-      ? recurso.issues
+  const detalle = (() => {
+    if (tipo === "meeting.alert" && Array.isArray(recurso?.issues)) {
+      return (
+        recurso.issues
           .map(texto)
           .filter((v): v is string => v !== null)
           .join(", ")
           .slice(0, 250) || null
-      : tipo === "meeting.participant_role_changed"
-        ? (() => {
-            const anterior = texto(participante?.old_role);
-            const nuevo = texto(participante?.new_role);
-            const rol = (valor: string | null) =>
-              valor === "host" ? "anfitrión" : valor === "co-host" ? "coanfitrión" : valor === "attendee" ? "participante" : null;
-            const desde = rol(anterior);
-            const hacia = rol(nuevo);
-            return desde && hacia ? "Rol: " + desde + " → " + hacia : null;
-          })()
-        : tipo === "meeting.sharing_started"
-          ? (() => {
-              const sharing = objeto(participante?.sharing_details);
-              const contenido = texto(sharing?.content);
-              return contenido ? "Contenido: " + contenido : null;
-            })()
-          : null;
+      );
+    }
+    if (tipo === "meeting.participant_role_changed") {
+      const anterior = texto(participante?.old_role);
+      const nuevo = texto(participante?.new_role);
+      const etiquetaRol = (valor: string | null): string | null => {
+        if (valor === "host") return "anfitrión";
+        if (valor === "co-host" || valor === "cohost" || valor === "co_host") return "coanfitrión";
+        if (valor === "attendee") return "participante";
+        return null;
+      };
+      const desde = etiquetaRol(anterior);
+      const hacia = etiquetaRol(nuevo);
+      if (!desde || !hacia) return null;
+      return "Rol: " + desde + " → " + hacia;
+    }
+    if (tipo === "meeting.sharing_started") {
+      const sharing = objeto(participante?.sharing_details);
+      const contenido = texto(sharing?.content);
+      return contenido ? "Contenido: " + contenido : null;
+    }
+    return null;
+  })();
   if (participanteId && participanteId.length > 255) {
     return null;
   }
