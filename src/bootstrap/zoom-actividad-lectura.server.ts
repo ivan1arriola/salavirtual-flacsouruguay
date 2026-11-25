@@ -31,7 +31,10 @@ export async function leerActividadEncuentroZoom(
   ejecucion?: Readonly<{ cuentaZoomId: string; uuid: string }>
 ): Promise<EntradaActividadZoom[]> {
   const ocurrencias = await db.ocurrenciaArchivoZoom.findMany({
-    where: { eventoProveedorId, ...(ejecucion ?? {}) },
+    where: {
+      eventoProveedorId,
+      ...(ejecucion ? { cuentaZoomId: ejecucion.cuentaZoomId, uuid: ejecucion.uuid } : {})
+    },
     select: { cuentaZoomId: true, uuid: true }
   });
   if (ocurrencias.length === 0) {
