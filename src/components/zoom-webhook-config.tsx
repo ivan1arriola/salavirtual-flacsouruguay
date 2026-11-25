@@ -94,6 +94,7 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
           <li><code>meeting.sharing_started</code> y <code>meeting.sharing_ended</code><span>Inicio y fin de pantalla compartida.</span></li>
         </ul>
         <p><strong>Scopes:</strong> participantes: <code>meeting:read:participant:admin</code> o <code>meeting:read:participant</code>; pantalla compartida: <code>meeting:read:participant_sharing:admin</code> o <code>meeting:read:participant_sharing</code>.</p>
+        <p><code>meeting.participant_jbh_waiting</code> depende de que la opción de unirse antes que el anfitrión esté deshabilitada y la espera supere el umbral de Zoom; su ausencia no implica que nadie haya esperado.</p>
 
         <h4>Calidad de la reunión (muy recomendado)</h4>
         <ul>
@@ -104,8 +105,8 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
         <p><strong>Requisito de alertas:</strong> cuenta Business o superior y opción <em>Meeting quality scores and network alerts on Dashboard</em> habilitada en la configuración de Zoom.</p>
 
         <h4>Datos de participantes en vivo (API de Zoom Dashboard)</h4>
-        <p>La lista en vivo y las métricas de audio, vídeo y pantalla se consultan directamente a Zoom. Requieren cuenta Business o superior, Dashboard habilitado y uno de estos scopes: <code>dashboard_meetings:read:admin</code> o <code>dashboard:read:admin</code>. Las métricas de calidad también requieren habilitar las puntuaciones de calidad en Dashboard.</p>
-        <p><strong>Importante:</strong> los webhooks alimentan la cronología y las alertas; no se usan para calcular minutos ni para inventar una lista de asistencia. La asistencia oficial se obtiene del reporte de Zoom al finalizar la reunión. La consulta de participantes tiene un límite de uso elevado; Sala Virtual la actualiza cada 30 segundos mientras la consola está abierta.</p>
+        <p>La lista en vivo y las métricas de audio, vídeo y pantalla se consultan directamente a Zoom. Requieren cuenta Business o superior, Dashboard habilitado y uno de estos scopes: <code>dashboard_meetings:read:admin</code> o <code>dashboard:read:admin</code> (granular: <code>dashboard:read:list_meeting_participants:admin</code>). Las métricas de calidad también requieren habilitar las puntuaciones de calidad en Dashboard.</p>
+        <p><strong>Importante:</strong> los webhooks alimentan la cronología y las alertas; no se usan para calcular minutos ni para inventar una lista de asistencia. La asistencia oficial se obtiene del reporte de Zoom al finalizar la reunión. Zoom clasifica esta consulta como HEAVY; Sala Virtual la actualiza cada 30 segundos mientras la consola está abierta.</p>
 
         <p><strong>Agenda:</strong> además de estos eventos, Sala Virtual consulta la agenda completa de Zoom cada 30 minutos y desde Centro de operaciones › Zoom › Agenda de Zoom.</p>
       </div>
