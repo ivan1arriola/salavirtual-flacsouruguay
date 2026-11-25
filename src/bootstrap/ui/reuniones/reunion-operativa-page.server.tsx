@@ -107,6 +107,7 @@ export default async function ReunionOperativaPage({
     }
     const actual = resolverEstadoActualZoom(ejecuciones, api, cuentaApi);
     const mostrarOperativa =
+      vista === "actual" ||
       cercaDelHorario ||
       actual.tipo === "ACTIVA" ||
       actual.tipo === "INICIO_SIN_VERIFICAR" ||
