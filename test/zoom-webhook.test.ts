@@ -98,6 +98,53 @@ describe("webhook firmado de Zoom", () => {
       interpretarAvisoZoom(JSON.stringify({ ...JSON.parse(cuerpo), event: "meeting.participant_joined" }))
     ).toBeNull();
   });
+
+  it("correlaciona nuevos eventos de participantes y conserva solo detalles operativos", () => {
+    const cambioRol = JSON.stringify({
+      event: "meeting.participant_role_changed",
+      event_ts: ahora.getTime(),
+      payload: {
+        account_id: "cuenta",
+        object: {
+          id: 123,
+          uuid: "uuid-1",
+          participant: {
+            participant_uuid: "participante-opaco",
+            participant_user_id: "usuario-id",
+            old_role: "attendee",
+            new_role: "co-host",
+            user_name: "Nombre privado",
+            email: "privado@example.org"
+          }
+        }
+      }
+    });
+    const resultado = interpretarAvisoAdicionalZoom(cambioRol);
+    expect(resultado).toMatchObject({
+      tipo: "meeting.participant_role_changed",
+      participanteId: "participante-opaco",
+      detalle: "Rol: participante → coanfitrión"
+    });
+    expect(JSON.stringify(resultado)).not.toContain("Nombre privado");
+    expect(JSON.stringify(resultado)).not.toContain("privado@example.org");
+
+    const espera = JSON.stringify({
+      event: "meeting.participant_jbh_waiting_left",
+      event_ts: ahora.getTime(),
+      payload: {
+        account_id: "cuenta",
+        object: {
+          id: 123,
+          uuid: "uuid-1",
+          participant: { participant_user_id: "id-participante" }
+        }
+      }
+    });
+    expect(interpretarAvisoAdicionalZoom(espera)).toMatchObject({
+      tipo: "meeting.participant_jbh_waiting_left",
+      participanteId: "id-participante"
+    });
+  });
 });
 
 const crear = vi.hoisted(() => vi.fn());

@@ -102,10 +102,21 @@ export default async function ReunionOperativaPage({
           }
           if (asistencia.status === "fulfilled") {
             asistenciaEnVivo = asistencia.value;
+          } else {
+            asistenciaEnVivo = {
+              estado: "NO_DISPONIBLE",
+              motivo: "ERROR_CONEXION",
+              detalle: "La consulta de participantes falló antes de recibir una respuesta de Zoom."
+            };
           }
         }
       } catch {
-        // Sin permisos, conexión o respuesta válida: no afirmar que está deshabilitada.
+        asistenciaEnVivo = {
+          estado: "NO_DISPONIBLE",
+          motivo: "ERROR_CONEXION",
+          detalle:
+            "No se pudo autenticar o consultar Zoom. Revisá las credenciales y permisos de la cuenta anfitriona."
+        };
       }
     }
     const actividadEnVivo = reunion.zoom.eventoProveedorId
