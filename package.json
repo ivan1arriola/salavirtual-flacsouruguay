@@ -63,7 +63,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write docs/refactorizacion/e01-catalogo-pantallas.md && prettier docs/refactorizacion/e01-catalogo-pantallas.md && prettier --check .",
     "deadcode": "knip",
     "architecture": "depcruise src app auth.ts scripts test --config .dependency-cruiser.cjs --output-type err"
   },
