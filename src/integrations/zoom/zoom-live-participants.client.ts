@@ -125,7 +125,11 @@ function errorZoom(response: Response, cuerpo: unknown): EstadoAsistenciaZoomEnV
   const textoError = (mensaje ?? "").toLowerCase();
 
   let motivo: MotivoAsistenciaZoom = "ERROR_API";
-  if (response.status === 401 || response.status === 403) {
+  if (
+    response.status === 401 ||
+    response.status === 403 ||
+    /invalid scope|insufficient scope|permission denied|not authorized/.test(textoError)
+  ) {
     motivo = "SIN_PERMISOS";
   } else if (response.status === 404 || codigoNumerico === 3001) {
     motivo = "SIN_REUNION";
