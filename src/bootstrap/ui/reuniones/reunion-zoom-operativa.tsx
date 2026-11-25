@@ -556,6 +556,7 @@ function calidadClass(calidad: string | null): string {
 }
 
 function tituloMotivoAsistenciaZoom(motivo: string): string {
+  if (motivo === "SIN_DATOS") return "La consulta de asistencia en vivo no se ejecutó";
   if (motivo === "PLAN_DASHBOARD_REQUERIDO") return "La cuenta no tiene habilitada esta consulta de Dashboard";
   if (motivo === "SIN_PERMISOS") return "Zoom rechazó los permisos de consulta";
   if (motivo === "SIN_REUNION") return "Zoom no encuentra esta reunión";
@@ -566,6 +567,9 @@ function tituloMotivoAsistenciaZoom(motivo: string): string {
 }
 
 function mensajeMotivoAsistenciaZoom(motivo: string): string {
+  if (motivo === "SIN_DATOS") {
+    return "No hay un ID de reunión o credenciales de Zoom disponibles para consultar los participantes en vivo.";
+  }
   if (motivo === "PLAN_DASHBOARD_REQUERIDO") {
     return "La API de participantes en vivo requiere una cuenta Business o superior con la función Dashboard habilitada.";
   }
