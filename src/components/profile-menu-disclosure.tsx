@@ -39,6 +39,17 @@ export function DismissibleDetails({
       }
     }
 
+    function handleLinkClick(event: MouseEvent) {
+      const details = detailsRef.current;
+      const target = event.target;
+      const link = target instanceof Element ? target.closest("a[href]") : null;
+
+      if (details?.open && link && details.contains(link)) {
+        // Close even when selecting the current URL, before client-side navigation.
+        closeMenu({ restoreFocus: event.detail === 0 });
+      }
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") {
         return;
@@ -55,10 +66,12 @@ export function DismissibleDetails({
 
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("click", handleLinkClick, true);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("click", handleLinkClick, true);
     };
   }, []);
 
