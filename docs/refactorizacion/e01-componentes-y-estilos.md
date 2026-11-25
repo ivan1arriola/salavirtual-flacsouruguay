@@ -12,12 +12,12 @@ Línea base: `bfcbfc091277086b37a7ae499bc95e54fe441272`. Revisión estática de 
 
 Las cinco hojas compartidas más grandes son:
 
-| Archivo | Bytes |
-| --- | ---: |
-| `operations.css` | 87.426 |
-| `meeting-detail-v2.css` | 59.311 |
-| `role-dashboard.css` | 28.411 |
-| `settings.css` | 26.624 |
+| Archivo                    |  Bytes |
+| :------------------------- | -----: |
+| `operations.css`           | 87.426 |
+| `meeting-detail-v2.css`    | 59.311 |
+| `role-dashboard.css`       | 28.411 |
+| `settings.css`             | 26.624 |
 | `configuration-center.css` | 23.429 |
 
 Estas cinco suman 225.201 bytes, aproximadamente el 49,2 % del CSS compartido importado.
