@@ -1217,3 +1217,59 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Personas registradas para el encuentro: lista independiente de conexiones de Zoom. */
+.registeredList {
+  display: grid;
+  gap: 7px;
+  max-height: 440px;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.registeredRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #dce6f2;
+  border-radius: 9px;
+  background: #f8fafd;
+}
+.registeredIdentity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.registeredIdentity strong {
+  color: #193663;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+.registeredIdentity span {
+  color: #5b6d86;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.registeredStatus {
+  max-width: 220px;
+  text-align: right;
+  font-size: 0.74rem;
+  font-weight: 750;
+  color: #526781;
+}
+.registeredCount {
+  color: #526781;
+  font-size: 0.8rem;
+}
+@media (max-width: 650px) {
+  .registeredRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .registeredStatus {
+    text-align: left;
+    max-width: none;
+  }
+}

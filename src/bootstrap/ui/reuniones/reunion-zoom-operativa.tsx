@@ -34,6 +34,7 @@ import {
   type EntradaActividadZoom
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
+import { ZoomInscriptos } from "./zoom-inscriptos";
 import {
   etiquetaEstadoActualZoom,
   type EstadoActualZoom
@@ -262,6 +263,8 @@ export function ReunionZoomOperativa({
           <ZoomIntegrationWarning error={reunion.zoom.errorIntegracion} rol={rol} />
         ) : null}
       </section>
+
+      <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
 
       <section className={styles.card} aria-label="Participantes de Zoom en vivo">
         <div className={styles.sectionHeading}>
