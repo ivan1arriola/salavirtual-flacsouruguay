@@ -49,13 +49,21 @@ describe("estado actual de Zoom", () => {
       ejecucion: segunda
     });
     expect(
-      resolverEstadoActualZoom([segunda], { estado: "waiting", uuid: "segunda", salaEspera: null }, "cuenta")
+      resolverEstadoActualZoom(
+        [segunda],
+        { estado: "waiting", uuid: "segunda", salaEspera: null },
+        "cuenta"
+      )
     ).toMatchObject({ tipo: "SIN_ACTIVA" });
   });
 
   it("no reactiva una ejecución por un aviso viejo sin cierre si existe otra posterior cerrada", () => {
     expect(
-      resolverEstadoActualZoom([{ ...primera, fin: null }, { ...segunda, fin: primera.fin }], null, null)
+      resolverEstadoActualZoom(
+        [{ ...primera, fin: null }, { ...segunda, fin: primera.fin }],
+        null,
+        null
+      )
     ).toMatchObject({ tipo: "SIN_VERIFICAR" });
   });
 });

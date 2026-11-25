@@ -500,7 +500,8 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
     uuid?: unknown;
     settings?: { waiting_room?: unknown };
   };
-  const estado = data.status === "started" || data.status === "waiting" ? data.status : null;
+  const estado: "started" | "waiting" | null =
+    data.status === "started" || data.status === "waiting" ? data.status : null;
   return {
     estado,
     uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,

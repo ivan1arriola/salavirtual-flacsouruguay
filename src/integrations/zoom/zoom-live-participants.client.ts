@@ -199,10 +199,9 @@ export async function obtenerParticipantesZoomEnVivoHttp(
 ): Promise<EstadoAsistenciaZoomEnVivo> {
   const participantes: ParticipanteZoomEnVivo[] = [];
   const identificador = encodeURIComponent(meetingId);
-  const idCodificado =
-    meetingId.startsWith("/") || meetingId.includes("//")
-      ? encodeURIComponent(identificador)
-      : identificador;
+  const idCodificado = meetingId.startsWith("/") || meetingId.includes("//")
+    ? encodeURIComponent(identificador)
+    : identificador;
   let siguiente = "";
   const visitados = new Set<string>();
   let pagina = 0;

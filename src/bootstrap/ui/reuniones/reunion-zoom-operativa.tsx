@@ -221,7 +221,9 @@ export function ReunionZoomOperativa({
         </p>
         {estadoActual?.ejecucion &&
         (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
-          <p className={styles.note}>Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.</p>
+          <p className={styles.note}>
+            Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.
+          </p>
         ) : null}
         {estadoActual?.tipo === "OTRA_EJECUCION" ? (
           <p className={styles.note}>
@@ -229,7 +231,9 @@ export function ReunionZoomOperativa({
             vínculo.
           </p>
         ) : null}
-        <p className={styles.note}>Última comprobación: {formatTime(reunion.actualizadoAt)}.</p>
+        <p className={styles.note}>
+          Última comprobación: {formatTime(reunion.actualizadoAt)}.
+        </p>
         <div className={styles.statusGrid}>
           <div>
             <Video size={18} aria-hidden="true" />
@@ -240,7 +244,9 @@ export function ReunionZoomOperativa({
             <Users size={18} aria-hidden="true" />
             <strong>En reunión</strong>
             <span>
-              {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " conexión(es)" : "Sin verificar"}
+              {asistenciaEnVivo.estado === "DISPONIBLE"
+                ? enReunion + " conexión(es)"
+                : "Sin verificar"}
             </span>
           </div>
           <div>
@@ -264,7 +270,10 @@ export function ReunionZoomOperativa({
         ) : null}
       </section>
 
-      <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
+      <ZoomInscriptos
+        invitados={reunion.invitados}
+        asistenciaEnVivo={asistenciaEnVivo}
+      />
 
       <section className={styles.card} aria-label="Participantes de Zoom en vivo">
         <div className={styles.sectionHeading}>
@@ -308,14 +317,18 @@ export function ReunionZoomOperativa({
                       <div className={styles.liveIdentity}>
                         <strong>{p.nombre}</strong>
                         <span>{p.email ?? "Correo no disponible"}</span>
-                        {p.rol !== "DESCONOCIDO" ? <small>{rolParticipanteLabel(p.rol)}</small> : null}
+                        {p.rol !== "DESCONOCIDO" ? (
+                          <small>{rolParticipanteLabel(p.rol)}</small>
+                        ) : null}
                       </div>
                       <div className={styles.liveStatus}>
                         <span className={estadoParticipanteClass(p.estado)}>
                           {estadoParticipanteLabel(p.estado)}
                         </span>
                         <small>
-                          {p.ingreso ? "Entró " + formatTime(new Date(p.ingreso)) : "Ingreso sin horario"}
+                          {p.ingreso
+                            ? "Entró " + formatTime(new Date(p.ingreso))
+                            : "Ingreso sin horario"}
                         </small>
                         {p.salida ? <small>Salió {formatTime(new Date(p.salida))}</small> : null}
                         {p.motivoSalida ? <small>{p.motivoSalida}</small> : null}
@@ -363,7 +376,9 @@ export function ReunionZoomOperativa({
                     : ""}
                 </small>
               ) : null}
-              {asistenciaEnVivo.detalle ? <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small> : null}
+              {asistenciaEnVivo.detalle ? (
+                <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small>
+              ) : null}
             </div>
           </div>
         )}
@@ -372,8 +387,10 @@ export function ReunionZoomOperativa({
             <h3>Última presencia observada por webhooks</h3>
             <p>
               {presenciaObservada.identificadores > 0
-                ? presenciaObservada.enSala + " identificador(es) con entrada sin salida posterior · " +
-                  presenciaObservada.enEspera + " en espera según el último aviso"
+                ? presenciaObservada.enSala +
+                  " identificador(es) con entrada sin salida posterior · " +
+                  presenciaObservada.enEspera +
+                  " en espera según el último aviso"
                 : "No se recibieron identificadores suficientes para estimar presencia."}
             </p>
             <p className={styles.note}>

@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import { ZoomInscriptos } from "../src/bootstrap/ui/reuniones/zoom-inscriptos";
 
 const invitado = { id: "i1", nombre: "Ana Pérez", email: "ana@example.com" };
-const participante = (email: string, estado: "EN_REUNION" | "EN_ESPERA" | "DESCONECTADO" | "DESCONOCIDO") => ({
+const participante = (
+  email: string,
+  estado: "EN_REUNION" | "EN_ESPERA" | "DESCONECTADO" | "DESCONOCIDO"
+) => ({
   id: "p1",
   nombre: "Ana",
   email,
@@ -25,7 +28,10 @@ describe("lista de personas inscriptas en la ficha operativa", () => {
     const html = renderToStaticMarkup(
       createElement(ZoomInscriptos, {
         invitados: [invitado],
-        asistenciaEnVivo: { estado: "DISPONIBLE", participantes: [participante("ANA@example.com", "EN_REUNION")] }
+        asistenciaEnVivo: {
+          estado: "DISPONIBLE",
+          participantes: [participante("ANA@example.com", "EN_REUNION")]
+        }
       })
     );
     expect(html).toContain("Personas inscriptas");

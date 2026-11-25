@@ -37,7 +37,10 @@ export function NavegacionEncuentroZoom({
         ) : (
           <>
             <OperationalAutoRefresh
-              enabled={actualizarAutomaticamente ?? (reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO")}
+              enabled={
+                actualizarAutomaticamente ??
+                (reunion.estado === "ESPERANDO_INICIO" || reunion.estado === "EN_CURSO")
+              }
             />
             <RefreshButton />
           </>

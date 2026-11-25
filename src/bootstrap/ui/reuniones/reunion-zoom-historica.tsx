@@ -94,6 +94,19 @@ function SeccionResumen({
 }>) {
   const { registros, ocurrencias } = asistencia;
   const { inicioRealAt, finRealAt } = reunion.conferencia;
+  let inicioRealLabel = "Sin confirmar";
+  let finRealLabel = "Sin confirmar";
+  if (ejecuciones.length > 1) {
+    inicioRealLabel = "Ver ejecuciones";
+    finRealLabel = "Ver ejecuciones";
+  } else {
+    if (inicioRealAt) {
+      inicioRealLabel = formatTime(inicioRealAt);
+    }
+    if (finRealAt) {
+      finRealLabel = formatTime(finRealAt);
+    }
+  }
   const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo)).reverse();
   const otrasActividades = actividad.length - actividadOperativa.length;
   return (
@@ -112,7 +125,11 @@ function SeccionResumen({
                 .map((e) => (
                   <li key={e.cuentaZoomId + ":" + e.uuid}>
                     <span>{formatDate(e.inicio)} · {formatTime(e.inicio)}</span>
-                    <span>{e.fin ? formatTime(e.fin) + " · " + duracion(e.inicio, e.fin) : "Sin cierre confirmado"}</span>
+                    <span>
+                      {e.fin
+                        ? formatTime(e.fin) + " · " + duracion(e.inicio, e.fin)
+                        : "Sin cierre confirmado"}
+                    </span>
                   </li>
                 ))}
             </ul>
@@ -123,14 +140,14 @@ function SeccionResumen({
             <dt>
               <CalendarDays size={21} aria-hidden="true" /> Inicio real
             </dt>
-            <dd>{ejecuciones.length > 1 ? "Ver ejecuciones" : (inicioRealAt ? formatTime(inicioRealAt) : "Sin confirmar")}</dd>
+            <dd>{inicioRealLabel}</dd>
             <small>Programado {formatTime(reunion.inicioProgramadoAt)}</small>
           </div>
           <div>
             <dt>
               <Clock3 size={21} aria-hidden="true" /> Fin real
             </dt>
-            <dd>{ejecuciones.length > 1 ? "Ver ejecuciones" : (finRealAt ? formatTime(finRealAt) : "Sin confirmar")}</dd>
+            <dd>{finRealLabel}</dd>
             <small>Programado {formatTime(reunion.finProgramadoAt)}</small>
           </div>
           <div>
@@ -172,7 +189,10 @@ function SeccionResumen({
           <>
             <ol className={styles.timeline}>
               {actividadOperativa.slice(0, 15).map((a, i) => (
-                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
+                <ItemActividad
+                  key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
+                  a={a}
+                />
               ))}
             </ol>
             {actividadOperativa.length > 15 ? (
@@ -182,7 +202,10 @@ function SeccionResumen({
                 </summary>
                 <ol className={styles.timeline}>
                   {actividadOperativa.slice(15).map((a, i) => (
-                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
+                    <ItemActividad
+                      key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
+                      a={a}
+                    />
                   ))}
                 </ol>
               </details>
@@ -198,7 +221,10 @@ function SeccionResumen({
                 .slice(-20)
                 .reverse()
                 .map((a, i) => (
-                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
+                  <ItemActividad
+                    key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
+                    a={a}
+                  />
                 ))}
             </ol>
             <p>Últimos 20 grupos de avisos administrativos.</p>
@@ -308,7 +334,9 @@ export function ReunionZoomHistorica({
   const { registros, ocurrencias } = asistencia;
   const esAsistente = rol === "ASISTENTE_TECNICO";
   const { inicioRealAt, finRealAt } = reunion.conferencia;
-  const ejecucion = estadoActual ? etiquetaEstadoActualZoom(estadoActual) : etiquetaEjecucion(inicioRealAt, finRealAt);
+  const ejecucion = estadoActual
+    ? etiquetaEstadoActualZoom(estadoActual)
+    : etiquetaEjecucion(inicioRealAt, finRealAt);
   const hayReporte = asistencia.estadoReporte === "DISPONIBLE" && registros.length > 0;
   const conexiones = registros.reduce((total, r) => total + r.sesiones, 0);
   const estadoGrabacion = derivarEstadoGrabacionZoomFicha({
@@ -358,7 +386,9 @@ export function ReunionZoomHistorica({
       {mostrarRegresoEnVivo ? (
         <section className={styles.card}>
           <strong>Estás consultando el historial, no la actividad en vivo.</strong>
-          <Link href="?vista=actual" className={styles.primary}>Ver estado actual de la reunión</Link>
+          <Link href="?vista=actual" className={styles.primary}>
+            Ver estado actual de la reunión
+          </Link>
         </section>
       ) : null}
       <nav className={styles.tabs} aria-label="Secciones del encuentro">
