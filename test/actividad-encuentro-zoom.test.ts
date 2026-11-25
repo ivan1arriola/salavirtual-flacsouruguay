@@ -95,5 +95,6 @@ describe("resumen operativo de Zoom", () => {
     expect(traducirDetalleActividadZoom("Unstable audio quality, High CPU occupation")).toBe(
       "Audio inestable · Uso elevado de CPU"
     );
+    expect(traducirDetalleActividadZoom("Contenido: application")).toBe("Compartió una aplicación");
   });
 });
