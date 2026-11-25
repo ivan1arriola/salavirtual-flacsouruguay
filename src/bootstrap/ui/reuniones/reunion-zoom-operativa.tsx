@@ -633,7 +633,7 @@ function mensajeMotivoAsistenciaZoom(motivo: string): string {
     return "La API de participantes en vivo requiere una cuenta Business o superior con la función Dashboard habilitada.";
   }
   if (motivo === "SIN_PERMISOS") {
-    return "Revisá los scopes dashboard_meetings:read:admin o dashboard:read:admin y que la aplicación pueda consultar la cuenta anfitriona.";
+    return "Revisá el scope dashboard:read:list_meeting_participants:admin o los scopes amplios dashboard_meetings:read:admin / dashboard:read:admin, y que la aplicación pueda consultar la cuenta anfitriona.";
   }
   if (motivo === "SIN_REUNION") {
     return "Zoom no devolvió una instancia activa para este ID. Verificá que el encuentro siga abierto y que se esté usando el ID correcto.";
