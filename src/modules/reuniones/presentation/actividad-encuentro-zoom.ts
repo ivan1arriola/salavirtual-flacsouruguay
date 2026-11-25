@@ -175,7 +175,9 @@ export function resumirActividadEncuentroZoom(
 }
 
 export function traducirDetalleActividadZoom(detalle: string | null | undefined): string | null {
-  if (!detalle) return null;
+  if (!detalle) {
+    return null;
+  }
   const traducciones: Record<string, string> = {
     "Unstable audio quality": "Audio inestable",
     "Unstable video quality": "Vídeo inestable",
