@@ -18,7 +18,7 @@ const segunda: EjecucionZoomObservada = {
   fin: null
 };
 
-// Regressions for execution correlation and current meeting state.
+// Regression coverage for Zoom execution correlation and live state.
 describe("estado actual de Zoom", () => {
   it("reconoce una nueva ejecución aunque la primera haya finalizado", () => {
     expect(
