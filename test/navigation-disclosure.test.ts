@@ -16,7 +16,14 @@ describe("cierre de los menús de navegación", () => {
   it("conserva el cierre exterior y con Escape", () => {
     expect(disclosure).toContain('document.addEventListener("pointerdown", handlePointerDown)');
     expect(disclosure).toContain('document.addEventListener("keydown", handleKeyDown)');
+    expect(disclosure).toContain('document.addEventListener("focusin", handlePointerDown)');
+    expect(disclosure).toContain('document.removeEventListener("focusin", handlePointerDown)');
     expect(disclosure).toContain('event.key !== "Escape"');
     expect(disclosure).toContain("closeMenu({ restoreFocus: true })");
+  });
+
+  it("admite un control explícito de cierre", () => {
+    expect(disclosure).toContain('target.closest("[data-disclosure-close]")');
+    expect(disclosure).toContain("details?.open && closeButton && details.contains(closeButton)");
   });
 });
