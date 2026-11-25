@@ -1,0 +1,31 @@
+name: "Auditoría · E01"
+on:
+  pull_request:
+    paths:
+      - scripts/auditar-e01.mjs
+      - .github/workflows/auditoria-e01.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Inventario estático reproducible
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - name: Generar inventarios
+        run: |
+          mkdir -p "$RUNNER_TEMP/e01"
+          npx --no-install depcruise src app auth.ts --config .dependency-cruiser.cjs --output-type json > "$RUNNER_TEMP/e01/dependencies.json"
+          node scripts/auditar-e01.mjs "$RUNNER_TEMP/e01"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: e01-${{ github.sha }}
+          path: ${{ runner.temp }}/e01/
+          retention-days: 7
