@@ -2,6 +2,7 @@ type CalidadZoom = "good" | "fair" | "poor" | "bad";
 export type EstadoParticipanteZoom = "EN_REUNION" | "EN_ESPERA" | "DESCONECTADO" | "DESCONOCIDO";
 export type RolParticipanteZoom = "ANFITRION" | "PARTICIPANTE" | "DESCONOCIDO";
 export type MotivoAsistenciaZoom =
+  | "SIN_DATOS"
   | "SIN_REUNION"
   | "SIN_PERMISOS"
   | "PLAN_DASHBOARD_REQUERIDO"
