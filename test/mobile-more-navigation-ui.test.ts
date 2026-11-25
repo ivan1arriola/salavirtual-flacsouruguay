@@ -4,10 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const styles = postcss.parse(readFileSync(new URL("../app/(gestion)/ux-polish.css", import.meta.url), "utf8"));
 const shell = readFileSync(new URL("../src/components/app-shell.tsx", import.meta.url), "utf8");
-const navigation = readFileSync(
-  new URL("../app/(gestion)/profile-navigation-refresh.css", import.meta.url),
-  "utf8"
-);
+const navigationUrl = new URL("../app/(gestion)/profile-navigation-refresh.css", import.meta.url);
+const navigation = readFileSync(navigationUrl, "utf8");
 
 function declarations(selector: string) {
   const values = new Map<string, string>();
@@ -37,9 +35,8 @@ describe("navegación móvil secundaria", () => {
 
   it("indica la página actual con más que color y conserva el foco visible", () => {
     expect(shell).toContain('className="mobile-more-current"');
-    expect(
-      declarations('.mobile-more-menu nav a[aria-current="page"] .mobile-more-current').get("visibility")
-    ).toBe("visible");
+    const current = declarations('.mobile-more-menu nav a[aria-current="page"] .mobile-more-current');
+    expect(current.get("visibility")).toBe("visible");
     expect(declarations(".mobile-more-menu :is(a, button):focus-visible").get("outline")).toContain("2px");
     expect(navigation).toContain('.mobile-nav-more:has(a[aria-current="page"]):not([open]) > summary');
   });
