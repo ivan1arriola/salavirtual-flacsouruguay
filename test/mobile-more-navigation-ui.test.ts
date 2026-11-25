@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import postcss, { type Declaration } from "postcss";
 import { describe, expect, it } from "vitest";
 
-const styles = postcss.parse(readFileSync(new URL("../app/(gestion)/ux-polish.css", import.meta.url), "utf8"));
+const stylesUrl = new URL("../app/(gestion)/ux-polish.css", import.meta.url);
+const styles = postcss.parse(readFileSync(stylesUrl, "utf8"));
 const shell = readFileSync(new URL("../src/components/app-shell.tsx", import.meta.url), "utf8");
 const navigationUrl = new URL("../app/(gestion)/profile-navigation-refresh.css", import.meta.url);
 const navigation = readFileSync(navigationUrl, "utf8");
