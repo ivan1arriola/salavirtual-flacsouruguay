@@ -1,5 +1,8 @@
 import { CircleAlert, FileVideo, MonitorUp, PlayCircle, UsersRound } from "lucide-react";
-import type { EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
+import {
+  traducirDetalleActividadZoom,
+  type EntradaActividadZoom
+} from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import styles from "./reunion-zoom-operativa.module.css";
 
 const hora = new Intl.DateTimeFormat("es-UY", {
@@ -24,6 +27,7 @@ function IconoActividad({ etiqueta }: Readonly<{ etiqueta: string }>) {
 }
 
 export function ItemActividad({ a }: Readonly<{ a: EntradaActividadZoom }>) {
+  const detalle = traducirDetalleActividadZoom(a.detalle);
   return (
     <li>
       <time dateTime={a.desde.toISOString()}>{hora.format(a.desde)}</time>
@@ -33,8 +37,7 @@ export function ItemActividad({ a }: Readonly<{ a: EntradaActividadZoom }>) {
       <span className={styles.timelineLabel}>
         {a.etiqueta}
         {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
-        {a.detalle ? <small> · {a.detalle}</small> : null}
-        {a.participanteId ? <small> · Participante {a.participanteId.slice(-8)}</small> : null}
+        {detalle ? <small> · {detalle}</small> : null}
       </span>
     </li>
   );

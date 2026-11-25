@@ -14,7 +14,12 @@ const TIPOS_PARTICIPANTE = [
   "meeting.participant_joined_waiting_room",
   "meeting.participant_left_waiting_room",
   "meeting.participant_admitted",
-  "meeting.participant_put_in_waiting_room"
+  "meeting.participant_put_in_waiting_room",
+  "meeting.participant_jbh_waiting",
+  "meeting.participant_jbh_waiting_left",
+  "meeting.participant_role_changed",
+  "meeting.participant_joined_breakout_room",
+  "meeting.participant_left_breakout_room"
 ];
 
 /**

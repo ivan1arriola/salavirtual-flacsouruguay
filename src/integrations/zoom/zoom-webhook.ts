@@ -15,6 +15,11 @@ export const EVENTOS_EN_VIVO: ReadonlySet<string> = new Set([
   "meeting.participant_left_waiting_room",
   "meeting.participant_admitted",
   "meeting.participant_put_in_waiting_room",
+  "meeting.participant_jbh_waiting",
+  "meeting.participant_jbh_waiting_left",
+  "meeting.participant_role_changed",
+  "meeting.participant_joined_breakout_room",
+  "meeting.participant_left_breakout_room",
   "recording.started",
   "recording.stopped",
   "recording.paused",
@@ -150,9 +155,12 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   const participante = objeto(recurso?.participant);
   // Solo ids opacos: nombre, correo, IP y demás datos del participante jamás se leen.
   const participanteId = EVENTOS_EN_VIVO.has(tipo)
-    ? (texto(participante?.participant_uuid) ?? texto(participante?.id) ?? texto(participante?.user_id))
+    ? (texto(participante?.participant_uuid) ??
+      texto(participante?.participant_user_id) ??
+      texto(participante?.user_id) ??
+      texto(participante?.id))
     : null;
-  // Códigos de alerta de Zoom (p. ej. "Unstable audio quality"): texto corto, sin personas.
+  // Se guardan únicamente códigos de calidad, roles y tipos de contenido; nunca nombres ni correos.
   const detalle =
     tipo === "meeting.alert" && Array.isArray(recurso?.issues)
       ? recurso.issues
@@ -160,7 +168,23 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
           .filter((v): v is string => v !== null)
           .join(", ")
           .slice(0, 250) || null
-      : null;
+      : tipo === "meeting.participant_role_changed"
+        ? (() => {
+            const anterior = texto(participante?.old_role);
+            const nuevo = texto(participante?.new_role);
+            const rol = (valor: string | null) =>
+              valor === "host" ? "anfitrión" : valor === "co-host" ? "coanfitrión" : valor === "attendee" ? "participante" : null;
+            const desde = rol(anterior);
+            const hacia = rol(nuevo);
+            return desde && hacia ? "Rol: " + desde + " → " + hacia : null;
+          })()
+        : tipo === "meeting.sharing_started"
+          ? (() => {
+              const sharing = objeto(participante?.sharing_details);
+              const contenido = texto(sharing?.content);
+              return contenido ? "Contenido: " + contenido : null;
+            })()
+          : null;
   if (participanteId && participanteId.length > 255) {
     return null;
   }
