@@ -98,7 +98,7 @@ export function ReunionZoomOperativa({
         <h1>{reunion.titulo}</h1>
         <p className={styles.subtitle}>
           {reunion.docente}
-          {reunion.docenteEmail ? \` · \${reunion.docenteEmail}\` : ""}
+          {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
         </p>
         <div className={styles.chips} aria-label="Fecha y horario">
           <span>
@@ -442,7 +442,7 @@ export function ReunionZoomOperativa({
         </div>
         <div className={styles.quickActions}>
           {!esAsistente ? (
-            <Link href={\`/reuniones/\${reunion.solicitudId}\`}>
+            <Link href={`/reuniones/${reunion.solicitudId}`}>
               <FileText size={19} /> Ficha completa
             </Link>
           ) : null}
