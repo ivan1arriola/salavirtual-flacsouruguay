@@ -83,6 +83,12 @@ export function ReunionZoomOperativa({
   const eventosRecientes = actividadOperativa.slice(-15).reverse();
   const eventosAnteriores = actividadOperativa.slice(0, -15).reverse();
   const ultimoEvento = actividad.at(-1);
+  const estadoAnfitrion =
+    asistenciaEnVivo.estado !== "DISPONIBLE"
+      ? "Sin verificar"
+      : anfitrionesConectados > 0
+        ? "Detectado en sala"
+        : "No detectado en sala";
 
   return (
     <main className={styles.page}>
@@ -208,11 +214,7 @@ export function ReunionZoomOperativa({
           <div>
             <Users size={18} aria-hidden="true" />
             <strong>Anfitrión</strong>
-            <span>
-              {asistenciaEnVivo.estado === "DISPONIBLE"
-                ? anfitrionesConectados > 0 ? "Detectado en sala" : "No detectado en sala"
-                : "Sin verificar"}
-            </span>
+            <span>{estadoAnfitrion}</span>
           </div>
           <div>
             <Radio size={18} aria-hidden="true" />
@@ -536,48 +538,92 @@ export function ReunionZoomOperativa({
 }
 
 function estadoParticipanteLabel(estado: string): string {
-  if (estado === "EN_REUNION") return "En reunión";
-  if (estado === "EN_ESPERA") return "En sala de espera";
-  if (estado === "DESCONECTADO") return "Desconectado";
+  if (estado === "EN_REUNION") {
+    return "En reunión";
+  }
+  if (estado === "EN_ESPERA") {
+    return "En sala de espera";
+  }
+  if (estado === "DESCONECTADO") {
+    return "Desconectado";
+  }
   return "Estado sin informar";
 }
 
 function estadoParticipanteClass(estado: string): string {
-  if (estado === "EN_REUNION") return styles.participantOnline;
-  if (estado === "EN_ESPERA") return styles.participantWaiting;
-  if (estado === "DESCONECTADO") return styles.participantDeparted;
+  if (estado === "EN_REUNION") {
+    return styles.participantOnline;
+  }
+  if (estado === "EN_ESPERA") {
+    return styles.participantWaiting;
+  }
+  if (estado === "DESCONECTADO") {
+    return styles.participantDeparted;
+  }
   return styles.participantUnknown;
 }
 
 function rolParticipanteLabel(rol: string): string {
-  if (rol === "ANFITRION") return "Anfitrión";
-  if (rol === "PARTICIPANTE") return "Participante";
+  if (rol === "ANFITRION") {
+    return "Anfitrión";
+  }
+  if (rol === "PARTICIPANTE") {
+    return "Participante";
+  }
   return "Rol sin informar";
 }
 
 function calidadLabel(calidad: string | null): string {
-  if (calidad === "good") return "Buena";
-  if (calidad === "fair") return "Aceptable";
-  if (calidad === "poor") return "Deficiente";
-  if (calidad === "bad") return "Muy deficiente";
+  if (calidad === "good") {
+    return "Buena";
+  }
+  if (calidad === "fair") {
+    return "Aceptable";
+  }
+  if (calidad === "poor") {
+    return "Deficiente";
+  }
+  if (calidad === "bad") {
+    return "Muy deficiente";
+  }
   return "Sin dato";
 }
 
 function calidadClass(calidad: string | null): string {
-  if (calidad === "good") return styles.qualityGood;
-  if (calidad === "fair") return styles.qualityFair;
-  if (calidad === "poor" || calidad === "bad") return styles.qualityPoor;
+  if (calidad === "good") {
+    return styles.qualityGood;
+  }
+  if (calidad === "fair") {
+    return styles.qualityFair;
+  }
+  if (calidad === "poor" || calidad === "bad") {
+    return styles.qualityPoor;
+  }
   return styles.qualityUnknown;
 }
 
 function tituloMotivoAsistenciaZoom(motivo: string): string {
-  if (motivo === "SIN_DATOS") return "La consulta de asistencia en vivo no se ejecutó";
-  if (motivo === "PLAN_DASHBOARD_REQUERIDO") return "La cuenta no tiene habilitada esta consulta de Dashboard";
-  if (motivo === "SIN_PERMISOS") return "Zoom rechazó los permisos de consulta";
-  if (motivo === "SIN_REUNION") return "Zoom no encuentra esta reunión";
-  if (motivo === "ID_REUNION_INVALIDO") return "El identificador de reunión no es válido";
-  if (motivo === "LIMITE_CONSULTAS") return "Zoom limitó temporalmente las consultas";
-  if (motivo === "ERROR_CONEXION") return "No se pudo conectar con Zoom";
+  if (motivo === "SIN_DATOS") {
+    return "La consulta de asistencia en vivo no se ejecutó";
+  }
+  if (motivo === "PLAN_DASHBOARD_REQUERIDO") {
+    return "La cuenta no tiene habilitada esta consulta de Dashboard";
+  }
+  if (motivo === "SIN_PERMISOS") {
+    return "Zoom rechazó los permisos de consulta";
+  }
+  if (motivo === "SIN_REUNION") {
+    return "Zoom no encuentra esta reunión";
+  }
+  if (motivo === "ID_REUNION_INVALIDO") {
+    return "El identificador de reunión no es válido";
+  }
+  if (motivo === "LIMITE_CONSULTAS") {
+    return "Zoom limitó temporalmente las consultas";
+  }
+  if (motivo === "ERROR_CONEXION") {
+    return "No se pudo conectar con Zoom";
+  }
   return "No se pudo consultar la asistencia en vivo";
 }
 
