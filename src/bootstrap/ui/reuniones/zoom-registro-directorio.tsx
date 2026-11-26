@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ResultadoInscriptosZoom } from "@/src/integrations/zoom/zoom-registrants.client";
+import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
 const etiquetas = { approved: "Aprobada", pending: "Pendiente", denied: "Rechazada" };
@@ -29,7 +30,18 @@ export function ZoomRegistroDirectorio({ resultado }: Readonly<{ resultado: Resu
       ) : null}
       {resultado.estado === "DISPONIBLE" || resultado.estado === "PARCIAL" ? (
         <>
-          <p>{resultado.personas.length} registros recuperados</p>
+          <dl className={styles.kpis} aria-label="Resumen de inscripciones recuperadas">
+            <div>
+              <dt>Registros recuperados</dt>
+              <dd>{resultado.personas.length}</dd>
+            </div>
+            {(["approved", "pending", "denied"] as const).map((tipo) => (
+              <div key={tipo}>
+                <dt>{etiquetas[tipo]}</dt>
+                <dd>{resultado.personas.filter((p) => p.estado === tipo).length}</dd>
+              </div>
+            ))}
+          </dl>
           <div className={styles.directoryFilters}>
             <label>
               Buscar por nombre o correo
@@ -46,12 +58,18 @@ export function ZoomRegistroDirectorio({ resultado }: Readonly<{ resultado: Resu
             </label>
           </div>
           <p aria-live="polite">{personas.length} resultados</p>
+          {personas.length === 0 ? (
+            <p className={styles.note}>No hay registros que coincidan con los filtros.</p>
+          ) : null}
           <ul className={styles.registeredList}>
             {personas.map((p) => (
               <li className={styles.registeredRow} key={p.id + ":" + p.estado}>
                 <div className={styles.registeredIdentity}>
                   <strong>{p.nombre || p.email}</strong>
                   <span>{p.email}</span>
+                  {p.fecha && Number.isFinite(Date.parse(p.fecha)) ? (
+                    <small>Inscripción: {formatDate(new Date(p.fecha))} · {formatTime(new Date(p.fecha))}</small>
+                  ) : null}
                 </div>
                 <span className={styles.registeredStatus}>{etiquetas[p.estado]}</span>
               </li>
