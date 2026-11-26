@@ -100,17 +100,32 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
     hasta: Date;
     cantidad: number;
     participanteId?: string | null;
-  participanteNombre?: string | null;
-  participanteEmail?: string | null;
-  registranteId?: string | null;
-  motivoSalida?: string | null;
+    participanteNombre?: string | null;
+    participanteEmail?: string | null;
+    registranteId?: string | null;
+    motivoSalida?: string | null;
     detalle?: string | null;
     huella?: string;
   }[] = [];
 
-  for (const { tipo, ocurridoAt, participanteId, participanteNombre, participanteEmail, registranteId, motivoSalida, detalle, huella } of ordenados) {
+  for (const {
+    tipo,
+    ocurridoAt,
+    participanteId,
+    participanteNombre,
+    participanteEmail,
+    registranteId,
+    motivoSalida,
+    detalle,
+    huella
+  } of ordenados) {
     const ultima = entradas.at(-1);
-    const mismoParticipante = ultima?.participanteId === participanteId && ultima?.participanteNombre === participanteNombre && ultima?.participanteEmail === participanteEmail && ultima?.registranteId === registranteId && ultima?.motivoSalida === motivoSalida;
+    const mismoParticipante =
+      ultima?.participanteId === participanteId &&
+      ultima?.participanteNombre === participanteNombre &&
+      ultima?.participanteEmail === participanteEmail &&
+      ultima?.registranteId === registranteId &&
+      ultima?.motivoSalida === motivoSalida;
     if (
       ultima &&
       AGRUPABLES.has(tipo) &&

@@ -21,9 +21,7 @@ import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
 import { ZoomActividadCategorias } from "./zoom-actividad-categorias";
 import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
-import {
-  type EntradaActividadZoom
-} from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
+import { type EntradaActividadZoom } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import {
   etiquetaEstadoActualZoom,
   type EjecucionZoomObservada,

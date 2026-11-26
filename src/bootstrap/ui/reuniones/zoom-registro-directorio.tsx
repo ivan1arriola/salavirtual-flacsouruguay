@@ -11,25 +11,32 @@ export function ZoomRegistroDirectorio({ resultado }: Readonly<{ resultado: Resu
   const [estado, setEstado] = useState("todos");
   const texto = buscar.trim().toLowerCase();
   const personas = resultado.personas.filter(
-    (p) => (estado === "todos" || p.estado === estado) && (p.nombre + " " + p.email).toLowerCase().includes(texto)
+    (p) =>
+      (estado === "todos" || p.estado === estado) && (p.nombre + " " + p.email).toLowerCase().includes(texto)
   );
   return (
     <section className={styles.card} aria-label="Inscripciones de Zoom">
       <h2 className={styles.sectionTitle}>Inscripciones de Zoom</h2>
       <p className={styles.note}>
-        {resultado.ambito.tipo === "ENCUENTRO" ? "Encuentro específico" : "Serie o alcance sin confirmar; no atribuir a este encuentro."}
+        {resultado.ambito.tipo === "ENCUENTRO"
+          ? "Encuentro específico"
+          : "Serie o alcance sin confirmar; no atribuir a este encuentro."}
       </p>
       {resultado.estado === "NO_HABILITADA" ? <p>La inscripción no está habilitada en Zoom.</p> : null}
       {resultado.estado === "SIN_VERIFICAR" ? <p>No se pudo verificar la lista de Zoom.</p> : null}
-      {resultado.estado === "PARCIAL" ? <p>Lista parcial: no se pudieron completar todas las consultas.</p> : null}
+      {resultado.estado === "PARCIAL" ? (
+        <p>Lista parcial: no se pudieron completar todas las consultas.</p>
+      ) : null}
       {resultado.estado === "DISPONIBLE" || resultado.estado === "PARCIAL" ? (
         <>
           <p>{resultado.personas.length} registros recuperados</p>
           <div className={styles.directoryFilters}>
-            <label>Buscar por nombre o correo
+            <label>
+              Buscar por nombre o correo
               <input value={buscar} onChange={(e) => setBuscar(e.target.value)} />
             </label>
-            <label>Estado de inscripción
+            <label>
+              Estado de inscripción
               <select value={estado} onChange={(e) => setEstado(e.target.value)}>
                 <option value="todos">Todos</option>
                 <option value="approved">Aprobadas</option>

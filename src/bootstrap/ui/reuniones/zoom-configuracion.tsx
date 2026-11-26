@@ -26,12 +26,17 @@ export function ZoomConfiguracion({
     ["Grabación automática", grabaciones[configuracion?.grabacion ?? ""] ?? "Sin verificar"],
     ["Cuenta anfitriona en Zoom", configuracion?.anfitrion ?? "Sin verificar"],
     ["Cuenta asignada en Sala Virtual", anfitrion ?? "Sin asignar"],
-    ["Anfitriones alternativos", configuracion?.alternativos === "" ? "Ninguno" : (configuracion?.alternativos ?? "Sin verificar")]
+    [
+      "Anfitriones alternativos",
+      configuracion?.alternativos === "" ? "Ninguno" : (configuracion?.alternativos ?? "Sin verificar")
+    ]
   ];
   return (
     <section className={styles.card} aria-label="Configuración efectiva de Zoom">
       <h2 className={styles.sectionTitle}>Configuración de Zoom</h2>
-      <p className={styles.note}>Configuración de la reunión consultada en Zoom, no el estado de la ejecución.</p>
+      <p className={styles.note}>
+        Configuración de la reunión consultada en Zoom, no el estado de la ejecución.
+      </p>
       <dl className={styles.facts}>
         {datos.map(([nombre, valor]) => (
           <div key={nombre}>

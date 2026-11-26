@@ -224,138 +224,139 @@ export function ReunionZoomOperativa({
       </section>
 
       <div className={styles.operationsGrid}>
-      <div className={styles.directoryColumn}>
-        {inscriptosZoom ? <ZoomRegistroDirectorio resultado={inscriptosZoom} /> : null}
-        <details className={styles.advanced}>
-          <summary>Invitados de Sala Virtual ({reunion.invitados.length})</summary>
-          <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
-        </details>
-      </div>
+        <div className={styles.directoryColumn}>
+          {inscriptosZoom ? <ZoomRegistroDirectorio resultado={inscriptosZoom} /> : null}
+          <details className={styles.advanced}>
+            <summary>Invitados de Sala Virtual ({reunion.invitados.length})</summary>
+            <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
+          </details>
+        </div>
 
-      <section className={styles.card} aria-label="Participantes de Zoom en vivo">
-        <div className={styles.sectionHeading}>
-          <div className={styles.heading}>
-            <Users size={19} aria-hidden="true" />
-            <h2>Participantes en vivo</h2>
+        <section className={styles.card} aria-label="Participantes de Zoom en vivo">
+          <div className={styles.sectionHeading}>
+            <div className={styles.heading}>
+              <Users size={19} aria-hidden="true" />
+              <h2>Participantes en vivo</h2>
+            </div>
+            {asistenciaEnVivo.estado === "DISPONIBLE" ? (
+              <span className={styles.updatedTag}>Datos de Zoom Dashboard</span>
+            ) : null}
           </div>
           {asistenciaEnVivo.estado === "DISPONIBLE" ? (
-            <span className={styles.updatedTag}>Datos de Zoom Dashboard</span>
-          ) : null}
-        </div>
-        {asistenciaEnVivo.estado === "DISPONIBLE" ? (
-          <>
-            <p className={styles.note}>
-              Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron. Una persona
-              que vuelve a entrar puede aparecer en más de una conexión.
-            </p>
-            <div className={styles.liveSummary}>
-              <div>
-                <strong>{enReunion}</strong>
-                <span>Conexiones en reunión</span>
-              </div>
-              <div>
-                <strong>{enEspera}</strong>
-                <span>Conexiones en espera</span>
-              </div>
-              <div>
-                <strong>{salieron}</strong>
-                <span>Conexiones que salieron</span>
-              </div>
-              <div>
-                <strong>{conProblemasCalidad}</strong>
-                <span>Conexiones con calidad deficiente</span>
-              </div>
-            </div>
-            {participantes.length ? (
-              <>
-                <div className={styles.liveList}>
-                  {participantes.map((p, index) => (
-                    <article key={p.id + ":" + index} className={styles.liveRow}>
-                      <div className={styles.liveIdentity}>
-                        <strong>{p.nombre}</strong>
-                        <span>{p.email ?? "Correo no disponible"}</span>
-                        {p.rol !== "DESCONOCIDO" ? <small>{rolParticipanteLabel(p.rol)}</small> : null}
-                      </div>
-                      <div className={styles.liveStatus}>
-                        <span className={estadoParticipanteClass(p.estado)}>
-                          {estadoParticipanteLabel(p.estado)}
-                        </span>
-                        <small>
-                          {p.ingreso ? "Entró " + formatTime(new Date(p.ingreso)) : "Ingreso sin horario"}
-                        </small>
-                        {p.salida ? <small>Salió {formatTime(new Date(p.salida))}</small> : null}
-                        {p.motivoSalida ? <small>{p.motivoSalida}</small> : null}
-                      </div>
-                      <div className={styles.liveQuality} aria-label="Calidad de conexión">
-                        <span className={calidadClass(p.calidadAudio)}>
-                          Audio: {calidadLabel(p.calidadAudio)}
-                        </span>
-                        <span className={calidadClass(p.calidadVideo)}>
-                          Vídeo: {calidadLabel(p.calidadVideo)}
-                        </span>
-                        <span className={calidadClass(p.calidadPantalla)}>
-                          Pantalla: {calidadLabel(p.calidadPantalla)}
-                        </span>
-                        {p.tipoConexion || p.tipoRed ? (
-                          <small>{[p.tipoConexion, p.tipoRed].filter(Boolean).join(" · ")}</small>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+            <>
+              <p className={styles.note}>
+                Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron. Una persona
+                que vuelve a entrar puede aparecer en más de una conexión.
+              </p>
+              <div className={styles.liveSummary}>
+                <div>
+                  <strong>{enReunion}</strong>
+                  <span>Conexiones en reunión</span>
                 </div>
-                {sinEstado > 0 ? (
-                  <p className={styles.note}>{sinEstado} conexión(es) sin estado informado por Zoom.</p>
+                <div>
+                  <strong>{enEspera}</strong>
+                  <span>Conexiones en espera</span>
+                </div>
+                <div>
+                  <strong>{salieron}</strong>
+                  <span>Conexiones que salieron</span>
+                </div>
+                <div>
+                  <strong>{conProblemasCalidad}</strong>
+                  <span>Conexiones con calidad deficiente</span>
+                </div>
+              </div>
+              {participantes.length ? (
+                <>
+                  <div className={styles.liveList}>
+                    {participantes.map((p, index) => (
+                      <article key={p.id + ":" + index} className={styles.liveRow}>
+                        <div className={styles.liveIdentity}>
+                          <strong>{p.nombre}</strong>
+                          <span>{p.email ?? "Correo no disponible"}</span>
+                          {p.rol !== "DESCONOCIDO" ? <small>{rolParticipanteLabel(p.rol)}</small> : null}
+                        </div>
+                        <div className={styles.liveStatus}>
+                          <span className={estadoParticipanteClass(p.estado)}>
+                            {estadoParticipanteLabel(p.estado)}
+                          </span>
+                          <small>
+                            {p.ingreso ? "Entró " + formatTime(new Date(p.ingreso)) : "Ingreso sin horario"}
+                          </small>
+                          {p.salida ? <small>Salió {formatTime(new Date(p.salida))}</small> : null}
+                          {p.motivoSalida ? <small>{p.motivoSalida}</small> : null}
+                        </div>
+                        <div className={styles.liveQuality} aria-label="Calidad de conexión">
+                          <span className={calidadClass(p.calidadAudio)}>
+                            Audio: {calidadLabel(p.calidadAudio)}
+                          </span>
+                          <span className={calidadClass(p.calidadVideo)}>
+                            Vídeo: {calidadLabel(p.calidadVideo)}
+                          </span>
+                          <span className={calidadClass(p.calidadPantalla)}>
+                            Pantalla: {calidadLabel(p.calidadPantalla)}
+                          </span>
+                          {p.tipoConexion || p.tipoRed ? (
+                            <small>{[p.tipoConexion, p.tipoRed].filter(Boolean).join(" · ")}</small>
+                          ) : null}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  {sinEstado > 0 ? (
+                    <p className={styles.note}>{sinEstado} conexión(es) sin estado informado por Zoom.</p>
+                  ) : null}
+                </>
+              ) : (
+                <p className={styles.note}>Zoom no devolvió conexiones para esta consulta.</p>
+              )}
+              <p className={styles.disclaimer}>
+                Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las puntuaciones de
+                calidad en Zoom Dashboard. «Sin dato» no significa que la conexión sea buena o mala.
+              </p>
+            </>
+          ) : (
+            <div className={styles.unavailable}>
+              <AlertTriangle size={19} aria-hidden="true" />
+              <div>
+                <strong>{tituloMotivoAsistenciaZoom(asistenciaEnVivo.motivo)}</strong>
+                <p>{mensajeMotivoAsistenciaZoom(asistenciaEnVivo.motivo)}</p>
+                {asistenciaEnVivo.httpStatus ? (
+                  <small>
+                    HTTP {asistenciaEnVivo.httpStatus}
+                    {asistenciaEnVivo.codigoZoom !== undefined
+                      ? " · Código Zoom " + asistenciaEnVivo.codigoZoom
+                      : ""}
+                  </small>
                 ) : null}
-              </>
-            ) : (
-              <p className={styles.note}>Zoom no devolvió conexiones para esta consulta.</p>
-            )}
-            <p className={styles.disclaimer}>
-              Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las puntuaciones de
-              calidad en Zoom Dashboard. «Sin dato» no significa que la conexión sea buena o mala.
-            </p>
-          </>
-        ) : (
-          <div className={styles.unavailable}>
-            <AlertTriangle size={19} aria-hidden="true" />
-            <div>
-              <strong>{tituloMotivoAsistenciaZoom(asistenciaEnVivo.motivo)}</strong>
-              <p>{mensajeMotivoAsistenciaZoom(asistenciaEnVivo.motivo)}</p>
-              {asistenciaEnVivo.httpStatus ? (
-                <small>
-                  HTTP {asistenciaEnVivo.httpStatus}
-                  {asistenciaEnVivo.codigoZoom !== undefined
-                    ? " · Código Zoom " + asistenciaEnVivo.codigoZoom
-                    : ""}
-                </small>
-              ) : null}
-              {asistenciaEnVivo.detalle ? <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small> : null}
+                {asistenciaEnVivo.detalle ? (
+                  <small>Respuesta de Zoom: {asistenciaEnVivo.detalle}</small>
+                ) : null}
+              </div>
             </div>
-          </div>
-        )}
-        {asistenciaEnVivo.estado !== "DISPONIBLE" && presenciaObservada.ultimoAviso ? (
-          <div className={styles.card}>
-            <h3>Última presencia observada por webhooks</h3>
-            <p>
-              {presenciaObservada.identificadores > 0
-                ? presenciaObservada.enSala +
-                  " identificador(es) con entrada sin salida posterior · " +
-                  presenciaObservada.enEspera +
-                  " en espera según el último aviso"
-                : "No se recibieron identificadores suficientes para estimar presencia."}
-            </p>
-            <p className={styles.note}>
-              Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar
-              incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la asistencia
-              oficial.
-              {presenciaObservada.sinIdentificador > 0
-                ? " Avisos sin identificador: " + presenciaObservada.sinIdentificador + "."
-                : ""}
-            </p>
-          </div>
-        ) : null}
-      </section>
-
+          )}
+          {asistenciaEnVivo.estado !== "DISPONIBLE" && presenciaObservada.ultimoAviso ? (
+            <div className={styles.card}>
+              <h3>Última presencia observada por webhooks</h3>
+              <p>
+                {presenciaObservada.identificadores > 0
+                  ? presenciaObservada.enSala +
+                    " identificador(es) con entrada sin salida posterior · " +
+                    presenciaObservada.enEspera +
+                    " en espera según el último aviso"
+                  : "No se recibieron identificadores suficientes para estimar presencia."}
+              </p>
+              <p className={styles.note}>
+                Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar
+                incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la
+                asistencia oficial.
+                {presenciaObservada.sinIdentificador > 0
+                  ? " Avisos sin identificador: " + presenciaObservada.sinIdentificador + "."
+                  : ""}
+              </p>
+            </div>
+          ) : null}
+        </section>
       </div>
 
       <section className={styles.card} aria-label="Calidad de la reunión">

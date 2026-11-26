@@ -33,9 +33,7 @@ export function elegirAmbitoInscriptos(
       o && o.status !== "deleted" && Date.parse(o.start_time ?? "") === inicio.getTime()
   );
   const id = coincidencias.length === 1 ? coincidencias[0]?.occurrence_id : null;
-  return typeof id === "string" && id
-    ? { tipo: "ENCUENTRO", occurrenceId: id }
-    : { tipo: "SERIE" };
+  return typeof id === "string" && id ? { tipo: "ENCUENTRO", occurrenceId: id } : { tipo: "SERIE" };
 }
 
 export async function consultarInscriptosZoom({
@@ -69,7 +67,8 @@ export async function consultarInscriptosZoom({
         if (next) {
           params.set("next_page_token", next);
         }
-        const url = "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
+        const url =
+          "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
         const respuesta = await fetch(url, {
           headers: { Authorization: "Bearer " + token },
           cache: "no-store",
@@ -80,7 +79,13 @@ export async function consultarInscriptosZoom({
           break;
         }
         const data = (await respuesta.json()) as {
-          registrants?: Array<{ id?: string; first_name?: string; last_name?: string; email?: string; create_time?: string }>;
+          registrants?: Array<{
+            id?: string;
+            first_name?: string;
+            last_name?: string;
+            email?: string;
+            create_time?: string;
+          }>;
           next_page_token?: string;
         };
         for (const r of data.registrants ?? []) {

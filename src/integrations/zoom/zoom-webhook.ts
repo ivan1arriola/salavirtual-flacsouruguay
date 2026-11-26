@@ -156,7 +156,9 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   const registrante = tipo.startsWith("meeting.registration_") ? objeto(recurso?.registrant) : null;
   const identidad = participante ?? registrante;
   const limitado = (v: unknown) => texto(v)?.slice(0, 255) ?? null;
-  const participanteNombre = limitado(identidad?.user_name ?? identidad?.name) ?? limitado([texto(identidad?.first_name), texto(identidad?.last_name)].filter(Boolean).join(" "));
+  const participanteNombre =
+    limitado(identidad?.user_name ?? identidad?.name) ??
+    limitado([texto(identidad?.first_name), texto(identidad?.last_name)].filter(Boolean).join(" "));
   const participanteEmail = limitado(identidad?.email);
   const registranteId = limitado(participante?.registrant_id ?? registrante?.id);
   const motivoSalida = tipo === "meeting.participant_left" ? limitado(participante?.leave_reason) : null;

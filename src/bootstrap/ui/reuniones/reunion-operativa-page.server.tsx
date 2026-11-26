@@ -21,11 +21,12 @@ import {
   type EstadoAsistenciaZoomEnVivo
 } from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerEstadoActualZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
-import { consultarInscriptosZoom, elegirAmbitoInscriptos } from "@/src/integrations/zoom/zoom-registrants.client";
-import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
 import {
-  resolverEstadoActualZoom
-} from "@/src/modules/reuniones/presentation/estado-actual-zoom";
+  consultarInscriptosZoom,
+  elegirAmbitoInscriptos
+} from "@/src/integrations/zoom/zoom-registrants.client";
+import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
+import { resolverEstadoActualZoom } from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";

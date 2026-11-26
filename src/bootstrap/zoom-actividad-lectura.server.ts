@@ -57,13 +57,29 @@ export async function leerActividadEncuentroZoom(
       where: { OR: donde, tipo: { notIn: TIPOS_PARTICIPANTE } },
       orderBy: { ocurridoAt: "desc" },
       take: TOPE_HITOS,
-      select: { ...seleccion, participanteId: true, participanteNombre: true, participanteEmail: true, registranteId: true, motivoSalida: true, detalle: true }
+      select: {
+        ...seleccion,
+        participanteId: true,
+        participanteNombre: true,
+        participanteEmail: true,
+        registranteId: true,
+        motivoSalida: true,
+        detalle: true
+      }
     }),
     db.eventoWebhookZoomAdicional.findMany({
       where: { OR: donde, tipo: { in: TIPOS_PARTICIPANTE } },
       orderBy: { ocurridoAt: "desc" },
       take: TOPE_PARTICIPANTES,
-      select: { ...seleccion, participanteId: true, participanteNombre: true, participanteEmail: true, registranteId: true, motivoSalida: true, detalle: true }
+      select: {
+        ...seleccion,
+        participanteId: true,
+        participanteNombre: true,
+        participanteEmail: true,
+        registranteId: true,
+        motivoSalida: true,
+        detalle: true
+      }
     })
   ]);
   return construirActividadEncuentroZoom([...principales, ...hitos, ...participantes]);
