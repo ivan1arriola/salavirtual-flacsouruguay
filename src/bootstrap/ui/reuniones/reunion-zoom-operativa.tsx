@@ -36,6 +36,8 @@ import {
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
 import { ZoomInscriptos } from "./zoom-inscriptos";
+import { ZoomRegistroDirectorio } from "./zoom-registro-directorio";
+import type { ResultadoInscriptosZoom } from "@/src/integrations/zoom/zoom-registrants.client";
 import {
   etiquetaEstadoActualZoom,
   type EstadoActualZoom
@@ -47,6 +49,7 @@ export function ReunionZoomOperativa({
   rol,
   salaEspera,
   configuracion,
+  inscriptosZoom,
   asistenciaEnVivo,
   actividad = [],
   estadoActual,
@@ -56,6 +59,7 @@ export function ReunionZoomOperativa({
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   salaEspera: boolean | null;
   configuracion?: ConfiguracionZoom;
+  inscriptosZoom?: ResultadoInscriptosZoom;
   asistenciaEnVivo: EstadoAsistenciaZoomEnVivo;
   /** Hechos confirmados por webhooks de Zoom para esta ejecución, de más antiguo a más reciente. */
   actividad?: readonly EntradaActividadZoom[];
@@ -220,7 +224,13 @@ export function ReunionZoomOperativa({
       </section>
 
       <div className={styles.operationsGrid}>
-      <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
+      <div className={styles.directoryColumn}>
+        {inscriptosZoom ? <ZoomRegistroDirectorio resultado={inscriptosZoom} /> : null}
+        <details className={styles.advanced}>
+          <summary>Invitados de Sala Virtual ({reunion.invitados.length})</summary>
+          <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
+        </details>
+      </div>
 
       <section className={styles.card} aria-label="Participantes de Zoom en vivo">
         <div className={styles.sectionHeading}>

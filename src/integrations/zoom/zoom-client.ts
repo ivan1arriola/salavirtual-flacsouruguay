@@ -499,6 +499,8 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
     status?: unknown;
     uuid?: unknown;
     password?: unknown;
+    type?: unknown;
+    occurrences?: unknown;
     host_email?: unknown;
     settings?: Record<string, unknown>;
   };
@@ -508,7 +510,9 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
     estado,
     uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,
     salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null,
-    configuracion: extraerConfiguracionZoom(data)
+    configuracion: extraerConfiguracionZoom(data),
+    tipoReunion: typeof data.type === "number" ? data.type : null,
+    ocurrencias: Array.isArray(data.occurrences) ? data.occurrences : []
   };
 }
 

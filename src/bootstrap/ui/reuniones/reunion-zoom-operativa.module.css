@@ -1310,3 +1310,27 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.directoryColumn {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.directoryFilters {
+  display: grid;
+  gap: 8px;
+}
+.directoryFilters input,
+.directoryFilters select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #becfe5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #20395e;
+  background: #fff;
+}
+.directoryFilters :is(input, select):focus-visible {
+  outline: 3px solid #d69c13;
+  outline-offset: 2px;
+}
