@@ -3,6 +3,5 @@ export {
   crearConferenceDataMeet,
   extraerConferenceData,
   extraerMeetProvisionado,
-  eventoCalendarCoincideConSolicitud,
-  type CalendarEvent
+  eventoCalendarCoincideConSolicitud
 } from "@/src/modules/conferencias/api";

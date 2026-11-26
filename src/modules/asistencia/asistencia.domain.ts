@@ -5,7 +5,6 @@ export {
   cumpleSeparacionMinimaAsistencias,
   desvinculacionAsistenciaSchema,
   disponibilidadSemanalSchema,
-  esAsistenciaCompletada,
   estadoInteresParaAccion,
   notificacionAsistenciaSchema,
   postulacionAsistenciaSchema,
@@ -13,4 +12,3 @@ export {
   puedeGestionarPostulacion,
   reporteDuracionSchema
 } from "./domain/asistencia.domain";
-export type { PeriodoAsistencia } from "./domain/asistencia.types";

@@ -5,11 +5,5 @@ export {
   etiquetaTipoArtefactoMeet,
   nombreArchivoReunion,
   nombreCarpetaReunion,
-  TIPOS_ARTEFACTO_SINCRONIZABLES,
-  type DatosCarpetaReunion,
-  type DatosNombreArtefacto,
-  type FilaAsistenciaMeet,
-  type RegistroConferenciaMeet,
-  type SesionParticipanteMeet,
-  type TipoArtefactoMeet
+  TIPOS_ARTEFACTO_SINCRONIZABLES
 } from "@/src/modules/archivos/presentation";

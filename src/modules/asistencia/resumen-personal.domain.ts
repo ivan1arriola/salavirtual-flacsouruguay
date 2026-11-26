@@ -13,8 +13,6 @@ export {
 } from "@/src/modules/liquidaciones/domain";
 export type {
   AccionHistorialAsistencia,
-  ModalidadAsistencia,
   RegistroAsistenciaPersonal,
   RegistroHistorialAsistenciaPersonal
 } from "./domain/asistencia.types";
-export type { ResumenAsistencia } from "@/src/modules/liquidaciones/domain";

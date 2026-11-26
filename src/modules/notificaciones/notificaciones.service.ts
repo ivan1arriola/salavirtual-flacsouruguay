@@ -18,7 +18,7 @@ import {
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 
-export type { NotificationMessage, NotificationRecipient, ReunionEmailInput };
+export type { NotificationMessage, NotificationRecipient };
 export { reunionEmailText };
 
 function buildScope(db: Db) {
