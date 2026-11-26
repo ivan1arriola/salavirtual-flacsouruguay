@@ -125,8 +125,8 @@ describe("webhook firmado de Zoom", () => {
       participanteId: "participante-opaco",
       detalle: "Rol: participante → coanfitrión"
     });
-    expect(JSON.stringify(resultado)).not.toContain("Nombre privado");
-    expect(JSON.stringify(resultado)).not.toContain("privado@example.org");
+    expect(resultado?.participanteNombre).toBe("Nombre privado");
+    expect(resultado?.participanteEmail).toBe("privado@example.org");
 
     const espera = JSON.stringify({
       event: "meeting.participant_jbh_waiting_left",
@@ -214,7 +214,7 @@ describe("recepción durable", () => {
     expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("privado");
   });
 
-  it("persiste eventos en vivo por ejecución, sin datos personales, idempotente y fuera de orden", async () => {
+  it("persiste eventos en vivo por ejecución, con identidad seleccionada, idempotente y fuera de orden", async () => {
     buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
     crearAdicional.mockResolvedValue({ count: 0 });
     const evento = (event: string, uuid: string, ts: number, extra: object = {}) =>
@@ -255,8 +255,10 @@ describe("recepción durable", () => {
     expect(filas[1].huella).not.toBe(filas[0].huella);
     expect(filas[1].participanteId).toBe("p-1");
     expect(filas[3].detalle).toBe("Unstable audio quality");
+    expect(filas[1].participanteNombre).toBe("Ana Pérez");
+    expect(filas[1].participanteEmail).toBe("ana@x.uy");
     const guardado = JSON.stringify(filas);
-    for (const prohibido of ["Ana", "ana@x.uy", "ip-privada", "secret.example"]) {
+    for (const prohibido of ["ip-privada", "secret.example"]) {
       expect(guardado).not.toContain(prohibido);
     }
     expect(crearAdicional.mock.calls.every(([a]) => a.skipDuplicates === true)).toBe(true);
