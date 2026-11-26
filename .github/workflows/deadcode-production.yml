@@ -1,0 +1,28 @@
+name: "Dead Code · Production"
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Inventario de código muerto en producción
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - name: Generar informe de Knip
+        run: |
+          mkdir -p "$RUNNER_TEMP/deadcode"
+          npm run --silent deadcode:report > "$RUNNER_TEMP/deadcode/production.json"
+          node -e 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$RUNNER_TEMP/deadcode/production.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deadcode-production-${{ github.sha }}
+          path: ${{ runner.temp }}/deadcode/
+          retention-days: 14
