@@ -329,7 +329,10 @@ export function ReunionZoomHistorica({
           </Link>
         </section>
       ) : null}
-      <SelectorSeccionZoom seccion={seccion} opciones={SECCIONES_FICHA_ZOOM.map((id) => ({ id, nombre: NOMBRE_SECCION[id] }))} />
+      <SelectorSeccionZoom
+        seccion={seccion}
+        opciones={SECCIONES_FICHA_ZOOM.map((id) => ({ id, nombre: NOMBRE_SECCION[id] }))}
+      />
       <nav className={styles.tabs} aria-label="Secciones del encuentro">
         {SECCIONES_FICHA_ZOOM.map((s) => (
           <Link
@@ -359,34 +362,38 @@ export function ReunionZoomHistorica({
             </>
           ) : null}
 
-          {seccion === "inscripciones" ? (
-            inscriptosZoom ? <ZoomRegistroDirectorio resultado={inscriptosZoom} /> : (
-              <section className={styles.card}><h2 className={styles.sectionTitle}>Inscripciones de Zoom</h2><p>No se pudo consultar el directorio.</p></section>
-            )
-          ) : null}
+          {seccion === "inscripciones" &&
+            (inscriptosZoom ? (
+              <ZoomRegistroDirectorio resultado={inscriptosZoom} />
+            ) : (
+              <section className={styles.card}>
+                <h2 className={styles.sectionTitle}>Inscripciones de Zoom</h2>
+                <p>No se pudo consultar el directorio.</p>
+              </section>
+            ))}
 
           {seccion === "actividad" ? (
             <>
               <ZoomConfiguracion configuracion={configuracion} anfitrion={reunion.zoom.anfitrion} />
-      <ZoomActividadCategorias actividad={actividad} id="zoom-actividad" />
+              <ZoomActividadCategorias actividad={actividad} id="zoom-actividad" />
 
-      <details className={styles.advanced}>
-        <summary>
-          <Info size={19} aria-hidden="true" /> Información técnica
-        </summary>
-        <dl className={styles.facts}>
-          {ocurrencias.map((o, i) => (
-            <div key={o.id}>
-              <dt>UUID de la ejecución{ocurrencias.length > 1 ? ` ${i + 1}` : ""}</dt>
-              <dd className={styles.mono}>{o.uuid}</dd>
-            </div>
-          ))}
-          <div>
-            <dt>Asistente técnico</dt>
-            <dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd>
-          </div>
-        </dl>
-      </details>
+              <details className={styles.advanced}>
+                <summary>
+                  <Info size={19} aria-hidden="true" /> Información técnica
+                </summary>
+                <dl className={styles.facts}>
+                  {ocurrencias.map((o, i) => (
+                    <div key={o.id}>
+                      <dt>UUID de la ejecución{ocurrencias.length > 1 ? ` ${i + 1}` : ""}</dt>
+                      <dd className={styles.mono}>{o.uuid}</dd>
+                    </div>
+                  ))}
+                  <div>
+                    <dt>Asistente técnico</dt>
+                    <dd>{reunion.asistencia.asistente ?? "Sin asignar"}</dd>
+                  </div>
+                </dl>
+              </details>
             </>
           ) : null}
 
@@ -406,22 +413,22 @@ export function ReunionZoomHistorica({
           ) : null}
         </div>
         {seccion === "actividad" ? (
-        <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
-          <section className={styles.card} aria-labelledby="zoom-identificacion">
-            <h2 id="zoom-identificacion" className={styles.sectionTitle}>
-              <Info size={20} aria-hidden="true" />
-              Detalles de la reunión
-            </h2>
-            <dl className={styles.facts}>
-              <div>
-                <dt>
-                  <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
-                </dt>
-                <dd className={styles.mono}>
-                  {reunion.zoom.id ?? "No disponible"}
-                  {reunion.zoom.id ? (
-                    <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
-                  ) : null}
+          <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
+            <section className={styles.card} aria-labelledby="zoom-identificacion">
+              <h2 id="zoom-identificacion" className={styles.sectionTitle}>
+                <Info size={20} aria-hidden="true" />
+                Detalles de la reunión
+              </h2>
+              <dl className={styles.facts}>
+                <div>
+                  <dt>
+                    <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
+                  </dt>
+                  <dd className={styles.mono}>
+                    {reunion.zoom.id ?? "No disponible"}
+                    {reunion.zoom.id ? (
+                      <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
+                    ) : null}
                 </dd>
               </div>
               <div>
