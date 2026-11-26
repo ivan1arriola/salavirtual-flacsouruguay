@@ -1,0 +1,72 @@
+name: "Quality · Auditorías adicionales"
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-audits-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Calidad estática y seguridad
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Preparar informes
+        run: mkdir -p "$RUNNER_TEMP/quality"
+      - name: Duplicación (diagnóstico)
+        run: |
+          npx --yes jscpd@4.0.5 app src --min-lines 8 --min-tokens 70 --reporters json --output "$RUNNER_TEMP/quality/duplication"
+      - name: ShellCheck (diagnóstico)
+        if: always()
+        run: |
+          find infra/ec2 scripts -name '*.sh' -type f -print0 | xargs -0 -r shellcheck -f json > "$RUNNER_TEMP/quality/shellcheck.json" || status=$?
+          test "${status:-0}" -le 1
+      - name: Migraciones SQL (diagnóstico)
+        if: always()
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          node scripts/audit-sql-migrations.mjs "$BASE_SHA" > "$RUNNER_TEMP/quality/migrations.json"
+          cat "$RUNNER_TEMP/quality/migrations.json"
+      - name: Informes
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: quality-${{ github.sha }}
+          path: ${{ runner.temp }}/quality/
+          retention-days: 14
+  secrets:
+    name: Secretos en cambios
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Gitleaks (sin publicar secretos)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          args=(--redact=100 --no-banner)
+          if [[ -n "$BASE_SHA" ]]; then
+            args+=(--log-opts="$BASE_SHA..HEAD")
+          else
+            args+=(--log-opts="HEAD")
+          fi
+          docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo "${args[@]}"
