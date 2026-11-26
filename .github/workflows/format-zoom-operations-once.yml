@@ -1,0 +1,29 @@
+name: Format Zoom operations
+on:
+  push:
+    branches:
+      - feat/zoom-operations-redesign
+    paths:
+      - .github/workflows/format-zoom-operations-once.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feat/zoom-operations-redesign
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+      - run: npm run format
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git diff --cached --quiet || git commit -m "style(zoom): apply repository formatter"
+          git push origin HEAD:feat/zoom-operations-redesign
+      - run: npm run format:check
