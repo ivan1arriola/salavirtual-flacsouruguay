@@ -26,10 +26,11 @@ import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentati
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
-import { ItemActividad } from "./zoom-actividad-item";
+import { ZoomActividadCategorias } from "./zoom-actividad-categorias";
+import { ZoomConfiguracion } from "./zoom-configuracion";
+import type { ConfiguracionZoom } from "@/src/integrations/zoom/zoom-client";
 import {
   esActividadOperativaZoom,
-  resumirActividadEncuentroZoom,
   resumirPresenciaObservadaZoom,
   type EntradaActividadZoom
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
@@ -45,6 +46,7 @@ export function ReunionZoomOperativa({
   reunion,
   rol,
   salaEspera,
+  configuracion,
   asistenciaEnVivo,
   actividad = [],
   estadoActual,
@@ -53,6 +55,7 @@ export function ReunionZoomOperativa({
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
   salaEspera: boolean | null;
+  configuracion?: ConfiguracionZoom;
   asistenciaEnVivo: EstadoAsistenciaZoomEnVivo;
   /** Hechos confirmados por webhooks de Zoom para esta ejecución, de más antiguo a más reciente. */
   actividad?: readonly EntradaActividadZoom[];
@@ -84,16 +87,11 @@ export function ReunionZoomOperativa({
   ).length;
 
   const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo));
-  const actividadSecundaria = actividad.filter((a) => !esActividadOperativaZoom(a.tipo));
-  const resumen = resumirActividadEncuentroZoom(actividadOperativa);
   const presenciaObservada = resumirPresenciaObservadaZoom(actividadOperativa);
   const alertasCalidad = actividadOperativa
     .filter((a) => a.tipo === "meeting.alert")
     .slice(-5)
     .reverse();
-  const eventosRecientes = actividadOperativa.slice(-15).reverse();
-  const eventosAnteriores = actividadOperativa.slice(0, -15).reverse();
-  const ultimoEvento = actividad.at(-1);
   let estadoAnfitrion = "Sin verificar";
   if (asistenciaEnVivo.estado === "DISPONIBLE") {
     estadoAnfitrion = anfitrionesConectados > 0 ? "Detectado en sala" : "No detectado en sala";
@@ -166,49 +164,6 @@ export function ReunionZoomOperativa({
         </div>
       </header>
 
-      <section className={styles.securityCard} aria-label="Seguridad y acceso de Zoom">
-        <div className={styles.heading}>
-          <ShieldCheck size={20} aria-hidden="true" />
-          <h2>Seguridad y acceso</h2>
-        </div>
-        <p className={styles.note}>
-          Configuración consultada en Zoom. Los cambios pueden afectar a toda una serie de reuniones.
-        </p>
-        <div className={styles.securityGrid}>
-          <div className={styles.securityItem}>
-            <div className={styles.securityLabel}>
-              <Users size={19} aria-hidden="true" />
-              <strong>Sala de espera</strong>
-            </div>
-            <span
-              className={
-                salaEspera === true ? styles.enabled : salaEspera === false ? styles.disabled : styles.unknown
-              }
-            >
-              {salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}
-            </span>
-            <small>
-              {asistenciaEnVivo.estado === "DISPONIBLE"
-                ? enEspera + " persona(s) esperando según Zoom Dashboard"
-                : "La cantidad de personas en espera depende de la consulta de participantes en vivo"}
-            </small>
-          </div>
-          <div className={styles.securityItem}>
-            <div className={styles.securityLabel}>
-              <LockKeyhole size={19} aria-hidden="true" />
-              <strong>Código de acceso</strong>
-            </div>
-            {rol === "ADMINISTRACION" ? (
-              <ZoomPasscodeControl instanciaId={reunion.id} />
-            ) : (
-              <p className={styles.note}>
-                La consulta y gestión del código requieren permisos de administración.
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
-
       <section className={styles.card} aria-label="Estado de la reunión">
         <div className={styles.heading}>
           <Activity size={19} aria-hidden="true" />
@@ -264,6 +219,7 @@ export function ReunionZoomOperativa({
         ) : null}
       </section>
 
+      <div className={styles.operationsGrid}>
       <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
 
       <section className={styles.card} aria-label="Participantes de Zoom en vivo">
@@ -390,6 +346,8 @@ export function ReunionZoomOperativa({
         ) : null}
       </section>
 
+      </div>
+
       <section className={styles.card} aria-label="Calidad de la reunión">
         <div className={styles.heading}>
           <AlertTriangle size={19} aria-hidden="true" />
@@ -430,101 +388,51 @@ export function ReunionZoomOperativa({
         ) : null}
       </section>
 
-      <section className={styles.card} aria-labelledby="zoom-actividad-vivo">
-        <div className={styles.sectionHeading}>
-          <div>
-            <h2 id="zoom-actividad-vivo">Actividad operativa</h2>
-            <p className={styles.note}>
-              Avisos recibidos por webhook, ordenados por la hora del evento.
-              {ultimoEvento ? " Último aviso: " + formatTime(ultimoEvento.desde) + "." : ""}
-            </p>
-          </div>
-          {actualizarAutomaticamente ? (
-            <span className={styles.updatedTag}>Actualización automática cada 30 s</span>
-          ) : null}
+      <ZoomActividadCategorias actividad={actividad} id="zoom-actividad-vivo" />
+
+      <ZoomConfiguracion configuracion={configuracion} anfitrion={reunion.zoom.anfitrion} />
+
+      <section className={styles.securityCard} aria-label="Seguridad y acceso de Zoom">
+        <div className={styles.heading}>
+          <ShieldCheck size={20} aria-hidden="true" />
+          <h2>Seguridad y acceso</h2>
         </div>
-        {actividadOperativa.length === 0 ? (
-          <p>
-            Todavía no llegaron avisos operativos de Zoom para esta ejecución. Verificá las suscripciones de
-            webhooks; la ausencia de avisos no significa que no haya participantes.
-          </p>
-        ) : (
-          <>
-            <div className={styles.activitySummary}>
-              <div>
-                <strong>{resumen.entradas}</strong>
-                <span>Entradas</span>
-              </div>
-              <div>
-                <strong>{resumen.salidas}</strong>
-                <span>Salidas</span>
-              </div>
-              <div>
-                <strong>{resumen.admisiones}</strong>
-                <span>Admisiones</span>
-              </div>
-              <div>
-                <strong>{resumen.esperaAnfitrion}</strong>
-                <span>Esperas</span>
-              </div>
-              <div>
-                <strong>{resumen.cambiosRol}</strong>
-                <span>Cambios de rol</span>
-              </div>
-              <div>
-                <strong>{resumen.movimientosGrupos}</strong>
-                <span>Movimientos en grupos</span>
-              </div>
-              <div>
-                <strong>{resumen.alertasCalidad}</strong>
-                <span>Alertas de calidad</span>
-              </div>
-              <div>
-                <strong>{resumen.eventosGrabacion}</strong>
-                <span>Eventos de grabación</span>
-              </div>
-              <div>
-                <strong>{resumen.comparticiones}</strong>
-                <span>Eventos de pantalla compartida</span>
-              </div>
+        <p className={styles.note}>
+          Configuración consultada en Zoom. Los cambios pueden afectar a toda una serie de reuniones.
+        </p>
+        <div className={styles.securityGrid}>
+          <div className={styles.securityItem}>
+            <div className={styles.securityLabel}>
+              <Users size={19} aria-hidden="true" />
+              <strong>Sala de espera</strong>
             </div>
-            <ol className={styles.timeline}>
-              {eventosRecientes.map((a) => (
-                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString()} a={a} />
-              ))}
-            </ol>
-            {eventosAnteriores.length ? (
-              <details className={styles.moreActivity}>
-                <summary>Ver {eventosAnteriores.length} eventos operativos anteriores</summary>
-                <ol className={styles.timeline}>
-                  {eventosAnteriores.map((a) => (
-                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString()} a={a} />
-                  ))}
-                </ol>
-              </details>
-            ) : null}
-            <p className={styles.disclaimer}>
-              Los contadores representan avisos recibidos por webhook; no equivalen a cantidad de personas ni
-              sustituyen el reporte oficial de asistencia, que se consulta al finalizar la reunión.
-            </p>
-          </>
-        )}
-        {actividadSecundaria.length ? (
-          <details className={styles.moreActivity}>
-            <summary>Otros eventos de Zoom ({actividadSecundaria.length})</summary>
-            <ol className={styles.timeline}>
-              {actividadSecundaria
-                .slice(-20)
-                .reverse()
-                .map((a) => (
-                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString()} a={a} />
-                ))}
-            </ol>
+            <span
+              className={
+                salaEspera === true ? styles.enabled : salaEspera === false ? styles.disabled : styles.unknown
+              }
+            >
+              {salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}
+            </span>
             <small>
-              Incluye inscripciones y cambios administrativos que no forman parte de la actividad en vivo.
+              {asistenciaEnVivo.estado === "DISPONIBLE"
+                ? enEspera + " persona(s) esperando según Zoom Dashboard"
+                : "La cantidad de personas en espera depende de la consulta de participantes en vivo"}
             </small>
-          </details>
-        ) : null}
+          </div>
+          <div className={styles.securityItem}>
+            <div className={styles.securityLabel}>
+              <LockKeyhole size={19} aria-hidden="true" />
+              <strong>Código de acceso</strong>
+            </div>
+            {rol === "ADMINISTRACION" ? (
+              <ZoomPasscodeControl instanciaId={reunion.id} />
+            ) : (
+              <p className={styles.note}>
+                La consulta y gestión del código requieren permisos de administración.
+              </p>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className={styles.card} aria-label="Acciones rápidas">

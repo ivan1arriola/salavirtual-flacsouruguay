@@ -90,10 +90,10 @@ export default async function ReunionOperativaPage({
       cercaDelHorario ||
       ultimo.tipo === "INICIO_SIN_VERIFICAR" ||
       reunion.estado === "EN_CURSO";
-    let api: EstadoApiZoom | null = null;
+    let api: (EstadoApiZoom & Pick<Awaited<ReturnType<typeof obtenerEstadoActualZoomHttp>>, "configuracion">) | null = null;
     let cuentaApi: string | null = null;
     let token: string | null = null;
-    if (consultar && reunion.zoom.id) {
+    if (reunion.zoom.id) {
       try {
         const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
         if (credenciales.disponible) {
@@ -151,6 +151,7 @@ export default async function ReunionOperativaPage({
         reunion={{ ...reunion, estado }}
         rol={actor.rol}
         salaEspera={api?.salaEspera ?? null}
+        configuracion={api?.configuracion}
         asistenciaEnVivo={asistenciaEnVivo}
         actividad={actividadEnVivo}
         estadoActual={actual}

@@ -5,26 +5,23 @@ import {
   Clock3,
   ExternalLink,
   FileVideo,
-  History,
   Info,
   Repeat2,
   UsersRound,
   Video,
   UserRound,
   Wifi,
-  Timer,
-  List
+  Timer
 } from "lucide-react";
 import Link from "next/link";
 import { NavegacionEncuentroZoom } from "./navegacion-encuentro-zoom";
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import type { AsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import { ZoomAsistenciaVista } from "@/src/components/zoom-asistencia-vista";
-import { ItemActividad } from "./zoom-actividad-item";
+import { ZoomActividadCategorias } from "./zoom-actividad-categorias";
 import { ZoomCopyIdButton } from "@/src/components/zoom-copy-id-button";
 import type { ReunionOperativaView } from "@/src/modules/reuniones/reunion-operativa.service";
 import {
-  esActividadOperativaZoom,
   type EntradaActividadZoom
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import {
@@ -106,8 +103,6 @@ function SeccionResumen({
   } else if (finRealAt) {
     finRealLabel = formatTime(finRealAt);
   }
-  const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo)).reverse();
-  const otrasActividades = actividad.length - actividadOperativa.length;
   return (
     <>
       <section className={styles.card} aria-labelledby="zoom-resumen">
@@ -180,50 +175,8 @@ function SeccionResumen({
           </div>
         </dl>
       </section>
-      <section className={styles.card} aria-labelledby="zoom-actividad">
-        <h2 id="zoom-actividad" className={styles.sectionTitle}>
-          <History size={21} aria-hidden="true" /> Actividad del encuentro
-        </h2>
-        {actividadOperativa.length === 0 ? (
-          <p>No hay avisos operativos vinculados. Esto no demuestra que no haya habido actividad.</p>
-        ) : (
-          <>
-            <ol className={styles.timeline}>
-              {actividadOperativa.slice(0, 15).map((a, i) => (
-                <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
-              ))}
-            </ol>
-            {actividadOperativa.length > 15 ? (
-              <details className={styles.moreActivity}>
-                <summary>
-                  <List size={16} aria-hidden="true" />
-                  Ver {actividadOperativa.length - 15} avisos anteriores
-                </summary>
-                <ol className={styles.timeline}>
-                  {actividadOperativa.slice(15).map((a, i) => (
-                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
-                  ))}
-                </ol>
-              </details>
-            ) : null}
-          </>
-        )}
-        {otrasActividades > 0 ? (
-          <details className={styles.moreActivity}>
-            <summary>Eventos administrativos ({otrasActividades})</summary>
-            <ol className={styles.timeline}>
-              {actividad
-                .filter((a) => !esActividadOperativaZoom(a.tipo))
-                .slice(-20)
-                .reverse()
-                .map((a, i) => (
-                  <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
-                ))}
-            </ol>
-            <p>Últimos 20 grupos de avisos administrativos.</p>
-          </details>
-        ) : null}
-      </section>
+      <ZoomActividadCategorias actividad={actividad} id="zoom-actividad" />
+
       <details className={styles.advanced}>
         <summary>
           <Info size={19} aria-hidden="true" /> Información técnica
