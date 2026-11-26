@@ -124,8 +124,7 @@ async function consultarPagina(
   if (next) {
     params.set("next_page_token", next);
   }
-  const url =
-    "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
+  const url = "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
   const respuesta = await fetch(url, {
     headers: { Authorization: "Bearer " + token },
     cache: "no-store",
