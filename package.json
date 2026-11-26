@@ -65,6 +65,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "deadcode": "knip",
+    "deadcode:production": "knip --production",
+    "deadcode:report": "knip --production --reporter json --no-exit-code",
     "architecture": "depcruise src app auth.ts scripts test --config .dependency-cruiser.cjs --output-type err"
   },
   "dependencies": {
