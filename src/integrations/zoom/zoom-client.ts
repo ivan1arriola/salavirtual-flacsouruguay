@@ -498,13 +498,60 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
   const data = (await response.json()) as {
     status?: unknown;
     uuid?: unknown;
-    settings?: { waiting_room?: unknown };
+    password?: unknown;
+    type?: unknown;
+    occurrences?: unknown;
+    host_email?: unknown;
+    settings?: Record<string, unknown>;
   };
   const estado: "started" | "waiting" | null =
     data.status === "started" || data.status === "waiting" ? data.status : null;
   return {
     estado,
     uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,
-    salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null
+    salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null,
+    configuracion: extraerConfiguracionZoom(data),
+    tipoReunion: typeof data.type === "number" ? data.type : null,
+    ocurrencias: Array.isArray(data.occurrences) ? data.occurrences : []
+  };
+}
+
+export type ConfiguracionZoom = Readonly<{
+  salaEspera: boolean | null;
+  inscripcion: boolean | null;
+  clave: boolean | null;
+  autenticacion: boolean | null;
+  ingresoAntes: boolean | null;
+  silencio: boolean | null;
+  grabacion: string | null;
+  anfitrion: string | null;
+  alternativos: string | null;
+}>;
+
+export function extraerConfiguracionZoom(data: {
+  password?: unknown;
+  host_email?: unknown;
+  settings?: Record<string, unknown>;
+}): ConfiguracionZoom {
+  const settings = data.settings ?? {};
+  const bool = (v: unknown) => (typeof v === "boolean" ? v : null);
+  const cadena = (v: unknown) => (typeof v === "string" ? v : null);
+  const aprobacion = settings.approval_type;
+  let inscripcion: boolean | null = null;
+  if (aprobacion === 0 || aprobacion === 1) {
+    inscripcion = true;
+  } else if (aprobacion === 2) {
+    inscripcion = false;
+  }
+  return {
+    salaEspera: bool(settings.waiting_room),
+    inscripcion,
+    clave: typeof data.password === "string" ? data.password.length > 0 : null,
+    autenticacion: bool(settings.meeting_authentication),
+    ingresoAntes: bool(settings.join_before_host),
+    silencio: bool(settings.mute_upon_entry),
+    grabacion: cadena(settings.auto_recording),
+    anfitrion: cadena(data.host_email),
+    alternativos: cadena(settings.alternative_hosts)
   };
 }

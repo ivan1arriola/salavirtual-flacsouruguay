@@ -37,6 +37,9 @@ export function ItemActividad({ a }: Readonly<{ a: EntradaActividadZoom }>) {
       <span className={styles.timelineLabel}>
         {a.etiqueta}
         {a.cantidad > 1 ? ` (hasta ${hora.format(a.hasta)})` : ""}
+        {a.participanteNombre ? <small>{a.participanteNombre}</small> : null}
+        {a.participanteEmail ? <small>{a.participanteEmail}</small> : null}
+        {a.motivoSalida ? <small>Motivo de salida: {a.motivoSalida}</small> : null}
         {detalle ? <small> · {detalle}</small> : null}
       </span>
     </li>

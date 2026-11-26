@@ -121,7 +121,7 @@ export function interpretarAvisoZoom(cuerpo: string): AvisoZoom | null {
   };
 }
 
-/** Conserva únicamente identificadores y fechas; nunca el contenido del webhook. */
+/** Extrae identidad y metadatos operativos seleccionados, sin conservar el cuerpo completo. */
 export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   const raiz = objeto(JSON.parse(cuerpo) as unknown);
   const tipo = texto(raiz?.event);
@@ -153,14 +153,22 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
     return null;
   }
   const participante = objeto(recurso?.participant);
-  // Solo ids opacos: nombre, correo, IP y demás datos del participante jamás se leen.
+  const registrante = tipo.startsWith("meeting.registration_") ? objeto(recurso?.registrant) : null;
+  const identidad = participante ?? registrante;
+  const limitado = (v: unknown) => texto(v)?.slice(0, 255) ?? null;
+  const participanteNombre =
+    limitado(identidad?.user_name ?? identidad?.name) ??
+    limitado([texto(identidad?.first_name), texto(identidad?.last_name)].filter(Boolean).join(" "));
+  const participanteEmail = limitado(identidad?.email);
+  const registranteId = limitado(participante?.registrant_id ?? registrante?.id);
+  const motivoSalida = tipo === "meeting.participant_left" ? limitado(participante?.leave_reason) : null;
   const participanteId = EVENTOS_EN_VIVO.has(tipo)
     ? (texto(participante?.participant_uuid) ??
       texto(participante?.participant_user_id) ??
       texto(participante?.user_id) ??
       texto(participante?.id))
     : null;
-  // Se guardan únicamente códigos de calidad, roles y tipos de contenido; nunca nombres ni correos.
+  // Detalle operativo independiente de la identidad.
   const detalle = (() => {
     if (tipo === "meeting.alert" && Array.isArray(recurso?.issues)) {
       return (
@@ -211,6 +219,10 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
     uuid,
     uuids,
     participanteId,
+    participanteNombre,
+    participanteEmail,
+    registranteId,
+    motivoSalida,
     detalle,
     ocurridoAt
   };

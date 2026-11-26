@@ -1151,9 +1151,13 @@ model EventoWebhookZoomAdicional {
   recursoId      String?
   uuid           String?
   uuids          String[] @default([])
-  /// Id opaco del participante (participant_uuid); nunca nombre ni correo.
+  /// Identificador del participante informado por Zoom.
   participanteId String?
-  /// Códigos de meeting.alert; sin datos personales.
+  participanteNombre String?
+  participanteEmail String?
+  registranteId String?
+  motivoSalida String?
+  /// Detalle operativo del evento.
   detalle        String?
   ocurridoAt     DateTime
   createdAt      DateTime @default(now())

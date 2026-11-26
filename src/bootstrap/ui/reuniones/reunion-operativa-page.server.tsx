@@ -21,11 +21,12 @@ import {
   type EstadoAsistenciaZoomEnVivo
 } from "@/src/integrations/zoom/zoom-live-participants.client";
 import { obtenerEstadoActualZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
-import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
 import {
-  resolverEstadoActualZoom,
-  type EstadoApiZoom
-} from "@/src/modules/reuniones/presentation/estado-actual-zoom";
+  consultarInscriptosZoom,
+  elegirAmbitoInscriptos
+} from "@/src/integrations/zoom/zoom-registrants.client";
+import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
+import { resolverEstadoActualZoom } from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { ReunionZoomOperativa } from "./reunion-zoom-operativa";
@@ -90,10 +91,10 @@ export default async function ReunionOperativaPage({
       cercaDelHorario ||
       ultimo.tipo === "INICIO_SIN_VERIFICAR" ||
       reunion.estado === "EN_CURSO";
-    let api: EstadoApiZoom | null = null;
+    let api: Awaited<ReturnType<typeof obtenerEstadoActualZoomHttp>> | null = null;
     let cuentaApi: string | null = null;
     let token: string | null = null;
-    if (consultar && reunion.zoom.id) {
+    if (reunion.zoom.id) {
       try {
         const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
         if (credenciales.disponible) {
@@ -140,6 +141,12 @@ export default async function ReunionOperativaPage({
       reunion.zoom.eventoProveedorId && ejecucionActiva
         ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId, ejecucionActiva)
         : [];
+    const inscriptosZoom = await consultarInscriptosZoom({
+      token,
+      meetingId: reunion.zoom.id,
+      habilitada: api?.configuracion.inscripcion ?? null,
+      ambito: elegirAmbitoInscriptos(api?.tipoReunion, api?.ocurrencias, reunion.inicioProgramadoAt)
+    });
     let estado = reunion.estado;
     if (activa) {
       estado = "EN_CURSO";
@@ -151,6 +158,8 @@ export default async function ReunionOperativaPage({
         reunion={{ ...reunion, estado }}
         rol={actor.rol}
         salaEspera={api?.salaEspera ?? null}
+        configuracion={api?.configuracion}
+        inscriptosZoom={inscriptosZoom}
         asistenciaEnVivo={asistenciaEnVivo}
         actividad={actividadEnVivo}
         estadoActual={actual}

@@ -6,6 +6,10 @@ export type HechoZoom = Readonly<{
   ocurridoAt: Date;
   huella?: string;
   participanteId?: string | null;
+  participanteNombre?: string | null;
+  participanteEmail?: string | null;
+  registranteId?: string | null;
+  motivoSalida?: string | null;
   detalle?: string | null;
 }>;
 
@@ -18,6 +22,10 @@ export type EntradaActividadZoom = Readonly<{
   /** Cantidad de avisos que resume (1 si no se agrupó). */
   cantidad: number;
   participanteId?: string | null;
+  participanteNombre?: string | null;
+  participanteEmail?: string | null;
+  registranteId?: string | null;
+  motivoSalida?: string | null;
   detalle?: string | null;
   huella?: string;
 }>;
@@ -92,13 +100,32 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
     hasta: Date;
     cantidad: number;
     participanteId?: string | null;
+    participanteNombre?: string | null;
+    participanteEmail?: string | null;
+    registranteId?: string | null;
+    motivoSalida?: string | null;
     detalle?: string | null;
     huella?: string;
   }[] = [];
 
-  for (const { tipo, ocurridoAt, participanteId, detalle, huella } of ordenados) {
+  for (const {
+    tipo,
+    ocurridoAt,
+    participanteId,
+    participanteNombre,
+    participanteEmail,
+    registranteId,
+    motivoSalida,
+    detalle,
+    huella
+  } of ordenados) {
     const ultima = entradas.at(-1);
-    const mismoParticipante = ultima?.participanteId === participanteId;
+    const mismoParticipante =
+      ultima?.participanteId === participanteId &&
+      ultima?.participanteNombre === participanteNombre &&
+      ultima?.participanteEmail === participanteEmail &&
+      ultima?.registranteId === registranteId &&
+      ultima?.motivoSalida === motivoSalida;
     if (
       ultima &&
       AGRUPABLES.has(tipo) &&
@@ -116,6 +143,10 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
         hasta: ocurridoAt,
         cantidad: 1,
         participanteId,
+        participanteNombre,
+        participanteEmail,
+        registranteId,
+        motivoSalida,
         detalle,
         huella
       });
