@@ -18,17 +18,39 @@ const categorias = [
 ] as const;
 
 function categoria(tipo: string): (typeof categorias)[number] {
-  if (tipo.startsWith("recording.")) return "Grabaciones";
-  if (tipo.includes("registration_")) return "Inscripciones";
-  if (tipo.includes("breakout_room")) return "Grupos pequeños";
-  if (tipo.includes("waiting") || tipo === "meeting.participant_admitted") return "Sala de espera";
-  if (tipo.includes("role_changed")) return "Anfitriones y roles";
-  if (tipo.startsWith("meeting.participant_")) return "Participación";
-  if (tipo.includes("sharing_")) return "Pantalla compartida";
-  if (tipo === "meeting.alert") return "Calidad técnica";
-  if (tipo === "meeting.started" || tipo === "meeting.ended") return "Ejecución";
-  if (tipo.includes("live_streaming")) return "Transmisión";
-  if (/^meeting\.(created|updated|deleted|recovered|permanently_deleted)$/.test(tipo)) return "Configuración";
+  if (tipo.startsWith("recording.")) {
+    return "Grabaciones";
+  }
+  if (tipo.includes("registration_")) {
+    return "Inscripciones";
+  }
+  if (tipo.includes("breakout_room")) {
+    return "Grupos pequeños";
+  }
+  if (tipo.includes("waiting") || tipo === "meeting.participant_admitted") {
+    return "Sala de espera";
+  }
+  if (tipo.includes("role_changed")) {
+    return "Anfitriones y roles";
+  }
+  if (tipo.startsWith("meeting.participant_")) {
+    return "Participación";
+  }
+  if (tipo.includes("sharing_")) {
+    return "Pantalla compartida";
+  }
+  if (tipo === "meeting.alert") {
+    return "Calidad técnica";
+  }
+  if (tipo === "meeting.started" || tipo === "meeting.ended") {
+    return "Ejecución";
+  }
+  if (tipo.includes("live_streaming")) {
+    return "Transmisión";
+  }
+  if (/^meeting\.(created|updated|deleted|recovered|permanently_deleted)$/.test(tipo)) {
+    return "Configuración";
+  }
   return "Otros";
 }
 

@@ -53,72 +53,95 @@ export async function consultarInscriptosZoom({
   if (!token || !meetingId || habilitada !== true || ambito.tipo === "DESCONOCIDO") {
     return { estado: "SIN_VERIFICAR", ambito, personas: [] };
   }
-  const personas: InscriptoZoom[] = [];
-  let incompleto = false;
+  const resultados = [];
   for (const estado of ["approved", "pending", "denied"] as const) {
-    let next = "";
-    const vistos = new Set<string>();
-    for (let pagina = 0; pagina < 20; pagina++) {
-      try {
-        const params = new URLSearchParams({ status: estado, page_size: "100" });
-        if (ambito.occurrenceId) {
-          params.set("occurrence_id", ambito.occurrenceId);
-        }
-        if (next) {
-          params.set("next_page_token", next);
-        }
-        const url =
-          "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
-        const respuesta = await fetch(url, {
-          headers: { Authorization: "Bearer " + token },
-          cache: "no-store",
-          signal: AbortSignal.timeout(5000)
-        });
-        if (!respuesta.ok) {
-          incompleto = true;
-          break;
-        }
-        const data = (await respuesta.json()) as {
-          registrants?: Array<{
-            id?: string;
-            first_name?: string;
-            last_name?: string;
-            email?: string;
-            create_time?: string;
-          }>;
-          next_page_token?: string;
-        };
-        for (const r of data.registrants ?? []) {
-          if (!r.id || !r.email) {
-            incompleto = true;
-            continue;
-          }
-          personas.push({
-            id: r.id,
-            nombre: [r.first_name, r.last_name].filter(Boolean).join(" "),
-            email: r.email,
-            estado,
-            fecha: r.create_time ?? null
-          });
-        }
-        next = data.next_page_token ?? "";
-        if (!next) {
-          break;
-        }
-        if (vistos.has(next) || pagina === 19) {
-          incompleto = true;
-          break;
-        }
-        vistos.add(next);
-      } catch {
-        incompleto = true;
-        break;
-      }
-    }
+    resultados.push(await consultarEstado(token, meetingId, ambito, estado));
   }
+  const personas = resultados.flatMap((resultado) => resultado.personas);
+  const incompleto = resultados.some((resultado) => resultado.incompleto);
   let estado: ResultadoInscriptosZoom["estado"] = "DISPONIBLE";
   if (incompleto) {
     estado = personas.length ? "PARCIAL" : "SIN_VERIFICAR";
   }
   return { estado, ambito, personas };
+}
+
+async function consultarEstado(
+  token: string,
+  meetingId: string,
+  ambito: AmbitoInscriptos,
+  estado: InscriptoZoom["estado"]
+) {
+  const personas: InscriptoZoom[] = [];
+  let incompleto = false;
+  let next = "";
+  const vistos = new Set<string>();
+  for (let pagina = 0; pagina < 20; pagina++) {
+    try {
+      const data = await consultarPagina(token, meetingId, ambito, estado, next);
+      if (!data) {
+        return { personas, incompleto: true };
+      }
+      for (const r of data.registrants ?? []) {
+        if (!r.id || !r.email) {
+          incompleto = true;
+          continue;
+        }
+        personas.push({
+          id: r.id,
+          nombre: [r.first_name, r.last_name].filter(Boolean).join(" "),
+          email: r.email,
+          estado,
+          fecha: r.create_time ?? null
+        });
+      }
+      next = data.next_page_token ?? "";
+      if (!next) {
+        return { personas, incompleto };
+      }
+      if (vistos.has(next)) {
+        return { personas, incompleto: true };
+      }
+      vistos.add(next);
+    } catch {
+      return { personas, incompleto: true };
+    }
+  }
+  return { personas, incompleto: true };
+}
+
+async function consultarPagina(
+  token: string,
+  meetingId: string,
+  ambito: AmbitoInscriptos,
+  estado: InscriptoZoom["estado"],
+  next: string
+) {
+  const params = new URLSearchParams({ status: estado, page_size: "100" });
+  if (ambito.occurrenceId) {
+    params.set("occurrence_id", ambito.occurrenceId);
+  }
+  if (next) {
+    params.set("next_page_token", next);
+  }
+  const url =
+    "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
+  const respuesta = await fetch(url, {
+    headers: { Authorization: "Bearer " + token },
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000)
+  });
+  if (!respuesta.ok) {
+    return null;
+  }
+  return (await respuesta.json()) as {
+    registrants?: Array<{
+      id?: string;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      create_time?: string;
+    }>;
+    next_page_token?: string;
+  };
 }
