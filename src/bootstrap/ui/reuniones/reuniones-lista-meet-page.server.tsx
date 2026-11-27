@@ -71,7 +71,6 @@ export default async function ReunionesPage({
   const {
     vista,
     q,
-    query,
     programaId,
     periodo,
     isHistory,
