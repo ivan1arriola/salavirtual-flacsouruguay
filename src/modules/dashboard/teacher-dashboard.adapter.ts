@@ -78,6 +78,7 @@ export async function obtenerDashboardDocente(
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           include: { asistenteTecnico: { include: { usuario: true } } },
+          orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
           take: 1
         }
       }

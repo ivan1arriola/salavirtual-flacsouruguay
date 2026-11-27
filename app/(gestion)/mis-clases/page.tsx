@@ -5,6 +5,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { ParticipantesZoomVivo } from "@/src/components/participantes-zoom-vivo";
+import { TeacherMonitoringStatus } from "@/src/components/dashboard/teacher/teacher-monitoring-status";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,16 @@ export default async function MisClasesPage({
       finProgramadoAt: true,
       proveedorActivoTipo: true,
       solicitudSalaId: true,
+      requiereAsistenciaTecnica: true,
+      asignaciones: {
+        where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
+        orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+        take: 1,
+        select: {
+          estado: true,
+          asistenteTecnico: { select: { usuario: { select: { nombres: true, apellidos: true } } } }
+        }
+      },
       solicitud: {
         select: { titulo: true, docentePrograma: { select: { programa: { select: { nombre: true } } } } }
       },
@@ -97,7 +108,7 @@ export default async function MisClasesPage({
         <div>
           <p className="page-eyebrow">Actividad académica</p>
           <h1>Mis clases</h1>
-          <p>Consultá invitados, participantes conectados y asistencia de tus programas.</p>
+          <p>Consultá el monitoreo técnico, los invitados y la asistencia de tus programas.</p>
         </div>
       </header>
       <nav className={styles.tabs} aria-label="Estado de las clases">
@@ -132,6 +143,13 @@ export default async function MisClasesPage({
                 </div>
                 <Link href={detalle}>Ver clase</Link>
               </div>
+              <dl className={styles.monitoring}>
+                <TeacherMonitoringStatus
+                  requiereMonitoreo={clase.requiereAsistenciaTecnica}
+                  asignaciones={clase.asignaciones}
+                  historico={vista === "anteriores"}
+                />
+              </dl>
               <dl className={styles.metadata}>
                 <div>
                   <dt>Cuenta anfitriona</dt>
