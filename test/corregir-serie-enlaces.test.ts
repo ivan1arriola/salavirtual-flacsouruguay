@@ -240,7 +240,7 @@ function crearEscenario(opciones: Opciones = {}) {
   const db = { ...tx, $transaction: vi.fn(async (cb: (t: typeof tx) => unknown) => cb(tx)) };
 
   const calendarios = new Map(
-    instancias.map((i, indice) => [
+    instancias.map((_i, indice) => [
       `cal-${indice + 1}`,
       {
         description: `Clase\nZoom: ${viejo(indice + 1)}\nRepetido: ${viejo(indice + 1)}`,
