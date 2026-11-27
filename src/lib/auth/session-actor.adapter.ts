@@ -15,7 +15,7 @@ export type SessionActor = Readonly<{
  */
 export async function resolveSessionActor(
   db: PrismaClient,
-  identity: Readonly<{ id: string; email?: string | null }>,
+  identity: Readonly<{ id: string; email?: string | null | undefined }>,
 ): Promise<SessionActor | null> {
   if (!identity.id?.trim()) {
     return null;
