@@ -62,7 +62,7 @@ export default async function GestionMonitoreoListado({
   if (!session?.user) {
     redirect("/acceso");
   }
-  const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email });
+  const actor = await resolveSessionActor(db, { id: session.user.id, email: session.user.email ?? null });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     redirect("/reuniones");
   }
@@ -76,7 +76,7 @@ export default async function GestionMonitoreoListado({
       requiereAsistenciaTecnica: true,
       estado: "PROGRAMADA",
       inicioProgramadoAt: { gte: now },
-      solicitud: q ? { titulo: { contains: q, mode: "insensitive" } } : undefined,
+      ...(q ? { solicitud: { titulo: { contains: q, mode: "insensitive" } } } : {}),
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {
