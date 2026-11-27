@@ -85,9 +85,10 @@ export function planificarReemplazoSerieZoom(
     );
     return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
-  const superpuestos = ordenados.some(
-    (actual, indice) => indice > 0 && actual.inicio < ordenados[indice - 1].fin
-  );
+  const superpuestos = ordenados.some((actual, indice) => {
+    const anterior = ordenados[indice - 1];
+    return anterior !== undefined && actual.inicio < anterior.fin;
+  });
   const errores = [
     ...evaluados.errores,
     ...(superpuestos ? ["Hay encuentros futuros superpuestos dentro de la serie."] : [])
