@@ -102,46 +102,48 @@ export default async function AgendaAbiertaPage({
     actor.rol === "ASISTENTE_TECNICO"
       ? obtenerAsistenciasPersonales(db, actor.id, "MES_ACTUAL", ahora)
       : Promise.resolve([]),
-    actor.rol === "ASISTENTE_TECNICO"
+    assistant
       ? db.postulacionAsistenciaTecnica.findMany({
-          where: { instanciaSalaId: { in: meetingIds }, asistenteTecnicoId: assistant?.id },
+          where: { instanciaSalaId: { in: meetingIds }, asistenteTecnicoId: assistant.id },
           select: { instanciaSalaId: true, estado: true },
         })
-      : db.postulacionAsistenciaTecnica.findMany({
-          where: {
-            instanciaSalaId: { in: meetingIds },
-            estado: "ME_INTERESA",
-            asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
-          },
-          select: {
-            instanciaSalaId: true,
-            asistenteTecnico: {
-              select: {
-                id: true,
-                usuario: { select: { nombres: true, apellidos: true } },
-                asignaciones: {
-                  where: {
-                    estado: { in: [...ACTIVE_ASSIGNMENTS] },
-                    instancia: { estado: "PROGRAMADA" },
-                  },
-                  select: {
-                    instancia: {
-                      select: {
-                        id: true,
-                        inicioProgramadoAt: true,
-                        finProgramadoAt: true,
-                        inicioAsistenciaTecnicaAt: true,
-                        finAsistenciaTecnicaAt: true,
-                        solicitud: { select: { titulo: true } },
+      : actor.rol === "ADMINISTRACION"
+        ? db.postulacionAsistenciaTecnica.findMany({
+            where: {
+              instanciaSalaId: { in: meetingIds },
+              estado: "ME_INTERESA",
+              asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
+            },
+            select: {
+              instanciaSalaId: true,
+              asistenteTecnico: {
+                select: {
+                  id: true,
+                  usuario: { select: { nombres: true, apellidos: true } },
+                  asignaciones: {
+                    where: {
+                      estado: { in: [...ACTIVE_ASSIGNMENTS] },
+                      instancia: { estado: "PROGRAMADA" },
+                    },
+                    select: {
+                      instancia: {
+                        select: {
+                          id: true,
+                          inicioProgramadoAt: true,
+                          finProgramadoAt: true,
+                          inicioAsistenciaTecnicaAt: true,
+                          finAsistenciaTecnicaAt: true,
+                          solicitud: { select: { titulo: true } },
+                        },
                       },
                     },
                   },
                 },
               },
             },
-          },
-          orderBy: { createdAt: "asc" },
-        }),
+            orderBy: { createdAt: "asc" },
+          })
+        : Promise.resolve([]),
     actor.rol === "ADMINISTRACION"
       ? db.asistenteTecnico.findMany({
           where: {

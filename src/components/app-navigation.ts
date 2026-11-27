@@ -23,7 +23,7 @@ export type NavigationItem = Readonly<{
   icon: LucideIcon;
   shortLabel?: string;
   emphasis?: "primary";
-  search?: Readonly<{ key: string; value: string; defaultActive?: boolean }>;
+  search?: Readonly<{ key: string; value: string; defaultActive?: boolean }> | undefined;
 }>;
 
 export type NavigationGroup = Readonly<{
@@ -47,7 +47,7 @@ const createMeeting: NavigationItem = {
   icon: CalendarPlus,
 };
 
-const adminGroups: readonly NavigationGroup[] = [
+const adminGroups = [
   {
     label: "Operaciones",
     items: [
@@ -85,9 +85,9 @@ const adminGroups: readonly NavigationGroup[] = [
       { href: "/notificaciones", label: "Notificaciones", icon: Bell },
     ],
   },
-];
+] as const satisfies readonly NavigationGroup[];
 
-const teacherGroups: readonly NavigationGroup[] = [
+const teacherGroups = [
   {
     label: "Actividad académica",
     items: [
@@ -102,9 +102,9 @@ const teacherGroups: readonly NavigationGroup[] = [
     label: "Personal",
     items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }],
   },
-];
+] as const satisfies readonly NavigationGroup[];
 
-const assistantGroups: readonly NavigationGroup[] = [
+const assistantGroups = [
   {
     label: "Trabajo diario",
     items: [
@@ -147,7 +147,7 @@ const assistantGroups: readonly NavigationGroup[] = [
     label: "Personal",
     items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }],
   },
-];
+] as const satisfies readonly NavigationGroup[];
 
 const mobilePrimary: Readonly<Record<RolUsuario, readonly NavigationItem[]>> = {
   ADMINISTRACION: [

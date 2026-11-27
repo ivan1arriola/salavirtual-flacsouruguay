@@ -99,30 +99,32 @@ export default async function AsistenciaTecnicaPage({
       requiereAsistenciaTecnica: true,
       inicioProgramadoAt: { gte: now },
       estado: "PROGRAMADA",
-      solicitud: q
+      ...(q
         ? {
-            OR: [
-              { titulo: { contains: q, mode: "insensitive" } },
-              {
-                docentePrograma: {
-                  programa: { nombre: { contains: q, mode: "insensitive" } },
+            solicitud: {
+              OR: [
+                { titulo: { contains: q, mode: "insensitive" } },
+                {
+                  docentePrograma: {
+                    programa: { nombre: { contains: q, mode: "insensitive" } },
+                  },
                 },
-              },
-              {
-                docentePrograma: {
-                  docente: {
-                    usuario: {
-                      OR: [
-                        { nombres: { contains: q, mode: "insensitive" } },
-                        { apellidos: { contains: q, mode: "insensitive" } },
-                      ],
+                {
+                  docentePrograma: {
+                    docente: {
+                      usuario: {
+                        OR: [
+                          { nombres: { contains: q, mode: "insensitive" } },
+                          { apellidos: { contains: q, mode: "insensitive" } },
+                        ],
+                      },
                     },
                   },
                 },
-              },
-            ],
+              ],
+            },
           }
-        : undefined,
+        : {}),
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {

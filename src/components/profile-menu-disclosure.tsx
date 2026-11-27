@@ -8,7 +8,7 @@ export function DismissibleDetails({
   children,
 }: Readonly<{
   className: string;
-  dataTour?: string;
+  dataTour?: string | undefined;
   children: React.ReactNode;
 }>) {
   const detailsRef = useRef<HTMLDetailsElement>(null);

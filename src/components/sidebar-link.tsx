@@ -14,9 +14,9 @@ export function SidebarLink({
 }: Readonly<{
   href: string;
   exact?: boolean;
-  className?: string;
-  dataTour?: string;
-  activeSearch?: Readonly<{ key: string; value: string; defaultActive?: boolean }>;
+  className?: string | undefined;
+  dataTour?: string | undefined;
+  activeSearch?: Readonly<{ key: string; value: string; defaultActive?: boolean }> | undefined;
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
